@@ -1,26 +1,20 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import Bottom from "./screens/bottom/bottom"
+import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import Bottom from "./screens/bottom";
+import Login from "./screens/login";
+import { View, Text, Button } from 'react-native';
 
 
-export default function App() {
+function App() {
   return (
-    <NavigationContainer>
-      <Bottom />
+    <View style={{ width: 1000, height: 600, backgroundColor: 'blue' }}>
+      <NavigationContainer>
+        <Bottom/>
     </NavigationContainer>
+    </View>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
+export default App;
 
 
 // import * as React from "react";
@@ -146,4 +140,3 @@ export default function App() {
 //     </NavigationContainer>
 //   );
 // }
-

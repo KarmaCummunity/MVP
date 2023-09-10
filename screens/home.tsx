@@ -16,15 +16,37 @@
 
 // export default Home;
 
+// import React from 'react';
+// import { Text, View } from 'react-native';
+
+// function HomeScreen() {
+//   return (
+//     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+//       <Text>Home!</Text>
+//     </View>
+//   );
+// }
+
+// export default HomeScreen;
 import React from 'react';
-import { Text, View } from 'react-native';
+import { View, Text, TouchableOpacity, Linking } from 'react-native';
 
-function HomeScreen() {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Home!</Text>
-    </View>
-  );
-}
+function Home() {
+    const openLink = () => {
+        const url = 'https://example.com'; // Replace with your URL
+        Linking.openURL(url);
+    };
+    return (
+        <div>
+            <Text>hello world</Text>
+            <View>
+                <Text>This is a clickable link:</Text>
+                <TouchableOpacity onPress={openLink}>
+                    <Text style={{ color: 'blue' }}>Visit Example.com</Text>
+                </TouchableOpacity>
+            </View>
+        </div>
+    );
+};
 
-export default HomeScreen;
+export default Home

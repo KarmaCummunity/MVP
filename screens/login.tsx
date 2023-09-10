@@ -1,21 +1,33 @@
-// import * as React from "react";
-// import { View, Text, Button } from "react-native";
-// import { NativeStackScreenProps } from "@react-navigation/native-stack";
-// //import { RootStackParamList } from "../AppNavigator"
+import * as React from "react";
+// import {RootStackParamList} from "./bottom"
+import { View, Text, Button } from 'react-native';
 
-// export type RootStackParamList = {
-//       login: undefined;
-//       mainScreen: undefined;
-//     };
+import { NavigationProp } from '@react-navigation/native'; // Import both RouteProp and NavigationProp
 
-//  type SettingsScreenProps = NativeStackScreenProps<RootStackParamList, "login">;
+export type RootStackParamList = {
+    Login: undefined;
+    Register: undefined
+    Profile: undefined;
+  };
 
-// const Login: React.FC<SettingsScreenProps> = (props) => {
-//   return (
-//     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-//       <Text>Settings Screen</Text>
-//       <Button title='Login' onPress={() => props.navigation.push("mainScreen")} />
-//     </View>
-//   );
-// };
-// export default Login;
+type loginProps = {
+  navigation: NavigationProp<RootStackParamList, 'Register'>; // Replace YourParamList with your actual param list
+};
+
+function login({ navigation }: loginProps) {
+  return (
+    <div>
+        <Text>login</Text>
+        <Button
+        title="Go to Login"
+        onPress={() => navigation.navigate('Register')} // Assuming you have a 'Login' screen defined
+        />
+        <Button
+        title="Go to profile"
+        onPress={() => navigation.navigate('Profile')} // Assuming you have a 'Login' screen defined
+      />
+    </div>
+  );
+}
+
+export default login;
