@@ -1,16 +1,25 @@
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import HomeScreen from "../screens/HomeScreen";
 import DonationsScreen from "../screens/DonationsScreen";
 import SearchScreen from "../screens/SearchScreen";
 import ProfileScreen from "../screens/ProfileScreen";
-import {StyleSheet, View } from 'react-native';
+
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View } from 'react-native';
+
+import styles from "../styles";
+
 const Tab = createBottomTabNavigator();
 
+
 function BottomNavigator() {
+
+  const insets = useSafeAreaInsets();
+
     return (
-      <View style={styles.container}>
+      <View style={[styles.bottomContainer, { paddingTop: insets.bottom }]}>
       <Tab.Navigator>
-        <Tab.Screen name="HomeScreen" component={HomeScreen} />
+        <Tab.Screen name="HomeScreen" component={HomeScreen} options={{ headerShown: false }}/>
         <Tab.Screen name="SearchScreen" component={SearchScreen} />
         <Tab.Screen name="DonationsScreen" component={DonationsScreen} />
         <Tab.Screen name="ProfileScreen" component={ProfileScreen} />
@@ -18,18 +27,5 @@ function BottomNavigator() {
       </View>
     );
 }
-const styles = StyleSheet.create({
-  container: {
-    flex: 1, // This makes the container take up the entire screen height
-    justifyContent: 'flex-end', // Positions content at the top and bottom
-  },
-  content: {
-    flex: 1,
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: -100,
-  },
 
-});
 export default BottomNavigator;

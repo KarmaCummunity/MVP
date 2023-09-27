@@ -12,6 +12,22 @@ const styles = StyleSheet.create({
       flex: 1, // This makes the container take up the entire screen height
       justifyContent: 'flex-end', // Positions content at the top and bottom
     },
+    bottomContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      alignItems: 'center',
+      backgroundColor: 'white',
+      borderTopWidth: 1,
+      borderTopColor: 'lightgray',
+      paddingVertical: 8,
+    },
+    tab: {
+      alignItems: 'center',
+    },
+    tabText: {
+      marginTop: 4,
+      fontSize: 12,
+    },
   });
   
   export default styles;
