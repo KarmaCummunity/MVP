@@ -1,10 +1,15 @@
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { View, Text, Button, StyleSheet } from 'react-native';
+import TopBarNavigator from '../navigations/TopBarNavigator';
+import BottomNavigator from '../navigations/BottomNavigator';
 
-function HomeScreen({ navigation }: { navigation: NavigationProp<ParamListBase> }) {
+function Home({ navigation }: { navigation: NavigationProp<ParamListBase> }) {
     return (
       <View style={styles.container}>
+        <TopBarNavigator navigation={navigation}/>
+
         <Button title="Go to First" onPress={() => navigation.navigate('FirstScreen')} />
+        <BottomNavigator/>
       </View>
     );
   }
@@ -16,4 +21,4 @@ const styles = StyleSheet.create({
       justifyContent: 'flex-end', // Positions content at the top and bottom
     },
 });
-export default HomeScreen;
+export default Home;
