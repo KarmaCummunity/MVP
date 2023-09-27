@@ -23,7 +23,8 @@ List the main features or capabilities of your project.
     * node
     * npm
     * expo
-    * android emulator (recommended with android studio)
+    * android emulator (recommended with android studio) 
+    * downlad expo on your phone to run 
 
 ### Installation
 
