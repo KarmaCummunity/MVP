@@ -1,9 +1,12 @@
-import { View, Text } from 'react-native';
+import TopBarNavigator from '../navigations/TopBarNavigator';
+
+import { View } from 'react-native';
 
 function SearchScreen() {
+
     return (
       <View>
-        <Text>Search Screen</Text>
+        <TopBarNavigator title="Search"/> 
       </View>
     );
   }

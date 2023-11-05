@@ -1,9 +1,14 @@
-import { View, Text } from 'react-native';
+
+import styles from '../styles';
+import TopBarNavigator from '../navigations/TopBarNavigator';
+
+import { View, Button } from 'react-native';
 
 function DonationsScreen() {
+
     return (
       <View>
-        <Text>Donations Screen</Text>
+        <TopBarNavigator title="Donations"/> 
       </View>
     );
   }

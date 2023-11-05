@@ -1,30 +1,47 @@
-import HomeScreen from "../screens/HomeScreen";
+import Home from "../screens/Home";
 import DonationsScreen from "../screens/DonationsScreen";
 import SearchScreen from "../screens/SearchScreen";
 import ProfileScreen from "../screens/ProfileScreen";
+import Icon from 'react-native-vector-icons/Ionicons';
 
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { View } from 'react-native';
 
-import styles from "../styles";
 
 const Tab = createBottomTabNavigator();
 
-
 function BottomNavigator() {
 
-  const insets = useSafeAreaInsets();
-
     return (
-      <View style={[styles.bottomContainer, { paddingTop: insets.bottom }]}>
-      <Tab.Navigator>
-        <Tab.Screen name="HomeScreen" component={HomeScreen} options={{ headerShown: false }}/>
-        <Tab.Screen name="SearchScreen" component={SearchScreen} />
-        <Tab.Screen name="DonationsScreen" component={DonationsScreen} />
-        <Tab.Screen name="ProfileScreen" component={ProfileScreen} />
-      </Tab.Navigator>
-      </View>
+    <Tab.Navigator>
+
+      <Tab.Screen
+        name="Home"
+        component={Home}
+        options={{
+          tabBarIcon: () => <Icon name="ios-home" size={24} color="black" />,
+          headerShown: false,}}/>
+
+      <Tab.Screen
+        name="SearchScreen"
+        component={SearchScreen}
+        options={{
+          tabBarIcon: () => <Icon name="ios-search" size={24} color="black" />,
+          headerShown: false,}}/>
+
+      <Tab.Screen
+        name="DonationsScreen"
+        component={DonationsScreen}
+        options={{
+          tabBarIcon: () => <Icon name="ios-heart" size={24} color="black" />,
+          headerShown: false,}}/>
+          
+      <Tab.Screen
+        name="ProfileScreen"
+        component={ProfileScreen}
+        options={{tabBarIcon: () => <Icon name="ios-person" size={24} color="black" />,
+        headerShown: false,}}/>
+
+    </Tab.Navigator>    
     );
 }
 

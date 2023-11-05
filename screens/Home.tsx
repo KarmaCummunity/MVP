@@ -1,15 +1,14 @@
-import { NavigationProp, ParamListBase } from '@react-navigation/native';
+import styles from '../styles';
+import TopBarNavigator from '../navigations/TopBarNavigator';
+
 import { View, Button } from 'react-native';
 
-import BottomNavigator from '../navigations/BottomNavigator';
-import styles from '../styles';
 
-function Home({ navigation }: { navigation: NavigationProp<ParamListBase> }) {
-
-    return (
-      <View style={styles.container}>
-        <Button title="Go to First" onPress={() => navigation.navigate('FirstScreen')} />
-        <BottomNavigator/>
+function Home(){
+    return (  
+      <View>
+        <TopBarNavigator title="Home"/> 
+        <Button title="Go to First" onPress={() => alert('FirstScreen')} />
       </View>
     );
   }

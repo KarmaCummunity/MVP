@@ -12,6 +12,11 @@ const styles = StyleSheet.create({
       flex: 1, // This makes the container take up the entire screen height
       justifyContent: 'flex-end', // Positions content at the top and bottom
     },
+    container2: {
+      flex: 1, // This makes the container take up the entire screen height
+      justifyContent: 'flex-end', // Positions content at the top and bottom
+      backgroundColor: "black"
+    },
     bottomContainer: {
       flexDirection: 'row',
       justifyContent: 'space-around',
