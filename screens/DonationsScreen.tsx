@@ -1,23 +1,21 @@
 import styles from "../navigations/styles";
-import TopBarNavigator from "../navigations/TopBarNavigator";
 import { NavigationProp, ParamListBase } from "@react-navigation/native";
 import { View, TouchableOpacity, Text, ScrollView, Dimensions,} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 
-function DonationsScreen({
+export default function DonationsScreen({
   navigation,
 }: {
   navigation: NavigationProp<ParamListBase>;
 }) {
   return (
     <SafeAreaView style={styles.container}>
-      <TopBarNavigator navigation={navigation} title="donations" />
       {/* Recent Section */}
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>מומלצים בשבילך</Text>
         <View style={styles.recentButtonsContainer}>
-          <TouchableOpacity style={styles.recentButton}>
+          <TouchableOpacity onPress={() => navigation.navigate('MoneyScreen')} style={styles.recentButton}>
             <Text style={styles.recentButtonText}>כסף</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.recentButton}>
@@ -100,5 +98,3 @@ function DonationsScreen({
     </SafeAreaView>
   );
 }
-
-export default DonationsScreen;

@@ -4,11 +4,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { NavigationProp, ParamListBase } from "@react-navigation/native";
 import { View, TouchableOpacity, Text } from "react-native";
 
-function HomeScreen({ navigation }: { navigation: NavigationProp<ParamListBase> }) {
+export default function HomeScreen({ navigation }: { navigation: NavigationProp<ParamListBase> }) {
   return (
     <SafeAreaView style={styles.container}>
-      <TopBarNavigator navigation={navigation} title="home"/>
-
       <View style={styles.content}>
         <TouchableOpacity
           onPress={() => navigation.navigate("FirstScreen")}
@@ -22,4 +20,3 @@ function HomeScreen({ navigation }: { navigation: NavigationProp<ParamListBase> 
     </SafeAreaView>
   );
 }
-export default HomeScreen;

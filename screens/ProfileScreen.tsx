@@ -4,11 +4,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { NavigationProp, ParamListBase } from "@react-navigation/native";
 import { View, TouchableOpacity, Text } from "react-native";
 
-function ProfileScreen({ navigation }: { navigation: NavigationProp<ParamListBase> }) {
+
+export default function ProfileScreen({ navigation }: { navigation: NavigationProp<ParamListBase> }) {
   return (
     <SafeAreaView style={styles.container}>
-      <TopBarNavigator navigation={navigation} title="profile"/>
-
       <View style={styles.content}>
         <TouchableOpacity
           onPress={() => navigation.navigate("FirstScreen")}
@@ -22,5 +21,3 @@ function ProfileScreen({ navigation }: { navigation: NavigationProp<ParamListBas
     </SafeAreaView>
   );
 }
-
-export default ProfileScreen;

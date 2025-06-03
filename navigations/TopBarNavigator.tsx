@@ -3,13 +3,28 @@ import styles from './styles'; // your styles file
 import Icon from 'react-native-vector-icons/Ionicons';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
+import { useRoute, RouteProp } from '@react-navigation/native';
+
+
 
 interface TopBarNavigatorProps {
   navigation: NavigationProp<ParamListBase>;
-  title: string;
 }
 
-function TopBarNavigator({ navigation, title }: TopBarNavigatorProps) {
+function TopBarNavigator({ navigation }: TopBarNavigatorProps) {
+  
+  const route = useRoute();
+
+  // Map route names to subtitles
+  const routeSubtitles: Record<string, string> = {
+    HomeScreen: 'Welcome Home',
+    SearchScreen: 'Search Something',
+    DonationsScreen: 'Your Donations',
+    ProfileScreen: 'Your Profile',
+  };
+
+  const subtitle = routeSubtitles[route.name] ?? '';
+
   const settingspushed = () => {
     alert("SettingsScreen1");
   };
@@ -29,7 +44,7 @@ function TopBarNavigator({ navigation, title }: TopBarNavigatorProps) {
       {/* Title */}
       <View style={{ alignItems: 'center' }}>
         <Text style={styles.title}>KC</Text>
-        {title && <Text style={styles.subTitle}>{title}</Text>}
+        {/* { <Text style={styles.subTitle}>{subtitle}</Text>} */}
       </View>
       {/* Right Icons Group */}
       <View style={{ flexDirection: 'row', gap: 5 }}>

@@ -1,15 +1,15 @@
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import HomeScreen from "../screens/HomeScreen";
-import DonationsScreen from "../screens/DonationsScreen";
 import SearchScreen from "../screens/SearchScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import styles from './styles';
+import DonationsStack from './DonationsStack';
+import HomeScreen from '../screens/HomeScreen';
 import { View } from 'react-native';
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
 const Tab = createBottomTabNavigator();
 
-function BottomNavigator() {
+export default function BottomNavigator() {
   return (
     <View style={styles.container_bottom_nav}>
       <Tab.Navigator
@@ -35,10 +35,12 @@ function BottomNavigator() {
       >
         <Tab.Screen name="HomeScreen"      component={HomeScreen} />
         <Tab.Screen name="SearchScreen"    component={SearchScreen} />
-        <Tab.Screen name="DonationsScreen" component={DonationsScreen} />
+        <Tab.Screen name="DonationsScreen" component={DonationsStack} />
         <Tab.Screen name="ProfileScreen"   component={ProfileScreen} />
       </Tab.Navigator>
-
+      </View>
+    );
+  }
       {/* {cool bottom in center of bottom bar nav} */}
       {/* Bottom Navigation */}
       {/* <View style={styles.bottomNav}>
@@ -50,7 +52,3 @@ function BottomNavigator() {
       </View> */}
 
       
-    </View>
-  );
-}
-export default BottomNavigator;

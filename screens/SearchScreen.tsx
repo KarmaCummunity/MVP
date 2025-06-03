@@ -4,14 +4,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { View, TouchableOpacity, Text } from "react-native";
 import { NavigationProp, ParamListBase } from "@react-navigation/native";
 
-function SearchScreen({
+export default function SearchScreen({
   navigation,
 }: {
   navigation: NavigationProp<ParamListBase>;
 }) {
   return (
     <SafeAreaView style={styles.container}>
-      <TopBarNavigator navigation={navigation} title="search" />
       <View style={styles.content}>
         <TouchableOpacity
           onPress={() => navigation.navigate("FirstScreen")}
@@ -25,4 +24,3 @@ function SearchScreen({
     </SafeAreaView>
   );
 }
-export default SearchScreen;

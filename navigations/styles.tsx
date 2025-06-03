@@ -200,6 +200,122 @@ const styles = StyleSheet.create({
     fontSize: 30,
     color: '#fff', // White icon color
   },
+  searchFilterContainer: {
+    padding: 15,
+    backgroundColor: '#f8f0eb', // Light orange background
+  },
+  searchBox: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 10,
+    alignSelf: 'flex-end', // Align to the right
+  },
+  searchText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#e79d7f', // Orange text color
+  },
+  searchInputs: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  searchInput: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 8,
+    marginHorizontal: 5,
+    textAlign: 'right', // For Hebrew input
+  },
+  searchIcon: {
+    padding: 8,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+  },
+  filterButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 10,
+    backgroundColor: '#f8f0eb',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  filterButton: {
+    backgroundColor: '#e79d7f', // Orange button
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+  },
+  filterButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  inputSection: {
+    padding: 15,
+    backgroundColor: '#fff',
+  },
+  inputField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end', // Align to the right
+    marginBottom: 15,
+  },
+  inputLabel: {
+    fontSize: 16,
+    marginRight: 10,
+    fontWeight: 'bold',
+  },
+  dropdown: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '60%', // Adjust as needed
+  },
+  section: {
+    padding: 15,
+    backgroundColor: '#f8f0eb', // Light orange background for sections
+    marginTop: 10,
+    borderRadius: 20,
+    marginHorizontal: 10,
+  },
+  card: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 10,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  cardImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25, // Make it circular
+    marginLeft: 15, // Margin for Hebrew layout
+  },
+  cardContent: {
+    flex: 1,
+    alignItems: 'flex-end', // Align text to the right for Hebrew
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  cardDescription: {
+    fontSize: 14,
+    color: 'gray',
+  },
 });
 
 export default styles;
