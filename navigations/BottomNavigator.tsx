@@ -38,6 +38,18 @@ function BottomNavigator() {
         <Tab.Screen name="DonationsScreen" component={DonationsScreen} />
         <Tab.Screen name="ProfileScreen"   component={ProfileScreen} />
       </Tab.Navigator>
+
+      {/* {cool bottom in center of bottom bar nav} */}
+      {/* Bottom Navigation */}
+      {/* <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.bottomNavItem}>
+          <View style={styles.bottomNavCenterIconContainer}>
+            <Text style={styles.bottomNavCenterIcon}>👐</Text>
+          </View>
+        </TouchableOpacity>
+      </View> */}
+
+      
     </View>
   );
 }

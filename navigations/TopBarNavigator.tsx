@@ -31,7 +31,6 @@ function TopBarNavigator({ navigation, title }: TopBarNavigatorProps) {
         <Text style={styles.title}>KC</Text>
         {title && <Text style={styles.subTitle}>{title}</Text>}
       </View>
-
       {/* Right Icons Group */}
       <View style={{ flexDirection: 'row', gap: 5 }}>
         <TouchableOpacity onPress={() => navigation.navigate('infoScreen')} style={{ marginRight: 5 }}>
