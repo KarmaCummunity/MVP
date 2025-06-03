@@ -1,80 +1,46 @@
-/**
-import { NavigationProp, ParamListBase } from '@react-navigation/native';
-import { View, Text, Button, TouchableOpacity, Image } from 'react-native';
+import React from 'react';
+import styles from './styles'; // your styles file
 import Icon from 'react-native-vector-icons/Ionicons';
-import ChatScreen from '../screens/ChatScreen';
-import { useNavigation } from '@react-navigation/native';
-//import logo from '../assets/favicon.png'; 
-import styles from '../styles';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { NavigationProp, ParamListBase } from '@react-navigation/native';
 
-
-
-function TopBarNavigator({ navigation }: { navigation: NavigationProp<ParamListBase> }) {
-  const settingspushed = () => {
-    alert("SettingsScreen")
-  } 
-  return (
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 10 }}>
-      <TouchableOpacity onPress={() => navigation.navigate('ChatScreen')}>
-        <Icon name="chatbubbles-outline" size={30} color="black" />
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate('notificationsScreen')}>
-        <Icon name="notifications-circle-outline" size={30} color="black" />
-      </TouchableOpacity>
-      <Text style={styles.title}>KC</Text>
-      <TouchableOpacity onPress={() => navigation.navigate('settingsScreen')}>
-        <Icon name="information-circle-sharp" size={30} color="black" />
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => settingspushed()}>
-        <Icon name="settings" size={30} color="black" />
-      </TouchableOpacity>
-    </View> 
-    );
+interface TopBarNavigatorProps {
+  navigation: NavigationProp<ParamListBase>;
+  title: string;
 }
 
-export default TopBarNavigator;
- */
-
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/Ionicons';
-import styles from '../styles';
-import { NavigationProp, ParamListBase } from '@react-navigation/native';
-
-function TopBarNavigator({ navigation }: { navigation: NavigationProp<ParamListBase> }) {
+function TopBarNavigator({ navigation, title }: TopBarNavigatorProps) {
   const settingspushed = () => {
-    alert("SettingsScreen");
+    alert("SettingsScreen1");
   };
 
   return (
-    <View style={{ 
-      backgroundColor: "#fffffF", 
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 15,
-      paddingVertical: 0,
-      height: 60
-       }}>
-        <TouchableOpacity onPress={() => navigation.navigate('ChatScreen')}>
-          <Icon name="chatbubbles-outline" size={30} color="black" />
+    <View style={styles.container_top_bar}>
+      {/* Left Icons Group */}
+      <View style={{ flexDirection: 'row', gap: 5 }}>
+        <TouchableOpacity onPress={() => navigation.navigate('ChatScreen')} style={{ marginRight: 5 }}>
+          <Icon name="chatbubbles-outline" size={25} color="black" />
         </TouchableOpacity>
-
         <TouchableOpacity onPress={() => navigation.navigate('notificationsScreen')}>
-          <Icon name="notifications-circle-outline" size={30} color="black" />
+          <Icon name="notifications-circle-outline" size={25} color="black" />
         </TouchableOpacity>
+      </View>
 
+      {/* Title */}
+      <View style={{ alignItems: 'center' }}>
         <Text style={styles.title}>KC</Text>
+        {title && <Text style={styles.subTitle}>{title}</Text>}
+      </View>
 
-        <TouchableOpacity onPress={() => navigation.navigate('settingsScreen')}>
-          <Icon name="information-circle-sharp" size={30} color="black" />
+      {/* Right Icons Group */}
+      <View style={{ flexDirection: 'row', gap: 5 }}>
+        <TouchableOpacity onPress={() => navigation.navigate('infoScreen')} style={{ marginRight: 5 }}>
+          <Icon name="information-circle-outline" size={25} color="black" />
         </TouchableOpacity>
-
         <TouchableOpacity onPress={() => settingspushed()}>
-          <Icon name="settings" size={30} color="black" />
+          <Icon name="settings-outline" size={25} color="black" />
         </TouchableOpacity>
+      </View>
     </View>
   );
 }
