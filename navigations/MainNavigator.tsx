@@ -2,7 +2,7 @@ import FirstScreen from "../screens/FirstScreen";
 import LoginScreen from "../screens/LoginScreen";
 import { createStackNavigator } from "@react-navigation/stack";
 import HomeStack from "./HomeStack";
-import InactiveScreen from "../screens/InactiveScreen"; // ודא שהנתיב נכון
+import InactiveScreen from "../screens/InactiveScreen";
 
 const Stack = createStackNavigator();
 
