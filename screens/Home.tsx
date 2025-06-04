@@ -8,7 +8,7 @@ import { NavigationProp, ParamListBase } from '@react-navigation/native';
 export default function Home({ navigation }: { navigation: NavigationProp<ParamListBase> }) {
     return (
       <View style={styles.container}>
-        <SafeAreaView>
+        <SafeAreaView edges={['top']} style={styles.safeArea}>
       <TopBarNavigator navigation={navigation} />
           </SafeAreaView>
       <View style={styles.container}>

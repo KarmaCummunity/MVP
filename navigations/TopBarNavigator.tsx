@@ -33,10 +33,10 @@ function TopBarNavigator({ navigation }: TopBarNavigatorProps) {
     <View style={styles.container_top_bar}>
       {/* Left Icons Group */}
       <View style={{ flexDirection: 'row', gap: 5 }}>
-        <TouchableOpacity onPress={() => navigation.navigate('ChatScreen')} style={{ marginRight: 5 }}>
+        <TouchableOpacity onPress={() => navigation.navigate('InactiveScreen')} style={{ marginRight: 5 }}>
           <Icon name="chatbubbles-outline" size={25} color="black" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('notificationsScreen')}>
+        <TouchableOpacity onPress={() => navigation.navigate('InactiveScreen')}>
           <Icon name="notifications-circle-outline" size={25} color="black" />
         </TouchableOpacity>
       </View>
@@ -48,10 +48,10 @@ function TopBarNavigator({ navigation }: TopBarNavigatorProps) {
       </View>
       {/* Right Icons Group */}
       <View style={{ flexDirection: 'row', gap: 5 }}>
-        <TouchableOpacity onPress={() => navigation.navigate('infoScreen')} style={{ marginRight: 5 }}>
+        <TouchableOpacity onPress={() => navigation.navigate('InactiveScreen')} style={{ marginRight: 5 }}>
           <Icon name="information-circle-outline" size={25} color="black" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => settingspushed()}>
+        <TouchableOpacity onPress={() => navigation.navigate('InactiveScreen')}>
           <Icon name="settings-outline" size={25} color="black" />
         </TouchableOpacity>
       </View>

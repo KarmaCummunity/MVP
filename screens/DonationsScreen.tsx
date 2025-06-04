@@ -1,7 +1,6 @@
 import styles from "../navigations/styles";
 import { NavigationProp, ParamListBase } from "@react-navigation/native";
 import { View, TouchableOpacity, Text, ScrollView, Dimensions,} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 
 export default function DonationsScreen({
@@ -10,7 +9,7 @@ export default function DonationsScreen({
   navigation: NavigationProp<ParamListBase>;
 }) {
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Recent Section */}
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>מומלצים בשבילך</Text>
@@ -95,6 +94,6 @@ export default function DonationsScreen({
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

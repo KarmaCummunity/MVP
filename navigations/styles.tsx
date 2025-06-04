@@ -8,26 +8,15 @@ const styles = StyleSheet.create({
   container_bottom_nav: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "#fffff0", // white yellwo 
-  },
-  title: {
-    fontSize: 20, // Set the font size
-    fontWeight: "bold", // Set the font weight (e.g., 'bold', 'normal')
-    color: "black", // Set the text color
-    textAlign: "center", // Set the text alignment
-    // marginTop: 20 ,       // Add some margin at the bottom
+    // backgroundColor: "#fffff0", // white yellwo 
+    backgroundColor: '#F8F5F0',
+
   },
   subTitle: {
     fontSize: 15, // Set the font size
     color: "black", // Set the text color
     textAlign: "center", // Set the text alignment
   },
-  container: {
-    flex: 1, // This makes the container take up the entire screen height
-    justifyContent: "flex-end", // Positions content at the top and bottom
-    backgroundColor: "#fff0f0", // white pink
-  },
-
   container_top_bar: { 
     backgroundColor: "transparent", 
     // backgroundColor: "#0fff0f", // Dark background for the top bar
@@ -43,18 +32,8 @@ const styles = StyleSheet.create({
     justifyContent: "center", // centers the button vertically
     alignItems: "center",     // centers the button horizontally
   },
-  button: {
-    backgroundColor: "#007AFF", // blue color
-    padding: 10,
-    borderRadius: 5,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "white",
-    textAlign: "center",
-  },
   safeArea: {
-    flex: 1,
+    // flex: 1,
     backgroundColor: 'white', // Light background color for the entire screen
   },
   scrollView: {
@@ -86,10 +65,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   icon: {
+    marginHorizontal: 6,
     fontSize: 22,
   },
   sectionContainer: {
-    padding: 15,
+    padding: 20,
+    // flex: 1,
   },
   mainSectionContainer: {
     flex: 1, // This makes the content area take up all remaining space
@@ -315,6 +296,127 @@ const styles = StyleSheet.create({
   cardDescription: {
     fontSize: 14,
     color: 'gray',
+  },
+  container: {
+    justifyContent: "flex-end", // Positions content at the top and bottom
+    flex: 1,
+    backgroundColor: '#F8F5F0',
+    // alignItems: 'center', // Centers content horizontally
+    // backgroundColor: '#FFEAF4',
+  },
+  scrollContainer: {
+    padding: 20,
+    paddingTop: 60,
+  },
+  topSection: {
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: 'black',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 18,
+    color: '#555',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  description: {
+    fontSize: 16,
+    color: '#444',
+    lineHeight: 24,
+    textAlign: 'right',
+  },
+  bottomSection: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderColor: '#f2cddb',
+    backgroundColor: '#FFEAF4',
+  },
+  button: {
+    backgroundColor: '#F06292',
+    paddingVertical: 14,
+    borderRadius: 25,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  logo: {
+    width: 180,
+    height: 180,
+    marginTop: 20,
+    justifyContent: "center", // centers the button vertically
+    alignSelf: 'center',  // <-- centers the logo horizontally
+
+  },
+  formContainer: {
+    width: '90%',
+    height: '60%',
+    backgroundColor: '#FA815D', // כתום חזק יותר לטופס
+    padding: 24,
+    borderRadius: 20,
+    marginTop: 10,
+    alignSelf: 'center', // Center the form container
+  },
+  // header: {
+  //   fontSize: 20,
+  //   fontWeight: 'bold',
+  //   backgroundColor: '#FFE6D6',
+  //   padding: 10,
+  //   textAlign: 'center',
+  //   borderRadius: 20,
+  //   marginBottom: 20,
+  // },
+  input: {
+    backgroundColor: '#FFB19A',
+    padding: 12,
+    borderRadius: 20,
+    marginBottom: 12,
+    color: '#fff',
+  },
+  passwordHint: {
+    color: 'black',
+    fontSize: 14,
+    textAlign: 'right',
+    marginBottom: 16,
+    textDecorationLine: 'underline',
+  },
+  buttonsRow: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  primaryButton: {
+    backgroundColor: '#FF7A5A',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+  },
+  secondaryButton: {
+    backgroundColor: '#FFE6D6',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+  },
+  orText: {
+    textAlign: 'center',
+    color: '#000',
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  iconsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+  },
+  topContentWrapper: {
+    flex: 1, // זה מה שידחוף את התוכן שמתחתיו כלפי מטה
+    justifyContent: 'flex-start', // ודא שהתוכן בפנים מתחיל מלמעלה
   },
 });
 
