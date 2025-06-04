@@ -5,20 +5,18 @@ import {
   Text,
   StyleSheet,
   SafeAreaView,
-  ScrollView,
+  ScrollView, // Import ScrollView
   TouchableOpacity,
   Image,
-} from "react-native"; // Removed Modal, Animated as they are now in MenuComp
+  Modal,
+  Animated,
+} from "react-native";
 import { NavigationProp, ParamListBase } from "@react-navigation/native";
-import styles from "../navigations/styles"; // Adjust path if necessary
-import SearchBar from "../components/SearchBar"; // Adjust path if necessary
-import MenuComp from "../components/MenuComp"; // Import the new component
+import styles from "../navigations/styles";
+import SearchBar from "./SearchBar";
 
-export default function MoneyScreen({
-  navigation,
-}: {
-  navigation: NavigationProp<ParamListBase>;
-}) {
+
+export default function MoneyScreen({ navigation }: { navigation: NavigationProp<ParamListBase> }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuOptions = [
     "הוראות קבע",
@@ -26,7 +24,7 @@ export default function MoneyScreen({
     "הטבות",
     "הגשת בקשה",
     "אפשרות 5",
-    "אפשרות 6", // Corrected typo
+    "אפשרות 6",
     "אפשרות 7",
     "אפשרות 8",
     "אפשרות 9",
@@ -35,15 +33,7 @@ export default function MoneyScreen({
     "אפשרות 12",
   ];
 
-  // --- FIX APPLIED HERE ---
-  // Specify the type of the ref to be a TouchableOpacity (or View) instance
-  // The 'as any' is a temporary workaround if precise type is hard,
-  // but better to use specific types like 'TouchableOpacity' from 'react-native'.
-  // const menuIconRef = useRef<TouchableOpacity | View>(null); // More specific type
-  const menuIconRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
-  // const menuIconRef = useRef<any>(null); // Less strict but would also fix the error
-
-
+  const menuIconRef = useRef(null);
   const [menuIconPosition, setMenuIconPosition] = useState({
     x: 0,
     y: 0,
@@ -51,56 +41,43 @@ export default function MoneyScreen({
     height: 0,
   });
 
-  // Since Modal and Animated logic moved to MenuComp,
-  // these state/ref declarations are no longer needed here.
-  // const scaleAnim = useRef(new Animated.Value(0.01)).current;
-  // const opacityAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.01)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
 
   const openMenu = () => {
-    // --- FIX APPLIED HERE ---
-    // Use optional chaining (?.) to safely call measure
-    // Also, destructure the measure parameters to avoid implicit 'any'
-    menuIconRef.current?.measure((fx: number, fy: number, width: number, height: number, px: number, py: number) => {
+    menuIconRef.current.measure((fx, fy, width, height, px, py) => {
       setMenuIconPosition({ x: px, y: py, width: width, height: height });
       setIsMenuOpen(true);
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
     });
-    // Animated calls are now inside MenuComp, so remove from here:
-    // Animated.parallel([
-    //   Animated.spring(scaleAnim, {
-    //     toValue: 1,
-    //     friction: 8,
-    //     useNativeDriver: true,
-    //   }),
-    //   Animated.timing(opacityAnim, {
-    //     toValue: 1,
-    //     duration: 200,
-    //     useNativeDriver: true,
-    //   }),
-    // ]).start();
   };
 
   const closeMenu = () => {
-    setIsMenuOpen(false); // Only need to set state here, animations are handled by MenuComp
-    // Animated calls are now inside MenuComp, so remove from here:
-    // Animated.parallel([
-    //   Animated.timing(scaleAnim, {
-    //     toValue: 0.01,
-    //     duration: 200,
-    //     useNativeDriver: true,
-    //   }),
-    //   Animated.timing(opacityAnim, {
-    //     toValue: 0,
-    //     duration: 200,
-    //     useNativeDriver: true,
-    //   }),
-    // ]).start(() => {
-    //   setIsMenuOpen(false);
-    // });
-  };
-
-  const handleSelectMenuItem = (option: string) => {
-    alert(`Selected: ${option}`);
-    closeMenu(); // Close the menu after selection
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 0.01,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsMenuOpen(false);
+    });
   };
 
   return (
@@ -112,7 +89,7 @@ export default function MoneyScreen({
             <TouchableOpacity
               onPress={openMenu}
               style={localStyles.menuIconPlacement}
-              ref={menuIconRef} // Attach ref here to measure its position
+              ref={menuIconRef}
             >
               <Ionicons name="menu" size={24} color="black" />
             </TouchableOpacity>
@@ -218,14 +195,53 @@ export default function MoneyScreen({
           </View>
         </ScrollView>
 
-        {/* Use the new MenuComp component */}
-        <MenuComp
-          isVisible={isMenuOpen}
-          onClose={closeMenu}
-          options={menuOptions}
-          onSelectOption={handleSelectMenuItem}
-          anchorPosition={menuIconPosition}
-        />
+        {/* Menu Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={isMenuOpen}
+          onRequestClose={closeMenu}
+        >
+          <TouchableOpacity
+            style={localStyles.modalOverlay}
+            activeOpacity={1}
+            onPressOut={closeMenu}
+          >
+            <Animated.View
+              style={[
+                localStyles.modalContent,
+                {
+                  opacity: opacityAnim,
+                  transform: [{ scale: scaleAnim }],
+                  top: menuIconPosition.y + menuIconPosition.height / 2,
+                  right: 0,
+                },
+              ]}
+            >
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {" "}
+                {/* Added ScrollView here */}
+                {menuOptions.map((option, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      localStyles.menuOption,
+                      index === menuOptions.length - 1 && {
+                        borderBottomWidth: 0,
+                      }, // Remove border from last item
+                    ]}
+                    onPress={() => {
+                      alert(`Selected: ${option}`);
+                      closeMenu();
+                    }}
+                  >
+                    <Text style={localStyles.menuOptionText}>{option}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </Animated.View>
+          </TouchableOpacity>
+        </Modal>
       </View>
     </SafeAreaView>
   );
@@ -238,10 +254,42 @@ const localStyles = StyleSheet.create({
   headerSection: {
     paddingHorizontal: 15,
     paddingTop: 10,
-    alignItems: "flex-end", // Aligns children (menu icon and search bar) to the right
+    alignItems: "flex-end",
   },
   menuIconPlacement: {
-    padding: 10, // Adjust padding if needed, this creates the touchable area around the icon
+    padding: 10,
     marginBottom: 5,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    borderRadius: 10,
+    position: "absolute",
+    minWidth: 180,
+    maxHeight: 250, // Set a fixed maxHeight for the menu
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    paddingVertical: 10, // Add vertical padding to the content itself, not individual items
+  },
+  menuOption: {
+    paddingHorizontal: 20, // Add horizontal padding for consistency
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    width: "100%",
+    alignSelf: "flex-end",
+  },
+  menuOptionText: {
+    fontSize: 16,
+    textAlign: "right",
+    writingDirection: "rtl",
   },
 });

@@ -1,9 +1,9 @@
 import Ionicons from "react-native-vector-icons/Ionicons";
-import SearchScreen from "../screens/SearchScreen";
-import ProfileScreen from "../screens/ProfileScreen";
+import SearchScreen from "../bottomBarScreens/SearchScreen";
+import ProfileScreen from "../bottomBarScreens/ProfileScreen";
 import styles from "./styles";
 import DonationsStack from "./DonationsStack";
-import HomeScreen from "../screens/HomeScreen";
+import HomeScreen from "../bottomBarScreens/HomeScreen";
 import { View } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 

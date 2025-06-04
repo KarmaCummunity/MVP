@@ -1,5 +1,4 @@
 import styles from '../navigations/styles';
-import TopBarNavigator from "../navigations/TopBarNavigator";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NavigationProp, ParamListBase } from "@react-navigation/native";
 import { View, TouchableOpacity, Text } from "react-native";

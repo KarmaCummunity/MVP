@@ -14,7 +14,7 @@ export default function HomeScreen({ navigation }: { navigation: NavigationProp<
           style={styles.button}>
             
           <Text style={styles.buttonText}>
-            {"Go to First\nthis is Home1 page"}
+            {"Go to First\nthis is Home page"}
           </Text>
         </TouchableOpacity>
       </View>
