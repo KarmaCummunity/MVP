@@ -1,4 +1,4 @@
-import styles from "../navigations/styles";
+import styles from "../globals/styles";
 import { NavigationProp, ParamListBase } from "@react-navigation/native";
 import { View, TouchableOpacity, Text, ScrollView, Dimensions,} from "react-native";
 

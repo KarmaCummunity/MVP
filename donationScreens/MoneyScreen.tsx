@@ -12,7 +12,7 @@ import {
   Animated,
 } from "react-native";
 import { NavigationProp, ParamListBase } from "@react-navigation/native";
-import styles from "../navigations/styles";
+import styles from "../globals/styles";
 import SearchBar from "./SearchBar";
 
 

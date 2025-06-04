@@ -1,7 +1,7 @@
 import Ionicons from "react-native-vector-icons/Ionicons";
 import SearchScreen from "../bottomBarScreens/SearchScreen";
 import ProfileScreen from "../bottomBarScreens/ProfileScreen";
-import styles from "./styles";
+import styles from "../globals/styles";
 import DonationsStack from "./DonationsStack";
 import HomeScreen from "../bottomBarScreens/HomeScreen";
 import { View } from "react-native";

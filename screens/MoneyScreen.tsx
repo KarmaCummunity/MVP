@@ -1,5 +1,4 @@
 import React, { useState, useRef } from "react";
-import { Ionicons } from "@expo/vector-icons";
 import {
   View,
   Text,
@@ -8,111 +7,95 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-} from "react-native"; // Removed Modal, Animated as they are now in MenuComp
+  LayoutRectangle,
+  findNodeHandle,
+  UIManager,
+  Modal,
+  FlatList, // Import FlatList
+  Alert, // Import Alert for the donate button action
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { NavigationProp, ParamListBase } from "@react-navigation/native";
-import styles from "../navigations/styles"; // Adjust path if necessary
-import SearchBar from "../components/SearchBar"; // Adjust path if necessary
-import MenuComp from "../components/MenuComp"; // Import the new component
+import styles from "../globals/styles";
+import SearchBar from "../components/SearchBar";
+import MenuComp from "../components/MenuComp";
+import { charityNames } from "../globals/constant"; // Assuming charityNames is a long list
 
 export default function MoneyScreen({
   navigation,
 }: {
   navigation: NavigationProp<ParamListBase>;
 }) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuOptions = [
-    "הוראות קבע",
-    "היסטוריה",
-    "הטבות",
-    "הגשת בקשה",
-    "אפשרות 5",
-    "אפשרות 6", // Corrected typo
-    "אפשרות 7",
-    "אפשרות 8",
-    "אפשרות 9",
-    "אפשרות 10",
-    "אפשרות 11",
-    "אפשרות 12",
-  ];
+  const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+  const [isRecipientDropdownOpen, setRecipientDropdownOpen] = useState<boolean>(false);
+  const [isAmountDropdownOpen, setAmountDropdownOpen] = useState<boolean>(false);
+  const [selectedRecipient, setSelectedRecipient] = useState<string>("בחר נמען");
+  const [selectedAmount, setSelectedAmount] = useState<string>("בחר סכום");
 
-  // --- FIX APPLIED HERE ---
-  // Specify the type of the ref to be a TouchableOpacity (or View) instance
-  // The 'as any' is a temporary workaround if precise type is hard,
-  // but better to use specific types like 'TouchableOpacity' from 'react-native'.
-  // const menuIconRef = useRef<TouchableOpacity | View>(null); // More specific type
-  const menuIconRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
-  // const menuIconRef = useRef<any>(null); // Less strict but would also fix the error
+  // Dropdown options for amount (recipient options come from charityNames)
+  const amountOptions = ["₪10", "₪50", "₪100", "₪500", "₪1000", "₪2000"]; // Added more for scroll demo
 
+  // Refs and layout for the menu icon position
+  const menuIconRef = useRef<View>(null);
 
-  const [menuIconPosition, setMenuIconPosition] = useState({
+  const [menuIconPosition, setMenuIconPosition] = useState<LayoutRectangle>({
     x: 0,
     y: 0,
     width: 0,
     height: 0,
   });
 
-  // Since Modal and Animated logic moved to MenuComp,
-  // these state/ref declarations are no longer needed here.
-  // const scaleAnim = useRef(new Animated.Value(0.01)).current;
-  // const opacityAnim = useRef(new Animated.Value(0)).current;
-
   const openMenu = () => {
-    // --- FIX APPLIED HERE ---
-    // Use optional chaining (?.) to safely call measure
-    // Also, destructure the measure parameters to avoid implicit 'any'
-    menuIconRef.current?.measure((fx: number, fy: number, width: number, height: number, px: number, py: number) => {
-      setMenuIconPosition({ x: px, y: py, width: width, height: height });
-      setIsMenuOpen(true);
-    });
-    // Animated calls are now inside MenuComp, so remove from here:
-    // Animated.parallel([
-    //   Animated.spring(scaleAnim, {
-    //     toValue: 1,
-    //     friction: 8,
-    //     useNativeDriver: true,
-    //   }),
-    //   Animated.timing(opacityAnim, {
-    //     toValue: 1,
-    //     duration: 200,
-    //     useNativeDriver: true,
-    //   }),
-    // ]).start();
+    const handle = findNodeHandle(menuIconRef.current);
+    if (handle) {
+      UIManager.measure(
+        handle,
+        (x, y, width, height, pageX, pageY) => {
+          setMenuIconPosition({ x: pageX, y: pageY, width, height });
+          setIsMenuOpen(true);
+        }
+      );
+    }
   };
 
-  const closeMenu = () => {
-    setIsMenuOpen(false); // Only need to set state here, animations are handled by MenuComp
-    // Animated calls are now inside MenuComp, so remove from here:
-    // Animated.parallel([
-    //   Animated.timing(scaleAnim, {
-    //     toValue: 0.01,
-    //     duration: 200,
-    //     useNativeDriver: true,
-    //   }),
-    //   Animated.timing(opacityAnim, {
-    //     toValue: 0,
-    //     duration: 200,
-    //     useNativeDriver: true,
-    //   }),
-    // ]).start(() => {
-    //   setIsMenuOpen(false);
-    // });
-  };
+  const closeMenu = () => setIsMenuOpen(false);
 
   const handleSelectMenuItem = (option: string) => {
-    alert(`Selected: ${option}`);
-    closeMenu(); // Close the menu after selection
+    Alert.alert(`Selected: ${option}`);
+    closeMenu();
   };
+
+  const handleDonate = () => {
+    if (selectedRecipient === "בחר נמען" || selectedAmount === "בחר סכום") {
+      Alert.alert("שגיאה", "אנא בחר נמען וסכום לפני התרומה.");
+    } else {
+      Alert.alert(
+        "תרומה בוצעה",
+        `תודה על תרומתך ${selectedAmount} ל-${selectedRecipient}!`
+      );
+      // Here you would typically integrate with a payment gateway
+    }
+  };
+
+  const renderDropdownItem = ({ item, onPress }: { item: string; onPress: (item: string) => void }) => (
+    <TouchableOpacity
+      style={localStyles.dropdownOption}
+      onPress={() => onPress(item)}
+    >
+      <Text style={localStyles.dropdownOptionText}>{item}</Text>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={localStyles.mainContentContainer}>
         <ScrollView showsVerticalScrollIndicator={false}>
-          {/* Top Section: Menu Icon at top-right, SearchBar below it */}
+          {/* Header: Menu icon + Search bar */}
           <View style={localStyles.headerSection}>
             <TouchableOpacity
               onPress={openMenu}
               style={localStyles.menuIconPlacement}
-              ref={menuIconRef} // Attach ref here to measure its position
+              ref={menuIconRef}
             >
               <Ionicons name="menu" size={24} color="black" />
             </TouchableOpacity>
@@ -121,108 +104,137 @@ export default function MoneyScreen({
 
           {/* Filter Buttons */}
           <View style={styles.filterButtonsContainer}>
-            <TouchableOpacity style={styles.filterButton}>
-              <Text style={styles.filterButtonText}>הטבות</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.filterButton}>
-              <Text style={styles.filterButtonText}>אמצעי תשלום</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.filterButton}>
-              <Text style={styles.filterButtonText}>ילדים</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.filterButton}>
-              <Text style={styles.filterButtonText}>קרוב אליי</Text>
-            </TouchableOpacity>
+            {["הטבות", "אמצעי תשלום", "ילדים", "קרוב אליי"].map((label) => (
+              <TouchableOpacity key={label} style={styles.filterButton}>
+                <Text style={styles.filterButtonText}>{label}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
-          {/* Input Fields */}
+          {/* Input Fields with Dropdowns */}
           <View style={styles.inputSection}>
+            {/* Recipient Dropdown */}
             <View style={styles.inputField}>
               <Text style={styles.inputLabel}>למי ?</Text>
-              <View style={styles.dropdown}>
+              <TouchableOpacity
+                style={styles.dropdown}
+                onPress={() => setRecipientDropdownOpen(!isRecipientDropdownOpen)}
+              >
+                <Text style={styles.dropdown}>{selectedRecipient}</Text>
                 <Ionicons name="chevron-down" size={20} color="black" />
-              </View>
+              </TouchableOpacity>
             </View>
+
+            {/* Amount Dropdown */}
             <View style={styles.inputField}>
               <Text style={styles.inputLabel}>כמה ?</Text>
-              <View style={styles.dropdown}>
+              <TouchableOpacity
+                style={styles.dropdown}
+                onPress={() => setAmountDropdownOpen(!isAmountDropdownOpen)}
+              >
+                <Text style={styles.dropdown}>{selectedAmount}</Text>
                 <Ionicons name="chevron-down" size={20} color="black" />
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
+
+          {/* Dropdown Modals */}
+          <Modal visible={isRecipientDropdownOpen} transparent animationType="fade">
+            <TouchableOpacity style={localStyles.modalOverlay} onPress={() => setRecipientDropdownOpen(false)}>
+              <View style={localStyles.dropdownModal}>
+                <FlatList
+                  data={charityNames}
+                  keyExtractor={(item) => item}
+                  renderItem={({ item }) =>
+                    renderDropdownItem({
+                      item,
+                      onPress: (option) => {
+                        setSelectedRecipient(option);
+                        setRecipientDropdownOpen(false);
+                      },
+                    })
+                  }
+                  // Optional: to limit height and ensure scrollability
+                  style={{ maxHeight: 200 }}
+                />
+              </View>
+            </TouchableOpacity>
+          </Modal>
+
+          <Modal visible={isAmountDropdownOpen} transparent animationType="fade">
+            <TouchableOpacity style={localStyles.modalOverlay} onPress={() => setAmountDropdownOpen(false)}>
+              <View style={localStyles.dropdownModal}>
+                <FlatList
+                  data={amountOptions}
+                  keyExtractor={(item) => item}
+                  renderItem={({ item }) =>
+                    renderDropdownItem({
+                      item,
+                      onPress: (option) => {
+                        setSelectedAmount(option);
+                        setAmountDropdownOpen(false);
+                      },
+                    })
+                  }
+                  // Optional: to limit height and ensure scrollability
+                  style={{ maxHeight: 200 }}
+                />
+              </View>
+            </TouchableOpacity>
+          </Modal>
+
+          {/* Donate Button */}
+          <TouchableOpacity style={localStyles.donateButton} onPress={handleDonate}>
+            <Text style={localStyles.donateButtonText}>תרום</Text>
+          </TouchableOpacity>
 
           {/* Recommended Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>מומלצים:</Text>
-            <View style={styles.card}>
-              <Image
-                source={{ uri: "https://via.placeholder.com/50" }}
-                style={styles.cardImage}
-              />
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>JGive</Text>
-                <Text style={styles.cardDescription}>
-                  אצלנו התרומה שלך שווה יותר
-                </Text>
+            {[1, 2].map((_, i) => (
+              <View style={styles.card} key={`rec-${i}`}>
+                <Image source={{ uri: "https://via.placeholder.com/50" }} style={styles.cardImage} />
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitle}>JGive</Text>
+                  <Text style={styles.cardDescription}>אצלנו התרומה שלך שווה יותר</Text>
+                </View>
               </View>
-            </View>
-            <View style={styles.card}>
-              <Image
-                source={{ uri: "https://via.placeholder.com/50" }}
-                style={styles.cardImage}
-              />
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>JGive</Text>
-                <Text style={styles.cardDescription}>
-                  אצלנו התרומה שלך שווה יותר
-                </Text>
-              </View>
-            </View>
+            ))}
           </View>
 
           {/* All Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>הכל:</Text>
-            <View style={styles.card}>
-              <Image
-                source={{ uri: "https://via.placeholder.com/50" }}
-                style={styles.cardImage}
-              />
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>האגודה למלחמה בסרטן</Text>
-                <Text style={styles.cardDescription}>
-                  אצלנו התרומה שלך שווה יותר
-                </Text>
+            {["האגודה למלחמה בסרטן", "לתת", "לתת"].map((title, idx) => (
+              <View style={styles.card} key={`all-${idx}`}>
+                <Image source={{ uri: "https://via.placeholder.com/50" }} style={styles.cardImage} />
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitle}>{title}</Text>
+                  <Text style={styles.cardDescription}>סיוע הומניטרי ישראלי</Text>
+                </View>
               </View>
-            </View>
-            <View style={styles.card}>
-              <Image
-                source={{ uri: "https://via.placeholder.com/50" }}
-                style={styles.cardImage}
-              />
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>לתת</Text>
-                <Text style={styles.cardDescription}>סיוע הומניטרי ישראלי</Text>
-              </View>
-            </View>
-            <View style={styles.card}>
-              <Image
-                source={{ uri: "https://via.placeholder.com/50" }}
-                style={styles.cardImage}
-              />
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>לתת</Text>
-                <Text style={styles.cardDescription}>סיוע הומניטרי ישראלי</Text>
-              </View>
-            </View>
+            ))}
           </View>
         </ScrollView>
 
-        {/* Use the new MenuComp component */}
+        {/* Popup Menu Component */}
         <MenuComp
           isVisible={isMenuOpen}
           onClose={closeMenu}
-          options={menuOptions}
+          options={[
+            "הוראות קבע",
+            "היסטוריה",
+            "הטבות",
+            "הגשת בקשה",
+            "אפשרות 5",
+            "אפשרות 6",
+            "אפשרות 7",
+            "אפשרות 8",
+            "אפשרות 9",
+            "אפשרות 10",
+            "אפשרות 11",
+            "אפשרות 12",
+          ]}
           onSelectOption={handleSelectMenuItem}
           anchorPosition={menuIconPosition}
         />
@@ -238,10 +250,48 @@ const localStyles = StyleSheet.create({
   headerSection: {
     paddingHorizontal: 15,
     paddingTop: 10,
-    alignItems: "flex-end", // Aligns children (menu icon and search bar) to the right
+    alignItems: "flex-end",
   },
   menuIconPlacement: {
-    padding: 10, // Adjust padding if needed, this creates the touchable area around the icon
+    padding: 10,
     marginBottom: 5,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dropdownModal: {
+    backgroundColor: "white",
+    borderRadius: 8,
+    padding: 10,
+    width: "80%",
+    // maxHeight added to limit height and ensure scrollability for FlatList
+    maxHeight: 250, // You can adjust this value
+  },
+  dropdownOption: {
+    paddingVertical: 10,
+    // borderBottomWidth: 1, // Only if you want dividers between items
+    // borderColor: "#ddd",
+  },
+  dropdownOptionText: {
+    fontSize: 16,
+  },
+  donateButton: {
+    backgroundColor: "#007BFF", // Example blue color
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: "center",
+    marginHorizontal: 15,
+    marginTop: 20,
+    marginBottom: 10,
+    alignSelf: "center",
+  },
+  donateButtonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
