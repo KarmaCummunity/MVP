@@ -1,4 +1,4 @@
-// components/DropdownMenu.tsx
+// components/MenuComp.tsx
 import React, { useRef, useState, useEffect } from "react";
 import {
   Modal,
@@ -8,139 +8,179 @@ import {
   StyleSheet,
   Animated,
   ScrollView,
+  LayoutRectangle, // Import LayoutRectangle
+  findNodeHandle, // Import findNodeHandle
+  UIManager, // Import UIManager
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons"; // Import Ionicons for the menu icon
 
-// Define the props that the DropdownMenu component will accept
-interface DropdownMenuProps {
-  isVisible: boolean; // Controls the visibility of the menu
-  onClose: () => void; // Function to call when the menu should close
+// Define the props that the MenuComp component will accept
+interface MenuCompProps {
   options: string[]; // Array of strings for the menu items
   onSelectOption: (option: string) => void; // Function to call when an option is selected
-  // Position of the "anchor" element (e.g., the menu icon) to position the dropdown
-  anchorPosition: { x: number; y: number; width: number; height: number };
 }
 
-const MenuComp: React.FC<DropdownMenuProps> = ({
-  isVisible,
-  onClose,
+const MenuComp: React.FC<MenuCompProps> = ({
   options,
   onSelectOption,
-  anchorPosition,
 }) => {
-  // Animated values for scale and opacity, ensuring they are initialized
-  const scaleAnim = useRef(new Animated.Value(0.01)).current; // Start very small
-  const opacityAnim = useRef(new Animated.Value(0)).current; // Start invisible
+  const [isVisible, setIsVisible] = useState<boolean>(false);
+  const [menuIconPosition, setMenuIconPosition] = useState<LayoutRectangle>({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  });
 
-  // Use useEffect to run animations when isVisible changes
+  const menuIconRef = useRef<View>(null); // Ref for the internal menu icon
+
+  // Animated values for scale and opacity
+  const scaleAnim = useRef(new Animated.Value(0.01)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  const openMenu = () => {
+    const handle = findNodeHandle(menuIconRef.current);
+    if (handle) {
+      UIManager.measure(
+        handle,
+        (x, y, width, height, pageX, pageY) => {
+          setMenuIconPosition({ x: pageX, y: pageY, width, height });
+          setIsVisible(true);
+        }
+      );
+    }
+  };
+
+  const closeMenu = () => setIsVisible(false);
+
   useEffect(() => {
     if (isVisible) {
-      // If the menu is becoming visible, run the "open" animation
       Animated.parallel([
         Animated.spring(scaleAnim, {
-          toValue: 1, // Scale up to full size
-          friction: 8, // Controls "bounciness"
+          toValue: 1,
+          friction: 8,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
-          toValue: 1, // Fade in
-          duration: 200, // Quick fade-in
+          toValue: 1,
+          duration: 200,
           useNativeDriver: true,
         }),
       ]).start();
     } else {
-      // If the menu is becoming hidden, run the "close" animation
       Animated.parallel([
         Animated.timing(scaleAnim, {
-          toValue: 0.01, // Shrink back to tiny
+          toValue: 0.01,
           duration: 200,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
-          toValue: 0, // Fade out
+          toValue: 0,
           duration: 200,
           useNativeDriver: true,
         }),
-      ]).start();
+      ]).start(() => {
+        // Optional: Reset visibility after animation completes
+        if (!isVisible) {
+          // This can be useful to completely unmount the modal content
+          // However, for smooth re-opening, keeping it mounted and just hidden is often better.
+        }
+      });
     }
-  }, [isVisible, scaleAnim, opacityAnim]); // Dependencies for useEffect
-
-  // Don't render the modal at all if it's not supposed to be visible.
-  // This helps prevent flickering and unnecessary rendering.
-  if (!isVisible) {
-    return null;
-  }
+  }, [isVisible, scaleAnim, opacityAnim]);
 
   return (
-    <Modal
-      animationType="fade" // Use fade for Modal, as we control scale/opacity with Animated
-      transparent={true} // Essential for the overlay effect
-      visible={isVisible}
-      onRequestClose={onClose} // Handle Android back button
-    >
+    <>
+      {/* The menu icon that opens the dropdown */}
       <TouchableOpacity
-        style={localStyles.modalOverlay}
-        activeOpacity={1} // Prevents visual feedback on touch
-        onPressOut={onClose} // Closes menu when tapping outside
+        onPress={openMenu}
+        style={localStyles.menuIconPlacement}
+        ref={menuIconRef} // Attach ref to the icon
       >
-        <Animated.View // Use Animated.View for scale and opacity animations
-          style={[
-            localStyles.modalContent,
-            {
-              opacity: opacityAnim, // Apply animated opacity
-              transform: [{ scale: scaleAnim }], // Apply animated scale
-              // Position the modal content relative to the anchor icon
-              top: anchorPosition.y + anchorPosition.height / 2,
-              right: 0, // Position from the right edge
-            },
-          ]}
-        >
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {options.map((option, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  localStyles.menuOption,
-                  // Remove the bottom border from the last item for a cleaner look
-                  index === options.length - 1 && { borderBottomWidth: 0 },
-                ]}
-                onPress={() => onSelectOption(option)} // Pass selected option back
-              >
-                <Text style={localStyles.menuOptionText}>{option}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </Animated.View>
+        <Ionicons name="menu" size={24} color="black" />
       </TouchableOpacity>
-    </Modal>
+
+      {/* Modal is only rendered when isVisible is true */}
+      {isVisible && (
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={isVisible}
+          onRequestClose={closeMenu}
+        >
+          <TouchableOpacity
+            style={localStyles.modalOverlay}
+            activeOpacity={1}
+            onPressOut={closeMenu}
+          >
+            <Animated.View
+              style={[
+                localStyles.modalContent,
+                {
+                  opacity: opacityAnim,
+                  transform: [{ scale: scaleAnim }],
+                  // Position the modal content relative to the anchor icon
+                  top: menuIconPosition.y + menuIconPosition.height / 2,
+                  // Adjust right position based on desired offset from right edge
+                  right: 15, // A small offset from the right edge of the screen
+                },
+              ]}
+            >
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {options.map((option, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      localStyles.menuOption,
+                      index === options.length - 1 && { borderBottomWidth: 0 },
+                    ]}
+                    onPress={() => {
+                      onSelectOption(option);
+                      closeMenu(); // Close the menu after selection
+                    }}
+                  >
+                    <Text style={localStyles.menuOptionText}>{option}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </Animated.View>
+          </TouchableOpacity>
+        </Modal>
+      )}
+    </>
   );
 };
 
 const localStyles = StyleSheet.create({
+  menuIconPlacement: {
+    padding: 10,
+    marginBottom: 5,
+  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent black overlay
-    justifyContent: "flex-start", // Start content from the top
-    alignItems: "flex-start", // Start content from the left
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
   },
   modalContent: {
     backgroundColor: "white",
     borderRadius: 10,
-    position: "absolute", // Allows precise positioning relative to the anchor
-    minWidth: 180, // Minimum width for the menu
-    maxHeight: 250, // Fixed maximum height, enabling scrolling
-    shadowColor: "#000", // Shadow for iOS
+    position: "absolute",
+    minWidth: 180,
+    maxHeight: 250,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    elevation: 5, // Shadow for Android
-    paddingVertical: 10, // Vertical padding inside the modal content
+    elevation: 5,
+    paddingVertical: 10,
   },
   menuOption: {
-    paddingHorizontal: 20, // Horizontal padding for each option
-    paddingVertical: 12, // Vertical padding for each option
-    borderBottomWidth: 1, // Separator line for options
-    borderBottomColor: "#eee", // Light gray separator
-    width: "100%", // Options take full width of the modal content
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    width: "100%",
     alignSelf: "flex-end", // Align text to the right for RTL layout
   },
   menuOptionText: {

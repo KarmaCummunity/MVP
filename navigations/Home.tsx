@@ -1,4 +1,4 @@
-import styles from '../globals/styles';
+import styles from '../globals/Styles';
 import BottomNavigator from '../navigations/BottomNavigator';
 import TopBarNavigator from '../navigations/TopBarNavigator';
 import { View } from 'react-native';

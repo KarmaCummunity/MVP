@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,279 +7,203 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  LayoutRectangle,
-  findNodeHandle,
-  UIManager,
-  Modal,
-  FlatList, // Import FlatList
-  Alert, // Import Alert for the donate button action
+  Alert,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { NavigationProp, ParamListBase } from "@react-navigation/native";
-import styles from "../globals/styles";
-import SearchBar from "../components/SearchBar";
-import MenuComp from "../components/MenuComp";
-import { charityNames } from "../globals/constant"; // Assuming charityNames is a long list
+import { Picker } from "@react-native-picker/picker";
+import HeaderComp from "../components/HeaderComp";
+import { charityNames } from "../globals/Constant";
+
+// Reusable Dropdown component (keep as is)
+interface DropdownProps {
+  label: string;
+  selectedValue: string;
+  onValueChange: (value: string) => void;
+  options: string[];
+}
+
+const Dropdown: React.FC<DropdownProps> = ({
+  label,
+  selectedValue,
+  onValueChange,
+  options,
+}) => {
+  return (
+    <View style={localStyles.dropdownBox}>
+      <Picker
+        selectedValue={selectedValue}
+        onValueChange={onValueChange}
+        mode="dropdown"
+      >
+        <Picker.Item label={label} value="" />
+        {options.map((opt, idx) => (
+          <Picker.Item key={idx} label={opt} value={opt} />
+        ))}
+      </Picker>
+    </View>
+  );
+};
 
 export default function MoneyScreen({
   navigation,
 }: {
   navigation: NavigationProp<ParamListBase>;
 }) {
-  const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
-  const [isRecipientDropdownOpen, setRecipientDropdownOpen] = useState<boolean>(false);
-  const [isAmountDropdownOpen, setAmountDropdownOpen] = useState<boolean>(false);
-  const [selectedRecipient, setSelectedRecipient] = useState<string>("בחר נמען");
-  const [selectedAmount, setSelectedAmount] = useState<string>("בחר סכום");
+  const [selectedRecipient, setSelectedRecipient] = useState<string>("");
+  const [selectedAmount, setSelectedAmount] = useState<string>("");
+  const [mode, setMode] = useState<"מחפש" | "מציע">("מחפש");
 
-  // Dropdown options for amount (recipient options come from charityNames)
-  const amountOptions = ["₪10", "₪50", "₪100", "₪500", "₪1000", "₪2000"]; // Added more for scroll demo
-
-  // Refs and layout for the menu icon position
-  const menuIconRef = useRef<View>(null);
-
-  const [menuIconPosition, setMenuIconPosition] = useState<LayoutRectangle>({
-    x: 0,
-    y: 0,
-    width: 0,
-    height: 0,
-  });
-
-  const openMenu = () => {
-    const handle = findNodeHandle(menuIconRef.current);
-    if (handle) {
-      UIManager.measure(
-        handle,
-        (x, y, width, height, pageX, pageY) => {
-          setMenuIconPosition({ x: pageX, y: pageY, width, height });
-          setIsMenuOpen(true);
-        }
-      );
-    }
-  };
-
-  const closeMenu = () => setIsMenuOpen(false);
+  const amountOptions = ["₪10", "₪50", "₪100", "₪500", "₪1000", "₪2000"];
 
   const handleSelectMenuItem = (option: string) => {
     Alert.alert(`Selected: ${option}`);
-    closeMenu();
   };
 
   const handleDonate = () => {
-    if (selectedRecipient === "בחר נמען" || selectedAmount === "בחר סכום") {
+    if (!selectedRecipient || !selectedAmount) {
       Alert.alert("שגיאה", "אנא בחר נמען וסכום לפני התרומה.");
     } else {
       Alert.alert(
         "תרומה בוצעה",
         `תודה על תרומתך ${selectedAmount} ל-${selectedRecipient}!`
       );
-      // Here you would typically integrate with a payment gateway
     }
   };
 
-  const renderDropdownItem = ({ item, onPress }: { item: string; onPress: (item: string) => void }) => (
-    <TouchableOpacity
-      style={localStyles.dropdownOption}
-      onPress={() => onPress(item)}
-    >
-      <Text style={localStyles.dropdownOptionText}>{item}</Text>
-    </TouchableOpacity>
-  );
+  const toggleMode = (): void => {
+    setMode((prev) => (prev === "מחפש" ? "מציע" : "מחפש"));
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={localStyles.mainContentContainer}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {/* Header: Menu icon + Search bar */}
-          <View style={localStyles.headerSection}>
-            <TouchableOpacity
-              onPress={openMenu}
-              style={localStyles.menuIconPlacement}
-              ref={menuIconRef}
-            >
-              <Ionicons name="menu" size={24} color="black" />
-            </TouchableOpacity>
-            <SearchBar />
+    <SafeAreaView style={localStyles.safeArea}>
+      {/* Wrapper View */}
+      <View style={localStyles.wrapper}>
+        {/* Header Component - This stays outside the ScrollView */}
+        <HeaderComp
+          mode={mode}
+          onToggleMode={toggleMode}
+          onSelectMenuItem={handleSelectMenuItem}
+        />
+
+        {/* Scrollable Content */}
+        <ScrollView
+          contentContainerStyle={localStyles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          // The container style for the ScrollView itself, if needed
+          style={localStyles.scrollViewBase}
+        >
+          {/* Dropdowns */}
+          <View style={localStyles.dropdownContainer}>
+            <Dropdown
+              label="למי ?"
+              selectedValue={selectedRecipient}
+              onValueChange={(val) => setSelectedRecipient(val)}
+              options={charityNames}
+            />
+            <Dropdown
+              label="כמה ?"
+              selectedValue={selectedAmount}
+              onValueChange={(val) => setSelectedAmount(val)}
+              options={amountOptions}
+            />
           </View>
 
+          {/* Donate Button */}
+          <TouchableOpacity
+            style={localStyles.donateButton}
+            onPress={handleDonate}
+          >
+            <Text style={localStyles.donateButtonText}>תרום</Text>
+          </TouchableOpacity>
+
           {/* Filter Buttons */}
-          <View style={styles.filterButtonsContainer}>
-            {["הטבות", "אמצעי תשלום", "ילדים", "קרוב אליי"].map((label) => (
-              <TouchableOpacity key={label} style={styles.filterButton}>
-                <Text style={styles.filterButtonText}>{label}</Text>
+          <View style={localStyles.filterButtonsContainer}>
+            {["הטבות", "אמצעי תשלום", "ילד1ים", "קרוב אליי"].map((label) => (
+              <TouchableOpacity key={label} style={localStyles.filterButton}>
+                <Text style={localStyles.filterButtonText}>{label}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          {/* Input Fields with Dropdowns */}
-          <View style={styles.inputSection}>
-            {/* Recipient Dropdown */}
-            <View style={styles.inputField}>
-              <Text style={styles.inputLabel}>למי ?</Text>
-              <TouchableOpacity
-                style={styles.dropdown}
-                onPress={() => setRecipientDropdownOpen(!isRecipientDropdownOpen)}
-              >
-                <Text style={styles.dropdown}>{selectedRecipient}</Text>
-                <Ionicons name="chevron-down" size={20} color="black" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Amount Dropdown */}
-            <View style={styles.inputField}>
-              <Text style={styles.inputLabel}>כמה ?</Text>
-              <TouchableOpacity
-                style={styles.dropdown}
-                onPress={() => setAmountDropdownOpen(!isAmountDropdownOpen)}
-              >
-                <Text style={styles.dropdown}>{selectedAmount}</Text>
-                <Ionicons name="chevron-down" size={20} color="black" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Dropdown Modals */}
-          <Modal visible={isRecipientDropdownOpen} transparent animationType="fade">
-            <TouchableOpacity style={localStyles.modalOverlay} onPress={() => setRecipientDropdownOpen(false)}>
-              <View style={localStyles.dropdownModal}>
-                <FlatList
-                  data={charityNames}
-                  keyExtractor={(item) => item}
-                  renderItem={({ item }) =>
-                    renderDropdownItem({
-                      item,
-                      onPress: (option) => {
-                        setSelectedRecipient(option);
-                        setRecipientDropdownOpen(false);
-                      },
-                    })
-                  }
-                  // Optional: to limit height and ensure scrollability
-                  style={{ maxHeight: 200 }}
-                />
-              </View>
-            </TouchableOpacity>
-          </Modal>
-
-          <Modal visible={isAmountDropdownOpen} transparent animationType="fade">
-            <TouchableOpacity style={localStyles.modalOverlay} onPress={() => setAmountDropdownOpen(false)}>
-              <View style={localStyles.dropdownModal}>
-                <FlatList
-                  data={amountOptions}
-                  keyExtractor={(item) => item}
-                  renderItem={({ item }) =>
-                    renderDropdownItem({
-                      item,
-                      onPress: (option) => {
-                        setSelectedAmount(option);
-                        setAmountDropdownOpen(false);
-                      },
-                    })
-                  }
-                  // Optional: to limit height and ensure scrollability
-                  style={{ maxHeight: 200 }}
-                />
-              </View>
-            </TouchableOpacity>
-          </Modal>
-
-          {/* Donate Button */}
-          <TouchableOpacity style={localStyles.donateButton} onPress={handleDonate}>
-            <Text style={localStyles.donateButtonText}>תרום</Text>
-          </TouchableOpacity>
-
           {/* Recommended Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>מומלצים:</Text>
+          <View style={localStyles.section}>
+            <Text style={localStyles.sectionTitle}>מומלצים:</Text>
             {[1, 2].map((_, i) => (
-              <View style={styles.card} key={`rec-${i}`}>
-                <Image source={{ uri: "https://via.placeholder.com/50" }} style={styles.cardImage} />
-                <View style={styles.cardContent}>
-                  <Text style={styles.cardTitle}>JGive</Text>
-                  <Text style={styles.cardDescription}>אצלנו התרומה שלך שווה יותר</Text>
+              <View style={localStyles.card} key={`rec-${i}`}>
+                <Image
+                  source={{ uri: "https://via.placeholder.com/50" }}
+                  style={localStyles.cardImage}
+                />
+                <View style={localStyles.cardContent}>
+                  <Text style={localStyles.cardTitle}>JGive</Text>
+                  <Text style={localStyles.cardDescription}>
+                    אצלנו התרומה שלך שווה יותר
+                  </Text>
                 </View>
               </View>
             ))}
           </View>
 
           {/* All Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>הכל:</Text>
+          <View style={localStyles.section}>
+            <Text style={localStyles.sectionTitle}>הכל:</Text>
             {["האגודה למלחמה בסרטן", "לתת", "לתת"].map((title, idx) => (
-              <View style={styles.card} key={`all-${idx}`}>
-                <Image source={{ uri: "https://via.placeholder.com/50" }} style={styles.cardImage} />
-                <View style={styles.cardContent}>
-                  <Text style={styles.cardTitle}>{title}</Text>
-                  <Text style={styles.cardDescription}>סיוע הומניטרי ישראלי</Text>
+              <View style={localStyles.card} key={`all-${idx}`}>
+                <Image
+                  source={{ uri: "https://via.placeholder.com/50" }}
+                  style={localStyles.cardImage}
+                />
+                <View style={localStyles.cardContent}>
+                  <Text style={localStyles.cardTitle}>{title}</Text>
+                  <Text style={localStyles.cardDescription}>
+                    סיוע הומניטרי ישראלי
+                  </Text>
                 </View>
               </View>
             ))}
           </View>
         </ScrollView>
-
-        {/* Popup Menu Component */}
-        <MenuComp
-          isVisible={isMenuOpen}
-          onClose={closeMenu}
-          options={[
-            "הוראות קבע",
-            "היסטוריה",
-            "הטבות",
-            "הגשת בקשה",
-            "אפשרות 5",
-            "אפשרות 6",
-            "אפשרות 7",
-            "אפשרות 8",
-            "אפשרות 9",
-            "אפשרות 10",
-            "אפשרות 11",
-            "אפשרות 12",
-          ]}
-          onSelectOption={handleSelectMenuItem}
-          anchorPosition={menuIconPosition}
-        />
       </View>
     </SafeAreaView>
   );
 }
 
 const localStyles = StyleSheet.create({
-  mainContentContainer: {
+  safeArea: {
     flex: 1,
+    backgroundColor: "#FFEDD5",
   },
-  headerSection: {
-    paddingHorizontal: 15,
-    paddingTop: 10,
-    alignItems: "flex-end",
-  },
-  menuIconPlacement: {
-    padding: 10,
-    marginBottom: 5,
-  },
-  modalOverlay: {
+  wrapper: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.3)",
-    justifyContent: "center",
-    alignItems: "center",
+    width: "100%",
+    maxWidth: 600,
+    alignSelf: "center",
+    // Remove paddingTop here, as HeaderComp handles its own padding.
   },
-  dropdownModal: {
+  // Add a base style for the ScrollView itself if needed, for example, to define its padding.
+  scrollViewBase: {
+    flex: 1, // Allow ScrollView to take remaining height
+    paddingHorizontal: 16, // Apply horizontal padding to the scrollable area
+    paddingTop: 12, // Add some padding below the header
+  },
+  scrollContent: {
+    paddingBottom: 24,
+    // paddingTop: 12, // This padding will now be relative to the scrollViewBase paddingTop
+  },
+  dropdownContainer: {
+    gap: 12,
+    marginBottom: 24,
+  },
+  dropdownBox: {
     backgroundColor: "white",
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
     borderRadius: 8,
-    padding: 10,
-    width: "80%",
-    // maxHeight added to limit height and ensure scrollability for FlatList
-    maxHeight: 250, // You can adjust this value
-  },
-  dropdownOption: {
-    paddingVertical: 10,
-    // borderBottomWidth: 1, // Only if you want dividers between items
-    // borderColor: "#ddd",
-  },
-  dropdownOptionText: {
-    fontSize: 16,
   },
   donateButton: {
-    backgroundColor: "#007BFF", // Example blue color
+    backgroundColor: "#007BFF",
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -293,5 +217,81 @@ const localStyles = StyleSheet.create({
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  filterButtonsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    marginBottom: 20,
+    gap: 10,
+  },
+  filterButton: {
+    backgroundColor: "#E0E0E0",
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    color: "#333",
+  },
+  section: {
+    marginTop: 20,
+  },
+  sectionTitle: {
+    fontWeight: "bold",
+    fontSize: 18,
+    marginBottom: 10,
+  },
+  card: {
+    flexDirection: "row",
+    backgroundColor: "white",
+    padding: 12,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    marginBottom: 12,
+    alignItems: "center",
+  },
+  cardImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 10,
+  },
+  cardContent: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  cardDescription: {
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  trumpCard: {
+    backgroundColor: "white",
+    padding: 12,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    marginBottom: 12,
+  },
+  trumpCardTitle: {
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  trumpCardSubtitle: {
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  trumpCardText: {
+    fontSize: 13,
+    color: "#6B7280",
   },
 });

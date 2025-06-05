@@ -1,7 +1,7 @@
 import Ionicons from "react-native-vector-icons/Ionicons";
 import SearchScreen from "../bottomBarScreens/SearchScreen";
 import ProfileScreen from "../bottomBarScreens/ProfileScreen";
-import styles from "../globals/styles";
+import styles from "../globals/Styles";
 import DonationsStack from "./DonationsStack";
 import HomeScreen from "../bottomBarScreens/HomeScreen";
 import { View } from "react-native";
@@ -38,9 +38,9 @@ export default function BottomNavigator() {
           },
         })}
       >
+        <Tab.Screen name="DonationsScreen" component={DonationsStack} />
         <Tab.Screen name="HomeScreen" component={HomeScreen} />
         <Tab.Screen name="SearchScreen" component={SearchScreen} />
-        <Tab.Screen name="DonationsScreen" component={DonationsStack} />
         <Tab.Screen name="ProfileScreen" component={ProfileScreen} />
       </Tab.Navigator>
     </View>

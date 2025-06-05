@@ -10,6 +10,11 @@ export default function MainNavigator() {
   return (
     <Stack.Navigator>
       <Stack.Screen
+        name="Home"
+        component={HomeStack}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
         name="FirstScreen"
         component={FirstScreen}
         options={{ headerShown: false }}
@@ -17,11 +22,6 @@ export default function MainNavigator() {
       <Stack.Screen
         name="LoginScreen"
         component={LoginScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Home"
-        component={HomeStack}
         options={{ headerShown: false }}
       />
       <Stack.Screen name="InactiveScreen" component={InactiveScreen} />

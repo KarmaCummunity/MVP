@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from '../globals/styles'; // your styles file
+import styles from '../globals/Styles'; // your styles file
 import Icon from 'react-native-vector-icons/Ionicons';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';

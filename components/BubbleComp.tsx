@@ -17,7 +17,7 @@ import Animated, {
   withDelay,
   Easing,
 } from "react-native-reanimated";
-import { sentences } from "../globals/constant"; // Assuming this path is correct
+import { sentences } from "../globals/Constant"; // Assuming this path is correct
 
 // Get the dimensions of the device window for responsive sizing
 const { width, height } = Dimensions.get("window");
@@ -315,12 +315,12 @@ const generateBubbles = (): BubbleData[] => {
 };
 
 /**
- * BubbleScreen component displaying animated bubbles and a message.
+ * BubbleComp component displaying animated bubbles and a message.
  */
-const BubbleScreen: React.FC = () => {
+const BubbleComp: React.FC = () => {
   // Memoize bubble generation to prevent re-rendering on every component render
   const bubbles = useMemo(generateBubbles, []);
-  console.log("[BubbleScreen] Bubbles generated and memoized.");
+  console.log("[BubbleComp] Bubbles generated and memoized.");
 
   // State to track the currently selected bubble
   const [selectedBubbleId, setSelectedBubbleId] = useState<string | null>(null);
@@ -333,11 +333,11 @@ const BubbleScreen: React.FC = () => {
    * @param id The ID of the pressed bubble.
    */
   const handleBubblePress = useCallback((id: string) => {
-    console.log(`[BubbleScreen] Bubble pressed: ${id}`);
+    console.log(`[BubbleComp] Bubble pressed: ${id}`);
     setSelectedBubbleId((prevId) => {
       const newId = prevId === id ? null : id;
       console.log(
-        `[BubbleScreen] Selected bubble ID changed from ${prevId} to ${newId}`
+        `[BubbleComp] Selected bubble ID changed from ${prevId} to ${newId}`
       );
       return newId;
     });
@@ -345,7 +345,7 @@ const BubbleScreen: React.FC = () => {
     setCurrentSentenceIndex((prevIndex) => {
       const newIndex = (prevIndex + 1) % sentences.length;
       console.log(
-        `[BubbleScreen] Current sentence index changed from ${prevIndex} to ${newIndex}`
+        `[BubbleComp] Current sentence index changed from ${prevIndex} to ${newIndex}`
       );
       return newIndex;
     });
@@ -592,4 +592,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BubbleScreen;
+export default BubbleComp;
