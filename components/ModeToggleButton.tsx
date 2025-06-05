@@ -39,7 +39,7 @@ const localStyles = StyleSheet.create({
     width: '40%', 
   },
   modeToggleBackground: {
-    flexDirection: 'row-reverse', // Keeps "מחפש" on the right initially for RTL
+    flexDirection: 'row-reverse', // Keeps "מחפש" on the right initially for rtl
     backgroundColor: '#FBD5D5',
     borderRadius: 999, // Use 999 for full pill shape
     height: 40, // Fixed height for consistency

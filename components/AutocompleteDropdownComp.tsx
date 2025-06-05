@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 5,
     color: '#333',
-    textAlign: 'right', // For RTL
+    textAlign: 'right', // For rtl
   },
   inputContainer: {
     borderWidth: 1,
@@ -133,8 +133,8 @@ const styles = StyleSheet.create({
     height: 40,
     paddingHorizontal: 10,
     fontSize: 16,
-    textAlign: 'right', // For RTL
-    writingDirection: 'rtl', // Explicit RTL text direction
+    textAlign: 'right', // For rtl
+    writingDirection: 'rtl', // Explicit rtl text direction
   },
   suggestionsList: {
     maxHeight: 150, // Limit height of suggestions list
@@ -159,8 +159,8 @@ const styles = StyleSheet.create({
   },
   suggestionText: {
     fontSize: 16,
-    textAlign: 'right', // For RTL
-    writingDirection: 'rtl', // Explicit RTL text direction
+    textAlign: 'right', // For rtl
+    writingDirection: 'rtl', // Explicit rtl text direction
   },
 });
 

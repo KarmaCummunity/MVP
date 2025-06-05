@@ -30,12 +30,12 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
 
 const headerStyles = StyleSheet.create({
   headerContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 5,
     paddingTop: 12,
     // Set a consistent paddingBottom for all platforms
     paddingBottom: Platform.select({
       ios: 80,       // For iOS
-      android: 80,    // For Android
+      android: 140,    // For Android
       web: 0,         // For Web
       default: 80,    // Fallback for any other platform
     }),
@@ -45,7 +45,7 @@ const headerStyles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
+    // marginBottom: 1,
   },
 });
 

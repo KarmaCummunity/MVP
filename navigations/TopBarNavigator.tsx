@@ -25,15 +25,12 @@ function TopBarNavigator({ navigation }: TopBarNavigatorProps) {
 
   const subtitle = routeSubtitles[route.name] ?? '';
 
-  const settingspushed = () => {
-    alert("SettingsScreen1");
-  };
 
   return (
     <View style={styles.container_top_bar}>
       {/* Left Icons Group */}
       <View style={{ flexDirection: 'row', gap: 5 }}>
-        <TouchableOpacity onPress={() => navigation.navigate('InactiveScreen')} style={{ marginRight: 5 }}>
+        <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={{ marginRight: 5 }}>
           <Icon name="chatbubbles-outline" size={25} color="black" />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate('InactiveScreen')}>
@@ -48,10 +45,10 @@ function TopBarNavigator({ navigation }: TopBarNavigatorProps) {
       </View>
       {/* Right Icons Group */}
       <View style={{ flexDirection: 'row', gap: 5 }}>
-        <TouchableOpacity onPress={() => navigation.navigate('InactiveScreen')} style={{ marginRight: 5 }}>
+        <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={{ marginRight: 5 }}>
           <Icon name="information-circle-outline" size={25} color="black" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('InactiveScreen')}>
+        <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')}>
           <Icon name="settings-outline" size={25} color="black" />
         </TouchableOpacity>
       </View>

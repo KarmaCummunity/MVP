@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   TextInput,
@@ -7,33 +7,38 @@ import {
   StyleSheet,
   Modal,
   SafeAreaView,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+  ScrollView,
+  Platform,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import Colors from "../globals/Colors";
 
 const SearchBar = () => {
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState("");
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [isSortModalVisible, setIsSortModalVisible] = useState(false);
 
-  const filterOptions: string[] = ['לפי תאריך', 'לפי קטגוריה', 'לפי רלוונטיות'];
-  const sortOptions: string[] = ['מהחדש לישן', 'מהישן לחדש', 'אלפביתי'];
+  const filterOptions: string[] = ["לפי תאריך", "לפי קטגוריה", "לפי רלוונטיות"];
+  const sortOptions: string[] = ["מהחדש לישן", "מהישן לחדש", "אלפביתי"];
 
   const handleSearch = () => {
-    if (searchText.trim() !== '') {
+    if (searchText.trim() !== "") {
       alert(`מחפש: ${searchText}`);
     } else {
-      alert('אנא הכנס טקסט לחיפוש.');
+      alert("אנא הכנס טקסט לחיפוש.");
     }
   };
 
   // --- FIX APPLIED HERE ---
-  const handleFilterSelection = (option: string) => { // <--- Added ': string'
+  const handleFilterSelection = (option: string) => {
+    // <--- Added ': string'
     alert(`סינון לפי: ${option}`);
     setIsFilterModalVisible(false);
   };
 
   // --- FIX APPLIED HERE ---
-  const handleSortSelection = (option: string) => { // <--- Added ': string'
+  const handleSortSelection = (option: string) => {
+    // <--- Added ': string'
     alert(`מיון לפי: ${option}`);
     setIsSortModalVisible(false);
   };
@@ -64,11 +69,14 @@ const SearchBar = () => {
           placeholderTextColor="#A0A0A0"
           value={searchText}
           onChangeText={setSearchText}
-          textAlign="right" // For RTL text input
+          textAlign="right" // For rtl text input
         />
 
         {/* Search Icon */}
-        <TouchableOpacity onPress={handleSearch} style={localStyles.searchIconContainer}>
+        <TouchableOpacity
+          onPress={handleSearch}
+          style={localStyles.searchIconContainer}
+        >
           <Ionicons name="search" size={24} color="#333" />
         </TouchableOpacity>
 
@@ -124,49 +132,75 @@ const SearchBar = () => {
           </TouchableOpacity>
         </Modal>
       </View>
+      {/* Horizontal ScrollView for Filter Buttons */}
+      <ScrollView
+        horizontal={true}
+        style={localStyles.filterScrollView}
+        showsHorizontalScrollIndicator={false}
+      >
+        <View style={localStyles.filterButtonsContainer}>
+          {[
+            "הטבות",
+            "אמצעי תשלום",
+            "ילדים",
+            "קרוב אליי",
+            "עברו עימות",
+            "רק מתנדבים",
+            "החזר מס",
+            "מרצנדייז",
+          ].map((label, index) => (
+            <TouchableOpacity
+              key={label + index}
+              style={localStyles.filterButton}
+            >
+              <Text style={localStyles.filterButtonText}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
     </View>
   );
 };
 
 const localStyles = StyleSheet.create({
   safeArea: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     flex: 1,
-    width: '100%',
+    width: "100%",
   },
   searchBarContainer: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    backgroundColor: '#FFDAB9',
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    backgroundColor: "#FFDAB9",
     borderRadius: 30,
-    paddingHorizontal: 15,
+    // paddingHorizontal: 15,
     marginHorizontal: 20,
-    marginVertical: 15,
+    marginTop: 15,
     height: 55,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   buttonContainer: {
-    backgroundColor: '#FFEFD5',
+    backgroundColor: "#FFEFD5",
     borderRadius: 20,
-    paddingVertical: 8,
+    paddingVertical: 5,
     paddingHorizontal: 15,
     marginHorizontal: 5,
   },
   buttonText: {
     fontSize: 12,
-    color: '#333',
-    fontWeight: 'bold',
-    writingDirection: 'rtl',
+    color: "#333",
+    fontWeight: "bold",
+    writingDirection: "rtl",
   },
   searchInput: {
     flex: 1,
-    height: '100%',
+    height: "100%",
     fontSize: 16,
-    color: '#333',
+    color: "#333",
     paddingHorizontal: 10,
   },
   searchIconContainer: {
@@ -174,17 +208,17 @@ const localStyles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 10,
     padding: 20,
-    width: '80%',
-    maxHeight: '70%',
-    shadowColor: '#000',
+    width: "80%",
+    maxHeight: "70%",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -193,13 +227,44 @@ const localStyles = StyleSheet.create({
   modalOption: {
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: "#eee",
   },
   modalOptionText: {
     fontSize: 18,
-    textAlign: 'right',
-    writingDirection: 'rtl',
-    color: '#333',
+    textAlign: "right",
+    writingDirection: "ltr",
+    color: "#333",
+  },
+  filterButtonsContainer: {
+    backgroundColor: "transparent",
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center",
+    alignSelf: 'flex-start',
+    gap: 10,
+    height: 30, // Height for the horizontal scroll
+    paddingHorizontal: 5, // Padding inside the horizontal scroll
+  },
+  filterButton: {
+    backgroundColor: Colors.orange,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    flexShrink: 0,
+  },
+  filterButtonText: {
+    fontSize: 13,
+    color: Colors.black,
+  },
+  filterScrollView: {
+    maxHeight: Platform.select({
+      ios: 80,
+      android: 100,
+      web: 80,
+      default: 80,
+    }),
+    paddingVertical: 30,
+    // marginBottom: 20,
   },
 });
 

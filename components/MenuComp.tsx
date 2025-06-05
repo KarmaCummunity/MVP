@@ -149,12 +149,12 @@ const localStyles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
     width: "100%",
-    alignSelf: "flex-end", // Align text to the right for RTL layout
+    alignSelf: "flex-end", // Align text to the right for rtl layout
   },
   menuOptionText: {
     fontSize: 16,
-    textAlign: "right", // Text alignment for RTL
-    writingDirection: "rtl", // Explicit RTL text direction
+    textAlign: "right", // Text alignment for rtl
+    writingDirection: "rtl", // Explicit rtl text direction
   },
 });
 

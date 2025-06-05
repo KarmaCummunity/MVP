@@ -92,30 +92,6 @@ export default function MoneyScreen({
         <Text style={localStyles.donateButtonText}>תרום</Text>
       </TouchableOpacity>
 
-      {/* Horizontal ScrollView for Filter Buttons */}
-      <ScrollView
-        horizontal={true}
-        style={localStyles.filterScrollView}
-        showsHorizontalScrollIndicator={false}
-      >
-        <View style={localStyles.filterButtonsContainer}>
-          {[
-            "הטבות",
-            "אמצעי תשלום",
-            "ילדים",
-            "קרוב אליי",
-            "עברו עימות",
-            "רק מתנדבים",
-            "החזר מס",
-            "מרצנדייז",
-          ].map((label, index) => (
-            <TouchableOpacity key={label + index} style={localStyles.filterButton}>
-              <Text style={localStyles.filterButtonText}>{label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-
       {/* Recommended Section */}
       <View style={localStyles.section}>
         <Text style={localStyles.sectionTitle}>מומלצים:</Text>
