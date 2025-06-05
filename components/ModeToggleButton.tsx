@@ -68,7 +68,7 @@ const localStyles = StyleSheet.create({
   modeText: {
     fontWeight: 'bold',
     color: '#000',
-    fontSize: 14,
+    fontSize: 12,
   },
 });
 

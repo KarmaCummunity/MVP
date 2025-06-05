@@ -157,7 +157,7 @@ const localStyles = StyleSheet.create({
     marginHorizontal: 5,
   },
   buttonText: {
-    fontSize: 16,
+    fontSize: 12,
     color: '#333',
     fontWeight: 'bold',
     writingDirection: 'rtl',

@@ -1,18 +1,19 @@
 import React from "react";
-import { View, Text, StyleSheet, Platform } from "react-native"; // Import Platform
+import { View, Text, StyleSheet, Platform } from "react-native";
 import SearchBar from "../components/SearchBar";
 import MenuComp from "../components/MenuComp";
 import ModeToggleButton from "../components/ModeToggleButton";
-// import styles from "../globals/styles"; // If you have global styles, ensure they don't conflict
-
+import Colors from "../globals/Colors";
 interface HeaderSectionProps {
   mode: "מחפש" | "מציע";
+  menuOptions: string[];
   onToggleMode: () => void;
   onSelectMenuItem: (option: string) => void;
 }
 
 const HeaderComp: React.FC<HeaderSectionProps> = ({
   mode,
+  menuOptions,
   onToggleMode,
   onSelectMenuItem,
 }) => {
@@ -20,23 +21,7 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
     <View style={headerStyles.headerContainer}>
       <View style={headerStyles.topRow}>
         <ModeToggleButton mode={mode} onToggle={onToggleMode} />
-        <MenuComp
-          options={[
-            "הוראות קבע",
-            "היסטוריה",
-            "הטבות",
-            "הגשת בקשה",
-            "אפשרות 5",
-            "אפשרות 6",
-            "אפשרות 7",
-            "אפשרות 8",
-            "אפשרות 9",
-            "אפשרות 10",
-            "אפשרות 11",
-            "אפשרות 12",
-          ]}
-          onSelectOption={onSelectMenuItem}
-        />
+        <MenuComp options={menuOptions} onSelectOption={onSelectMenuItem} />
       </View>
       <SearchBar />
     </View>
@@ -47,27 +32,19 @@ const headerStyles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    // Use Platform.select to apply different values based on the platform
+    // Set a consistent paddingBottom for all platforms
     paddingBottom: Platform.select({
       ios: 80,       // For iOS
       android: 80,    // For Android
       web: 0,         // For Web
       default: 80,    // Fallback for any other platform
     }),
-    backgroundColor: "#FFEDD5",
-    // You might want a subtle border or shadow here
-    // borderBottomWidth: 1,
-    // borderBottomColor: '#E0E0E0',
-    // elevation: 3, // For Android shadow
-    // shadowColor: '#000', // For iOS shadow
-    // shadowOffset: { width: 0, height: 2 },
-    // shadowOpacity: 0.1,
-    // shadowRadius: 3,
+    backgroundColor: 'transparent',
   },
   topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 10,
   },
 });

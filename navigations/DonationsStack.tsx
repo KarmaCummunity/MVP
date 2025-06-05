@@ -1,6 +1,6 @@
 import DonationsScreen from '../bottomBarScreens/DonationsScreen';
 import TrumpScreen from '../donationScreens/TrumpScreen';
-import MoneyScreen from '../screens/MoneyScreen';
+import MoneyScreen from '../donationScreens/MoneyScreen';
 import { createStackNavigator } from '@react-navigation/stack';
 
 const Stack = createStackNavigator();

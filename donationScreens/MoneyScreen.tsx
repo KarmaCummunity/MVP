@@ -1,295 +1,353 @@
-import React, { useState, useRef } from "react";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
-  ScrollView, // Import ScrollView
+  FlatList, // Changed from ScrollView to FlatList
   TouchableOpacity,
   Image,
-  Modal,
-  Animated,
+  Alert,
+  Platform,
+  ScrollView,
 } from "react-native";
 import { NavigationProp, ParamListBase } from "@react-navigation/native";
-import styles from "../globals/Styles";
-import SearchBar from "./SearchBar";
+// Picker is no longer used
+import HeaderComp from "../components/HeaderComp";
+import { charityNames } from "../globals/Constant";
+import Colors from "../globals/Colors";
+import AutocompleteDropdownComp from "../components/AutocompleteDropdownComp"; // Corrected component import
 
+const options = [
+  "הוראות קבע",
+  "היסטוריה",
+  "הטבות",
+  "הגשת בקשה",
+  "אשראי",
+  "אפשרות 6",
+  "אפשרות 7",
+  "אפשרות 8",
+  "אפשרות 9",
+  "אפשרות 10",
+  "אפשרות 11",
+  "אפשרות 12",
+];
 
-export default function MoneyScreen({ navigation }: { navigation: NavigationProp<ParamListBase> }) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuOptions = [
-    "הוראות קבע",
-    "היסטוריה",
-    "הטבות",
-    "הגשת בקשה",
-    "אפשרות 5",
-    "אפשרות 6",
-    "אפשרות 7",
-    "אפשרות 8",
-    "אפשרות 9",
-    "אפשרות 10",
-    "אפשרות 11",
-    "אפשרות 12",
+export default function MoneyScreen({
+  navigation,
+}: {
+  navigation: NavigationProp<ParamListBase>;
+}) {
+  const [selectedRecipient, setSelectedRecipient] = useState<string>("");
+  const [selectedAmount, setSelectedAmount] = useState<string>("");
+  const [mode, setMode] = useState<"מחפש" | "מציע">("מחפש");
+
+  const amountOptions = ["₪111", "₪50", "₪100", "₪500", "₪1000", "₪2000"];
+
+  const handleSelectMenuItem = (option: string) => {
+    Alert.alert(`Selected: ${option}`);
+  };
+
+  const handleDonate = () => {
+    if (!selectedRecipient || !selectedAmount) {
+      Alert.alert("שגיאה", "אנא בחר נמען וסכום לפני התרומה.");
+    } else {
+      Alert.alert(
+        "תרומה בוצעה",
+        `תודה על תרומתך ${selectedAmount} ל-${selectedRecipient}!`
+      );
+    }
+  };
+
+  const toggleMode = (): void => {
+    setMode((prev) => (prev === "מחפש" ? "מציע" : "מציע")); // Changed default to 'מציע' as you had it previously
+  };
+
+  // Content that will always appear at the top of the scrollable area
+  const ListHeader = () => (
+    <View>
+      {/* Dropdowns */}
+      <View style={localStyles.dropdownContainer1}>
+        <AutocompleteDropdownComp
+          label="למי ?"
+          selectedValue={selectedRecipient}
+          onValueChange={(val) => setSelectedRecipient(val)}
+          options={charityNames}
+        />
+      </View>
+      <View style={localStyles.dropdownContainer2}>
+        <AutocompleteDropdownComp
+          label="כמה ?"
+          selectedValue={selectedAmount}
+          onValueChange={(val) => setSelectedAmount(val)}
+          options={amountOptions}
+        />
+      </View>
+
+      {/* Donate Button */}
+      <TouchableOpacity
+        style={localStyles.donateButton}
+        onPress={handleDonate}
+      >
+        <Text style={localStyles.donateButtonText}>תרום</Text>
+      </TouchableOpacity>
+
+      {/* Horizontal ScrollView for Filter Buttons */}
+      <ScrollView
+        horizontal={true}
+        style={localStyles.filterScrollView}
+        showsHorizontalScrollIndicator={false}
+      >
+        <View style={localStyles.filterButtonsContainer}>
+          {[
+            "הטבות",
+            "אמצעי תשלום",
+            "ילדים",
+            "קרוב אליי",
+            "עברו עימות",
+            "רק מתנדבים",
+            "החזר מס",
+            "מרצנדייז",
+          ].map((label, index) => (
+            <TouchableOpacity key={label + index} style={localStyles.filterButton}>
+              <Text style={localStyles.filterButtonText}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+
+      {/* Recommended Section */}
+      <View style={localStyles.section}>
+        <Text style={localStyles.sectionTitle}>מומלצים:</Text>
+        {/* Horizontal ScrollView for Recommended Cards */}
+        <ScrollView
+          horizontal={true}
+          style={localStyles.cardListScrollView}
+          showsHorizontalScrollIndicator={false}
+        >
+          {[1, 2, 3, 4, 5].map((_, i) => (
+            <View style={localStyles.card} key={`rec-${i}`}>
+              <Image
+                source={{ uri: "https://via.placeholder.com/50" }}
+                style={localStyles.cardImage}
+              />
+              <View style={localStyles.cardContent}>
+                <Text style={localStyles.cardTitle}>JGive {i + 1}</Text>
+                <Text style={localStyles.cardDescription}>
+                  אצלנו התרומה שלך שווה יותר
+                </Text>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Separator if needed before "All" section */}
+      {/* <View style={{ height: 20 }} /> */}
+    </View>
+  );
+
+  // Data for the FlatList's main content (can be simplified if only one section remains)
+  const mainContentData = [
+    {
+      id: "all_section",
+      title: "הכל:",
+      items: [
+        "האגודה למלחמה בסרטן",
+        "לתת",
+        "לתת",
+        "יד שרה",
+        "מגן דוד אדום",
+        "קרן לבריאות הילד",
+        "המרכז לזקן",
+      ],
+    },
   ];
 
-  const menuIconRef = useRef(null);
-  const [menuIconPosition, setMenuIconPosition] = useState({
-    x: 0,
-    y: 0,
-    width: 0,
-    height: 0,
-  });
-
-  const scaleAnim = useRef(new Animated.Value(0.01)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-
-  const openMenu = () => {
-    menuIconRef.current.measure((fx, fy, width, height, px, py) => {
-      setMenuIconPosition({ x: px, y: py, width: width, height: height });
-      setIsMenuOpen(true);
-      Animated.parallel([
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    });
-  };
-
-  const closeMenu = () => {
-    Animated.parallel([
-      Animated.timing(scaleAnim, {
-        toValue: 0.01,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setIsMenuOpen(false);
-    });
-  };
-
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={localStyles.mainContentContainer}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {/* Top Section: Menu Icon at top-right, SearchBar below it */}
-          <View style={localStyles.headerSection}>
-            <TouchableOpacity
-              onPress={openMenu}
-              style={localStyles.menuIconPlacement}
-              ref={menuIconRef}
-            >
-              <Ionicons name="menu" size={24} color="black" />
-            </TouchableOpacity>
-            <SearchBar />
-          </View>
+    <SafeAreaView style={localStyles.safeArea}>
+      <View style={localStyles.wrapper}>
+        <HeaderComp
+          mode={mode}
+          menuOptions={options}
+          onToggleMode={toggleMode}
+          onSelectMenuItem={handleSelectMenuItem}
+        />
 
-          {/* Filter Buttons */}
-          <View style={styles.filterButtonsContainer}>
-            <TouchableOpacity style={styles.filterButton}>
-              <Text style={styles.filterButtonText}>הטבות</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.filterButton}>
-              <Text style={styles.filterButtonText}>אמצעי תשלום</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.filterButton}>
-              <Text style={styles.filterButtonText}>ילדים</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.filterButton}>
-              <Text style={styles.filterButtonText}>קרוב אליי</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Input Fields */}
-          <View style={styles.inputSection}>
-            <View style={styles.inputField}>
-              <Text style={styles.inputLabel}>למי ?</Text>
-              <View style={styles.dropdown}>
-                <Ionicons name="chevron-down" size={20} color="black" />
-              </View>
-            </View>
-            <View style={styles.inputField}>
-              <Text style={styles.inputLabel}>כמה ?</Text>
-              <View style={styles.dropdown}>
-                <Ionicons name="chevron-down" size={20} color="black" />
-              </View>
-            </View>
-          </View>
-
-          {/* Recommended Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>מומלצים:</Text>
-            <View style={styles.card}>
-              <Image
-                source={{ uri: "https://via.placeholder.com/50" }}
-                style={styles.cardImage}
-              />
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>JGive</Text>
-                <Text style={styles.cardDescription}>
-                  אצלנו התרומה שלך שווה יותר
-                </Text>
-              </View>
-            </View>
-            <View style={styles.card}>
-              <Image
-                source={{ uri: "https://via.placeholder.com/50" }}
-                style={styles.cardImage}
-              />
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>JGive</Text>
-                <Text style={styles.cardDescription}>
-                  אצלנו התרומה שלך שווה יותר
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* All Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>הכל:</Text>
-            <View style={styles.card}>
-              <Image
-                source={{ uri: "https://via.placeholder.com/50" }}
-                style={styles.cardImage}
-              />
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>האגודה למלחמה בסרטן</Text>
-                <Text style={styles.cardDescription}>
-                  אצלנו התרומה שלך שווה יותר
-                </Text>
-              </View>
-            </View>
-            <View style={styles.card}>
-              <Image
-                source={{ uri: "https://via.placeholder.com/50" }}
-                style={styles.cardImage}
-              />
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>לתת</Text>
-                <Text style={styles.cardDescription}>סיוע הומניטרי ישראלי</Text>
-              </View>
-            </View>
-            <View style={styles.card}>
-              <Image
-                source={{ uri: "https://via.placeholder.com/50" }}
-                style={styles.cardImage}
-              />
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>לתת</Text>
-                <Text style={styles.cardDescription}>סיוע הומניטרי ישראלי</Text>
-              </View>
-            </View>
-          </View>
-        </ScrollView>
-
-        {/* Menu Modal */}
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={isMenuOpen}
-          onRequestClose={closeMenu}
-        >
-          <TouchableOpacity
-            style={localStyles.modalOverlay}
-            activeOpacity={1}
-            onPressOut={closeMenu}
-          >
-            <Animated.View
-              style={[
-                localStyles.modalContent,
-                {
-                  opacity: opacityAnim,
-                  transform: [{ scale: scaleAnim }],
-                  top: menuIconPosition.y + menuIconPosition.height / 2,
-                  right: 0,
-                },
-              ]}
-            >
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {" "}
-                {/* Added ScrollView here */}
-                {menuOptions.map((option, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      localStyles.menuOption,
-                      index === menuOptions.length - 1 && {
-                        borderBottomWidth: 0,
-                      }, // Remove border from last item
-                    ]}
-                    onPress={() => {
-                      alert(`Selected: ${option}`);
-                      closeMenu();
-                    }}
-                  >
-                    <Text style={localStyles.menuOptionText}>{option}</Text>
-                  </TouchableOpacity>
+        {/* Changed to FlatList for the main scrollable content */}
+        <FlatList
+          data={mainContentData} // Data for the main FlatList (the "All" section)
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={localStyles.section}>
+              <Text style={localStyles.sectionTitle}>{item.title}</Text>
+              {/* Horizontal ScrollView for All Cards */}
+              <ScrollView
+                horizontal={true}
+                style={localStyles.cardListScrollView}
+                showsHorizontalScrollIndicator={false}
+              >
+                {item.items.map((title, idx) => (
+                  <View style={localStyles.card} key={`all-${idx}`}>
+                    <Image
+                      source={{ uri: "https://via.placeholder.com/50" }}
+                      style={localStyles.cardImage}
+                    />
+                    <View style={localStyles.cardContent}>
+                      <Text style={localStyles.cardTitle}>{title}</Text>
+                      <Text style={localStyles.cardDescription}>
+                        סיוע הומניטרי ישראלי
+                      </Text>
+                    </View>
+                  </View>
                 ))}
               </ScrollView>
-            </Animated.View>
-          </TouchableOpacity>
-        </Modal>
+            </View>
+          )}
+          ListHeaderComponent={ListHeader} // All content above "All" section
+          // You can also add ListFooterComponent if you have content below the main list
+          showsVerticalScrollIndicator={false} // Hide main scrollbar
+          contentContainerStyle={localStyles.flatListContentContainer} // Apply padding here
+          keyboardShouldPersistTaps="always" // Still useful for nested TextInput interactions
+        />
       </View>
     </SafeAreaView>
   );
 }
 
 const localStyles = StyleSheet.create({
-  mainContentContainer: {
+  safeArea: {
     flex: 1,
+    backgroundColor: "#FFEDD5",
   },
-  headerSection: {
-    paddingHorizontal: 15,
-    paddingTop: 10,
-    alignItems: "flex-end",
-  },
-  menuIconPlacement: {
-    padding: 10,
-    marginBottom: 5,
-  },
-  modalOverlay: {
+  wrapper: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-start",
-    alignItems: "flex-start",
-  },
-  modalContent: {
-    backgroundColor: "white",
-    borderRadius: 10,
-    position: "absolute",
-    minWidth: 180,
-    maxHeight: 250, // Set a fixed maxHeight for the menu
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    paddingVertical: 10, // Add vertical padding to the content itself, not individual items
-  },
-  menuOption: {
-    paddingHorizontal: 20, // Add horizontal padding for consistency
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
     width: "100%",
-    alignSelf: "flex-end",
+    maxWidth: 600,
+    alignSelf: "center",
   },
-  menuOptionText: {
+  // Removed scrollViewBase as FlatList replaces it
+  flatListContentContainer: {
+    paddingHorizontal: 16, // Apply horizontal padding here
+    paddingTop: 12, // Add some padding below the header
+    paddingBottom: 24, // Add padding at the bottom
+  },
+  donateButton: {
+    backgroundColor: "#007BFF",
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 10,
+    alignSelf: "center",
+  },
+  donateButtonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  filterButtonsContainer: {
+    backgroundColor: "transparent",
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    gap: 10,
+    paddingHorizontal: 5, // Padding inside the horizontal scroll
+  },
+  filterButton: {
+    backgroundColor: Colors.orange,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    flexShrink: 0,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    color: "#333",
+  },
+  section: {
+    marginTop: 20,
+    // flex: 1, // Remove flex:1 if it was causing issues with FlatList item sizing
+  },
+  sectionTitle: {
+    fontWeight: "bold",
+    fontSize: 18,
+    marginBottom: 10,
+  },
+  filterScrollView: {
+    maxHeight: Platform.select({
+      ios: 80,
+      android: 100,
+      web: 80,
+      default: 80,
+    }),
+    paddingVertical: 10,
+    marginBottom: 20,
+  },
+  cardListScrollView: {
+    height: 200,
+    maxHeight: 200,
+    paddingVertical: 10,
+  },
+  card: {
+    flexDirection: "row",
+    backgroundColor: "white",
+    padding: 30,
+    marginHorizontal: 10,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    marginBottom: 12,
+    alignItems: "center",
+    width: 280,
+    flexShrink: 0,
+  },
+  cardImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 10,
+  },
+  cardContent: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontWeight: "bold",
     fontSize: 16,
-    textAlign: "right",
-    writingDirection: "rtl",
+  },
+  cardDescription: {
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  trumpCard: {
+    backgroundColor: "white",
+    padding: 12,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    marginBottom: 12,
+  },
+  trumpCardTitle: {
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  trumpCardSubtitle: {
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  trumpCardText: {
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  dropdownContainer1: {
+    marginBottom: 12,
+    zIndex: 12, // Needs to be higher than other elements that might overlap
+  },
+  dropdownContainer2: {
+    marginBottom: 24,
+    zIndex: 11, // Needs to be higher than other elements that might overlap, but lower than dropdown1
   },
 });

@@ -1,6 +1,7 @@
 // Color Constants
 const Colors = {
   white: '#FFFFFF',
+  orange: '#FB923C',
   lightGray: '#EEEEEE',
   mediumGray: '#666666',
   darkGray: '#333333',

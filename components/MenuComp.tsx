@@ -1,4 +1,3 @@
-// components/MenuComp.tsx
 import React, { useRef, useState, useEffect } from "react";
 import {
   Modal,
@@ -8,11 +7,8 @@ import {
   StyleSheet,
   Animated,
   ScrollView,
-  LayoutRectangle, // Import LayoutRectangle
-  findNodeHandle, // Import findNodeHandle
-  UIManager, // Import UIManager
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons"; // Import Ionicons for the menu icon
+import { Ionicons } from "@expo/vector-icons";
 
 // Define the props that the MenuComp component will accept
 interface MenuCompProps {
@@ -20,35 +16,15 @@ interface MenuCompProps {
   onSelectOption: (option: string) => void; // Function to call when an option is selected
 }
 
-const MenuComp: React.FC<MenuCompProps> = ({
-  options,
-  onSelectOption,
-}) => {
+const MenuComp: React.FC<MenuCompProps> = ({ options, onSelectOption }) => {
   const [isVisible, setIsVisible] = useState<boolean>(false);
-  const [menuIconPosition, setMenuIconPosition] = useState<LayoutRectangle>({
-    x: 0,
-    y: 0,
-    width: 0,
-    height: 0,
-  });
-
-  const menuIconRef = useRef<View>(null); // Ref for the internal menu icon
 
   // Animated values for scale and opacity
   const scaleAnim = useRef(new Animated.Value(0.01)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
   const openMenu = () => {
-    const handle = findNodeHandle(menuIconRef.current);
-    if (handle) {
-      UIManager.measure(
-        handle,
-        (x, y, width, height, pageX, pageY) => {
-          setMenuIconPosition({ x: pageX, y: pageY, width, height });
-          setIsVisible(true);
-        }
-      );
-    }
+    setIsVisible(true);
   };
 
   const closeMenu = () => setIsVisible(false);
@@ -79,13 +55,7 @@ const MenuComp: React.FC<MenuCompProps> = ({
           duration: 200,
           useNativeDriver: true,
         }),
-      ]).start(() => {
-        // Optional: Reset visibility after animation completes
-        if (!isVisible) {
-          // This can be useful to completely unmount the modal content
-          // However, for smooth re-opening, keeping it mounted and just hidden is often better.
-        }
-      });
+      ]).start();
     }
   }, [isVisible, scaleAnim, opacityAnim]);
 
@@ -95,7 +65,6 @@ const MenuComp: React.FC<MenuCompProps> = ({
       <TouchableOpacity
         onPress={openMenu}
         style={localStyles.menuIconPlacement}
-        ref={menuIconRef} // Attach ref to the icon
       >
         <Ionicons name="menu" size={24} color="black" />
       </TouchableOpacity>
@@ -119,9 +88,8 @@ const MenuComp: React.FC<MenuCompProps> = ({
                 {
                   opacity: opacityAnim,
                   transform: [{ scale: scaleAnim }],
-                  // Position the modal content relative to the anchor icon
-                  top: menuIconPosition.y + menuIconPosition.height / 2,
-                  // Adjust right position based on desired offset from right edge
+                  // Position the modal content relative to the top-right of the screen
+                  top: 70, // Adjust this value to position it below the header
                   right: 15, // A small offset from the right edge of the screen
                 },
               ]}
