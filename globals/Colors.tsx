@@ -1,8 +1,6 @@
-import { blue, green } from "react-native-reanimated/lib/typescript/Colors";
-
 // Color Constants
 
-const Colors = {
+const colors = {
   // Primary Neutrals
   white: '#FFFFFF',
   black: '#000000',
@@ -59,7 +57,7 @@ const Colors = {
     deleteRed: '#D85151',           // Color for the delete icon
 };
 
-export default Colors;
+export default colors;
 
 // Log for Colors file:
 /*
