@@ -1,6 +1,7 @@
 import { blue, green } from "react-native-reanimated/lib/typescript/Colors";
 
 // Color Constants
+
 const Colors = {
   // Primary Neutrals
   white: '#FFFFFF',
