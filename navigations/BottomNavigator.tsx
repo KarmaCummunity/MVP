@@ -6,6 +6,7 @@ import DonationsStack from "./DonationsStack";
 import HomeScreen from "../bottomBarScreens/HomeScreen";
 import { View } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import TodoListScreen from "../bottomBarScreens/TodoListScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -26,6 +27,8 @@ export default function BottomNavigator() {
               iconName = focused ? "heart" : "heart-outline";
             } else if (route.name === "ProfileScreen") {
               iconName = focused ? "person" : "person-outline";
+            } else if (route.name === "TodoListScreen") {
+              iconName = focused ? "checkbox" : "checkbox-outline";
             }
 
             return <Ionicons name={iconName} size={size} color={color} />;
@@ -38,6 +41,7 @@ export default function BottomNavigator() {
           },
         })}
       >
+        <Tab.Screen name="TodoListScreen" component={TodoListScreen} />
         <Tab.Screen name="DonationsScreen" component={DonationsStack} />
         <Tab.Screen name="HomeScreen" component={HomeScreen} />
         <Tab.Screen name="SearchScreen" component={SearchScreen} />
