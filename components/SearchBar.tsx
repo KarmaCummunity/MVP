@@ -11,7 +11,7 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import Colors from "../globals/Colors";
+import colors from "../globals/colors";
 
 const SearchBar = () => {
   const [searchText, setSearchText] = useState("");
@@ -246,7 +246,7 @@ const localStyles = StyleSheet.create({
     paddingHorizontal: 5, // Padding inside the horizontal scroll
   },
   filterButton: {
-    backgroundColor: Colors.orange,
+    backgroundColor: colors.mediumOrange,
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 20,
@@ -254,7 +254,7 @@ const localStyles = StyleSheet.create({
   },
   filterButtonText: {
     fontSize: 13,
-    color: Colors.black,
+    color: colors.black,
   },
   filterScrollView: {
     maxHeight: Platform.select({

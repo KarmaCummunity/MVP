@@ -1,6 +1,6 @@
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { View, Button, Alert } from 'react-native';
-import styles from '../globals/Styles';
+import styles from '../globals/styles';
 function ChatScreen({ navigation }: { navigation: NavigationProp<ParamListBase> }) {
     alert("ChatScreen")
     return (

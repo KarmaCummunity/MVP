@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Platform } from "react-native";
 import SearchBar from "../components/SearchBar";
 import MenuComp from "../components/MenuComp";
 import ModeToggleButton from "../components/ModeToggleButton";
-import Colors from "../globals/Colors";
+import Colors from "../globals/colors";
 interface HeaderSectionProps {
   mode: "מחפש" | "מציע";
   menuOptions: string[];

@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Saf
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
 import ChatListItem from '../components/ChatListItem';
 import { conversations as initialConversations, users, ChatConversation } from '../globals/fakeData'; // Adjust path
-import Colors from '../globals/Colors'; // Assuming you have a Colors file
+import colors from '../globals/colors'; // Assuming you have a Colors file
 import Icon from 'react-native-vector-icons/Ionicons'; // Example icon
 
 export default function ChatListScreen() {
@@ -51,11 +51,11 @@ export default function ChatListScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color={Colors.textPrimary} />
+          <Icon name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>צ'אטים</Text>
         <TouchableOpacity onPress={() => alert('שלח הודעה חדשה')}>
-          <Icon name="add-circle-outline" size={24} color={Colors.textPrimary} />
+          <Icon name="add-circle-outline" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
       <FlatList
@@ -64,7 +64,7 @@ export default function ChatListScreen() {
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.instagramBlue} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.blue} />
         }
       />
     </SafeAreaView>
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: Platform.OS === 'android' ? 30 : 0, // Adjust for Android status bar
     marginBottom: Platform.OS === 'android' ? 40 : 0, // Adjust for Android status bar
-    backgroundColor: Colors.backgroundPrimary,
+    backgroundColor: colors.backgroundPrimary,
   },
   header: {
     flexDirection: 'row',
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
   },
   listContent: {
     paddingVertical: 8,

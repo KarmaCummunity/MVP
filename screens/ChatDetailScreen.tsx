@@ -17,7 +17,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { ParamListBase } from '@react-navigation/native';
 import ChatMessageBubble from '../components/ChatMessageBubble';
 import { conversations as initialConversations, Message } from '../globals/fakeData'; // Adjust path
-import Colors from '../globals/Colors'; // Adjust path
+import colors from '../globals/colors'; // Adjust path
 import Icon from 'react-native-vector-icons/Ionicons'; // Example icon
 
 type ChatDetailRouteParams = {
@@ -109,14 +109,14 @@ export default function ChatDetailScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color={Colors.textPrimary} />
+          <Icon name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <View style={styles.headerUserInfo}>
           <Image source={{ uri: userAvatar }} style={styles.headerAvatar} />
           <Text style={styles.headerTitle}>{userName}</Text>
         </View>
         <TouchableOpacity onPress={() => Alert.alert('מידע נוסף', `מידע על ${userName}`)}>
-          <Icon name="information-circle-outline" size={24} color={Colors.textPrimary} />
+          <Icon name="information-circle-outline" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
@@ -137,10 +137,10 @@ export default function ChatDetailScreen() {
 
         <View style={styles.inputContainer}>
           <TouchableOpacity onPress={() => Alert.alert('תמונה')}>
-            <Icon name="camera-outline" size={24} color={Colors.instagramBlue} style={styles.icon} />
+            <Icon name="camera-outline" size={24} color={colors.blue} style={styles.icon} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => Alert.alert('מדיה')}>
-            <Icon name="image-outline" size={24} color={Colors.instagramBlue} style={styles.icon} />
+            <Icon name="image-outline" size={24} color={colors.blue} style={styles.icon} />
           </TouchableOpacity>
           <TextInput
             style={styles.textInput}
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: 30, // Adjust for status bar height
     marginBottom: 40,
-    backgroundColor: Colors.backgroundPrimary,
+    backgroundColor: colors.backgroundPrimary,
   },
   header: {
     flexDirection: 'row',
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl', // For RTL
   },
   sendButton: {
-    backgroundColor: Colors.instagramBlue,
+    backgroundColor: colors.blue,
     borderRadius: 20,
     paddingHorizontal: 15,
     paddingVertical: 8,

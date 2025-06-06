@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Filter, SortBy, SortOrder } from '../globals';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import Colors from '../globals/Colors';
+import colors from '../globals/colors';
 
 interface FilterSortOptionsProps {
   currentFilter: Filter;
@@ -71,7 +71,7 @@ const FilterSortOptions: React.FC<FilterSortOptionsProps> = ({
           <Icon
             name={currentSortOrder === 'asc' ? 'arrow-upward' : 'arrow-downward'}
             size={20}
-            color="#007AFF"
+            color={colors.blue}
           />
         </TouchableOpacity>
       </View>
@@ -81,7 +81,7 @@ const FilterSortOptions: React.FC<FilterSortOptionsProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.lightOrange,
+    backgroundColor: colors.lightOrange,
     padding: 10,
     borderRadius: 10,
     // marginBottom: 20,

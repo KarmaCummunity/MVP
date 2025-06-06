@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Task } from "../globals"; // Assuming Task interface is here
 import Icon from "react-native-vector-icons/MaterialIcons"; // Assuming you might use icons for priority/date pickers
-import Colors from "../globals/Colors";
+import colors from "../globals/colors";
 
 // Define the props interface for the modal
 interface AddEditTaskModalProps {
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   },
   modalView: {
     margin: 20,
-    backgroundColor: Colors.lightOrange,
+    backgroundColor: colors.lightOrange,
     borderRadius: 20,
     padding: 35,
     alignItems: "center",

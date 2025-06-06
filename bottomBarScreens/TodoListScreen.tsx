@@ -33,7 +33,7 @@ import {
   serverTimestamp,   // Generates a timestamp on the Firestore server
   Timestamp          // Firestore's native Timestamp type for date conversion
 } from 'firebase/firestore';
-import Colors from '../globals/Colors';
+import colors from '../globals/colors';
 
 
 /**
@@ -327,11 +327,6 @@ const TodoListScreen: React.FC = () => {
           <Icon name="add" size={30} color="#FFF" />
           <Text style={styles.addButtonText}>Add Task</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity style={styles.clearCompletedButton} onPress={handleClearCompleted}>
-          <Icon name="clear-all" size={24} color="#FFF" />
-          <Text style={styles.clearCompletedButtonText}>Clear Completed</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Modal for adding or editing tasks */}
@@ -349,7 +344,7 @@ const TodoListScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.lightOrange,
+    backgroundColor: colors.lightOrange,
     // Adjust paddingTop based on platform for correct status bar spacing
     // paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },

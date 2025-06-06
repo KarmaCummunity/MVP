@@ -1,9 +1,16 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import MainNavigator from './navigations/MainNavigator';
-import { NavigationContainer } from '@react-navigation/native';
-import * as Font from 'expo-font';
-import { Ionicons } from '@expo/vector-icons';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native'; // Import necessary components for a loading screen
+import React, { useCallback, useEffect, useState } from "react";
+import MainNavigator from "./navigations/MainNavigator";
+import { NavigationContainer } from "@react-navigation/native";
+import * as Font from "expo-font";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  StyleSheet,
+  Platform,
+} from "react-native"; // Import necessary components for a loading screen
+import styles from "./globals/styles";
 
 export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
@@ -15,11 +22,12 @@ export default function App() {
         ...Ionicons.font,
         // If you're using MaterialIcons (for example, in your TodoListScreen TaskItem)
         // you'll need to load its font as well:
-        'MaterialIcons': require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf'),
+        MaterialIcons: require("@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf"),
         // Add any other custom fonts you use here
       });
       setFontsLoaded(true);
-    } catch (error: any) { // Type 'any' for the error object
+    } catch (error: any) {
+      // Type 'any' for the error object
       console.error("Error loading fonts:", error);
       setFontError(error);
     }
@@ -51,27 +59,11 @@ export default function App() {
 
   // Once fonts are loaded, render the main application
   return (
-    <NavigationContainer>
-      <MainNavigator />
-    </NavigationContainer>
+    <View style={styles.container}>
+      <NavigationContainer>
+        <MainNavigator />
+      </NavigationContainer>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#666',
-  },
-  errorText: {
-    color: 'red',
-    fontSize: 18,
-    textAlign: 'center',
-  },
-});

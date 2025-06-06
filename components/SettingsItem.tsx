@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, Platform } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons'; // Or any other icon set you prefer
-import Colors from '../globals/Colors'; // Adjust path
+import colors from '../globals/colors'; // Adjust path
 
 // Define types for the different kinds of settings items
 type SettingItemType = 'navigate' | 'toggle' | 'button' | 'value';
@@ -32,7 +32,7 @@ const SettingsItem: React.FC<SettingsItemProps> = ({
   isDestructive,
   children,
 }) => {
-  const textColor = isDestructive ? Colors.danger : Colors.textPrimary;
+  const textColor = isDestructive ? colors.danger : colors.textPrimary;
 
   const renderContent = () => {
     switch (type) {
@@ -41,21 +41,21 @@ const SettingsItem: React.FC<SettingsItemProps> = ({
           <Switch
             value={value}
             onValueChange={onValueChange}
-            trackColor={{ false: Colors.border, true: Colors.instagramBlue }}
-            thumbColor={value ? Colors.instagramBlue : Colors.backgroundSecondary}
-            ios_backgroundColor={Colors.border}
+            trackColor={{ false: colors.border, true: colors.blue }}
+            thumbColor={value ? colors.blue : colors.backgroundSecondary}
+            ios_backgroundColor={colors.border}
           />
         );
       case 'value':
         return (
           <Text style={styles.valueText}>
             {displayValue}
-            {Platform.OS === 'web' && <Icon name="chevron-forward-outline" size={20} color={Colors.textSecondary} style={styles.webChevron}/>}
+            {Platform.OS === 'web' && <Icon name="chevron-forward-outline" size={20} color={colors.textSecondary} style={styles.webChevron}/>}
           </Text>
         );
       case 'navigate':
         return (
-          <Icon name="chevron-forward-outline" size={20} color={Colors.textSecondary} />
+          <Icon name="chevron-forward-outline" size={20} color={colors.textSecondary} />
         );
       case 'button':
         return null; // Button content is handled by the title itself inside TouchableOpacity
@@ -92,9 +92,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 15,
     paddingHorizontal: 16,
-    backgroundColor: Colors.backgroundSecondary,
+    backgroundColor: colors.backgroundSecondary,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
+    borderBottomColor: colors.border,
     writingDirection: 'rtl', // For RTL
     textAlign: 'right', // For RTL
   },
@@ -109,11 +109,11 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
   },
   description: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginTop: 2,
   },
   rightContent: {
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   },
   valueText: {
     fontSize: 16,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginRight: Platform.OS === 'web' ? -5 : 0, // Adjust for web chevron position
   },
   webChevron: {

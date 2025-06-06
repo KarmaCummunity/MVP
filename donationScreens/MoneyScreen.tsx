@@ -14,8 +14,8 @@ import {
 import { NavigationProp, ParamListBase } from "@react-navigation/native";
 // Picker is no longer used
 import HeaderComp from "../components/HeaderComp";
-import { charityNames } from "../globals/Constant";
-import Colors from "../globals/Colors";
+import { charityNames } from "../globals/constants"; // Adjusted import path
+import colors from "../globals/colors";
 import AutocompleteDropdownComp from "../components/AutocompleteDropdownComp"; // Corrected component import
 
 const options = [
@@ -230,7 +230,7 @@ const localStyles = StyleSheet.create({
     paddingHorizontal: 5, // Padding inside the horizontal scroll
   },
   filterButton: {
-    backgroundColor: Colors.orange,
+    backgroundColor: colors.mediumOrange,
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 20,
@@ -238,7 +238,7 @@ const localStyles = StyleSheet.create({
   },
   filterButtonText: {
     fontSize: 14,
-    color: "#333",
+    color: colors.darkGray,
   },
   section: {
     marginTop: 20,

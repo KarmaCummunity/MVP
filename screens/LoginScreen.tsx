@@ -2,7 +2,7 @@ import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Button } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
-import styles from '../globals/Styles'; // Import your styles
+import styles from '../globals/styles'; // Import your styles
 
 export default function LoginScreen({ navigation }: { navigation: NavigationProp<ParamListBase> }) {
   return (

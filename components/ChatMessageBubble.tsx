@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { Message, ChatUser } from '../globals/fakeData'; // Adjust path
-import Colors from '../globals/Colors'; // Assuming you have a Colors file
+import colors from '../globals/colors'; // Assuming you have a Colors file
 
 interface ChatMessageBubbleProps {
   message: Message;
@@ -62,18 +62,18 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     maxWidth: '75%',
     // Shadows
-    shadowColor: '#000',
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 1,
     elevation: 1,
   },
   myBubble: {
-    backgroundColor: Colors.instagramBlue, // Your brand blue/purple
+    backgroundColor: colors.blue, // Your brand blue/purple
     borderBottomRightRadius: 5, // Pointy end
   },
   otherBubble: {
-    backgroundColor: '#E0E0E0', // Light grey for incoming
+    backgroundColor: colors.lightGray, // Light grey for incoming
     borderBottomLeftRadius: 5, // Pointy end
   },
   messageText: {
@@ -81,10 +81,10 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   myText: {
-    color: 'white',
+    color: colors.white,
   },
   otherText: {
-    color: '#333',
+    color: colors.darkGray,
   },
   messageImage: {
     width: 200,

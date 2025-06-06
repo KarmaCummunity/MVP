@@ -7,7 +7,7 @@ import {
   ScrollView,
   StyleSheet,
 } from "react-native";
-import styles from "../globals/Styles";
+import styles from "../globals/styles";
 export default function FirstScreen({
   navigation,
 }: {

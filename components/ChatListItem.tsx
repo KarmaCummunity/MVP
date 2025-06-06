@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { ChatConversation, ChatUser } from '../globals/fakeData'; // Adjust path
-import Colors from '../globals/Colors'; // Assuming you have a Colors file
+import colors from '../globals/colors'; // Assuming you have a Colors file
 
 interface ChatListItemProps {
   conversation: ChatConversation;
@@ -78,9 +78,9 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: Colors.green, // Adjust to your green color
+    backgroundColor: colors.green, // Adjust to your green color
     borderWidth: 2,
-    borderColor: 'white',
+    borderColor: colors.white,
   },
   content: {
     flex: 1,

@@ -17,7 +17,7 @@ import Animated, {
   withDelay,
   Easing,
 } from "react-native-reanimated";
-import { sentences } from "../globals/Constant"; // Assuming this path is correct
+import { sentences } from "../globals/constants"; // Assuming this path is correct
 
 // Get the dimensions of the device window for responsive sizing
 const { width, height } = Dimensions.get("window");

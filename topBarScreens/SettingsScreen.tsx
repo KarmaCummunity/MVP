@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView, Alert, Linking, Platform, SafeAreaView, TouchableOpacity } from 'react-native';
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
 import SettingsItem from '../components/SettingsItem';
-import Colors from '../globals/Colors'; // Adjust path
+import colors from '../globals/colors'; // Adjust path
 import Icon from 'react-native-vector-icons/Ionicons'; // For header back button
 
 export default function SettingsScreen() {
@@ -228,7 +228,7 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
-          <Icon name="arrow-back" size={24} color={Colors.textPrimary} />
+          <Icon name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>הגדרות</Text>
         <View style={styles.headerButton} /> {/* Placeholder for consistent spacing */}
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'stretch',
     writingDirection: 'rtl',
-    backgroundColor: Colors.backgroundPrimary,
+    backgroundColor: colors.backgroundPrimary,
     marginTop: Platform.OS === 'android' ? 30 : 0, // Adjust for Android status bar
     marginBottom: Platform.OS === 'android' ? 40 : 0, // Adjust for Android status bar
   },
@@ -259,14 +259,14 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: Colors.backgroundSecondary,
+    backgroundColor: colors.backgroundSecondary,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
   },
   headerButton: {
     width: 24, // To keep consistent spacing with the icon
@@ -279,15 +279,15 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     alignItems: 'flex-end',
     fontWeight: 'bold',
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: Colors.backgroundPrimary, // Section background color
+    backgroundColor: colors.backgroundPrimary, // Section background color
     marginTop: 10,
     marginBottom: 5,
   },
   sectionSpacer: {
     height: 200, // Space for empty section headers
-    backgroundColor: Colors.backgroundPrimary,
+    backgroundColor: colors.backgroundPrimary,
   }
 });

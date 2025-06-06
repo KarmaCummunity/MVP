@@ -1,7 +1,7 @@
-import styles from "../globals/Styles";
+import styles from "../globals/styles";
 import { NavigationProp, ParamListBase } from "@react-navigation/native";
 import { View, TouchableOpacity, Text, ScrollView, StyleSheet,} from "react-native";
-import Colors from "../globals/Colors";
+import colors from "../globals/colors";
 
 export default function DonationsScreen({
   navigation,
@@ -109,7 +109,7 @@ const localStyles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 12,
-    backgroundColor: Colors.lightOrange,
+    backgroundColor: colors.lightOrange,
   },
   scrollContent: {
     paddingBottom: 24,

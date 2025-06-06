@@ -1,9 +1,9 @@
 import React from 'react'
-import Colors from '../globals/Colors' // Assuming Colors.js is in the same directory or accessible path
+import colors from '../globals/colors' // Assuming colors.js is in the same directory or accessible path
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons'; // For header back button
-import styles from '../globals/Styles';
+import styles from '../globals/styles';
 
 
 export default function AboutKarmaCommunityScreen() {
@@ -16,7 +16,7 @@ export default function AboutKarmaCommunityScreen() {
           onPress={() => navigation.goBack()}
           style={localStyles.headerButton}
         >
-          <Icon name='arrow-back' size={24} color={Colors.textPrimary} />
+          <Icon name='arrow-back' size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>אודות</Text>
         <View style={localStyles.headerButton} />{' '}
@@ -339,16 +339,16 @@ const localStyles = StyleSheet.create({
     flex: 1,
     marginTop: Platform.OS === 'android' ? 30 : 0, // Adjust for Android status bar
     marginBottom: Platform.OS === 'android' ? 40 : 0, // Adjust for Android status bar
-    backgroundColor: Colors.lightBackground // Using lightBackground from your Colors file
+    backgroundColor: colors.lightOrange // Using lightBackground from your Colors file
   },
   container: {
     flex: 1,
     padding: 15,
-    backgroundColor: Colors.lightOrange, // Using white from your Colors file
+    backgroundColor: colors.lightOrange, // Using white from your Colors file
     marginHorizontal: 10,
     marginVertical: 10,
     borderRadius: 8,
-    shadowColor: Colors.black,
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -359,14 +359,14 @@ const localStyles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 10,
-    color: Colors.textPrimary // Using textPrimary
+    color: colors.textPrimary // Using textPrimary
   },
   subtitle: {
     fontSize: 18,
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 20,
-    color: Colors.mediumGray // Using mediumGray
+    color: colors.mediumGray // Using mediumGray
   },
   sectionTitle: {
     fontSize: 22,
@@ -374,9 +374,9 @@ const localStyles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 25,
     marginBottom: 15,
-    color: Colors.darkGray, // Using darkGray
+    color: colors.darkGray, // Using darkGray
     borderBottomWidth: 1,
-    borderBottomColor: Colors.headerBorder, // Using headerBorder
+    borderBottomColor: colors.headerBorder, // Using headerBorder
     paddingBottom: 5
   },
   paragraph: {
@@ -384,7 +384,7 @@ const localStyles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 15,
-    color: Colors.textPrimary // Using textPrimary
+    color: colors.textPrimary // Using textPrimary
   },
   bulletPointContainer: {
     flexDirection: 'row-reverse',
@@ -394,54 +394,54 @@ const localStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginRight: 5,
-    color: Colors.textPrimary // Using textPrimary
+    color: colors.textPrimary // Using textPrimary
   },
   bulletText: {
     flex: 1,
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,
-    color: Colors.textPrimary // Using textPrimary
+    color: colors.textPrimary // Using textPrimary
   },
   challengeSection: {
     marginBottom: 20,
     paddingRight: 10,
     borderRightWidth: 3,
-    borderRightColor: Colors.danger // Using danger for challenges
+    borderRightColor: colors.danger // Using danger for challenges
   },
   challengeTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'right',
     marginBottom: 8,
-    color: Colors.danger // Using danger for challenges
+    color: colors.danger // Using danger for challenges
   },
   solutionSection: {
     marginBottom: 20,
     paddingRight: 10,
     borderRightWidth: 3,
-    borderRightColor: Colors.accent // Using accent for solutions (green)
+    borderRightColor: colors.accent // Using accent for solutions (green)
   },
   solutionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'right',
     marginBottom: 8,
-    color: Colors.accent // Using accent for solutions
+    color: colors.accent // Using accent for solutions
   },
   contactInfo: {
     marginBottom: 15,
     padding: 10,
-    backgroundColor: Colors.offWhite, // Using offWhite
+    backgroundColor: colors.offWhite, // Using offWhite
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: Colors.border // Using border color
+    borderColor: colors.border // Using border color
   },
   contactText: {
     fontSize: 15,
     textAlign: 'right',
     lineHeight: 22,
-    color: Colors.textPrimary // Using textPrimary
+    color: colors.textPrimary // Using textPrimary
   },
   headerButton: {
     width: 24, // To keep consistent spacing with the icon

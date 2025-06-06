@@ -1,11 +1,8 @@
-import { StyleSheet, Dimensions } from "react-native";
-import Colors from "./Colors";
-
+import { StyleSheet, Dimensions, Platform } from "react-native";
+import colors from "./colors";
 
 const { width } = Dimensions.get('window');
 
-// Calculate category button width based on screen dimensions
-const categoryButtonWidth = (width - 60) / 4; // 20px padding on each side, 20px space between buttons
 
 const styles = StyleSheet.create({
   /**
@@ -15,7 +12,7 @@ const styles = StyleSheet.create({
   container_bottom_nav: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: Colors.offWhite,
+    backgroundColor: colors.offWhite,
   },
   /**
    * Style for a subtitle text.
@@ -23,7 +20,7 @@ const styles = StyleSheet.create({
    */
   subTitle: {
     fontSize: 15,
-    color: Colors.black,
+    color: colors.black,
     textAlign: "center",
   },
   /**
@@ -50,7 +47,7 @@ const styles = StyleSheet.create({
    * Safe area view style with a white background for the entire screen.
    */
   safeArea: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.white,
   },
   /**
    * Style for a scroll view, allowing it to take up available space.
@@ -68,7 +65,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.lightGray,
+    borderBottomColor: colors.lightGray,
   },
   /**
    * Style for the main title in the header.
@@ -76,7 +73,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: Colors.darkGray,
+    color: colors.darkGray,
   },
   /**
    * Container for left-aligned header icons.
@@ -119,7 +116,7 @@ const styles = StyleSheet.create({
    */
   mainSectionContainer: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
+    backgroundColor: colors.lightGray,
   },
   /**
    * Title style for sections, bold and centered.
@@ -137,7 +134,7 @@ const styles = StyleSheet.create({
   recentButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: Colors.lightOrange,
+    backgroundColor: colors.lightOrange,
     borderRadius: 15,
     paddingVertical: 15,
     paddingHorizontal: 20,
@@ -147,11 +144,11 @@ const styles = StyleSheet.create({
    * Style for individual recent buttons, with white background, padding, rounded corners, and shadow.
    */
   recentButton: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.white,
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 10,
-    shadowColor: Colors.black,
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -163,7 +160,7 @@ const styles = StyleSheet.create({
   recentButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: Colors.mediumGray,
+    color: colors.mediumGray,
   },
   /**
    * Grid container for all categories, with wrap functionality, centered content, light orange background, and rounded corners.
@@ -173,7 +170,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    backgroundColor: Colors.lightOrange,
+    backgroundColor: colors.lightOrange,
     borderRadius: 15,
     paddingVertical: 15,
     paddingHorizontal: 0,
@@ -182,14 +179,14 @@ const styles = StyleSheet.create({
    * Style for individual category buttons, making them square, centered, with white background, rounded corners, and shadow.
    */
   categoryButton: {
-    backgroundColor: Colors.white,
-    width: categoryButtonWidth,
-    height: categoryButtonWidth,
+    backgroundColor: colors.white,
+    width: '25%',
+    height: '20%',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 10,
     margin: 10,
-    shadowColor: Colors.black,
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -201,7 +198,7 @@ const styles = StyleSheet.create({
   categoryButtonText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: Colors.mediumGray,
+    color: colors.mediumGray,
     textAlign: 'center',
   },
   /**
@@ -211,9 +208,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.white,
     borderTopWidth: 1,
-    borderTopColor: Colors.lightGray,
+    borderTopColor: colors.lightGray,
     paddingVertical: 10,
   },
   /**
@@ -234,14 +231,14 @@ const styles = StyleSheet.create({
    */
   bottomNavText: {
     fontSize: 12,
-    color: Colors.mediumGray,
+    color: colors.mediumGray,
   },
   /**
    * Container for the special center icon in the bottom navigation.
    * Features an orange background, circular shape, lifted position, border, and shadow.
    */
   bottomNavCenterIconContainer: {
-    backgroundColor: Colors.mediumOrange,
+    backgroundColor: colors.mediumOrange,
     borderRadius: 30,
     width: 60,
     height: 60,
@@ -249,8 +246,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: -30,
     borderWidth: 4,
-    borderColor: Colors.lightGray, // Match screen background color
-    shadowColor: Colors.black,
+    borderColor: colors.lightGray, // Match screen background color
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 5,
@@ -261,20 +258,20 @@ const styles = StyleSheet.create({
    */
   bottomNavCenterIcon: {
     fontSize: 30,
-    color: Colors.white,
+    color: colors.white,
   },
   /**
    * Container for search and filter elements with a light orange background.
    */
   searchFilterContainer: {
     padding: 15,
-    backgroundColor: Colors.lightBackground,
+    backgroundColor: colors.lightOrange,
   },
   /**
    * Search box style with white background, rounded corners, and right alignment.
    */
   searchBox: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.white,
     borderRadius: 10,
     padding: 10,
     marginBottom: 10,
@@ -286,7 +283,7 @@ const styles = StyleSheet.create({
   searchText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: Colors.darkOrange,
+    color: colors.darkOrange,
   },
   /**
    * Container for search input fields, arranged in a row.
@@ -301,7 +298,7 @@ const styles = StyleSheet.create({
    */
   searchInput: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.white,
     borderRadius: 10,
     padding: 8,
     marginHorizontal: 5,
@@ -312,7 +309,7 @@ const styles = StyleSheet.create({
    */
   searchIcon: {
     padding: 8,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.white,
     borderRadius: 10,
   },
   /**
@@ -322,7 +319,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingVertical: 10,
-    backgroundColor: Colors.lightBackground,
+    backgroundColor: colors.lightOrange,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
@@ -330,7 +327,7 @@ const styles = StyleSheet.create({
    * Style for individual filter buttons, with orange background, rounded corners, and padding.
    */
   filterButton: {
-    backgroundColor: Colors.darkOrange,
+    backgroundColor: colors.darkOrange,
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 15,
@@ -339,7 +336,7 @@ const styles = StyleSheet.create({
    * Text style for filter buttons.
    */
   filterButtonText: {
-    color: Colors.white,
+    color: colors.white,
     fontWeight: 'bold',
   },
   /**
@@ -347,7 +344,7 @@ const styles = StyleSheet.create({
    */
   inputSection: {
     padding: 15,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.white,
   },
   /**
    * Style for an input field row, with right alignment for content.
@@ -371,7 +368,7 @@ const styles = StyleSheet.create({
    */
   dropdown: {
     borderWidth: 1,
-    borderColor: Colors.lightGray,
+    borderColor: colors.lightGray,
     borderRadius: 8,
     padding: 10,
     flexDirection: 'row',
@@ -384,7 +381,7 @@ const styles = StyleSheet.create({
    */
   section: {
     padding: 15,
-    backgroundColor: Colors.lightBackground,
+    backgroundColor: colors.lightOrange,
     marginTop: 10,
     borderRadius: 20,
     marginHorizontal: 10,
@@ -394,12 +391,12 @@ const styles = StyleSheet.create({
    */
   card: {
     flexDirection: 'row',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.white,
     borderRadius: 15,
     padding: 15,
     marginBottom: 10,
     alignItems: 'center',
-    shadowColor: Colors.black,
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -440,9 +437,15 @@ const styles = StyleSheet.create({
    * Main container style, aligning content to the bottom and with an off-white background.
    */
   container: {
-    justifyContent: "flex-end",
     flex: 1,
-    backgroundColor: Colors.offWhite,
+    ...Platform.select({
+      web: {
+        alignSelf: "center",
+        minWidth: 400, // Minimum width for web to maintain readability
+        maxWidth: 600, // Maximum width for web to prevent stretching
+      },
+    }),
+    backgroundColor: colors.offWhite,
   },
   /**
    * Scroll container with padding for content.
@@ -463,7 +466,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: Colors.black,
+    color: colors.black,
     marginBottom: 8,
     textAlign: 'center',
   },
@@ -491,14 +494,14 @@ const styles = StyleSheet.create({
   bottomSection: {
     padding: 20,
     borderTopWidth: 1,
-    borderColor: Colors.headerBorder,
-    backgroundColor: Colors.pink,
+    borderColor: colors.headerBorder,
+    backgroundColor: colors.pink,
   },
   /**
    * Button style with dark pink background, padding, rounded corners, and centered content.
    */
   button: {
-    backgroundColor: Colors.darkPink,
+    backgroundColor: colors.darkPink,
     paddingVertical: 14,
     borderRadius: 25,
     alignItems: 'center',
@@ -507,7 +510,7 @@ const styles = StyleSheet.create({
    * Text style for buttons.
    */
   buttonText: {
-    color: Colors.white,
+    color: colors.white,
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -527,7 +530,7 @@ const styles = StyleSheet.create({
   formContainer: {
     width: '90%',
     height: '60%',
-    backgroundColor: Colors.vibrantOrange,
+    backgroundColor: colors.vibrantOrange,
     padding: 24,
     borderRadius: 20,
     marginTop: 10,
@@ -537,17 +540,17 @@ const styles = StyleSheet.create({
    * Input field style within forms, with peach background, padding, rounded corners, and white text.
    */
   input: {
-    backgroundColor: Colors.peach,
+    backgroundColor: colors.peach,
     padding: 12,
     borderRadius: 20,
     marginBottom: 12,
-    color: Colors.white,
+    color: colors.white,
   },
   /**
    * Style for password hint text, black, right-aligned, and underlined.
    */
   passwordHint: {
-    color: Colors.black,
+    color: colors.black,
     fontSize: 14,
     textAlign: 'right',
     marginBottom: 16,
@@ -565,7 +568,7 @@ const styles = StyleSheet.create({
    * Style for a primary button.
    */
   primaryButton: {
-    backgroundColor: Colors.accentOrange,
+    backgroundColor: colors.accentOrange,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 20,
@@ -574,7 +577,7 @@ const styles = StyleSheet.create({
    * Style for a secondary button.
    */
   secondaryButton: {
-    backgroundColor: Colors.lightOrange,
+    backgroundColor: colors.lightOrange,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 20,
@@ -584,7 +587,7 @@ const styles = StyleSheet.create({
    */
   orText: {
     textAlign: 'center',
-    color: Colors.black,
+    color: colors.black,
     fontWeight: 'bold',
     marginBottom: 12,
   },
@@ -601,6 +604,16 @@ const styles = StyleSheet.create({
   topContentWrapper: {
     flex: 1,
     justifyContent: 'flex-start',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#666",
+  },
+  errorText: {
+    color: "red",
+    fontSize: 18,
+    textAlign: "center",
   },
 });
 

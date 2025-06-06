@@ -114,3 +114,42 @@ export const sentences = [
     "Explore the world of digits!",
     "Every number is a new adventure.",
   ];
+
+export const FontSizes = {
+    // --- General Text Sizes ---
+    /** Smallest text size, often used for captions or fine print. */
+    caption: 10,
+    /** Typically used for secondary information, dates, or small labels. */
+    small: 12,
+    /** Standard body text size for most paragraphs and descriptions. */
+    body: 14,
+    /** Slightly larger text, often used for subheadings or prominent labels. */
+    medium: 16,
+    /** Larger text, suitable for section titles or important short phrases. */
+    large: 18,
+  
+    // --- Heading Sizes ---
+    /** Primary heading size for main screen titles. */
+    heading1: 24,
+    /** Secondary heading size for major sections. */
+    heading2: 20,
+    /** Tertiary heading size for subsections. */
+    heading3: 18, // Can be same as 'large' if appropriate
+  
+    // --- UI Specific Sizes (if distinct from general text) ---
+    /** Size for button text. */
+    button: 14,
+    /** Size for input field text. */
+    input: 16,
+    /** Size for tab bar labels. */
+    tabLabel: 12,
+    /** Size for icon labels that accompany text. */
+    iconLabel: 12,
+  
+    // --- App-specific adjustments (if needed) ---
+    /** For specific very large numbers or display text */
+    displayLarge: 32,
+    /** For very small UI elements */
+    extraSmall: 8,
+  };
+  
