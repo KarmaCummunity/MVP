@@ -25,7 +25,7 @@ const FilterSortOptions: React.FC<FilterSortOptionsProps> = ({
     <View style={styles.container}>
       <View style={styles.filterContainer}>
         <Text style={styles.label}>Filter:</Text>
-        {['All', 'Pending', 'Completed'].map((filter) => (
+        {['Pending', 'Completed', 'All'].map((filter) => (
           <TouchableOpacity
             key={filter}
             style={[
@@ -48,7 +48,7 @@ const FilterSortOptions: React.FC<FilterSortOptionsProps> = ({
 
       <View style={styles.sortContainer}>
         <Text style={styles.label}>Sort By:</Text>
-        {['createdAt', 'dueDate', 'priority'].map((sortBy) => (
+        {['priority', 'createdAt', 'dueDate'].map((sortBy) => (
           <TouchableOpacity
             key={sortBy}
             style={[

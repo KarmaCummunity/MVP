@@ -29,7 +29,7 @@ const colors = {
 
   // Backgrounds
   backgroundPrimary: '#FFE5D2', // Primary screen background, matches lightOrange
-  backgroundSecondary: '#FFFFFF', // Secondary background, e.g., for cards
+  backgroundSecondary: '#FFF0E0', // Secondary background, e.g., for cards
 
   // Text Colors
   textPrimary: '#333333', // Primary text color, matches darkGray
@@ -58,11 +58,3 @@ const colors = {
 };
 
 export default colors;
-
-// Log for Colors file:
-/*
-// Log: Colors file has been reviewed and updated.
-// Log: Unused color constants like 'green', 'instagramBlue' have been removed.
-// Log: Semantic naming for colors (e.g., textPrimary, backgroundPrimary) has been maintained.
-// Log: Comments added for clarity on color usage.
-*/

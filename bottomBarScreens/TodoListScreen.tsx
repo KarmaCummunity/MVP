@@ -10,14 +10,12 @@ import {
   StatusBar,
   Platform, // Used for StatusBar.currentHeight to adjust for Android
 } from 'react-native';
-
 // --- Local Component Imports ---
 import TaskItem from '../components/TaskItem';
 import AddEditTaskModal from '../components/AddEditTaskModal';
 import FilterSortOptions from '../components/FilterSortOptions';
 import { Task, Filter, SortBy, SortOrder } from '../globals'; // Importing shared types
 import Icon from 'react-native-vector-icons/MaterialIcons'; // Material Design Icons
-
 // --- Firebase Imports ---
 // Ensure 'db' is correctly initialized in your firebaseConfig.ts file
 import { db } from '../config/firebaseConfig';
@@ -47,8 +45,8 @@ const TodoListScreen: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]); // Stores the list of tasks fetched from Firestore
   const [isModalVisible, setIsModalVisible] = useState(false); // Controls visibility of the Add/Edit Task Modal
   const [editingTask, setEditingTask] = useState<Task | null>(null); // Stores the task being edited, null if adding new
-  const [filter, setFilter] = useState<Filter>('All'); // Current filter ('All', 'Pending', 'Completed')
-  const [sortBy, setSortBy] = useState<SortBy>('createdAt'); // Current sort criterion ('createdAt', 'dueDate', 'priority')
+  const [filter, setFilter] = useState<Filter>('Pending'); // Current filter ('All', 'Pending', 'Completed')
+  const [sortBy, setSortBy] = useState<SortBy>('priority'); // Current sort criterion ('createdAt', 'dueDate', 'priority')
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc'); // Current sort order ('asc', 'desc')
 
   // --- Firestore Real-time Data Listener (useEffect) ---
@@ -195,37 +193,6 @@ const TodoListScreen: React.FC = () => {
     setIsModalVisible(true);
   }, []);
 
-  /**
-   * Prompts for confirmation and then deletes all completed tasks from Firestore.
-   */
-  const handleClearCompleted = async () => {
-    Alert.alert(
-      'Clear Completed Tasks',
-      'Are you sure you want to clear all completed tasks?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          onPress: async () => {
-            try {
-              const completedTasks = tasks.filter((task) => task.completed);
-              // Firestore does not have a single "delete all matching query" operation.
-              // We perform individual deletions for each completed task.
-              // For very large numbers, consider using Firestore Batched Writes for efficiency.
-              const deletePromises = completedTasks.map(task => deleteDoc(doc(db, 'tasks', task.id)));
-              await Promise.all(deletePromises); // Wait for all deletions to complete
-              // State update is handled by the onSnapshot listener.
-            } catch (error) {
-              console.error('Error clearing completed tasks:', error);
-              Alert.alert('Error', 'Failed to clear completed tasks.');
-            }
-          },
-          style: 'destructive',
-        },
-      ],
-      { cancelable: true }
-    );
-  };
 
   // --- Filtering and Sorting Logic (Applied Locally to fetched tasks) ---
 
@@ -315,7 +282,7 @@ const TodoListScreen: React.FC = () => {
         contentContainerStyle={styles.listContentContainer}
       />
 
-      {/* Footer buttons for Add Task and Clear Completed */}
+      {/* Footer buttons for Add Task */}
       <View style={styles.footerButtons}>
         <TouchableOpacity
           style={styles.addButton}
@@ -401,25 +368,6 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: '#FFF',
     fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
-  clearCompletedButton: {
-    backgroundColor: '#D85151', // A clear red for destructive action
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 30,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  clearCompletedButtonText: {
-    color: '#FFF',
-    fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 8,
   },

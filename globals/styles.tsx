@@ -12,7 +12,8 @@ const styles = StyleSheet.create({
   container_bottom_nav: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: colors.offWhite,
+    backgroundColor: colors.darkOrange,
+    borderRadius: 300,
   },
   /**
    * Style for a subtitle text.
@@ -28,12 +29,18 @@ const styles = StyleSheet.create({
    * Uses transparent background, aligns items, and adds horizontal padding.
    */
   container_top_bar: {
-    backgroundColor: "transparent",
+    // backgroundColor: "transparent",
+    // backgroundColor: colors.backgroundSecondary,
+    backgroundColor: colors.darkOrange,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 0,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+
+    // borderRadius: 1000,
   },
   /**
    * Generic content container that centers its children both vertically and horizontally.
@@ -47,7 +54,7 @@ const styles = StyleSheet.create({
    * Safe area view style with a white background for the entire screen.
    */
   safeArea: {
-    backgroundColor: colors.white,
+    backgroundColor: 'transparent',
   },
   /**
    * Style for a scroll view, allowing it to take up available space.
@@ -445,7 +452,8 @@ const styles = StyleSheet.create({
         maxWidth: 600, // Maximum width for web to prevent stretching
       },
     }),
-    backgroundColor: colors.offWhite,
+    backgroundColor: colors.backgroundPrimary,
+    // borderRadius
   },
   /**
    * Scroll container with padding for content.

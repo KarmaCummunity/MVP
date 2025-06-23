@@ -1,12 +1,12 @@
-import React from 'react'
-import colors from '../globals/colors' // Assuming colors.js is in the same directory or accessible path
+import React, { memo } from 'react' // Import memo here
+import colors from '../globals/colors'
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons'; // For header back button
+import Icon from 'react-native-vector-icons/Ionicons';
 import styles from '../globals/styles';
 
-
-export default function AboutKarmaCommunityScreen() {
+// Changed this line to use const and wrap with memo
+const AboutKarmaCommunityScreen = memo(() => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   return (
@@ -19,7 +19,7 @@ export default function AboutKarmaCommunityScreen() {
           <Icon name='arrow-back' size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>אודות</Text>
-        <View style={localStyles.headerButton} />{' '}
+        {/* <View style={localStyles.headerButton} />{' '} */}
         {/* Placeholder for consistent spacing */}
       </View>
       <ScrollView style={localStyles.container}>
@@ -332,7 +332,9 @@ export default function AboutKarmaCommunityScreen() {
       </ScrollView>
     </SafeAreaView>
   )
-}
+}); // Closing memo parenthesis and semicolon
+
+export default AboutKarmaCommunityScreen; // Export the const component
 
 const localStyles = StyleSheet.create({
   safeArea: {

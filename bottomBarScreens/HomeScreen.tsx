@@ -1,7 +1,7 @@
 import styles from "../globals/styles";
 import BottomNavigator from "../navigations/BottomNavigator";
 import TopBarNavigator from "../navigations/TopBarNavigator";
-import { View } from "react-native";
+import { View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NavigationProp, ParamListBase } from "@react-navigation/native";
 import BubbleComp from "../components/BubbleComp";
@@ -13,10 +13,12 @@ export default function HomeScreen({
   navigation: NavigationProp<ParamListBase>;
 }) {
   return (
-    <SafeAreaView style={styles.container}>
+    // <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+
       {/* <SearchBar /> */}
       {/* <ProfileScreen /> */}
-        <BubbleComp />
+        {/* <BubbleComp /> */}
     </SafeAreaView>
   );
 }
