@@ -1,5 +1,5 @@
 // components/SettingsItem.tsx
-import React from 'react';
+import React, { memo } from 'react'; // Import memo from React
 import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, Platform } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons'; // Or any other icon set you prefer
 import colors from '../globals/colors'; // Adjust path
@@ -7,7 +7,7 @@ import colors from '../globals/colors'; // Adjust path
 // Define types for the different kinds of settings items
 type SettingItemType = 'navigate' | 'toggle' | 'button' | 'value';
 
-interface SettingsItemProps {
+export interface SettingsItemProps {
   title: string;
   description?: string;
   iconName?: string; // Icon to display on the left
@@ -20,18 +20,10 @@ interface SettingsItemProps {
   children?: React.ReactNode; // For more complex custom content
 }
 
-const SettingsItem: React.FC<SettingsItemProps> = ({
-  title,
-  description,
-  iconName,
-  type,
-  onPress,
-  value,
-  onValueChange,
-  displayValue,
-  isDestructive,
-  children,
-}) => {
+// Wrap the component definition in React.memo
+const SettingsItem: React.FC<SettingsItemProps> = memo((props) => {
+
+  const {title, description, iconName, type, onPress, value, onValueChange, displayValue, isDestructive, children} = props;
   const textColor = isDestructive ? colors.danger : colors.textPrimary;
 
   const renderContent = () => {
@@ -75,16 +67,22 @@ const SettingsItem: React.FC<SettingsItemProps> = ({
         <Icon name={iconName} size={24} color={textColor} style={styles.icon} />
       )}
       <View style={styles.textContainer}>
+        {/* title is a required prop, so no need for title && */}
         <Text style={[styles.title, { color: textColor }]}>{title}</Text>
         {description && <Text style={styles.description}>{description}</Text>}
       </View>
       <View style={styles.rightContent}>
         {renderContent()}
-        {children} {/* Render any custom children passed */}
+        {/*
+          CRUCIAL FIX:
+          Safely render children: If children is a string, wrap it in a <Text> component.
+          Otherwise, render it as is (it's already a ReactNode, e.g., an element, null, etc.).
+        */}
+        {typeof children === 'string' ? <Text>{children}</Text> : children}
       </View>
     </TouchableOpacity>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

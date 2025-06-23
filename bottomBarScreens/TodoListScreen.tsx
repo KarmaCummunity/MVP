@@ -54,6 +54,17 @@ const TodoListScreen: React.FC = () => {
   // to the 'tasks' collection in Firestore. It keeps the local 'tasks' state
   // synchronized with the database.
   useEffect(() => {
+
+    const onBackPress = () => {
+      // You can call a function here if you want to do something,
+      // but if you want to do nothing, just return true.
+      console.log('Android back button pressed, doing nothing.');
+      // Alert.alert('Back Press', 'You pressed the back button!'); // Optional: for testing
+
+      // Return true to prevent default back button behavior (e.g., navigating back)
+      return true;
+    };
+    
     // Get a reference to the 'tasks' collection
     const tasksCollectionRef = collection(db, 'tasks');
 
@@ -244,6 +255,8 @@ const TodoListScreen: React.FC = () => {
   // Combine filtering and sorting to get the tasks currently displayed
   const displayedTasks = getSortedTasks(getFilteredTasks());
 
+
+  
   // --- Component JSX ---
   return (
     <SafeAreaView style={styles.container}>
@@ -292,7 +305,7 @@ const TodoListScreen: React.FC = () => {
           }}
         >
           <Icon name="add" size={30} color="#FFF" />
-          <Text style={styles.addButtonText}>Add Task</Text>
+          {/* <Text style={styles.addButtonText}>Add Task</Text> */}
         </TouchableOpacity>
       </View>
 
@@ -312,7 +325,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.lightOrange,
-    // Adjust paddingTop based on platform for correct status bar spacing
     // paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   header: {
@@ -345,9 +357,10 @@ const styles = StyleSheet.create({
   },
   footerButtons: {
     position: 'absolute',
-    bottom: 20,
+    borderRadius: 400,
+    bottom: 45,
     left: 0,
-    right: 0,
+    right: '80%',
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingHorizontal: 15,

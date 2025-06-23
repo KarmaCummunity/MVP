@@ -22,7 +22,7 @@ const colors = {
   darkPink: '#F06292', // A strong, darker pink
 
   // General UI Colors (can be mapped to the app's palette if desired)
-  primary: '#007BFF', // A general app primary color (currently not used but kept for general app design)
+  primaryBlue: '#007BFF', // A general app primary color (currently not used but kept for general app design)
   secondary: '#6c757d', // Muted secondary color (currently not used)
   accent: '#28a745', // For success, active states (currently not used)
   danger: '#dc3545', // For destructive actions (currently not used)

@@ -107,7 +107,7 @@ export const charityNames: string[] = [
     "מסע של אור - עמותה לליווי מטופלים אונקולוגיים"
   ];
 
-export const sentences = [
+export const sentences: string[] = [
     "1Tap a bubble to reveal its power!",
     "Numbers have a unique story to tell.",
     "What's your favorite number?",
@@ -152,4 +152,38 @@ export const FontSizes = {
     /** For very small UI elements */
     extraSmall: 8,
   };
+ 
   
+// For searching 
+export const filterOptions: string[] = [
+  "לפי מיקום",
+  "לפי סוג תרומה",
+  "לפי גיל",
+  "לפי מגדר",
+  "לפי מצב משפחתי",
+  "לפי מצב כלכלי",
+  "לפי מצב בריאותי",
+  "לפי תחומי עניין",
+  "לפי מועד תרומה אחרון",
+  "לפי תאריך",
+  "לפי קטגוריה",
+  "לפי רלוונטיות",
+];
+
+export const sortOptions: string[] = [
+  "מהחדש לישן", 
+  "מהישן לחדש", 
+  "אלפביתי",
+  "לפי מיקום",
+  "לפי סוג תרומה",
+  "לפי גיל",
+  "לפי מגדר",
+  "לפי מצב משפחתי",
+  "לפי מצב כלכלי",
+  "לפי מצב בריאותי",
+  "לפי תחומי עניין",
+  "לפי מועד תרומה אחרון",
+  "לפי תאריך",
+  "לפי קטגוריה",
+  "לפי רלוונטיות",
+];

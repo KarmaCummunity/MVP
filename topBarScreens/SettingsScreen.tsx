@@ -7,7 +7,7 @@ import colors from '../globals/colors'; // Adjust path
 import Icon from 'react-native-vector-icons/Ionicons'; // For header back button
 
 export default function SettingsScreen() {
-  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const navigation = useNavigation();
 
   // State for toggle settings
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(true);

@@ -55,6 +55,7 @@ const styles = StyleSheet.create({
    */
   safeArea: {
     backgroundColor: 'transparent',
+    flex: 1,
   },
   /**
    * Style for a scroll view, allowing it to take up available space.

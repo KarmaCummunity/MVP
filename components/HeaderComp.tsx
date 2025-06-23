@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Platform } from "react-native";
 import SearchBar from "../components/SearchBar";
 import MenuComp from "../components/MenuComp";
 import ModeToggleButton from "../components/ModeToggleButton";
-import Colors from "../globals/colors";
 interface HeaderSectionProps {
   mode: "מחפש" | "מציע";
   menuOptions: string[];
@@ -31,7 +30,8 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
 const headerStyles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: 5,
-    paddingTop: 12,
+    paddingTop: 10,
+    
     // Set a consistent paddingBottom for all platforms
     paddingBottom: Platform.select({
       ios: 80,       // For iOS
@@ -45,7 +45,6 @@ const headerStyles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    // marginBottom: 1,
   },
 });
 
