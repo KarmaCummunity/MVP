@@ -240,7 +240,7 @@ const SearchBar = () => {
                 <Text style={localStyles.selectedFilterSortButtonText}>
                   {filter}
                 </Text>
-                <Ionicons name="close-circle" size={16} color={colors.white} />
+                <Ionicons name="close-circle" size={15} color={colors.white} />
               </TouchableOpacity>
             ))}
           </ScrollView>

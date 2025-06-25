@@ -187,3 +187,10 @@ export const sortOptions: string[] = [
   "לפי קטגוריה",
   "לפי רלוונטיות",
 ];
+
+export const filter_for_trumps: string[] = [
+  'לפי מיקום',
+  'לפי סוג תרומה',
+  'לפי גיל',
+  'לפי מגדר',
+]

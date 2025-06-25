@@ -259,7 +259,7 @@ const TodoListScreen: React.FC = () => {
   
   // --- Component JSX ---
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={localStyles.container}>
       {/* Status Bar configuration */}
       <StatusBar barStyle="dark-content" backgroundColor="#F8F8F8" />
 
@@ -287,24 +287,24 @@ const TodoListScreen: React.FC = () => {
         )}
         // Component to show when the list is empty
         ListEmptyComponent={
-          <View style={styles.emptyListContainer}>
-            <Text style={styles.emptyListText}>No tasks yet! Add one to get started.</Text>
-            <Icon name="event-note" size={50} color="#ccc" style={styles.emptyListIcon} />
+          <View style={localStyles.emptyListContainer}>
+            <Text style={localStyles.emptyListText}>No tasks yet! Add one to get started.</Text>
+            <Icon name="event-note" size={50} color="#ccc" style={localStyles.emptyListIcon} />
           </View>
         }
-        contentContainerStyle={styles.listContentContainer}
+        contentContainerStyle={localStyles.listContentContainer}
       />
 
       {/* Footer buttons for Add Task */}
-      <View style={styles.footerButtons}>
+      <View style={localStyles.footerButtons}>
         <TouchableOpacity
-          style={styles.addButton}
+          style={localStyles.addButton}
           onPress={() => {
             setEditingTask(null); // Clear any editing state for new task
             setIsModalVisible(true); // Open the Add/Edit modal
           }}
         >
-          <Icon name="add" size={30} color="#FFF" />
+          <Icon name="add" size={15} color='white' />
           {/* <Text style={styles.addButtonText}>Add Task</Text> */}
         </TouchableOpacity>
       </View>
@@ -321,7 +321,7 @@ const TodoListScreen: React.FC = () => {
 };
 
 // --- StyleSheet for component styling ---
-const styles = StyleSheet.create({
+const localStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.lightOrange,
@@ -359,11 +359,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderRadius: 400,
     bottom: 45,
-    left: 0,
-    right: '80%',
+    left: '80%',
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingHorizontal: 15,
   },
   addButton: {
     backgroundColor: '#007AFF', // Standard iOS blue

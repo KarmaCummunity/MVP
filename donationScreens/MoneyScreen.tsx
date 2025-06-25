@@ -64,64 +64,8 @@ export default function MoneyScreen({
   };
 
   // Content that will always appear at the top of the scrollable area
-  const ListHeader = () => (
-    <View>
-      {/* Dropdowns */}
-      <View style={localStyles.dropdownContainer1}>
-        <AutocompleteDropdownComp
-          label="למי ?"
-          selectedValue={selectedRecipient}
-          onValueChange={(val) => setSelectedRecipient(val)}
-          options={charityNames}
-        />
-      </View>
-      <View style={localStyles.dropdownContainer2}>
-        <AutocompleteDropdownComp
-          label="כמה ?"
-          selectedValue={selectedAmount}
-          onValueChange={(val) => setSelectedAmount(val)}
-          options={amountOptions}
-        />
-      </View>
-
-      {/* Donate Button */}
-      <TouchableOpacity
-        style={localStyles.donateButton}
-        onPress={handleDonate}
-      >
-        <Text style={localStyles.donateButtonText}>תרום</Text>
-      </TouchableOpacity>
-
-      {/* Recommended Section */}
-      <View style={localStyles.section}>
-        <Text style={localStyles.sectionTitle}>מומלצים:</Text>
-        {/* Horizontal ScrollView for Recommended Cards */}
-        <ScrollView
-          horizontal={true}
-          style={localStyles.cardListScrollView}
-          showsHorizontalScrollIndicator={false}
-        >
-          {[1, 2, 3, 4, 5].map((_, i) => (
-            <View style={localStyles.card} key={`rec-${i}`}>
-              <Image
-                source={{ uri: "https://via.placeholder.com/50" }}
-                style={localStyles.cardImage}
-              />
-              <View style={localStyles.cardContent}>
-                <Text style={localStyles.cardTitle}>JGive {i + 1}</Text>
-                <Text style={localStyles.cardDescription}>
-                  אצלנו התרומה שלך שווה יותר
-                </Text>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Separator if needed before "All" section */}
-      {/* <View style={{ height: 20 }} /> */}
-    </View>
-  );
+  //  const ListHeader = () => (
+  //  );
 
   // Data for the FlatList's main content (can be simplified if only one section remains)
   const mainContentData = [
@@ -152,10 +96,70 @@ export default function MoneyScreen({
 
         {/* Changed to FlatList for the main scrollable content */}
         <FlatList
+          nestedScrollEnabled={true}
           data={mainContentData} // Data for the main FlatList (the "All" section)
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={localStyles.section}>
+              <View>
+                {/* Dropdowns */}
+                <View style={localStyles.dropdownContainer1}>
+                  <AutocompleteDropdownComp
+                    label="למי ?"
+                    selectedValue={selectedRecipient}
+                    onValueChange={(val) => setSelectedRecipient(val)}
+                    options={charityNames}
+                  />
+                </View>
+                <View style={localStyles.dropdownContainer2}>
+                  <AutocompleteDropdownComp
+                    label="כמה ?"
+                    selectedValue={selectedAmount}
+                    onValueChange={(val) => setSelectedAmount(val)}
+                    options={amountOptions}
+                  />
+                </View>
+
+                {/* Donate Button */}
+                <TouchableOpacity
+                  style={localStyles.donateButton}
+                  onPress={handleDonate}
+                >
+                  <Text style={localStyles.donateButtonText}>תרום</Text>
+                </TouchableOpacity>
+
+                {/* Recommended Section */}
+                <View style={localStyles.section}>
+                  <Text style={localStyles.sectionTitle}>מומלצים:</Text>
+                  {/* Horizontal ScrollView for Recommended Cards */}
+                  <ScrollView
+                    horizontal={true}
+                    style={localStyles.cardListScrollView}
+                    showsHorizontalScrollIndicator={false}
+                  >
+                    {[1, 2, 3, 4, 5].map((_, i) => (
+                      <View style={localStyles.card} key={`rec-${i}`}>
+                        <Image
+                          source={{ uri: "https://via.placeholder.com/50" }}
+                          style={localStyles.cardImage}
+                        />
+                        <View style={localStyles.cardContent}>
+                          <Text style={localStyles.cardTitle}>
+                            JGive {i + 1}
+                          </Text>
+                          <Text style={localStyles.cardDescription}>
+                            אצלנו התרומה שלך שווה יותר
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                {/* Separator if needed before "All" section */}
+                {/* <View style={{ height: 20 }} /> */}
+              </View>
+
               <Text style={localStyles.sectionTitle}>{item.title}</Text>
               {/* Horizontal ScrollView for All Cards */}
               <ScrollView
@@ -180,7 +184,7 @@ export default function MoneyScreen({
               </ScrollView>
             </View>
           )}
-          ListHeaderComponent={ListHeader} // All content above "All" section
+          // ListHeaderComponent={ListHeader} // All content above "All" section
           // You can also add ListFooterComponent if you have content below the main list
           showsVerticalScrollIndicator={false} // Hide main scrollbar
           contentContainerStyle={localStyles.flatListContentContainer} // Apply padding here

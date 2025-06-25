@@ -52,7 +52,7 @@ export default function BottomNavigator() {
             // shadowRadius: 3,
             height: 40, // Optional: fixed height for consistency
             backgroundColor: colors.backgroundPrimary, // Set the background color to transparent
-            opacity: 0.9, // Optional: adjust opacity for a more subtle look
+            // opacity: 0.9, // Optional: adjust opacity for a more subtle look
           },
         })}
       >

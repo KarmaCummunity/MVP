@@ -12,6 +12,7 @@ import { Picker } from "@react-native-picker/picker";
 // import MenuComp from "../components/MenuComp"; // Not used in provided snippet
 // import ModeToggleButton from "../components/ModeToggleButton"; // Not used in provided snippet
 import HeaderComp from "../components/HeaderComp";
+import { filter_for_trumps } from "../globals/constants";
 
 const dropdownOptions = {
   to: ["תל אביב", "ירושלים", "חיפה"],
@@ -79,10 +80,11 @@ export default function TrumpScreen() {
     <SafeAreaView style={localStyles.safeArea}>
       {/* New Wrapper View */}
       <View style={localStyles.wrapper}>
-        <View style={localStyles.container}>
+        {/* <View style={localStyles.container}> */}
           {/* Replaced with HeaderSection component */}
           <HeaderComp
             mode={mode}
+            menuOptions={filter_for_trumps}
             onToggleMode={toggleMode}
             onSelectMenuItem={handleSelectMenuItem}
           />
@@ -143,7 +145,7 @@ export default function TrumpScreen() {
             ))}
           </ScrollView>
         </View>
-      </View>
+      {/* </View> */}
     </SafeAreaView>
   );
 }

@@ -88,6 +88,7 @@ const AutocompleteDropdownComp: React.FC<AutocompleteDropdownProps> = ({
         />
         {showSuggestions && filteredOptions.length > 0 && (
           <FlatList
+            nestedScrollEnabled={true}
             data={filteredOptions}
             keyExtractor={(item) => item}
             renderItem={({ item }) => (
@@ -142,7 +143,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     backgroundColor: "white",
     borderRadius: 8,
-    position: 'absolute', // Position suggestions over other content
+    // position: 'absolute', // Position suggestions over other content
     width: '100%',
     top: 40, // Position right below the input
     elevation: 3, // Android shadow
@@ -151,6 +152,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     zIndex: 100, // Make this very high to guarantee it's on top
+    overflow: 'hidden',
   },
   suggestionItem: {
     padding: 10,
