@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   TextInput,
@@ -8,10 +8,15 @@ import {
   Modal,
   ScrollView,
   Platform,
+  Alert, // Use Alert for messages instead of alert()
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import colors from "../globals/colors";
-import { filterOptions, sortOptions } from "../globals/constants";
+import { Ionicons } from "@expo/vector-icons"; // Ensure @expo/vector-icons is installed
+import colors from "../globals/colors"; // Ensure this path is correct
+import { filterOptions, sortOptions } from "../globals/constants"; // Ensure this path is correct
+
+interface SearchBarProps {
+  onHasActiveConditionsChange: (isActive: boolean) => void;
+}
 
 const SearchBar = () => {
   const [searchText, setSearchText] = useState("");
@@ -19,13 +24,45 @@ const SearchBar = () => {
   const [isSortModalVisible, setIsSortModalVisible] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [selectedSorts, setSelectedSorts] = useState<string[]>([]);
+ // New state to track if SearchBar has active filters/sorts
+ const [hasActiveConditions, setHasActiveConditions] = useState<boolean>(false);
+
+ // Callback function to be passed to SearchBar
+ const handleHasActiveConditionsChange = (isActive: boolean) => {
+   setHasActiveConditions(isActive);
+ };
+
+ // Determine paddingBottom based on hasActiveConditions
+ const getPaddingBottom = () => {
+   if (hasActiveConditions) {
+     // If there are filters/sorts, provide less padding to avoid excessive space
+     return Platform.select({
+       ios: 20,
+       android: 0,
+       web: 0,
+     });
+   } else {
+     // If no filters/sorts, provide more padding for the static buttons row
+     return Platform.select({
+       ios: 80,
+       android: 0,
+       web: 0, // Assuming web might handle spacing differently
+     });
+   }
+ };
+
+  // Effect to inform parent about active conditions
+  useEffect(() => {
+    const hasActive = selectedFilters.length > 0 || selectedSorts.length > 0;
+    handleHasActiveConditionsChange(hasActive);
+  }, [selectedFilters, selectedSorts]); // Add onHasActiveConditionsChange to dependencies
 
   const handleSearch = () => {
     if (searchText.trim() !== "") {
-      alert(`מחפש: ${searchText}`);
+      Alert.alert(`מחפש: ${searchText}`); // Changed to Alert.alert
       console.log("Searching with:", { searchText, selectedFilters, selectedSorts });
     } else {
-      alert("אנא הכנס טקסט לחיפוש.");
+      Alert.alert("אנא הכנס טקסט לחיפוש."); // Changed to Alert.alert
     }
   };
 
@@ -41,10 +78,11 @@ const SearchBar = () => {
 
   const handleSortSelection = (option: string) => {
     setSelectedSorts((prevSorts) => {
+      // For sort, assuming only one can be selected at a time, or none
       if (prevSorts.includes(option)) {
-        return [];
+        return []; // Deselect if already selected
       } else {
-        return [option];
+        return [option]; // Select new option
       }
     });
   };
@@ -56,26 +94,12 @@ const SearchBar = () => {
   };
 
   const removeSort = (sortToRemove: string) => {
-    setSelectedSorts((prevSorts) =>
-      prevSorts.filter((sort) => sort !== sortToRemove)
-    );
+    setSelectedSorts([]); // Remove all sorts, as typically only one can be active
   };
 
   const isFilterSelected = (option: string) => selectedFilters.includes(option);
   const isSortSelected = (option: string) => selectedSorts.includes(option);
 
-  const staticFilterButtons = [
-    "הטבות",
-    "אמצעי תשלום",
-    "ילדים",
-    "קרוב אליי",
-    "עברו עימות",
-    "רק מתנדבים",
-    "החזר מס",
-    "מרצנדייז",
-  ];
-
-  const showStaticFilters = selectedFilters.length === 0 && selectedSorts.length === 0;
 
   return (
     <View style={localStyles.container}>
@@ -272,25 +296,7 @@ const SearchBar = () => {
         </View>
       )}
 
-      {/* --- Static Filter Buttons Row (conditionally rendered) --- */}
-      {showStaticFilters && (
-        <View style={localStyles.staticRowWrapper}>
-          <ScrollView
-            horizontal={true}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={localStyles.staticButtonsContainer}
-          >
-            {staticFilterButtons.map((label, index) => (
-              <TouchableOpacity
-                key={label + index}
-                style={localStyles.staticFilterButton}
-              >
-                <Text style={localStyles.staticFilterButtonText}>{label}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+     
     </View>
   );
 };
@@ -298,23 +304,27 @@ const SearchBar = () => {
 const localStyles = StyleSheet.create({
   container: {
     backgroundColor: "transparent",
-    flex: 1,
     width: "100%",
-    paddingBottom: 10,
+    // paddingBottom: 10,
+    // Note: flex: 1 removed as it can interfere with parent layout if not carefully managed.
+    // The height of SearchBar will be determined by its content.
   },
   searchBarContainer: {
     flexDirection: "row-reverse",
     alignItems: "center",
+    alignSelf: "center",
     backgroundColor: "#FFDAB9",
     borderRadius: 30,
     marginHorizontal: 20,
-    marginTop: 15,
-    height: 55,
+    marginTop: 10,
+    // height: 55,
+    flex: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    paddingVertical: 3,
   },
   buttonContainer: {
     backgroundColor: "#FFEFD5",
@@ -413,9 +423,7 @@ const localStyles = StyleSheet.create({
     flexDirection: "row-reverse",
     marginHorizontal: 10,
     marginTop: 5,
-    // Add minHeight to ensure it's visible even if content is small
-    minHeight: 30, // A minimum height for the wrapper
-    // The ScrollView inside will then take its content size or the height of the wrapper
+    // minHeight: 20,
   },
   rowLabel: {
     fontSize: 12,
@@ -430,8 +438,6 @@ const localStyles = StyleSheet.create({
     gap: 8,
     paddingRight: 10,
     alignItems: 'center',
-    // flexGrow is crucial here for horizontal ScrollViews on Android
-    // It allows the content container to grow within the ScrollView's bounds
     flexGrow: 1,
   },
   selectedFilterSortButton: {
@@ -458,8 +464,7 @@ const localStyles = StyleSheet.create({
   staticRowWrapper: {
     marginTop: 10,
     paddingBottom: 10,
-    // Add minHeight here as well for consistency
-    minHeight: 40, // A minimum height for the wrapper
+    minHeight: 40,
   },
   staticButtonsContainer: {
     flexDirection: "row",
@@ -467,7 +472,6 @@ const localStyles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     paddingHorizontal: 15,
-    // Apply flexGrow here too
     flexGrow: 1,
   },
   staticFilterButton: {

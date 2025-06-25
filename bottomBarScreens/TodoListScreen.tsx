@@ -358,7 +358,7 @@ const localStyles = StyleSheet.create({
   footerButtons: {
     position: 'absolute',
     borderRadius: 400,
-    bottom: 45,
+    bottom: 65,
     left: '80%',
     flexDirection: 'row',
     justifyContent: 'space-around',

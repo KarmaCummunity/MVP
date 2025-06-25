@@ -17,6 +17,7 @@ import HeaderComp from "../components/HeaderComp";
 import { charityNames } from "../globals/constants"; // Adjusted import path
 import colors from "../globals/colors";
 import AutocompleteDropdownComp from "../components/AutocompleteDropdownComp"; // Corrected component import
+import styles from "../globals/styles";
 
 const options = [
   "הוראות קבע",
@@ -61,7 +62,7 @@ export default function MoneyScreen({
 
   const toggleMode = (): void => {
     // console.log("Toggling mode" + mode);
-    setMode((prev) => (prev === "מחפש" ? "מציע" : "מחפש")); 
+    setMode((prev) => (prev === "מחפש" ? "מציע" : "מחפש"));
   };
 
   const mainContentData = [
@@ -92,7 +93,7 @@ export default function MoneyScreen({
 
         {/* Changed to FlatList for the main scrollable content */}
         <FlatList
-          nestedScrollEnabled={true}
+          nestedScrollEnabled={false}
           data={mainContentData} // Data for the main FlatList (the "All" section)
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
@@ -134,20 +135,26 @@ export default function MoneyScreen({
                     showsHorizontalScrollIndicator={false}
                   >
                     {[1, 2, 3, 4, 5].map((_, i) => (
-                      <View style={localStyles.card} key={`rec-${i}`}>
-                        <Image
-                          source={{ uri: "https://via.placeholder.com/50" }}
-                          style={localStyles.cardImage}
-                        />
-                        <View style={localStyles.cardContent}>
-                          <Text style={localStyles.cardTitle}>
-                            JGive {i + 1}
-                          </Text>
-                          <Text style={localStyles.cardDescription}>
-                            אצלנו התרומה שלך שווה יותר
-                          </Text>
+                      <TouchableOpacity onPress={ () => 
+                        // console.log("fgdfg")
+                        navigation.navigate("WebViewScreen")
+                      }>
+                        <View style={localStyles.card} key={`rec-${i}`}>
+                          <Image
+                            source={require("../assets/images/Jgive_Logo.png")}
+                            resizeMode="contain"
+                            style={localStyles.cardImage}
+                          />
+                          <View style={localStyles.cardContent}>
+                            <Text style={localStyles.cardTitle}>
+                              JGive {i + 1}
+                            </Text>
+                            <Text style={localStyles.cardDescription}>
+                              אצלנו התרומה שלך שווה יותר
+                            </Text>
+                          </View>
                         </View>
-                      </View>
+                      </TouchableOpacity>
                     ))}
                   </ScrollView>
                 </View>
@@ -239,8 +246,7 @@ const localStyles = StyleSheet.create({
     color: colors.darkGray,
   },
   section: {
-    marginTop: 20,
-    // flex: 1, // Remove flex:1 if it was causing issues with FlatList item sizing
+    // marginTop: 5,
   },
   sectionTitle: {
     fontWeight: "bold",
@@ -278,8 +284,8 @@ const localStyles = StyleSheet.create({
     flexShrink: 0,
   },
   cardImage: {
-    width: 50,
-    height: 50,
+    width: 70,
+    height: 70,
     borderRadius: 25,
     marginRight: 10,
   },
@@ -317,11 +323,13 @@ const localStyles = StyleSheet.create({
     color: "#6B7280",
   },
   dropdownContainer1: {
-    marginBottom: 12,
-    zIndex: 12, // Needs to be higher than other elements that might overlap
+    marginBottom: 10,
+    flex: 1,
+    zIndex: 0, // Needs to be higher than other elements that might overlap
   },
   dropdownContainer2: {
+    flex: 1,
     marginBottom: 24,
-    zIndex: 11, // Needs to be higher than other elements that might overlap, but lower than dropdown1
+    zIndex: 0, // Needs to be higher than other elements that might overlap, but lower than dropdown1
   },
 });

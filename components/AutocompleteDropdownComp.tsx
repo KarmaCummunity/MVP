@@ -1,169 +1,199 @@
+// components/AutocompleteDropdownComp.tsx
 import React, { useState } from "react";
 import {
   View,
   Text,
-  TextInput, // Import TextInput
-  StyleSheet,
+  TextInput,
   TouchableOpacity,
-  FlatList, // Import FlatList for efficient list rendering
+  FlatList,
+  StyleSheet,
+  Modal,
+  Keyboard,
 } from "react-native";
+import Icon from "react-native-vector-icons/MaterialIcons"; // You'll need to install this library
 
-interface AutocompleteDropdownProps {
+interface AutocompleteDropdownCompProps {
   label: string;
-  selectedValue: string; // This will now represent the current input value
+  selectedValue: string;
   onValueChange: (value: string) => void;
-  options: string[]; // The list of all possible suggestions
+  options: string[];
+  placeholder?: string;
 }
 
-const AutocompleteDropdownComp: React.FC<AutocompleteDropdownProps> = ({
+export default function AutocompleteDropdownComp({
   label,
   selectedValue,
   onValueChange,
   options,
-}) => {
-  const [inputValue, setInputValue] = useState(selectedValue);
-  const [filteredOptions, setFilteredOptions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  placeholder = "בחר...",
+}: AutocompleteDropdownCompProps) {
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Effect to update internal input value when selectedValue prop changes
-  // This is useful if the parent component sets the value programmatically
-  React.useEffect(() => {
-    setInputValue(selectedValue);
-  }, [selectedValue]);
-
-  const handleInputChange = (text: string) => {
-    setInputValue(text);
-    onValueChange(text); // Immediately update parent with current input
-
-    if (text.length > 0) {
-      const filtered = options.filter((option) =>
-        option.toLowerCase().includes(text.toLowerCase())
-      );
-      setFilteredOptions(filtered);
-      setShowSuggestions(true);
-    } else {
-      setFilteredOptions([]);
-      setShowSuggestions(false);
-    }
-  };
+  const filteredOptions = options.filter((option) =>
+    option.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleSelectOption = (option: string) => {
-    setInputValue(option);
-    onValueChange(option); // Update parent with selected option
-    setShowSuggestions(false); // Hide suggestions after selection
-    setFilteredOptions([]); // Clear filtered options
-  };
-
-  const handleInputFocus = () => {
-    // Show suggestions on focus if there's existing input or if you want to show all options initially
-    if (inputValue.length > 0) {
-        handleInputChange(inputValue); // Re-filter based on current value
-    } else {
-        setFilteredOptions(options); // Show all options if input is empty
-    }
-    setShowSuggestions(true);
-  };
-
-  const handleInputBlur = () => {
-    // A small delay helps if you have TouchableOpacity inside FlatList that needs to register the press
-    setTimeout(() => {
-      setShowSuggestions(false);
-      // Optional: If input doesn't match an option, you might want to clear it or leave it as free text
-      // For now, we leave it as free text if no exact match was selected.
-    }, 100);
+    onValueChange(option);
+    setSearchTerm(option); // Set the search term to the selected value
+    setIsModalVisible(false);
+    Keyboard.dismiss(); // Dismiss the keyboard when an option is selected
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.inputContainer}>
+    <View style={dropdownStyles.container}>
+      <Text style={dropdownStyles.label}>{label}</Text>
+      <TouchableOpacity
+        style={dropdownStyles.inputContainer}
+        onPress={() => setIsModalVisible(true)}
+        activeOpacity={0.7}
+      >
         <TextInput
-          style={styles.input}
-          value={inputValue}
-          onChangeText={handleInputChange}
-          onFocus={handleInputFocus}
-          onBlur={handleInputBlur}
-          placeholder={`הכנס ${label.replace('?', '')}...`}
+          style={dropdownStyles.textInput}
+          value={searchTerm || selectedValue} // Display search term or selected value
+          placeholder={placeholder}
           placeholderTextColor="#999"
+          editable={false} // Make it not directly editable, only through the modal
         />
-        {showSuggestions && filteredOptions.length > 0 && (
-          <FlatList
-            nestedScrollEnabled={true}
-            data={filteredOptions}
-            keyExtractor={(item) => item}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.suggestionItem}
-                onPress={() => handleSelectOption(item)}
-              >
-                <Text style={styles.suggestionText}>{item}</Text>
+        <Icon
+          name={isModalVisible ? "arrow-drop-up" : "arrow-drop-down"}
+          size={24}
+          color="#666"
+        />
+      </TouchableOpacity>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isModalVisible}
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={dropdownStyles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => {
+            setIsModalVisible(false);
+            Keyboard.dismiss();
+          }} // Dismiss modal and keyboard on overlay press
+        >
+          <View style={dropdownStyles.modalContent}>
+            <View style={dropdownStyles.searchContainer}>
+              <Icon name="search" size={20} color="#888" style={{ marginRight: 8 }} />
+              <TextInput
+                style={dropdownStyles.searchInput}
+                placeholder="חפש..."
+                placeholderTextColor="#999"
+                value={searchTerm}
+                onChangeText={setSearchTerm}
+                autoFocus={true} // Focus input when modal opens
+              />
+              <TouchableOpacity onPress={() => setIsModalVisible(false)}>
+                <Icon name="close" size={24} color="#666" />
               </TouchableOpacity>
-            )}
-            style={styles.suggestionsList}
-            // You might want to limit the height of the suggestions list
-            // to prevent it from taking up too much screen space.
-            // maxHeight: 150, // Example max height
-            // You can also use `keyboardShouldPersistTaps='always'` on the main ScrollView
-            // or here if the keyboard interferes with suggestion selection.
-          />
-        )}
-      </View>
+            </View>
+
+            <FlatList
+              data={filteredOptions}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={dropdownStyles.optionItem}
+                  onPress={() => handleSelectOption(item)}
+                >
+                  <Text style={dropdownStyles.optionText}>{item}</Text>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <Text style={dropdownStyles.noOptionsText}>אין תוצאות</Text>
+              }
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
-};
+}
 
-const styles = StyleSheet.create({
+const dropdownStyles = StyleSheet.create({
   container: {
-    marginBottom: 10,
-    zIndex: 10, 
+    // marginBottom: 10,
+    zIndex: 1, // Ensure dropdown is above other elements
   },
   label: {
     fontSize: 16,
-    marginBottom: 5,
-    color: '#333',
-    textAlign: 'right', // For rtl
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 8,
+    textAlign: "right", // Align label to the right
   },
   inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 8,
-    backgroundColor: "white",
-    zIndex: 1, // Ensure suggestions appear above other content
-  },
-  input: {
-    height: 40,
-    paddingHorizontal: 10,
-    fontSize: 16,
-    textAlign: 'right', // For rtl
-    writingDirection: 'rtl', // Explicit rtl text direction
-  },
-  suggestionsList: {
-    maxHeight: 150, // Limit height of suggestions list
-    borderColor: "#D1D5DB",
-    borderTopWidth: 1,
-    backgroundColor: "white",
-    borderRadius: 8,
-    // position: 'absolute', // Position suggestions over other content
-    width: '100%',
-    top: 40, // Position right below the input
-    elevation: 3, // Android shadow
-    shadowColor: '#000', // iOS shadow
+    borderColor: "#ddd",
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    zIndex: 100, // Make this very high to guarantee it's on top
-    overflow: 'hidden',
+    shadowRadius: 4,
+    elevation: 3,
   },
-  suggestionItem: {
-    padding: 10,
+  textInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#333",
+    textAlign: "right", // Align text to the right
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    width: "90%",
+    maxHeight: "70%",
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    paddingBottom: 10,
+    marginBottom: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 8,
+    textAlign: "right", // Align search input text to the right
+  },
+  optionItem: {
+    paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
-  suggestionText: {
+  optionText: {
     fontSize: 16,
-    textAlign: 'right', // For rtl
-    writingDirection: 'rtl', // Explicit rtl text direction
+    color: "#333",
+    textAlign: "right", // Align option text to the right
+  },
+  noOptionsText: {
+    textAlign: "center",
+    paddingVertical: 20,
+    color: "#777",
+    fontSize: 16,
   },
 });
-
-export default AutocompleteDropdownComp;

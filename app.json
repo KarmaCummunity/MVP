@@ -4,10 +4,10 @@
     "slug": "Karma Community",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/images/logo.jpeg",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/images/logo.jpeg",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -25,7 +25,8 @@
       "package": "com.navesarussi1.mvp"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "backgroundColor": "#0"
     },
     "plugins": [
       "expo-font"

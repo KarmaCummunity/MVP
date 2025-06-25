@@ -46,34 +46,34 @@ const SearchScreen = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={local_Styles.container}>
       <SearchBar  />
-      {/* <SearchBar onSearch={handleSearch} /> */}
-
-      <Text style={styles.sectionTitle}>אפשרויות מומלצות</Text>
+    <View style={{ padding: 20, marginBottom: 20 }}>
+      <Text style={local_Styles.sectionTitle}>אפשרויות מומלצות</Text>
       {recommendedOptions.map((option, index) => (
-        <Text key={index} style={styles.recommendation}>
+        <Text key={index} style={local_Styles.recommendation}>
           • {option}
         </Text>
       ))}
 
       {searchResults.length > 0 && (
         <>
-          <Text style={styles.sectionTitle}>תוצאות עבור: {searchQuery}</Text>
+          <Text style={local_Styles.sectionTitle}>תוצאות עבור: {searchQuery}</Text>
           {searchResults.map((result, index) => (
-            <Text key={index} style={styles.resultItem}>
+            <Text key={index} style={local_Styles.resultItem}>
               🔍 {result}
             </Text>
           ))}
         </>
       )}
+      </View>
     </ScrollView>
   );
 };
 
-const styles = StyleSheet.create({
+const local_Styles = StyleSheet.create({
   container: {
-    padding: 20,
+    // padding: 20,
   },
   sectionTitle: {
     fontSize: 20,

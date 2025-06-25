@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, Platform } from "react-native";
-import SearchBar from "../components/SearchBar";
-import MenuComp from "../components/MenuComp";
-import ModeToggleButton from "../components/ModeToggleButton";
+import SearchBar from "../components/SearchBar"; // Ensure this path is correct
+import MenuComp from "../components/MenuComp"; // Ensure this path is correct
+import ModeToggleButton from "../components/ModeToggleButton"; // Ensure this path is correct
+
 interface HeaderSectionProps {
   mode: "מחפש" | "מציע";
   menuOptions: string[];
@@ -16,8 +17,11 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
   onToggleMode,
   onSelectMenuItem,
 }) => {
+ 
   return (
-    <View style={headerStyles.headerContainer}>
+    <View style={[
+      headerStyles.headerContainer,
+    ]}>
       <View style={headerStyles.topRow}>
         <ModeToggleButton mode={mode} onToggle={onToggleMode} />
         <MenuComp options={menuOptions} onSelectOption={onSelectMenuItem} />
@@ -31,14 +35,6 @@ const headerStyles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: 5,
     paddingTop: 10,
-    
-    // Set a consistent paddingBottom for all platforms
-    paddingBottom: Platform.select({
-      ios: 80,       // For iOS
-      android: 140,    // For Android
-      web: 0,         // For Web
-      default: 80,    // Fallback for any other platform
-    }),
     backgroundColor: 'transparent',
   },
   topRow: {

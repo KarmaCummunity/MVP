@@ -105,6 +105,10 @@ const styles = StyleSheet.create({
     gap: 20,
     marginTop: 16,
     marginBottom: 30,
+    backgroundColor: colors.lightOrange,
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
   },
   recommendedButton: {
     // width: '48%',
@@ -134,6 +138,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 15,
     paddingHorizontal: 20,
+    backgroundColor: colors.lightOrange,
+    borderRadius: 16,
+    paddingVertical: 10,
   },
   categoryButton: {
     width: '30%',
