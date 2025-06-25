@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "KC",
-    "slug": "Karma Community",
+    "name": "Karma Community",
+    "slug": "karma-community",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.jpeg",
@@ -22,7 +22,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.navesarussi1.mvp"
+      "package": "com.karma_community.KC"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -33,8 +33,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "a412119e-8f6c-4fff-bd81-e5f66adc5055"
+        "projectId": "e9adde31-7801-4e3c-a709-2454fe511c24"
       }
-    }
+    },
+    "owner": "navesarussi1"
   }
 }
