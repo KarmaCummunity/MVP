@@ -62,6 +62,9 @@ const styles = StyleSheet.create({
    */
   scrollView: {
     flex: 1,
+    marginBottom: 20,
+    paddingBottom: 2000,
+    backgroundColor: colors.lightOrange,
   },
   /**
    * Header container with row layout, space between content, and bottom border.
@@ -102,8 +105,8 @@ const styles = StyleSheet.create({
   /**
    * Content style for scrollable areas with top and bottom padding.
    */
-  scrollContent: {
-    paddingBottom: 24,
+  scrollViewContent: {
+    paddingBottom: 2400,
     paddingTop: 12,
   },
   /**
@@ -118,6 +121,7 @@ const styles = StyleSheet.create({
    */
   sectionContainer: {
     padding: 20,
+    backgroundColor: colors.backgroundSecondary,
   },
   /**
    * Main section container that fills available space with a light background.
@@ -174,7 +178,8 @@ const styles = StyleSheet.create({
    * Grid container for all categories, with wrap functionality, centered content, light orange background, and rounded corners.
    */
   allCategoriesGrid: {
-    flex: 1,
+    // flex:  1,
+    marginBottom: 20,
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
@@ -182,6 +187,13 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     paddingVertical: 15,
     paddingHorizontal: 0,
+    height: 800,
+  },
+  contentWrapperPadded: {
+    backgroundColor: colors.lightOrange,
+    // paddingVertical: 10, // Vertical padding inside this wrapper
+    // We're letting localStyles.container handle paddingHorizontal
+    // If this view needs a background, define it here.
   },
   /**
    * Style for individual category buttons, making them square, centered, with white background, rounded corners, and shadow.
@@ -461,6 +473,7 @@ const styles = StyleSheet.create({
    */
   scrollContainer: {
     padding: 20,
+    flex: 1,
     paddingTop: 60,
   },
   /**

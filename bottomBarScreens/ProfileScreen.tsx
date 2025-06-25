@@ -14,6 +14,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { TabView, TabBar, SceneMap } from 'react-native-tab-view';
 import type { SceneRendererProps, NavigationState, Route } from 'react-native-tab-view';
+import colors from '../globals/colors';
 
 // --- Type Definitions ---
 type TabRoute = {
@@ -93,7 +94,7 @@ export default function ProfileScreen() {
           {route.title}
         </Text>
       )}
-      activeColor="#000"
+      activeColor={colors.black}
       inactiveColor="#8e8e8e"
       pressColor="#efefef"
     />

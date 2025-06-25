@@ -240,7 +240,7 @@ const TodoListScreen: React.FC = () => {
           compareValue = dateA - dateB;
         } else if (sortBy === 'priority') {
           // Map priority strings to numerical values for comparison
-          const priorityOrder = { High: 3, Medium: 2, Low: 1 };
+          const priorityOrder = {Urgent: 5, Critical: 4, High: 3, Medium: 2, Low: 1 };
           compareValue = priorityOrder[b.priority] - priorityOrder[a.priority]; // High comes first by default
         }
 

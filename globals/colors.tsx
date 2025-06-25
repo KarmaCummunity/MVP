@@ -11,7 +11,9 @@ const colors = {
   darkGray: '#333333',
   offWhite: '#F8F5F0', // A warm off-white, often used for backgrounds
 
-  // Oranges & Pinks (App-specific palette)
+  //grids
+  error_Container: '#F8D7DA', // Light red background for error messages
+  // Oranges & Pinks (App-spconconasjdlskdslakdlsaecific palette)
   lightOrange: '#FFE5D2', // Very light orange, good for subtle backgrounds
   mediumOrange: '#FF9966', // A standard orange
   darkOrange: '#E79D7F', // Muted, earthy orange
@@ -34,6 +36,7 @@ const colors = {
   // Text Colors
   textPrimary: '#333333', // Primary text color, matches darkGray
   textSecondary: '#6c757d', // Muted text color (currently not used)
+  textError: '#721C24',
 
   // Borders
   border: '#dee2e6', // General border color (currently not used)
@@ -44,6 +47,8 @@ const colors = {
     priorityMedium: '#FFD166',    // Yellow/Orange for Medium priority tasks
     priorityLow: '#6FCF97',       // Green for Low priority tasks
     priorityDefault: '#CCCCCC',   // Default color for undefined priority
+    priorityCritical: '#D32F2F', // Dark Red for Critical priority tasks
+    priorityUrgent: '#F4511E',
   
     // Switch component colors
     switchTrackFalse: '#767577',  // Color when switch is OFF

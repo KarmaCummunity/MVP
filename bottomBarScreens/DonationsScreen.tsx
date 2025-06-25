@@ -1,198 +1,159 @@
-import styles from "../globals/styles";
-import { NavigationProp, ParamListBase } from "@react-navigation/native";
-import { View, TouchableOpacity, Text, ScrollView, StyleSheet,} from "react-native";
-import colors from "../globals/colors";
+import React from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+} from 'react-native';
+import { NavigationProp } from '@react-navigation/native';
+import { DonationsStackParamList } from '../globals/types';
+import colors from '../globals/colors';
+import globalStyles from '../globals/styles';
+
+interface DonationsScreenProps {
+  navigation: NavigationProp<DonationsStackParamList>;
+}
+
+const recommended = [
+  { label: 'כסף', screen: 'MoneyScreen' },
+  { label: 'טרמפים', screen: 'TrumpScreen' },
+  { label: 'אוכל', screen: '' },
+];
+
+const categories = [
+  'תחבורה',
+  'שיעורים פרטיים',
+  'הספרייה',
+  'חפצים',
+  'חיות',
+  'בגדים',
+  'דיור',
+  'רפואה',
+  'משפחה',
+  'תמיכה',
+  'מלונות',
+  'שאריות',
+  'תחבורה',
+  'תחבורה',
+  'תחבורה',
+  'תחבורה',
+  'תחבורה',
+  'תחבורה',
+  'תחבורה',
+  'תחבורה',
+  'תחבורה',
+  'תחבורה',
+  'תחבורה',
+  'תחבורה',
+  'תחבורה',
+  'תחבורה',
+  'תחבורה',
+  'תחבורה',
+  'תחבורה',
+  'תחבורה',
+  'תחבורה',
+  'תחב1ורה',
+];
 
 export default function DonationsScreen({
   navigation,
-}: {
-  navigation: NavigationProp<ParamListBase>;
-}) {
+}: DonationsScreenProps): React.ReactElement {
   return (
-    <View style={localStyles.container}>
-      {/* Recent Section */}
-      <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>מומלצים בשבילך</Text>
-        <View style={styles.recentButtonsContainer}>
-          <TouchableOpacity onPress={() => navigation.navigate('MoneyScreen')} style={styles.recentButton}>
-            <Text style={styles.recentButtonText}>כסף</Text>
+    <View style={styles.container}>
+      {/* Recommended Section */}
+      <Text style={globalStyles.sectionTitle}>מומלצים בשבילך</Text>
+      <View style={styles.recommendedContainer}>
+        {recommended.map(({ label, screen }, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.recommendedButton}
+            onPress={() => screen && navigation.navigate(screen as keyof DonationsStackParamList)}
+          >
+            <Text style={styles.recommendedButtonText}>{label}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('TrumpScreen')} style={styles.recentButton}>
-            <Text style={styles.recentButtonText}>טרמפים</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.recentButton}>
-            <Text style={styles.recentButtonText}>אוכל</Text>
-          </TouchableOpacity>
-        </View>
+        ))}
       </View>
 
       {/* All Categories Section */}
-      <Text style={styles.sectionTitle}>הכל</Text>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.sectionContainer}>
-          <View style={styles.allCategoriesGrid}>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>תחבורה</Text>
+      <Text style={globalStyles.sectionTitle}>כל האפשרויות</Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.grid}>
+          {categories.map((category, index) => (
+            <TouchableOpacity key={index} style={styles.categoryButton}>
+              <Text style={styles.categoryButtonText}>{category}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>תחבורה</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>תחבורה</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>תחבורה</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>תחבורה</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>שיעורים פרטיים</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>הספרייה</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>חפצים</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>חיות</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>בגדים</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>דיור</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>רפואה</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>משפחה</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>תמיכה</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>מלונות</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>שאריות</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>תחבורה</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>תחבורה</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>תחבורה</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <Text style={styles.categoryButtonText}>תחבורה</Text>
-            </TouchableOpacity>
-          </View>
+          ))}
         </View>
       </ScrollView>
     </View>
   );
 }
 
-
-const localStyles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#FFEDD5",
-    alignItems: 'center', // Center content horizontally
-  },
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    backgroundColor: colors.lightOrange,
+    padding: 16,
+    backgroundColor: colors.backgroundSecondary,
   },
-  scrollContent: {
-    paddingBottom: 24,
-    paddingTop: 12,
+  recommendedContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 20,
+    marginTop: 16,
+    marginBottom: 30,
   },
-  dropdownContainer: {
-    gap: 12,
-    marginBottom: 24,
-  },
-  dropdownBox: {
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 8,
-  },
-  donateButton: {
-    backgroundColor: "#007BFF",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: "center",
-    marginHorizontal: 15,
-    marginTop: 20,
-    marginBottom: 10,
-    alignSelf: "center", // Center the button horizontally
-  },
-  donateButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  filterButtonsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    marginBottom: 20,
-    gap: 10, // Adds space between buttons
-  },
-  filterButton: {
-    backgroundColor: "#E0E0E0",
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-  },
-  filterButtonText: {
-    fontSize: 14,
-    color: "#333",
-  },
-  section: {
-    marginTop: 20,
-  },
-  sectionTitle: {
-    fontWeight: "bold",
-    fontSize: 18,
-    marginBottom: 10,
-  },
-  card: {
-    flexDirection: "row",
-    backgroundColor: "white",
-    padding: 12,
+  recommendedButton: {
+    // width: '48%',
+    backgroundColor: colors.white,
+    paddingVertical: 14,
     borderRadius: 12,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    marginBottom: 12,
-    alignItems: "center",
-  },
-  cardImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 10,
-  },
-  cardContent: {
+    alignItems: 'center',
+    shadowColor: colors.black,
+    shadowOpacity: 0.09,
+    shadowOffset: { width: 2, height: 2 },
+    shadowRadius: 3,
+    elevation: 5,
     flex: 1,
   },
-  cardTitle: {
-    fontWeight: "bold",
+  recommendedButtonText: {
+    color: colors.textPrimary,
+    fontWeight: '800',
     fontSize: 16,
   },
-  cardDescription: {
-    fontSize: 13,
-    color: "#6B7280",
+  scrollContent: {
+    paddingVertical: 16,
+    paddingBottom: 60
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 15,
+    paddingHorizontal: 20,
+  },
+  categoryButton: {
+    width: '30%',
+    backgroundColor: colors.white,
+    paddingVertical: 25,
+    paddingHorizontal: 5,
+    marginBottom: 12,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.black,
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  categoryButtonText: {
+    fontSize: 15,
+    color: colors.textPrimary,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });

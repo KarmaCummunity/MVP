@@ -21,6 +21,10 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
 
   const getPriorityColor = useCallback((priority: Task['priority']): string => {
     switch (priority) {
+      case 'Critical':
+        return colors.priorityCritical;
+      case 'Urgent':
+        return colors.priorityUrgent;
       case 'High':
         return colors.priorityHigh;
       case 'Medium':

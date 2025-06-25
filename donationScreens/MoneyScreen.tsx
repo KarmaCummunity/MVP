@@ -24,7 +24,7 @@ const options = [
   "הטבות",
   "הגשת בקשה",
   "אשראי",
-  "אפשרות 6",
+  "מלגות",
   "אפשרות 7",
   "אפשרות 8",
   "אפשרות 9",
@@ -60,14 +60,10 @@ export default function MoneyScreen({
   };
 
   const toggleMode = (): void => {
-    setMode((prev) => (prev === "מחפש" ? "מציע" : "מציע")); // Changed default to 'מציע' as you had it previously
+    // console.log("Toggling mode" + mode);
+    setMode((prev) => (prev === "מחפש" ? "מציע" : "מחפש")); 
   };
 
-  // Content that will always appear at the top of the scrollable area
-  //  const ListHeader = () => (
-  //  );
-
-  // Data for the FlatList's main content (can be simplified if only one section remains)
   const mainContentData = [
     {
       id: "all_section",
@@ -156,7 +152,6 @@ export default function MoneyScreen({
                   </ScrollView>
                 </View>
 
-                {/* Separator if needed before "All" section */}
                 {/* <View style={{ height: 20 }} /> */}
               </View>
 
@@ -184,7 +179,6 @@ export default function MoneyScreen({
               </ScrollView>
             </View>
           )}
-          // ListHeaderComponent={ListHeader} // All content above "All" section
           // You can also add ListFooterComponent if you have content below the main list
           showsVerticalScrollIndicator={false} // Hide main scrollbar
           contentContainerStyle={localStyles.flatListContentContainer} // Apply padding here

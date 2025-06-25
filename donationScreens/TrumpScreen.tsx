@@ -73,6 +73,7 @@ export default function TrumpScreen() {
   };
 
   const toggleMode = (): void => {
+    console.log("Toggling mode" + mode);
     setMode((prev) => (prev === "מחפש" ? "מציע" : "מחפש"));
   };
 
