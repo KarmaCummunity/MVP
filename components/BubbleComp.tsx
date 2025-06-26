@@ -21,15 +21,15 @@ import { sentences } from "../globals/constants"; // Assuming this path is corre
 
 // Get the dimensions of the device window for responsive sizing
 const { width, height } = Dimensions.get("window");
-console.log(`[Dimensions] Screen width: ${width}, height: ${height}`);
+// console.log(`[Dimensions] Screen width: ${width}, height: ${height}`);
 
 // --- Constants ---
 const NUM_BUBBLES = 30; // Number of main interactive bubbles
-const NUM_BACKGROUND_BUBBLES = 200; // Number of non-interactive background bubbles
+const NUM_BACKGROUND_BUBBLES = 100; // Number of non-interactive background bubbles
 const MIN_SIZE = 50; // Minimum size for main bubbles
 const MAX_SIZE = 150; // Maximum size for main bubbles
 const MIN_NUMBER = 1; // Minimum number value for main bubbles
-const MAX_NUMBER = 100000; // Maximum number value for main bubbles
+const MAX_NUMBER = 100; // Maximum number value for main bubbles
 
 // Interface for defining the structure of bubble data
 interface BubbleData {
@@ -92,7 +92,7 @@ const numberToWords = (num: number): string => {
   ];
 
   if (num === 0) {
-    console.log("[numberToWords] Converting 0 to 'אפס'");
+    // console.log("[numberToWords] Converting 0 to 'אפס'");
     return "אפס"; // Zero in Hebrew
   }
 
@@ -103,9 +103,7 @@ const numberToWords = (num: number): string => {
   const addPart = (n: number, word: string) => {
     if (n > 0) {
       result += `${numberToWords(n)} ${word} `; // Recursively convert and append
-      console.log(
-        `[numberToWords] Adding part: ${n} ${word}, current result: ${result}`
-      );
+      // console.log(`[numberToWords] Adding part: ${n} ${word}, current result: ${result}`);
     }
   };
 
@@ -114,9 +112,7 @@ const numberToWords = (num: number): string => {
     const thousands = Math.floor(tempNum / 1000);
     result += thousands === 1 ? "אלף " : numberToWords(thousands) + " אלפים "; // "thousand" or "thousands"
     tempNum %= 1000; // Remove thousands from tempNum
-    console.log(
-      `[numberToWords] Handled thousands: ${thousands}, remaining num: ${tempNum}`
-    );
+    // console.log(`[numberToWords] Handled thousands: ${thousands}, remaining num: ${tempNum}`);
   }
 
   // Handle hundreds
@@ -124,9 +120,7 @@ const numberToWords = (num: number): string => {
     const hundreds = Math.floor(tempNum / 100);
     result += hundreds === 1 ? "מאה " : numberToWords(hundreds) + " מאות "; // "hundred" or "hundreds"
     tempNum %= 100; // Remove hundreds from tempNum
-    console.log(
-      `[numberToWords] Handled hundreds: ${hundreds}, remaining num: ${tempNum}`
-    );
+    // console.log(`[numberToWords] Handled hundreds: ${hundreds}, remaining num: ${tempNum}`);
   }
 
   // Handle tens and units
@@ -137,26 +131,12 @@ const numberToWords = (num: number): string => {
     if (u > 0) {
       result += ` ו${units[u]}`; // Add "and" + units word
     }
-    console.log(
-      `[numberToWords] Handled tens and units (>=20): ${tempNum}, result part: ${
-        tens[t]
-      } ${u > 0 ? "ו" + units[u] : ""}`
-    );
   } else if (tempNum >= 10) {
     result += teens[tempNum - 10]; // Handle teens (10-19)
-    console.log(
-      `[numberToWords] Handled teens: ${tempNum}, result part: ${
-        teens[tempNum - 10]
-      }`
-    );
   } else if (tempNum > 0) {
     result += units[tempNum]; // Handle single units (1-9)
-    console.log(
-      `[numberToWords] Handled units: ${tempNum}, result part: ${units[tempNum]}`
-    );
   }
 
-  console.log(`[numberToWords] Final result for ${num}: "${result.trim()}"`);
   return result.trim(); // Return the trimmed result
 };
 
@@ -172,9 +152,6 @@ const scaleNumberToSize = (num: number): number => {
     MIN_SIZE +
     ((clampedNum - MIN_NUMBER) / (MAX_NUMBER - MIN_NUMBER)) *
       (MAX_SIZE - MIN_SIZE);
-  console.log(
-    `[scaleNumberToSize] Number: ${num}, Clamped: ${clampedNum}, Scaled Size: ${scaledSize}`
-  );
   return scaledSize;
 };
 
@@ -199,13 +176,6 @@ const isOverlapping = (
     const distance = Math.sqrt(dx * dx + dy * dy);
     // Check if the distance is less than the sum of their radii (adjusted for a little buffer)
     if (distance < (b.size + size) / 2.5) {
-      console.log(
-        `[isOverlapping] Overlap detected. Bubble at (${x},${y}) size ${size} overlaps with bubble ${
-          b.id
-        } at (${b.x},${b.y}) size ${b.size}. Distance: ${distance}, Required: ${
-          (b.size + size) / 2.5
-        }`
-      );
       return true;
     }
   }
@@ -218,14 +188,11 @@ const isOverlapping = (
  * @returns An array of BubbleData.
  */
 const generateBubbles = (): BubbleData[] => {
-  console.log("[generateBubbles] Starting bubble generation...");
+  // console.log("[generateBubbles] Starting bubble generation...");
   const bubbles: BubbleData[] = []; // Stores all generated bubbles
   let attempts = 0; // Counter for attempts to place a bubble
 
   // --- Generate Background Bubbles ---
-  console.log(
-    `[generateBubbles] Generating ${NUM_BACKGROUND_BUBBLES} background bubbles.`
-  );
   while (bubbles.length < NUM_BACKGROUND_BUBBLES && attempts < 2000) {
     const size = 20 + Math.random() * 80; // Smaller and varied sizes for background bubbles
     // Random position within screen bounds, considering bubble size
@@ -248,24 +215,14 @@ const generateBubbles = (): BubbleData[] => {
       delay,
       isBackground: true,
     });
-    console.log(
-      `[generateBubbles] Added background bubble ${
-        bubbles.length - 1
-      } at (${x},${y}) with size ${size}`
-    );
 
     attempts++;
   }
-  console.log(
-    `[generateBubbles] Finished generating background bubbles. Total: ${
-      bubbles.filter((b) => b.isBackground).length
-    }`
-  );
 
   // --- Generate Main Bubbles ---
   attempts = 0; // Reset attempts for main bubbles
   const mainBubbles: BubbleData[] = []; // Temporary array for main bubbles
-  console.log(`[generateBubbles] Generating ${NUM_BUBBLES} main bubbles.`);
+  // console.log(`[generateBubbles] Generating ${NUM_BUBBLES} main bubbles.`);
   while (mainBubbles.length < NUM_BUBBLES && attempts < 2000) {
     const value = Math.floor(Math.random() * MAX_NUMBER) + 1; // Random number value
     const size = scaleNumberToSize(value); // Size based on the number value
@@ -290,27 +247,12 @@ const generateBubbles = (): BubbleData[] => {
         delay,
         isBackground: false,
       });
-      console.log(
-        `[generateBubbles] Added main bubble ${
-          mainBubbles.length - 1
-        } with value ${value} and size ${size} at (${x},${y})`
-      );
-    } else {
-      console.log(
-        `[generateBubbles] Attempt ${attempts} failed for main bubble (overlap).`
-      );
     }
     attempts++;
   }
-  console.log(
-    `[generateBubbles] Finished generating main bubbles. Total: ${mainBubbles.length}`
-  );
 
   // Combine background and main bubbles
   const allBubbles = [...bubbles, ...mainBubbles];
-  console.log(
-    `[generateBubbles] Total bubbles generated: ${allBubbles.length}`
-  );
   return allBubbles;
 };
 
@@ -320,7 +262,7 @@ const generateBubbles = (): BubbleData[] => {
 const BubbleComp: React.FC = () => {
   // Memoize bubble generation to prevent re-rendering on every component render
   const bubbles = useMemo(generateBubbles, []);
-  console.log("[BubbleComp] Bubbles generated and memoized.");
+  // console.log("[BubbleComp] Bubbles generated and memoized.");
 
   // State to track the currently selected bubble
   const [selectedBubbleId, setSelectedBubbleId] = useState<string | null>(null);
@@ -333,26 +275,21 @@ const BubbleComp: React.FC = () => {
    * @param id The ID of the pressed bubble.
    */
   const handleBubblePress = useCallback((id: string) => {
-    console.log(`[BubbleComp] Bubble pressed: ${id}`);
+    // console.log(`[BubbleComp] Bubble pressed: ${id}`);
     setSelectedBubbleId((prevId) => {
       const newId = prevId === id ? null : id;
-      console.log(
-        `[BubbleComp] Selected bubble ID changed from ${prevId} to ${newId}`
-      );
       return newId;
     });
     // Cycle through the predefined sentences
     setCurrentSentenceIndex((prevIndex) => {
       const newIndex = (prevIndex + 1) % sentences.length;
-      console.log(
-        `[BubbleComp] Current sentence index changed from ${prevIndex} to ${newIndex}`
-      );
       return newIndex;
     });
   }, []); // Empty dependency array means this function is created once
 
   return (
     <View style={styles.container}>
+      <View style={styles.container}>
       {/* Render each bubble */}
       {bubbles.map((bubble) => (
         <AnimatedBubble
@@ -362,6 +299,8 @@ const BubbleComp: React.FC = () => {
           onPress={handleBubblePress} // Pass the press handler
         />
       ))}
+
+      </View>
       {/* Message display container */}
       <View style={styles.messageContainer}>
         <Text style={styles.messageText}>
@@ -403,13 +342,9 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
   const animatedOpacity = useSharedValue(isBackground ? 0.2 : 1); // Controls bubble opacity
   const animatedScale = useSharedValue(1); // Controls bubble scale (for press effect)
 
-  console.log(
-    `[AnimatedBubble ${id}] Initializing. Is background: ${isBackground}, Initial opacity: ${animatedOpacity.value}`
-  );
 
   // Floating animation effect
   useEffect(() => {
-    console.log(`[AnimatedBubble ${id}] Setting up floating animation.`);
     offset.value = withRepeat(
       withDelay(
         delay, // Staggered start based on delay
@@ -426,9 +361,6 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
   // Selection animation effects (opacity and scale)
   useEffect(() => {
     if (!isBackground) {
-      console.log(
-        `[AnimatedBubble ${id}] Is selected changed: ${isSelected}. Triggering selection animations.`
-      );
       animatedOpacity.value = withTiming(isSelected ? 1 : 0.7, {
         duration: 200, // Quick opacity change
       });
@@ -446,12 +378,7 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
   const handleInternalPress = useCallback(
     (event: GestureResponderEvent) => {
       if (!isBackground) {
-        console.log(`[AnimatedBubble ${id}] Non-background bubble pressed.`);
         onPress(id); // Call the external press handler
-      } else {
-        console.log(
-          `[AnimatedBubble ${id}] Background bubble pressed (ignored).`
-        );
       }
     },
     [id, isBackground, onPress]
@@ -497,9 +424,6 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
   // Calculate font sizes dynamically based on bubble size
   const fontSize = Math.max(8, size / 6);
   const nameSize = Math.max(6, size / 8);
-  console.log(
-    `[AnimatedBubble ${id}] Calculated font sizes: value=${fontSize}, name=${nameSize}`
-  );
 
   return (
     <TouchableWithoutFeedback onPress={handleInternalPress}>
@@ -548,6 +472,8 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
 // --- StyleSheet ---
 const styles = StyleSheet.create({
   container: {
+    flexDirection: "column", // Column layout for the main container
+    marginBottom: 60, // Space for the message at the bottom
     flex: 1, // Takes up the entire screen
     backgroundColor: "#e6f7ff", // Light blue background for the screen
   },
@@ -585,9 +511,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, // Horizontal padding
   },
   messageText: {
+    zIndex: 10, // Ensure it appears above bubbless
+    position: "absolute", // Absolute positioning
     fontSize: 18, // Font size for the message
     fontWeight: "bold", // Bold message text
-    color: "#333", // Dark gray text color
+    // color: "#333", // Dark gray text color
     textAlign: "center", // Center align the message
   },
 });

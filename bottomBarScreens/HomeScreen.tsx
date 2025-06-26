@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, BackHandler, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import BubbleComp from '../components/BubbleComp';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -20,7 +21,7 @@ export default function HomeScreen() {
             { text: 'YES', onPress: () => BackHandler.exitApp() }
           ]
         );
-        console.log('Android back button pressed on Home Screen, preventing default.');
+        // console.log('Android back button pressed on Home Screen, preventing default.');
         // Return true to prevent default back button behavior (e.g., navigating back)
         return true;
       };
@@ -39,22 +40,8 @@ export default function HomeScreen() {
   const bottomPadding = 60 + 20 + insets.bottom;
 
   return (
-    <View style={[styles.container, { paddingBottom: bottomPadding }]}>
-      <Text style={styles.title}>Welcome to Home Screen!</Text>
-      <Text style={styles.text}>
-        This is your main content area.
-      </Text>
-      <Text style={styles.text}>
-        Try pressing the Android back button. It will now prompt to exit instead of going back.
-      </Text>
-      <View style={{ height: 200, backgroundColor: '#eee', marginTop: 20, width: '80%', justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Scrollable Content Placeholder</Text>
-        <Text>More content...</Text>
-        <Text>More content...</Text>
-        <Text>More content...</Text>
-        <Text>More content...</Text>
-        <Text>More content...</Text>
-      </View>
+    <View style={styles.container}>
+      <BubbleComp />
     </View>
   );
 }
@@ -62,8 +49,8 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    // justifyContent: 'center',
+    // alignItems: 'center',
   },
   title: {
     fontSize: 24,

@@ -58,7 +58,7 @@ const TodoListScreen: React.FC = () => {
     const onBackPress = () => {
       // You can call a function here if you want to do something,
       // but if you want to do nothing, just return true.
-      console.log('Android back button pressed, doing nothing.');
+      // console.log('Android back button pressed, doing nothing.');
       // Alert.alert('Back Press', 'You pressed the back button!'); // Optional: for testing
 
       // Return true to prevent default back button behavior (e.g., navigating back)

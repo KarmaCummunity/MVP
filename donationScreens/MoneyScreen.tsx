@@ -41,7 +41,7 @@ export default function MoneyScreen({
 }) {
   const [selectedRecipient, setSelectedRecipient] = useState<string>("");
   const [selectedAmount, setSelectedAmount] = useState<string>("");
-  const [mode, setMode] = useState<"מחפש" | "מציע">("מחפש");
+  const [mode, setMode] = useState<boolean>(false);
 
   const amountOptions = ["₪111", "₪50", "₪100", "₪500", "₪1000", "₪2000"];
 
@@ -62,7 +62,7 @@ export default function MoneyScreen({
 
   const toggleMode = (): void => {
     // console.log("Toggling mode" + mode);
-    setMode((prev) => (prev === "מחפש" ? "מציע" : "מחפש"));
+    setMode((prev) => (!prev ? true : false));
   };
 
   const mainContentData = [

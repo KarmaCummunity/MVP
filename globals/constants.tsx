@@ -193,4 +193,62 @@ export const filter_for_trumps: string[] = [
   'לפי סוג תרומה',
   'לפי גיל',
   'לפי מגדר',
+  'בחינם/בהשתתפות',
+  'נסיעות עם ילדים',
 ]
+export const menu_for_trumps: string[] = [
+  'נסיעות קבועות',
+  'נסיעות חד פעמיות',
+  'נסיעות משותפות',
+  'הובלות',
+  'משלוחים',  
+]
+
+export const WHATSAPP_GROUP_DETAILS = [
+  {
+    name: "טרמפים מרכז",
+    link: "https://chat.whatsapp.com/0lLT8M8RkPILPAV9IPfpjT",
+    image: require("../assets/images/logo.png"),
+  },
+  {
+    name: "טרמפים צפון",
+    link: "https://chat.whatsapp.com/GjHTYqHGYF63VWh3BfTbE",
+    image: require("../assets/images/logo.png"),
+  },
+  {
+    name: "טרמפים צפון",
+    link: "https://chat.whatsapp.com/GjHTYqHGYF63VWh3BfTbE",
+    image: require("../assets/images/logo.png"),
+  },
+  {
+    name: "טרמפים צפון",
+    link: "https://chat.whatsapp.com/GjHTYqHGYF63VWh3BfTbE",
+    image: require("../assets/images/logo.png"),
+  },
+  {
+    name: "טרמפים צפון",
+    link: "https://chat.whatsapp.com/GjHTYqHGYF63VWh3BfTbE",
+    image: require("../assets/images/logo.png"),
+  },
+  {
+    name: "טרמפים צפון",
+    link: "https://chat.whatsapp.com/GjHTYqHGYF63VWh3BfTbE",
+    image: require("../assets/images/logo.png"),
+  },
+  {
+    name: "טרמפים צפון",
+    link: "https://chat.whatsapp.com/GjHTYqHGYF63VWh3BfTbE",
+    image: require("../assets/images/logo.png"),
+  },
+  {
+    name: "טרמפים צפון",
+    link: "https://chat.whatsapp.com/GjHTYqHGYF63VWh3BfTbE",
+    image: require("../assets/images/logo.png"),
+  },
+  {
+    name: "טרמפים דרום",
+    link: "https://chat.whatsapp.com/GjHTYqHGYF63VWh3BfTbE",
+    image: require("../assets/images/logo.png"),
+  }, // Assuming a different name for the duplicated link
+];
+

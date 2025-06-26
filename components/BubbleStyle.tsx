@@ -48,6 +48,7 @@ export const getBubbleTextStyles = (
 ): BubbleTextStyles => {
   return StyleSheet.create({
     textContainer: {
+      flex: 1,
       alignItems: "center",
       justifyContent: "center",
       paddingHorizontal: 2,

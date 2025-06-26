@@ -1,29 +1,41 @@
-// components/SettingsItem.tsx
-import React, { memo } from 'react'; // Import memo from React
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, Platform } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons'; // Or any other icon set you prefer
-import colors from '../globals/colors'; // Adjust path
+// ===================================
+// SettingsItem.tsx
+// ===================================
 
-// Define types for the different kinds of settings items
+import React, { memo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Platform } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
+import colors from '../globals/colors';
+
 type SettingItemType = 'navigate' | 'toggle' | 'button' | 'value';
 
 export interface SettingsItemProps {
   title: string;
   description?: string;
-  iconName?: string; // Icon to display on the left
+  iconName?: string;
   type: SettingItemType;
-  onPress?: () => void; // For 'navigate' and 'button' types
-  value?: boolean; // For 'toggle' type
-  onValueChange?: (newValue: boolean) => void; // For 'toggle' type
-  displayValue?: string; // For 'value' type (e.g., "English" for Language)
-  isDestructive?: boolean; // For buttons like "Delete Account"
-  children?: React.ReactNode; // For more complex custom content
+  onPress?: () => void;
+  value?: boolean;
+  onValueChange?: (newValue: boolean) => void;
+  displayValue?: string;
+  isDestructive?: boolean;
+  children?: React.ReactNode;
 }
 
-// Wrap the component definition in React.memo
 const SettingsItem: React.FC<SettingsItemProps> = memo((props) => {
+  const {
+    title,
+    description,
+    iconName,
+    type,
+    onPress,
+    value,
+    onValueChange,
+    displayValue,
+    isDestructive,
+    children
+  } = props;
 
-  const {title, description, iconName, type, onPress, value, onValueChange, displayValue, isDestructive, children} = props;
   const textColor = isDestructive ? colors.danger : colors.textPrimary;
 
   const renderContent = () => {
@@ -40,17 +52,24 @@ const SettingsItem: React.FC<SettingsItemProps> = memo((props) => {
         );
       case 'value':
         return (
-          <Text style={styles.valueText}>
-            {displayValue}
-            {Platform.OS === 'web' && <Icon name="chevron-forward-outline" size={20} color={colors.textSecondary} style={styles.webChevron}/>}
-          </Text>
+          <View style={styles.valueContainer}>
+            <Text style={styles.valueText}>{displayValue}</Text>
+            {/* Chevron should appear BEFORE the value text in RTL visually,
+                so we place it after the text when using row-reverse on the container */}
+            <Icon 
+              name="chevron-back-outline" // Changed to 'chevron-back-outline' for RTL visual consistency
+              size={20} 
+              color={colors.textSecondary} 
+              style={styles.chevron}
+            />
+          </View>
         );
       case 'navigate':
         return (
-          <Icon name="chevron-forward-outline" size={20} color={colors.textSecondary} />
+          <Icon name="chevron-back-outline" size={20} color={colors.textSecondary} style={styles.chevron}/> // Changed to 'chevron-back-outline' for RTL visual consistency
         );
       case 'button':
-        return null; // Button content is handled by the title itself inside TouchableOpacity
+        return null;
       default:
         return null;
     }
@@ -60,74 +79,88 @@ const SettingsItem: React.FC<SettingsItemProps> = memo((props) => {
     <TouchableOpacity
       style={[styles.container, type === 'button' && styles.buttonItem]}
       onPress={onPress}
-      disabled={!onPress && type !== 'toggle'} // Disable if no action and not a toggle
-      activeOpacity={type === 'toggle' ? 1 : 0.7} // No active opacity for toggle
+      disabled={!onPress && type !== 'toggle'}
+      activeOpacity={type === 'toggle' ? 1 : 0.7}
     >
       {iconName && (
         <Icon name={iconName} size={24} color={textColor} style={styles.icon} />
       )}
       <View style={styles.textContainer}>
-        {/* title is a required prop, so no need for title && */}
-        <Text style={[styles.title, { color: textColor }]}>{title}</Text>
-        {description && <Text style={styles.description}>{description}</Text>}
+        {/* Explicitly setting textAlign: 'right' for all text for RTL */}
+        <Text style={[styles.title, { color: textColor, textAlign: 'right' }]}>{title}</Text>
+        {description && <Text style={[styles.description, { textAlign: 'right' }]}>{description}</Text>}
       </View>
       <View style={styles.rightContent}>
         {renderContent()}
-        {/*
-          CRUCIAL FIX:
-          Safely render children: If children is a string, wrap it in a <Text> component.
-          Otherwise, render it as is (it's already a ReactNode, e.g., an element, null, etc.).
-        */}
-        {typeof children === 'string' ? <Text>{children}</Text> : children}
+        {children && (
+          typeof children === 'string' ? (
+            <Text style={[styles.childrenText, { textAlign: 'right' }]}>{children}</Text>
+          ) : (
+            children
+          )
+        )}
       </View>
     </TouchableOpacity>
   );
 });
 
+SettingsItem.displayName = 'SettingsItem';
+
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row-reverse', // For RTL layout
+    flexDirection: 'row-reverse', // Key for overall RTL layout
     alignItems: 'center',
     paddingVertical: 15,
     paddingHorizontal: 16,
     backgroundColor: colors.backgroundSecondary,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
-    writingDirection: 'rtl', // For RTL
-    textAlign: 'right', // For RTL
+    // Removed `writingDirection` and `textAlign` from here as they are for Text components or inherit
   },
   buttonItem: {
     justifyContent: 'center',
   },
   icon: {
-    marginRight: 15,
+    marginHorizontal: 15, // Space to the left of the icon in an RTL row
   },
   textContainer: {
     flex: 1,
+    // Ensure text within this container flows RTL
+    writingDirection: 'rtl',
   },
   title: {
     fontSize: 16,
     color: colors.textPrimary,
+    // textAlign: 'right' applied inline for explicit text alignment
   },
   description: {
     fontSize: 13,
     color: colors.textSecondary,
     marginTop: 2,
+    // textAlign: 'right' applied inline for explicit text alignment
   },
   rightContent: {
-    marginLeft: 'auto', // Push content to the right
-    flexDirection: 'row', // Align content and chevron
-    textAlign: 'right', // For rtl
-    writingDirection: 'rtl', // For RTL
+    marginLeft: 'auto', // Pushes content to the left (start of RTL row)
+    flexDirection: 'row-reverse', // <--- Changed to 'row-reverse' for internal RTL order of elements like value + chevron
+    alignItems: 'center',
+    writingDirection: 'rtl', // Ensure content within this container flows RTL
+  },
+  valueContainer: {
+    flexDirection: 'row-reverse', // <--- Changed to 'row-reverse' to put chevron before text visually
     alignItems: 'center',
   },
   valueText: {
     fontSize: 16,
     color: colors.textSecondary,
-    marginRight: Platform.OS === 'web' ? -5 : 0, // Adjust for web chevron position
+    // If chevron is placed before text, this margin separates them
+    marginRight: 5, // Space between value text and chevron
   },
-  webChevron: {
-    marginLeft: 5, // Space between value text and chevron on web
+  chevron: {
+    // No explicit margin needed here if using flexbox correctly in valueContainer
+  },
+  childrenText: {
+    fontSize: 16,
+    color: colors.textSecondary,
   }
 });
 

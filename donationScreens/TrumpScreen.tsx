@@ -14,38 +14,19 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import HeaderComp from "../components/HeaderComp";
-import { filter_for_trumps } from "../globals/constants";
+import {
+  filter_for_trumps,
+  menu_for_trumps,
+  sentences,
+  WHATSAPP_GROUP_DETAILS,
+} from "../globals/constants";
 import AutocompleteDropdownComp from "../components/AutocompleteDropdownComp"; // Corrected component import
 import { NavigationProp, ParamListBase } from "@react-navigation/native";
 import LocationSearchComp from "../components/LocationSearchComp";
 import TimeInput from "../components/TimeInput";
 import styles from "../globals/styles";
-
 // Define your WhatsApp group links WITH their names
 // IMPORTANT: Replace "Name of Group 1", "Name of Group 2", etc., with the actual names you want to display.
-const WHATSAPP_GROUP_DETAILS = [
-  {
-    name: "טרמפים מרכז",
-    link: "https://chat.whatsapp.com/0lLT8M8RkPILPAV9IPfpjT",
-    image: require("../assets/images/logo.png"),
-  },
-  {
-    name: "טרמפים צפון",
-    link: "https://chat.whatsapp.com/GjHTYqHGYF63VWh3BfTbE",
-    image: require("../assets/images/logo.png"),
-  },
-  {
-    name: "טרמפים דרום",
-    link: "https://chat.whatsapp.com/GjHTYqHGYF63VWh3BfTbE",
-    image: require("../assets/images/logo.png"),
-  }, // Assuming a different name for the duplicated link
-];
-
-const dropdownOptions = {
-  to: ["תל אביב", "ירושלים", "חיפה"],
-  from: ["באר שבע", "אשדוד", "חולון"],
-  when: ["היום", "מחר", "שבוע הבא"],
-};
 
 const searchResults = [];
 interface WhatsAppGroup {
@@ -69,7 +50,7 @@ export default function TrumpScreen({
     from: "",
     when: "",
   });
-  const [mode, setMode] = useState<"מחפש" | "מציע">("מחפש");
+  const [mode, setMode] = useState<boolean>(false); // false for "מחפש", true for "מציע"
   const [selectedTime, setSelectedTime] = useState<Date>(new Date());
 
   const handleSelectMenuItem = (option: string) => {
@@ -77,12 +58,13 @@ export default function TrumpScreen({
   };
 
   const handleDropdownChange = (field: keyof Filters, value: string): void => {
+    // console.log(`Dropdown changed: ${field} = ${value}`);
     setFilters((prev) => ({ ...prev, [field]: value }));
   };
 
   const toggleMode = (): void => {
-    console.log("Toggling mode" + mode);
-    setMode((prev) => (prev === "מחפש" ? "מציע" : "מחפש"));
+    // console.log("Toggling mode" + mode);
+    setMode((prev) => (prev ? false : true));
   };
 
   // Function to open WhatsApp group link
@@ -108,7 +90,7 @@ export default function TrumpScreen({
       <View style={localStyles.wrapper}>
         <HeaderComp
           mode={mode}
-          menuOptions={filter_for_trumps}
+          menuOptions={menu_for_trumps}
           onToggleMode={toggleMode}
           onSelectMenuItem={handleSelectMenuItem}
         />
@@ -116,42 +98,52 @@ export default function TrumpScreen({
           contentContainerStyle={localStyles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View>
-            <Text style={localStyles.sectionTitle}>מאיפה?</Text>
+          <View style={localStyles.rowContainer}>
+            <Text style={localStyles.search_Text}>מאיפה?</Text>
             <LocationSearchComp
-              // onLocationSelected={(location) =>
-              //   handleDropdownChange("from", location)
-              // }
+              onLocationSelected={(location) =>
+                handleDropdownChange("from", location)
+              }
             />
-            <Text style={localStyles.sectionTitle}>לאיפה?</Text>
-            <LocationSearchComp
-              // onLocationSelected={(location) =>
-              //   handleDropdownChange("to", location)
-              // }
-            />
-            <Text style={localStyles.sectionTitle}>מתי?</Text>
           </View>
 
-          <TimeInput
-            value={selectedTime}
-            onChange={(date) => {
-              console.log("Selected time:", date);
-              setSelectedTime(date);
-            }}
-          />
+          <View style={localStyles.rowContainer}>
+            <Text style={localStyles.search_Text}>לאיפה?</Text>
+            <LocationSearchComp
+              onLocationSelected={(location) =>
+                handleDropdownChange("to", location)
+              }
+            />
+          </View>
+          <View style={localStyles.rowContainerTime}>
+            <Text style={localStyles.search_Text}>מתי?</Text>
+
+            <TimeInput
+              value={selectedTime}
+              onChange={(date) => {
+                // console.log("Selected time:", date);
+                setSelectedTime(date);
+              }}
+            />
+          </View>
 
           <TouchableOpacity
             onPress={() =>
               Alert.alert(
                 "Searching",
-                `Time: ${selectedTime.toLocaleTimeString()} To: ${
-                  filters.to || "Not specified"
-                }`
+                `יציאה מ: ${
+                  filters.from || "לא צוין"
+                } \nבשעה:  ${selectedTime.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })} \nליעד: ${filters.to || "לא צוין"}`
               )
             }
             style={styles.button}
           >
-            <Text style={localStyles.donateButtonText}>חפש</Text>
+            <Text style={localStyles.donateButtonText}>
+              {mode ? "פרסם" : "חפש"}
+            </Text>
           </TouchableOpacity>
 
           {/* Results */}
@@ -172,36 +164,48 @@ export default function TrumpScreen({
           )}
 
           {/* Groups */}
-          <Text style={localStyles.sectionTitle}>קבוצות:</Text>
-          {/* Loop through your WhatsApp group details */}
-          {WHATSAPP_GROUP_DETAILS.map(
-            (
-              group,
-              idx // Changed to 'group' object
-            ) => (
-              <TouchableOpacity
-                key={idx}
-                style={localStyles.trumpCard}
-                onPress={() => handleOpenWhatsAppGroup(group.link)} // Use group.link
-              >
-                <View style={localStyles.groupCardContentWrapper}>
-                  <Image
-                    source={group.image} // Use the image source from the group details
-                    style={localStyles.groupCardImage}
-                  />
-                  <View style={localStyles.groupCardTextContent}>
-                    {/* Wrapper for text content */}
-                    <Text style={localStyles.trumpCardSubtitle}>
-                      {group.name} {/* Use group.name for the title */}
-                    </Text>
-                    <Text style={localStyles.trumpCardText}>תיאור הקבוצה</Text>
-                    {/* <Text style={localStyles.trumpCardLinkText}>
+          {!mode && (
+            <View>
+              <Text style={localStyles.sectionTitle}>קבוצות:</Text>
+              {/* Loop through your WhatsApp group details */}
+              {WHATSAPP_GROUP_DETAILS.map(
+                (
+                  group,
+                  idx // Changed to 'group' object
+                ) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={localStyles.trumpCard}
+                    onPress={() => handleOpenWhatsAppGroup(group.link)} // Use group.link
+                  >
+                    <View style={localStyles.groupCardContentWrapper}>
+                      <Image
+                        source={group.image} // Use the image source from the group details
+                        style={localStyles.groupCardImage}
+                      />
+                      <View style={localStyles.groupCardTextContent}>
+                        {/* Wrapper for text content */}
+                        <Text style={localStyles.trumpCardSubtitle}>
+                          {group.name} {/* Use group.name for the title */}
+                        </Text>
+                        <Text style={localStyles.trumpCardText}>
+                          תיאור הקבוצה
+                        </Text>
+                        {/* <Text style={localStyles.trumpCardLinkText}>
                       {group.link.substring(0, 40)}...
                     </Text> */}
-                  </View>
-                </View>
-              </TouchableOpacity>
-            )
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                )
+              )}
+            </View>
+          )}
+          {mode && (
+            <View>
+              <Text style={localStyles.sentences}>אנו מודים לך על תרומתך</Text>
+              <Text style={localStyles.sentences}> ויותר מזה על השתתפותך בקהילה!</Text>
+            </View>
           )}
         </ScrollView>
       </View>
@@ -224,6 +228,21 @@ const localStyles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 12,
+  },
+  rowContainer: {
+    flexDirection: "row-reverse", // Use 'row-reverse' for RTL layout
+    alignItems: "flex-start", // Aligns items vertically in the center of the row
+    justifyContent: "space-between", // Aligns items to the right (since Hebrew is RTL)
+    // marginBottom: 10, // Add some spacing below the row if needed
+    // You might need to adjust width or padding depending on surrounding elements
+  },
+  rowContainerTime: {
+    marginLeft: "40%", // Add some spacing to the left for better alignment
+    flexDirection: "row-reverse", // Use 'row-reverse' for RTL layout
+    alignItems: "flex-start", // Aligns items vertically in the center of the row
+    justifyContent: "space-between", // Aligns items to the right (since Hebrew is RTL)
+    marginBottom: 10, // Add some spacing below the row if needed
+    // You might need to adjust width or padding depending on surrounding elements
   },
   scrollContent: {
     paddingBottom: 24,
@@ -278,11 +297,24 @@ const localStyles = StyleSheet.create({
   section: {
     marginTop: 20,
   },
+  search_Text: {
+    fontWeight: "bold",
+    fontSize: 18,
+    marginTop: 10,
+    alignSelf: "flex-start",
+  },
   sectionTitle: {
     fontWeight: "bold",
     fontSize: 18,
-    marginBottom: 10,
+    marginVertical: 10,
     alignSelf: "flex-end",
+  },
+  sentences: {
+
+    fontWeight: "bold",
+    fontSize: 20,
+    marginTop: 20,
+    alignSelf: "center",
   },
   card: {
     flexDirection: "row",

@@ -3,7 +3,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 interface ModeToggleButtonProps {
-  mode: 'מחפש' | 'מציע';
+  mode: boolean;
   onToggle: () => void;
 }
 
@@ -15,7 +15,7 @@ const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({ mode, onToggle }) =
         <View
           style={[
             localStyles.modeButton,
-            mode === 'מחפש' ? localStyles.selectedLeft : localStyles.unselectedLeft // Adjusted for 'מחפש' (left)
+            !mode ? localStyles.selectedLeft : localStyles.unselectedLeft // Adjusted for 'מחפש' (left)
           ]}
         >
           <Text style={localStyles.modeText}>מחפש</Text>
@@ -23,7 +23,7 @@ const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({ mode, onToggle }) =
         <View
           style={[
             localStyles.modeButton,
-            mode === 'מציע' ? localStyles.selectedRight : localStyles.unselectedRight // Adjusted for 'מציע' (right)
+            mode ? localStyles.selectedRight : localStyles.unselectedRight // Adjusted for 'מציע' (right)
           ]}
         >
           <Text style={localStyles.modeText}>מציע</Text>

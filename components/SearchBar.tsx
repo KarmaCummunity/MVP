@@ -60,7 +60,7 @@ const SearchBar = () => {
   const handleSearch = () => {
     if (searchText.trim() !== "") {
       Alert.alert(`מחפש: ${searchText}`); // Changed to Alert.alert
-      console.log("Searching with:", { searchText, selectedFilters, selectedSorts });
+      // console.log("Searching with:", { searchText, selectedFilters, selectedSorts });
     } else {
       Alert.alert("אנא הכנס טקסט לחיפוש."); // Changed to Alert.alert
     }

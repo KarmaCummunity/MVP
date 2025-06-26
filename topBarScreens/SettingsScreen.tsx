@@ -1,13 +1,17 @@
-// screens/SettingsScreen.tsx
+// SettingsScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ScrollView, Alert, Linking, Platform, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Alert, Linking, Platform, SafeAreaView, TouchableOpacity } from 'react-native';
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
-import SettingsItem from '../components/SettingsItem';
-import colors from '../globals/colors'; // Adjust path
-import Icon from 'react-native-vector-icons/Ionicons'; // For header back button
+import SettingsItem, { SettingsItemProps } from '../components/SettingsItem';
+import colors from '../globals/colors';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { setupRTL } from '../utils/RTLConfig';
 
 export default function SettingsScreen() {
-  const navigation = useNavigation();
+
+
+
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   // State for toggle settings
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(true);
@@ -18,61 +22,55 @@ export default function SettingsScreen() {
   const [hideOnlineStatus, setHideOnlineStatus] = useState(false);
 
   // State for value-display settings
-  const [selectedLanguage, setSelectedLanguage] = useState('English'); // In a real app, use a global state/context
+  const [selectedLanguage, setSelectedLanguage] = useState('עברית');
 
   const handleClearCache = () => {
+
     Alert.alert(
-      "Clear Cache",
-      "Are you sure you want to clear the app's cache? This will free up storage space.",
+      "ניקוי זיכרון מטמון",
+      "האם אתה בטוח שברצונך לנקות את זיכרון המטמון של האפליקציה? פעולה זו תפנה שטח אחסון.",
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Clear", onPress: () => Alert.alert("Cache Cleared", "App cache has been cleared.") }
+        { text: "ביטול", style: "cancel" },
+        { text: "נקה", onPress: () => Alert.alert("זיכרון מטמון נוקה", "זיכרון המטמון של האפליקציה נוקה בהצלחה.") }
       ]
     );
   };
 
   const handleLogout = () => {
     Alert.alert(
-      "Log Out",
-      "Are you sure you want to log out?",
+      "התנתקות",
+      "האם אתה בטוח שברצונך להתנתק?",
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Log Out", onPress: () => Alert.alert("Logged Out", "You have been logged out.") }
-        // In a real app, dispatch a logout action, clear token, navigate to login screen
+        { text: "ביטול", style: "cancel" },
+        { text: "התנתק", onPress: () => Alert.alert("התנתקת", "התנתקת בהצלחה.") }
       ]
     );
   };
 
   const navigateTo = (screenName: string, params?: any) => {
-    // In a real app, you'd navigate to specific screens
-    // For this example, we'll just show an alert or navigate to dummy screens if they exist
-    Alert.alert("Navigate To", `Navigating to ${screenName}`);
-    // Example: navigation.navigate(screenName, params);
+    Alert.alert("מעבר למסך", `מנווט למסך: ${screenName}`);
   };
 
   const openLink = (url: string) => {
-    Linking.openURL(url).catch(err => Alert.alert("Error", `Could not open URL: ${err.message}`));
+    Linking.openURL(url).catch(err => Alert.alert("שגיאה", `לא ניתן לפתוח את הקישור: ${err.message}`));
   };
 
   // Define your settings data as an array of objects
-  const settingsData = [
+  const settingsData: (SettingsItemProps | { type: 'sectionHeader', title?: string })[] = [
     { type: 'sectionHeader', title: 'חשבון' },
     {
-      id: 'edit_profile',
       title: 'עריכת פרופיל',
       iconName: 'person-outline',
       type: 'navigate',
       onPress: () => navigateTo('EditProfileScreen'),
     },
     {
-      id: 'change_password',
       title: 'שינוי סיסמה',
       iconName: 'key-outline',
       type: 'navigate',
       onPress: () => navigateTo('ChangePasswordScreen'),
     },
     {
-      id: 'privacy',
       title: 'פרטיות',
       description: 'שלוט במי יכול לראות את הפעילות שלך',
       iconName: 'lock-closed-outline',
@@ -80,7 +78,6 @@ export default function SettingsScreen() {
       onPress: () => navigateTo('PrivacySettingsScreen'),
     },
     {
-      id: 'security',
       title: 'אבטחה',
       description: 'אימות דו-שלבי, פעילות התחברות',
       iconName: 'shield-checkmark-outline',
@@ -88,7 +85,6 @@ export default function SettingsScreen() {
       onPress: () => navigateTo('SecuritySettingsScreen'),
     },
     {
-      id: 'hide_online_status',
       title: 'הסתרת סטטוס מקוון',
       iconName: 'eye-off-outline',
       type: 'toggle',
@@ -97,7 +93,6 @@ export default function SettingsScreen() {
     },
     { type: 'sectionHeader', title: 'הודעות' },
     {
-      id: 'push_notifications',
       title: 'התראות Push',
       description: 'התראות על הודעות, לייקים, תגובות ועוד',
       iconName: 'notifications-outline',
@@ -106,7 +101,6 @@ export default function SettingsScreen() {
       onValueChange: setPushNotificationsEnabled,
     },
     {
-      id: 'email_notifications',
       title: 'התראות דוא"ל',
       iconName: 'mail-outline',
       type: 'toggle',
@@ -115,15 +109,13 @@ export default function SettingsScreen() {
     },
     { type: 'sectionHeader', title: 'העדפות אפליקציה' },
     {
-      id: 'language',
       title: 'שפה',
       iconName: 'language-outline',
       type: 'value',
       displayValue: selectedLanguage,
-      onPress: () => Alert.alert("בחירת שפה", "ממשק לבחירת שפה"), // In a real app, open a modal/picker
+      onPress: () => Alert.alert("בחירת שפה", "ממשק לבחירת שפה"),
     },
     {
-      id: 'dark_mode',
       title: 'מצב כהה',
       iconName: 'moon-outline',
       type: 'toggle',
@@ -131,7 +123,6 @@ export default function SettingsScreen() {
       onValueChange: setDarkModeEnabled,
     },
     {
-      id: 'data_saver',
       title: 'מצב חיסכון בנתונים',
       description: 'הפחתת איכות תמונה/וידאו',
       iconName: 'cellular-outline',
@@ -140,7 +131,6 @@ export default function SettingsScreen() {
       onValueChange: setDataSaverMode,
     },
     {
-      id: 'autoplay_videos',
       title: 'הפעלת וידאו אוטומטית',
       iconName: 'play-circle-outline',
       type: 'toggle',
@@ -148,7 +138,6 @@ export default function SettingsScreen() {
       onValueChange: setAutoplayVideos,
     },
     {
-      id: 'clear_cache',
       title: 'ניקוי זיכרון מטמון',
       iconName: 'trash-outline',
       type: 'button',
@@ -156,51 +145,44 @@ export default function SettingsScreen() {
     },
     { type: 'sectionHeader', title: 'עזרה ותמיכה' },
     {
-      id: 'help_center',
       title: 'מרכז העזרה',
       iconName: 'help-circle-outline',
       type: 'navigate',
-      onPress: () => openLink('https://help.instagram.com/'), // Example link
+      onPress: () => openLink('https://reactnative.dev/docs/linking'),
     },
     {
-      id: 'report_problem',
       title: 'דווח על בעיה',
       iconName: 'bug-outline',
       type: 'navigate',
       onPress: () => navigateTo('ReportProblemScreen'),
     },
     {
-      id: 'contact_us',
       title: 'צור קשר',
       iconName: 'call-outline',
       type: 'navigate',
       onPress: () => navigateTo('ContactUsScreen'),
     },
     {
-      id: 'privacy_policy',
       title: 'מדיניות פרטיות',
       iconName: 'document-text-outline',
       type: 'navigate',
-      onPress: () => openLink('https://help.instagram.com/519522125107875'), // Example link
+      onPress: () => openLink('https://reactnative.dev/docs/linking'),
     },
     {
-      id: 'terms_of_service',
       title: 'תנאי שירות',
       iconName: 'reader-outline',
       type: 'navigate',
-      onPress: () => openLink('https://help.instagram.com/581066165568187'), // Example link
+      onPress: () => openLink('https://reactnative.dev/docs/linking'),
     },
     { type: 'sectionHeader', title: 'אודות' },
     {
-      id: 'app_version',
       title: 'גרסת אפליקציה',
       iconName: 'information-circle-outline',
       type: 'value',
       displayValue: '1.0.0 (Build 123)',
     },
-    { type: 'sectionHeader', title: '' }, // Empty section for spacing before logout
+    { type: 'sectionHeader' },
     {
-      id: 'logout',
       title: 'התנתק',
       iconName: 'log-out-outline',
       type: 'button',
@@ -208,55 +190,60 @@ export default function SettingsScreen() {
       isDestructive: true,
     },
     {
-      id: 'delete_account',
       title: 'מחק חשבון',
       iconName: 'trash-bin-outline',
       type: 'button',
-      onPress: () => Alert.alert("מחק חשבון", "האם אתה בטוח שברצונך למחוק את חשבונך?"),
+      onPress: () => Alert.alert("מחק חשבון", "האם אתה בטוח שברצונך למחוק את חשבונך?\nפעולה זו בלתי הפיכה."),
       isDestructive: true,
     },
   ];
 
-  const renderSettingItem = ({ item }: { item: any }) => {
+  const renderSettingItem = ({ item, index }: { item: any; index: number }) => {
     if (item.type === 'sectionHeader') {
-      return item.title ? <Text style={styles.sectionHeader}>{item.title}</Text> : <View style={styles.sectionSpacer} />;
+      return item.title ? (
+        <Text style={localStyles.sectionHeader}>{item.title}</Text>
+      ) : (
+        <View style={localStyles.sectionSpacer} />
+      );
     }
-    return <SettingsItem {...item} />;
+    return <SettingsItem {...(item as SettingsItemProps)} />;
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
+    <SafeAreaView style={localStyles.safeArea}>
+      <View style={localStyles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={localStyles.headerButton}>
           <Icon name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>הגדרות</Text>
-        <View style={styles.headerButton} /> {/* Placeholder for consistent spacing */}
+        <Text style={localStyles.headerTitle}>הגדרות</Text>
+        <View style={localStyles.headerButton} />
       </View>
       <FlatList
         data={settingsData}
-        keyExtractor={(item, index) => item.id || `section-${item.title || index}`}
+        keyExtractor={(item, index) => 
+          item.type === 'sectionHeader' 
+            ? `section-${item.title || index}` 
+            : `setting-${item.title}-${index}`
+        }
         renderItem={renderSettingItem}
-        contentContainerStyle={styles.listContentContainer}
+        contentContainerStyle={localStyles.listContentContainer}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const localStyles = StyleSheet.create({
   safeArea: {
     flex: 1,
     alignItems: 'stretch',
-    writingDirection: 'rtl',
     backgroundColor: colors.backgroundPrimary,
-    marginTop: Platform.OS === 'android' ? 30 : 0, // Adjust for Android status bar
-    marginBottom: Platform.OS === 'android' ? 40 : 0, // Adjust for Android status bar
+    paddingTop: Platform.OS === 'android' ? 30 : 0,
   },
   header: {
-    flexDirection: 'row-reverse', // For RTL layout
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
-    alignItems: 'stretch',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: colors.backgroundSecondary,
@@ -269,7 +256,10 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   headerButton: {
-    width: 24, // To keep consistent spacing with the icon
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   listContentContainer: {
     paddingVertical: 8,
@@ -277,17 +267,16 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 18,
     alignSelf: 'flex-end',
-    alignItems: 'flex-end',
     fontWeight: 'bold',
     color: colors.textPrimary,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: colors.backgroundPrimary, // Section background color
+    backgroundColor: colors.backgroundPrimary,
     marginTop: 10,
     marginBottom: 5,
   },
   sectionSpacer: {
-    height: 200, // Space for empty section headers
+    height: 20,
     backgroundColor: colors.backgroundPrimary,
   }
 });

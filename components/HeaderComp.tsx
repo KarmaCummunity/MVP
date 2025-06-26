@@ -5,7 +5,7 @@ import MenuComp from "../components/MenuComp"; // Ensure this path is correct
 import ModeToggleButton from "../components/ModeToggleButton"; // Ensure this path is correct
 
 interface HeaderSectionProps {
-  mode: "מחפש" | "מציע";
+  mode: boolean;  // 0 - take, 1 - give
   menuOptions: string[];
   onToggleMode: () => void;
   onSelectMenuItem: (option: string) => void;
