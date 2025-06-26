@@ -1,18 +1,14 @@
 import React from "react";
 import { View, Platform, StyleSheet } from "react-native";
 import { createBottomTabNavigator, BottomTabNavigationOptions } from "@react-navigation/bottom-tabs";
-import { RouteProp } from '@react-navigation/native';
 import Ionicons from "react-native-vector-icons/Ionicons";
-// Import your screen components and global styles/colors
 import SearchScreen from "../bottomBarScreens/SearchScreen";
 import ProfileScreen from "../bottomBarScreens/ProfileScreen";
 import HomeScreen from "../bottomBarScreens/HomeScreen";
 import TodoListScreen from "../bottomBarScreens/TodoListScreen";
 import DonationsStack from "./DonationsStack";
-import WebViewScreen from '../screens/WebViewScreen';
 import styles from "../globals/styles";
 import colors from "../globals/colors";
-// import LocationSearchScreen from '../components/LocationSearchScreen';
 
 // Define the type for your bottom tab navigator's route names and their parameters.
 export type BottomTabNavigatorParamList = {
@@ -21,8 +17,6 @@ export type BottomTabNavigatorParamList = {
   HomeScreen: undefined;
   SearchScreen: undefined;
   ProfileScreen: undefined;
-  // JGiveWeb: undefined;
-  // LocationSearchScreen: undefined;
 };
 
 // Create an instance of the Bottom Tab Navigator with its parameter list type
@@ -94,17 +88,11 @@ export default function BottomNavigator(): React.ReactElement {
           },
         })}
       >
-        {/*
-          IMPORTANT: Ensure NO blank lines, comments, or whitespace characters
-          between the closing /> of one Tab.Screen and the opening <Tab.Screen
-          of the next. This is the most common cause of the "found ' '" error.
-        */}
         <Tab.Screen name="DonationsScreen" component={DonationsStack} />
         <Tab.Screen name="TodoListScreen" component={TodoListScreen} />
         <Tab.Screen name="HomeScreen" component={HomeScreen} />
         <Tab.Screen name="SearchScreen" component={SearchScreen} />
         <Tab.Screen name="ProfileScreen" component={ProfileScreen} />
-        {/* <Tab.Screen name="LocationSearchScreen" component={LocationSearchScreen} /> */}
       </Tab.Navigator>
     </View>
   );

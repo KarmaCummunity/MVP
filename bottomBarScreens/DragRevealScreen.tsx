@@ -17,9 +17,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useFocusEffect } from '@react-navigation/native';
 import BubbleComp from '../components/BubbleComp';
-import TrumpScreen from '../donationScreens/TrumpScreen';
-import TodoListScreen from './TodoListScreen';
-import colors from '../globals/colors';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PANEL_HEIGHT = SCREEN_HEIGHT - 50;
@@ -139,11 +136,32 @@ export default function DragRevealScreen() {
 
   return (
     <View style={styles.container}>
-      <BubbleComp />      
+      <BubbleComp />
+      
       <GestureDetector gesture={panGesture}>
         <Animated.View style={[styles.panel, animatedStyle]}>
+          {/* Animated handle */}
           <Animated.View style={[styles.panelHandle, handleAnimatedStyle]} />
-            <TodoListScreen/>
+
+          {/* Content with fade effect */}
+          <Animated.View style={[styles.panelContent, contentAnimatedStyle]}>
+            <Text style={styles.panelHeading}>ברוך הבא</Text>
+            <Image
+              source={require('../assets/images/logo.png')}
+              style={styles.panelImage}
+              resizeMode="cover"
+            />
+            <Text style={styles.panelDescription}>
+              זה אזור שנפתח כשגוררים את הפאנל כלפי מעלה. כאן תוכל להציג מידע נוסף, טפסים, קישורים ועוד.
+            </Text>
+            
+            {/* Additional visual feedback */}
+            <View style={styles.progressIndicator}>
+              <View style={styles.progressDot} />
+              <View style={styles.progressDot} />
+              <View style={styles.progressDot} />
+            </View>
+          </Animated.View>
         </Animated.View>
       </GestureDetector>
     </View>
@@ -153,17 +171,17 @@ export default function DragRevealScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: '#fafafa',
   },
   panel: {
     height: PANEL_HEIGHT,
     width: '100%',
     backgroundColor: '#fff',
     position: 'absolute',
-    bottom: 10,
+    bottom: 30,
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
-    // padding: 20,
+    padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.15,

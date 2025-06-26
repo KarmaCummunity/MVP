@@ -17,136 +17,96 @@ import Animated, {
   withDelay,
   Easing,
 } from "react-native-reanimated";
-import { sentences } from "../globals/constants"; // Assuming this path is correct
+import { motivationalQuotes } from "../globals/constants"; // Assuming this path is correct
+import { TouchableOpacity } from 'react-native';
+import colors from "../globals/colors";
 
 // Get the dimensions of the device window for responsive sizing
 const { width, height } = Dimensions.get("window");
-// console.log(`[Dimensions] Screen width: ${width}, height: ${height}`);
 
 // --- Constants ---
-const NUM_BUBBLES = 30; // Number of main interactive bubbles
-const NUM_BACKGROUND_BUBBLES = 100; // Number of non-interactive background bubbles
-const MIN_SIZE = 50; // Minimum size for main bubbles
-const MAX_SIZE = 150; // Maximum size for main bubbles
-const MIN_NUMBER = 1; // Minimum number value for main bubbles
-const MAX_NUMBER = 100; // Maximum number value for main bubbles
+const NUM_BUBBLES = 30;
+const NUM_BACKGROUND_BUBBLES = 100;
+const MIN_SIZE = 50;
+const MAX_SIZE = 150;
+const MIN_NUMBER = 1;
+const MAX_NUMBER = 100;
 
 // Interface for defining the structure of bubble data
 interface BubbleData {
-  id: string; // Unique identifier for the bubble
-  size: number; // Diameter of the bubble
-  x: number; // X-coordinate for initial position
-  y: number; // Y-coordinate for initial position
-  value: number | null; // Numeric value for main bubbles (null for background)
-  name: string | null; // Word representation of the number for main bubbles (null for background)
-  directionX: number; // X-axis movement direction (1 or -1)
-  directionY: number; // Y-axis movement direction (1 or -1)
-  delay: number; // Animation delay for staggered effects
-  isBackground: boolean; // Flag to distinguish background bubbles from main bubbles
+  id: string;
+  size: number;
+  x: number;
+  y: number;
+  value: number | null;
+  name: string | null;
+  directionX: number;
+  directionY: number;
+  delay: number;
+  isBackground: boolean;
 }
 
 /**
  * Converts a number to its Hebrew word representation.
- * @param num The number to convert.
- * @returns The Hebrew word representation of the number.
  */
 const numberToWords = (num: number): string => {
-  // Define Hebrew units
   const units = [
     "",
-    "אחת", // one
-    "שתיים", // two
-    "שלוש", // three
-    "ארבע", // four
-    "חמש", // five
-    "שש", // six
-    "שבע", // seven
-    "שמונה", // eight
-    "תשע", // nine
+    "אחת", "שתיים", "שלוש", "ארבע", "חמש", 
+    "שש", "שבע", "שמונה", "תשע",
   ];
-  // Define Hebrew tens
   const tens = [
     "",
-    "עשר", // ten
-    "עשרים", // twenty
-    "שלושים", // thirty
-    "ארבעים", // forty
-    "חמישים", // fifty
-    "שישים", // sixty
-    "שבעים", // seventy
-    "שמונים", // eighty
-    "תשעים", // ninety
+    "עשר", "עשרים", "שלושים", "ארבעים", "חמישים",
+    "שישים", "שבעים", "שמונים", "תשעים",
   ];
-  // Define Hebrew teens (10-19)
   const teens = [
-    "עשר", // ten (special case for 10)
-    "אחת עשרה", // eleven
-    "שתים עשרה", // twelve
-    "שלוש עשרה", // thirteen
-    "ארבע עשרה", // fourteen
-    "חמש עשרה", // fifteen
-    "שש עשרה", // sixteen
-    "שבע עשרה", // seventeen
-    "שמונה עשרה", // eighteen
-    "תשע עשרה", // nineteen
+    "עשר", "אחת עשרה", "שתים עשרה", "שלוש עשרה", "ארבע עשרה",
+    "חמש עשרה", "שש עשרה", "שבע עשרה", "שמונה עשרה", "תשע עשרה",
   ];
 
   if (num === 0) {
-    // console.log("[numberToWords] Converting 0 to 'אפס'");
-    return "אפס"; // Zero in Hebrew
+    return "אפס";
   }
 
-  let result = ""; // Stores the accumulated word representation
-  let tempNum = num; // Use a temporary variable to manipulate the number
-
-  // Helper function to add a part of the number to the result
-  const addPart = (n: number, word: string) => {
-    if (n > 0) {
-      result += `${numberToWords(n)} ${word} `; // Recursively convert and append
-      // console.log(`[numberToWords] Adding part: ${n} ${word}, current result: ${result}`);
-    }
-  };
+  let result = "";
+  let tempNum = num;
 
   // Handle thousands
   if (tempNum >= 1000) {
     const thousands = Math.floor(tempNum / 1000);
-    result += thousands === 1 ? "אלף " : numberToWords(thousands) + " אלפים "; // "thousand" or "thousands"
-    tempNum %= 1000; // Remove thousands from tempNum
-    // console.log(`[numberToWords] Handled thousands: ${thousands}, remaining num: ${tempNum}`);
+    result += thousands === 1 ? "אלף " : numberToWords(thousands) + " אלפים ";
+    tempNum %= 1000;
   }
 
   // Handle hundreds
   if (tempNum >= 100) {
     const hundreds = Math.floor(tempNum / 100);
-    result += hundreds === 1 ? "מאה " : numberToWords(hundreds) + " מאות "; // "hundred" or "hundreds"
-    tempNum %= 100; // Remove hundreds from tempNum
-    // console.log(`[numberToWords] Handled hundreds: ${hundreds}, remaining num: ${tempNum}`);
+    result += hundreds === 1 ? "מאה " : numberToWords(hundreds) + " מאות ";
+    tempNum %= 100;
   }
 
   // Handle tens and units
   if (tempNum >= 20) {
-    const t = Math.floor(tempNum / 10); // Tens digit
-    const u = tempNum % 10; // Units digit
-    result += tens[t]; // Add tens word
+    const t = Math.floor(tempNum / 10);
+    const u = tempNum % 10;
+    result += tens[t];
     if (u > 0) {
-      result += ` ו${units[u]}`; // Add "and" + units word
+      result += ` ו${units[u]}`;
     }
   } else if (tempNum >= 10) {
-    result += teens[tempNum - 10]; // Handle teens (10-19)
+    result += teens[tempNum - 10];
   } else if (tempNum > 0) {
-    result += units[tempNum]; // Handle single units (1-9)
+    result += units[tempNum];
   }
 
-  return result.trim(); // Return the trimmed result
+  return result.trim();
 };
 
 /**
  * Scales a number value to a bubble size within the defined MIN_SIZE and MAX_SIZE range.
- * @param num The number to scale.
- * @returns The calculated size for the bubble.
  */
 const scaleNumberToSize = (num: number): number => {
-  // Ensure num is within the expected range for scaling
   const clampedNum = Math.max(MIN_NUMBER, Math.min(MAX_NUMBER, num));
   const scaledSize =
     MIN_SIZE +
@@ -157,11 +117,6 @@ const scaleNumberToSize = (num: number): number => {
 
 /**
  * Checks if a newly generated bubble would overlap with existing bubbles.
- * @param x X-coordinate of the new bubble.
- * @param y Y-coordinate of the new bubble.
- * @param size Size of the new bubble.
- * @param bubbles Array of existing BubbleData.
- * @returns True if overlapping, false otherwise.
  */
 const isOverlapping = (
   x: number,
@@ -170,11 +125,9 @@ const isOverlapping = (
   bubbles: BubbleData[]
 ): boolean => {
   for (const b of bubbles) {
-    // Calculate distance between centers of the two bubbles
     const dx = b.x - x;
     const dy = b.y - y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    // Check if the distance is less than the sum of their radii (adjusted for a little buffer)
     if (distance < (b.size + size) / 2.5) {
       return true;
     }
@@ -184,32 +137,27 @@ const isOverlapping = (
 
 /**
  * Generates an array of BubbleData objects for both main and background bubbles.
- * Attempts to avoid initial overlaps.
- * @returns An array of BubbleData.
  */
 const generateBubbles = (): BubbleData[] => {
-  // console.log("[generateBubbles] Starting bubble generation...");
-  const bubbles: BubbleData[] = []; // Stores all generated bubbles
-  let attempts = 0; // Counter for attempts to place a bubble
+  const bubbles: BubbleData[] = [];
+  let attempts = 0;
 
-  // --- Generate Background Bubbles ---
+  // Generate Background Bubbles
   while (bubbles.length < NUM_BACKGROUND_BUBBLES && attempts < 2000) {
-    const size = 20 + Math.random() * 80; // Smaller and varied sizes for background bubbles
-    // Random position within screen bounds, considering bubble size
+    const size = 20 + Math.random() * 80;
     const x = Math.random() * (width - size);
-    const y = Math.random() * (height - size);
-    const directionX = Math.random() > 0.5 ? 1 : -1; // Random horizontal direction
-    const directionY = Math.random() > 0.5 ? 1 : -1; // Random vertical direction
-    const delay = Math.random() * 1000; // Random animation delay
+    const y = Math.random() * (height - size - 150); // Leave space for message
+    const directionX = Math.random() > 0.5 ? 1 : -1;
+    const directionY = Math.random() > 0.5 ? 1 : -1;
+    const delay = Math.random() * 1000;
 
-    // Check for overlap before adding the bubble
     bubbles.push({
-      id: `bg-${bubbles.length}`, // Unique ID for background bubble
+      id: `bg-${bubbles.length}`,
       size,
       x,
       y,
-      value: null, // No value for background bubbles
-      name: null, // No name for background bubbles
+      value: null,
+      name: null,
       directionX,
       directionY,
       delay,
@@ -219,24 +167,22 @@ const generateBubbles = (): BubbleData[] => {
     attempts++;
   }
 
-  // --- Generate Main Bubbles ---
-  attempts = 0; // Reset attempts for main bubbles
-  const mainBubbles: BubbleData[] = []; // Temporary array for main bubbles
-  // console.log(`[generateBubbles] Generating ${NUM_BUBBLES} main bubbles.`);
+  // Generate Main Bubbles
+  attempts = 0;
+  const mainBubbles: BubbleData[] = [];
   while (mainBubbles.length < NUM_BUBBLES && attempts < 2000) {
-    const value = Math.floor(Math.random() * MAX_NUMBER) + 1; // Random number value
-    const size = scaleNumberToSize(value); // Size based on the number value
-    const x = Math.random() * (width - size); // Random position
-    const y = Math.random() * (height - size); // Random position
+    const value = Math.floor(Math.random() * MAX_NUMBER) + 1;
+    const size = scaleNumberToSize(value);
+    const x = Math.random() * (width - size);
+    const y = Math.random() * (height - size - 150); // Leave space for message
     const directionX = Math.random() > 0.5 ? 1 : -1;
     const directionY = Math.random() > 0.5 ? 1 : -1;
     const delay = Math.random() * 1000;
-    const name = numberToWords(value); // Convert number to Hebrew words
+    const name = numberToWords(value);
 
-    // Check for overlap with other main bubbles (important for interactivity)
     if (!isOverlapping(x, y, size, mainBubbles)) {
       mainBubbles.push({
-        id: `main-${mainBubbles.length}`, // Unique ID for main bubble
+        id: `main-${mainBubbles.length}`,
         size,
         x,
         y,
@@ -251,7 +197,6 @@ const generateBubbles = (): BubbleData[] => {
     attempts++;
   }
 
-  // Combine background and main bubbles
   const allBubbles = [...bubbles, ...mainBubbles];
   return allBubbles;
 };
@@ -260,52 +205,47 @@ const generateBubbles = (): BubbleData[] => {
  * BubbleComp component displaying animated bubbles and a message.
  */
 const BubbleComp: React.FC = () => {
-  // Memoize bubble generation to prevent re-rendering on every component render
   const bubbles = useMemo(generateBubbles, []);
-  // console.log("[BubbleComp] Bubbles generated and memoized.");
-
-  // State to track the currently selected bubble
   const [selectedBubbleId, setSelectedBubbleId] = useState<string | null>(null);
-  // State to control the current message displayed at the bottom
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
 
-  /**
-   * Handles the press event on a bubble.
-   * Toggles the selected state of the bubble and cycles through messages.
-   * @param id The ID of the pressed bubble.
-   */
   const handleBubblePress = useCallback((id: string) => {
-    // console.log(`[BubbleComp] Bubble pressed: ${id}`);
     setSelectedBubbleId((prevId) => {
       const newId = prevId === id ? null : id;
       return newId;
     });
-    // Cycle through the predefined sentences
     setCurrentSentenceIndex((prevIndex) => {
-      const newIndex = (prevIndex + 1) % sentences.length;
+      const newIndex = (prevIndex + 1) % motivationalQuotes.length;
       return newIndex;
     });
-  }, []); // Empty dependency array means this function is created once
+  }, []);
+
+  const handleMessagePress = useCallback(() => {
+    setCurrentSentenceIndex((prevIndex) => (prevIndex + 1) % motivationalQuotes.length);
+  }, []);
+
 
   return (
     <View style={styles.container}>
-      <View style={styles.container}>
-      {/* Render each bubble */}
-      {bubbles.map((bubble) => (
-        <AnimatedBubble
-          key={bubble.id} // Unique key for list rendering
-          {...bubble} // Spread all bubble properties
-          isSelected={selectedBubbleId === bubble.id} // Pass selection state
-          onPress={handleBubblePress} // Pass the press handler
-        />
-      ))}
-
+      {/* Bubbles Container */}
+      <View style={styles.bubblesContainer}>
+        {bubbles.map((bubble) => (
+          <AnimatedBubble
+            key={bubble.id}
+            {...bubble}
+            isSelected={selectedBubbleId === bubble.id}
+            onPress={handleBubblePress}
+          />
+        ))}
       </View>
-      {/* Message display container */}
+
+      {/* Message Container - Fixed positioning */}
       <View style={styles.messageContainer}>
-        <Text style={styles.messageText}>
-          {sentences[currentSentenceIndex]}
-        </Text>
+        <TouchableOpacity onPress={handleMessagePress}>
+          <Text style={styles.messageText}>
+            {motivationalQuotes[currentSentenceIndex]}
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -313,16 +253,11 @@ const BubbleComp: React.FC = () => {
 
 // --- AnimatedBubble Component ---
 
-// Props interface for AnimatedBubble
 interface AnimatedBubbleProps extends BubbleData {
-  isSelected: boolean; // Indicates if the bubble is currently selected
-  onPress: (id: string) => void; // Callback for when the bubble is pressed
+  isSelected: boolean;
+  onPress: (id: string) => void;
 }
 
-/**
- * AnimatedBubble component representing a single interactive or background bubble.
- * Handles its own animation and styling based on its properties and selection state.
- */
 const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
   size,
   x,
@@ -337,93 +272,84 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
   onPress,
   id,
 }) => {
-  // Shared values for Reanimated animations
-  const offset = useSharedValue(0); // Controls the floating animation
-  const animatedOpacity = useSharedValue(isBackground ? 0.2 : 1); // Controls bubble opacity
-  const animatedScale = useSharedValue(1); // Controls bubble scale (for press effect)
-
+  const offset = useSharedValue(0);
+  const animatedOpacity = useSharedValue(isBackground ? 0.2 : 1);
+  const animatedScale = useSharedValue(1);
 
   // Floating animation effect
   useEffect(() => {
     offset.value = withRepeat(
       withDelay(
-        delay, // Staggered start based on delay
+        delay,
         withTiming(1, {
-          duration: 4000 + Math.random() * 2000, // Random duration for varied movement speed
-          easing: Easing.inOut(Easing.ease), // Smooth easing for movement
+          duration: 4000 + Math.random() * 2000,
+          easing: Easing.inOut(Easing.ease),
         })
       ),
-      -1, // Repeat indefinitely
-      true // Reverse animation on alternate cycles
+      -1,
+      true
     );
-  }, [delay, offset]); // Re-run if delay or offset changes
+  }, [delay, offset]);
 
-  // Selection animation effects (opacity and scale)
+  // Selection animation effects
   useEffect(() => {
     if (!isBackground) {
       animatedOpacity.value = withTiming(isSelected ? 1 : 0.7, {
-        duration: 200, // Quick opacity change
+        duration: 200,
       });
       animatedScale.value = withSpring(isSelected ? 1.1 : 1, {
-        damping: 10, // Controls bounciness
-        stiffness: 100, // Controls speed of spring
+        damping: 10,
+        stiffness: 100,
       });
     }
-  }, [isSelected, isBackground, animatedOpacity, animatedScale]); // Re-run when isSelected or isBackground changes
+  }, [isSelected, isBackground, animatedOpacity, animatedScale]);
 
-  /**
-   * Internal handler for bubble press. Only calls `onPress` if it's not a background bubble.
-   * @param event The touch event.
-   */
   const handleInternalPress = useCallback(
     (event: GestureResponderEvent) => {
       if (!isBackground) {
-        onPress(id); // Call the external press handler
+        onPress(id);
       }
     },
     [id, isBackground, onPress]
-  ); // Dependencies for useCallback
+  );
 
-  // Animated style for the bubble's position, background, and border
+  // Animated style for the bubble
   const animatedStyle = useAnimatedStyle(() => {
-    // Calculate floating movement based on offset value
     const dx =
       Math.sin(offset.value * Math.PI * 2) *
-      (isBackground ? 8 : 5) * // Smaller movement for main bubbles
+      (isBackground ? 8 : 5) *
       directionX;
     const dy =
       Math.cos(offset.value * Math.PI * 2) *
       (isBackground ? 8 : 5) *
       directionY;
 
-    // Determine background and border colors based on selection and background state
     const backgroundColor = isBackground
-      ? "rgba(0, 230, 255, 0.2)" // Light blue for background
+      ? "rgba(0, 230, 255, 0.2)"
       : isSelected
-      ? "rgba(250, 220, 220, 0.9)" // Light red/pink when selected
-      : "rgba(173, 216, 255, 0.8)"; // Light blue when not selected
+      ? "rgba(250, 220, 220, 0.9)"
+      : "rgba(173, 216, 255, 0.8)";
     const borderColor = isBackground
-      ? "rgba(255, 255, 255, 0.5)" // Faint white for background
+      ? "rgba(255, 255, 255, 0.5)"
       : isSelected
-      ? "rgba(0, 0, 0, 1)" // Black for selected
-      : "rgba(255, 255, 255, 0.9)"; // White for not selected
+      ? "rgba(0, 0, 0, 1)"
+      : "rgba(255, 255, 255, 0.9)";
 
-    // Return the animated styles
     return {
       transform: [
-        { translateX: x + 0.5 * dx }, // Apply floating X movement
-        { translateY: y + 0.5 * dy }, // Apply floating Y movement
-        { scale: animatedScale.value }, // Apply scaling based on selection
+        { translateX: x + 0.5 * dx },
+        { translateY: y + 0.5 * dy },
+        { scale: animatedScale.value },
       ],
       backgroundColor,
       borderColor,
-      opacity: animatedOpacity.value, // Apply opacity
+      opacity: animatedOpacity.value,
     };
   });
 
   // Calculate font sizes dynamically based on bubble size
-  const fontSize = Math.max(8, size / 6);
-  const nameSize = Math.max(6, size / 8);
+  const fontSize = Math.max(10, size / 7); // Slightly larger minimum
+  const nameSize = Math.max(8, size / 10); // Better proportion
 
   return (
     <TouchableWithoutFeedback onPress={handleInternalPress}>
@@ -433,34 +359,43 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
           {
             width: size,
             height: size,
-            borderRadius: size / 2, // Makes it a perfect circle
-            zIndex: isBackground ? 0 : isSelected ? 2 : 1, // Z-index for layering
+            borderRadius: size / 2,
+            zIndex: isBackground ? 0 : isSelected ? 10 : 5, // Higher z-index for selected
           },
-          animatedStyle, // Apply dynamic animated styles
+          animatedStyle,
         ]}
       >
-        {/* Only render text content for non-background bubbles */}
         {!isBackground && (
           <View style={styles.textContainer}>
             <Text
               style={[
                 styles.bubbleText,
-                { fontSize, color: isSelected ? "#333" : "#000" }, // Darker text when selected
+                { 
+                  fontSize, 
+                  color: isSelected ? "#333" : "#000",
+                  marginBottom: 2, // Add space between number and name
+                }
               ]}
-              numberOfLines={1} // Ensures text stays on one line
-              adjustsFontSizeToFit // Shrinks font to fit
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.5}
             >
-              {value?.toLocaleString()} {/* Display numeric value */}
+              {value?.toLocaleString()}
             </Text>
             <Text
               style={[
                 styles.bubbleName,
-                { fontSize: nameSize, color: isSelected ? "#555" : "#000" }, // Slightly darker text for name when selected
+                { 
+                  fontSize: nameSize, 
+                  color: isSelected ? "#555" : "#000",
+                  lineHeight: nameSize * 1.2, // Better line height
+                }
               ]}
-              numberOfLines={2} // Allows name to wrap
-              adjustsFontSizeToFit // Shrinks font to fit
+              numberOfLines={3} // Allow more lines for Hebrew text
+              adjustsFontSizeToFit
+              minimumFontScale={0.3}
             >
-              {name} {/* Display word representation */}
+              {name}
             </Text>
           </View>
         )}
@@ -472,51 +407,67 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
 // --- StyleSheet ---
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "column", // Column layout for the main container
-    marginBottom: 60, // Space for the message at the bottom
-    flex: 1, // Takes up the entire screen
-    backgroundColor: "#e6f7ff", // Light blue background for the screen
+    flex: 1,
+    backgroundColor: "#e6f7ff",
+  },
+  bubblesContainer: {
+    flex: 1,
+    position: "relative",
   },
   bubble: {
-    position: "absolute", // Allows positioning with x and y coordinates
-    borderWidth: 1, // Border around the bubble
-    shadowColor: "#ffffff", // White shadow for a subtle glow effect
-    shadowOpacity: 0.1, // Low opacity for subtle shadow
-    shadowOffset: { width: -1, height: -1 }, // Shadow direction
-    shadowRadius: 3, // Blur radius of the shadow
-    justifyContent: "center", // Center content vertically
-    alignItems: "center", // Center content horizontally
-    padding: 2, // Small padding inside the bubble
+    position: "absolute",
+    borderWidth: 1,
+    shadowColor: "#ffffff",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: -1, height: -1 },
+    shadowRadius: 3,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 4, // Increased padding
   },
   textContainer: {
-    alignItems: "center", // Center text elements horizontally
-    justifyContent: "center", // Center text elements vertically
-    paddingHorizontal: 2, // Horizontal padding for text
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4, // Increased padding
+    paddingVertical: 2,
+    width: "100%", // Ensure full width usage
   },
   bubbleText: {
-    fontWeight: "bold", // Bold text for the number
-    textAlign: "center", // Center align the number
-    opacity: 1, // Full opacity for the number
+    fontWeight: "bold",
+    textAlign: "center",
+    opacity: 1,
   },
   bubbleName: {
-    textAlign: "center", // Center align the name
-    opacity: 0.7, // Slightly transparent for the name
-    lineHeight: 10, // Reduced line height for compact look
+    textAlign: "center",
+    opacity: 0.8, // Slightly more visible
+    fontWeight: "500", // Add some weight to make it more visible
   },
   messageContainer: {
-    position: "absolute", // Absolute positioning
-    bottom: 20, // 20 units from the bottom
-    width: "100%", // Takes full width
-    alignItems: "center", // Center content horizontally
-    paddingHorizontal: 20, // Horizontal padding
+    // position: "absolute",
+    // marginBottom: 80,
+    paddingVertical: 80,
+    left: 0,
+    right: 0,
+    zIndex: 1000, // Very high z-index to ensure it's always on top
+    alignItems: "center",
+    paddingHorizontal: 20,
+    backgroundColor: "transparent", // Ensure no background interference
   },
   messageText: {
-    zIndex: 10, // Ensure it appears above bubbless
-    position: "absolute", // Absolute positioning
-    fontSize: 18, // Font size for the message
-    fontWeight: "bold", // Bold message text
-    // color: "#333", // Dark gray text color
-    textAlign: "center", // Center align the message
+    fontSize: 14,
+    fontWeight: "bold",
+    backgroundColor: colors.lightGray,
+    textAlign: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    opacity: 0.78,
+    elevation: 1, // For Android shadow
   },
 });
 
