@@ -81,7 +81,7 @@ export default function TrumpScreen() {
     <SafeAreaView style={localStyles.safeArea}>
       {/* New Wrapper View */}
       <View style={localStyles.wrapper}>
-        {/* <View style={localStyles.container}> */}
+        {/* <View st yle={localStyles.container}> */}
           {/* Replaced with HeaderSection component */}
           <HeaderComp
             mode={mode}

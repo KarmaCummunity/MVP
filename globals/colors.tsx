@@ -47,9 +47,8 @@ const colors = {
     priorityMedium: '#FFD166',    // Yellow/Orange for Medium priority tasks
     priorityLow: '#6FCF97',       // Green for Low priority tasks
     priorityDefault: '#CCCCCC',   // Default color for undefined priority
-    priorityCritical: '#D32F2F', // Dark Red for Critical priority tasks
-    priorityUrgent: '#F4511E',
-  
+    priorityCritical: '#F4511E', // Dark Red for Critical priority tasks
+    priorityUrgent: '#D32F2F',
     // Switch component colors
     switchTrackFalse: '#767577',  // Color when switch is OFF
     switchTrackTrue: '#81b0ff',   // Color when switch is ON

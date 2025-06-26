@@ -317,8 +317,6 @@ const localStyles = StyleSheet.create({
     borderRadius: 30,
     marginHorizontal: 20,
     marginTop: 10,
-    // height: 55,
-    flex: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -342,7 +340,7 @@ const localStyles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: "100%",
-    fontSize: 16,
+    fontSize: 12,
     color: "#333",
     paddingHorizontal: 10,
   },

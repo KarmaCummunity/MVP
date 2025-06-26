@@ -130,9 +130,9 @@ const AddEditTaskModal: React.FC<AddEditTaskModalProps> = ({
     p: "Urgent" | "Critical" | "High" | "Medium" | "Low"
   ) => {
     switch (p) {
-      case "Critical":
-        return "#D32F2F"; // A more standard and strong red (Material Design 'Red 700')
       case "Urgent":
+        return "#D32F2F"; // A more standard and strong red (Material Design 'Red 700')
+      case "Critical":
         return "#F4511E"; // A vibrant orange-red (Material Design 'Deep Orange 600')
       case "High":
         return "#FB8C00"; // A bright orange (Material Design 'Orange 600')
@@ -181,7 +181,7 @@ const AddEditTaskModal: React.FC<AddEditTaskModalProps> = ({
           {/* Priority Picker */}
           <View style={styles.priorityContainer}>
             <Text style={styles.priorityLabel}>Priority:</Text>
-            {["Low", "Medium", "High", "Urgent", "Critical"].map((p) => (
+            {["Low", "Medium", "High", "Critical", "Urgent"].map((p) => (
               <TouchableOpacity
                 key={p}
                 style={[

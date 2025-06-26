@@ -135,11 +135,8 @@ export default function MoneyScreen({
                     showsHorizontalScrollIndicator={false}
                   >
                     {[1, 2, 3, 4, 5].map((_, i) => (
-                      <TouchableOpacity onPress={ () => 
-                        // console.log("fgdfg")
-                        navigation.navigate("WebViewScreen")
-                      }>
-                        <View style={localStyles.card} key={`rec-${i}`}>
+                      <TouchableOpacity onPress={ () => navigation.navigate("WebViewScreen")} key={`rec-${i}`}>
+                        <View style={localStyles.card} >
                           <Image
                             source={require("../assets/images/Jgive_Logo.png")}
                             resizeMode="contain"

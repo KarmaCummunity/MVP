@@ -10,7 +10,7 @@ export default function LoginScreen({ navigation }: { navigation: NavigationProp
       <View style={styles.sectionContainer}>
       {/* לוגו */}
       <Image
-        source={require('../assets/images/logo.jpeg')}
+        source={require('../assets/images/logo.png')}
         style={styles.logo}
         resizeMode="contain"
       />
