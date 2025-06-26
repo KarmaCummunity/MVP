@@ -4,7 +4,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import HomeStack from "./HomeStack";
 import InactiveScreen from "../screens/InactiveScreen";
 import WebViewScreen from "../screens/WebViewScreen";
-
+import LocationSearchComp from "../components/LocationSearchComp";
 const Stack = createStackNavigator();
 
 export default function MainNavigator() {
@@ -27,7 +27,8 @@ export default function MainNavigator() {
       />
       <Stack.Screen name="InactiveScreen" component={InactiveScreen} />
       <Stack.Screen name="WebViewScreen" component={WebViewScreen} />
-
+      <Stack.Screen name="LocationSearchComp" component={LocationSearchComp} />
+      {/* Add other screens as needed */}
     </Stack.Navigator>
   );
 }

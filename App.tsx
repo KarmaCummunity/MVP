@@ -1,3 +1,5 @@
+// App.tsx
+'use strict';
 import React, { useCallback, useEffect, useState } from "react";
 import MainNavigator from "./navigations/MainNavigator";
 import { NavigationContainer } from "@react-navigation/native";
@@ -116,3 +118,4 @@ const errorStyles = StyleSheet.create({
     textAlign: "center",
   },
 });
+

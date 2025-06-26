@@ -5,14 +5,41 @@ import {
   ScrollView,
   StyleSheet,
   SafeAreaView,
-  Platform, // Import Platform
+  Platform,
+  TouchableOpacity,
+  Linking,
+  Alert,
+  Image,
+  ImageSourcePropType,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-// import SearchBar from "../components/SearchBar"; // Not used in provided snippet
-// import MenuComp from "../components/MenuComp"; // Not used in provided snippet
-// import ModeToggleButton from "../components/ModeToggleButton"; // Not used in provided snippet
 import HeaderComp from "../components/HeaderComp";
 import { filter_for_trumps } from "../globals/constants";
+import AutocompleteDropdownComp from "../components/AutocompleteDropdownComp"; // Corrected component import
+import { NavigationProp, ParamListBase } from "@react-navigation/native";
+import LocationSearchComp from "../components/LocationSearchComp";
+import TimeInput from "../components/TimeInput";
+import styles from "../globals/styles";
+
+// Define your WhatsApp group links WITH their names
+// IMPORTANT: Replace "Name of Group 1", "Name of Group 2", etc., with the actual names you want to display.
+const WHATSAPP_GROUP_DETAILS = [
+  {
+    name: "טרמפים מרכז",
+    link: "https://chat.whatsapp.com/0lLT8M8RkPILPAV9IPfpjT",
+    image: require("../assets/images/logo.png"),
+  },
+  {
+    name: "טרמפים צפון",
+    link: "https://chat.whatsapp.com/GjHTYqHGYF63VWh3BfTbE",
+    image: require("../assets/images/logo.png"),
+  },
+  {
+    name: "טרמפים דרום",
+    link: "https://chat.whatsapp.com/GjHTYqHGYF63VWh3BfTbE",
+    image: require("../assets/images/logo.png"),
+  }, // Assuming a different name for the duplicated link
+];
 
 const dropdownOptions = {
   to: ["תל אביב", "ירושלים", "חיפה"],
@@ -20,49 +47,30 @@ const dropdownOptions = {
   when: ["היום", "מחר", "שבוע הבא"],
 };
 
+const searchResults = [];
+interface WhatsAppGroup {
+  name: string;
+  link: string;
+  image: ImageSourcePropType;
+}
 interface Filters {
   to: string;
   from: string;
   when: string;
 }
 
-interface DropdownProps {
-  label: string;
-  selectedValue: string;
-  onValueChange: (value: string) => void;
-  options: string[];
-}
-
-// Reusable Dropdown component (keep as is)
-const Dropdown: React.FC<DropdownProps> = ({
-  label,
-  selectedValue,
-  onValueChange,
-  options,
-}) => {
-  return (
-    <View style={localStyles.dropdownBox}>
-      <Picker
-        selectedValue={selectedValue}
-        onValueChange={onValueChange}
-        mode="dropdown"
-      >
-        <Picker.Item label={label} value="" />
-        {options.map((opt, idx) => (
-          <Picker.Item key={idx} label={opt} value={opt} />
-        ))}
-      </Picker>
-    </View>
-  );
-};
-
-export default function TrumpScreen() {
+export default function TrumpScreen({
+  navigation,
+}: {
+  navigation: NavigationProp<ParamListBase>;
+}) {
   const [filters, setFilters] = useState<Filters>({
     to: "",
     from: "",
     when: "",
   });
   const [mode, setMode] = useState<"מחפש" | "מציע">("מחפש");
+  const [selectedTime, setSelectedTime] = useState<Date>(new Date());
 
   const handleSelectMenuItem = (option: string) => {
     alert(`Selected: ${option}`);
@@ -77,93 +85,140 @@ export default function TrumpScreen() {
     setMode((prev) => (prev === "מחפש" ? "מציע" : "מחפש"));
   };
 
+  // Function to open WhatsApp group link
+  const handleOpenWhatsAppGroup = async (url: string) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert(
+          "שגיאה",
+          `לא ניתן לפתוח את הקישור: ${url}. אנא וודא שאפליקציית ווטסאפ מותקנת.`
+        );
+      }
+    } catch (error) {
+      console.error("Failed to open WhatsApp URL:", error);
+      Alert.alert("שגיאה", "אירעה שגיאה בעת ניסיון לפתוח את הקישור.");
+    }
+  };
+
   return (
     <SafeAreaView style={localStyles.safeArea}>
-      {/* New Wrapper View */}
       <View style={localStyles.wrapper}>
-        {/* <View st yle={localStyles.container}> */}
-          {/* Replaced with HeaderSection component */}
-          <HeaderComp
-            mode={mode}
-            menuOptions={filter_for_trumps}
-            onToggleMode={toggleMode}
-            onSelectMenuItem={handleSelectMenuItem}
+        <HeaderComp
+          mode={mode}
+          menuOptions={filter_for_trumps}
+          onToggleMode={toggleMode}
+          onSelectMenuItem={handleSelectMenuItem}
+        />
+        <ScrollView
+          contentContainerStyle={localStyles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View>
+            <Text style={localStyles.sectionTitle}>מאיפה?</Text>
+            <LocationSearchComp
+              // onLocationSelected={(location) =>
+              //   handleDropdownChange("from", location)
+              // }
+            />
+            <Text style={localStyles.sectionTitle}>לאיפה?</Text>
+            <LocationSearchComp
+              // onLocationSelected={(location) =>
+              //   handleDropdownChange("to", location)
+              // }
+            />
+            <Text style={localStyles.sectionTitle}>מתי?</Text>
+          </View>
+
+          <TimeInput
+            value={selectedTime}
+            onChange={(date) => {
+              console.log("Selected time:", date);
+              setSelectedTime(date);
+            }}
           />
-          {/* Scrollable Content */}
-          <ScrollView
-            contentContainerStyle={localStyles.scrollContent}
-            showsVerticalScrollIndicator={false}
+
+          <TouchableOpacity
+            onPress={() =>
+              Alert.alert(
+                "Searching",
+                `Time: ${selectedTime.toLocaleTimeString()} To: ${
+                  filters.to || "Not specified"
+                }`
+              )
+            }
+            style={styles.button}
           >
-            {/* Dropdowns */}
-            <View style={localStyles.dropdownContainer}>
-              <Dropdown
-                label="? לאיפה"
-                selectedValue={filters.to}
-                onValueChange={(val) => handleDropdownChange("to", val)}
-                options={dropdownOptions.to}
-              />
-              <Dropdown
-                label="? מאיפה"
-                selectedValue={filters.from}
-                onValueChange={(val) => handleDropdownChange("from", val)}
-                options={dropdownOptions.from}
-              />
-              <Dropdown
-                label="? מתי"
-                selectedValue={filters.when}
-                onValueChange={(val) => handleDropdownChange("when", val)}
-                options={dropdownOptions.when}
-              />
-            </View>
+            <Text style={localStyles.donateButtonText}>חפש</Text>
+          </TouchableOpacity>
 
-            {/* Results */}
-            <Text style={localStyles.sectionTitle}>טרמפים :</Text>
-            <View style={localStyles.trumpCard}>
-              {/* Using trumpCard style */}
-              <Text style={localStyles.trumpCardTitle}>נועם סרוסי</Text>
-              <Text>מ: יאשיהו ל׳ הרכבת</Text>
-              <Text>ב: 02/01/2023 - 15:30</Text>
-            </View>
-            <View style={localStyles.trumpCard}>
-              {/* Using trumpCard style */}
-              <Text style={localStyles.trumpCardTitle}>נועם סרוסי</Text>
-              <Text>מ: שטרן 29, הרכבת לתל אביב</Text>
-              <Text>ב: היום - 15:30</Text>
-            </View>
-
-            {/* Groups */}
-            <Text style={localStyles.sectionTitle}>קבוצות:</Text>
-            {[...Array(5)].map((_, idx) => (
-              <View key={idx} style={localStyles.trumpCard}>
-                {/* Using trumpCard style */}
-                <Text style={localStyles.trumpCardSubtitle}>
-                  קבוצת טרמפים לדוגמה #{idx + 1}
-                </Text>
-                <Text style={localStyles.trumpCardText}>
-                  הודעה לדוגמה מתוך הקבוצה
-                </Text>
+          {/* Results */}
+          {searchResults.length > 0 && (
+            <View>
+              <Text style={localStyles.sectionTitle}>טרמפים :</Text>
+              <View style={localStyles.trumpCard}>
+                <Text style={localStyles.trumpCardTitle}>נועם סרוסי</Text>
+                <Text>מ: יאשיהו ל׳ הרכבת</Text>
+                <Text>ב: 02/01/2023 - 15:30</Text>
               </View>
-            ))}
-          </ScrollView>
-        </View>
-      {/* </View> */}
+              <View style={localStyles.trumpCard}>
+                <Text style={localStyles.trumpCardTitle}>נועם סרוסי</Text>
+                <Text>מ: שטרן 29, הרכבת לתל אביב</Text>
+                <Text>ב: היום - 15:30</Text>
+              </View>
+            </View>
+          )}
+
+          {/* Groups */}
+          <Text style={localStyles.sectionTitle}>קבוצות:</Text>
+          {/* Loop through your WhatsApp group details */}
+          {WHATSAPP_GROUP_DETAILS.map(
+            (
+              group,
+              idx // Changed to 'group' object
+            ) => (
+              <TouchableOpacity
+                key={idx}
+                style={localStyles.trumpCard}
+                onPress={() => handleOpenWhatsAppGroup(group.link)} // Use group.link
+              >
+                <View style={localStyles.groupCardContentWrapper}>
+                  <Image
+                    source={group.image} // Use the image source from the group details
+                    style={localStyles.groupCardImage}
+                  />
+                  <View style={localStyles.groupCardTextContent}>
+                    {/* Wrapper for text content */}
+                    <Text style={localStyles.trumpCardSubtitle}>
+                      {group.name} {/* Use group.name for the title */}
+                    </Text>
+                    <Text style={localStyles.trumpCardText}>תיאור הקבוצה</Text>
+                    {/* <Text style={localStyles.trumpCardLinkText}>
+                      {group.link.substring(0, 40)}...
+                    </Text> */}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            )
+          )}
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const localStyles = StyleSheet.create({
-
-safeArea: {
+  safeArea: {
     flex: 1,
     backgroundColor: "#FFEDD5",
   },
-  // This new wrapper will handle centering and max width for web
   wrapper: {
     flex: 1,
-    width: "100%", // Take full width of parent (safeArea)
-    maxWidth: 600, // Max width for web (adjust as needed)
-    alignSelf: "center", // Center horizontally within SafeAreaView
-    // paddingTop: Platform.OS === 'android' ? 20 : 0, // Optional: Android specific top padding
+    width: "100%",
+    maxWidth: 600,
+    alignSelf: "center",
   },
   container: {
     flex: 1,
@@ -173,6 +228,9 @@ safeArea: {
   scrollContent: {
     paddingBottom: 24,
     paddingTop: 12,
+    paddingHorizontal: 16,
+    // alignItems: "center",
+    justifyContent: "center",
   },
   dropdownContainer: {
     gap: 12,
@@ -184,7 +242,6 @@ safeArea: {
     borderColor: "#D1D5DB",
     borderRadius: 8,
   },
-  // MoneyScreen specific styles
   donateButton: {
     backgroundColor: "#007BFF",
     paddingVertical: 15,
@@ -194,7 +251,7 @@ safeArea: {
     marginHorizontal: 15,
     marginTop: 20,
     marginBottom: 10,
-    alignSelf: "center", // Center the button horizontally
+    alignSelf: "center",
   },
   donateButtonText: {
     color: "white",
@@ -206,7 +263,7 @@ safeArea: {
     flexWrap: "wrap",
     justifyContent: "center",
     marginBottom: 20,
-    gap: 10, // Adds space between buttons
+    gap: 10,
   },
   filterButton: {
     backgroundColor: "#E0E0E0",
@@ -225,9 +282,10 @@ safeArea: {
     fontWeight: "bold",
     fontSize: 18,
     marginBottom: 10,
+    alignSelf: "flex-end",
   },
   card: {
-    flexDirection: "row", // For MoneyScreen cards
+    flexDirection: "row",
     backgroundColor: "white",
     padding: 12,
     borderRadius: 12,
@@ -236,7 +294,7 @@ safeArea: {
     shadowOpacity: 0.1,
     shadowRadius: 4,
     marginBottom: 12,
-    alignItems: "center", // For MoneyScreen cards
+    alignItems: "center",
   },
   cardImage: {
     width: 50,
@@ -255,8 +313,8 @@ safeArea: {
     fontSize: 13,
     color: "#6B7280",
   },
-  // TrumpScreen specific card styles (overrides if needed)
   trumpCard: {
+    alignItems: "flex-end",
     backgroundColor: "white",
     padding: 12,
     borderRadius: 12,
@@ -265,18 +323,45 @@ safeArea: {
     shadowOpacity: 0.1,
     shadowRadius: 4,
     marginBottom: 12,
-    // Removed flexDirection and alignItems to make it vertical by default
   },
   trumpCardTitle: {
     fontWeight: "bold",
     fontSize: 16,
+    textAlign: "right", // Align text to the right
   },
   trumpCardSubtitle: {
     fontWeight: "600",
     fontSize: 15,
+    textAlign: "right", // Align text to the right
   },
   trumpCardText: {
+    textAlign: "right", // Align text to the right
     fontSize: 13,
     color: "#6B7280",
+  },
+  trumpCardLinkText: {
+    fontSize: 11,
+    color: "#007BFF",
+    marginTop: 4,
+  },
+  groupCardContentWrapper: {
+    flex: 1,
+    // gap: 100,
+    justifyContent: "space-between",
+    flexDirection: "row", // Arrange image and text horizontally
+    alignItems: "stretch", // Vertically align items in the center
+    // padding: 12, // Apply padding here for inner content spacing
+  },
+  groupCardImage: {
+    width: 48, // Adjust size as needed
+    height: 48, // Adjust size as needed
+    borderRadius: 24, // Half of width/height to make it circular
+    marginRight: 12, // Space between image and text
+    backgroundColor: "#eee", // Placeholder background
+  },
+  groupCardTextContent: {
+    textAlign: "right", // Align text to the right
+    justifyContent: "space-between",
+    flex: 1, // Allow text content to take remaining horizontal space
   },
 });

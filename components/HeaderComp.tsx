@@ -36,6 +36,7 @@ const headerStyles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingTop: 10,
     backgroundColor: 'transparent',
+    marginBottom: 10,
   },
   topRow: {
     flexDirection: "row",

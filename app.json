@@ -13,11 +13,14 @@
     },
     "assetBundlePatterns": [
       "**/*"
-    ],
+    ], 
     "ios": {
-      "supportsTablet": true
+      "jsEngine": "hermes",
+      "supportsTablet": true,
+      "bundleIdentifier": "com.karma-community.KC"
     },
     "android": {
+      "jsEngine": "hermes",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"

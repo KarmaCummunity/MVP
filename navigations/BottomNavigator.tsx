@@ -3,7 +3,6 @@ import { View, Platform, StyleSheet } from "react-native";
 import { createBottomTabNavigator, BottomTabNavigationOptions } from "@react-navigation/bottom-tabs";
 import { RouteProp } from '@react-navigation/native';
 import Ionicons from "react-native-vector-icons/Ionicons";
-
 // Import your screen components and global styles/colors
 import SearchScreen from "../bottomBarScreens/SearchScreen";
 import ProfileScreen from "../bottomBarScreens/ProfileScreen";
@@ -11,9 +10,9 @@ import HomeScreen from "../bottomBarScreens/HomeScreen";
 import TodoListScreen from "../bottomBarScreens/TodoListScreen";
 import DonationsStack from "./DonationsStack";
 import WebViewScreen from '../screens/WebViewScreen';
-
 import styles from "../globals/styles";
 import colors from "../globals/colors";
+// import LocationSearchScreen from '../components/LocationSearchScreen';
 
 // Define the type for your bottom tab navigator's route names and their parameters.
 export type BottomTabNavigatorParamList = {
@@ -23,6 +22,7 @@ export type BottomTabNavigatorParamList = {
   SearchScreen: undefined;
   ProfileScreen: undefined;
   // JGiveWeb: undefined;
+  // LocationSearchScreen: undefined;
 };
 
 // Create an instance of the Bottom Tab Navigator with its parameter list type
@@ -57,7 +57,7 @@ export default function BottomNavigator(): React.ReactElement {
         return focused ? "person" : "person-outline";
       case "TodoListScreen":
         return focused ? "checkbox" : "checkbox-outline";
-      // case "JGiveWeb":
+      // case "LocationSearchScreen":
       //   return focused ? "globe" : "globe-outline";
       default:
         return "help-circle-outline";
@@ -104,7 +104,7 @@ export default function BottomNavigator(): React.ReactElement {
         <Tab.Screen name="HomeScreen" component={HomeScreen} />
         <Tab.Screen name="SearchScreen" component={SearchScreen} />
         <Tab.Screen name="ProfileScreen" component={ProfileScreen} />
-        {/* <Tab.Screen name="JGiveWeb" component={WebViewScreen} /> */}
+        {/* <Tab.Screen name="LocationSearchScreen" component={LocationSearchScreen} /> */}
       </Tab.Navigator>
     </View>
   );

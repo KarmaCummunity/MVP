@@ -523,8 +523,10 @@ const styles = StyleSheet.create({
    * Button style with dark pink background, padding, rounded corners, and centered content.
    */
   button: {
+    alignSelf: "center", // Make container as small as needed
     backgroundColor: colors.darkPink,
     paddingVertical: 14,
+    paddingHorizontal: 24,
     borderRadius: 25,
     alignItems: 'center',
   },

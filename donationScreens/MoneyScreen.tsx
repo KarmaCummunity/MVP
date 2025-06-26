@@ -266,6 +266,7 @@ const localStyles = StyleSheet.create({
     paddingVertical: 10,
   },
   card: {
+    borderColor: colors.black,
     flexDirection: "row",
     backgroundColor: "white",
     padding: 30,
