@@ -7,6 +7,7 @@ node_modules/
 .expo/
 dist/
 web-build/
+.expo-shared/ # Added for Expo-specific shared config
 
 # Native
 *.orig.*
@@ -15,14 +16,27 @@ web-build/
 *.p12
 *.key
 *.mobileprovision
+android/build/ # Added for Android build output
+android/.gradle/ # Added for Android Gradle cache
+android/app/build/ # Added for Android app build output
+ios/build/ # Added for iOS build output
+ios/Pods/ # Added for CocoaPods dependencies (if used)
+ios/.xccheckout # Added for Xcode workspace
+ios/*.xcworkspace/xcuserdata/ # Added for Xcode user data
+ios/*/*.xcuserdatad/ # Added for Xcode user data
+DerivedData/ # Common Xcode generated data
 
 # Metro
 .metro-health-check*
 
-# debug
+# debug and logs
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+*.log # More general log files
+coverage/ # Test coverage reports
+.jest/ # Jest cache
+jest-cache/ # Jest cache
 
 # macOS
 .DS_Store
@@ -34,4 +48,9 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-package-lock.json
+package-lock.json 
+
+# IDE specific files (optional, depends on team preference)
+.vscode/ # Uncomment if you don't want to commit VS Code settings
+# !.vscode/extensions.json # Example: to keep specific VS Code settings
+.idea/ # JetBrains IDEs (e.g., WebStorm, Android Studio)
