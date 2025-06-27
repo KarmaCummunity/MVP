@@ -164,6 +164,7 @@ const AddEditTaskModal: React.FC<AddEditTaskModalProps> = ({
             style={styles.input}
             placeholder="Task Title"
             value={title}
+            placeholderTextColor={"#888"} // Placeholder text color 
             onChangeText={setTitle}
             returnKeyType="done" // Changes keyboard return key text
             onSubmitEditing={handleSave} // Allows saving when pressing "done" on keyboard

@@ -1,106 +1,397 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
-  ScrollView,
+  FlatList,
   StyleSheet,
   SafeAreaView,
-  Platform,
   TouchableOpacity,
   Linking,
   Alert,
   Image,
   ImageSourcePropType,
+  ListRenderItem,
+  TextInput,
+  Animated,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+  Platform,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import HeaderComp from "../components/HeaderComp";
-import {
-  filter_for_trumps,
-  menu_for_trumps,
-  sentences,
-  WHATSAPP_GROUP_DETAILS,
-} from "../globals/constants";
-import AutocompleteDropdownComp from "../components/AutocompleteDropdownComp"; // Corrected component import
+import { menu_for_trumps, WHATSAPP_GROUP_DETAILS } from "../globals/constants";
+import AutocompleteDropdownComp from "../components/AutocompleteDropdownComp";
 import { NavigationProp, ParamListBase } from "@react-navigation/native";
 import LocationSearchComp from "../components/LocationSearchComp";
 import TimeInput from "../components/TimeInput";
 import styles from "../globals/styles";
-// Define your WhatsApp group links WITH their names
-// IMPORTANT: Replace "Name of Group 1", "Name of Group 2", etc., with the actual names you want to display.
+import {
+  TrumpResult,
+  WhatsAppGroup,
+  Filters,
+  TrumpScreenProps,
+  ListItem,
+} from "../globals/types";
 
-const searchResults = [];
-interface WhatsAppGroup {
-  name: string;
-  link: string;
-  image: ImageSourcePropType;
-}
-interface Filters {
-  to: string;
-  from: string;
-  when: string;
-}
+//TODO that it will be depend on the sort/filtr
 
-export default function TrumpScreen({
-  navigation,
-}: {
-  navigation: NavigationProp<ParamListBase>;
-}) {
+const INITIAL_TOP_VIEW_HEIGHT =
+  Platform.OS === "ios"
+    ? 390
+    : Platform.OS === "android"
+    ? 390 //+ (StatusBar.currentHeight || 0)
+    : 390; // e.g., web or default
+
+export default function TrumpScreen({ navigation }: TrumpScreenProps) {
+  // State management
   const [filters, setFilters] = useState<Filters>({
     to: "",
     from: "",
     when: "",
   });
   const [mode, setMode] = useState<boolean>(false); // false for "מחפש", true for "מציע"
-  const [selectedTime, setSelectedTime] = useState<Date>(new Date());
+  const [selectedTime, setSelectedTime] = useState<Date | null>(null);
+  const [hidden, setHidden] = useState(false);
+  const lastOffset = useRef(0);
 
-  const handleSelectMenuItem = (option: string) => {
-    alert(`Selected: ${option}`);
+  const animatedViewHeight = useRef(
+    new Animated.Value(INITIAL_TOP_VIEW_HEIGHT)
+  ).current;
+  // Sample search results - replace with actual data from your API
+  const searchResults: TrumpResult[] = [
+    // {
+    //   id: "1",
+    //   name: "נועם סרוסי",
+    //   from: "יאשיהו",
+    //   to: "הרכבת",
+    //   date: "02/01/2023",
+    //   time: "15:30",
+    // },
+    // {
+    //   id: "2",
+    //   name: "נועם סרוסי",
+    //   from: "שטרן 29",
+    //   to: "הרכבת לתל אביב",
+    //   date: "היום",
+    //   time: "15:30",
+    // },
+  ];
+
+  const ANIMATION_COOLDOWN_MS = 400;
+  const SCROLL_UP_THRESHOLD = 1;
+  const SCROLL_DOWN_THRESHOLD = -30;
+
+  const canAnimate = useRef(true);
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    const deltaY = lastOffset.current - offsetY;
+
+    if (!canAnimate.current) return;
+
+    // Scroll Up (strong enough)
+    if (deltaY > SCROLL_UP_THRESHOLD && hidden) {
+      // console.log("scrolling up - ", deltaY);
+      canAnimate.current = false;
+      setHidden(false);
+      Animated.timing(animatedViewHeight, {
+        toValue: INITIAL_TOP_VIEW_HEIGHT,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
+
+      setTimeout(() => {
+        canAnimate.current = true;
+      }, ANIMATION_COOLDOWN_MS);
+    }
+
+    // Scroll Down (strong enough)
+    else if (deltaY < SCROLL_DOWN_THRESHOLD && !hidden) {
+      // console.log("scrolling down - ", deltaY);
+      canAnimate.current = false;
+      setHidden(true);
+      Animated.timing(animatedViewHeight, {
+        toValue: 0,
+        duration: 20,
+        useNativeDriver: false,
+      }).start();
+
+      setTimeout(() => {
+        canAnimate.current = true;
+      }, ANIMATION_COOLDOWN_MS);
+    }
+
+    lastOffset.current = offsetY;
   };
 
-  const handleDropdownChange = (field: keyof Filters, value: string): void => {
-    // console.log(`Dropdown changed: ${field} = ${value}`);
-    setFilters((prev) => ({ ...prev, [field]: value }));
-  };
+  /**
+   * Handles menu item selection from header
+   * @param option - Selected menu option
+   */
+  const handleSelectMenuItem = useCallback((option: string) => {
+    Alert.alert("בחירה", `נבחר: ${option}`);
+  }, []);
 
-  const toggleMode = (): void => {
-    // console.log("Toggling mode" + mode);
-    setMode((prev) => (prev ? false : true));
-  };
+  /**
+   * Updates filter values when dropdown selections change
+   * @param field - The filter field to update
+   * @param value - The new value for the field
+   */
+  const handleDropdownChange = useCallback(
+    (field: keyof Filters, value: string): void => {
+      setFilters((prev) => ({ ...prev, [field]: value }));
+    },
+    []
+  );
 
-  // Function to open WhatsApp group link
-  const handleOpenWhatsAppGroup = async (url: string) => {
+  /**
+   * Toggles between search mode (מחפש) and offer mode (מציע)
+   */
+  const toggleMode = useCallback((): void => {
+    setMode((prev) => !prev);
+  }, []);
+
+  /**
+   * Opens WhatsApp group link with improved error handling for APK builds
+   * @param url - WhatsApp group URL to open
+   */
+  const handleOpenWhatsAppGroup = useCallback(async (url: string) => {
     try {
+      // First, try to open the URL directly
       const supported = await Linking.canOpenURL(url);
+
       if (supported) {
         await Linking.openURL(url);
       } else {
-        Alert.alert(
-          "שגיאה",
-          `לא ניתן לפתוח את הקישור: ${url}. אנא וודא שאפליקציית ווטסאפ מותקנת.`
+        // If direct link fails, try alternative approaches for APK builds
+        const whatsappUrl = url.replace(
+          "https://chat.whatsapp.com/",
+          "whatsapp://send?text="
         );
+        const canOpenWhatsApp = await Linking.canOpenURL("whatsapp://send");
+
+        if (canOpenWhatsApp) {
+          // Try opening WhatsApp directly
+          await Linking.openURL("whatsapp://send");
+          Alert.alert(
+            "הוראות",
+            "אנא העתק את הקישור הבא ושלח אותו בווטסאפ כדי להצטרף לקבוצה:\n\n" +
+              url,
+            [
+              {
+                text: "העתק קישור",
+                onPress: () => {
+                  // You might want to use a clipboard library here
+                  Alert.alert("הודעה", "אנא העתק את הקישור ידנית");
+                },
+              },
+              { text: "ביטול", style: "cancel" },
+            ]
+          );
+        } else {
+          Alert.alert(
+            "שגיאה",
+            "לא ניתן לפתוח את ווטסאפ. אנא וודא שהאפליקציה מותקנת במכשיר.",
+            [
+              {
+                text: "העתק קישור",
+                onPress: () => {
+                  Alert.alert("קישור", url);
+                },
+              },
+              { text: "אישור" },
+            ]
+          );
+        }
       }
     } catch (error) {
       console.error("Failed to open WhatsApp URL:", error);
-      Alert.alert("שגיאה", "אירעה שגיאה בעת ניסיון לפתוח את הקישור.");
+      Alert.alert(
+        "שגיאה",
+        "אירעה שגיאה בעת ניסיון לפתוח את הקישור. האם תרצה להעתיק את הקישור?",
+        [
+          {
+            text: "העתק קישור",
+            onPress: () => Alert.alert("קישור", url),
+          },
+          { text: "ביטול", style: "cancel" },
+        ]
+      );
     }
-  };
+  }, []);
+
+  /**
+   * Handles search/publish action
+   */
+  const handleSearchAction = useCallback(() => {
+    if (selectedTime) {
+    setSelectedTime(null);
+    const timeString = selectedTime.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    Alert.alert(
+      mode ? "פרסום נסיעה" : "חיפוש נסיעה",
+      `יציאה מ: ${filters.from || "לא צוין"}\nבשעה: ${timeString}\nליעד: ${
+        filters.to || "לא צוין"
+      }`
+    );
+  } else {
+    console.log("No time selected for search.");
+  }
+  }, [filters, selectedTime, mode]);
+
+  /**
+   * Renders individual search result item
+   */
+  const renderSearchResult = useCallback(
+    (item: TrumpResult) => (
+      <View style={localStyles.trumpCard}>
+        <Text style={localStyles.trumpCardTitle}>{item.name}</Text>
+        <Text style={localStyles.trumpCardText}>
+          מ: {item.from} ל: {item.to}
+        </Text>
+        <Text style={localStyles.trumpCardText}>
+          ב: {item.date} - {item.time}
+        </Text>
+      </View>
+    ),
+    []
+  );
+
+  /**
+   * Renders individual WhatsApp group item
+   */
+  const renderWhatsAppGroup = useCallback(
+    (item: WhatsAppGroup) => (
+      <TouchableOpacity
+        style={localStyles.trumpCard}
+        onPress={() => handleOpenWhatsAppGroup(item.link)}
+        activeOpacity={0.7}
+      >
+        <View style={localStyles.groupCardContentWrapper}>
+          <Image
+            source={item.image}
+            style={localStyles.groupCardImage}
+            resizeMode="cover"
+          />
+          <View style={localStyles.groupCardTextContent}>
+            <Text style={localStyles.trumpCardSubtitle}>{item.name}</Text>
+            <Text style={localStyles.trumpCardText}>תיאור הקבוצה</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    ),
+    [handleOpenWhatsAppGroup]
+  );
+
+  /**
+   * Renders the main content based on current mode and data
+   */
+  const renderMainContent = useCallback((): ListItem[] => {
+    const data: ListItem[] = [];
+
+    // Add search form
+    data.push({ type: "form", key: "form" });
+
+    // Add search results if in search mode and results exist
+    if (!mode && searchResults.length > 0) {
+      data.push({ type: "results-header", key: "results-header" });
+      searchResults.forEach((result) =>
+        data.push({ type: "result", key: result.id, data: result })
+      );
+    }
+
+    // Add WhatsApp groups if in search mode
+    if (!mode) {
+      data.push({ type: "groups-header", key: "groups-header" });
+      WHATSAPP_GROUP_DETAILS.forEach((group, index) =>
+        data.push({ type: "group", key: `group-${index}`, data: group })
+      );
+    }
+
+    // Add thank you message if in offer mode
+    if (mode) {
+      data.push({ type: "thank-you", key: "thank-you" });
+    }
+
+    return data;
+  }, [mode, searchResults]);
+
+  /**
+   * Renders different content types for the FlatList
+   */
+  const renderContent: ListRenderItem<ListItem> = useCallback(
+    ({ item }) => {
+      switch (item.type) {
+        // case "form":
+        //   return (
+        //     <View>
+        //       <TouchableOpacity
+        //         onPress={handleSearchAction}
+        //         style={styles.button}
+        //         activeOpacity={0.8}
+        //       >
+        //         <Text style={localStyles.donateButtonText}>
+        //           {mode ? "פרסם" : "חפש"}
+        //         </Text>
+        //       </TouchableOpacity>
+        //     </View>
+        //   );
+
+        case "results-header":
+          return <Text style={localStyles.sectionTitle}>טרמפים:</Text>;
+
+        case "result":
+          return renderSearchResult(item.data);
+
+        case "groups-header":
+          return <Text style={localStyles.sectionTitle}>קבוצות:</Text>;
+
+        case "group":
+          return renderWhatsAppGroup(item.data);
+
+        case "thank-you":
+          return (
+            <View>
+              <Text style={localStyles.sentences}>אנו מודים לך על תרומתך</Text>
+              <Text style={localStyles.sentences}>
+                ויותר מזה על השתתפותך בקהילה!
+              </Text>
+            </View>
+          );
+
+        default:
+          return null;
+      }
+    },
+    [
+      handleDropdownChange,
+      selectedTime,
+      handleSearchAction,
+      mode,
+      renderSearchResult,
+      renderWhatsAppGroup,
+    ]
+  );
 
   return (
     <SafeAreaView style={localStyles.safeArea}>
       <View style={localStyles.wrapper}>
-        <HeaderComp
-          mode={mode}
-          menuOptions={menu_for_trumps}
-          onToggleMode={toggleMode}
-          onSelectMenuItem={handleSelectMenuItem}
-        />
-        <ScrollView
-          contentContainerStyle={localStyles.scrollContent}
-          showsVerticalScrollIndicator={false}
+        <Animated.View
+          style={[localStyles.topView, { height: animatedViewHeight }]}
         >
+          <HeaderComp
+            mode={mode}
+            menuOptions={menu_for_trumps}
+            onToggleMode={toggleMode}
+            onSelectMenuItem={handleSelectMenuItem}
+          />
+
           <View style={localStyles.rowContainer}>
-            <Text style={localStyles.search_Text}>מאיפה?</Text>
+            {/* <Text style={localStyles.search_Text}>מאיפה?</Text> */}
             <LocationSearchComp
+              placeholder="?מאיפה"
               onLocationSelected={(location) =>
                 handleDropdownChange("from", location)
               }
@@ -108,106 +399,48 @@ export default function TrumpScreen({
           </View>
 
           <View style={localStyles.rowContainer}>
-            <Text style={localStyles.search_Text}>לאיפה?</Text>
+            {/* <Text style={localStyles.search_Text}>לאיפה?</Text> */}
             <LocationSearchComp
+              placeholder="?לאיפה"
               onLocationSelected={(location) =>
                 handleDropdownChange("to", location)
               }
             />
           </View>
+
           <View style={localStyles.rowContainerTime}>
-            <Text style={localStyles.search_Text}>מתי?</Text>
-
-            <TimeInput
-              value={selectedTime}
-              onChange={(date) => {
-                // console.log("Selected time:", date);
-                setSelectedTime(date);
-              }}
-            />
+            {/* <Text style={localStyles.search_Text}>מתי?</Text> */}
+            {/* <View style={{ flex: 1 }}> */}
+              <TimeInput 
+               value={selectedTime}
+                onChange={setSelectedTime} 
+                placeholder="שעת יציאה"
+                />
+            {/* </View> */}
           </View>
+          <View>
+            <TouchableOpacity
+              onPress={handleSearchAction}
+              style={styles.button}
+              activeOpacity={0.8}
+            >
+              <Text style={localStyles.donateButtonText}>
+                {mode ? "פרסם" : "חפש"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
 
-          <TouchableOpacity
-            onPress={() =>
-              Alert.alert(
-                "Searching",
-                `יציאה מ: ${
-                  filters.from || "לא צוין"
-                } \nבשעה:  ${selectedTime.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })} \nליעד: ${filters.to || "לא צוין"}`
-              )
-            }
-            style={styles.button}
-          >
-            <Text style={localStyles.donateButtonText}>
-              {mode ? "פרסם" : "חפש"}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Results */}
-          {searchResults.length > 0 && (
-            <View>
-              <Text style={localStyles.sectionTitle}>טרמפים :</Text>
-              <View style={localStyles.trumpCard}>
-                <Text style={localStyles.trumpCardTitle}>נועם סרוסי</Text>
-                <Text>מ: יאשיהו ל׳ הרכבת</Text>
-                <Text>ב: 02/01/2023 - 15:30</Text>
-              </View>
-              <View style={localStyles.trumpCard}>
-                <Text style={localStyles.trumpCardTitle}>נועם סרוסי</Text>
-                <Text>מ: שטרן 29, הרכבת לתל אביב</Text>
-                <Text>ב: היום - 15:30</Text>
-              </View>
-            </View>
-          )}
-
-          {/* Groups */}
-          {!mode && (
-            <View>
-              <Text style={localStyles.sectionTitle}>קבוצות:</Text>
-              {/* Loop through your WhatsApp group details */}
-              {WHATSAPP_GROUP_DETAILS.map(
-                (
-                  group,
-                  idx // Changed to 'group' object
-                ) => (
-                  <TouchableOpacity
-                    key={idx}
-                    style={localStyles.trumpCard}
-                    onPress={() => handleOpenWhatsAppGroup(group.link)} // Use group.link
-                  >
-                    <View style={localStyles.groupCardContentWrapper}>
-                      <Image
-                        source={group.image} // Use the image source from the group details
-                        style={localStyles.groupCardImage}
-                      />
-                      <View style={localStyles.groupCardTextContent}>
-                        {/* Wrapper for text content */}
-                        <Text style={localStyles.trumpCardSubtitle}>
-                          {group.name} {/* Use group.name for the title */}
-                        </Text>
-                        <Text style={localStyles.trumpCardText}>
-                          תיאור הקבוצה
-                        </Text>
-                        {/* <Text style={localStyles.trumpCardLinkText}>
-                      {group.link.substring(0, 40)}...
-                    </Text> */}
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                )
-              )}
-            </View>
-          )}
-          {mode && (
-            <View>
-              <Text style={localStyles.sentences}>אנו מודים לך על תרומתך</Text>
-              <Text style={localStyles.sentences}> ויותר מזה על השתתפותך בקהילה!</Text>
-            </View>
-          )}
-        </ScrollView>
+        <FlatList
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          style={localStyles.scroll}
+          data={renderMainContent()}
+          renderItem={renderContent}
+          keyExtractor={(item) => item.key}
+          contentContainerStyle={localStyles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        />
       </View>
     </SafeAreaView>
   );
@@ -224,85 +457,40 @@ const localStyles = StyleSheet.create({
     maxWidth: 600,
     alignSelf: "center",
   },
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 12,
+  scroll: {
+    zIndex: 1000,
   },
   rowContainer: {
-    flexDirection: "row-reverse", // Use 'row-reverse' for RTL layout
-    alignItems: "flex-start", // Aligns items vertically in the center of the row
-    justifyContent: "space-between", // Aligns items to the right (since Hebrew is RTL)
-    // marginBottom: 10, // Add some spacing below the row if needed
-    // You might need to adjust width or padding depending on surrounding elements
+    marginHorizontal: 5,
+    flexDirection: "row-reverse",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    // marginBottom: 16,
   },
-  rowContainerTime: {
-    marginLeft: "40%", // Add some spacing to the left for better alignment
-    flexDirection: "row-reverse", // Use 'row-reverse' for RTL layout
-    alignItems: "flex-start", // Aligns items vertically in the center of the row
-    justifyContent: "space-between", // Aligns items to the right (since Hebrew is RTL)
-    marginBottom: 10, // Add some spacing below the row if needed
-    // You might need to adjust width or padding depending on surrounding elements
-  },
+  // rowContainerTime: {
+  //   marginHorizontal: 5,
+  //   flexDirection: "row-reverse", // RTL: text on right, input on left
+  //   alignItems: "center",
+  //   justifyContent: "space-between",
+  // },
+
   scrollContent: {
     paddingBottom: 24,
     paddingTop: 12,
     paddingHorizontal: 16,
-    // alignItems: "center",
     justifyContent: "center",
-  },
-  dropdownContainer: {
-    gap: 12,
-    marginBottom: 24,
-  },
-  dropdownBox: {
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 8,
-  },
-  donateButton: {
-    backgroundColor: "#007BFF",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: "center",
-    marginHorizontal: 15,
-    marginTop: 20,
-    marginBottom: 10,
-    alignSelf: "center",
   },
   donateButtonText: {
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
   },
-  filterButtonsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    marginBottom: 20,
-    gap: 10,
-  },
-  filterButton: {
-    backgroundColor: "#E0E0E0",
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-  },
-  filterButtonText: {
-    fontSize: 14,
-    color: "#333",
-  },
-  section: {
-    marginTop: 20,
-  },
-  search_Text: {
-    fontWeight: "bold",
-    fontSize: 18,
-    marginTop: 10,
-    alignSelf: "flex-start",
-  },
+  // search_Text: {
+  //   fontWeight: "bold",
+  //   fontSize: 16,
+  //   marginTop: 10,
+  //   // alignSelf: "flex-start",
+  // },
   sectionTitle: {
     fontWeight: "bold",
     fontSize: 18,
@@ -310,40 +498,10 @@ const localStyles = StyleSheet.create({
     alignSelf: "flex-end",
   },
   sentences: {
-
     fontWeight: "bold",
     fontSize: 20,
     marginTop: 20,
     alignSelf: "center",
-  },
-  card: {
-    flexDirection: "row",
-    backgroundColor: "white",
-    padding: 12,
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    marginBottom: 12,
-    alignItems: "center",
-  },
-  cardImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 10,
-  },
-  cardContent: {
-    flex: 1,
-  },
-  cardTitle: {
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  cardDescription: {
-    fontSize: 13,
-    color: "#6B7280",
   },
   trumpCard: {
     alignItems: "flex-end",
@@ -354,46 +512,70 @@ const localStyles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     marginBottom: 12,
   },
   trumpCardTitle: {
     fontWeight: "bold",
     fontSize: 16,
-    textAlign: "right", // Align text to the right
+    textAlign: "right",
   },
   trumpCardSubtitle: {
     fontWeight: "600",
     fontSize: 15,
-    textAlign: "right", // Align text to the right
+    textAlign: "right",
   },
   trumpCardText: {
-    textAlign: "right", // Align text to the right
+    textAlign: "right",
     fontSize: 13,
     color: "#6B7280",
   },
-  trumpCardLinkText: {
-    fontSize: 11,
-    color: "#007BFF",
-    marginTop: 4,
-  },
   groupCardContentWrapper: {
     flex: 1,
-    // gap: 100,
     justifyContent: "space-between",
-    flexDirection: "row", // Arrange image and text horizontally
-    alignItems: "stretch", // Vertically align items in the center
-    // padding: 12, // Apply padding here for inner content spacing
+    flexDirection: "row",
+    alignItems: "center",
   },
   groupCardImage: {
-    width: 48, // Adjust size as needed
-    height: 48, // Adjust size as needed
-    borderRadius: 24, // Half of width/height to make it circular
-    marginRight: 12, // Space between image and text
-    backgroundColor: "#eee", // Placeholder background
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 12,
+    backgroundColor: "#eee",
   },
   groupCardTextContent: {
-    textAlign: "right", // Align text to the right
-    justifyContent: "space-between",
-    flex: 1, // Allow text content to take remaining horizontal space
+    flex: 1,
+    alignItems: "flex-end",
+  },
+  locationInput: {
+    backgroundColor: "white",
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    textAlign: "right",
+    minWidth: 200,
+  },
+  rowContainerTime: {
+    marginHorizontal: 5,
+    alignSelf: 'center'
+  },
+
+  search_Text: {
+    fontWeight: "bold",
+    fontSize: 16,
+    // REMOVE marginTop here to fix vertical alignment
+    // marginTop: 10,  <--- REMOVE THIS LINE
+  },
+
+  topView: {
+    justifyContent: "flex-start",
+    alignItems: "stretch", // change from "center" to "stretch" so children can take full width
+    overflow: "hidden",
   },
 });

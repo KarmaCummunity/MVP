@@ -1,23 +1,25 @@
 // components/TimeInput.tsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   Platform,
   TouchableOpacity,
   StyleSheet,
-  TextInput,
 } from "react-native";
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 
+// 1. Define Props Interface
 interface TimeInputProps {
-  value?: Date;
-  onChange: (date: Date) => void;
+  value?: Date | null;
+  onChange: (date: Date | null) => void;
   label?: string;
+  placeholder?: string;
 }
 
+// Format time to HH:MM string
 const formatTime = (date: Date): string =>
   date.toLocaleTimeString("he-IL", {
     hour: "2-digit",
@@ -25,9 +27,19 @@ const formatTime = (date: Date): string =>
     hour12: false,
   });
 
-export default function TimeInput({ value, onChange, label }: TimeInputProps) {
+// 2. Component
+export default function TimeInput({
+  value,
+  onChange,
+  label,
+  placeholder = "בחר שעה",
+}: TimeInputProps) {
+  const [time, setTime] = useState<Date | null>(value || null);
   const [showPicker, setShowPicker] = useState(false);
-  const [time, setTime] = useState<Date>(value || new Date());
+
+  useEffect(() => {
+    setTime(value || null);
+  }, [value]);
 
   const handleChange = (
     event: DateTimePickerEvent,
@@ -37,6 +49,9 @@ export default function TimeInput({ value, onChange, label }: TimeInputProps) {
     if (selectedDate) {
       setTime(selectedDate);
       onChange(selectedDate);
+    } else {
+      setTime(null);
+      onChange(null);
     }
   };
 
@@ -45,19 +60,34 @@ export default function TimeInput({ value, onChange, label }: TimeInputProps) {
       {label && <Text style={styles.label}>{label}</Text>}
 
       {Platform.OS === "web" ? (
-        <TextInput
-          style={styles.input}
-          value={formatTime(time)}
-          onChangeText={(text) => {
-            const [h, m] = text.split(":").map(Number);
-            if (!isNaN(h) && !isNaN(m)) {
-              const updated = new Date();
-              updated.setHours(h, m);
-              setTime(updated);
-              onChange(updated);
+        <input
+          type="time"
+          value={time ? formatTime(time) : ""}
+          onChange={(e) => {
+            const text = e.target.value; // "HH:MM"
+            if (text === "") {
+              setTime(null);
+              onChange(null);
+            } else {
+              const [h, m] = text.split(":").map(Number);
+              if (!isNaN(h) && !isNaN(m)) {
+                const updated = time ? new Date(time) : new Date();
+                updated.setHours(h, m, 0, 0);
+                setTime(updated);
+                onChange(updated);
+              }
             }
           }}
-          placeholder="HH:MM"
+          placeholder={placeholder}
+          style={{
+            ...styles.input,
+            fontSize: 12,
+            direction: "rtl",
+            appearance: 'auto',
+            WebkitAppearance: "none",
+            MozAppearance: "none",
+            borderRadius: 6,
+          }}
         />
       ) : (
         <>
@@ -65,13 +95,15 @@ export default function TimeInput({ value, onChange, label }: TimeInputProps) {
             onPress={() => setShowPicker(true)}
             style={styles.input}
           >
-            <Text>{formatTime(time)}</Text>
+            <Text style={time ? styles.selectedTimeText : styles.placeholderText}>
+              {time ? formatTime(time) : placeholder}
+            </Text>
           </TouchableOpacity>
           {showPicker && (
             <DateTimePicker
               mode="time"
               display="default"
-              value={time}
+              value={time || new Date()}
               onChange={handleChange}
               is24Hour={true}
             />
@@ -81,27 +113,35 @@ export default function TimeInput({ value, onChange, label }: TimeInputProps) {
     </View>
   );
 }
+
+// 3. Styles
 const styles = StyleSheet.create({
-    container: {
-      alignSelf: "flex-end", // Make container as small as needed
-      marginBottom: 10,
-    },
-    label: {
-      marginBottom: 4,
-      fontSize: 14,
-      fontWeight: "bold",
-      textAlign: "right",
-    },
-    input: {
-      minWidth: 80,             // Just enough for "HH:MM"
-      paddingVertical: 6,
-      paddingHorizontal: 10,
-      borderWidth: 1,
-      borderRadius: 6,
-      borderColor: "#ccc",
-      backgroundColor: "#f9f9f9",
-      justifyContent: "center",
-      alignItems: "center",
-    },
-  });
-  
+  container: {
+    marginBottom: 10,
+  },
+  label: {
+    marginBottom: 4,
+    fontSize: 14,
+    fontWeight: "bold",
+    textAlign: "right",
+  },
+  input: {
+    minWidth: 80,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderRadius: 6,
+    borderColor: "#ccc",
+    backgroundColor: "#f9f9f9",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  selectedTimeText: {
+    color: "#000",
+    fontSize: 18,
+  },
+  placeholderText: {
+    color: "#888",
+    fontSize: 18,
+  },
+});
