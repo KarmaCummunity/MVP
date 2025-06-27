@@ -1,4 +1,6 @@
-import { NavigationProp, ParamListBase } from "@react-navigation/native";
+import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import { NavigationProp, NavigatorScreenParams, ParamListBase } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
 import { ImageSourcePropType } from "react-native";
 
 export type DonationsStackParamList = {
@@ -63,3 +65,57 @@ export type ListItem =
 export interface TrumpScreenProps {
   navigation: NavigationProp<ParamListBase>;
 }
+// --- Root Stack Navigator (MainNavigator) Parameter List ---
+// This lists all the screens directly in your MainNavigator.tsx
+export type RootStackParamList = {
+  Home: NavigatorScreenParams<BottomTabNavigatorParamList>;
+  FirstScreen: undefined;
+  LoginScreen: undefined;
+  InactiveScreen: undefined;
+  WebViewScreen: undefined;
+  PostsReelsScreen: undefined; // ADD THIS LINE - this was probably missing
+};
+
+// --- Bottom Tab Navigator (BottomNavigator) Parameter List ---
+// This lists all the screens within your BottomNavigator.tsx
+export type BottomTabNavigatorParamList = {
+  DonationsScreen: undefined; // Assuming DonationsStack is just a wrapper for its root screen here
+  TodoListScreen: undefined;
+  HomeScreen: undefined; // This is the HomeScreen with the drag handle
+  SearchScreen: undefined;
+  ProfileScreen: undefined;
+};
+
+// --- Donations Stack (Example - adjust if you have internal screens) ---
+// If DonationsStack is just one screen, you might not need this,
+// but if it has multiple internal screens, define its own param list.
+// export type DonationsStackParamList = {
+//   DonationsMain: undefined;
+//   DonationDetails: { itemId: string };
+// };
+
+// --- Nested Drag Reveal Stack Navigator (e.g., DragRevealStack.tsx, if you used Option 2 from earlier) ---
+// Define the screens that will appear *inside* your PostsReelsScreen modal
+export type PostsReelsStackParamList = {
+  PostsReels: undefined; // The content screen you want to show
+  SomeOtherContent: undefined; // Example of another screen within the modal
+  // Add any other screens that can be displayed inside the PostsReelsScreen modal
+};
+
+
+// --- Helper Types for Navigation Props ---
+
+// For use with `useNavigation()` within screens that are part of the RootStack
+export type RootStackNavigationProp<
+  RouteName extends keyof RootStackParamList
+> = StackNavigationProp<RootStackParamList, RouteName>;
+
+// For use with `useNavigation()` within screens that are part of the BottomTabNavigator
+export type BottomTabNavigationPropType<
+  RouteName extends keyof BottomTabNavigatorParamList
+> = BottomTabNavigationProp<BottomTabNavigatorParamList, RouteName>;
+
+// You might also need a type for the 'route' prop if you're accessing params:
+// import { RouteProp } from '@react-navigation/native';
+import PostsReelsScreen from '../components/PostsReelsScreen';
+// export type PostsReelsScreenRouteProp = RouteProp<RootStackParamList, 'PostsReelsScreen'>;

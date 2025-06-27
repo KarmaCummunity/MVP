@@ -321,6 +321,7 @@ const localStyles = StyleSheet.create({
   tabBar: {
     backgroundColor: '#fff',
     borderBottomWidth: 1,
+    alignItems: 'flex-end',
     borderBottomColor: '#eee',
   },
   tabBarIndicator: {

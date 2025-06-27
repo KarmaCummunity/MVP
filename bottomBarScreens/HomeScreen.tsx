@@ -1,84 +1,95 @@
-import React from 'react';
-import {
-  View,
-  StyleSheet,
-  Dimensions,
-} from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import React, { useState } from "react";
+import { View, StyleSheet, Dimensions } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   interpolate,
   Extrapolation,
-} from 'react-native-reanimated';
-import { useFocusEffect } from '@react-navigation/native';
-import BubbleComp from '../components/BubbleComp';
-import colors from '../globals/colors';
-import PostsReelsScreen from '../components/PostsReelsScreen';
+  runOnJS,
+} from "react-native-reanimated";
+import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+import BubbleComp from "../components/BubbleComp";
+import colors from "../globals/colors";
+import PostsReelsScreen from "../components/PostsReelsScreen";
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const PANEL_HEIGHT = SCREEN_HEIGHT - 50;
 const CLOSED_POSITION = PANEL_HEIGHT - 60;
 const OPEN_POSITION = 0;
-const MID_POSITION = PANEL_HEIGHT / 2; // Middle snap point for panel
+const MID_POSITION = PANEL_HEIGHT / 2;
 
-/**
- * DragRevealScreen
- * 
- * A screen with a draggable bottom panel that can be dragged once per focus session.
- * After the first drag, further dragging is disabled until the screen is left and refocused.
- */
-export default function DragRevealScreen() {
-  // Shared animated value for panel vertical translation
+export default function HomeScreen() {  
+  const isFocused = useIsFocused();
+  
+  // Only show PostsReelsScreen if focused AND revealed
+  const [isScreenRevel, setisScreenRevel] = useState(false);
+  const shouldShowReels = isFocused && isScreenRevel;
+
   const translateY = useSharedValue(CLOSED_POSITION);
-
-  // Flag to track whether the gesture is active (for UI feedback)
   const isGestureActive = useSharedValue(false);
-
-  // Flag to control whether dragging is allowed; resets on screen focus
   const canDrag = useSharedValue(true);
+  
+  // Store the starting position when gesture begins
+  const startPosition = useSharedValue(CLOSED_POSITION);
 
-  /**
-   * Reset the panel position and drag permission whenever screen comes into focus.
-   */
+  // Reset state immediately when screen loses focus
+  React.useEffect(() => {
+    if (!isFocused) {
+      console.log("[HomeScreen] Screen lost focus: Resetting reveal state");
+      setisScreenRevel(false);
+    }
+  }, [isFocused]);
+
   useFocusEffect(
     React.useCallback(() => {
-      console.log('[DragRevealScreen] Screen focused: Resetting panel position and enabling drag');
+      console.log("[HomeScreen] Screen focused: Resetting panel position and enabling drag");
+      translateY.value = CLOSED_POSITION; // Set immediately without animation on focus
+      canDrag.value = true;
+      // Ensure isScreenRevel is false when screen comes into focus
+      setisScreenRevel(false);
+      
+      // Then animate to position smoothly
       translateY.value = withSpring(CLOSED_POSITION, {
         damping: 20,
         stiffness: 150,
         mass: 0.8,
       });
-      canDrag.value = true;
     }, [])
   );
 
-  /**
-   * Gesture handler for the panel drag.
-   * Disables dragging after first completed drag until screen is refocused.
-   */
   const panGesture = Gesture.Pan()
     .onBegin(() => {
       if (!canDrag.value) {
-        console.log('[DragRevealScreen] Drag attempt blocked: dragging disabled');
+        console.log("[HomeScreen] Drag attempt blocked: dragging disabled");
         return;
       }
       isGestureActive.value = true;
-      console.log('[DragRevealScreen] Drag started');
+      // Store the starting position
+      startPosition.value = translateY.value;
+      console.log("[HomeScreen] Drag started from position:", startPosition.value);
     })
     .onUpdate((event) => {
-      console.log('[DragRevealScreen] Drag update');
       if (!canDrag.value) return;
-      const newPosition = translateY.value + event.translationY;
+      
+      // Calculate new position based on start position + translation
+      const newPosition = startPosition.value + event.translationY;
+      
+      // Apply constraints
       translateY.value = Math.max(
-        OPEN_POSITION - 50,      // Allow slight overshoot at top
-        Math.min(CLOSED_POSITION + 50, newPosition) // Slight overshoot at bottom
+        OPEN_POSITION - 100,
+        Math.min(CLOSED_POSITION + 50, newPosition)
       );
     })
     .onEnd((event) => {
+      console.log("[HomeScreen] Drag ended");
+      
       if (!canDrag.value) return;
 
+      // Use runOnJS to safely update React state
+      runOnJS(setisScreenRevel)(true);
+      
       isGestureActive.value = false;
 
       const currentPosition = translateY.value;
@@ -86,17 +97,17 @@ export default function DragRevealScreen() {
 
       let targetPosition;
 
-      // Use velocity for fast swipe detection and snapping
       if (Math.abs(velocity) > 800) {
-        targetPosition = velocity < 0 ? OPEN_POSITION : CLOSED_POSITION;
+        targetPosition = velocity < 0 ? OPEN_POSITION - 30 : CLOSED_POSITION;
       } else {
-        // Snap to nearest position based on current position
-        if (currentPosition < PANEL_HEIGHT * 0.25) targetPosition = OPEN_POSITION;
-        else if (currentPosition < PANEL_HEIGHT * 0.75) targetPosition = MID_POSITION;
-        else targetPosition = CLOSED_POSITION;
+        if (currentPosition < PANEL_HEIGHT * 0.25) {
+          targetPosition = OPEN_POSITION - 30;
+        } else if (currentPosition < PANEL_HEIGHT * 0.75) {
+          targetPosition = MID_POSITION;
+        } else {
+          targetPosition = CLOSED_POSITION;
+        }
       }
-
-      console.log(`[DragRevealScreen] Drag ended: Snapping to position ${targetPosition}`);
 
       translateY.value = withSpring(targetPosition, {
         damping: 25,
@@ -104,20 +115,20 @@ export default function DragRevealScreen() {
         mass: 0.6,
       });
 
-      // Disable further dragging after first drag ends
       canDrag.value = false;
-      console.log('[DragRevealScreen] Dragging disabled until screen refocus');
     })
     .onFinalize(() => {
-      if (!canDrag.value) return;
       isGestureActive.value = false;
-      console.log('[DragRevealScreen] Drag gesture finalized');
     });
 
-  // Animated styles for panel movement and scale effect during drag
   const animatedStyle = useAnimatedStyle(() => {
     const scale = isGestureActive.value
-      ? interpolate(translateY.value, [OPEN_POSITION, CLOSED_POSITION], [1.02, 1], Extrapolation.CLAMP)
+      ? interpolate(
+          translateY.value,
+          [OPEN_POSITION, CLOSED_POSITION],
+          [1.02, 1],
+          Extrapolation.CLAMP
+        )
       : 1;
 
     return {
@@ -125,9 +136,8 @@ export default function DragRevealScreen() {
     };
   });
 
-  // Animated style for the draggable handle's appearance
   const handleAnimatedStyle = useAnimatedStyle(() => {
-    const backgroundColor = isGestureActive.value ? '#999' : '#ccc';
+    const backgroundColor = isGestureActive.value ? "#999" : "#ccc";
     const width = interpolate(
       translateY.value,
       [CLOSED_POSITION, OPEN_POSITION],
@@ -144,12 +154,19 @@ export default function DragRevealScreen() {
   return (
     <View style={styles.container}>
       <BubbleComp />
-      <GestureDetector gesture={panGesture}>
+      {!shouldShowReels ? (
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={[styles.panel, animatedStyle]}>
+            <Animated.View style={[styles.panelHandle, handleAnimatedStyle]} />
+            <PostsReelsScreen />
+          </Animated.View>
+        </GestureDetector>
+      ) : (
         <Animated.View style={[styles.panel, animatedStyle]}>
           <Animated.View style={[styles.panelHandle, handleAnimatedStyle]} />
           <PostsReelsScreen />
         </Animated.View>
-      </GestureDetector>
+      )}
     </View>
   );
 }
@@ -161,13 +178,13 @@ const styles = StyleSheet.create({
   },
   panel: {
     height: PANEL_HEIGHT,
-    width: '100%',
-    backgroundColor: '#fff',
-    position: 'absolute',
+    width: "100%",
+    backgroundColor: "#fff",
+    position: "absolute",
     bottom: 10,
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    shadowColor: '#000',
+    borderTopLeftRadius: 250,
+    borderTopRightRadius: 250,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -176,7 +193,7 @@ const styles = StyleSheet.create({
   panelHandle: {
     height: 6,
     borderRadius: 3,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginBottom: 20,
   },
 });
