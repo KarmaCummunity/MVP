@@ -16,8 +16,6 @@ web-build/
 *.p12
 *.key
 *.mobileprovision
-android/
-ios/
 android/build/ # Added for Android build output
 android/.gradle/ # Added for Android Gradle cache
 android/app/build/ # Added for Android app build output
