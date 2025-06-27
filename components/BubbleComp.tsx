@@ -139,6 +139,7 @@ const isOverlapping = (
  * Generates an array of BubbleData objects for both main and background bubbles.
  */
 const generateBubbles = (): BubbleData[] => {
+  console.log("Generating bubbles...");
   const bubbles: BubbleData[] = [];
   let attempts = 0;
 

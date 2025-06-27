@@ -169,7 +169,7 @@ export default function MoneyScreen({
                 {item.items.map((title, idx) => (
                   <View style={localStyles.card} key={`all-${idx}`}>
                     <Image
-                      source={{ uri: "https://via.placeholder.com/50" }}
+                      source={{ uri: "https://randomuser.me/api/portraits/women/1.jpg" }}
                       style={localStyles.cardImage}
                     />
                     <View style={localStyles.cardContent}>

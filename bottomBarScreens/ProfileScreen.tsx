@@ -9,11 +9,10 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
-  I18nManager,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { TabView, TabBar, SceneMap } from 'react-native-tab-view';
-import type { SceneRendererProps, NavigationState, Route } from 'react-native-tab-view';
+import type { SceneRendererProps, NavigationState } from 'react-native-tab-view';
 import colors from '../globals/colors';
 
 // --- Type Definitions ---
@@ -29,11 +28,7 @@ const PostsRoute = () => (
       {Array.from({ length: 15 }).map((_, i) => (
         <Image
           key={i}
-          source={{
-            uri: `https://via.placeholder.com/150/${Math.floor(
-              Math.random() * 900000 + 100000
-            )}?text=Post${i + 1}`,
-          }}
+          source={{ uri: `https://randomuser.me/api/portraits/men/${i % 100}.jpg` }}
           style={localStyles.postImage}
         />
       ))}
@@ -75,35 +70,39 @@ export default function ProfileScreen() {
       {...props}
       indicatorStyle={localStyles.tabBarIndicator}
       style={localStyles.tabBar}
-      renderLabel={({
-        route,
-        focused,
-        color,
-      }: {
-        route: TabRoute;
-        focused: boolean;
-        color: string;
-      }) => (
-        <Text
-          style={{
-            color,
-            fontWeight: focused ? 'bold' : 'normal',
-            writingDirection: 'rtl',
-          }}
-        >
-          {route.title}
-        </Text>
-      )}
       activeColor={colors.black}
       inactiveColor="#8e8e8e"
       pressColor="#efefef"
+      renderTabBarItem={({ route, key }) => {
+        const routeIndex = props.navigationState.routes.findIndex(r => r.key === route.key);
+        const isFocused = props.navigationState.index === routeIndex;
+
+        return (
+          <TouchableOpacity
+            key={key}
+            style={localStyles.tabBarItem}
+            onPress={() => props.jumpTo(route.key)}
+          >
+            <Text
+              style={{
+                color: isFocused ? colors.black : '#8e8e8e',
+                fontWeight: isFocused ? 'bold' : 'normal',
+                writingDirection: 'rtl',
+                textAlign: 'center',
+                paddingVertical: 8,
+              }}
+            >
+              {route.title}
+            </Text>
+          </TouchableOpacity>
+        );
+      }}
     />
   );
 
   return (
     <SafeAreaView style={localStyles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
         <View style={localStyles.header}>
           <TouchableOpacity style={localStyles.headerIcon}>
             <Ionicons name="menu" size={30} color="black" />
@@ -114,10 +113,9 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Profile Info */}
         <View style={localStyles.profileInfo}>
           <Image
-            source={{ uri: 'https://via.placeholder.com/100/92c953' }}
+            source={{ uri: 'https://randomuser.me/api/portraits/men/2.jpg' }}
             style={localStyles.profilePicture}
           />
           <View style={localStyles.statsContainer}>
@@ -136,7 +134,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Bio */}
         <View style={localStyles.bioSection}>
           <Text style={localStyles.fullName}>שיי פרץ</Text>
           <Text style={localStyles.bioText}>
@@ -159,7 +156,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Action Buttons */}
         <View style={localStyles.actionButtonsContainer}>
           <TouchableOpacity style={localStyles.discoverPeopleButton}>
             <Ionicons name="person-add-outline" size={18} color="black" />
@@ -172,13 +168,12 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Story Highlights */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={localStyles.storyHighlightsContentContainer}
         >
-          {Array.from({ length: 50 }).map((_, i) => (
+          {Array.from({ length: 10 }).map((_, i) => (
             <View key={i} style={localStyles.storyHighlightItem}>
               <View style={localStyles.storyHighlightCircle}>
                 <Ionicons name="add" size={30} color="black" />
@@ -190,7 +185,6 @@ export default function ProfileScreen() {
           ))}
         </ScrollView>
 
-        {/* Tabs */}
         <TabView
           navigationState={{ index, routes }}
           renderScene={renderScene}
@@ -332,6 +326,10 @@ const localStyles = StyleSheet.create({
   tabBarIndicator: {
     backgroundColor: '#000',
     height: 2,
+  },
+  tabBarItem: {
+    flex: 1,
+    alignItems: 'center',
   },
   tabContentContainer: { minHeight: 300 },
   postsGrid: {
