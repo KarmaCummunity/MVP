@@ -4,7 +4,7 @@
 import React, { useCallback, memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
 
-import { Task } from '../globals';
+import { Task } from '../globals/types';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import colors from '../globals/colors';
 

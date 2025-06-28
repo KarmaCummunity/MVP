@@ -1,16 +1,47 @@
 import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
-import { NavigationProp, NavigatorScreenParams, ParamListBase } from "@react-navigation/native";
+import {
+  NavigationProp,
+  NavigatorScreenParams,
+  ParamListBase,
+} from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { ImageSourcePropType } from "react-native";
 
-export type DonationsStackParamList = {
-    DonationsScreen: undefined;
-    MoneyScreen: undefined;
-    TrumpScreen: undefined;
-    // Add more screens here as needed
-  };
+export interface Task {
+  id: string;
+  title: string;
+  completed: boolean;
+  dueDate?: Date;
+  priority: "Low" | "Medium" | "High" | "Critical" | "Urgent";
+  createdAt: Date;
+}
 
-  export type SettingItemType = 'navigate' | 'toggle' | 'button' | 'value';
+export type Filter = "All" | "Pending" | "Completed";
+export type SortBy = "createdAt" | "dueDate" | "priority";
+export type SortOrder = "asc" | "desc";
+
+// Interface for defining the structure of bubble data
+export interface BubbleData {
+  id: string;
+  size: number;
+  x: number;
+  y: number;
+  value: number | null;
+  name: string | null;
+  directionX: number;
+  directionY: number;
+  delay: number;
+  isBackground: boolean;
+}
+
+export type DonationsStackParamList = {
+  DonationsScreen: undefined;
+  MoneyScreen: undefined;
+  TrumpScreen: undefined;
+  // Add more screens here as needed
+};
+
+export type SettingItemType = "navigate" | "toggle" | "button" | "value";
 
 export interface SettingsItemProps {
   title: string;
@@ -26,7 +57,7 @@ export interface SettingsItemProps {
 }
 
 export interface SectionHeaderItem {
-  type: 'sectionHeader';
+  type: "sectionHeader";
   title?: string;
 }
 
@@ -52,7 +83,6 @@ export interface TrumpResult {
   date: string;
   time: string;
 }
-
 
 export type ListItem =
   | { type: "form"; key: string }
@@ -94,14 +124,12 @@ export type BottomTabNavigatorParamList = {
 //   DonationDetails: { itemId: string };
 // };
 
-// --- Nested Drag Reveal Stack Navigator (e.g., DragRevealStack.tsx, if you used Option 2 from earlier) ---
 // Define the screens that will appear *inside* your PostsReelsScreen modal
 export type PostsReelsStackParamList = {
   PostsReels: undefined; // The content screen you want to show
   SomeOtherContent: undefined; // Example of another screen within the modal
   // Add any other screens that can be displayed inside the PostsReelsScreen modal
 };
-
 
 // --- Helper Types for Navigation Props ---
 
@@ -117,5 +145,5 @@ export type BottomTabNavigationPropType<
 
 // You might also need a type for the 'route' prop if you're accessing params:
 // import { RouteProp } from '@react-navigation/native';
-import PostsReelsScreen from '../components/PostsReelsScreen';
+import PostsReelsScreen from "../components/PostsReelsScreen";
 // export type PostsReelsScreenRouteProp = RouteProp<RootStackParamList, 'PostsReelsScreen'>;

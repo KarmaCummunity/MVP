@@ -14,7 +14,7 @@ import {
 import TaskItem from '../components/TaskItem';
 import AddEditTaskModal from '../components/AddEditTaskModal';
 import FilterSortOptions from '../components/FilterSortOptions';
-import { Task, Filter, SortBy, SortOrder } from '../globals'; // Importing shared types
+import { Task, Filter, SortBy, SortOrder } from '../globals/types'; // Importing shared types
 import Icon from 'react-native-vector-icons/MaterialIcons'; // Material Design Icons
 // --- Firebase Imports ---
 // Ensure 'db' is correctly initialized in your firebaseConfig.ts file

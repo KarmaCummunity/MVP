@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Button } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import styles from '../globals/styles'; // Import your styles
+import colors from '../globals/colors';
 
 export default function LoginScreen({ navigation }: { navigation: NavigationProp<ParamListBase> }) {
   return (
@@ -19,8 +20,8 @@ export default function LoginScreen({ navigation }: { navigation: NavigationProp
       <View style={styles.formContainer}>
         {/* עוטפים את התוכן העליון ב-View חדש עם flex: 1 */}
         <View style={styles.topContentWrapper}>
-            <TextInput style={styles.input} placeholder="שם משתמש" placeholderTextColor="#fff" />
-            <TextInput style={styles.input} placeholder="סיסמה" placeholderTextColor="#fff" secureTextEntry />
+            <TextInput style={styles.input} placeholder="שם משתמש" placeholderTextColor={colors.textPrimary} />
+            <TextInput style={styles.input} placeholder="סיסמה" placeholderTextColor={colors.textPrimary} secureTextEntry />
 
             <TouchableOpacity>
               <Text style={styles.passwordHint}>שכחת סיסמה?</Text>

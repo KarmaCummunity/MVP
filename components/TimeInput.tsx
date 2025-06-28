@@ -142,6 +142,6 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     color: "#888",
-    fontSize: 18,
+    fontSize: 14,
   },
 });

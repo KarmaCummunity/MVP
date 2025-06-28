@@ -92,3 +92,39 @@ export interface Message {
       lastMessageTimestamp: lastMessage.timestamp,
     };
   });
+
+export const communityStats = [
+    { value: 125000, name: "תרומות בדולרים" }, // Donations in Dollars
+    { value: 2345, name: "מתנדבים פעילים" }, // Active Volunteers
+    { value: 78, name: "אירועים קהילתיים" }, // Community Events
+    { value: 15, name: "פרויקטים חדשים" }, // New Projects
+    { value: 3200, name: "חברים פעילים" }, // Active Members
+    { value: 95, name: "שותפים בקהילה" }, // Community Partners
+    { value: 500, name: "שעות התנדבות" }, // Volunteer Hours
+    { value: 12, name: "יוזמות חדשניות" }, // Innovative Initiatives
+    { value: 8, name: "הנהגות קהילתיות" }, // Community Leaderships
+    { value: 250, name: "משפחות נתמכות" }, // Families Supported
+  
+    // --- New Categories You Provided ---
+    { value: 1876, name: "טרמפים שנוצרו" }, // Rides created through us
+    { value: 450, name: "חפצים שנתרמו" }, // Items donated through us
+    { value: 23, name: "עמותות שותפות" }, // Partner organizations
+    { value: 1500, name: "ק''ג בגדים נתרמו" }, // kg of clothes donated
+    { value: 2100, name: "ק''ג אוכל נתרם" }, // kg of food donated
+    { value: 67, name: "קורסים נלמדו בספרייה" }, // Courses learned in our library
+    { value: 120, name: "חיות שמצאו בית" }, // Animals that found a home
+    { value: 350, name: "ליטר דם נתרם" }, // Liters of blood donated
+    { value: 18, name: "משפחות אומנה נמצאו" }, // Foster families found
+  
+    // --- More Creative Additions ---
+    { value: 45, name: "סדנאות יצירה" }, // Creative workshops held
+    { value: 9, name: "גינות קהילתיות" }, // Community gardens established
+    { value: 750, name: "עצים ניטעו" }, // Trees planted
+    { value: 110, name: "שעות ייעוץ אישי" }, // Personal counseling hours
+    { value: 5, name: "פרסים קהילתיים" }, // Community awards received
+    { value: 1200, name: "ק''מ של שבילי קהילה" }, // km of community paths maintained
+    { value: 30, name: "פודקאסטים קהילתיים" }, // Community podcasts produced
+    { value: 900, name: "שקיות מיחזור" }, // Recycling bags collected
+    { value: 200, name: "הכשרות מנהיגות" }, // Leadership trainings provided
+    { value: 60, name: "אירועי תרבות" }, // Cultural events hosted
+  ];

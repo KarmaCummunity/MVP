@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Platform,
 } from "react-native";
+import colors from "../globals/colors";
 
 interface PlacePrediction {
   description: string;
@@ -101,6 +102,7 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
         value={query}
         onChangeText={handleChangeText}
         placeholder={placeholder || "בחר מיקום"}
+        placeholderTextColor={colors.black}
         style={local_styles.input}
       />
 
@@ -160,6 +162,7 @@ const local_styles = StyleSheet.create({
     fontSize: 14,
     backgroundColor: "#f9f9f9",
     textAlign: "right",
+    writingDirection: "rtl",
     minHeight: 25,
   },
   item: {

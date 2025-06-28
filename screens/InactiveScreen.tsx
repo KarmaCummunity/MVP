@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import colors from '../globals/colors';
 
 export default function InactiveScreen() {
   const navigation = useNavigation();
@@ -38,7 +39,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.white,
     fontSize: 16,
   },
 });

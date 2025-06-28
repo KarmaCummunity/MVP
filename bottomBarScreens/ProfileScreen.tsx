@@ -71,8 +71,8 @@ export default function ProfileScreen() {
       indicatorStyle={localStyles.tabBarIndicator}
       style={localStyles.tabBar}
       activeColor={colors.black}
-      inactiveColor="#8e8e8e"
-      pressColor="#efefef"
+      inactiveColor= {colors.darkGray}
+      pressColor= {colors.lightGray}
       renderTabBarItem={({ route, key }) => {
         const routeIndex = props.navigationState.routes.findIndex(r => r.key === route.key);
         const isFocused = props.navigationState.index === routeIndex;
@@ -85,7 +85,7 @@ export default function ProfileScreen() {
           >
             <Text
               style={{
-                color: isFocused ? colors.black : '#8e8e8e',
+                color: isFocused ? colors.black : colors.darkGray,
                 fontWeight: isFocused ? 'bold' : 'normal',
                 writingDirection: 'rtl',
                 textAlign: 'center',
@@ -199,7 +199,7 @@ export default function ProfileScreen() {
 
 // --- Styles ---
 const localStyles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: colors.white },
   header: {
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
@@ -207,7 +207,7 @@ const localStyles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingTop: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.lightGray,
   },
   username: {
     fontSize: 20,
@@ -230,7 +230,7 @@ const localStyles = StyleSheet.create({
     height: 90,
     borderRadius: 45,
     borderWidth: 2,
-    borderColor: '#ddd',
+    borderColor: colors.lightGray,
     marginLeft: 20,
   },
   statsContainer: {
@@ -240,7 +240,7 @@ const localStyles = StyleSheet.create({
   },
   statItem: { alignItems: 'center' },
   statNumber: { fontSize: 18, fontWeight: 'bold', textAlign: 'center' },
-  statLabel: { fontSize: 14, color: '#666', textAlign: 'center' },
+  statLabel: { fontSize: 14, color: colors.mediumGray, textAlign: 'center' },
   bioSection: { paddingHorizontal: 15, marginBottom: 10 },
   fullName: {
     fontSize: 16,
@@ -250,7 +250,7 @@ const localStyles = StyleSheet.create({
   },
   bioText: {
     fontSize: 14,
-    color: '#333',
+    color: colors.darkGray,
     writingDirection: 'rtl',
     textAlign: 'right',
     marginTop: 5,
@@ -277,7 +277,7 @@ const localStyles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    backgroundColor: '#efefef',
+    backgroundColor: colors.lightGray,
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',
@@ -290,7 +290,7 @@ const localStyles = StyleSheet.create({
     textAlign: 'center',
   },
   discoverPeopleButton: {
-    backgroundColor: '#efefef',
+    backgroundColor: colors.darkGray,
     borderRadius: 8,
     padding: 10,
     marginRight: 5,
@@ -309,23 +309,23 @@ const localStyles = StyleSheet.create({
     borderColor: '#ddd',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.lightGray,
   },
   storyHighlightText: {
     fontSize: 12,
     marginTop: 5,
-    color: '#555',
+    color: colors.mediumGray,
     writingDirection: 'rtl',
     textAlign: 'center',
   },
   tabBar: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     borderBottomWidth: 1,
     alignItems: 'flex-end',
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.lightGray,
   },
   tabBarIndicator: {
-    backgroundColor: '#000',
+    backgroundColor: colors.black,
     height: 2,
   },
   tabBarItem: {
@@ -351,7 +351,7 @@ const localStyles = StyleSheet.create({
   },
   placeholderText: {
     fontSize: 16,
-    color: '#888',
+    color: colors.mediumGray,
     writingDirection: 'rtl',
     textAlign: 'center',
   },

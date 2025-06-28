@@ -17,91 +17,20 @@ import Animated, {
   withDelay,
   Easing,
 } from "react-native-reanimated";
-import { motivationalQuotes } from "../globals/constants"; // Assuming this path is correct
-import { TouchableOpacity } from 'react-native';
+import { motivationalQuotes, FontSizes } from "../globals/constants"; // Assuming this path is correct
+import { TouchableOpacity } from "react-native";
 import colors from "../globals/colors";
-
+import { communityStats } from "../globals/fakeData"; // Assuming this path is correct
+import { BubbleData } from "../globals/types";
 // Get the dimensions of the device window for responsive sizing
 const { width, height } = Dimensions.get("window");
 
 // --- Constants ---
 const NUM_BUBBLES = 30;
-const NUM_BACKGROUND_BUBBLES = 100;
 const MIN_SIZE = 50;
 const MAX_SIZE = 150;
 const MIN_NUMBER = 1;
 const MAX_NUMBER = 100;
-
-// Interface for defining the structure of bubble data
-interface BubbleData {
-  id: string;
-  size: number;
-  x: number;
-  y: number;
-  value: number | null;
-  name: string | null;
-  directionX: number;
-  directionY: number;
-  delay: number;
-  isBackground: boolean;
-}
-
-/**
- * Converts a number to its Hebrew word representation.
- */
-const numberToWords = (num: number): string => {
-  const units = [
-    "",
-    "אחת", "שתיים", "שלוש", "ארבע", "חמש", 
-    "שש", "שבע", "שמונה", "תשע",
-  ];
-  const tens = [
-    "",
-    "עשר", "עשרים", "שלושים", "ארבעים", "חמישים",
-    "שישים", "שבעים", "שמונים", "תשעים",
-  ];
-  const teens = [
-    "עשר", "אחת עשרה", "שתים עשרה", "שלוש עשרה", "ארבע עשרה",
-    "חמש עשרה", "שש עשרה", "שבע עשרה", "שמונה עשרה", "תשע עשרה",
-  ];
-
-  if (num === 0) {
-    return "אפס";
-  }
-
-  let result = "";
-  let tempNum = num;
-
-  // Handle thousands
-  if (tempNum >= 1000) {
-    const thousands = Math.floor(tempNum / 1000);
-    result += thousands === 1 ? "אלף " : numberToWords(thousands) + " אלפים ";
-    tempNum %= 1000;
-  }
-
-  // Handle hundreds
-  if (tempNum >= 100) {
-    const hundreds = Math.floor(tempNum / 100);
-    result += hundreds === 1 ? "מאה " : numberToWords(hundreds) + " מאות ";
-    tempNum %= 100;
-  }
-
-  // Handle tens and units
-  if (tempNum >= 20) {
-    const t = Math.floor(tempNum / 10);
-    const u = tempNum % 10;
-    result += tens[t];
-    if (u > 0) {
-      result += ` ו${units[u]}`;
-    }
-  } else if (tempNum >= 10) {
-    result += teens[tempNum - 10];
-  } else if (tempNum > 0) {
-    result += units[tempNum];
-  }
-
-  return result.trim();
-};
 
 /**
  * Scales a number value to a bubble size within the defined MIN_SIZE and MAX_SIZE range.
@@ -142,36 +71,11 @@ const generateBubbles = (): BubbleData[] => {
   console.log("Generating bubbles...");
   const bubbles: BubbleData[] = [];
   let attempts = 0;
-
-  // Generate Background Bubbles
-  while (bubbles.length < NUM_BACKGROUND_BUBBLES && attempts < 2000) {
-    const size = 20 + Math.random() * 80;
-    const x = Math.random() * (width - size);
-    const y = Math.random() * (height - size - 150); // Leave space for message
-    const directionX = Math.random() > 0.5 ? 1 : -1;
-    const directionY = Math.random() > 0.5 ? 1 : -1;
-    const delay = Math.random() * 1000;
-
-    bubbles.push({
-      id: `bg-${bubbles.length}`,
-      size,
-      x,
-      y,
-      value: null,
-      name: null,
-      directionX,
-      directionY,
-      delay,
-      isBackground: true,
-    });
-
-    attempts++;
-  }
-
   // Generate Main Bubbles
   attempts = 0;
+  let index = 0;
   const mainBubbles: BubbleData[] = [];
-  while (mainBubbles.length < NUM_BUBBLES && attempts < 2000) {
+  while (mainBubbles.length < NUM_BUBBLES && attempts < 1000) {
     const value = Math.floor(Math.random() * MAX_NUMBER) + 1;
     const size = scaleNumberToSize(value);
     const x = Math.random() * (width - size);
@@ -179,7 +83,9 @@ const generateBubbles = (): BubbleData[] => {
     const directionX = Math.random() > 0.5 ? 1 : -1;
     const directionY = Math.random() > 0.5 ? 1 : -1;
     const delay = Math.random() * 1000;
-    const name = numberToWords(value);
+    // const name = numberToWords(value);
+
+    const name = communityStats[index++ % communityStats.length].name; // Use names from communityStats
 
     if (!isOverlapping(x, y, size, mainBubbles)) {
       mainBubbles.push({
@@ -198,8 +104,7 @@ const generateBubbles = (): BubbleData[] => {
     attempts++;
   }
 
-  const allBubbles = [...bubbles, ...mainBubbles];
-  return allBubbles;
+  return mainBubbles;
 };
 
 /**
@@ -211,6 +116,7 @@ const BubbleComp: React.FC = () => {
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
 
   const handleBubblePress = useCallback((id: string) => {
+    // console.log(`Bubble pressed: ${id}`);
     setSelectedBubbleId((prevId) => {
       const newId = prevId === id ? null : id;
       return newId;
@@ -222,14 +128,16 @@ const BubbleComp: React.FC = () => {
   }, []);
 
   const handleMessagePress = useCallback(() => {
-    setCurrentSentenceIndex((prevIndex) => (prevIndex + 1) % motivationalQuotes.length);
+    setCurrentSentenceIndex(
+      (prevIndex) => (prevIndex + 1) % motivationalQuotes.length
+    );
   }, []);
 
-
   return (
-    <View style={styles.container}>
+    <View style={localStyles.container}>
+      <Text style={localStyles.title}>הקהילה במספרים</Text>
       {/* Bubbles Container */}
-      <View style={styles.bubblesContainer}>
+      <View style={localStyles.bubblesContainer}>
         {bubbles.map((bubble) => (
           <AnimatedBubble
             key={bubble.id}
@@ -241,9 +149,9 @@ const BubbleComp: React.FC = () => {
       </View>
 
       {/* Message Container - Fixed positioning */}
-      <View style={styles.messageContainer}>
+      <View style={localStyles.messageContainer}>
         <TouchableOpacity onPress={handleMessagePress}>
-          <Text style={styles.messageText}>
+          <Text style={localStyles.messageText}>
             {motivationalQuotes[currentSentenceIndex]}
           </Text>
         </TouchableOpacity>
@@ -356,7 +264,7 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
     <TouchableWithoutFeedback onPress={handleInternalPress}>
       <Animated.View
         style={[
-          styles.bubble,
+          localStyles.bubble,
           {
             width: size,
             height: size,
@@ -367,15 +275,15 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
         ]}
       >
         {!isBackground && (
-          <View style={styles.textContainer}>
+          <View style={localStyles.textContainer}>
             <Text
               style={[
-                styles.bubbleText,
-                { 
-                  fontSize, 
+                localStyles.bubbleText,
+                {
+                  fontSize: size * 0.2, // Adjusted for better visibility
                   color: isSelected ? "#333" : "#000",
                   marginBottom: 2, // Add space between number and name
-                }
+                },
               ]}
               numberOfLines={1}
               adjustsFontSizeToFit
@@ -385,12 +293,12 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
             </Text>
             <Text
               style={[
-                styles.bubbleName,
-                { 
-                  fontSize: nameSize, 
+                localStyles.bubbleName,
+                {
+                  fontSize: nameSize,
                   color: isSelected ? "#555" : "#000",
                   lineHeight: nameSize * 1.2, // Better line height
-                }
+                },
               ]}
               numberOfLines={3} // Allow more lines for Hebrew text
               adjustsFontSizeToFit
@@ -406,10 +314,11 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
 };
 
 // --- StyleSheet ---
-const styles = StyleSheet.create({
+const localStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#e6f7ff",
+    // backgroundColor: "#e6f7ff",
+   backgroundColor: 'rgba(100, 255, 255, 0.9)'
   },
   bubblesContainer: {
     flex: 1,
@@ -435,32 +344,35 @@ const styles = StyleSheet.create({
     width: "100%", // Ensure full width usage
   },
   bubbleText: {
-    fontWeight: "bold",
+    fontWeight: "900",
     textAlign: "center",
     opacity: 1,
   },
   bubbleName: {
     textAlign: "center",
     opacity: 0.8, // Slightly more visible
-    fontWeight: "500", // Add some weight to make it more visible
+    fontWeight: "bold", // Add some weight to make it more visible
   },
   messageContainer: {
-    // position: "absolute",
-    // marginBottom: 80,
-    paddingVertical: 80,
-    left: 0,
-    right: 0,
+    marginVertical: 80,
+    marginHorizontal: 20,
+    alignSelf: "center",
     zIndex: 1000, // Very high z-index to ensure it's always on top
     alignItems: "center",
-    paddingHorizontal: 20,
     backgroundColor: "transparent", // Ensure no background interference
+  },
+  title: {
+    textAlign: "center",
+    fontSize: 25,
+    marginTop: 10,
+    fontWeight: "bold",
   },
   messageText: {
     fontSize: 14,
     fontWeight: "bold",
     backgroundColor: colors.lightGray,
     textAlign: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: 5,
     paddingVertical: 8,
     borderRadius: 20,
     shadowColor: "#000",

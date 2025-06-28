@@ -14,6 +14,7 @@ import { WebView } from 'react-native-webview';
 
 // useNavigation is still needed for navigating back on the web side
 import { NavigationProp, ParamListBase, useNavigation } from '@react-navigation/native';
+import colors from '../globals/colors';
 // WebBrowser is no longer needed as we are using WebView for native.
 // import * as WebBrowser from 'expo-web-browser';
 
@@ -87,7 +88,7 @@ const WebViewScreen: React.FC<WebViewScreenProps> = (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff', // Or your app's background color
+    backgroundColor: colors.white, // Or your app's background color
   },
   webview: {
     flex: 1,
@@ -98,7 +99,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff', // Match your screen background
+    backgroundColor: colors.white, // Match your screen background
     top: 0,
     left: 0,
     right: 0,
@@ -110,12 +111,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#333',
+    color: colors.textPrimary, // Use your app's primary text color
     textAlign: 'center',
   },
 });

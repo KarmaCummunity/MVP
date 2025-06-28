@@ -43,7 +43,7 @@ const colors = {
   headerBorder: '#F2CDDB', // Specific border for headers
 
     // Priority badge colors
-    priorityHigh: '#FF6B6B',      // Red for High priority tasks
+    priorityHigh: '#FB8C00',      // Red for High priority tasks
     priorityMedium: '#FFD166',    // Yellow/Orange for Medium priority tasks
     priorityLow: '#6FCF97',       // Green for Low priority tasks
     priorityDefault: '#CCCCCC',   // Default color for undefined priority

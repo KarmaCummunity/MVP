@@ -9,8 +9,7 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
-import { Task } from "../globals";
-import Icon from "react-native-vector-icons/MaterialIcons";
+import { Task } from "../globals/types";
 import colors from "../globals/colors"; // Assuming this defines your global color palette
 
 /**
@@ -131,15 +130,15 @@ const AddEditTaskModal: React.FC<AddEditTaskModalProps> = ({
   ) => {
     switch (p) {
       case "Urgent":
-        return "#D32F2F"; // A more standard and strong red (Material Design 'Red 700')
+        return colors.priorityUrgent; // A more standard and strong red (Material Design 'Red 700')
       case "Critical":
-        return "#F4511E"; // A vibrant orange-red (Material Design 'Deep Orange 600')
+        return colors.priorityCritical; // A vibrant orange-red (Material Design 'Deep Orange 600')
       case "High":
-        return "#FB8C00"; // A bright orange (Material Design 'Orange 600')
+        return colors.priorityHigh; // A bright orange (Material Design 'Orange 600')
       case "Medium":
-        return "#FFC107"; // A warm yellow/amber (Material Design 'Amber 500')
+        return colors.priorityMedium; // A warm yellow/amber (Material Design 'Amber 500')
       case "Low":
-        return "#4CAF50"; // A standard green (Material Design 'Green 500')
+        return colors.priorityLow; // A standard green (Material Design 'Green 500')
       default:
         return "#888888"; // A neutral grey for any unhandled case
     }
@@ -164,7 +163,7 @@ const AddEditTaskModal: React.FC<AddEditTaskModalProps> = ({
             style={styles.input}
             placeholder="Task Title"
             value={title}
-            placeholderTextColor={"#888"} // Placeholder text color 
+            placeholderTextColor={colors.mediumGray} // Placeholder text color 
             onChangeText={setTitle}
             returnKeyType="done" // Changes keyboard return key text
             onSubmitEditing={handleSave} // Allows saving when pressing "done" on keyboard

@@ -247,7 +247,6 @@ export const FontSizes = {
     extraSmall: 8,
   };
  
-  
 // For searching 
 export const filterOptions: string[] = [
   "לפי מיקום",

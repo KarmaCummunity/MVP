@@ -31,6 +31,7 @@ import {
   TrumpScreenProps,
   ListItem,
 } from "../globals/types";
+import Clipboard from '@react-native-clipboard/clipboard'; // Import Clipboard
 
 //TODO that it will be depend on the sort/filtr
 
@@ -156,68 +157,40 @@ export default function TrumpScreen({ navigation }: TrumpScreenProps) {
    */
   const handleOpenWhatsAppGroup = useCallback(async (url: string) => {
     try {
-      // First, try to open the URL directly
-      const supported = await Linking.canOpenURL(url);
-
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        // If direct link fails, try alternative approaches for APK builds
-        const whatsappUrl = url.replace(
-          "https://chat.whatsapp.com/",
-          "whatsapp://send?text="
-        );
-        const canOpenWhatsApp = await Linking.canOpenURL("whatsapp://send");
-
-        if (canOpenWhatsApp) {
-          // Try opening WhatsApp directly
-          await Linking.openURL("whatsapp://send");
-          Alert.alert(
-            "הוראות",
-            "אנא העתק את הקישור הבא ושלח אותו בווטסאפ כדי להצטרף לקבוצה:\n\n" +
-              url,
-            [
-              {
-                text: "העתק קישור",
-                onPress: () => {
-                  // You might want to use a clipboard library here
-                  Alert.alert("הודעה", "אנא העתק את הקישור ידנית");
-                },
-              },
-              { text: "ביטול", style: "cancel" },
-            ]
-          );
-        } else {
-          Alert.alert(
-            "שגיאה",
-            "לא ניתן לפתוח את ווטסאפ. אנא וודא שהאפליקציה מותקנת במכשיר.",
-            [
-              {
-                text: "העתק קישור",
-                onPress: () => {
-                  Alert.alert("קישור", url);
-                },
-              },
-              { text: "אישור" },
-            ]
-          );
+      // For Android, try the intent approach first
+      if (Platform.OS === 'android') {
+        const intentUrl = `intent://send?text=${encodeURIComponent(url)}#Intent;package=com.whatsapp;end`;
+        
+        try {
+          await Linking.openURL(intentUrl);
+          return;
+        } catch (error) {
+          console.log('Intent failed, trying other methods');
         }
       }
-    } catch (error) {
-      console.error("Failed to open WhatsApp URL:", error);
+      
+      // Try the original URL
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+        return;
+      }
+      
+      // Fallback: copy to clipboard
+      Clipboard.setString(url);
       Alert.alert(
-        "שגיאה",
-        "אירעה שגיאה בעת ניסיון לפתוח את הקישור. האם תרצה להעתיק את הקישור?",
-        [
-          {
-            text: "העתק קישור",
-            onPress: () => Alert.alert("קישור", url),
-          },
-          { text: "ביטול", style: "cancel" },
-        ]
+        "קישור הועתק",
+        "הקישור הועתק ללוח. פתח את WhatsApp והדבק אותו בצ'אט.",
+        [{ text: "אישור" }]
       );
+      
+    } catch (error) {
+      console.error("Failed to open WhatsApp:", error);
+      Clipboard.setString(url);
+      Alert.alert("שגיאה", "הקישור הועתק ללוח");
     }
   }, []);
+
 
   /**
    * Handles search/publish action
@@ -391,7 +364,7 @@ export default function TrumpScreen({ navigation }: TrumpScreenProps) {
           <View style={localStyles.rowContainer}>
             {/* <Text style={localStyles.search_Text}>מאיפה?</Text> */}
             <LocationSearchComp
-              placeholder="?מאיפה"
+              placeholder="מאיפה?"
               onLocationSelected={(location) =>
                 handleDropdownChange("from", location)
               }
@@ -401,7 +374,7 @@ export default function TrumpScreen({ navigation }: TrumpScreenProps) {
           <View style={localStyles.rowContainer}>
             {/* <Text style={localStyles.search_Text}>לאיפה?</Text> */}
             <LocationSearchComp
-              placeholder="?לאיפה"
+              placeholder="לאיפה?"
               onLocationSelected={(location) =>
                 handleDropdownChange("to", location)
               }
