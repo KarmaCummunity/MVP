@@ -16,9 +16,10 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { ParamListBase } from '@react-navigation/native';
 import ChatMessageBubble from '../components/ChatMessageBubble';
-import { conversations as initialConversations, Message } from '../globals/fakeData'; // Adjust path
-import colors from '../globals/colors'; // Adjust path
-import Icon from 'react-native-vector-icons/Ionicons'; // Example icon
+import { conversations as initialConversations, Message } from '../globals/fakeData';
+import colors from '../globals/colors';
+import { FontSizes } from '../globals/constants';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 type ChatDetailRouteParams = {
   conversationId: string;
@@ -26,59 +27,49 @@ type ChatDetailRouteParams = {
   userAvatar: string;
 };
 
-type ChatDetailRouteProp = RouteProp<ParamListBase, 'ChatDetailScreen'> & {
-  params: ChatDetailRouteParams;
-};
-
 export default function ChatDetailScreen() {
   const navigation = useNavigation();
-  const route = useRoute<ChatDetailRouteProp>();
-  const { conversationId, userName, userAvatar } = route.params;
-
-  const [messages, setMessages] = useState<Message[]>([]);
+  const route = useRoute<RouteProp<Record<string, ChatDetailRouteParams>, string>>();
+  const { userName, userAvatar } = route.params;
   const [inputText, setInputText] = useState('');
-  const flatListRef = useRef<FlatList<Message>>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
-    // Load initial messages for this conversation
-    const conversation = initialConversations.find(conv => conv.id === conversationId);
-    if (conversation) {
-      setMessages(conversation.messages);
-      // Mark messages from the other user as read when opening the chat
-      const updatedMessages = conversation.messages.map(msg =>
-        msg.senderId !== 'me' ? { ...msg, read: true } : msg
-      );
-      setMessages(updatedMessages);
-      // In a real app, you'd update your global state/backend here
-    }
-  }, [conversationId]);
+    setMessages([
+      {
+        id: '1',
+        senderId: 'other',
+        text: 'היי, אשמח לקבל פרטים נוספים על התרומה שלך',
+        timestamp: new Date().toISOString(),
+        read: true,
+      },
+      {
+        id: '2',
+        senderId: 'me',
+        text: 'בטח! אני תורם ספה במצב מצוין. היא בת שנתיים, צבע אפור, ואפשר לאסוף מתל אביב',
+        timestamp: new Date().toISOString(),
+        read: true,
+      },
+    ]);
+  }, []);
 
-  useEffect(() => {
-    // Scroll to the end when messages change
-    if (messages.length > 0) {
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-    }
-  }, [messages]);
-
-  const generateFakeResponse = useCallback(() => {
-    const fakeResponses = [
-      'קיבלתי, תודה!',
-      'מעולה! נדבר על זה בהמשך.',
-      'אני בודק/ת את זה.',
-      'כן, נשמע טוב.',
-      'תודה על המידע!',
-      'אוקיי.',
+  const generateFakeResponse = () => {
+    const responses = [
+      'תודה על המידע! מתי אפשר לבוא לקחת?',
+      'האם אפשר לקבל תמונה של הספה?',
+      'מה המידות של הספה?',
+      'האם יש אפשרות למשלוח?',
     ];
-    const randomResponse = fakeResponses[Math.floor(Math.random() * fakeResponses.length)];
     const newMessage: Message = {
-      id: `msg-${Date.now()}-fake`,
-      senderId: conversationId, // The other user is the sender
-      text: randomResponse,
+      id: `msg-${Date.now()}`,
+      senderId: 'other',
+      text: responses[Math.floor(Math.random() * responses.length)],
       timestamp: new Date().toISOString(),
       read: false,
     };
     setMessages((prevMessages) => [...prevMessages, newMessage]);
-  }, [conversationId]);
+  };
 
   const handleSendMessage = () => {
     if (inputText.trim() === '') return;
@@ -93,8 +84,7 @@ export default function ChatDetailScreen() {
     setMessages((prevMessages) => [...prevMessages, newMessage]);
     setInputText('');
 
-    // Simulate fake response after a short delay
-    setTimeout(generateFakeResponse, 1500 + Math.random() * 1000); // 1.5 to 2.5 seconds
+    setTimeout(generateFakeResponse, 1500 + Math.random() * 1000);
   };
 
   const renderMessage = ({ item }: { item: Message }) => (
@@ -108,22 +98,22 @@ export default function ChatDetailScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
           <Icon name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <View style={styles.headerUserInfo}>
           <Image source={{ uri: userAvatar }} style={styles.headerAvatar} />
           <Text style={styles.headerTitle}>{userName}</Text>
         </View>
-        <TouchableOpacity onPress={() => Alert.alert('מידע נוסף', `מידע על ${userName}`)}>
+        <TouchableOpacity onPress={() => Alert.alert('מידע נוסף', `מידע על ${userName}`)} style={styles.headerButton}>
           <Icon name="information-circle-outline" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
+        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0} // Adjust as needed
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <FlatList
           ref={flatListRef}
@@ -137,19 +127,19 @@ export default function ChatDetailScreen() {
 
         <View style={styles.inputContainer}>
           <TouchableOpacity onPress={() => Alert.alert('תמונה')}>
-            <Icon name="camera-outline" size={24} color={colors.blue} style={styles.icon} />
+            <Icon name="camera-outline" size={24} color={colors.pink} style={styles.icon} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => Alert.alert('מדיה')}>
-            <Icon name="image-outline" size={24} color={colors.blue} style={styles.icon} />
+            <Icon name="image-outline" size={24} color={colors.pink} style={styles.icon} />
           </TouchableOpacity>
           <TextInput
             style={styles.textInput}
             value={inputText}
             onChangeText={setInputText}
             placeholder="שלח הודעה..."
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textSecondary}
             multiline
-            textAlignVertical="center" // For Android to center placeholder
+            textAlignVertical="center"
           />
           <TouchableOpacity onPress={handleSendMessage} style={styles.sendButton}>
             <Text style={styles.sendButtonText}>שלח</Text>
@@ -163,9 +153,8 @@ export default function ChatDetailScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    marginTop: 30, // Adjust for status bar height
-    marginBottom: 40,
-    backgroundColor: colors.backgroundPrimary,
+    marginTop: Platform.OS === 'android' ? 30 : 0,
+    backgroundColor: colors.backgroundSecondary,
   },
   header: {
     flexDirection: 'row',
@@ -173,13 +162,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E0E0E0',
-    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.backgroundSecondary,
   },
   headerUserInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
   },
   headerAvatar: {
     width: 32,
@@ -188,27 +179,34 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: FontSizes.medium,
     fontWeight: 'bold',
     color: colors.textPrimary,
   },
-  keyboardAvoidingView: {
-    flex: 1,
+  headerButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+  backButton: {
+    marginRight: 15,
+  },
+  // Chat messages container
   messagesContainer: {
+    flex: 1,
+    backgroundColor: colors.backgroundPrimary,
     paddingHorizontal: 10,
-    paddingVertical: 10,
-    flexGrow: 1, // Ensure content grows to fill space
-    justifyContent: 'flex-end', // Stick messages to the bottom
   },
+  // Input container at bottom
   inputContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E0E0E0',
-    backgroundColor: 'white',
+    alignItems: 'flex-end',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    backgroundColor: colors.backgroundPrimary,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   icon: {
     paddingHorizontal: 5,
@@ -216,26 +214,27 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: colors.border,
     borderRadius: 20,
     paddingHorizontal: 15,
-    paddingVertical: Platform.OS === 'ios' ? 10 : 8, // Adjust for Android vertical alignment
+    paddingVertical: Platform.OS === 'ios' ? 10 : 8,
     marginHorizontal: 8,
-    fontSize: 16,
-    maxHeight: 120, // Limit growth of text input
-    textAlign: 'right', // For RTL
-    writingDirection: 'rtl', // For RTL
+    fontSize: FontSizes.body,
+    maxHeight: 120,
+    textAlign: 'right',
+    color: colors.textPrimary,
   },
   sendButton: {
-    backgroundColor: colors.blue,
+    backgroundColor: colors.pink,
     borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    marginLeft: 5,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sendButtonText: {
-    color: 'white',
+    color: colors.backgroundPrimary,
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: FontSizes.body,
   },
 });

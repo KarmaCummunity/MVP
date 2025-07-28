@@ -1,554 +1,771 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
-  FlatList,
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
-  Linking,
   Alert,
-  Image,
-  ImageSourcePropType,
-  ListRenderItem,
+  ScrollView,
   TextInput,
-  Animated,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
   Platform,
-} from "react-native";
-import HeaderComp from "../components/HeaderComp";
-import { menu_for_trumps, WHATSAPP_GROUP_DETAILS } from "../globals/constants";
-import AutocompleteDropdownComp from "../components/AutocompleteDropdownComp";
-import { NavigationProp, ParamListBase } from "@react-navigation/native";
-import LocationSearchComp from "../components/LocationSearchComp";
-import TimeInput from "../components/TimeInput";
-import styles from "../globals/styles";
-import {
-  TrumpResult,
-  WhatsAppGroup,
-  Filters,
-  TrumpScreenProps,
-  ListItem,
-} from "../globals/types";
-import Clipboard from '@react-native-clipboard/clipboard'; // Import Clipboard
+} from 'react-native';
+import { NavigationProp, ParamListBase } from '@react-navigation/native';
+import colors from '../globals/colors';
+import { FontSizes } from '../globals/constants';  
+import Icon from 'react-native-vector-icons/Ionicons';
+import HeaderComp from '../components/HeaderComp';
+import TimePicker from '../components/TimePicker';
 
-//TODO that it will be depend on the sort/filtr
+export default function TrumpScreen({
+  navigation,
+}: {
+  navigation: NavigationProp<ParamListBase>;
+}) {
+  // Debug log for TrumpScreen
+  console.log('🚗 TrumpScreen - Component rendered');
+  console.log('🚗 TrumpScreen - Navigation object:', navigation);
+  
+  const [mode, setMode] = useState(false); // false = seeker (needs ride), true = offerer (offers ride)
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState("");
+  const [selectedSort, setSelectedSort] = useState("");
+  const [fromLocation, setFromLocation] = useState("");
+  const [toLocation, setToLocation] = useState("");
+  const [departureTime, setDepartureTime] = useState("");
 
-const INITIAL_TOP_VIEW_HEIGHT =
-  Platform.OS === "ios"
-    ? 390
-    : Platform.OS === "android"
-    ? 390 //+ (StatusBar.currentHeight || 0)
-    : 390; // e.g., web or default
+  // עדכון חיפוש לפי SearchBar
+  useEffect(() => {
+    console.log('🚗 TrumpScreen - Search updated:', { searchQuery, selectedFilter, selectedSort });
+  }, [searchQuery, selectedFilter, selectedSort]);
 
-export default function TrumpScreen({ navigation }: TrumpScreenProps) {
-  // State management
-  const [filters, setFilters] = useState<Filters>({
-    to: "",
-    from: "",
-    when: "",
-  });
-  const [mode, setMode] = useState<boolean>(false); // false for "מחפש", true for "מציע"
-  const [selectedTime, setSelectedTime] = useState<Date | null>(null);
-  const [hidden, setHidden] = useState(false);
-  const lastOffset = useRef(0);
-
-  const animatedViewHeight = useRef(
-    new Animated.Value(INITIAL_TOP_VIEW_HEIGHT)
-  ).current;
-  // Sample search results - replace with actual data from your API
-  const searchResults: TrumpResult[] = [
-    // {
-    //   id: "1",
-    //   name: "נועם סרוסי",
-    //   from: "יאשיהו",
-    //   to: "הרכבת",
-    //   date: "02/01/2023",
-    //   time: "15:30",
-    // },
-    // {
-    //   id: "2",
-    //   name: "נועם סרוסי",
-    //   from: "שטרן 29",
-    //   to: "הרכבת לתל אביב",
-    //   date: "היום",
-    //   time: "15:30",
-    // },
+  // נתונים דמה לטרמפים
+  const dummyRides = [
+    {
+      id: 1,
+      driverName: "דוד כהן",
+      from: "תל אביב",
+      to: "ירושלים",
+      date: "15.12.2023",
+      time: "08:30",
+      seats: 3,
+      price: 25,
+      rating: 4.8,
+      image: "👨‍💼",
+      category: "עבודה",
+    },
+    {
+      id: 2,
+      driverName: "שרה לוי",
+      from: "חיפה",
+      to: "תל אביב",
+      date: "15.12.2023",
+      time: "07:00",
+      seats: 2,
+      price: 30,
+      rating: 4.9,
+      image: "👩‍💼",
+      category: "עבודה",
+    },
+    {
+      id: 3,
+      driverName: "משה גולדברג",
+      from: "באר שבע",
+      to: "תל אביב",
+      date: "16.12.2023",
+      time: "09:15",
+      seats: 4,
+      price: 35,
+      rating: 4.7,
+      image: "👨‍🎓",
+      category: "לימודים",
+    },
+    {
+      id: 4,
+      driverName: "רחל אברהם",
+      from: "אשדוד",
+      to: "ירושלים",
+      date: "15.12.2023",
+      time: "10:00",
+      seats: 1,
+      price: 20,
+      rating: 4.6,
+      image: "👩‍⚕️",
+      category: "בריאות",
+    },
+    {
+      id: 5,
+      driverName: "יוסי שפירא",
+      from: "פתח תקווה",
+      to: "חיפה",
+      date: "16.12.2023",
+      time: "14:30",
+      seats: 3,
+      price: 40,
+      rating: 4.8,
+      image: "👨‍🔧",
+      category: "עבודה",
+    },
+    {
+      id: 6,
+      driverName: "מיכל רוזן",
+      from: "רמת גן",
+      to: "באר שבע",
+      date: "15.12.2023",
+      time: "16:00",
+      seats: 2,
+      price: 45,
+      rating: 4.9,
+      image: "👩‍🎨",
+      category: "בילוי",
+    },
   ];
 
-  const ANIMATION_COOLDOWN_MS = 400;
-  const SCROLL_UP_THRESHOLD = 1;
-  const SCROLL_DOWN_THRESHOLD = -30;
+  // נתונים דמה לטרמפים אחרונים
+  const dummyRecentRides = [
+    {
+      id: 1,
+      driverName: "דוד כהן",
+      from: "תל אביב",
+      to: "ירושלים",
+      date: "10.12.2023",
+      status: "הושלם",
+      price: 25,
+    },
+    {
+      id: 2,
+      driverName: "שרה לוי",
+      from: "חיפה",
+      to: "תל אביב",
+      date: "08.12.2023",
+      status: "הושלם",
+      price: 30,
+    },
+    {
+      id: 3,
+      driverName: "משה גולדברג",
+      from: "באר שבע",
+      to: "תל אביב",
+      date: "05.12.2023",
+      status: "הושלם",
+      price: 35,
+    },
+  ];
 
-  const canAnimate = useRef(true);
+  // נתונים דמה לקבוצות
+  const dummyGroups = [
+    {
+      id: 1,
+      name: "טרמפים תל אביב - ירושלים",
+      members: 1250,
+      image: "🚗",
+      type: "whatsapp",
+    },
+    {
+      id: 2,
+      name: "טרמפים חיפה - תל אביב",
+      members: 890,
+      image: "🚙",
+      type: "whatsapp",
+    },
+    {
+      id: 3,
+      name: "טרמפים באר שבע - תל אביב",
+      members: 650,
+      image: "🚐",
+      type: "facebook",
+    },
+  ];
 
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    const deltaY = lastOffset.current - offsetY;
+  // פונקציה לסינון טרמפים
+  const getFilteredRides = () => {
+    let filtered = [...dummyRides];
 
-    if (!canAnimate.current) return;
-
-    // Scroll Up (strong enough)
-    if (deltaY > SCROLL_UP_THRESHOLD && hidden) {
-      // console.log("scrolling up - ", deltaY);
-      canAnimate.current = false;
-      setHidden(false);
-      Animated.timing(animatedViewHeight, {
-        toValue: INITIAL_TOP_VIEW_HEIGHT,
-        duration: 200,
-        useNativeDriver: false,
-      }).start();
-
-      setTimeout(() => {
-        canAnimate.current = true;
-      }, ANIMATION_COOLDOWN_MS);
+    // סינון לפי חיפוש
+    if (searchQuery) {
+      filtered = filtered.filter(ride =>
+        ride.driverName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ride.from.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ride.to.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
 
-    // Scroll Down (strong enough)
-    else if (deltaY < SCROLL_DOWN_THRESHOLD && !hidden) {
-      // console.log("scrolling down - ", deltaY);
-      canAnimate.current = false;
-      setHidden(true);
-      Animated.timing(animatedViewHeight, {
-        toValue: 0,
-        duration: 20,
-        useNativeDriver: false,
-      }).start();
-
-      setTimeout(() => {
-        canAnimate.current = true;
-      }, ANIMATION_COOLDOWN_MS);
+    // סינון לפי קטגוריה
+    if (selectedFilter) {
+      filtered = filtered.filter(ride => ride.category === selectedFilter);
     }
 
-    lastOffset.current = offsetY;
+    // מיון
+    switch (selectedSort) {
+      case "אלפביתי":
+        filtered.sort((a, b) => a.driverName.localeCompare(b.driverName));
+        break;
+      case "לפי מיקום":
+        filtered.sort((a, b) => a.from.localeCompare(b.from));
+        break;
+      case "לפי מחיר":
+        filtered.sort((a, b) => a.price - b.price);
+        break;
+      case "לפי שעה":
+        filtered.sort((a, b) => a.time.localeCompare(b.time));
+        break;
+      case "לפי דירוג":
+        filtered.sort((a, b) => b.rating - a.rating);
+        break;
+    }
+
+    return filtered;
   };
 
-  /**
-   * Handles menu item selection from header
-   * @param option - Selected menu option
-   */
-  const handleSelectMenuItem = useCallback((option: string) => {
-    Alert.alert("בחירה", `נבחר: ${option}`);
-  }, []);
-
-  /**
-   * Updates filter values when dropdown selections change
-   * @param field - The filter field to update
-   * @param value - The new value for the field
-   */
-  const handleDropdownChange = useCallback(
-    (field: keyof Filters, value: string): void => {
-      setFilters((prev) => ({ ...prev, [field]: value }));
-    },
-    []
-  );
-
-  /**
-   * Toggles between search mode (מחפש) and offer mode (מציע)
-   */
-  const toggleMode = useCallback((): void => {
-    setMode((prev) => !prev);
-  }, []);
-
-  /**
-   * Opens WhatsApp group link with improved error handling for APK builds
-   * @param url - WhatsApp group URL to open
-   */
-  const handleOpenWhatsAppGroup = useCallback(async (url: string) => {
-    try {
-      // For Android, try the intent approach first
-      if (Platform.OS === 'android') {
-        const intentUrl = `intent://send?text=${encodeURIComponent(url)}#Intent;package=com.whatsapp;end`;
-        
-        try {
-          await Linking.openURL(intentUrl);
-          return;
-        } catch (error) {
-          console.log('Intent failed, trying other methods');
-        }
-      }
-      
-      // Try the original URL
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-        return;
-      }
-      
-      // Fallback: copy to clipboard
-      Clipboard.setString(url);
-      Alert.alert(
-        "קישור הועתק",
-        "הקישור הועתק ללוח. פתח את WhatsApp והדבק אותו בצ'אט.",
-        [{ text: "אישור" }]
-      );
-      
-    } catch (error) {
-      console.error("Failed to open WhatsApp:", error);
-      Clipboard.setString(url);
-      Alert.alert("שגיאה", "הקישור הועתק ללוח");
-    }
-  }, []);
-
-
-  /**
-   * Handles search/publish action
-   */
-  const handleSearchAction = useCallback(() => {
-    if (selectedTime) {
-    setSelectedTime(null);
-    const timeString = selectedTime.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
+  // פונקציה להצגת פרטי טרמפ
+  const showRideDetailsModal = (ride: any) => {
     Alert.alert(
-      mode ? "פרסום נסיעה" : "חיפוש נסיעה",
-      `יציאה מ: ${filters.from || "לא צוין"}\nבשעה: ${timeString}\nליעד: ${
-        filters.to || "לא צוין"
-      }`
+      `טרמפ של ${ride.driverName}`,
+      `מ: ${ride.from}\nאל: ${ride.to}\nתאריך: ${ride.date}\nשעה: ${ride.time}\nמחיר: ₪${ride.price}\nמקומות פנויים: ${ride.seats}\n\nהאם תרצה להצטרף לטרמף זה?`,
+      [
+        {
+          text: 'לא עכשיו',
+          style: 'cancel',
+        },
+        {
+          text: 'הצטרף לטרמף',
+          onPress: () => {
+            Alert.alert(
+              'בקשה נשלחה',
+              `בקשה להצטרף לטרמף של ${ride.driverName} נשלחה בהצלחה!`
+            );
+          },
+        },
+      ]
     );
-  } else {
-    console.log("No time selected for search.");
-  }
-  }, [filters, selectedTime, mode]);
+  };
 
-  /**
-   * Renders individual search result item
-   */
-  const renderSearchResult = useCallback(
-    (item: TrumpResult) => (
-      <View style={localStyles.trumpCard}>
-        <Text style={localStyles.trumpCardTitle}>{item.name}</Text>
-        <Text style={localStyles.trumpCardText}>
-          מ: {item.from} ל: {item.to}
-        </Text>
-        <Text style={localStyles.trumpCardText}>
-          ב: {item.date} - {item.time}
-        </Text>
-      </View>
-    ),
-    []
-  );
+  const menuOptions = [
+    'היסטוריית טרמפים',
+    'הגדרות',
+    'עזרה',
+    'צור קשר'
+  ];
 
-  /**
-   * Renders individual WhatsApp group item
-   */
-  const renderWhatsAppGroup = useCallback(
-    (item: WhatsAppGroup) => (
-      <TouchableOpacity
-        style={localStyles.trumpCard}
-        onPress={() => handleOpenWhatsAppGroup(item.link)}
-        activeOpacity={0.7}
-      >
-        <View style={localStyles.groupCardContentWrapper}>
-          <Image
-            source={item.image}
-            style={localStyles.groupCardImage}
-            resizeMode="cover"
-          />
-          <View style={localStyles.groupCardTextContent}>
-            <Text style={localStyles.trumpCardSubtitle}>{item.name}</Text>
-            <Text style={localStyles.trumpCardText}>תיאור הקבוצה</Text>
-          </View>
+  const handleToggleMode = useCallback(() => {
+    setMode(!mode);
+    console.log('Mode toggled:', !mode ? 'נזקק' : 'תורם');
+  }, [mode]);
+
+  const handleSelectMenuItem = useCallback((option: string) => {
+    console.log('Menu option selected:', option);
+    Alert.alert('תפריט', `נבחר: ${option}`);
+  }, []);
+
+  const renderRideCard = ({ item }: { item: any }) => (
+    <TouchableOpacity 
+      style={localStyles.rideCard}
+      onPress={() => {
+        if (mode) {
+          // מצב תורם - בוחר טרמפ להצטרף
+          Alert.alert('טרמפ נבחר', `נבחר: ${item.driverName}`);
+        } else {
+          // מצב נזקק - מציג פרטי טרמפ עם אפשרות להצטרף
+          showRideDetailsModal(item);
+        }
+      }}
+    >
+      <View style={localStyles.rideCardHeader}>
+        <Text style={localStyles.rideEmoji}>{item.image}</Text>
+        <View style={localStyles.rideRating}>
+          <Text style={localStyles.ratingText}>⭐ {item.rating}</Text>
         </View>
+      </View>
+      <Text style={localStyles.rideDriverName}>{item.driverName}</Text>
+      <View style={localStyles.rideRoute}>
+        <Text style={localStyles.rideFrom}>📍 {item.from}</Text>
+        <Text style={localStyles.rideArrow}>→</Text>
+        <Text style={localStyles.rideTo}>📍 {item.to}</Text>
+      </View>
+      <View style={localStyles.rideDetails}>
+        <Text style={localStyles.rideDateTime}>📅 {item.date} | 🕐 {item.time}</Text>
+        <Text style={localStyles.rideCategory}>🏷️ {item.category}</Text>
+      </View>
+      <View style={localStyles.rideStats}>
+        <Text style={localStyles.rideSeats}>💺 {item.seats} מקומות</Text>
+        <Text style={localStyles.ridePrice}>💰 ₪{item.price}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderRecentRideCard = ({ item }: { item: any }) => (
+    <View style={localStyles.recentRideCard}>
+      <View style={localStyles.recentRideHeader}>
+        <Text style={localStyles.recentRideDriver}>{item.driverName}</Text>
+        <Text style={localStyles.recentRidePrice}>₪{item.price}</Text>
+      </View>
+      <View style={localStyles.recentRideDetails}>
+        <Text style={localStyles.recentRideRoute}>{item.from} → {item.to}</Text>
+        <Text style={localStyles.recentRideDate}>📅 {item.date}</Text>
+      </View>
+      <View style={localStyles.recentRideStatus}>
+        <Text style={localStyles.recentRideStatusText}>✅ {item.status}</Text>
+      </View>
+      <TouchableOpacity 
+        style={localStyles.restoreButton}
+        onPress={() => {
+          setFromLocation(item.from);
+          setToLocation(item.to);
+          Alert.alert('שחזור הושלם', `יעד שוחזר: ${item.from} → ${item.to}`);
+        }}
+      >
+        <Text style={localStyles.restoreButtonText}>שחזר</Text>
       </TouchableOpacity>
-    ),
-    [handleOpenWhatsAppGroup]
+    </View>
   );
 
-  /**
-   * Renders the main content based on current mode and data
-   */
-  const renderMainContent = useCallback((): ListItem[] => {
-    const data: ListItem[] = [];
-
-    // Add search form
-    data.push({ type: "form", key: "form" });
-
-    // Add search results if in search mode and results exist
-    if (!mode && searchResults.length > 0) {
-      data.push({ type: "results-header", key: "results-header" });
-      searchResults.forEach((result) =>
-        data.push({ type: "result", key: result.id, data: result })
-      );
-    }
-
-    // Add WhatsApp groups if in search mode
-    if (!mode) {
-      data.push({ type: "groups-header", key: "groups-header" });
-      WHATSAPP_GROUP_DETAILS.forEach((group, index) =>
-        data.push({ type: "group", key: `group-${index}`, data: group })
-      );
-    }
-
-    // Add thank you message if in offer mode
-    if (mode) {
-      data.push({ type: "thank-you", key: "thank-you" });
-    }
-
-    return data;
-  }, [mode, searchResults]);
-
-  /**
-   * Renders different content types for the FlatList
-   */
-  const renderContent: ListRenderItem<ListItem> = useCallback(
-    ({ item }) => {
-      switch (item.type) {
-        // case "form":
-        //   return (
-        //     <View>
-        //       <TouchableOpacity
-        //         onPress={handleSearchAction}
-        //         style={styles.button}
-        //         activeOpacity={0.8}
-        //       >
-        //         <Text style={localStyles.donateButtonText}>
-        //           {mode ? "פרסם" : "חפש"}
-        //         </Text>
-        //       </TouchableOpacity>
-        //     </View>
-        //   );
-
-        case "results-header":
-          return <Text style={localStyles.sectionTitle}>טרמפים:</Text>;
-
-        case "result":
-          return renderSearchResult(item.data);
-
-        case "groups-header":
-          return <Text style={localStyles.sectionTitle}>קבוצות:</Text>;
-
-        case "group":
-          return renderWhatsAppGroup(item.data);
-
-        case "thank-you":
-          return (
-            <View>
-              <Text style={localStyles.sentences}>אנו מודים לך על תרומתך</Text>
-              <Text style={localStyles.sentences}>
-                ויותר מזה על השתתפותך בקהילה!
-              </Text>
-            </View>
-          );
-
-        default:
-          return null;
-      }
-    },
-    [
-      handleDropdownChange,
-      selectedTime,
-      handleSearchAction,
-      mode,
-      renderSearchResult,
-      renderWhatsAppGroup,
-    ]
+  const renderGroupCard = ({ item }: { item: any }) => (
+    <TouchableOpacity style={localStyles.groupCard}>
+      <View style={localStyles.groupCardHeader}>
+        <Text style={localStyles.groupEmoji}>{item.image}</Text>
+        <View style={localStyles.groupType}>
+          <Text style={localStyles.groupTypeText}>
+            {item.type === 'whatsapp' ? '📱' : '📘'}
+          </Text>
+        </View>
+      </View>
+      <Text style={localStyles.groupName}>{item.name}</Text>
+      <View style={localStyles.groupStats}>
+        <Text style={localStyles.groupMembers}>👥 {item.members} חברים</Text>
+        <Text style={localStyles.groupJoin}>הצטרף לקבוצה</Text>
+      </View>
+    </TouchableOpacity>
   );
 
+  const FormHeader = () => (
+    <View>
+      {/* Mode toggle is now handled by HeaderComp */}
+
+      {mode ? (
+        <View style={localStyles.formContainer}>
+          {/* מצב מציע - טופס יצירת טרמפ */}
+          <TimePicker
+            value={departureTime}
+            onTimeChange={setDepartureTime}
+            label="שעת יציאה"
+            placeholder="בחר שעת יציאה"
+          />
+        </View>
+      ) : (
+        <View style={localStyles.formContainer}>
+          {/* מצב נזקק - הודעה לחיפוש טרמפ */}
+ 
+
+          <TimePicker
+            value={departureTime}
+            onTimeChange={setDepartureTime}
+            label="שעת יציאה"
+            placeholder="בחר שעת יציאה"
+          />
+        </View>
+      )}
+    </View>
+  );
+  
   return (
     <SafeAreaView style={localStyles.safeArea}>
-      <View style={localStyles.wrapper}>
-        <Animated.View
-          style={[localStyles.topView, { height: animatedViewHeight }]}
-        >
-          <HeaderComp
-            mode={mode}
-            menuOptions={menu_for_trumps}
-            onToggleMode={toggleMode}
-            onSelectMenuItem={handleSelectMenuItem}
-          />
+      <HeaderComp
+        mode={mode}
+        menuOptions={menuOptions}
+        onToggleMode={handleToggleMode}
+        onSelectMenuItem={handleSelectMenuItem}
+        title=""
+        placeholder={mode ? "בחד יעד" : "חפש טרמפים זמינים"}
+      />
 
-          <View style={localStyles.rowContainer}>
-            {/* <Text style={localStyles.search_Text}>מאיפה?</Text> */}
-            <LocationSearchComp
-              placeholder="מאיפה?"
-              onLocationSelected={(location) =>
-                handleDropdownChange("from", location)
-              }
-            />
-          </View>
+      <FormHeader />
+      
+      <ScrollView 
+        style={localStyles.container} 
+        contentContainerStyle={localStyles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
 
-          <View style={localStyles.rowContainer}>
-            {/* <Text style={localStyles.search_Text}>לאיפה?</Text> */}
-            <LocationSearchComp
-              placeholder="לאיפה?"
-              onLocationSelected={(location) =>
-                handleDropdownChange("to", location)
-              }
-            />
-          </View>
-
-          <View style={localStyles.rowContainerTime}>
-            {/* <Text style={localStyles.search_Text}>מתי?</Text> */}
-            {/* <View style={{ flex: 1 }}> */}
-              <TimeInput 
-               value={selectedTime}
-                onChange={setSelectedTime} 
-                placeholder="שעת יציאה"
-                />
-            {/* </View> */}
-          </View>
-          <View>
-            <TouchableOpacity
-              onPress={handleSearchAction}
-              style={styles.button}
-              activeOpacity={0.8}
-            >
-              <Text style={localStyles.donateButtonText}>
-                {mode ? "פרסם" : "חפש"}
+        {mode ? (
+        
+            <View style={localStyles.section}>
+              <Text style={localStyles.sectionTitle}>היסטוריית טרמפים שלך</Text>
+              <View style={localStyles.recentRidesContainer}>
+                {dummyRecentRides.map((ride) => (
+                  <View key={ride.id} style={localStyles.recentRideCardWrapper}>
+                    {renderRecentRideCard({ item: ride })}
+                  </View>
+                ))}
+              </View>
+            </View>
+        ) : (
+          // מצב נזקק - מציג טרמפים זמינים וקבוצות
+          <>
+            <View style={localStyles.section}>
+              <Text style={localStyles.sectionTitle}>
+                {searchQuery || selectedFilter ? 'טרמפים זמינים' : 'טרמפים מומלצים'}
               </Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={localStyles.ridesScrollContainer}
+              >
+                {getFilteredRides().map((ride) => (
+                  <View key={ride.id} style={localStyles.rideCardWrapper}>
+                    {renderRideCard({ item: ride })}
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
 
-        <FlatList
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          style={localStyles.scroll}
-          data={renderMainContent()}
-          renderItem={renderContent}
-          keyExtractor={(item) => item.key}
-          contentContainerStyle={localStyles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        />
-      </View>
+            <View style={localStyles.section}>
+              <Text style={localStyles.sectionTitle}>קבוצות טרמפים</Text>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={localStyles.groupsScrollContainer}
+              >
+                {dummyGroups.map((group) => (
+                  <View key={group.id} style={localStyles.groupCardWrapper}>
+                    {renderGroupCard({ item: group })}
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          </>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const localStyles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#FFEDD5",
-  },
-  wrapper: {
-    flex: 1,
-    width: "100%",
-    maxWidth: 600,
-    alignSelf: "center",
-  },
-  scroll: {
-    zIndex: 1000,
-  },
-  rowContainer: {
-    marginHorizontal: 5,
-    flexDirection: "row-reverse",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    // marginBottom: 16,
-  },
-  // rowContainerTime: {
-  //   marginHorizontal: 5,
-  //   flexDirection: "row-reverse", // RTL: text on right, input on left
-  //   alignItems: "center",
-  //   justifyContent: "space-between",
-  // },
-
-  scrollContent: {
-    paddingBottom: 24,
-    paddingTop: 12,
-    paddingHorizontal: 16,
-    justifyContent: "center",
-  },
-  donateButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  // search_Text: {
-  //   fontWeight: "bold",
-  //   fontSize: 16,
-  //   marginTop: 10,
-  //   // alignSelf: "flex-start",
-  // },
-  sectionTitle: {
-    fontWeight: "bold",
-    fontSize: 18,
-    marginVertical: 10,
-    alignSelf: "flex-end",
-  },
-  sentences: {
-    fontWeight: "bold",
-    fontSize: 20,
-    marginTop: 20,
-    alignSelf: "center",
-  },
-  trumpCard: {
-    alignItems: "flex-end",
-    backgroundColor: "white",
-    padding: 12,
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: {
-      width: 0,
-      height: 2,
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.backgroundPrimary,
     },
-    marginBottom: 12,
-  },
-  trumpCardTitle: {
-    fontWeight: "bold",
-    fontSize: 16,
-    textAlign: "right",
-  },
-  trumpCardSubtitle: {
-    fontWeight: "600",
-    fontSize: 15,
-    textAlign: "right",
-  },
-  trumpCardText: {
-    textAlign: "right",
-    fontSize: 13,
-    color: "#6B7280",
-  },
-  groupCardContentWrapper: {
-    flex: 1,
-    justifyContent: "space-between",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  groupCardImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: 12,
-    backgroundColor: "#eee",
-  },
-  groupCardTextContent: {
-    flex: 1,
-    alignItems: "flex-end",
-  },
-  locationInput: {
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    textAlign: "right",
-    minWidth: 200,
-  },
-  rowContainerTime: {
-    marginHorizontal: 5,
-    alignSelf: 'center'
-  },
-
-  search_Text: {
-    fontWeight: "bold",
-    fontSize: 16,
-    // REMOVE marginTop here to fix vertical alignment
-    // marginTop: 10,  <--- REMOVE THIS LINE
-  },
-
-  topView: {
-    justifyContent: "flex-start",
-    alignItems: "stretch", // change from "center" to "stretch" so children can take full width
-    overflow: "hidden",
-  },
+    container: {
+        flex: 1,
+        paddingHorizontal: 16,
+        paddingTop: 24,
+    },
+    scrollContent: {
+        paddingBottom: 100, // מרווח בתחתית המסך
+    },
+    formContainer: {
+      padding: 5,
+      alignItems: 'center',
+      borderRadius: 15,
+      marginBottom: 15,
+    },
+    locationContainer: {
+        marginBottom: 20,
+    },
+    timeContainer: {
+        marginBottom: 20,
+    },
+    label: {
+        fontSize: FontSizes.medium,
+        fontWeight: '600',
+        color: colors.textPrimary,
+        marginBottom: 10,
+        textAlign: 'right',
+    },
+    input: {
+        backgroundColor: colors.moneyInputBackground,
+        borderRadius: 10,
+        padding: 15,
+        fontSize: FontSizes.body,
+        textAlign: 'right',
+        color: colors.textPrimary,
+        borderWidth: 1,
+        borderColor: colors.moneyFormBorder,
+    },
+    offerButton: {
+        backgroundColor: colors.moneyButtonBackground,
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    offerButtonText: {
+        color: colors.backgroundPrimary,
+        fontSize: FontSizes.medium,
+        fontWeight: 'bold',
+    },
+    section: {
+        marginBottom: 20,
+    },
+    sectionTitle: {
+        fontSize: FontSizes.heading2,
+        fontWeight: 'bold',
+        color: colors.textPrimary,
+        marginBottom: 10,
+        textAlign: 'right',
+    },
+    // Ride Cards Styles
+    ridesScrollContainer: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+    },
+    rideCardWrapper: {
+        marginRight: 12,
+        width: 280,
+    },
+    rideCard: {
+        backgroundColor: colors.moneyCardBackground,
+        borderRadius: 12,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: colors.moneyFormBorder,
+        minHeight: 200,
+    },
+    rideCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    rideEmoji: {
+        fontSize: FontSizes.displayLarge,
+    },
+    rideRating: {
+        backgroundColor: colors.moneyStatusBackground,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    ratingText: {
+        fontSize: FontSizes.small,
+        color: colors.moneyStatusText,
+        fontWeight: 'bold',
+    },
+    rideDriverName: {
+        fontSize: FontSizes.body,
+        fontWeight: 'bold',
+        color: colors.textPrimary,
+        marginBottom: 8,
+        textAlign: 'right',
+    },
+    rideRoute: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    rideFrom: {
+        fontSize: FontSizes.body,
+        color: colors.textSecondary,
+        flex: 1,
+        textAlign: 'right',
+    },
+    rideArrow: {
+        fontSize: FontSizes.body,
+        color: colors.textSecondary,
+        marginHorizontal: 8,
+    },
+    rideTo: {
+        fontSize: FontSizes.body,
+        color: colors.textSecondary,
+        flex: 1,
+        textAlign: 'left',
+    },
+    rideDetails: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+    },
+    rideDateTime: {
+        fontSize: FontSizes.small,
+        color: colors.textSecondary,
+    },
+    rideCategory: {
+        fontSize: FontSizes.small,
+        color: colors.textSecondary,
+    },
+    rideStats: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 'auto',
+    },
+    rideSeats: {
+        fontSize: FontSizes.small,
+        color: colors.moneyHistoryAmount,
+        fontWeight: '600',
+    },
+    ridePrice: {
+        fontSize: FontSizes.small,
+        color: colors.moneyHistoryAmount,
+        fontWeight: '600',
+    },
+    // Recent Rides Styles
+    recentRidesContainer: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+    },
+    recentRideCardWrapper: {
+        marginBottom: 12,
+        width: '100%',
+    },
+    recentRideCard: {
+        backgroundColor: colors.moneyCardBackground,
+        borderRadius: 12,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: colors.moneyFormBorder,
+        minHeight: 120,
+    },
+    recentRideHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 6,
+    },
+    recentRideDriver: {
+        fontSize: FontSizes.body,
+        fontWeight: 'bold',
+        color: colors.textPrimary,
+        textAlign: 'right',
+        flex: 1,
+    },
+    recentRidePrice: {
+        fontSize: FontSizes.body,
+        fontWeight: 'bold',
+        color: colors.moneyHistoryAmount,
+    },
+    recentRideDetails: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 6,
+    },
+    recentRideRoute: {
+        fontSize: FontSizes.small,
+        color: colors.textSecondary,
+        flex: 1,
+        textAlign: 'right',
+    },
+    recentRideDate: {
+        fontSize: FontSizes.small,
+        color: colors.textSecondary,
+    },
+    recentRideStatus: {
+        alignItems: 'flex-end',
+    },
+    recentRideStatusText: {
+        fontSize: FontSizes.small,
+        color: colors.moneyStatusText,
+        fontWeight: '600',
+    },
+    restoreButton: {
+        backgroundColor: colors.moneyButtonBackground,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginTop: 8,
+    },
+    restoreButtonText: {
+        color: colors.backgroundPrimary,
+        fontSize: FontSizes.body,
+        fontWeight: 'bold',
+    },
+    // Groups Styles
+    groupsScrollContainer: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+    },
+    groupCardWrapper: {
+        marginRight: 12,
+        width: 200,
+    },
+    groupCard: {
+        backgroundColor: colors.moneyCardBackground,
+        borderRadius: 12,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: colors.moneyFormBorder,
+        minHeight: 120,
+    },
+    groupCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    groupEmoji: {
+        fontSize: FontSizes.heading1,
+    },
+    groupType: {
+        backgroundColor: colors.moneyStatusBackground,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 6,
+    },
+    groupTypeText: {
+        fontSize: FontSizes.caption,
+        color: colors.moneyStatusText,
+    },
+    groupName: {
+        fontSize: FontSizes.body,
+        fontWeight: 'bold',
+        color: colors.textPrimary,
+        marginBottom: 8,
+        textAlign: 'right',
+    },
+    groupStats: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: 'auto',
+    },
+    groupMembers: {
+        fontSize: FontSizes.small,
+        color: colors.textSecondary,
+    },
+    groupJoin: {
+        fontSize: FontSizes.small,
+        color: colors.moneyHistoryAmount,
+        fontWeight: '600',
+    },
+    // Search Help Styles
+    searchHelpContainer: {
+        alignItems: 'center',
+        paddingVertical: 20,
+    },
+    searchHelpTitle: {
+        fontSize: FontSizes.heading2,
+        fontWeight: 'bold',
+        color: colors.textPrimary,
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    searchHelpText: {
+        fontSize: FontSizes.body,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        marginBottom: 20,
+        lineHeight: 24,
+    },
+    searchHelpTipsContainer: {
+        backgroundColor: colors.moneyInputBackground,
+        borderRadius: 12,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: colors.moneyFormBorder,
+        width: '100%',
+    },
+    searchHelpTipsTitle: {
+        fontSize: FontSizes.body,
+        fontWeight: 'bold',
+        color: colors.textPrimary,
+        marginBottom: 10,
+        textAlign: 'right',
+    },
+    searchHelpTip: {
+        fontSize: FontSizes.body,
+        color: colors.textSecondary,
+        marginBottom: 6,
+        textAlign: 'right',
+        lineHeight: 20,
+    },
 });

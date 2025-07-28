@@ -10,10 +10,14 @@ import { ImageSourcePropType } from "react-native";
 export interface Task {
   id: string;
   title: string;
+  description?: string;
   completed: boolean;
   dueDate?: Date;
-  priority: "Low" | "Medium" | "High" | "Critical" | "Urgent";
+  priority: "Low" | "Medium" | "High";
   createdAt: Date;
+  category?: string;
+  location?: string;
+  tags?: string[];
 }
 
 export type Filter = "All" | "Pending" | "Completed";
@@ -38,6 +42,8 @@ export type DonationsStackParamList = {
   DonationsScreen: undefined;
   MoneyScreen: undefined;
   TrumpScreen: undefined;
+  KnowledgeScreen: undefined;
+  TimeScreen: undefined;
   // Add more screens here as needed
 };
 

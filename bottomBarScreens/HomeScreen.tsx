@@ -1,5 +1,14 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Dimensions } from "react-native";
+import { 
+  View, 
+  StyleSheet, 
+  Dimensions, 
+  Text, 
+  TouchableOpacity, 
+  ScrollView,
+  Image,
+  Alert
+} from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
@@ -10,11 +19,21 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import BubbleComp from "../components/BubbleComp";
 import colors from "../globals/colors";
+import { FontSizes } from "../globals/constants";
+import CommunityStatsPanel from "../components/CommunityStatsPanel";
 import PostsReelsScreen from "../components/PostsReelsScreen";
+import { 
+  communityStats, 
+  tasks, 
+  donations, 
+  communityEvents, 
+  currentUser 
+} from "../globals/fakeData";
 
-const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 const PANEL_HEIGHT = SCREEN_HEIGHT - 50;
 const CLOSED_POSITION = PANEL_HEIGHT - 60;
 const OPEN_POSITION = 0;
@@ -22,35 +41,27 @@ const MID_POSITION = PANEL_HEIGHT / 2;
 
 export default function HomeScreen() {
   const isFocused = useIsFocused();
-
-  // Only show PostsReelsScreen if focused AND revealed
   const [isScreenRevel, setisScreenRevel] = useState(false);
   const shouldShowReels = isFocused && isScreenRevel;
 
   const translateY = useSharedValue(CLOSED_POSITION);
   const isGestureActive = useSharedValue(false);
   const canDrag = useSharedValue(true);
-
-  // Store the starting position when gesture begins
   const startPosition = useSharedValue(CLOSED_POSITION);
 
   // Reset state immediately when screen loses focus
   React.useEffect(() => {
     if (!isFocused) {
-      // console.log("[HomeScreen] Screen lost focus: Resetting reveal state");
       setisScreenRevel(false);
     }
   }, [isFocused]);
 
   useFocusEffect(
     React.useCallback(() => {
-      // console.log("[HomeScreen] Screen focused: Resetting panel position and enabling drag");
-      translateY.value = CLOSED_POSITION; // Set immediately without animation on focus
+      translateY.value = CLOSED_POSITION;
       canDrag.value = true;
-      // Ensure isScreenRevel is false when screen comes into focus
       setisScreenRevel(false);
 
-      // Then animate to position smoothly
       translateY.value = withSpring(CLOSED_POSITION, {
         damping: 20,
         stiffness: 150,
@@ -61,54 +72,35 @@ export default function HomeScreen() {
 
   const panGesture = Gesture.Pan()
     .onBegin(() => {
-      if (!canDrag.value) {
-        // console.log("[HomeScreen] Drag attempt blocked: dragging disabled");
-        return;
-      }
+      if (!canDrag.value) return;
       isGestureActive.value = true;
-      // Store the starting position
       startPosition.value = translateY.value;
-      // console.log("[HomeScreen] Drag started from position:",startPosition.value);
     })
     .onUpdate((event) => {
       if (!canDrag.value) return;
-
-      // Calculate new position based on start position + translation
       const newPosition = startPosition.value + event.translationY;
-
-      // Apply constraints
       translateY.value = Math.max(
         OPEN_POSITION - 100,
         Math.min(CLOSED_POSITION + 50, newPosition)
       );
     })
     .onEnd((event) => {
-      // console.log("[HomeScreen] Drag ended");
-
       if (!canDrag.value) return;
-
-      // Use runOnJS to safely update React state
       
       isGestureActive.value = false;
       
       const currentPosition = translateY.value;
       const velocity = event.velocityY;
-      // console.log("[HomeScreen] Current position:", currentPosition);
       let targetPosition;
       
       if (Math.abs(velocity) > 800) {
         targetPosition = velocity < 0 ? OPEN_POSITION - 30 : CLOSED_POSITION;
       } else {
         if (currentPosition < PANEL_HEIGHT * 0.25) {
-          // console.log("[HomeScreen] Position is in the top quarter");
           targetPosition = OPEN_POSITION - 30;
           runOnJS(setisScreenRevel)(true);
           canDrag.value = false;
-        // For half screen 
-        // } else if (currentPosition < PANEL_HEIGHT * 0.75) {
-        //   targetPosition = MID_POSITION;
         } else {
-          // console.log("[HomeScreen] Position is in the bottom half");
           targetPosition = CLOSED_POSITION;
         }
       }
@@ -118,7 +110,6 @@ export default function HomeScreen() {
         stiffness: 200,
         mass: 0.6,
       });
-
     })
     .onFinalize(() => {
       isGestureActive.value = false;
@@ -154,28 +145,165 @@ export default function HomeScreen() {
     };
   });
 
+  // Quick Actions
+  const quickActions = [
+    {
+      id: 'create-task',
+      title: 'צור משימה',
+      icon: 'add-circle-outline',
+      color: colors.pink,
+      onPress: () => Alert.alert('יצירת משימה', 'פתיחת טופס יצירת משימה חדשה')
+    },
+    {
+      id: 'donate',
+      title: 'תרום',
+      icon: 'heart-outline',
+      color: colors.error,
+      onPress: () => Alert.alert('תרומה', 'פתיחת טופס תרומה')
+    },
+    {
+      id: 'join-event',
+      title: 'הצטרף לאירוע',
+      icon: 'calendar-outline',
+      color: colors.success,
+      onPress: () => Alert.alert('הצטרפות לאירוע', 'בחירת אירוע להצטרפות')
+    },
+    {
+      id: 'chat',
+      title: 'צ\'אט',
+      icon: 'chatbubbles-outline',
+      color: colors.info,
+      onPress: () => Alert.alert('צ\'אט', 'פתיחת רשימת צ\'אטים')
+    }
+  ];
+
+  // Recent Activities
+  const recentActivities = [
+    {
+      id: '1',
+      type: 'task',
+      title: 'משימה הושלמה: איסוף מזון',
+      description: 'אנה כהן השלימה משימת איסוף מזון',
+      time: 'לפני שעה',
+      icon: 'checkmark-circle',
+      color: colors.success
+    },
+    {
+      id: '2',
+      type: 'donation',
+      title: 'תרומה חדשה: 500 ₪',
+      description: 'דני לוי תרם 500 ₪ לקניית ציוד',
+      time: 'לפני 3 שעות',
+      icon: 'heart',
+      color: colors.error
+    },
+    {
+      id: '3',
+      type: 'event',
+      title: 'אירוע חדש: יום קהילה',
+      description: 'אירוע קהילתי גדול יתקיים בשבוע הבא',
+      time: 'לפני יום',
+      icon: 'calendar',
+      color: colors.info
+    }
+  ];
+
   return (
     <View style={styles.container}>
-      {/* <BubbleComp /> */}
-      {!shouldShowReels && <BubbleComp />}
-
-      {!shouldShowReels ? (
-        <View>
-          <GestureDetector gesture={panGesture}>
-            <Animated.View style={[styles.panel, animatedStyle]}>
-              <Animated.View
-                style={[styles.panelHandle, handleAnimatedStyle]}
-              />
-              <PostsReelsScreen />
-            </Animated.View>
-          </GestureDetector>
+      {/* Header Section */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <View style={styles.userInfo}>
+            <Image 
+              source={{ uri: currentUser.avatar }} 
+              style={styles.userAvatar}
+            />
+            <View style={styles.userDetails}>
+              <Text style={styles.welcomeText}>שלום, {currentUser.name}!</Text>
+              <Text style={styles.karmaText}>קארמה: {currentUser.karmaPoints} נקודות</Text>
+            </View>
+          </View>
+          <TouchableOpacity 
+            style={styles.notificationButton}
+            onPress={() => Alert.alert('התראות', 'רשימת התראות')}
+          >
+            <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationText}>3</Text>
+            </View>
+          </TouchableOpacity>
         </View>
-      ) : (
+      </View>
+
+      {/* Quick Actions */}
+      <View style={styles.quickActionsContainer}>
+        <Text style={styles.sectionTitle}>פעולות מהירות</Text>
+        <View style={styles.quickActionsGrid}>
+          {quickActions.map((action) => (
+            <TouchableOpacity
+              key={action.id}
+              style={styles.quickActionButton}
+              onPress={action.onPress}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: action.color + '20' }]}>
+                <Ionicons name={action.icon as any} size={24} color={action.color} />
+              </View>
+              <Text style={styles.quickActionText}>{action.title}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Recent Activities */}
+      <View style={styles.activitiesContainer}>
+        <Text style={styles.sectionTitle}>פעילות אחרונה</Text>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.activitiesScroll}
+        >
+          {recentActivities.map((activity) => (
+            <TouchableOpacity
+              key={activity.id}
+              style={styles.activityCard}
+              onPress={() => Alert.alert(activity.title, activity.description)}
+            >
+              <View style={[styles.activityIcon, { backgroundColor: activity.color + '20' }]}>
+                <Ionicons name={activity.icon as any} size={20} color={activity.color} />
+              </View>
+              <Text style={styles.activityTitle} numberOfLines={2}>{activity.title}</Text>
+              <Text style={styles.activityTime}>{activity.time}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Stats Preview */}
+      <View style={styles.statsPreview}>
+        <Text style={styles.sectionTitle}>סטטיסטיקות קהילה</Text>
+        <View style={styles.statsGrid}>
+          {communityStats.slice(0, 4).map((stat, index) => (
+            <View key={index} style={styles.statCard}>
+              <Text style={styles.statIcon}>{stat.icon}</Text>
+              <Text style={styles.statValue}>{stat.value.toLocaleString()}</Text>
+              <Text style={styles.statName}>{stat.name}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* Bubble Component */}
+      <BubbleComp />
+      
+      {/* Draggable Panel */}
+      <GestureDetector gesture={panGesture}>
         <Animated.View style={[styles.panel, animatedStyle]}>
-          <Animated.View style={[styles.panelHandle, handleAnimatedStyle]} />
-          <PostsReelsScreen />
+          {shouldShowReels && <PostsReelsScreen />}
         </Animated.View>
-      )}
+      </GestureDetector>
+      
+      {/* Community Stats Panel */}
+      <CommunityStatsPanel />
     </View>
   );
 }
@@ -183,7 +311,173 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: colors.backgroundPrimary,
+  },
+  header: {
+    backgroundColor: colors.backgroundPrimary,
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: colors.shadowLight,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  userAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+  },
+  userDetails: {
+    flex: 1,
+  },
+  welcomeText: {
+    fontSize: FontSizes.medium,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  karmaText: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+  },
+  notificationButton: {
+    position: 'relative',
+    padding: 8,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: colors.error,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notificationText: {
+    color: colors.white,
+    fontSize: FontSizes.small,
+    fontWeight: 'bold',
+  },
+  quickActionsContainer: {
+    padding: 20,
+  },
+  sectionTitle: {
+    fontSize: FontSizes.heading3,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: 15,
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  quickActionButton: {
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  quickActionIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  quickActionText: {
+    fontSize: FontSizes.small,
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  activitiesContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  activitiesScroll: {
+    paddingRight: 20,
+  },
+  activityCard: {
+    backgroundColor: colors.backgroundPrimary,
+    padding: 15,
+    borderRadius: 12,
+    marginRight: 12,
+    width: 150,
+    shadowColor: colors.shadowLight,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  activityIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  activityTitle: {
+    fontSize: FontSizes.body,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  activityTime: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+  },
+  statsPreview: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statCard: {
+    backgroundColor: colors.backgroundPrimary,
+    padding: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 5,
+    shadowColor: colors.shadowLight,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  statIcon: {
+    fontSize: FontSizes.heading1,
+    marginBottom: 5,
+  },
+  statValue: {
+    fontSize: FontSizes.medium,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  statName: {
+    fontSize: FontSizes.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   panel: {
     height: PANEL_HEIGHT,

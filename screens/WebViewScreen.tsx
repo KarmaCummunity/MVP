@@ -6,7 +6,8 @@ import {
   ActivityIndicator,
   View,
   Platform,
-  Text // Needed for loading message on web
+  Text, // Needed for loading message on web
+  TouchableOpacity // Added for retry button
 } from 'react-native';
 
 // Re-import WebView for native platforms (iOS/Android)
@@ -15,6 +16,7 @@ import { WebView } from 'react-native-webview';
 // useNavigation is still needed for navigating back on the web side
 import { NavigationProp, ParamListBase, useNavigation } from '@react-navigation/native';
 import colors from '../globals/colors';
+import { FontSizes } from '../globals/constants';
 // WebBrowser is no longer needed as we are using WebView for native.
 // import * as WebBrowser from 'expo-web-browser';
 
@@ -49,7 +51,7 @@ const WebViewScreen: React.FC<WebViewScreenProps> = (
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0000ff" />
+          <ActivityIndicator size="large" color={colors.info} />
           <Text style={styles.loadingText}>
             Opening JGive in a new browser tab...
           </Text>
@@ -61,7 +63,7 @@ const WebViewScreen: React.FC<WebViewScreenProps> = (
   // Render the WebView for iOS and Android
   const renderLoading = () => (
     <View style={styles.nativeLoadingContainer}>
-      <ActivityIndicator size="large" color="#0000ff" />
+      <ActivityIndicator size="large" color={colors.info} />
     </View>
   );
 
@@ -115,9 +117,32 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
-    fontSize: 16,
+    fontSize: FontSizes.medium,
     color: colors.textPrimary, // Use your app's primary text color
     textAlign: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+  },
+  errorText: {
+    fontSize: FontSizes.medium,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+     retryButton: {
+     backgroundColor: colors.pink,
+     paddingVertical: 10,
+     paddingHorizontal: 20,
+     borderRadius: 8,
+   },
+  retryButtonText: {
+    color: colors.white,
+    fontSize: FontSizes.medium,
+    fontWeight: 'bold',
   },
 });
 

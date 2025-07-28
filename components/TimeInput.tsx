@@ -1,5 +1,6 @@
 // components/TimeInput.tsx
 import React, { useEffect, useState } from "react";
+import { UI_TEXT } from '../globals/constants';
 import {
   View,
   Text,
@@ -32,7 +33,7 @@ export default function TimeInput({
   value,
   onChange,
   label,
-  placeholder = "בחר שעה",
+  placeholder = UI_TEXT.timePlaceholder,
 }: TimeInputProps) {
   const [time, setTime] = useState<Date | null>(value || null);
   const [showPicker, setShowPicker] = useState(false);

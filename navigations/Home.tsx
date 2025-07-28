@@ -10,6 +10,9 @@ export default function Home({
 }: {
   navigation: NavigationProp<ParamListBase>;
 }) {
+  console.log('🏠 Home - Component rendered');
+  console.log('🏠 Home - Navigation object:', navigation);
+  
   return (
       <SafeAreaView style={styles.safeArea}>
         <TopBarNavigator navigation={navigation} />

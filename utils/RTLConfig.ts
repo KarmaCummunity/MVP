@@ -1,13 +1,26 @@
 import { I18nManager, Platform } from 'react-native';
+import i18next from './i18n';
 
-export const setupRTL = (): void => {
-  // Enable RTL support
-  I18nManager.allowRTL(true);
-  I18nManager.forceRTL(true);
+// Languages that should use RTL layout
+const RTL_LANGUAGES = ['he', 'ar'];
+
+export const isRTLLanguage = (language: string): boolean => {
+  return RTL_LANGUAGES.includes(language);
+};
+
+export const setupRTL = (language?: string): void => {
+  const shouldBeRTL = isRTLLanguage(language || i18next.language);
   
-  // For Android, you might need to restart the app after enabling RTL
-  if (Platform.OS === 'android' && !I18nManager.isRTL) {
-    // console.log('RTL enabled. Please restart the app for changes to take effect.');
+  // Only change if needed
+  if (I18nManager.isRTL !== shouldBeRTL) {
+    // Enable/disable RTL support based on language
+    I18nManager.allowRTL(shouldBeRTL);
+    I18nManager.forceRTL(shouldBeRTL);
+    
+    // For Android, you might need to restart the app after enabling RTL
+    if (Platform.OS === 'android') {
+      // console.log('RTL changed. Please restart the app for changes to take effect.');
+    }
   }
 };
 
@@ -63,3 +76,8 @@ export interface RTLStyleObject {
   paddingLeft?: number;
   paddingRight?: number;
 }
+
+// Listen for language changes and update RTL accordingly
+i18next.on('languageChanged', (lng) => {
+  setupRTL(lng);
+});

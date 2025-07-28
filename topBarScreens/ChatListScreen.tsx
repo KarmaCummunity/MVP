@@ -3,9 +3,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, SafeAreaView, Platform } from 'react-native';
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
 import ChatListItem from '../components/ChatListItem';
-import { conversations as initialConversations, users, ChatConversation } from '../globals/fakeData'; // Adjust path
-import colors from '../globals/colors'; // Assuming you have a Colors file
-import Icon from 'react-native-vector-icons/Ionicons'; // Example icon
+import { conversations as initialConversations, users, ChatConversation } from '../globals/fakeData';
+import colors from '../globals/colors';
+import { FontSizes } from '../globals/constants';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 export default function ChatListScreen() {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -14,9 +15,7 @@ export default function ChatListScreen() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    // Simulate fetching new data
     setTimeout(() => {
-      // You might shuffle conversations or add new fake ones here
       setConversations([...initialConversations].sort(() => 0.5 - Math.random()));
       setRefreshing(false);
     }, 1000);
@@ -50,12 +49,12 @@ export default function ChatListScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color={colors.textPrimary} />
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
+          <Icon name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>צ'אטים</Text>
-        <TouchableOpacity onPress={() => alert('שלח הודעה חדשה')}>
-          <Icon name="add-circle-outline" size={24} color={colors.textPrimary} />
+        <TouchableOpacity onPress={() => alert('שלח הודעה חדשה')} style={styles.headerButton}>
+          <Icon name="add-circle-outline" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
       <FlatList
@@ -64,7 +63,7 @@ export default function ChatListScreen() {
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.blue} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
       />
     </SafeAreaView>
@@ -74,9 +73,8 @@ export default function ChatListScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    marginTop: Platform.OS === 'android' ? 30 : 0, // Adjust for Android status bar
-    marginBottom: Platform.OS === 'android' ? 40 : 0, // Adjust for Android status bar
-    backgroundColor: colors.backgroundPrimary,
+    marginTop: Platform.OS === 'android' ? 30 : 0,
+    backgroundColor: colors.backgroundSecondary,
   },
   header: {
     flexDirection: 'row',
@@ -84,14 +82,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    backgroundColor: 'white',
+    backgroundColor: colors.backgroundSecondary,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: FontSizes.heading2,
     fontWeight: 'bold',
-    color: colors.textPrimary,
+    color: colors.text,
+    textAlign: 'center',
+    flex: 1,
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   listContent: {
     paddingVertical: 8,

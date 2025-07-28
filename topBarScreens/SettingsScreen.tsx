@@ -2,281 +2,247 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Alert, Linking, Platform, SafeAreaView, TouchableOpacity } from 'react-native';
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import SettingsItem, { SettingsItemProps } from '../components/SettingsItem';
 import colors from '../globals/colors';
-import Icon from 'react-native-vector-icons/Ionicons';
-import { setupRTL } from '../utils/RTLConfig';
+import { FontSizes } from '../globals/constants';
+import { useTranslation } from 'react-i18next';
+import { signOut } from 'firebase/auth';
+import { auth } from '../config/firebaseConfig';
+import LanguageSelector from '../components/LanguageSelector';
 
 export default function SettingsScreen() {
-
-
-
+  const { t, i18n } = useTranslation();
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const [isLanguageModalVisible, setIsLanguageModalVisible] = useState(false);
 
   // State for toggle settings
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(true);
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(false);
   const [dataSaverMode, setDataSaverMode] = useState(false);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
-  const [autoplayVideos, setAutoplayVideos] = useState(true);
   const [hideOnlineStatus, setHideOnlineStatus] = useState(false);
 
-  // State for value-display settings
-  const [selectedLanguage, setSelectedLanguage] = useState('עברית');
-
   const handleClearCache = () => {
-
     Alert.alert(
-      "ניקוי זיכרון מטמון",
-      "האם אתה בטוח שברצונך לנקות את זיכרון המטמון של האפליקציה? פעולה זו תפנה שטח אחסון.",
+      t('settings.clearCache'),
+      t('settings.clearCacheConfirm'),
       [
-        { text: "ביטול", style: "cancel" },
-        { text: "נקה", onPress: () => Alert.alert("זיכרון מטמון נוקה", "זיכרון המטמון של האפליקציה נוקה בהצלחה.") }
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.clear'), onPress: () => Alert.alert(t('settings.cacheCleared'), t('settings.cacheClearedSuccess')) }
       ]
     );
   };
 
   const handleLogout = () => {
     Alert.alert(
-      "התנתקות",
-      "האם אתה בטוח שברצונך להתנתק?",
+      t('settings.logout'),
+      t('settings.logoutConfirm'),
       [
-        { text: "ביטול", style: "cancel" },
-        { text: "התנתק", onPress: () => Alert.alert("התנתקת", "התנתקת בהצלחה.") }
+        { text: t('common.cancel'), style: 'cancel' },
+        { 
+          text: t('settings.logout'), 
+          onPress: async () => {
+            try {
+              await signOut(auth);
+              // Navigation will be handled automatically by auth state change
+            } catch (error) {
+              Alert.alert(t('common.error'), t('settings.logoutError'));
+            }
+          }
+        }
       ]
     );
   };
 
-  const navigateTo = (screenName: string, params?: any) => {
-    Alert.alert("מעבר למסך", `מנווט למסך: ${screenName}`);
+  const navigateTo = (screenName: string) => {
+    navigation.navigate(screenName);
   };
 
   const openLink = (url: string) => {
-    Linking.openURL(url).catch(err => Alert.alert("שגיאה", `לא ניתן לפתוח את הקישור: ${err.message}`));
+    Linking.openURL(url).catch(err => Alert.alert(t('common.error'), t('settings.linkError')));
+  };
+
+  const handleBackPress = () => {
+    navigation.goBack();
   };
 
   // Define your settings data as an array of objects
   const settingsData: (SettingsItemProps | { type: 'sectionHeader', title?: string })[] = [
-    { type: 'sectionHeader', title: 'חשבון' },
+    { type: 'sectionHeader', title: t('settings.accountSection') },
     {
-      title: 'עריכת פרופיל',
+      title: t('settings.editProfile'),
       iconName: 'person-outline',
       type: 'navigate',
       onPress: () => navigateTo('EditProfileScreen'),
     },
     {
-      title: 'שינוי סיסמה',
-      iconName: 'key-outline',
-      type: 'navigate',
-      onPress: () => navigateTo('ChangePasswordScreen'),
-    },
-    {
-      title: 'פרטיות',
-      description: 'שלוט במי יכול לראות את הפעילות שלך',
+      title: t('settings.privacy'),
       iconName: 'lock-closed-outline',
       type: 'navigate',
       onPress: () => navigateTo('PrivacySettingsScreen'),
     },
     {
-      title: 'אבטחה',
-      description: 'אימות דו-שלבי, פעילות התחברות',
-      iconName: 'shield-checkmark-outline',
-      type: 'navigate',
-      onPress: () => navigateTo('SecuritySettingsScreen'),
-    },
-    {
-      title: 'הסתרת סטטוס מקוון',
+      title: t('settings.privacyVisibility'),
       iconName: 'eye-off-outline',
       type: 'toggle',
       value: hideOnlineStatus,
       onValueChange: setHideOnlineStatus,
     },
-    { type: 'sectionHeader', title: 'הודעות' },
+    { type: 'sectionHeader', title: t('settings.notifications') },
     {
-      title: 'התראות Push',
-      description: 'התראות על הודעות, לייקים, תגובות ועוד',
+      title: t('settings.notificationsPush'),
       iconName: 'notifications-outline',
       type: 'toggle',
       value: pushNotificationsEnabled,
       onValueChange: setPushNotificationsEnabled,
     },
     {
-      title: 'התראות דוא"ל',
+      title: t('settings.notificationsEmail'),
       iconName: 'mail-outline',
       type: 'toggle',
       value: emailNotificationsEnabled,
       onValueChange: setEmailNotificationsEnabled,
     },
-    { type: 'sectionHeader', title: 'העדפות אפליקציה' },
+    { type: 'sectionHeader', title: t('settings.appPreferences') },
     {
-      title: 'שפה',
+      title: t('settings.language'),
       iconName: 'language-outline',
       type: 'value',
-      displayValue: selectedLanguage,
-      onPress: () => Alert.alert("בחירת שפה", "ממשק לבחירת שפה"),
+      displayValue: i18n.language,
+      onPress: () => setIsLanguageModalVisible(true),
     },
     {
-      title: 'מצב כהה',
+      title: t('settings.darkMode'),
       iconName: 'moon-outline',
       type: 'toggle',
       value: darkModeEnabled,
       onValueChange: setDarkModeEnabled,
     },
     {
-      title: 'מצב חיסכון בנתונים',
-      description: 'הפחתת איכות תמונה/וידאו',
+      title: t('settings.dataSaver'),
       iconName: 'cellular-outline',
       type: 'toggle',
       value: dataSaverMode,
       onValueChange: setDataSaverMode,
     },
     {
-      title: 'הפעלת וידאו אוטומטית',
-      iconName: 'play-circle-outline',
-      type: 'toggle',
-      value: autoplayVideos,
-      onValueChange: setAutoplayVideos,
-    },
-    {
-      title: 'ניקוי זיכרון מטמון',
+      title: t('settings.clearCache'),
       iconName: 'trash-outline',
       type: 'button',
       onPress: handleClearCache,
     },
-    { type: 'sectionHeader', title: 'עזרה ותמיכה' },
+    { type: 'sectionHeader', title: t('settings.helpSupport') },
     {
-      title: 'מרכז העזרה',
+      title: t('settings.helpCenter'),
       iconName: 'help-circle-outline',
       type: 'navigate',
-      onPress: () => openLink('https://reactnative.dev/docs/linking'),
+      onPress: () => openLink('https://help.karmacommunity.com'),
     },
     {
-      title: 'דווח על בעיה',
-      iconName: 'bug-outline',
-      type: 'navigate',
-      onPress: () => navigateTo('ReportProblemScreen'),
-    },
-    {
-      title: 'צור קשר',
-      iconName: 'call-outline',
-      type: 'navigate',
-      onPress: () => navigateTo('ContactUsScreen'),
-    },
-    {
-      title: 'מדיניות פרטיות',
-      iconName: 'document-text-outline',
-      type: 'navigate',
-      onPress: () => openLink('https://reactnative.dev/docs/linking'),
-    },
-    {
-      title: 'תנאי שירות',
-      iconName: 'reader-outline',
-      type: 'navigate',
-      onPress: () => openLink('https://reactnative.dev/docs/linking'),
-    },
-    { type: 'sectionHeader', title: 'אודות' },
-    {
-      title: 'גרסת אפליקציה',
+      title: t('settings.about'),
       iconName: 'information-circle-outline',
-      type: 'value',
-      displayValue: '1.0.0 (Build 123)',
+      type: 'navigate',
+      onPress: () => navigateTo('AboutScreen'),
     },
     { type: 'sectionHeader' },
     {
-      title: 'התנתק',
+      title: t('settings.logout'),
       iconName: 'log-out-outline',
       type: 'button',
       onPress: handleLogout,
       isDestructive: true,
-    },
-    {
-      title: 'מחק חשבון',
-      iconName: 'trash-bin-outline',
-      type: 'button',
-      onPress: () => Alert.alert("מחק חשבון", "האם אתה בטוח שברצונך למחוק את חשבונך?\nפעולה זו בלתי הפיכה."),
-      isDestructive: true,
-    },
+    }
   ];
 
   const renderSettingItem = ({ item, index }: { item: any; index: number }) => {
     if (item.type === 'sectionHeader') {
       return item.title ? (
-        <Text style={localStyles.sectionHeader}>{item.title}</Text>
+        <Text style={[styles.sectionHeader, { textAlign: 'right' }]}>{item.title}</Text>
       ) : (
-        <View style={localStyles.sectionSpacer} />
+        <View style={styles.sectionSpacer} />
       );
     }
-    return <SettingsItem {...(item as SettingsItemProps)} />;
+    return <SettingsItem {...item} />;
   };
 
   return (
-    <SafeAreaView style={localStyles.safeArea}>
-      <View style={localStyles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={localStyles.headerButton}>
-          <Icon name="arrow-back" size={24} color={colors.textPrimary} />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
+      {/* Header with Back Button */}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={handleBackPress}
+        >
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={localStyles.headerTitle}>הגדרות</Text>
-        <View style={localStyles.headerButton} />
+        <Text style={styles.headerTitle}>{t('settings.title')}</Text>
+        <View style={styles.headerSpacer} />
       </View>
+      
       <FlatList
         data={settingsData}
-        keyExtractor={(item, index) => 
-          item.type === 'sectionHeader' 
-            ? `section-${item.title || index}` 
-            : `setting-${item.title}-${index}`
-        }
         renderItem={renderSettingItem}
-        contentContainerStyle={localStyles.listContentContainer}
+        keyExtractor={(item, index) => index.toString()}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContainer}
+      />
+      
+      <LanguageSelector
+        isVisible={isLanguageModalVisible}
+        onClose={() => setIsLanguageModalVisible(false)}
       />
     </SafeAreaView>
   );
 }
 
-const localStyles = StyleSheet.create({
-  safeArea: {
+const styles = StyleSheet.create({
+  container: {
     flex: 1,
-    alignItems: 'stretch',
-    backgroundColor: colors.backgroundPrimary,
-    paddingTop: Platform.OS === 'android' ? 30 : 0,
   },
   header: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.backgroundSecondary,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    backgroundColor: colors.background,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: colors.backgroundSecondary,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: FontSizes.heading2,
     fontWeight: 'bold',
-    color: colors.textPrimary,
+    color: colors.text,
+    flex: 1,
+    textAlign: 'center',
   },
-  headerButton: {
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+  headerSpacer: {
+    width: 40,
   },
-  listContentContainer: {
-    paddingVertical: 8,
+  listContainer: {
+    paddingBottom: 20,
   },
   sectionHeader: {
-    fontSize: 18,
-    alignSelf: 'flex-end',
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-    paddingHorizontal: 16,
+    fontSize: FontSizes.body,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: colors.backgroundPrimary,
-    marginTop: 10,
-    marginBottom: 5,
+    backgroundColor: colors.backgroundSecondary,
+    marginTop: 8,
   },
   sectionSpacer: {
     height: 20,
-    backgroundColor: colors.backgroundPrimary,
-  }
+  },
 });

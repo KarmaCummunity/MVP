@@ -1,5 +1,6 @@
 import React, { memo } from 'react' // Import memo here
 import colors from '../globals/colors'
+import { FontSizes } from '../globals/constants';
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -11,16 +12,15 @@ const AboutKarmaCommunityScreen = memo(() => {
 
   return (
     <SafeAreaView style={localStyles.safeArea}>
-      <View style={styles.header}>
+      <View style={localStyles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={localStyles.headerButton}
         >
-          <Icon name='arrow-back' size={24} color={colors.textPrimary} />
+          <Icon name='arrow-back' size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>אודות</Text>
-        {/* <View style={localStyles.headerButton} />{' '} */}
-        {/* Placeholder for consistent spacing */}
+        <Text style={localStyles.headerTitle}>אודות</Text>
+        <View style={localStyles.headerButton} />
       </View>
       <ScrollView style={localStyles.container}>
         {/* Header Section */}
@@ -50,43 +50,18 @@ const AboutKarmaCommunityScreen = memo(() => {
 
         {/* Our Aspirations */}
         <Text style={localStyles.sectionTitle}>השאיפות המרכזיות שלנו</Text>
-        <View style={localStyles.bulletPointContainer}>
-          <Text style={localStyles.bulletPoint}>•</Text>
-          <Text style={localStyles.bulletText}>
-            הקמת רשת מתנדבים עוצמתית: הקמת רשת מתנדבים חברתית וחזקה, שתעודד
-            קבוצות ויחידים לעסוק באופן פעיל בקהילה.
-          </Text>
-        </View>
-        <View style={localStyles.bulletPointContainer}>
-          <Text style={localStyles.bulletPoint}>•</Text>
-          <Text style={localStyles.bulletText}>
-            טיפוח תחושה של קהילתיות והעצמה: טיפוח תחושה עמוקה של קהילתיות
-            והעצמה, שתאפשר למשתמשים להשפיע באופן משמעותי זה על זה ועל סביבתם,
-            ולהביא לשינוי חיובי.
-          </Text>
-        </View>
-        <View style={localStyles.bulletPointContainer}>
-          <Text style={localStyles.bulletPoint}>•</Text>
-          <Text style={localStyles.bulletText}>
-            יצירת פלטפורמה מפגישה: פיתוח פלטפורמה שתפגיש בין אנשים מרקעים שונים
-            ומנקודות מבט מגוונות, במטרה לשתף פעולה למען המטרה הפשוטה אך מורכבת
-            של הפיכת העולם למקום טוב יותר.
-          </Text>
-        </View>
-        <View style={localStyles.bulletPointContainer}>
-          <Text style={localStyles.bulletPoint}>•</Text>
-          <Text style={localStyles.bulletText}>
-            הנגשת אפשרויות תרומה ועשייה: הפלטפורמה תספק גישה למגוון רחב של
-            אפשרויות תרומה, יוזמות חדשות, התנדבויות, וכל סוג של עשייה חברתית.
-          </Text>
-        </View>
-        <View style={localStyles.bulletPointContainer}>
-          <Text style={localStyles.bulletPoint}>•</Text>
-          <Text style={localStyles.bulletText}>
-            עידוד שותפויות ושיתוף משאבים: עידוד שותפויות, יוזמות משותפות ושיתוף
-            משאבים, כדי להגביר את ההשפעה של מאמצים שנעשים כיום בנפרד.
-          </Text>
-        </View>
+        <Text style={localStyles.paragraph}>
+          1. יצירת פלטפורמה דיגיטלית שתאפשר לכל אחד לתת ולקבל בקלות ובנוחות.
+        </Text>
+        <Text style={localStyles.paragraph}>
+          2. בניית קהילה חדשה ומיוחדת שתפעל למען הכלל.
+        </Text>
+        <Text style={localStyles.paragraph}>
+          3. איחוד קהילות קיימות תחת פלטפורמה אחת.
+        </Text>
+        <Text style={localStyles.paragraph}>
+          4. עידוד עשייה חברתית ותרומה לקהילה.
+        </Text>
 
         {/* Existing Challenges */}
         <Text style={localStyles.sectionTitle}>
@@ -339,68 +314,82 @@ export default AboutKarmaCommunityScreen; // Export the const component
 const localStyles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    marginTop: Platform.OS === 'android' ? 30 : 0, // Adjust for Android status bar
-    marginBottom: Platform.OS === 'android' ? 40 : 0, // Adjust for Android status bar
-    backgroundColor: colors.lightOrange // Using lightBackground from your Colors file
+    marginTop: Platform.OS === 'android' ? 30 : 0,
+    backgroundColor: colors.backgroundSecondary
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.backgroundSecondary,
+  },
+  headerTitle: {
+    fontSize: FontSizes.heading2,
+    fontWeight: 'bold',
+    color: colors.text,
+    textAlign: 'center',
+    flex: 1,
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   container: {
     flex: 1,
     padding: 15,
-    backgroundColor: colors.lightOrange, // Using white from your Colors file
-    marginHorizontal: 10,
-    marginVertical: 10,
-    borderRadius: 8,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3
+    backgroundColor: colors.backgroundSecondary,
   },
   mainTitle: {
-    fontSize: 26,
+    fontSize: FontSizes.heading1,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 10,
-    color: colors.textPrimary // Using textPrimary
+    color: colors.text
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: FontSizes.medium,
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 20,
-    color: colors.mediumGray // Using mediumGray
+    color: colors.textSecondary
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: FontSizes.heading2,
     fontWeight: 'bold',
     textAlign: 'center',
     marginTop: 25,
     marginBottom: 15,
-    color: colors.darkGray, // Using darkGray
+    color: colors.text,
     borderBottomWidth: 1,
-    borderBottomColor: colors.headerBorder, // Using headerBorder
+    borderBottomColor: colors.border,
     paddingBottom: 5
   },
   paragraph: {
-    fontSize: 16,
+    fontSize: FontSizes.body,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 15,
-    color: colors.textPrimary // Using textPrimary
+    color: colors.text
   },
   bulletPointContainer: {
     flexDirection: 'row-reverse',
     marginBottom: 8
   },
   bulletPoint: {
-    fontSize: 16,
+    fontSize: FontSizes.body,
     fontWeight: 'bold',
     marginRight: 5,
     color: colors.textPrimary // Using textPrimary
   },
   bulletText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: FontSizes.body,
     textAlign: 'center',
     lineHeight: 24,
     color: colors.textPrimary // Using textPrimary
@@ -412,7 +401,7 @@ const localStyles = StyleSheet.create({
     borderRightColor: colors.danger // Using danger for challenges
   },
   challengeTitle: {
-    fontSize: 18,
+    fontSize: FontSizes.medium,
     fontWeight: 'bold',
     textAlign: 'right',
     marginBottom: 8,
@@ -425,7 +414,7 @@ const localStyles = StyleSheet.create({
     borderRightColor: colors.accent // Using accent for solutions (green)
   },
   solutionTitle: {
-    fontSize: 18,
+    fontSize: FontSizes.medium,
     fontWeight: 'bold',
     textAlign: 'right',
     marginBottom: 8,
@@ -440,12 +429,9 @@ const localStyles = StyleSheet.create({
     borderColor: colors.border // Using border color
   },
   contactText: {
-    fontSize: 15,
+    fontSize: FontSizes.body,
     textAlign: 'right',
     lineHeight: 22,
     color: colors.textPrimary // Using textPrimary
-  },
-  headerButton: {
-    width: 24, // To keep consistent spacing with the icon
   },
 })

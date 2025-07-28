@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { ChatConversation, ChatUser } from '../globals/fakeData'; // Adjust path
 import colors from '../globals/colors'; // Assuming you have a Colors file
+import { FontSizes } from '../globals/constants';
 
 interface ChatListItemProps {
   conversation: ChatConversation;
@@ -58,8 +59,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E0E0E0',
-    backgroundColor: 'white',
+    borderBottomColor: colors.border,
+    backgroundColor: colors.white,
     margin: 1,
   },
   avatarContainer: {
@@ -78,7 +79,7 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: colors.green, // Adjust to your green color
+    backgroundColor: colors.success, // Adjust to your green color
     borderWidth: 2,
     borderColor: colors.white,
   },
@@ -93,20 +94,20 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontWeight: 'bold',
-    fontSize: 16,
-    color: '#333',
+    fontSize: FontSizes.body,
+    color: colors.textPrimary,
   },
   timestamp: {
-    fontSize: 12,
-    color: '#999',
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
   },
   lastMessage: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
   },
   unreadMessage: {
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.textPrimary,
   },
 });
 

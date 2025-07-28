@@ -12,13 +12,16 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // Ensure @expo/vector-icons is installed
 import colors from "../globals/colors"; // Ensure this path is correct
+import { FontSizes, UI_TEXT } from "../globals/constants";
 import { filterOptions, sortOptions } from "../globals/constants"; // Ensure this path is correct
 
 interface SearchBarProps {
-  onHasActiveConditionsChange: (isActive: boolean) => void;
+  onHasActiveConditionsChange?: (isActive: boolean) => void;
+  onSearch?: (query: string) => void;
+  placeholder?: string;
 }
 
-const SearchBar = () => {
+const SearchBar = ({ onHasActiveConditionsChange, onSearch, placeholder }: SearchBarProps) => {
   const [searchText, setSearchText] = useState("");
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [isSortModalVisible, setIsSortModalVisible] = useState(false);
@@ -30,6 +33,7 @@ const SearchBar = () => {
  // Callback function to be passed to SearchBar
  const handleHasActiveConditionsChange = (isActive: boolean) => {
    setHasActiveConditions(isActive);
+   onHasActiveConditionsChange?.(isActive);
  };
 
  // Determine paddingBottom based on hasActiveConditions
@@ -59,10 +63,10 @@ const SearchBar = () => {
 
   const handleSearch = () => {
     if (searchText.trim() !== "") {
-      Alert.alert(`מחפש: ${searchText}`); // Changed to Alert.alert
+      onSearch?.(searchText);
       // console.log("Searching with:", { searchText, selectedFilters, selectedSorts });
     } else {
-      Alert.alert("אנא הכנס טקסט לחיפוש."); // Changed to Alert.alert
+      Alert.alert(UI_TEXT.searchTextRequired);
     }
   };
 
@@ -100,6 +104,19 @@ const SearchBar = () => {
   const isFilterSelected = (option: string) => selectedFilters.includes(option);
   const isSortSelected = (option: string) => selectedSorts.includes(option);
 
+  // Handle text input changes
+  const handleTextChange = (text: string) => {
+    setSearchText(text);
+    // Call onSearch with empty string to clear results when input is empty
+    if (text.trim() === '') {
+      onSearch?.('');
+    }
+  };
+
+  // Handle search on submit
+  const handleSubmitEditing = () => {
+    handleSearch();
+  };
 
   return (
     <View style={localStyles.container}>
@@ -110,7 +127,7 @@ const SearchBar = () => {
           style={localStyles.buttonContainer}
           onPress={() => setIsSortModalVisible(true)}
         >
-          <Text style={localStyles.buttonText}>מיון</Text>
+          <Text style={localStyles.buttonText}>{UI_TEXT.sort}</Text>
         </TouchableOpacity>
 
         {/* Filter Button (opens filter modal) */}
@@ -118,17 +135,19 @@ const SearchBar = () => {
           style={localStyles.buttonContainer}
           onPress={() => setIsFilterModalVisible(true)}
         >
-          <Text style={localStyles.buttonText}>סינון</Text>
+          <Text style={localStyles.buttonText}>{UI_TEXT.filter}</Text>
         </TouchableOpacity>
 
         {/* Search Input Field */}
         <TextInput
           style={localStyles.searchInput}
-          placeholder="חפש..."
-          placeholderTextColor={colors.mediumGray}
+          placeholder={placeholder}
+          placeholderTextColor="black"
           value={searchText}
-          onChangeText={setSearchText}
-          textAlign="right"
+          onChangeText={handleTextChange}
+          onSubmitEditing={handleSubmitEditing}
+          returnKeyType="search"
+          textAlign="center"
         />
 
         {/* Search Icon Button */}
@@ -149,7 +168,7 @@ const SearchBar = () => {
           <TouchableOpacity
             style={localStyles.modalOverlay}
             activeOpacity={1}
-            onPressOut={() => setIsFilterModalVisible(false)}
+            onPress={() => setIsFilterModalVisible(false)}
           >
             <View style={localStyles.modalContent}>
               <Text style={localStyles.modalTitle}>בחר אפשרויות סינון</Text>
@@ -175,7 +194,7 @@ const SearchBar = () => {
                       <Ionicons
                         name="checkmark-circle"
                         size={20}
-                        color={colors.primaryBlue}
+                        color={colors.pink}
                         style={localStyles.modalCheckmark}
                       />
                     )}
@@ -202,7 +221,7 @@ const SearchBar = () => {
           <TouchableOpacity
             style={localStyles.modalOverlay}
             activeOpacity={1}
-            onPressOut={() => setIsSortModalVisible(false)}
+            onPress={() => setIsSortModalVisible(false)}
           >
             <View style={localStyles.modalContent}>
               <Text style={localStyles.modalTitle}>בחר אפשרויות מיון</Text>
@@ -228,7 +247,7 @@ const SearchBar = () => {
                       <Ionicons
                         name="checkmark-circle"
                         size={20}
-                        color={colors.primaryBlue}
+                        color={colors.pink}
                         style={localStyles.modalCheckmark}
                       />
                     )}
@@ -313,35 +332,37 @@ const localStyles = StyleSheet.create({
     flexDirection: "row-reverse",
     alignItems: "center",
     alignSelf: "center",
-    backgroundColor: "#FFDAB9",
-    borderRadius: 30,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 25,
     marginHorizontal: 20,
-    marginTop: 10,
+    marginTop: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    paddingVertical: 3,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: colors.searchBorder,
   },
   buttonContainer: {
-    backgroundColor: "#FFEFD5",
-    borderRadius: 20,
-    paddingVertical: 5,
-    paddingHorizontal: 15,
-    marginHorizontal: 5,
+    backgroundColor: colors.moneyFormBackground,
+    borderRadius: 18,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    marginHorizontal: 4,
   },
   buttonText: {
-    fontSize: 12,
-    color: "#333",
+    fontSize: FontSizes.caption,
+    color: colors.searchText,
     fontWeight: "bold",
     writingDirection: "rtl",
   },
   searchInput: {
     flex: 1,
     height: "100%",
-    fontSize: 12,
-    color: "#333",
+    fontSize: FontSizes.small,
+    color: colors.searchText,
     paddingHorizontal: 10,
   },
   searchIconContainer: {
@@ -368,11 +389,11 @@ const localStyles = StyleSheet.create({
     elevation: 5,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: FontSizes.heading2,
     fontWeight: "bold",
     marginBottom: 15,
     textAlign: "center",
-    color: colors.darkGray,
+    color: colors.textSecondary,
   },
   modalScrollView: {
     maxHeight: 300,
@@ -387,10 +408,10 @@ const localStyles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   modalOptionSelected: {
-    backgroundColor: colors.lightOrange,
+    backgroundColor: colors.orangeLight,
   },
   modalOptionText: {
-    fontSize: 18,
+    fontSize: FontSizes.medium,
     textAlign: "right",
     writingDirection: "rtl",
     color: "#333",
@@ -398,21 +419,21 @@ const localStyles = StyleSheet.create({
   },
   modalOptionTextSelected: {
     fontWeight: "bold",
-    color: colors.primaryBlue,
+    color: colors.pink,
   },
   modalCheckmark: {
     marginLeft: 10,
   },
   modalCloseButton: {
     marginTop: 20,
-    backgroundColor: colors.primaryBlue,
+    backgroundColor: colors.pink,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",
   },
   modalCloseButtonText: {
     color: "white",
-    fontSize: 18,
+    fontSize: FontSizes.medium,
     fontWeight: "bold",
   },
 
@@ -424,9 +445,9 @@ const localStyles = StyleSheet.create({
     // minHeight: 20,
   },
   rowLabel: {
-    fontSize: 12,
+    fontSize: FontSizes.small,
     fontWeight: "bold",
-    color: colors.darkGray,
+    color: colors.textSecondary,
     marginRight: 8,
     paddingVertical: 5,
     paddingLeft: 10,
@@ -439,7 +460,7 @@ const localStyles = StyleSheet.create({
     flexGrow: 1,
   },
   selectedFilterSortButton: {
-    backgroundColor: colors.mediumOrange,
+    backgroundColor: colors.orange,
     paddingVertical: 4,
     paddingHorizontal: 12,
     marginTop: 5,
@@ -453,7 +474,7 @@ const localStyles = StyleSheet.create({
     elevation: 2,
   },
   selectedFilterSortButtonText: {
-    fontSize: 10,
+    fontSize: FontSizes.caption,
     color: colors.black,
     marginLeft: 1,
   },
@@ -473,14 +494,14 @@ const localStyles = StyleSheet.create({
     flexGrow: 1,
   },
   staticFilterButton: {
-    backgroundColor: colors.mediumOrange,
+    backgroundColor: colors.orange,
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 20,
     flexShrink: 0,
   },
   staticFilterButtonText: {
-    fontSize: 13,
+    fontSize: FontSizes.small,
     color: colors.black,
   },
 });

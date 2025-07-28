@@ -16,6 +16,10 @@ import {
 } from "react-native";
 import styles from "./globals/styles";
 import colors from "./globals/colors";
+import { FontSizes } from "./globals/constants";
+import './utils/i18n';
+import { I18nextProvider } from 'react-i18next';
+import i18n from './utils/i18n';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -68,18 +72,20 @@ export default function App() {
   if (!appIsReady) {
     return (
       <View style={loadingStyles.container}>
-        <ActivityIndicator size="large" color={colors.primaryBlue}/>
+        <ActivityIndicator size="large" color={colors.info}/>
         <Text style={loadingStyles.loadingText}>Loading...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <NavigationContainer>
-        <MainNavigator />
-      </NavigationContainer>
-    </View>
+    <I18nextProvider i18n={i18n}>
+      <View style={styles.container}>
+        <NavigationContainer>
+          <MainNavigator />
+        </NavigationContainer>
+      </View>
+    </I18nextProvider>
   );
 }
 
@@ -92,7 +98,7 @@ const loadingStyles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
-    fontSize: 18,
+    fontSize: FontSizes.medium,
     color: colors.textPrimary,
   },
 });
@@ -102,18 +108,18 @@ const errorStyles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: colors.error_Container,
+    backgroundColor: colors.errorLight,
     padding: 20,
   },
   errorText: {
-    fontSize: 20,
+    fontSize: FontSizes.large,
     fontWeight: "bold",
-    color: colors.textError,
+    color: colors.error,
     textAlign: "center",
     marginBottom: 10,
   },
   detailText: {
-    fontSize: 16,
+    fontSize: FontSizes.body,
     color: colors.textPrimary,
     textAlign: "center",
   },

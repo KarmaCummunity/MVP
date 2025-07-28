@@ -9,6 +9,7 @@ import {
   Platform,
 } from "react-native";
 import colors from "../globals/colors";
+import { FontSizes, UI_TEXT } from "../globals/constants";
 
 interface PlacePrediction {
   description: string;
@@ -101,7 +102,7 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
       <TextInput
         value={query}
         onChangeText={handleChangeText}
-        placeholder={placeholder || "בחר מיקום"}
+        placeholder={placeholder || UI_TEXT.locationPlaceholder}
         placeholderTextColor={colors.black}
         style={local_styles.input}
       />
@@ -140,13 +141,13 @@ const local_styles = StyleSheet.create({
   resultsContainer: {
     maxHeight: 200,
     borderWidth: 1,
-    borderColor: "#eee",
+    borderColor: colors.border,
     borderRadius: 8,
     marginTop: 5,
-    backgroundColor: "white",
+    backgroundColor: colors.white,
     overflow: "hidden",
     elevation: 3,
-    shadowColor: "#000",
+    shadowColor: colors.black,
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowOffset: {
@@ -156,11 +157,11 @@ const local_styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: colors.border,
     paddingHorizontal: 12,
     borderRadius: 8,
-    fontSize: 14,
-    backgroundColor: "#f9f9f9",
+    fontSize: FontSizes.body,
+    backgroundColor: colors.backgroundSecondary,
     textAlign: "right",
     writingDirection: "rtl",
     minHeight: 25,
@@ -169,12 +170,12 @@ const local_styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 15,
     borderBottomWidth: 1,
-    borderColor: "#eee",
+    borderColor: colors.border,
   },
   itemText: {
     textAlign: "right",
-    fontSize: 14,
-    color: "#333",
+    fontSize: FontSizes.body,
+    color: colors.textPrimary,
   },
 });
 

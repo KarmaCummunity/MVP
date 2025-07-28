@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import colors from '../globals/colors';
+import { FontSizes, UI_TEXT } from '../globals/constants';
 
 export default function InactiveScreen() {
   const navigation = useNavigation();
@@ -9,10 +10,10 @@ export default function InactiveScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.message}>
-        השימוש במסך זה עדיין אינו זמין. תודה על ההבנה!
+        {UI_TEXT.inactiveMessage}
       </Text>
       <TouchableOpacity style={styles.button} onPress={() => navigation.goBack()}>
-        <Text style={styles.buttonText}>חזור</Text>
+        <Text style={styles.buttonText}>{UI_TEXT.back}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -23,23 +24,22 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 20,
+    backgroundColor: colors.backgroundPrimary,
   },
   message: {
-    fontSize: 18,
+    fontSize: FontSizes.large,
     textAlign: 'center',
     marginBottom: 30,
-    color: '#333',
+    color: colors.textPrimary,
   },
   button: {
-    backgroundColor: '#FF69B4', // ורוד נעים
+    backgroundColor: colors.pink, // ורוד נעים
     paddingHorizontal: 30,
     paddingVertical: 12,
     borderRadius: 25,
   },
   buttonText: {
     color: colors.white,
-    fontSize: 16,
+    fontSize: FontSizes.medium,
   },
 });

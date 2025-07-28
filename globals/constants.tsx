@@ -249,35 +249,27 @@ export const FontSizes = {
  
 // For searching 
 export const filterOptions: string[] = [
-  "לפי מיקום",
-  "לפי סוג תרומה",
-  "לפי גיל",
-  "לפי מגדר",
-  "לפי מצב משפחתי",
-  "לפי מצב כלכלי",
-  "לפי מצב בריאותי",
-  "לפי תחומי עניין",
-  "לפי מועד תרומה אחרון",
-  "לפי תאריך",
-  "לפי קטגוריה",
-  "לפי רלוונטיות",
+  "חינוך",
+  "בריאות",
+  "רווחה",
+  "סביבה",
+  "בעלי חיים",
+  "נוער בסיכון",
+  "קשישים",
+  "נכים",
+  "חולים",
+  "משפחות במצוקה",
+  "עולים חדשים",
+  "קהילה",
 ];
 
 export const sortOptions: string[] = [
-  "מהחדש לישן", 
-  "מהישן לחדש", 
   "אלפביתי",
   "לפי מיקום",
-  "לפי סוג תרומה",
-  "לפי גיל",
-  "לפי מגדר",
-  "לפי מצב משפחתי",
-  "לפי מצב כלכלי",
-  "לפי מצב בריאותי",
-  "לפי תחומי עניין",
-  "לפי מועד תרומה אחרון",
-  "לפי תאריך",
-  "לפי קטגוריה",
+  "לפי תחום",
+  "לפי תאריך הקמה",
+  "לפי מספר תורמים",
+  "לפי דירוג",
   "לפי רלוונטיות",
 ];
 
@@ -344,4 +336,214 @@ export const WHATSAPP_GROUP_DETAILS = [
     image: require("../assets/images/logo.png"),
   }, // Assuming a different name for the duplicated link
 ];
+
+// UI Text Constants
+export const UI_TEXT = {
+  // Common Actions
+  back: "חזור",
+  save: "שמור",
+  cancel: "ביטול",
+  delete: "מחק",
+  edit: "ערוך",
+  add: "הוסף",
+  search: "חיפוש",
+  filter: "סינון",
+  sort: "מיון",
+  clear: "נקה",
+  confirm: "אישור",
+  close: "סגור",
+  next: "הבא",
+  previous: "הקודם",
+  submit: "שלח",
+  loading: "טוען...",
+  error: "שגיאה",
+  success: "הצלחה",
+  warning: "אזהרה",
+  info: "מידע",
+
+  // Placeholders
+  searchPlaceholder: "חפש...",
+  selectPlaceholder: "בחר...",
+  timePlaceholder: "בחר שעה",
+  locationPlaceholder: "בחר מיקום",
+  namePlaceholder: "הכנס שם",
+  emailPlaceholder: "הכנס אימייל",
+  phonePlaceholder: "הכנס טלפון",
+  messagePlaceholder: "הכנס הודעה",
+
+  // Labels
+  timeLabel: "שעה",
+  dateLabel: "תאריך",
+  locationLabel: "מיקום",
+  nameLabel: "שם",
+  emailLabel: "אימייל",
+  phoneLabel: "טלפון",
+  messageLabel: "הודעה",
+  amountLabel: "סכום",
+  categoryLabel: "קטגוריה",
+  statusLabel: "סטטוס",
+
+  // Status Messages
+  completed: "הושלם",
+  pending: "ממתין",
+  active: "פעיל",
+  inactive: "לא פעיל",
+  available: "זמין",
+  unavailable: "לא זמין",
+  online: "מקוון",
+  offline: "לא מקוון",
+
+  // Error Messages
+  searchTextRequired: "אנא הכנס טקסט לחיפוש.",
+  networkError: "שגיאת רשת",
+  generalError: "אירעה שגיאה",
+  tryAgain: "נסה שוב",
+
+  // Screen Titles
+  aboutTitle: "אודות",
+  donationsTitle: "תרומות",
+  moneyTitle: "תרומת כסף",
+  timeTitle: "תרומת זמן",
+  knowledgeTitle: "תרומת ידע",
+  trumpTitle: "טרמפים",
+  settingsTitle: "הגדרות",
+  profileTitle: "פרופיל",
+  searchTitle: "חיפוש",
+  homeTitle: "בית",
+  chatTitle: "צ'אטים",
+
+  // Quick Actions
+  urgentTasks: "משימות דחופות",
+  upcomingEvents: "אירועים קרובים",
+  newDonations: "תרומות חדשות",
+  activeVolunteers: "מתנדבים פעילים",
+
+  // Community Stats
+  activeMembers: "חברים פעילים",
+  monthlyDonations: "תרומות החודש",
+  monthlyGrowth: "גידול חודשי",
+  activeCities: "ערים פעילות",
+
+  // Inactive Screen
+  inactiveMessage: "השימוש במסך זה עדיין אינו זמין. תודה על ההבנה!",
+
+  // About Screen
+  aboutSubtitle: "הקיבוץ הקפיטליסטי הראשון מסוגו",
+  communityTitle: "אודות קהילת קארמה (Karma Community)",
+  whatIsTitle: "מהי קהילת קארמה?",
+  aspirationsTitle: "השאיפות המרכזיות שלנו",
+  challengesTitle: "האתגרים הקיימים כיום (הבעיות שאנו פותרים)",
+  visionTitle: "החזון והפתרונות שאנו מציעים",
+  duplicatesTitle: "כפילויות",
+  reliabilityTitle: "חוסר אמינות",
+  dispersionTitle: "פיזור",
+
+  // Categories
+  education: "חינוך",
+  health: "בריאות",
+  welfare: "רווחה",
+  environment: "סביבה",
+  animals: "בעלי חיים",
+  youthAtRisk: "נוער בסיכון",
+  elderly: "קשישים",
+  disabled: "נכים",
+  patients: "חולים",
+  familiesInNeed: "משפחות במצוקה",
+  newImmigrants: "עולים חדשים",
+  community: "קהילה",
+  work: "עבודה",
+  studies: "לימודים",
+  leisure: "בילוי",
+
+  // Cities
+  telAviv: "תל אביב",
+  jerusalem: "ירושלים",
+  haifa: "חיפה",
+  beerSheva: "באר שבע",
+  eilat: "אילת",
+  ashdod: "אשדוד",
+  ramatGan: "רמת גן",
+  petahTikva: "פתח תקווה",
+
+  // Sort Options
+  alphabetical: "אלפביתי",
+  byLocation: "לפי מיקום",
+  byCategory: "לפי תחום",
+  byPrice: "לפי מחיר",
+  byTime: "לפי שעה",
+  byRating: "לפי דירוג",
+  byRelevance: "לפי רלוונטיות",
+  byEstablishmentDate: "לפי תאריך הקמה",
+  byDonorsCount: "לפי מספר תורמים",
+
+  // Trump Specific
+  departureTime: "שעת יציאה",
+  selectDepartureTime: "בחר שעת יציאה",
+  searchAvailableTrumps: "חפש טרמפים זמינים",
+  oneWay: "בחד יעד",
+  searchCharitiesForDonation: "חפש עמותות לתרומה",
+  searchCharitiesForHelp: "חפש עמותות שיכולות לעזור לך מבחינה כספית",
+  searchCoursesAndLessons: "חפש קורסים ושיעורים",
+
+  // WhatsApp Groups
+  trumpsCenter: "טרמפים מרכז",
+  trumpsNorth: "טרמפים צפון",
+  trumpsSouth: "טרמפים דרום",
+
+  // Group Types
+  whatsapp: "whatsapp",
+  facebook: "facebook",
+
+  // Driver Names (for demo data)
+  davidCohen: "דוד כהן",
+  saraLevy: "שרה לוי",
+  mosheGoldberg: "משה גולדברג",
+  rachelAbraham: "רחל אברהם",
+  yossiShapira: "יוסי שפירא",
+  michalRosen: "מיכל רוזן",
+
+  // Organization Names (for demo data)
+  goldenHeart: "לב זהב - עמותה לתמיכה בקשישים",
+  lightForChildren: "אור לילדים - עמותה לקידום חינוך",
+  compassionForAnimals: "חמלה לבעלי חיים - עמותה להצלת חיות",
+  healthForAll: "בריאות לכולם - קידום רפואה נגישה",
+  greenEyes: "ירוק בעיניים - שמירה על איכות הסביבה",
+  bellsOfHope: "פעמוני תקווה - תמיכה בנוער בסיכון",
+  pathOfLight: "שביל האור - ליווי אנשים עם מוגבלויות",
+  voiceOfHope: "קול התקווה - תמיכה בחולי סרטן",
+  warmHome: 'בית אבות "בית חם"',
+  goldenHeartShelter: 'מקלט חיות "לב זהב"',
+  gatesOfRighteousness: 'בית חולים "שערי צדק"',
+
+  // Descriptions (for demo data)
+  elderlySupportDesc: "תמיכה בקשישים בודדים וסיוע יומיומי",
+  educationPromotionDesc: "קידום חינוך לילדים ממשפחות מעוטות יכולת",
+  animalRescueDesc: "הצלה וטיפול בבעלי חיים נטושים",
+  accessibleMedicineDesc: "קידום רפואה נגישה לכל האוכלוסיות",
+  environmentalProtectionDesc: "שמירה על איכות הסביבה והטבע",
+  youthAtRiskSupportDesc: "תמיכה וטיפול בנוער בסיכון",
+  disabledSupportDesc: "ליווי ושילוב אנשים עם מוגבלויות",
+  cancerSupportDesc: "תמיכה נפשית ופיזית בחולי סרטן",
+
+  // Search Results
+  noResultsFound: "לא נמצאו תוצאות",
+  tryChangingSearchTerms: "נסה לשנות את מילות החיפוש או לבדוק את האיות",
+  searching: "מחפש...",
+  resultsFound: "נמצאו {count} תוצאות עבור \"{query}\"",
+  noOptions: "אין תוצאות",
+
+  // Section Titles
+  realTimeData: "נתונים בזמן אמת",
+  communityImpact: "השפעה קהילתית",
+  topContributors: "תורמים מובילים החודש",
+  weeklyActivity: "פעילות שבועית",
+  quickActions: "פעולות מהירות",
+  activityGraphPlaceholder: "גרף פעילות יופיע כאן",
+
+  // Impact Stats
+  sharedRides: "נסיעות שותפו החודש",
+  donatedMeals: "ארוחות נתרמו",
+  mentoringHours: "שעות חונכות",
+  supportedFamilies: "משפחות נתמכו",
+};
 

@@ -1,0 +1,54 @@
+{
+    "translation": {
+        "welcome": "Добро пожаловать в Карма Комьюнити!",
+        "tabs": {
+          "home": "Главная",
+          "donations": "Донаты",
+          "search": "Поиск",
+          "profile": "Профиль"
+        },
+        "settings": {
+            "title": "Настройки",
+            "language": "Язык",
+            "selectLanguage": "Выбор языка",
+            "selectLanguageDesc": "Выберите предпочитаемый язык",
+            "restartRequired": "Требуется перезапуск",
+            "restartDesc": "Пожалуйста, перезапустите приложение, чтобы изменения языка вступили в силу",
+            "accountSection": "Аккаунт",
+            "editProfile": "Редактировать профиль",
+            "privacy": "Конфиденциальность",
+            "privacyVisibility": "Показывать онлайн статус",
+            "notifications": "Уведомления",
+            "notificationsPush": "Push-уведомления",
+            "notificationsEmail": "Email-уведомления",
+            "appPreferences": "Настройки приложения",
+            "darkMode": "Темная тема",
+            "dataSaver": "Экономия трафика",
+            "clearCache": "Очистить кэш",
+            "clearCacheConfirm": "Вы уверены, что хотите очистить кэш приложения? Это освободит место в памяти.",
+            "cacheCleared": "Кэш очищен",
+            "cacheClearedSuccess": "Кэш приложения успешно очищен.",
+            "helpSupport": "Помощь и поддержка",
+            "helpCenter": "Центр помощи",
+            "about": "О приложении",
+            "logout": "Выйти",
+            "logoutConfirm": "Вы уверены, что хотите выйти?",
+            "logoutError": "Произошла ошибка при выходе",
+            "linkError": "Не удалось открыть ссылку"
+        },
+        "common": {
+            "cancel": "Отмена",
+            "restart": "Перезапустить",
+            "save": "Сохранить",
+            "delete": "Удалить",
+            "clear": "Очистить",
+            "error": "Ошибка"
+        },
+        "locations": {
+            "telAviv": "Тель-Авив",
+            "jerusalem": "Иерусалим",
+            "haifa": "Хайфа",
+            "beerSheva": "Беэр-Шева"
+        }
+    }
+}

@@ -9,6 +9,8 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import colors from "../globals/colors";
+import { FontSizes } from "../globals/constants";
 
 // Define the props that the MenuComp component will accept
 interface MenuCompProps {
@@ -66,7 +68,7 @@ const MenuComp: React.FC<MenuCompProps> = ({ options, onSelectOption }) => {
         onPress={openMenu}
         style={localStyles.menuIconPlacement}
       >
-        <Ionicons name="menu" size={24} color="black" />
+        <Ionicons name="menu" size={24} color={colors.menuText} />
       </TouchableOpacity>
 
       {/* Modal is only rendered when isVisible is true */}
@@ -131,7 +133,7 @@ const localStyles = StyleSheet.create({
     alignItems: "flex-start",
   },
   modalContent: {
-    backgroundColor: "white",
+    backgroundColor: colors.menuBackground,
     borderRadius: 10,
     position: "absolute",
     minWidth: 180,
@@ -142,19 +144,22 @@ const localStyles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
     paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: colors.menuBorder,
   },
   menuOption: {
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: colors.menuBorder,
     width: "100%",
     alignSelf: "flex-end", // Align text to the right for rtl layout
   },
   menuOptionText: {
-    fontSize: 16,
+    fontSize: FontSizes.body,
     textAlign: "right", // Text alignment for rtl
     writingDirection: "rtl", // Explicit rtl text direction
+    color: colors.menuText,
   },
 });
 

@@ -1,333 +1,877 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
-  FlatList, // Changed from ScrollView to FlatList
+  FlatList,
   TouchableOpacity,
   Image,
   Alert,
-  Platform,
   ScrollView,
-} from "react-native";
-import { NavigationProp, ParamListBase } from "@react-navigation/native";
-// Picker is no longer used
-import HeaderComp from "../components/HeaderComp";
-import { charityNames } from "../globals/constants"; // Adjusted import path
-import colors from "../globals/colors";
-import AutocompleteDropdownComp from "../components/AutocompleteDropdownComp"; // Corrected component import
-import styles from "../globals/styles";
+  TextInput,
+  Platform,
+} from 'react-native';
+import { NavigationProp, ParamListBase } from '@react-navigation/native';
+import { charityNames, FontSizes } from '../globals/constants';
+import colors from '../globals/colors';
+import Icon from 'react-native-vector-icons/Ionicons';
+import HeaderComp from '../components/HeaderComp';
 
-const options = [
-  "הוראות קבע",
-  "היסטוריה",
-  "הטבות",
-  "הגשת בקשה",
-  "אשראי",
-  "מלגות",
-  "אפשרות 7",
-  "אפשרות 8",
-  "אפשרות 9",
-  "אפשרות 10",
-  "אפשרות 11",
-  "אפשרות 12",
-];
+const suggestedAmounts = [50, 100, 180, 360, 500];
 
 export default function MoneyScreen({
   navigation,
 }: {
   navigation: NavigationProp<ParamListBase>;
 }) {
-  const [selectedRecipient, setSelectedRecipient] = useState<string>("");
-  const [selectedAmount, setSelectedAmount] = useState<string>("");
-  const [mode, setMode] = useState<boolean>(false);
+  // Debug log for MoneyScreen
+  console.log('💰 MoneyScreen - Component rendered');
+  console.log('💰 MoneyScreen - Navigation object:', navigation);
+  console.log('💰 MoneyScreen - Navigation state:', JSON.stringify(navigation.getState(), null, 2));
+  const [selectedRecipient, setSelectedRecipient] = useState<string>('');
+  const [amount, setAmount] = useState<string>('50');
+  const [mode, setMode] = useState(false); // false = seeker (needs help), true = offerer (wants to donate)
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState("");
+  const [selectedSort, setSelectedSort] = useState("");
 
-  const amountOptions = ["₪111", "₪50", "₪100", "₪500", "₪1000", "₪2000"];
+  // עדכון חיפוש לפי SearchBar
+  useEffect(() => {
+    // כאן נוכל להוסיף לוגיקה לקבלת החיפוש מ-SearchBar
+    // כרגע נשתמש בנתונים דמה
+    console.log('💰 MoneyScreen - Search updated:', { searchQuery, selectedFilter, selectedSort });
+  }, [searchQuery, selectedFilter, selectedSort]);
 
-  const handleSelectMenuItem = (option: string) => {
-    Alert.alert(`Selected: ${option}`);
+  // נתונים דמה לעמותות
+  const dummyCharities = [
+    {
+      id: 1,
+      name: "לב זהב - עמותה לתמיכה בקשישים",
+      category: "רווחה",
+      location: "תל אביב",
+      rating: 4.8,
+      donors: 1250,
+      description: "תמיכה בקשישים בודדים וסיוע יומיומי",
+      image: "👴",
+      minDonation: 20,
+    },
+    {
+      id: 2,
+      name: "אור לילדים - עמותה לקידום חינוך",
+      category: "חינוך",
+      location: "ירושלים",
+      rating: 4.9,
+      donors: 2100,
+      description: "קידום חינוך לילדים ממשפחות מעוטות יכולת",
+      image: "📚",
+      minDonation: 30,
+    },
+    {
+      id: 3,
+      name: "חמלה לבעלי חיים - עמותה להצלת חיות",
+      category: "בעלי חיים",
+      location: "חיפה",
+      rating: 4.7,
+      donors: 890,
+      description: "הצלה וטיפול בבעלי חיים נטושים",
+      image: "🐕",
+      minDonation: 25,
+    },
+    {
+      id: 4,
+      name: "בריאות לכולם - קידום רפואה נגישה",
+      category: "בריאות",
+      location: "באר שבע",
+      rating: 4.6,
+      donors: 1560,
+      description: "קידום רפואה נגישה לכל האוכלוסיות",
+      image: "🏥",
+      minDonation: 40,
+    },
+    {
+      id: 5,
+      name: "ירוק בעיניים - שמירה על איכות הסביבה",
+      category: "סביבה",
+      location: "אילת",
+      rating: 4.5,
+      donors: 720,
+      description: "שמירה על איכות הסביבה והטבע",
+      image: "🌱",
+      minDonation: 15,
+    },
+    {
+      id: 6,
+      name: "פעמוני תקווה - תמיכה בנוער בסיכון",
+      category: "נוער בסיכון",
+      location: "אשדוד",
+      rating: 4.8,
+      donors: 980,
+      description: "תמיכה וטיפול בנוער בסיכון",
+      image: "🎭",
+      minDonation: 35,
+    },
+    {
+      id: 7,
+      name: "שביל האור - ליווי אנשים עם מוגבלויות",
+      category: "נכים",
+      location: "רמת גן",
+      rating: 4.9,
+      donors: 1340,
+      description: "ליווי ושילוב אנשים עם מוגבלויות",
+      image: "♿",
+      minDonation: 50,
+    },
+    {
+      id: 8,
+      name: "קול התקווה - תמיכה בחולי סרטן",
+      category: "חולים",
+      location: "פתח תקווה",
+      rating: 4.7,
+      donors: 2100,
+      description: "תמיכה נפשית ופיזית בחולי סרטן",
+      image: "💪",
+      minDonation: 60,
+    },
+  ];
+
+  // נתונים דמה לתרומות אחרונות
+  const dummyRecentDonations = [
+    {
+      id: 1,
+      charityName: "לב זהב",
+      amount: 180,
+      date: "15.12.2023",
+      status: "הושלמה",
+      category: "רווחה",
+    },
+    {
+      id: 2,
+      charityName: "אור לילדים",
+      amount: 250,
+      date: "12.12.2023",
+      status: "הושלמה",
+      category: "חינוך",
+    },
+    {
+      id: 3,
+      charityName: "חמלה לבעלי חיים",
+      amount: 120,
+      date: "10.12.2023",
+      status: "הושלמה",
+      category: "בעלי חיים",
+    },
+    {
+      id: 4,
+      charityName: "בריאות לכולם",
+      amount: 300,
+      date: "08.12.2023",
+      status: "הושלמה",
+      category: "בריאות",
+    },
+    {
+      id: 5,
+      charityName: "ירוק בעיניים",
+      amount: 80,
+      date: "05.12.2023",
+      status: "הושלמה",
+      category: "סביבה",
+    },
+  ];
+
+  // פונקציה לסינון עמותות לפי חיפוש וסינון
+  const getFilteredCharities = () => {
+    let filtered = [...dummyCharities];
+
+    // סינון לפי חיפוש
+    if (searchQuery) {
+      filtered = filtered.filter(charity =>
+        charity.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        charity.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        charity.location.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // סינון לפי קטגוריה
+    if (selectedFilter) {
+      filtered = filtered.filter(charity => charity.category === selectedFilter);
+    }
+
+    // מיון
+    switch (selectedSort) {
+      case "אלפביתי":
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "לפי מיקום":
+        filtered.sort((a, b) => a.location.localeCompare(b.location));
+        break;
+      case "לפי תחום":
+        filtered.sort((a, b) => a.category.localeCompare(b.category));
+        break;
+      case "לפי מספר תורמים":
+        filtered.sort((a, b) => b.donors - a.donors);
+        break;
+      case "לפי דירוג":
+        filtered.sort((a, b) => b.rating - a.rating);
+        break;
+      case "לפי רלוונטיות":
+        // ברירת מחדל - לפי דירוג
+        filtered.sort((a, b) => b.rating - a.rating);
+        break;
+    }
+
+    return filtered;
   };
 
+  // פונקציה לסינון תרומות אחרונות
+  const getFilteredRecentDonations = () => {
+    let filtered = [...dummyRecentDonations];
+
+    // סינון לפי חיפוש
+    if (searchQuery) {
+      filtered = filtered.filter(donation =>
+        donation.charityName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        donation.category.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // סינון לפי קטגוריה
+    if (selectedFilter) {
+      filtered = filtered.filter(donation => donation.category === selectedFilter);
+    }
+
+    return filtered;
+  };
+
+  // פונקציה להצגת פרטי עמותה במצב מחפש
+  const showCharityDetailsModal = (charity: any) => {
+    Alert.alert(
+      charity.name,
+      `${charity.description}\n\n📞 צור קשר: 03-1234567\n📧 אימייל: info@${charity.name.replace(/\s+/g, '').toLowerCase()}.org.il\n\nהאם תרצה לתרום לעמותה זו?`,
+      [
+        {
+          text: 'לא עכשיו',
+          style: 'cancel',
+        },
+        {
+          text: 'תרום עכשיו',
+          onPress: () => showDonationAmountModal(charity),
+        },
+      ]
+    );
+  };
+
+  // פונקציה לבחירת סכום תרומה
+  const showDonationAmountModal = (charity: any) => {
+    Alert.prompt(
+      'בחר סכום לתרומה',
+      `לתרומה ל: ${charity.name}\n\nהכנס סכום:`,
+      [
+        {
+          text: 'ביטול',
+          style: 'cancel',
+        },
+        {
+          text: 'תרום',
+          onPress: (amount) => {
+            if (amount && !isNaN(Number(amount))) {
+              Alert.alert(
+                'תרומה בוצעה',
+                `תודה על תרומתך בסך ₪${amount} ל-${charity.name}!`
+              );
+            } else {
+              Alert.alert('שגיאה', 'אנא הכנס סכום תקין');
+            }
+          },
+        },
+      ],
+      'plain-text',
+      '50'
+    );
+  };
+
+ 
+  const menuOptions = [
+    'היסטוריית תרומות',
+    'הגדרות תשלום',
+    'עזרה',
+    'צור קשר'
+  ];
+
   const handleDonate = () => {
-    if (!selectedRecipient || !selectedAmount) {
-      Alert.alert("שגיאה", "אנא בחר נמען וסכום לפני התרומה.");
+    if (!selectedRecipient || !amount) {
+      Alert.alert('שגיאה', 'אנא בחר נמען וסכום לפני התרומה.');
     } else {
       Alert.alert(
-        "תרומה בוצעה",
-        `תודה על תרומתך ${selectedAmount} ל-${selectedRecipient}!`
+        'תרומה בוצעה',
+        `תודה על תרומתך בסך ₪${amount} ל-${selectedRecipient}!`
       );
     }
   };
 
-  const toggleMode = (): void => {
-    // console.log("Toggling mode" + mode);
-    setMode((prev) => (!prev ? true : false));
-  };
+  const handleToggleMode = useCallback(() => {
+    setMode(!mode);
+    console.log('Mode toggled:', !mode ? 'נזקק' : 'תורם');
+  }, [mode]);
 
-  const mainContentData = [
-    {
-      id: "all_section",
-      title: "הכל:",
-      items: [
-        "האגודה למלחמה בסרטן",
-        "לתת",
-        "לתת",
-        "יד שרה",
-        "מגן דוד אדום",
-        "קרן לבריאות הילד",
-        "המרכז לזקן",
-      ],
-    },
-  ];
+  const handleSelectMenuItem = useCallback((option: string) => {
+    console.log('Menu option selected:', option);
+    Alert.alert('תפריט', `נבחר: ${option}`);
+  }, []);
 
+  const renderCharityCard = ({ item }: { item: any }) => (
+    <TouchableOpacity 
+      style={localStyles.charityCard}
+      onPress={() => {
+        if (mode) {
+          // מצב תורם - בוחר עמותה לתרומה
+          setSelectedRecipient(item.name);
+          Alert.alert('עמותה נבחרה', `נבחרה: ${item.name}`);
+        } else {
+          // מצב נזקק - מציג פרטי עמותה עם אפשרות לתרומה
+          showCharityDetailsModal(item);
+        }
+      }}
+    >
+      <View style={localStyles.charityCardHeader}>
+        <Text style={localStyles.charityEmoji}>{item.image}</Text>
+        <View style={localStyles.charityRating}>
+          <Text style={localStyles.ratingText}>⭐ {item.rating}</Text>
+        </View>
+      </View>
+      <Text style={localStyles.charityName}>{item.name}</Text>
+      <Text style={localStyles.charityDescription}>{item.description}</Text>
+      <View style={localStyles.charityDetails}>
+        <Text style={localStyles.charityLocation}>📍 {item.location}</Text>
+        <Text style={localStyles.charityCategory}>🏷️ {item.category}</Text>
+      </View>
+      <View style={localStyles.charityStats}>
+        <Text style={localStyles.charityDonors}>👥 {item.donors} תורמים</Text>
+        <Text style={localStyles.charityMinDonation}>💰 מ-₪{item.minDonation}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderRecentDonationCard = ({ item }: { item: any }) => (
+    <TouchableOpacity style={localStyles.recentDonationCard}>
+      <View style={localStyles.recentDonationHeader}>
+        <Text style={localStyles.recentDonationCharity}>{item.charityName}</Text>
+        <Text style={localStyles.recentDonationAmount}>₪{item.amount}</Text>
+      </View>
+      <View style={localStyles.recentDonationDetails}>
+        <Text style={localStyles.recentDonationDate}>📅 {item.date}</Text>
+        <Text style={localStyles.recentDonationCategory}>🏷️ {item.category}</Text>
+      </View>
+      <View style={localStyles.recentDonationStatus}>
+        <Text style={localStyles.recentDonationStatusText}>✅ {item.status}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const FormHeader = () => (
+    <View>
+      {/* Mode toggle is now handled by HeaderComp */}
+
+      {mode ? (
+        <></>
+      ) : (
+        <View style={localStyles.formContainer}>
+          {/* מצב נזקק - הודעה לחיפוש עזרה */}
+          <View style={localStyles.searchHelpContainer}>
+            <Text style={localStyles.searchHelpTitle}>מחפש עזרה כספית?</Text>
+            <Text style={localStyles.searchHelpText}>
+              השתמש בסרגל החיפוש למעלה כדי למצוא עמותות שיכולות לעזור לך מבחינה כספית
+            </Text>
+            <View style={localStyles.searchHelpTipsContainer}>
+              <Text style={localStyles.searchHelpTipsTitle}>איך למצוא עזרה:</Text>
+              <Text style={localStyles.searchHelpTip}>• חפש לפי תחום: חינוך, בריאות, רווחה</Text>
+              <Text style={localStyles.searchHelpTip}>• חפש לפי מיקום: עיר, אזור</Text>
+              <Text style={localStyles.searchHelpTip}>• חפש לפי סוג עזרה: מזון, ביגוד, טיפול רפואי</Text>
+              <Text style={localStyles.searchHelpTip}>• פנה ישירות לעמותה דרך פרטי הקשר</Text>
+            </View>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+  
   return (
     <SafeAreaView style={localStyles.safeArea}>
-      <View style={localStyles.wrapper}>
-        <HeaderComp
-          mode={mode}
-          menuOptions={options}
-          onToggleMode={toggleMode}
-          onSelectMenuItem={handleSelectMenuItem}
-        />
+      <HeaderComp
+        mode={mode}
+        menuOptions={menuOptions}
+        onToggleMode={handleToggleMode}
+        onSelectMenuItem={handleSelectMenuItem}
+        title=""
+        placeholder={mode ? "חפש עמותות לתרומה" : "חפש עמותות שיכולות לעזור לך מבחינה כספית"}
+      />
 
-        {/* Changed to FlatList for the main scrollable content */}
-        <FlatList
-          nestedScrollEnabled={false}
-          data={mainContentData} // Data for the main FlatList (the "All" section)
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
+      <ScrollView 
+        style={localStyles.container} 
+        contentContainerStyle={localStyles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <FormHeader />
+
+        {mode ? (
+          // מצב תורם - מציג עמותות לתרומה והיסטוריית תרומות
+          <>
             <View style={localStyles.section}>
-              <View>
-                {/* Dropdowns */}
-                <View style={localStyles.dropdownContainer1}>
-                  <AutocompleteDropdownComp
-                    label="למי ?"
-                    selectedValue={selectedRecipient}
-                    onValueChange={(val) => setSelectedRecipient(val)}
-                    options={charityNames}
-                  />
-                </View>
-                <View style={localStyles.dropdownContainer2}>
-                  <AutocompleteDropdownComp
-                    label="כמה ?"
-                    selectedValue={selectedAmount}
-                    onValueChange={(val) => setSelectedAmount(val)}
-                    options={amountOptions}
-                  />
-                </View>
-
-                {/* Donate Button */}
-                <TouchableOpacity
-                  style={localStyles.donateButton}
-                  onPress={handleDonate}
-                >
-                  <Text style={localStyles.donateButtonText}>תרום</Text>
-                </TouchableOpacity>
-
-                {/* Recommended Section */}
-                <View style={localStyles.section}>
-                  <Text style={localStyles.sectionTitle}>מומלצים:</Text>
-                  {/* Horizontal ScrollView for Recommended Cards */}
-                  <ScrollView
-                    horizontal={true}
-                    style={localStyles.cardListScrollView}
-                    showsHorizontalScrollIndicator={false}
-                  >
-                    {[1, 2, 3, 4, 5].map((_, i) => (
-                      <TouchableOpacity onPress={ () => navigation.navigate("WebViewScreen")} key={`rec-${i}`}>
-                        <View style={localStyles.card} >
-                          <Image
-                            source={require("../assets/images/Jgive_Logo.png")}
-                            resizeMode="contain"
-                            style={localStyles.cardImage}
-                          />
-                          <View style={localStyles.cardContent}>
-                            <Text style={localStyles.cardTitle}>
-                              JGive {i + 1}
-                            </Text>
-                            <Text style={localStyles.cardDescription}>
-                              אצלנו התרומה שלך שווה יותר
-                            </Text>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-
-                {/* <View style={{ height: 20 }} /> */}
-              </View>
-
-              <Text style={localStyles.sectionTitle}>{item.title}</Text>
-              {/* Horizontal ScrollView for All Cards */}
-              <ScrollView
-                horizontal={true}
-                style={localStyles.cardListScrollView}
+              <Text style={localStyles.sectionTitle}>
+                {searchQuery || selectedFilter ? 'תוצאות חיפוש' : 'עמותות מומלצות לתרומה'}
+              </Text>
+              <ScrollView 
+                horizontal 
                 showsHorizontalScrollIndicator={false}
+                contentContainerStyle={localStyles.charitiesScrollContainer}
               >
-                {item.items.map((title, idx) => (
-                  <View style={localStyles.card} key={`all-${idx}`}>
-                    <Image
-                      source={{ uri: "https://randomuser.me/api/portraits/women/1.jpg" }}
-                      style={localStyles.cardImage}
-                    />
-                    <View style={localStyles.cardContent}>
-                      <Text style={localStyles.cardTitle}>{title}</Text>
-                      <Text style={localStyles.cardDescription}>
-                        סיוע הומניטרי ישראלי
-                      </Text>
-                    </View>
+                {getFilteredCharities().map((charity) => (
+                  <View key={charity.id} style={localStyles.charityCardWrapper}>
+                    {renderCharityCard({ item: charity })}
                   </View>
                 ))}
               </ScrollView>
             </View>
-          )}
-          // You can also add ListFooterComponent if you have content below the main list
-          showsVerticalScrollIndicator={false} // Hide main scrollbar
-          contentContainerStyle={localStyles.flatListContentContainer} // Apply padding here
-          keyboardShouldPersistTaps="always" // Still useful for nested TextInput interactions
-        />
-      </View>
+
+            <View style={localStyles.section}>
+              <Text style={localStyles.sectionTitle}>היסטוריית תרומות שלך</Text>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={localStyles.recentDonationsScrollContainer}
+              >
+                {getFilteredRecentDonations().map((donation) => (
+                  <View key={donation.id} style={localStyles.recentDonationCardWrapper}>
+                    {renderRecentDonationCard({ item: donation })}
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          </>
+        ) : (
+          // מצב נזקק - מציג עמותות שיכולות לעזור
+          <View style={localStyles.section}>
+            <Text style={localStyles.sectionTitle}>
+              {searchQuery || selectedFilter ? 'עמותות שיכולות לעזור' : 'עמותות מומלצות לעזרה'}
+            </Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={localStyles.charitiesScrollContainer}
+            >
+              {getFilteredCharities().map((charity) => (
+                <View key={charity.id} style={localStyles.charityCardWrapper}>
+                  {renderCharityCard({ item: charity })}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const localStyles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#FFEDD5",
-  },
-  wrapper: {
-    flex: 1,
-    width: "100%",
-    maxWidth: 600,
-    alignSelf: "center",
-  },
-  // Removed scrollViewBase as FlatList replaces it
-  flatListContentContainer: {
-    paddingHorizontal: 16, // Apply horizontal padding here
-    paddingTop: 12, // Add some padding below the header
-    paddingBottom: 24, // Add padding at the bottom
-  },
-  donateButton: {
-    backgroundColor: "#007BFF",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    marginBottom: 10,
-    alignSelf: "center",
-  },
-  donateButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  filterButtonsContainer: {
-    backgroundColor: "transparent",
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    gap: 10,
-    paddingHorizontal: 5, // Padding inside the horizontal scroll
-  },
-  filterButton: {
-    backgroundColor: colors.mediumOrange,
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    flexShrink: 0,
-  },
-  filterButtonText: {
-    fontSize: 14,
-    color: colors.darkGray,
-  },
-  section: {
-    // marginTop: 5,
-  },
-  sectionTitle: {
-    fontWeight: "bold",
-    fontSize: 18,
-    marginBottom: 10,
-  },
-  filterScrollView: {
-    maxHeight: Platform.select({
-      ios: 80,
-      android: 100,
-      web: 80,
-      default: 80,
-    }),
-    paddingVertical: 10,
-    marginBottom: 20,
-  },
-  cardListScrollView: {
-    height: 200,
-    maxHeight: 200,
-    paddingVertical: 10,
-  },
-  card: {
-    borderColor: colors.black,
-    flexDirection: "row",
-    backgroundColor: "white",
-    padding: 30,
-    marginHorizontal: 10,
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    marginBottom: 12,
-    alignItems: "center",
-    width: 280,
-    flexShrink: 0,
-  },
-  cardImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 25,
-    marginRight: 10,
-  },
-  cardContent: {
-    flex: 1,
-  },
-  cardTitle: {
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  cardDescription: {
-    fontSize: 13,
-    color: "#6B7280",
-  },
-  trumpCard: {
-    backgroundColor: "white",
-    padding: 12,
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    marginBottom: 12,
-  },
-  trumpCardTitle: {
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  trumpCardSubtitle: {
-    fontWeight: "600",
-    fontSize: 15,
-  },
-  trumpCardText: {
-    fontSize: 13,
-    color: "#6B7280",
-  },
-  dropdownContainer1: {
-    marginBottom: 10,
-    flex: 1,
-    zIndex: 0, // Needs to be higher than other elements that might overlap
-  },
-  dropdownContainer2: {
-    flex: 1,
-    marginBottom: 24,
-    zIndex: 0, // Needs to be higher than other elements that might overlap, but lower than dropdown1
-  },
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.backgroundPrimary,
+    },
+    container: {
+        flex: 1,
+        paddingHorizontal: 16,
+        paddingTop: 24,
+    },
+    scrollContent: {
+        paddingBottom: 100, // מרווח בתחתית המסך
+    },
+    formContainer: {
+      backgroundColor: colors.moneyFormBackground,
+      padding: 16,
+      borderRadius: 15,
+      marginBottom: 24,
+      borderWidth: 1,
+      borderColor: colors.moneyFormBorder,
+    },
+    inputContainer: {
+        marginBottom: 20,
+    },
+    label: {
+        fontSize: FontSizes.medium,
+        fontWeight: '600',
+        color: colors.textPrimary,
+        marginBottom: 10,
+        textAlign: 'right',
+    },
+    input: {
+        backgroundColor: colors.moneyInputBackground,
+        borderRadius: 10,
+        padding: 15,
+        fontSize: FontSizes.body,
+        textAlign: 'right',
+        color: colors.textPrimary,
+        borderWidth: 1,
+        borderColor: colors.moneyFormBorder,
+    },
+    amountContainer: {
+        marginBottom: 25,
+    },
+    suggestedAmountsContainer: {
+        flexDirection: 'row-reverse',
+        justifyContent: 'space-between',
+        marginBottom: 15,
+    },
+    amountButton: {
+        backgroundColor: colors.moneyInputBackground,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: colors.moneyFormBorder,
+    },
+    selectedAmount: {
+        backgroundColor: colors.moneyButtonSelected,
+        borderColor: colors.moneyButtonSelected,
+    },
+    amountButtonText: {
+        fontSize: FontSizes.body,
+        fontWeight: '700',
+        color: colors.textPrimary,
+    },
+    selectedAmountText: {
+        color: colors.backgroundPrimary,
+    },
+    customAmountInput: {
+        textAlign: 'center',
+    },
+    donateButton: {
+        backgroundColor: colors.moneyButtonBackground,
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    donateButtonText: {
+        color: colors.backgroundPrimary,
+        fontSize: FontSizes.medium,
+        fontWeight: 'bold',
+    },
+    section: {
+        marginBottom: 20,
+    },
+    sectionTitle: {
+        fontSize: FontSizes.heading2,
+        fontWeight: 'bold',
+        color: colors.textPrimary,
+        marginBottom: 10,
+        textAlign: 'right',
+    },
+    recommendationCard: {
+        backgroundColor: colors.moneyCardBackground,
+        borderRadius: 15,
+        padding: 15,
+        marginRight: 15,
+        width: 150,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.moneyFormBorder,
+    },
+    cardImage: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        marginBottom: 10,
+    },
+    cardTitle: {
+        fontSize: FontSizes.body,
+        fontWeight: 'bold',
+        color: colors.textPrimary,
+    },
+    cardDescription: {
+        fontSize: FontSizes.small,
+        color: colors.textSecondary,
+        textAlign: 'center',
+    },
+    historyCard: {
+        backgroundColor: colors.moneyCardBackground,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: colors.moneyFormBorder,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    historyContent: {
+        flex: 1,
+    },
+    historyTitle: {
+        fontSize: FontSizes.body,
+        fontWeight: '600',
+        color: colors.textPrimary,
+        marginBottom: 4,
+    },
+    historyAmount: {
+        fontSize: FontSizes.medium,
+        fontWeight: 'bold',
+        color: colors.moneyHistoryAmount,
+        marginBottom: 2,
+    },
+    historyDate: {
+        fontSize: FontSizes.small,
+        color: colors.textSecondary,
+    },
+    historyStatus: {
+        backgroundColor: colors.moneyStatusBackground,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    historyStatusText: {
+        fontSize: FontSizes.small,
+        color: colors.moneyStatusText,
+        fontWeight: '600',
+    },
+    searchContainer: {
+        marginBottom: 20,
+    },
+    searchInput: {
+        marginBottom: 15,
+    },
+    searchButton: {
+        backgroundColor: colors.moneyButtonBackground,
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    searchButtonText: {
+        color: colors.backgroundPrimary,
+        fontSize: FontSizes.medium,
+        fontWeight: 'bold',
+    },
+    recommendationsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        paddingVertical: 10,
+    },
+    historyContainer: {
+        paddingVertical: 5,
+    },
+    searchInfoContainer: {
+        alignItems: 'center',
+        paddingVertical: 20,
+    },
+    searchInfoTitle: {
+        fontSize: FontSizes.heading3,
+        fontWeight: 'bold',
+        color: colors.textPrimary,
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    searchInfoText: {
+        fontSize: FontSizes.body,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        marginBottom: 20,
+        lineHeight: 24,
+    },
+    searchTipsContainer: {
+        backgroundColor: colors.moneyInputBackground,
+        borderRadius: 12,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: colors.moneyFormBorder,
+    },
+    searchTipsTitle: {
+        fontSize: FontSizes.body,
+        fontWeight: 'bold',
+        color: colors.textPrimary,
+        marginBottom: 8,
+        textAlign: 'right',
+    },
+    searchTip: {
+        fontSize: FontSizes.body,
+        color: colors.textSecondary,
+        marginBottom: 4,
+        textAlign: 'right',
+    },
+    // Charity Cards Styles
+    charitiesScrollContainer: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+    },
+    charityCardWrapper: {
+        marginRight: 12,
+        width: 280,
+    },
+    charityCard: {
+        backgroundColor: colors.moneyCardBackground,
+        borderRadius: 12,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: colors.moneyFormBorder,
+        minHeight: 200,
+    },
+    charityCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    charityEmoji: {
+        fontSize: FontSizes.displayLarge,
+    },
+    charityRating: {
+        backgroundColor: colors.moneyStatusBackground,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    ratingText: {
+        fontSize: FontSizes.small,
+        color: colors.moneyStatusText,
+        fontWeight: 'bold',
+    },
+    charityName: {
+        fontSize: FontSizes.body,
+        fontWeight: 'bold',
+        color: colors.textPrimary,
+        marginBottom: 6,
+        textAlign: 'right',
+    },
+    charityDescription: {
+        fontSize: FontSizes.body,
+        color: colors.textSecondary,
+        marginBottom: 8,
+        textAlign: 'right',
+        lineHeight: 18,
+    },
+    charityDetails: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+    },
+    charityLocation: {
+        fontSize: FontSizes.small,
+        color: colors.textSecondary,
+    },
+    charityCategory: {
+        fontSize: FontSizes.small,
+        color: colors.textSecondary,
+    },
+    charityStats: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 'auto',
+    },
+    charityDonors: {
+        fontSize: FontSizes.small,
+        color: colors.moneyHistoryAmount,
+        fontWeight: '600',
+    },
+    charityMinDonation: {
+        fontSize: FontSizes.small,
+        color: colors.moneyHistoryAmount,
+        fontWeight: '600',
+    },
+    // Recent Donations Styles
+    recentDonationsScrollContainer: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+    },
+    recentDonationCardWrapper: {
+        marginRight: 12,
+        width: 200,
+    },
+    recentDonationCard: {
+        backgroundColor: colors.moneyCardBackground,
+        borderRadius: 12,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: colors.moneyFormBorder,
+        minHeight: 120,
+    },
+    recentDonationHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 6,
+    },
+    recentDonationCharity: {
+        fontSize: FontSizes.body,
+        fontWeight: 'bold',
+        color: colors.textPrimary,
+        textAlign: 'right',
+        flex: 1,
+    },
+    recentDonationAmount: {
+        fontSize: FontSizes.body,
+        fontWeight: 'bold',
+        color: colors.moneyHistoryAmount,
+    },
+    recentDonationDetails: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 6,
+    },
+    recentDonationDate: {
+        fontSize: FontSizes.small,
+        color: colors.textSecondary,
+    },
+    recentDonationCategory: {
+        fontSize: FontSizes.small,
+        color: colors.textSecondary,
+    },
+    recentDonationStatus: {
+        alignItems: 'flex-end',
+    },
+    recentDonationStatusText: {
+        fontSize: FontSizes.small,
+        color: colors.moneyStatusText,
+        fontWeight: '600',
+    },
+    // Search Help Styles
+    searchHelpContainer: {
+        alignItems: 'center',
+        paddingVertical: 20,
+    },
+    searchHelpTitle: {
+        fontSize: FontSizes.heading2,
+        fontWeight: 'bold',
+        color: colors.textPrimary,
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    searchHelpText: {
+        fontSize: FontSizes.body,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        marginBottom: 20,
+        lineHeight: 24,
+    },
+    searchHelpTipsContainer: {
+        backgroundColor: colors.moneyInputBackground,
+        borderRadius: 12,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: colors.moneyFormBorder,
+        width: '100%',
+    },
+    searchHelpTipsTitle: {
+        fontSize: FontSizes.body,
+        fontWeight: 'bold',
+        color: colors.textPrimary,
+        marginBottom: 10,
+        textAlign: 'right',
+    },
+    searchHelpTip: {
+        fontSize: FontSizes.body,
+        color: colors.textSecondary,
+        marginBottom: 6,
+        textAlign: 'right',
+        lineHeight: 20,
+    },
 });

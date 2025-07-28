@@ -1,8 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Filter, SortBy, SortOrder } from '../globals';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import colors from '../globals/colors';
+import { FontSizes } from '../globals/constants';
+
+type Filter = 'Pending' | 'Completed' | 'All';
+type SortBy = 'priority' | 'createdAt' | 'dueDate';
+type SortOrder = 'asc' | 'desc';
 
 interface FilterSortOptionsProps {
   currentFilter: Filter;
@@ -71,7 +75,7 @@ const FilterSortOptions: React.FC<FilterSortOptionsProps> = ({
           <Icon
             name={currentSortOrder === 'asc' ? 'arrow-upward' : 'arrow-downward'}
             size={20}
-            color={colors.blue}
+            color={colors.info}
           />
         </TouchableOpacity>
       </View>
@@ -81,7 +85,7 @@ const FilterSortOptions: React.FC<FilterSortOptionsProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.lightOrange,
+    backgroundColor: colors.orangeLight,
     padding: 10,
     borderRadius: 10,
     // marginBottom: 20,
@@ -102,27 +106,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   label: {
-    fontSize: 12,
+    fontSize: FontSizes.small,
     fontWeight: 'bold',
     marginRight: 10,
-    color: '#333',
+    color: colors.textPrimary,
   },
   optionButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 20,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: colors.backgroundSecondary,
     marginHorizontal: 4,
   },
   selectedOption: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.info,
   },
   optionText: {
-    color: '#555',
-    fontSize: 10,
+    color: colors.textSecondary,
+    fontSize: FontSizes.caption,
   },
   selectedOptionText: {
-    color: '#FFFFFF',
+    color: colors.white,
   },
   sortOrderButton: {
     marginLeft: 10,

@@ -1,6 +1,8 @@
 // components/ModeToggleButton.tsx
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import colors from '../globals/colors';
+import { FontSizes } from '../globals/constants';
 
 interface ModeToggleButtonProps {
   mode: boolean;
@@ -15,18 +17,18 @@ const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({ mode, onToggle }) =
         <View
           style={[
             localStyles.modeButton,
-            !mode ? localStyles.selectedLeft : localStyles.unselectedLeft // Adjusted for 'מחפש' (left)
+            !mode ? localStyles.selected: localStyles.unselected // Adjusted for 'מחפש' (left)
           ]}
         >
-          <Text style={localStyles.modeText}>מחפש</Text>
+          <Text style={localStyles.modeText}>מציע</Text>
         </View>
         <View
           style={[
             localStyles.modeButton,
-            mode ? localStyles.selectedRight : localStyles.unselectedRight // Adjusted for 'מציע' (right)
+            mode ? localStyles.selected : localStyles.unselected // Adjusted for 'מציע' (right)
           ]}
         >
-          <Text style={localStyles.modeText}>מציע</Text>
+          <Text style={localStyles.modeText}>מחפש</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -41,35 +43,27 @@ const localStyles = StyleSheet.create({
   },
   modeToggleBackground: {
     flexDirection: 'row-reverse', // Keeps "מחפש" on the right initially for rtl
-    backgroundColor: '#FBD5D5',
+    backgroundColor: colors.toggleBackground,
     borderRadius: 999, // Use 999 for full pill shape
-    height: 40, // Fixed height for consistency
+    height: 25, // Fixed height for consistency
   },
   modeButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
     flex: 1, // Distributes space evenly
     alignItems: 'center',
     justifyContent: 'center', // Center text vertically
   },
-  selectedLeft: { // Styles for "מחפש" when selected
-    backgroundColor: '#FB923C',
+  unselected: { 
+    backgroundColor: colors.toggleActive,
     borderRadius: 999, // Full pill shape
   },
-  unselectedLeft: { // Styles for "מחפש" when unselected
-    backgroundColor: '#FBD5D5',
+  selected: {
+    backgroundColor: colors.toggleBackground,
   },
-  selectedRight: { // Styles for "מציע" when selected
-    backgroundColor: '#FB923C',
-    borderRadius: 999, // Full pill shape
-  },
-  unselectedRight: { // Styles for "מציע" when unselected
-    backgroundColor: '#FBD5D5',
-  },
+
   modeText: {
     fontWeight: 'bold',
-    color: '#000',
-    fontSize: 12,
+    color: colors.toggleText,
+    fontSize: FontSizes.small,
   },
 });
 

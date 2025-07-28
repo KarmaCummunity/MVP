@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { Message, ChatUser } from '../globals/fakeData'; // Adjust path
 import colors from '../globals/colors'; // Assuming you have a Colors file
+import { FontSizes } from '../globals/constants';
 
 interface ChatMessageBubbleProps {
   message: Message;
@@ -69,22 +70,22 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   myBubble: {
-    backgroundColor: colors.blue, // Your brand blue/purple
+    backgroundColor: colors.chatSent, // Your brand blue/purple
     borderBottomRightRadius: 5, // Pointy end
   },
   otherBubble: {
-    backgroundColor: colors.lightGray, // Light grey for incoming
+    backgroundColor: colors.chatReceived, // Light grey for incoming
     borderBottomLeftRadius: 5, // Pointy end
   },
   messageText: {
-    fontSize: 16,
+    fontSize: FontSizes.body,
     lineHeight: 22,
   },
   myText: {
     color: colors.white,
   },
   otherText: {
-    color: colors.darkGray,
+    color: colors.chatText,
   },
   messageImage: {
     width: 200,
@@ -94,15 +95,16 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   timestamp: {
-    fontSize: 10,
+    fontSize: FontSizes.caption,
     marginTop: 4,
     alignSelf: 'flex-end',
   },
   myTimestamp: {
-    color: 'rgba(255,255,255,0.7)',
+    color: colors.white,
+    opacity: 0.8,
   },
   otherTimestamp: {
-    color: 'rgba(0,0,0,0.5)',
+    color: colors.chatTime,
   },
 });
 

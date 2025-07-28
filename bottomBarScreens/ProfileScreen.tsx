@@ -9,11 +9,14 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { TabView, TabBar, SceneMap } from 'react-native-tab-view';
 import type { SceneRendererProps, NavigationState } from 'react-native-tab-view';
 import colors from '../globals/colors';
+import { FontSizes } from '../globals/constants';
+import { currentUser, tasks, donations, communityEvents } from '../globals/fakeData';
 
 // --- Type Definitions ---
 type TabRoute = {
@@ -23,28 +26,47 @@ type TabRoute = {
 
 // --- Tab Components ---
 const PostsRoute = () => (
-  <ScrollView contentContainerStyle={localStyles.tabContentContainer}>
-    <View style={localStyles.postsGrid}>
-      {Array.from({ length: 15 }).map((_, i) => (
-        <Image
+  <ScrollView contentContainerStyle={styles.tabContentContainer}>
+    <View style={styles.postsGrid}>
+      {Array.from({ length: 12 }).map((_, i) => (
+        <TouchableOpacity
           key={i}
-          source={{ uri: `https://randomuser.me/api/portraits/men/${i % 100}.jpg` }}
-          style={localStyles.postImage}
-        />
+          style={styles.postContainer}
+          onPress={() => Alert.alert('פוסט', `פוסט מספר ${i + 1}`)}
+        >
+          <Image
+            source={{ uri: `https://picsum.photos/300/300?random=${i}` }}
+            style={styles.postImage}
+          />
+          <View style={styles.postOverlay}>
+            <View style={styles.postStats}>
+              <Ionicons name="heart" size={16} color={colors.white} />
+              <Text style={styles.postStatsText}>{Math.floor(Math.random() * 100) + 10}</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
       ))}
     </View>
   </ScrollView>
 );
 
 const ReelsRoute = () => (
-  <View style={localStyles.tabContentPlaceholder}>
-    <Text style={localStyles.placeholderText}>אין סרטוני רילס עדיין.</Text>
+  <View style={styles.tabContentPlaceholder}>
+    <Ionicons name="videocam-outline" size={60} color={colors.textSecondary} />
+    <Text style={styles.placeholderText}>אין סרטוני רילס עדיין</Text>
+    <Text style={styles.placeholderSubtext}>צור רילס ראשון כדי לשתף עם הקהילה</Text>
+    <TouchableOpacity style={styles.createButton}>
+      <Ionicons name="add" size={20} color={colors.white} />
+      <Text style={styles.createButtonText}>צור רילס</Text>
+    </TouchableOpacity>
   </View>
 );
 
 const TaggedRoute = () => (
-  <View style={localStyles.tabContentPlaceholder}>
-    <Text style={localStyles.placeholderText}>אין תיוגים עדיין.</Text>
+  <View style={styles.tabContentPlaceholder}>
+    <Ionicons name="person-outline" size={60} color={colors.textSecondary} />
+    <Text style={styles.placeholderText}>אין תיוגים עדיין</Text>
+    <Text style={styles.placeholderSubtext}>כאשר אנשים יתייגו אותך, זה יופיע כאן</Text>
   </View>
 );
 
@@ -68,11 +90,11 @@ export default function ProfileScreen() {
   ) => (
     <TabBar
       {...props}
-      indicatorStyle={localStyles.tabBarIndicator}
-      style={localStyles.tabBar}
-      activeColor={colors.black}
-      inactiveColor= {colors.darkGray}
-      pressColor= {colors.lightGray}
+      indicatorStyle={styles.tabBarIndicator}
+      style={styles.tabBar}
+      activeColor={colors.pink}
+      inactiveColor={colors.textSecondary}
+      pressColor={colors.backgroundSecondary}
       renderTabBarItem={({ route, key }) => {
         const routeIndex = props.navigationState.routes.findIndex(r => r.key === route.key);
         const isFocused = props.navigationState.index === routeIndex;
@@ -80,17 +102,17 @@ export default function ProfileScreen() {
         return (
           <TouchableOpacity
             key={key}
-            style={localStyles.tabBarItem}
+            style={styles.tabBarItem}
             onPress={() => props.jumpTo(route.key)}
           >
             <Text
-              style={{
-                color: isFocused ? colors.black : colors.darkGray,
-                fontWeight: isFocused ? 'bold' : 'normal',
-                writingDirection: 'rtl',
-                textAlign: 'center',
-                paddingVertical: 8,
-              }}
+              style={[
+                styles.tabBarText,
+                { 
+                  color: isFocused ? colors.pink : colors.textSecondary,
+                  fontWeight: isFocused ? 'bold' : 'normal',
+                }
+              ]}
             >
               {route.title}
             </Text>
@@ -100,91 +122,204 @@ export default function ProfileScreen() {
     />
   );
 
+  // User Statistics
+  const userStats = {
+    posts: 24,
+    followers: 156,
+    following: 89,
+    karmaPoints: currentUser.karmaPoints,
+    completedTasks: currentUser.completedTasks,
+    totalDonations: currentUser.totalDonations,
+  };
+
+  // Recent Activities
+  const recentActivities = [
+    {
+      id: '1',
+      type: 'task',
+      title: 'השלמת משימה: איסוף מזון',
+      time: 'לפני שעה',
+      icon: 'checkmark-circle',
+      color: colors.success
+    },
+    {
+      id: '2',
+      type: 'donation',
+      title: 'תרמת 200 ₪ לקניית ציוד',
+      time: 'לפני 3 שעות',
+      icon: 'heart',
+      color: colors.error
+    },
+    {
+      id: '3',
+      type: 'event',
+      title: 'הצטרפת לאירוע: יום קהילה',
+      time: 'לפני יום',
+      icon: 'calendar',
+      color: colors.info
+    }
+  ];
+
   return (
-    <SafeAreaView style={localStyles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={localStyles.header}>
-          <TouchableOpacity style={localStyles.headerIcon}>
-            <Ionicons name="menu" size={30} color="black" />
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.headerIcon}
+            onPress={() => Alert.alert('תפריט', 'פתיחת תפריט')}
+          >
+            <Ionicons name="menu" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={localStyles.username}>shay_perez</Text>
-          <TouchableOpacity style={localStyles.headerIcon}>
-            <Ionicons name="add-circle-outline" size={30} color="black" />
+          <Text style={styles.username}>{currentUser.name}</Text>
+          <TouchableOpacity 
+            style={styles.headerIcon}
+            onPress={() => Alert.alert('הוסף', 'הוספת תוכן חדש')}
+          >
+            <Ionicons name="add-circle-outline" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
 
-        <View style={localStyles.profileInfo}>
+        {/* Profile Info */}
+        <View style={styles.profileInfo}>
           <Image
-            source={{ uri: 'https://randomuser.me/api/portraits/men/2.jpg' }}
-            style={localStyles.profilePicture}
+            source={{ uri: currentUser.avatar }}
+            style={styles.profilePicture}
           />
-          <View style={localStyles.statsContainer}>
-            <View style={localStyles.statItem}>
-              <Text style={localStyles.statNumber}>150</Text>
-              <Text style={localStyles.statLabel}>פוסטים</Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{userStats.posts}</Text>
+              <Text style={styles.statLabel}>פוסטים</Text>
             </View>
-            <View style={localStyles.statItem}>
-              <Text style={localStyles.statNumber}>5000</Text>
-              <Text style={localStyles.statLabel}>עוקבים</Text>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{userStats.followers}</Text>
+              <Text style={styles.statLabel}>עוקבים</Text>
             </View>
-            <View style={localStyles.statItem}>
-              <Text style={localStyles.statNumber}>300</Text>
-              <Text style={localStyles.statLabel}>עוקב/ת</Text>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{userStats.following}</Text>
+              <Text style={styles.statLabel}>עוקב/ת</Text>
             </View>
           </View>
         </View>
 
-        <View style={localStyles.bioSection}>
-          <Text style={localStyles.fullName}>שיי פרץ</Text>
-          <Text style={localStyles.bioText}>
-            תיאור ביו קצר ומעניין עליי. {'\n'}
-            כאן אפשר לכתוב על תחומי עניין, מקצוע, או כל דבר אחר.
+        {/* Bio Section */}
+        <View style={styles.bioSection}>
+          <Text style={styles.fullName}>{currentUser.name}</Text>
+          <Text style={styles.bioText}>{currentUser.bio}</Text>
+          <Text style={styles.locationText}>
+            <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
+            {' '}{currentUser.location}
           </Text>
-          <View style={localStyles.activityIcons}>
-            <TouchableOpacity style={localStyles.activityIconItem}>
-              <Ionicons name="star-outline" size={24} color="gray" />
-              <Text style={localStyles.activityIconText}>פעילות</Text>
+          
+          {/* Karma Points */}
+          <View style={styles.karmaSection}>
+            <View style={styles.karmaCard}>
+              <Ionicons name="star" size={20} color={colors.warning} />
+              <Text style={styles.karmaText}>{userStats.karmaPoints} נקודות קארמה</Text>
+            </View>
+          </View>
+
+          {/* Activity Icons */}
+          <View style={styles.activityIcons}>
+            <TouchableOpacity 
+              style={styles.activityIconItem}
+              onPress={() => Alert.alert('פעילות', 'צפייה בפעילות שלך')}
+            >
+              <Ionicons name="star-outline" size={24} color={colors.pink} />
+              <Text style={styles.activityIconText}>פעילות</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={localStyles.activityIconItem}>
-              <MaterialCommunityIcons name="history" size={24} color="gray" />
-              <Text style={localStyles.activityIconText}>היסטוריה</Text>
+            <TouchableOpacity 
+              style={styles.activityIconItem}
+              onPress={() => Alert.alert('היסטוריה', 'היסטוריית פעילות')}
+            >
+              <MaterialCommunityIcons name="history" size={24} color={colors.pink} />
+              <Text style={styles.activityIconText}>היסטוריה</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={localStyles.activityIconItem}>
-              <Ionicons name="heart-outline" size={24} color="gray" />
-              <Text style={localStyles.activityIconText}>מועדפים</Text>
+            <TouchableOpacity 
+              style={styles.activityIconItem}
+              onPress={() => Alert.alert('מועדפים', 'המועדפים שלך')}
+            >
+              <Ionicons name="heart-outline" size={24} color={colors.pink} />
+              <Text style={styles.activityIconText}>מועדפים</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={localStyles.actionButtonsContainer}>
-          <TouchableOpacity style={localStyles.discoverPeopleButton}>
-            <Ionicons name="person-add-outline" size={18} color="black" />
+        {/* Action Buttons */}
+        <View style={styles.actionButtonsContainer}>
+          <TouchableOpacity 
+            style={styles.discoverPeopleButton}
+            onPress={() => Alert.alert('גילוי אנשים', 'מציאת אנשים חדשים')}
+          >
+            <Ionicons name="person-add-outline" size={18} color={colors.white} />
           </TouchableOpacity>
-          <TouchableOpacity style={localStyles.actionButton}>
-            <Text style={localStyles.actionButtonText}>שתף פרופיל</Text>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => Alert.alert('שתף פרופיל', 'שיתוף הפרופיל שלך')}
+          >
+            <Text style={styles.actionButtonText}>שתף פרופיל</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={localStyles.actionButton}>
-            <Text style={localStyles.actionButtonText}>ערוך פרופיל</Text>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => Alert.alert('ערוך פרופיל', 'עריכת פרטי הפרופיל')}
+          >
+            <Text style={styles.actionButtonText}>ערוך פרופיל</Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={localStyles.storyHighlightsContentContainer}
-        >
-          {Array.from({ length: 10 }).map((_, i) => (
-            <View key={i} style={localStyles.storyHighlightItem}>
-              <View style={localStyles.storyHighlightCircle}>
-                <Ionicons name="add" size={30} color="black" />
+        {/* Recent Activities */}
+        <View style={styles.activitiesSection}>
+          <Text style={styles.sectionTitle}>פעילות אחרונה</Text>
+          {recentActivities.map((activity) => (
+            <TouchableOpacity
+              key={activity.id}
+              style={styles.activityItem}
+              onPress={() => Alert.alert(activity.title, activity.time)}
+            >
+              <View style={[styles.activityIcon, { backgroundColor: activity.color + '20' }]}>
+                <Ionicons name={activity.icon as any} size={16} color={activity.color} />
               </View>
-              <Text style={localStyles.storyHighlightText}>
-                {i === 0 ? 'חדש' : `היילייט ${i}`}
-              </Text>
-            </View>
+              <View style={styles.activityContent}>
+                <Text style={styles.activityTitle}>{activity.title}</Text>
+                <Text style={styles.activityTime}>{activity.time}</Text>
+              </View>
+            </TouchableOpacity>
           ))}
-        </ScrollView>
+        </View>
 
+        {/* Story Highlights */}
+        <View style={styles.highlightsSection}>
+          <Text style={styles.sectionTitle}>היילייטים</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.storyHighlightsContentContainer}
+          >
+            {Array.from({ length: 8 }).map((_, i) => (
+              <TouchableOpacity 
+                key={i} 
+                style={styles.storyHighlightItem}
+                onPress={() => Alert.alert('היילייט', `היילייט ${i + 1}`)}
+              >
+                <View style={styles.storyHighlightCircle}>
+                  {i === 0 ? (
+                    <Ionicons name="add" size={24} color={colors.pink} />
+                  ) : (
+                    <Image
+                      source={{ uri: `https://picsum.photos/60/60?random=${i + 10}` }}
+                      style={styles.highlightImage}
+                    />
+                  )}
+                </View>
+                <Text style={styles.storyHighlightText}>
+                  {i === 0 ? 'חדש' : `היילייט ${i}`}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Tab View */}
         <TabView
           navigationState={{ index, routes }}
           renderScene={renderScene}
@@ -197,162 +332,303 @@ export default function ProfileScreen() {
   );
 }
 
-// --- Styles ---
-const localStyles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.white },
+const styles = StyleSheet.create({
+  container: { 
+    flex: 1, 
+    backgroundColor: colors.backgroundPrimary 
+  },
   header: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 15,
+    paddingHorizontal: 20,
     paddingTop: 10,
+    paddingBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: colors.lightGray,
+    borderBottomColor: colors.border,
   },
   username: {
-    fontSize: 20,
+    fontSize: FontSizes.medium,
     fontWeight: 'bold',
-    writingDirection: 'rtl',
-    textAlign: 'right',
-    flex: 1,
-    marginRight: 10,
-    marginLeft: 10,
+    color: colors.textPrimary,
   },
-  headerIcon: { padding: 5 },
+  headerIcon: { 
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: colors.backgroundSecondary,
+  },
   profileInfo: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
   },
   profilePicture: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    borderWidth: 2,
-    borderColor: colors.lightGray,
-    marginLeft: 20,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    borderColor: colors.pink,
   },
   statsContainer: {
     flexDirection: 'row',
     flex: 1,
     justifyContent: 'space-around',
+    marginLeft: 20,
   },
-  statItem: { alignItems: 'center' },
-  statNumber: { fontSize: 18, fontWeight: 'bold', textAlign: 'center' },
-  statLabel: { fontSize: 14, color: colors.mediumGray, textAlign: 'center' },
-  bioSection: { paddingHorizontal: 15, marginBottom: 10 },
+  statItem: { 
+    alignItems: 'center' 
+  },
+  statNumber: { 
+    fontSize: FontSizes.medium, 
+    fontWeight: 'bold', 
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  statLabel: { 
+    fontSize: FontSizes.small, 
+    color: colors.textSecondary,
+  },
+  bioSection: { 
+    paddingHorizontal: 20, 
+    marginBottom: 20 
+  },
   fullName: {
-    fontSize: 16,
+    fontSize: FontSizes.medium,
     fontWeight: 'bold',
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    color: colors.textPrimary,
+    marginBottom: 8,
   },
   bioText: {
-    fontSize: 14,
-    color: colors.darkGray,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-    marginTop: 5,
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
     lineHeight: 20,
+    marginBottom: 8,
+  },
+  locationText: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+    marginBottom: 15,
+  },
+  karmaSection: {
+    marginBottom: 15,
+  },
+  karmaCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundSecondary,
+    padding: 12,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  karmaText: {
+    fontSize: FontSizes.body,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginLeft: 8,
   },
   activityIcons: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'flex-start',
-    marginTop: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
   },
-  activityIconItem: { alignItems: 'center', marginHorizontal: 10 },
+  activityIconItem: { 
+    alignItems: 'center',
+    padding: 10,
+  },
   activityIconText: {
-    fontSize: 12,
-    color: 'gray',
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
     marginTop: 5,
-    writingDirection: 'rtl',
-    textAlign: 'center',
   },
   actionButtonsContainer: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'center',
-    paddingHorizontal: 15,
-    marginBottom: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 20,
   },
   actionButton: {
     flex: 1,
-    backgroundColor: colors.lightGray,
-    borderRadius: 8,
-    paddingVertical: 10,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 12,
+    paddingVertical: 12,
     alignItems: 'center',
     marginHorizontal: 5,
   },
   actionButtonText: {
-    fontWeight: 'bold',
-    fontSize: 14,
-    writingDirection: 'rtl',
-    textAlign: 'center',
+    fontWeight: '600',
+    fontSize: FontSizes.body,
+    color: colors.textPrimary,
   },
   discoverPeopleButton: {
-    backgroundColor: colors.darkGray,
-    borderRadius: 8,
-    padding: 10,
-    marginRight: 5,
+    backgroundColor: colors.pink,
+    borderRadius: 12,
+    padding: 12,
+    marginHorizontal: 5,
+  },
+  activitiesSection: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: FontSizes.heading3,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: 15,
+  },
+  activityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundPrimary,
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    shadowColor: colors.shadowLight,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  activityIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  activityContent: {
+    flex: 1,
+  },
+  activityTitle: {
+    fontSize: FontSizes.body,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  activityTime: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+  },
+  highlightsSection: {
+    marginBottom: 20,
   },
   storyHighlightsContentContainer: {
+    paddingHorizontal: 20,
     paddingVertical: 10,
-    paddingHorizontal: 10,
-    flexDirection: 'row-reverse',
   },
-  storyHighlightItem: { alignItems: 'center', marginHorizontal: 8 },
+  storyHighlightItem: { 
+    alignItems: 'center', 
+    marginHorizontal: 8 
+  },
   storyHighlightCircle: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    borderWidth: 2,
+    borderColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.lightGray,
+    backgroundColor: colors.backgroundSecondary,
+    marginBottom: 8,
+  },
+  highlightImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
   },
   storyHighlightText: {
-    fontSize: 12,
-    marginTop: 5,
-    color: colors.mediumGray,
-    writingDirection: 'rtl',
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   tabBar: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.backgroundPrimary,
     borderBottomWidth: 1,
-    alignItems: 'flex-end',
-    borderBottomColor: colors.lightGray,
+    borderBottomColor: colors.border,
   },
   tabBarIndicator: {
-    backgroundColor: colors.black,
+    backgroundColor: colors.pink,
     height: 2,
   },
   tabBarItem: {
     flex: 1,
     alignItems: 'center',
   },
-  tabContentContainer: { minHeight: 300 },
-  postsGrid: {
-    flexDirection: 'row-reverse',
-    flexWrap: 'wrap',
-    justifyContent: 'flex-start',
+  tabBarText: {
+    fontSize: FontSizes.body,
+    paddingVertical: 12,
   },
-  postImage: {
+  tabContentContainer: { 
+    minHeight: 400 
+  },
+  postsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 1,
+  },
+  postContainer: {
     width: Dimensions.get('window').width / 3 - 2,
     height: Dimensions.get('window').width / 3 - 2,
     margin: 1,
+    position: 'relative',
+  },
+  postImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+  },
+  postOverlay: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+  },
+  postStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  postStatsText: {
+    color: colors.white,
+    fontSize: FontSizes.small,
+    marginLeft: 4,
   },
   tabContentPlaceholder: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: 200,
+    minHeight: 300,
+    padding: 20,
   },
   placeholderText: {
-    fontSize: 16,
-    color: colors.mediumGray,
-    writingDirection: 'rtl',
+    fontSize: FontSizes.medium,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginTop: 15,
+    marginBottom: 8,
+  },
+  placeholderSubtext: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
     textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  createButton: {
+    backgroundColor: colors.pink,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+  },
+  createButtonText: {
+    color: colors.white,
+    fontSize: FontSizes.body,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });

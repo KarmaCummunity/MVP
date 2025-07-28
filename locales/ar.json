@@ -1,0 +1,54 @@
+{
+    "translation": {
+        "welcome": "أهلاً بكم في مجتمع كارما!",
+        "tabs": {
+          "home": "الرئيسية",
+          "donations": "التبرعات",
+          "search": "بحث",
+          "profile": "الملف الشخصي"
+        },
+        "settings": {
+            "title": "الإعدادات",
+            "language": "اللغة",
+            "selectLanguage": "اختيار اللغة",
+            "selectLanguageDesc": "اختر لغتك المفضلة",
+            "restartRequired": "يتطلب إعادة التشغيل",
+            "restartDesc": "يرجى إعادة تشغيل التطبيق لتطبيق تغييرات اللغة",
+            "accountSection": "الحساب",
+            "editProfile": "تعديل الملف الشخصي",
+            "privacy": "الخصوصية",
+            "privacyVisibility": "إظهار حالة الاتصال",
+            "notifications": "الإشعارات",
+            "notificationsPush": "الإشعارات الفورية",
+            "notificationsEmail": "إشعارات البريد الإلكتروني",
+            "appPreferences": "تفضيلات التطبيق",
+            "darkMode": "الوضع الداكن",
+            "dataSaver": "توفير البيانات",
+            "clearCache": "مسح ذاكرة التخزين المؤقت",
+            "clearCacheConfirm": "هل أنت متأكد من أنك تريد مسح ذاكرة التخزين المؤقت للتطبيق؟ سيؤدي هذا إلى تحرير مساحة التخزين.",
+            "cacheCleared": "تم مسح ذاكرة التخزين المؤقت",
+            "cacheClearedSuccess": "تم مسح ذاكرة التخزين المؤقت للتطبيق بنجاح.",
+            "helpSupport": "المساعدة والدعم",
+            "helpCenter": "مركز المساعدة",
+            "about": "حول التطبيق",
+            "logout": "تسجيل الخروج",
+            "logoutConfirm": "هل أنت متأكد من أنك تريد تسجيل الخروج؟",
+            "logoutError": "حدث خطأ أثناء تسجيل الخروج",
+            "linkError": "لا يمكن فتح الرابط"
+        },
+        "common": {
+            "cancel": "إلغاء",
+            "restart": "إعادة تشغيل",
+            "save": "حفظ",
+            "delete": "حذف",
+            "clear": "مسح",
+            "error": "خطأ"
+        },
+        "locations": {
+            "telAviv": "تل أبيب",
+            "jerusalem": "القدس",
+            "haifa": "حيفا",
+            "beerSheva": "بئر السبع"
+        }
+    }
+}

@@ -17,7 +17,7 @@ import Animated, {
   withDelay,
   Easing,
 } from "react-native-reanimated";
-import { motivationalQuotes, FontSizes } from "../globals/constants"; // Assuming this path is correct
+import { motivationalQuotes, FontSizes, UI_TEXT } from "../globals/constants"; // Assuming this path is correct
 import { TouchableOpacity } from "react-native";
 import colors from "../globals/colors";
 import { communityStats } from "../globals/fakeData"; // Assuming this path is correct
