@@ -17,23 +17,26 @@ import Animated, {
   withDelay,
   Easing,
 } from "react-native-reanimated";
-import { motivationalQuotes, FontSizes, UI_TEXT } from "../globals/constants"; // Assuming this path is correct
+import { motivationalQuotes, FontSizes, UI_TEXT } from "../globals/constants";
 import { TouchableOpacity } from "react-native";
 import colors from "../globals/colors";
-import { communityStats } from "../globals/fakeData"; // Assuming this path is correct
+import { communityStats } from "../globals/fakeData";
 import { BubbleData } from "../globals/types";
+
 // Get the dimensions of the device window for responsive sizing
 const { width, height } = Dimensions.get("window");
 
 // --- Constants ---
-const NUM_BUBBLES = 30;
-const MIN_SIZE = 50;
-const MAX_SIZE = 150;
-const MIN_NUMBER = 1;
-const MAX_NUMBER = 100;
+const NUM_BUBBLES = 30; // מספר הבועות שיוצגו על המסך
+const MIN_SIZE = 50; // גודל מינימלי לבועה
+const MAX_SIZE = 150; // גודל מקסימלי לבועה
+const MIN_NUMBER = 1; // ערך מינימלי לבועה
+const MAX_NUMBER = 100; // ערך מקסימלי לבועה
 
 /**
- * Scales a number value to a bubble size within the defined MIN_SIZE and MAX_SIZE range.
+ * ממיר מספר לערך גודל בועה בטווח המוגדר
+ * @param num - המספר להמרה
+ * @returns גודל הבועה בפיקסלים
  */
 const scaleNumberToSize = (num: number): number => {
   const clampedNum = Math.max(MIN_NUMBER, Math.min(MAX_NUMBER, num));
@@ -45,7 +48,12 @@ const scaleNumberToSize = (num: number): number => {
 };
 
 /**
- * Checks if a newly generated bubble would overlap with existing bubbles.
+ * בודק אם בועה חדשה תחפוף עם בועות קיימות
+ * @param x - מיקום X של הבועה החדשה
+ * @param y - מיקום Y של הבועה החדשה
+ * @param size - גודל הבועה החדשה
+ * @param bubbles - מערך הבועות הקיימות
+ * @returns true אם יש חפיפה, false אחרת
  */
 const isOverlapping = (
   x: number,
@@ -65,27 +73,28 @@ const isOverlapping = (
 };
 
 /**
- * Generates an array of BubbleData objects for both main and background bubbles.
+ * יוצר מערך של בועות עם נתונים אקראיים
+ * @returns מערך של BubbleData
  */
 const generateBubbles = (): BubbleData[] => {
   console.log("Generating bubbles...");
   const bubbles: BubbleData[] = [];
   let attempts = 0;
-  // Generate Main Bubbles
-  attempts = 0;
   let index = 0;
   const mainBubbles: BubbleData[] = [];
+  
+  // יוצר בועות ראשיות עד שמגיע למספר הרצוי או מנסה 1000 פעמים
   while (mainBubbles.length < NUM_BUBBLES && attempts < 1000) {
     const value = Math.floor(Math.random() * MAX_NUMBER) + 1;
     const size = scaleNumberToSize(value);
     const x = Math.random() * (width - size);
-    const y = Math.random() * (height - size - 150); // Leave space for message
+    const y = Math.random() * (height - size - 150); // משאיר מקום להודעה
     const directionX = Math.random() > 0.5 ? 1 : -1;
     const directionY = Math.random() > 0.5 ? 1 : -1;
     const delay = Math.random() * 1000;
-    // const name = numberToWords(value);
 
-    const name = communityStats[index++ % communityStats.length].name; // Use names from communityStats
+    // משתמש בשמות מסטטיסטיקות הקהילה
+    const name = communityStats[index++ % communityStats.length].name;
 
     if (!isOverlapping(x, y, size, mainBubbles)) {
       mainBubbles.push({
@@ -108,15 +117,19 @@ const generateBubbles = (): BubbleData[] => {
 };
 
 /**
- * BubbleComp component displaying animated bubbles and a message.
+ * קומפוננטה ראשית להצגת בועות סטטיסטיקות צפות
+ * כוללת בועות אינטראקטיביות והודעות מוטיבציוניות
  */
 const BubbleComp: React.FC = () => {
   const bubbles = useMemo(generateBubbles, []);
   const [selectedBubbleId, setSelectedBubbleId] = useState<string | null>(null);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
 
+  /**
+   * מטפל בלחיצה על בועה
+   * @param id - מזהה הבועה שנלחצה
+   */
   const handleBubblePress = useCallback((id: string) => {
-    // console.log(`Bubble pressed: ${id}`);
     setSelectedBubbleId((prevId) => {
       const newId = prevId === id ? null : id;
       return newId;
@@ -127,6 +140,9 @@ const BubbleComp: React.FC = () => {
     });
   }, []);
 
+  /**
+   * מטפל בלחיצה על הודעה מוטיבציונית
+   */
   const handleMessagePress = useCallback(() => {
     setCurrentSentenceIndex(
       (prevIndex) => (prevIndex + 1) % motivationalQuotes.length
@@ -136,7 +152,8 @@ const BubbleComp: React.FC = () => {
   return (
     <View style={localStyles.container}>
       <Text style={localStyles.title}>הקהילה במספרים</Text>
-      {/* Bubbles Container */}
+      
+      {/* מיכל הבועות */}
       <View style={localStyles.bubblesContainer}>
         {bubbles.map((bubble) => (
           <AnimatedBubble
@@ -148,7 +165,7 @@ const BubbleComp: React.FC = () => {
         ))}
       </View>
 
-      {/* Message Container - Fixed positioning */}
+      {/* מיכל ההודעה המוטיבציונית - מיקום קבוע */}
       <View style={localStyles.messageContainer}>
         <TouchableOpacity onPress={handleMessagePress}>
           <Text style={localStyles.messageText}>
@@ -167,6 +184,10 @@ interface AnimatedBubbleProps extends BubbleData {
   onPress: (id: string) => void;
 }
 
+/**
+ * קומפוננטת בועה בודדת עם אנימציות
+ * כוללת אפקט ציפה, בחירה ואינטראקציה
+ */
 const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
   size,
   x,
@@ -185,7 +206,7 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
   const animatedOpacity = useSharedValue(isBackground ? 0.2 : 1);
   const animatedScale = useSharedValue(1);
 
-  // Floating animation effect
+  // אפקט אנימציית ציפה
   useEffect(() => {
     offset.value = withRepeat(
       withDelay(
@@ -200,7 +221,7 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
     );
   }, [delay, offset]);
 
-  // Selection animation effects
+  // אפקטי אנימציה לבחירה
   useEffect(() => {
     if (!isBackground) {
       animatedOpacity.value = withTiming(isSelected ? 1 : 0.7, {
@@ -213,6 +234,9 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
     }
   }, [isSelected, isBackground, animatedOpacity, animatedScale]);
 
+  /**
+   * מטפל בלחיצה פנימית על הבועה
+   */
   const handleInternalPress = useCallback(
     (event: GestureResponderEvent) => {
       if (!isBackground) {
@@ -222,7 +246,7 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
     [id, isBackground, onPress]
   );
 
-  // Animated style for the bubble
+  // סגנון מונפש לבועה
   const animatedStyle = useAnimatedStyle(() => {
     const dx =
       Math.sin(offset.value * Math.PI * 2) *
@@ -256,9 +280,9 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
     };
   });
 
-  // Calculate font sizes dynamically based on bubble size
-  const fontSize = Math.max(10, size / 7); // Slightly larger minimum
-  const nameSize = Math.max(8, size / 10); // Better proportion
+  // חישוב גדלי פונט דינמיים לפי גודל הבועה
+  const fontSize = Math.max(10, size / 7);
+  const nameSize = Math.max(8, size / 10);
 
   return (
     <TouchableWithoutFeedback onPress={handleInternalPress}>
@@ -269,7 +293,7 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
             width: size,
             height: size,
             borderRadius: size / 2,
-            zIndex: isBackground ? 0 : isSelected ? 10 : 5, // Higher z-index for selected
+            zIndex: isBackground ? 0 : isSelected ? 10 : 5,
           },
           animatedStyle,
         ]}
@@ -280,9 +304,9 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
               style={[
                 localStyles.bubbleText,
                 {
-                  fontSize: size * 0.2, // Adjusted for better visibility
+                  fontSize: size * 0.2,
                   color: isSelected ? "#333" : "#000",
-                  marginBottom: 2, // Add space between number and name
+                  marginBottom: 2,
                 },
               ]}
               numberOfLines={1}
@@ -297,10 +321,10 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
                 {
                   fontSize: nameSize,
                   color: isSelected ? "#555" : "#000",
-                  lineHeight: nameSize * 1.2, // Better line height
+                  lineHeight: nameSize * 1.2,
                 },
               ]}
-              numberOfLines={3} // Allow more lines for Hebrew text
+              numberOfLines={3}
               adjustsFontSizeToFit
               minimumFontScale={0.3}
             >
@@ -317,8 +341,7 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
 const localStyles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: "#e6f7ff",
-   backgroundColor: 'rgba(100, 255, 255, 0.9)'
+    backgroundColor: 'rgba(100, 255, 255, 0.9)' // רקע כחול בהיר
   },
   bubblesContainer: {
     flex: 1,
@@ -333,15 +356,15 @@ const localStyles = StyleSheet.create({
     shadowRadius: 3,
     justifyContent: "center",
     alignItems: "center",
-    padding: 4, // Increased padding
+    padding: 4,
   },
   textContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 4, // Increased padding
+    paddingHorizontal: 4,
     paddingVertical: 2,
-    width: "100%", // Ensure full width usage
+    width: "100%",
   },
   bubbleText: {
     fontWeight: "900",
@@ -350,16 +373,16 @@ const localStyles = StyleSheet.create({
   },
   bubbleName: {
     textAlign: "center",
-    opacity: 0.8, // Slightly more visible
-    fontWeight: "bold", // Add some weight to make it more visible
+    opacity: 0.8,
+    fontWeight: "bold",
   },
   messageContainer: {
     marginVertical: 80,
     marginHorizontal: 20,
     alignSelf: "center",
-    zIndex: 1000, // Very high z-index to ensure it's always on top
+    zIndex: 1000,
     alignItems: "center",
-    backgroundColor: "transparent", // Ensure no background interference
+    backgroundColor: "transparent",
   },
   title: {
     textAlign: "center",
@@ -380,7 +403,7 @@ const localStyles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     opacity: 0.78,
-    elevation: 1, // For Android shadow
+    elevation: 1,
   },
 });
 

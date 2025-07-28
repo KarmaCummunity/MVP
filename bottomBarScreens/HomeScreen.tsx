@@ -7,7 +7,9 @@ import {
   TouchableOpacity, 
   ScrollView,
   Image,
-  Alert
+  Alert,
+  SafeAreaView,
+  StatusBar
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -41,28 +43,24 @@ const MID_POSITION = PANEL_HEIGHT / 2;
 
 export default function HomeScreen() {
   const isFocused = useIsFocused();
-  const [isScreenRevel, setisScreenRevel] = useState(false);
-  const shouldShowReels = isFocused && isScreenRevel;
+  const [showPosts, setShowPosts] = useState(false);
+  const [isPersonalMode, setIsPersonalMode] = useState(true); // מצב אישי כברירת מחדל
 
-  const translateY = useSharedValue(CLOSED_POSITION);
-  const isGestureActive = useSharedValue(false);
-  const canDrag = useSharedValue(true);
-  const startPosition = useSharedValue(CLOSED_POSITION);
+  // ערכים מונפשים לגלילה
+  const scrollY = useSharedValue(0);
+  const postsTranslateY = useSharedValue(0);
 
-  // Reset state immediately when screen loses focus
+  // איפוס מצב כאשר המסך מאבד פוקוס
   React.useEffect(() => {
     if (!isFocused) {
-      setisScreenRevel(false);
+      setShowPosts(false);
     }
   }, [isFocused]);
 
   useFocusEffect(
     React.useCallback(() => {
-      translateY.value = CLOSED_POSITION;
-      canDrag.value = true;
-      setisScreenRevel(false);
-
-      translateY.value = withSpring(CLOSED_POSITION, {
+      setShowPosts(false);
+      postsTranslateY.value = withSpring(0, {
         damping: 20,
         stiffness: 150,
         mass: 0.8,
@@ -70,78 +68,34 @@ export default function HomeScreen() {
     }, [])
   );
 
-  const panGesture = Gesture.Pan()
-    .onBegin(() => {
-      if (!canDrag.value) return;
-      isGestureActive.value = true;
-      startPosition.value = translateY.value;
-    })
-    .onUpdate((event) => {
-      if (!canDrag.value) return;
-      const newPosition = startPosition.value + event.translationY;
-      translateY.value = Math.max(
-        OPEN_POSITION - 100,
-        Math.min(CLOSED_POSITION + 50, newPosition)
-      );
-    })
-    .onEnd((event) => {
-      if (!canDrag.value) return;
-      
-      isGestureActive.value = false;
-      
-      const currentPosition = translateY.value;
-      const velocity = event.velocityY;
-      let targetPosition;
-      
-      if (Math.abs(velocity) > 800) {
-        targetPosition = velocity < 0 ? OPEN_POSITION - 30 : CLOSED_POSITION;
-      } else {
-        if (currentPosition < PANEL_HEIGHT * 0.25) {
-          targetPosition = OPEN_POSITION - 30;
-          runOnJS(setisScreenRevel)(true);
-          canDrag.value = false;
-        } else {
-          targetPosition = CLOSED_POSITION;
-        }
-      }
-
-      translateY.value = withSpring(targetPosition, {
+  /**
+   * מטפל בגלילה למטה
+   * כאשר הגלילה עוברת סף מסוים, נפתח מסך הפוסטים
+   */
+  const handleScroll = (event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    scrollY.value = offsetY;
+    
+    // סף נמוך מאוד - מגיב מהר
+    const threshold = 20;
+    
+    // אם הגלילה עוברת את הסף, נפתח מסך הפוסטים
+    if (offsetY > threshold && !showPosts) {
+      setShowPosts(true);
+      postsTranslateY.value = withSpring(0, {
         damping: 25,
         stiffness: 200,
         mass: 0.6,
       });
-    })
-    .onFinalize(() => {
-      isGestureActive.value = false;
-    });
+    }
+  };
 
-  const animatedStyle = useAnimatedStyle(() => {
-    const scale = isGestureActive.value
-      ? interpolate(
-          translateY.value,
-          [OPEN_POSITION, CLOSED_POSITION],
-          [1.02, 1],
-          Extrapolation.CLAMP
-        )
-      : 1;
-
+  /**
+   * סגנון מונפש למסך הפוסטים
+   */
+  const postsAnimatedStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ translateY: translateY.value }, { scale }],
-    };
-  });
-
-  const handleAnimatedStyle = useAnimatedStyle(() => {
-    const backgroundColor = isGestureActive.value ? "#999" : "#ccc";
-    const width = interpolate(
-      translateY.value,
-      [CLOSED_POSITION, OPEN_POSITION],
-      [60, 80],
-      Extrapolation.CLAMP
-    );
-
-    return {
-      backgroundColor,
-      width,
+      transform: [{ translateY: postsTranslateY.value }],
     };
   });
 
@@ -209,102 +163,139 @@ export default function HomeScreen() {
   ];
 
   return (
-    <View style={styles.container}>
-      {/* Header Section */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.userInfo}>
-            <Image 
-              source={{ uri: currentUser.avatar }} 
-              style={styles.userAvatar}
-            />
-            <View style={styles.userDetails}>
-              <Text style={styles.welcomeText}>שלום, {currentUser.name}!</Text>
-              <Text style={styles.karmaText}>קארמה: {currentUser.karmaPoints} נקודות</Text>
-            </View>
-          </View>
-          <TouchableOpacity 
-            style={styles.notificationButton}
-            onPress={() => Alert.alert('התראות', 'רשימת התראות')}
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundPrimary} />
+      
+      {showPosts ? (
+        // מסך הפוסטים
+        <View style={styles.postsContainer}>
+          <PostsReelsScreen />
+        </View>
+      ) : (
+        // מסך הבית עם גלילה משופרת
+        <View style={styles.homeContainer}>
+          <ScrollView 
+            style={styles.scrollContainer}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
           >
-            <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
-            <View style={styles.notificationBadge}>
-              <Text style={styles.notificationText}>3</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Quick Actions */}
-      <View style={styles.quickActionsContainer}>
-        <Text style={styles.sectionTitle}>פעולות מהירות</Text>
-        <View style={styles.quickActionsGrid}>
-          {quickActions.map((action) => (
-            <TouchableOpacity
-              key={action.id}
-              style={styles.quickActionButton}
-              onPress={action.onPress}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: action.color + '20' }]}>
-                <Ionicons name={action.icon as any} size={24} color={action.color} />
+            {/* תוכן דינמי בהתאם למצב */}
+            {isPersonalMode ? (
+              // מצב אישי - המסך המלא
+              <View style={styles.personalModeContainer}>
+                {/* Header Section */}
+                <View style={styles.header}>
+                <View style={styles.headerContent}>
+                  <View style={styles.userInfo}>
+                    <Image 
+                      source={{ uri: currentUser.avatar }} 
+                      style={styles.userAvatar}
+                    />
+                    <View style={styles.userDetails}>
+                      <Text style={styles.welcomeText}>שלום, {currentUser.name}!</Text>
+                      <Text style={styles.karmaText}>קארמה: {currentUser.karmaPoints} נקודות</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.notificationButton}
+                    onPress={() => Alert.alert('התראות', 'רשימת התראות')}
+                  >
+                    <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
+                    <View style={styles.notificationBadge}>
+                      <Text style={styles.notificationText}>3</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <Text style={styles.quickActionText}>{action.title}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
 
-      {/* Recent Activities */}
-      <View style={styles.activitiesContainer}>
-        <Text style={styles.sectionTitle}>פעילות אחרונה</Text>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.activitiesScroll}
-        >
-          {recentActivities.map((activity) => (
-            <TouchableOpacity
-              key={activity.id}
-              style={styles.activityCard}
-              onPress={() => Alert.alert(activity.title, activity.description)}
-            >
-              <View style={[styles.activityIcon, { backgroundColor: activity.color + '20' }]}>
-                <Ionicons name={activity.icon as any} size={20} color={activity.color} />
+              {/* Quick Actions */}
+              <View style={styles.quickActionsContainer}>
+                <Text style={styles.sectionTitle}>פעולות מהירות</Text>
+                <View style={styles.quickActionsGrid}>
+                  {quickActions.map((action) => (
+                    <TouchableOpacity
+                      key={action.id}
+                      style={styles.quickActionButton}
+                      onPress={action.onPress}
+                    >
+                      <View style={[styles.quickActionIcon, { backgroundColor: action.color + '20' }]}>
+                        <Ionicons name={action.icon as any} size={24} color={action.color} />
+                      </View>
+                      <Text style={styles.quickActionText}>{action.title}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
-              <Text style={styles.activityTitle} numberOfLines={2}>{activity.title}</Text>
-              <Text style={styles.activityTime}>{activity.time}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
 
-      {/* Stats Preview */}
-      <View style={styles.statsPreview}>
-        <Text style={styles.sectionTitle}>סטטיסטיקות קהילה</Text>
-        <View style={styles.statsGrid}>
-          {communityStats.slice(0, 4).map((stat, index) => (
-            <View key={index} style={styles.statCard}>
-              <Text style={styles.statIcon}>{stat.icon}</Text>
-              <Text style={styles.statValue}>{stat.value.toLocaleString()}</Text>
-              <Text style={styles.statName}>{stat.name}</Text>
+              {/* Recent Activities */}
+              <View style={styles.activitiesContainer}>
+                <Text style={styles.sectionTitle}>פעילות אחרונה</Text>
+                <View style={styles.activitiesScroll}>
+                  {recentActivities.map((activity) => (
+                    <TouchableOpacity
+                      key={activity.id}
+                      style={styles.activityCard}
+                      onPress={() => Alert.alert(activity.title, activity.description)}
+                    >
+                      <View style={[styles.activityIcon, { backgroundColor: activity.color + '20' }]}>
+                        <Ionicons name={activity.icon as any} size={20} color={activity.color} />
+                      </View>
+                      <Text style={styles.activityTitle} numberOfLines={2}>{activity.title}</Text>
+                      <Text style={styles.activityTime}>{activity.time}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Stats Preview */}
+              <View style={styles.statsPreview}>
+                <View style={styles.statsGrid}>
+                  {communityStats.slice(0, 4).map((stat, index) => (
+                    <View key={index} style={styles.statCard}>
+                      <Text style={styles.statIcon}>{stat.icon}</Text>
+                      <Text style={styles.statValue}>{stat.value.toLocaleString()}</Text>
+                      <Text style={styles.statName}>{stat.name}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
             </View>
-          ))}
+          ) : (
+            // מצב קהילתי - רק בועות סטטיסטיקות
+            <View style={styles.communityModeContainer}>
+              <BubbleComp />
+            </View>
+          )}
+          </ScrollView>
+          
+          {/* Toggle Button */}
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity 
+              style={[styles.toggleButton, isPersonalMode && styles.toggleButtonActive]}
+              onPress={() => setIsPersonalMode(!isPersonalMode)}
+            >
+              <Ionicons 
+                name="person" 
+                size={18} 
+                color={isPersonalMode ? colors.backgroundPrimary : colors.textSecondary} 
+              />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.toggleButton, !isPersonalMode && styles.toggleButtonActive]}
+              onPress={() => setIsPersonalMode(!isPersonalMode)}
+            >
+              <Ionicons 
+                name="people" 
+                size={18} 
+                color={!isPersonalMode ? colors.backgroundPrimary : colors.textSecondary} 
+              />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-
-      {/* Bubble Component */}
-      <BubbleComp />
-      
-      {/* Draggable Panel */}
-      <GestureDetector gesture={panGesture}>
-        <Animated.View style={[styles.panel, animatedStyle]}>
-          {shouldShowReels && <PostsReelsScreen />}
-        </Animated.View>
-      </GestureDetector>
-      
-      {/* Community Stats Panel */}
-      <CommunityStatsPanel />
-    </View>
+      )}
+    </SafeAreaView>
   );
 }
 
@@ -498,5 +489,98 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     alignSelf: "center",
     marginBottom: 20,
+  },
+  // סטיילים חדשים למסך הפוסטים וגלילה
+  postsContainer: {
+    flex: 1,
+    backgroundColor: colors.backgroundPrimary,
+  },
+  postsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.backgroundTertiary,
+  },
+  postsTitle: {
+    fontSize: FontSizes.heading2,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  pullIndicator: {
+    alignItems: 'center',
+    paddingVertical: 30,
+    marginBottom: 50,
+  },
+  pullText: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+    marginTop: 8,
+  },
+  // סטיילים לכפתור הטוגל
+  toggleContainer: {
+    position: 'absolute',
+    bottom: 50,
+    right: 30,
+    zIndex: 1000,
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 20,
+    padding: 3,
+    gap: 2,
+  },
+  toggleButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+  },
+  toggleButtonActive: {
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.4,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  toggleText: {
+    fontSize: FontSizes.body,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  toggleTextActive: {
+    color: colors.backgroundPrimary,
+  },
+  // סטיילים למצב קהילתי
+  communityModeContainer: {
+    flex: 1,
+    paddingTop: 20,
+    minHeight: 800, // גובה מינימלי כדי לאפשר גלילה
+  },
+  communityModeTitle: {
+    fontSize: FontSizes.heading2,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  // סטייל למיכל הבית
+  homeContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  // סטייל למצב אישי
+  personalModeContainer: {
+    flex: 1,
+  },
+  // סטייל לתוכן הגלילה
+  scrollContent: {
+    paddingBottom: 100, // מרווח בתחתית כדי לאפשר גלילה
   },
 });

@@ -23,7 +23,7 @@ function TopBarNavigator({ navigation }: TopBarNavigatorProps) {
 
   // Map route names to titles
   const routeTitles: Record<string, string> = {
-    HomeScreen: 'KC',
+    HomeScreen: 'חדשות',
     SearchScreen: 'חיפוש',
     DonationsScreen: 'תרומות',
     ProfileScreen: 'פרופיל',
@@ -31,8 +31,8 @@ function TopBarNavigator({ navigation }: TopBarNavigatorProps) {
     TrumpScreen: 'טרמפים',
     KnowledgeScreen: 'תרומת ידע',
     TimeScreen: 'תרומת זמן',
-    // Add HomeMain as KC (default)
-    HomeMain: 'KC',
+    // Add HomeMain as חדשות (default)
+    HomeMain: 'חדשות',
   };
 
   // Get the current active route from the navigation state

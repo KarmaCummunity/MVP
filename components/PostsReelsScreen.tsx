@@ -10,9 +10,10 @@ import {
 
 const { width } = Dimensions.get('window');
 
-// Fake data generator
-const NUM_ITEMS = 100;
+// --- Constants ---
+const NUM_ITEMS = 100; // מספר הפריטים שיוצגו
 
+// --- Types ---
 type Item = {
   id: string;
   type: 'post' | 'reel';
@@ -20,6 +21,10 @@ type Item = {
   thumbnail: string;
 };
 
+/**
+ * יוצר נתונים מדומים לפוסטים ורילס
+ * @returns מערך של פריטים עם נתונים אקראיים
+ */
 const generateFakeData = (): Item[] => {
   const data: Item[] = [];
   for (let i = 1; i <= NUM_ITEMS; i++) {
@@ -27,8 +32,8 @@ const generateFakeData = (): Item[] => {
     data.push({
       id: `${type}-${i}`,
       type,
-      title: `${type === 'post' ? 'Post' : 'Reel'} #${i}`,
-      // Use placeholder images for thumbnails
+      title: `${type === 'post' ? 'פוסט' : 'ריל'} #${i}`,
+      // משתמש בתמונות placeholder
       thumbnail: `https://picsum.photos/seed/${type}-${i}/300/200`,
     });
   }
@@ -37,18 +42,26 @@ const generateFakeData = (): Item[] => {
 
 const data = generateFakeData();
 
+/**
+ * קומפוננטת פריט בודד - פוסט או ריל
+ * @param item - הפריט להצגה
+ */
 const PostReelItem = ({ item }: { item: Item }) => {
   return (
     <View style={[styles.itemContainer, item.type === 'reel' && styles.reelItem]}>
       <Image source={{ uri: item.thumbnail }} style={styles.thumbnail} />
       <View style={styles.textContainer}>
-        <Text style={styles.typeLabel}>{item.type.toUpperCase()}</Text>
+        <Text style={styles.typeLabel}>{item.type === 'post' ? 'פוסט' : 'ריל'}</Text>
         <Text style={styles.title}>{item.title}</Text>
       </View>
     </View>
   );
 };
 
+/**
+ * מסך פוסטים ורילס קהילתיים
+ * מציג רשימה של פוסטים ורילס עם תמונות ותיאורים
+ */
 export default function PostsReelsScreen() {
   return (
     <View style={styles.container}>
@@ -85,7 +98,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   reelItem: {
-    backgroundColor: '#e0f7fa',
+    backgroundColor: '#e0f7fa', // צבע שונה לרילס
   },
   thumbnail: {
     width: width - 32,

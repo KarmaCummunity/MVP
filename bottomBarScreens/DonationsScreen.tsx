@@ -23,12 +23,52 @@ interface DonationsScreenProps {
 // New modern categories with icons and descriptions (excluding quick actions)
 const donationCategories = [
   {
+    id: 'money',
+    title: 'כסף',
+    subtitle: 'תרומה כספית',
+    icon: 'card-outline',
+    color: colors.success,
+    bgColor: colors.successLight,
+    screen: 'MoneyScreen',
+    description: 'תרומה כספית לארגונים ופרויקטים',
+  },
+  {
+    id: 'trump',
+    title: 'טרמפים',
+    subtitle: 'הסעות וטרמפים',
+    icon: 'car-outline',
+    color: colors.info,
+    bgColor: colors.infoLight,
+    screen: 'TrumpScreen',
+    description: 'הסעת אנשים וטרמפים לקהילה',
+  },
+  {
+    id: 'knowledge',
+    title: 'ידע',
+    subtitle: 'חונכות ולימוד',
+    icon: 'school-outline',
+    color: colors.legacyMediumPurple,
+    bgColor: colors.backgroundTertiary,
+    screen: 'KnowledgeScreen',
+    description: 'חונכות, הדרכה ושיתוף ידע',
+  },
+  {
+    id: 'time',
+    title: 'זמן',
+    subtitle: 'התנדבות',
+    icon: 'time-outline',
+    color: colors.orange,
+    bgColor: colors.backgroundTertiary,
+    screen: 'TimeScreen',
+    description: 'התנדבות ועזרה בזמן',
+  },
+  {
     id: 'food',
     title: 'אוכל',
     subtitle: 'תרומת מזון',
     icon: 'restaurant-outline',
-    color: colors.textPrimary, // היה חום
-    bgColor: colors.backgroundSecondary, // היה חום בהיר
+    color: colors.textPrimary,
+    bgColor: colors.backgroundSecondary,
     screen: '',
     description: 'תרומת מזון לנזקקים',
   },
@@ -180,55 +220,40 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
 
 
               <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Quick Actions */}
-          <View style={styles.quickActionsSection}>
-            <Text style={styles.sectionTitle}>כל הדרכים לפעול בקהילה</Text>
-          <View style={styles.quickActionsContainer}>
-            <TouchableOpacity
-              style={[styles.quickActionButton, { backgroundColor: colors.success }]}
-              onPress={() => handleQuickDonation('כסף')}
-            >
-              <Ionicons name="card" size={24} color="white" />
-              <Text style={styles.quickActionText}>כסף</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.quickActionButton, { backgroundColor: colors.info }]}
-              onPress={() => handleQuickDonation('טרמפ')}
-            >
-              <Ionicons name="car" size={24} color="white" />
-              <Text style={styles.quickActionText}>טרמפ</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.quickActionButton, { backgroundColor: colors.legacyMediumPurple }]}
-              onPress={() => handleQuickDonation('ידע')}
-            >
-              <Ionicons name="school" size={24} color="white" />
-              <Text style={styles.quickActionText}>ידע</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.quickActionButton, { backgroundColor: colors.orange }]}
-              onPress={() => handleQuickDonation('זמן')}
-            >
-              <Ionicons name="time" size={24} color="white" />
-              <Text style={styles.quickActionText}>זמן</Text>
-            </TouchableOpacity>
+          {/* Active Screens Section */}
+          <View style={styles.categoriesSection}>
+            <Text style={styles.sectionTitle}>פעולות אפשריות בקהילה</Text>
+            <View style={styles.activeCategoriesGrid}>
+            {donationCategories.filter(category => category.screen).map((category) => (
+              <TouchableOpacity
+                key={category.id}
+                style={[
+                  styles.activeCategoryCard,
+                  { backgroundColor: category.bgColor },
+                ]}
+                onPress={() => handleCategoryPress(category)}
+              >
+                <View style={[styles.activeCategoryIcon, { backgroundColor: category.color }]}>
+                  <Ionicons name={category.icon as any} size={28} color="white" />
+                </View>
+                <Text style={styles.activeCategoryTitle}>{category.title}</Text>
+                <Text style={styles.activeCategorySubtitle}>{category.subtitle}</Text>
+                <Text style={styles.activeCategoryDescription}>{category.description}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
-        {/* Categories Grid */}
+        {/* Inactive Categories Section */}
         <View style={styles.categoriesSection}>
-          <Text style={styles.sectionTitle}>כל הקטגוריות</Text>
+          <Text style={styles.sectionTitle}>עובדים על על אופציות חדשות </Text>
           <View style={styles.categoriesGrid}>
-            {donationCategories.map((category) => (
+            {donationCategories.filter(category => !category.screen).map((category) => (
               <TouchableOpacity
                 key={category.id}
                 style={[
                   styles.categoryCard,
                   { backgroundColor: category.bgColor },
-                  selectedCategory === category.id && styles.categoryCardSelected
                 ]}
                 onPress={() => handleCategoryPress(category)}
               >
@@ -272,7 +297,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: colors.backgroundPrimary,
   },
   header: {
     backgroundColor: colors.backgroundPrimary,
@@ -362,12 +387,28 @@ const styles = StyleSheet.create({
   categoriesSection: {
     marginBottom: 30,
     alignItems: 'center',
+    backgroundColor: colors.backgroundSecondaryPink,
+    borderColor: colors.moneyFormBorder,
+    borderRadius: 20,
+    padding: 20,
+    marginHorizontal: 10,
+    shadowColor: colors.shadowLight,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   categoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 15,
+    gap: 14,
+  },
+  activeCategoriesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 20,
   },
   categoryCard: {
     width: '30%',
@@ -380,6 +421,24 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
     minHeight: 100,
+    backgroundColor: colors.backgroundPrimary,
+    borderWidth: 0.5,
+    borderColor: colors.backgroundTertiary,
+  },
+  activeCategoryCard: {
+    width: '45%',
+    padding: 16,
+    borderRadius: 15,
+    alignItems: 'center',
+    shadowColor: colors.shadowLight,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+    minHeight: 140,
+    backgroundColor: colors.backgroundPrimary,
+    borderWidth: 1,
+    borderColor: colors.backgroundTertiary,
   },
   categoryCardSelected: {
     borderWidth: 2,
@@ -392,6 +451,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 6,
+  },
+  activeCategoryIcon: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   categoryTitle: {
     fontSize: FontSizes.small,
@@ -412,8 +479,36 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 12,
   },
+  activeCategoryTitle: {
+    fontSize: FontSizes.medium,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  activeCategorySubtitle: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  activeCategoryDescription: {
+    fontSize: FontSizes.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
   statsSection: {
     marginBottom: 30,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 20,
+    padding: 20,
+    marginHorizontal: 10,
+    shadowColor: colors.shadowLight,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -431,6 +526,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.backgroundTertiary,
   },
   statNumber: {
     fontSize: FontSizes.heading1,
