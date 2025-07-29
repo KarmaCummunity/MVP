@@ -8,6 +8,7 @@ import SearchScreen from "../bottomBarScreens/SearchScreen";
 import ProfileScreen from "../bottomBarScreens/ProfileScreen";
 import HomeScreen from "../bottomBarScreens/HomeScreen"; // This is your HomeScreen with the drag handle
 import DonationsStack from "./DonationsStack"; // Assuming this is another stack navigator
+import UsersScreen from "../bottomBarScreens/UsersScreen";
 import styles from "../globals/styles"; // Adjust path if needed
 import colors from "../globals/colors"; // Adjust path if needed
 
@@ -18,6 +19,7 @@ export type BottomTabNavigatorParamList = {
   HomeScreen: undefined;
   SearchScreen: undefined;
   ProfileScreen: undefined;
+  UsersScreen: undefined;
 };
 
 // Create an instance of the Bottom Tab Navigator with its parameter list type
@@ -52,6 +54,8 @@ export default function BottomNavigator(): React.ReactElement {
         return focused ? "heart" : "heart-outline";
       case "ProfileScreen":
         return focused ? "person" : "person-outline";
+      case "UsersScreen":
+        return focused ? "people" : "people-outline";
 
       // case "LocationSearchScreen": // Uncomment if you add this screen to the navigator
       //   return focused ? "globe" : "globe-outline";
@@ -70,29 +74,26 @@ export default function BottomNavigator(): React.ReactElement {
             const iconName = getTabBarIconName(route.name, focused);
             return <Ionicons name={iconName} size={size} color={color} />;
           },
-          tabBarActiveTintColor: colors.black,
-          tabBarInactiveTintColor: "gray",
+          tabBarActiveTintColor: colors.bottomNavActive,
+          tabBarInactiveTintColor: colors.bottomNavInactive,
           tabBarShowLabel: false,
           tabBarStyle: {
             position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            elevation: 5,
-            shadowOpacity: 0.2,
-            shadowOffset: { width: 0, height: -2 },
-            shadowRadius: 4,
-            height: 45,
-            backgroundColor: colors.backgroundPrimary || 'white',
-            paddingBottom: Platform.OS === 'ios' ? 15 : 5,
+            left: 20,
+            right: 20,
+            borderRadius: 25,
+            elevation: 8,
+            height: 40,
+            backgroundColor: colors.bottomNavBackground,
+            paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+            paddingTop: 6,
           },
         })}
       >
-        <Tab.Screen name="DonationsScreen" component={DonationsStack} />
         <Tab.Screen name="HomeScreen" component={HomeScreen} />
         <Tab.Screen name="SearchScreen" component={SearchScreen} />
+        <Tab.Screen name="DonationsScreen" component={DonationsStack} />
+        <Tab.Screen name="UsersScreen" component={UsersScreen} />
         <Tab.Screen name="ProfileScreen" component={ProfileScreen} />
       </Tab.Navigator>
     </View>

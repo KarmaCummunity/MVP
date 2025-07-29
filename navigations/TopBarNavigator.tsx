@@ -5,6 +5,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import colors from '../globals/colors';
 
 
 
@@ -18,28 +19,28 @@ function TopBarNavigator({ navigation, hideTopBar = false }: TopBarNavigatorProp
   const route = useRoute();
   const translateY = useSharedValue(0);
   
-  console.log('🔝 TopBarNavigator - hideTopBar prop:', hideTopBar);
+  ////console.log('🔝 TopBarNavigator - hideTopBar prop:', hideTopBar);
 
   // אנימציה להסתרת/הצגת הטופ בר
   React.useEffect(() => {
-    console.log('🔝 TopBarNavigator - hideTopBar changed:', hideTopBar);
+    //console.log('🔝 TopBarNavigator - hideTopBar changed:', hideTopBar);
     translateY.value = withTiming(hideTopBar ? -60 : 0, {
       duration: 200,
     });
   }, [hideTopBar]);
 
   const animatedStyle = useAnimatedStyle(() => {
-    console.log('🔝 TopBarNavigator - translateY value:', translateY.value);
+    //console.log('🔝 TopBarNavigator - translateY value:', translateY.value);
     return {
       transform: [{ translateY: translateY.value }],
     };
   });
 
   // Debug logs
-  console.log('🔍 TopBarNavigator - Current route name:', route.name);
-  console.log('🔍 TopBarNavigator - Route params:', route.params);
-  console.log('🔍 TopBarNavigator - Route key:', route.key);
-  console.log('🔍 TopBarNavigator - Full route object:', JSON.stringify(route, null, 2));
+  //console.log('🔍 TopBarNavigator - Current route name:', route.name);
+  //console.log('🔍 TopBarNavigator - Route params:', route.params);
+  //console.log('🔍 TopBarNavigator - Route key:', route.key);
+  //console.log('🔍 TopBarNavigator - Full route object:', JSON.stringify(route, null, 2));
 
   // Map route names to titles
   const routeTitles: Record<string, string> = {
@@ -66,25 +67,25 @@ function TopBarNavigator({ navigation, hideTopBar = false }: TopBarNavigatorProp
 
   // Try to get the active route name from navigation state
   const activeRouteName = getActiveRouteName(navigation.getState());
-  console.log('🔍 TopBarNavigator - Active route name from navigation state:', activeRouteName);
+  //console.log('🔍 TopBarNavigator - Active route name from navigation state:', activeRouteName);
 
   const title = routeTitles[activeRouteName] ?? routeTitles[route.name] ?? 'KC';
   
   // Debug log for title selection
-  console.log('🔍 TopBarNavigator - Selected title:', title);
-  console.log('🔍 TopBarNavigator - Available route names:', Object.keys(routeTitles));
-  console.log('🔍 TopBarNavigator - Navigation state:', JSON.stringify(navigation.getState(), null, 2));
+  //console.log('🔍 TopBarNavigator - Selected title:', title);
+  //console.log('🔍 TopBarNavigator - Available route names:', Object.keys(routeTitles));
+  //console.log('🔍 TopBarNavigator - Navigation state:', JSON.stringify(navigation.getState(), null, 2));
 
 
   return (
     <Animated.View style={[styles.container_top_bar, animatedStyle]}>
       {/* Left Icons Group */}
       <View style={{ flexDirection: 'row', gap: 5 }}>
-        <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={{ marginRight: 5 }}>
-          <Icon name="chatbubbles-outline" size={25} color="black" />
+        <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={{ padding: 4 }}>
+          <Icon name="chatbubbles-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('InactiveScreen')}>
-          <Icon name="notifications-circle-outline" size={25} color="black" />
+        <TouchableOpacity onPress={() => navigation.navigate('InactiveScreen')} style={{ padding: 4 }}>
+          <Icon name="notifications-circle-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
       </View>
 
@@ -94,11 +95,11 @@ function TopBarNavigator({ navigation, hideTopBar = false }: TopBarNavigatorProp
       </View>
       {/* Right Icons Group */}
       <View style={{ flexDirection: 'row', gap: 5 }}>
-        <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={{ marginRight: 5 }}>
-          <Icon name="information-circle-outline" size={25} color="black" />
+        <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={{ padding: 4 }}>
+          <Icon name="information-circle-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')}>
-          <Icon name="settings-outline" size={25} color="black" />
+        <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={{ padding: 4 }}>
+          <Icon name="settings-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
       </View>
     </Animated.View>

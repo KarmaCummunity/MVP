@@ -129,7 +129,7 @@ const SearchScreen = () => {
             id: user.id,
             type: 'user' as const,
             title: user.name,
-            description: user.status || 'חבר בקהילה',
+            description: user.bio || 'חבר בקהילה',
             image: user.avatar,
             category: 'משתמש',
           }))
