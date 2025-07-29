@@ -17,10 +17,13 @@ export default function Home({
   
   // קבלת hideTopBar מה-route params
   const hideTopBar = (route.params as any)?.hideTopBar || false;
+  console.log('🏠 Home - hideTopBar from params:', hideTopBar);
   
   return (
       <SafeAreaView style={styles.safeArea}>
-        <TopBarNavigator navigation={navigation} hideTopBar={hideTopBar} />
+        <View style={{ overflow: 'hidden' }}>
+          <TopBarNavigator navigation={navigation} hideTopBar={hideTopBar} />
+        </View>
         <BottomNavigator />
       </SafeAreaView>
   );

@@ -61,6 +61,7 @@ export default function HomeScreen() {
 
   // עדכון hideTopBar ב-route params
   React.useEffect(() => {
+    console.log('🏠 HomeScreen - Updating route params with hideTopBar:', hideTopBar);
     (navigation as any).setParams({ hideTopBar });
   }, [hideTopBar, navigation]);
 
@@ -176,7 +177,10 @@ export default function HomeScreen() {
       {showPosts ? (
         // מסך הפוסטים
         <View style={styles.postsContainer}>
-          <PostsReelsScreen onScroll={(hide) => setHideTopBar(hide)} />
+          <PostsReelsScreen onScroll={(hide) => {
+            console.log('🏠 HomeScreen - Setting hideTopBar:', hide);
+            setHideTopBar(hide);
+          }} />
         </View>
       ) : (
         // מסך הבית עם גלילה משופרת

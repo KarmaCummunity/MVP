@@ -156,10 +156,14 @@ export default function PostsReelsScreen({ onScroll }: PostsReelsScreenProps) {
   const handleScroll = (event: any) => {
     const offsetY = event.nativeEvent.contentOffset.y;
     
+    console.log('📱 PostsReelsScreen - Scroll offset:', offsetY);
+    
     // אם הגלילה עוברת 50 פיקסלים, מסתירים את הטופ בר
     if (offsetY > 50) {
+      console.log('📱 PostsReelsScreen - Hiding top bar');
       onScroll?.(true);
     } else {
+      console.log('📱 PostsReelsScreen - Showing top bar');
       onScroll?.(false);
     }
   };

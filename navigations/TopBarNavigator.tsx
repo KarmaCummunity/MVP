@@ -1,10 +1,10 @@
 import React from 'react';
 import styles from '../globals/styles'; // your styles file
 import Icon from 'react-native-vector-icons/Ionicons';
-import { View, Text, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { useRoute, RouteProp } from '@react-navigation/native';
-import { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
 
 
@@ -20,13 +20,17 @@ function TopBarNavigator({ navigation, hideTopBar = false }: TopBarNavigatorProp
 
   // אנימציה להסתרת/הצגת הטופ בר
   React.useEffect(() => {
+    console.log('🔝 TopBarNavigator - hideTopBar changed:', hideTopBar);
     translateY.value = withTiming(hideTopBar ? -100 : 0, {
       duration: 300,
     });
   }, [hideTopBar]);
 
   const animatedStyle = useAnimatedStyle(() => {
+    console.log('🔝 TopBarNavigator - translateY value:', translateY.value);
     return {
+      height: hideTopBar ? 0 : 60, // גובה הטופ בר
+      opacity: hideTopBar ? 0 : 1,
       transform: [{ translateY: translateY.value }],
     };
   });
