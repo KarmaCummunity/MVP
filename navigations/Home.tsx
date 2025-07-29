@@ -15,8 +15,8 @@ export default function Home({
   const [hideTopBar, setHideTopBar] = useState(false);
   const route = useRoute();
   
-  console.log('🏠 Home - Component rendered');
-  console.log('🏠 Home - hideTopBar state:', hideTopBar);
+  // console.log('🏠 Home - Component rendered');
+  // console.log('🏠 Home - hideTopBar state:', hideTopBar);
   
   // בדיקת route params של HomeScreen
   useFocusEffect(
@@ -25,7 +25,7 @@ export default function Home({
         const state = navigation.getState();
         const homeScreenRoute = state.routes.find(r => r.name === 'HomeMain')?.state?.routes?.find(r => r.name === 'HomeScreen');
         const homeScreenHideTopBar = (homeScreenRoute?.params as any)?.hideTopBar || false;
-        console.log('🏠 Home - HomeScreen hideTopBar:', homeScreenHideTopBar);
+        // console.log('🏠 Home - HomeScreen hideTopBar:', homeScreenHideTopBar);
         setHideTopBar(homeScreenHideTopBar);
       };
       
@@ -39,9 +39,11 @@ export default function Home({
   
   return (
       <SafeAreaView style={styles.safeArea}>
+        {hideTopBar ? (<></>) : (
         <View style={{ overflow: 'hidden' }}>
           <TopBarNavigator navigation={navigation} hideTopBar={hideTopBar} />
         </View>
+        )}
         <BottomNavigator />
       </SafeAreaView>
   );

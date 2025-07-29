@@ -155,29 +155,39 @@ interface PostsReelsScreenProps {
  * מציג רשימה של פוסטים ורילס עם תמונות ותיאורים
  */
 export default function PostsReelsScreen({ onScroll, hideTopBar = false }: PostsReelsScreenProps) {
+  console.log('📱 PostsReelsScreen - hideTopBar prop:', hideTopBar);
+  
   // אנימציה למסך הפוסטים
   const animatedStyle = useAnimatedStyle(() => {
+    console.log('📱 PostsReelsScreen - animatedStyle - hideTopBar:', hideTopBar);
     return {
+      flex: 1,
       marginTop: withTiming(hideTopBar ? -60 : 0, {
         duration: 200,
       }),
     };
   });
 
+  const [lastOffsetY, setLastOffsetY] = useState(0);
+  
   const handleScroll = (event: any) => {
     const offsetY = event.nativeEvent.contentOffset.y;
+    const isScrollingUp = offsetY < lastOffsetY;
     
-    console.log('📱 PostsReelsScreen - Scroll offset:', offsetY);
+    console.log('📱 PostsReelsScreen - Scroll offset:', offsetY, 'Last offset:', lastOffsetY, 'Scrolling up:', isScrollingUp);
     
-    // סף נמוך יותר להסתרה (30px) וסף נמוך מאוד להחזרה (5px)
-    if (offsetY > 30) {
+    // הטופ בר חוזר מיד כשגוללים למעלה (אפילו טיפה)
+    if (isScrollingUp) {
+      // גלילה למעלה מחזירה את הטופ בר מיד
+      console.log('📱 PostsReelsScreen - Showing top bar (scrolling up)');
+      onScroll?.(false);
+    } else if (offsetY > 20) {
+      // גלילה למטה מעל 20px מסתירה את הטופ בר
       console.log('📱 PostsReelsScreen - Hiding top bar');
       onScroll?.(true);
-    } else if (offsetY < 5) {
-      console.log('📱 PostsReelsScreen - Showing top bar');
-      onScroll?.(false);
     }
-    // בין 5-30px - שומרים על המצב הנוכחי
+    
+    setLastOffsetY(offsetY);
   };
 
   return (

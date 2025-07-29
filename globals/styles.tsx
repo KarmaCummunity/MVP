@@ -12,8 +12,7 @@ const styles = StyleSheet.create({
   container_bottom_nav: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: colors.orangeDark,
-    borderRadius: 300,
+    backgroundColor: 'transparent',
   },
   /**
    * Style for a subtitle text.

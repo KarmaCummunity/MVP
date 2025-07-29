@@ -17,6 +17,7 @@ import type { SceneRendererProps, NavigationState } from 'react-native-tab-view'
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { currentUser, tasks, donations, communityEvents } from '../globals/fakeData';
+import { useUser } from '../context/UserContext';
 
 // --- Type Definitions ---
 type TabRoute = {
@@ -72,6 +73,7 @@ const TaggedRoute = () => (
 
 // --- Main Component ---
 export default function ProfileScreen() {
+  const { selectedUser } = useUser();
   const [index, setIndex] = useState(0);
   const [routes] = useState<TabRoute[]>([
     { key: 'posts', title: 'פוסטים' },
@@ -171,7 +173,7 @@ export default function ProfileScreen() {
           >
             <Ionicons name="menu" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.username}>{currentUser.name}</Text>
+          <Text style={styles.username}>{selectedUser?.name || currentUser.name}</Text>
           <TouchableOpacity 
             style={styles.headerIcon}
             onPress={() => Alert.alert('הוסף', 'הוספת תוכן חדש')}
@@ -183,20 +185,20 @@ export default function ProfileScreen() {
         {/* Profile Info */}
         <View style={styles.profileInfo}>
           <Image
-            source={{ uri: currentUser.avatar }}
+            source={{ uri: selectedUser?.avatar || currentUser.avatar }}
             style={styles.profilePicture}
           />
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{userStats.posts}</Text>
+              <Text style={styles.statNumber}>{selectedUser?.postsCount || userStats.posts}</Text>
               <Text style={styles.statLabel}>פוסטים</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{userStats.followers}</Text>
+              <Text style={styles.statNumber}>{selectedUser?.followersCount || userStats.followers}</Text>
               <Text style={styles.statLabel}>עוקבים</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{userStats.following}</Text>
+              <Text style={styles.statNumber}>{selectedUser?.followingCount || userStats.following}</Text>
               <Text style={styles.statLabel}>עוקב/ת</Text>
             </View>
           </View>
@@ -204,18 +206,18 @@ export default function ProfileScreen() {
 
         {/* Bio Section */}
         <View style={styles.bioSection}>
-          <Text style={styles.fullName}>{currentUser.name}</Text>
-          <Text style={styles.bioText}>{currentUser.bio}</Text>
+          <Text style={styles.fullName}>{selectedUser?.name || currentUser.name}</Text>
+          <Text style={styles.bioText}>{selectedUser?.bio || currentUser.bio}</Text>
           <Text style={styles.locationText}>
             <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
-            {' '}{currentUser.location}
+            {' '}{selectedUser?.location.city || currentUser.location}
           </Text>
           
           {/* Karma Points */}
           <View style={styles.karmaSection}>
             <View style={styles.karmaCard}>
               <Ionicons name="star" size={20} color={colors.warning} />
-              <Text style={styles.karmaText}>{userStats.karmaPoints} נקודות קארמה</Text>
+              <Text style={styles.karmaText}>{selectedUser?.karmaPoints || userStats.karmaPoints} נקודות קארמה</Text>
             </View>
           </View>
 

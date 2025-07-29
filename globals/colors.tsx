@@ -74,6 +74,18 @@ const colors = {
   navigationBorder: '#E8E8E8',
   navigationActive: '#FF6B9D',
   navigationInactive: '#999999',
+  
+  // Bottom Navigation
+  bottomNavBackground: 'rgba(255, 255, 255, 0.65)',
+  bottomNavActive: '#FF6B9D',
+  bottomNavInactive: 'rgba(0, 0, 0, 0.8)',
+  bottomNavShadow: 'rgba(0, 0, 0, 0.1)',
+
+  // Top Navigation
+  topNavBackground: 'rgba(255, 255, 255, 0.8)',
+  topNavTitle: 'rgba(44, 44, 44, 0.9)',
+  topNavIcon: 'rgba(0, 0, 0, 0.7)',
+  topNavShadow: 'rgba(0, 0, 0, 0.08)',
 
   // Chat
   chatSent: '#FF6B9D',

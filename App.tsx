@@ -20,6 +20,8 @@ import { FontSizes } from "./globals/constants";
 import './utils/i18n';
 import { I18nextProvider } from 'react-i18next';
 import i18n from './utils/i18n';
+import { UserProvider } from './context/UserContext';
+import { createSampleData } from './utils/chatService';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -40,6 +42,9 @@ export default function App() {
         // 'MyCustomFont-Regular': require('./assets/fonts/MyCustomFont-Regular.ttf'),
         // 'MyCustomFont-Bold': require('./assets/fonts/MyCustomFont-Bold.ttf'),
       });
+
+      // יצירת נתונים לדוגמה לצ'אט
+      await createSampleData();
 
       setAppIsReady(true);
     } catch (e: any) {
@@ -80,11 +85,13 @@ export default function App() {
 
   return (
     <I18nextProvider i18n={i18n}>
-      <View style={styles.container}>
-        <NavigationContainer>
-          <MainNavigator />
-        </NavigationContainer>
-      </View>
+      <UserProvider>
+        <View style={styles.container}>
+          <NavigationContainer>
+            <MainNavigator />
+          </NavigationContainer>
+        </View>
+      </UserProvider>
     </I18nextProvider>
   );
 }

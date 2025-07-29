@@ -34,6 +34,7 @@ import {
   communityEvents, 
   currentUser 
 } from "../globals/fakeData";
+import { useUser } from "../context/UserContext";
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 const PANEL_HEIGHT = SCREEN_HEIGHT - 50;
@@ -44,6 +45,7 @@ const MID_POSITION = PANEL_HEIGHT / 2;
 export default function HomeScreen() {
   const isFocused = useIsFocused();
   const navigation = useNavigation();
+  const { selectedUser, setSelectedUser } = useUser();
   const [showPosts, setShowPosts] = useState(false);
   const [isPersonalMode, setIsPersonalMode] = useState(true); // מצב אישי כברירת מחדל
   const [hideTopBar, setHideTopBar] = useState(false); // מצב הסתרת הטופ בר
@@ -206,12 +208,12 @@ export default function HomeScreen() {
                 <View style={styles.headerContent}>
                   <View style={styles.userInfo}>
                     <Image 
-                      source={{ uri: currentUser.avatar }} 
+                      source={{ uri: selectedUser?.avatar || currentUser.avatar }} 
                       style={styles.userAvatar}
                     />
                     <View style={styles.userDetails}>
-                      <Text style={styles.welcomeText}>שלום, {currentUser.name}!</Text>
-                      <Text style={styles.karmaText}>קארמה: {currentUser.karmaPoints} נקודות</Text>
+                      <Text style={styles.welcomeText}>שלום, {selectedUser?.name || currentUser.name}!</Text>
+                      <Text style={styles.karmaText}>קארמה: {selectedUser?.karmaPoints || currentUser.karmaPoints} נקודות</Text>
                     </View>
                   </View>
                   <TouchableOpacity 
@@ -225,6 +227,36 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
+
+              {/* User Selection Indicator */}
+              {selectedUser && (
+                <View style={styles.userSelectionIndicator}>
+                  <View style={styles.selectedUserInfo}>
+                    <Image source={{ uri: selectedUser.avatar }} style={styles.selectedUserAvatar} />
+                    <Text style={styles.selectedUserName}>{selectedUser.name}</Text>
+                    <Text style={styles.selectedUserLocation}>{selectedUser.location.city}</Text>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.clearUserButton}
+                    onPress={() => {
+                      Alert.alert(
+                        'נקה יוזר', 
+                        'האם אתה בטוח שברצונך לנקות את היוזר הנבחר?',
+                        [
+                          { text: 'ביטול', style: 'cancel' },
+                          { 
+                            text: 'נקה', 
+                            style: 'destructive',
+                            onPress: () => setSelectedUser(null)
+                          }
+                        ]
+                      );
+                    }}
+                  >
+                    <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+              )}
 
               {/* Quick Actions */}
               <View style={styles.quickActionsContainer}>
@@ -581,10 +613,44 @@ const styles = StyleSheet.create({
   },
   communityModeTitle: {
     fontSize: FontSizes.heading2,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: 20,
+  },
+  // סטיילים לאינדיקטור יוזר נבחר
+  userSelectionIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.offWhite,
+    marginHorizontal: 20,
+    marginTop: 15,
+    marginBottom: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary + '30',
+  },
+  selectedUserInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  selectedUserAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 10,
+  },
+  selectedUserName: {
+    fontSize: FontSizes.small,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 2,
+  },
+  selectedUserLocation: {
+    fontSize: FontSizes.caption,
+    color: colors.textSecondary,
+  },
+  clearUserButton: {
+    padding: 4,
   },
   // סטייל למיכל הבית
   homeContainer: {

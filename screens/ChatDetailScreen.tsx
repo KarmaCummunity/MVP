@@ -12,11 +12,13 @@ import {
   Image,
   Alert,
   SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { ParamListBase } from '@react-navigation/native';
 import ChatMessageBubble from '../components/ChatMessageBubble';
-import { conversations as initialConversations, Message } from '../globals/fakeData';
+import { useUser } from '../context/UserContext';
+import { getMessages, sendMessage, markMessagesAsRead, Message } from '../utils/chatService';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -25,78 +27,102 @@ type ChatDetailRouteParams = {
   conversationId: string;
   userName: string;
   userAvatar: string;
+  otherUserId: string;
 };
 
 export default function ChatDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<Record<string, ChatDetailRouteParams>, string>>();
-  const { userName, userAvatar } = route.params;
+  const { conversationId, userName, userAvatar, otherUserId } = route.params;
+  const { selectedUser } = useUser();
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const flatListRef = useRef<FlatList>(null);
 
-  useEffect(() => {
-    setMessages([
-      {
-        id: '1',
-        senderId: 'other',
-        text: 'היי, אשמח לקבל פרטים נוספים על התרומה שלך',
-        timestamp: new Date().toISOString(),
-        read: true,
-      },
-      {
-        id: '2',
-        senderId: 'me',
-        text: 'בטח! אני תורם ספה במצב מצוין. היא בת שנתיים, צבע אפור, ואפשר לאסוף מתל אביב',
-        timestamp: new Date().toISOString(),
-        read: true,
-      },
-    ]);
-  }, []);
+  // טעינת הודעות
+  const loadMessages = useCallback(async () => {
+    try {
+      const conversationMessages = await getMessages(conversationId);
+      setMessages(conversationMessages);
+      
+      // סימון הודעות כנקראו
+      if (selectedUser) {
+        await markMessagesAsRead(conversationId, selectedUser.id);
+      }
+    } catch (error) {
+      console.error('❌ Load messages error:', error);
+      Alert.alert('שגיאה', 'שגיאה בטעינת ההודעות');
+    }
+  }, [conversationId, selectedUser]);
 
-  const generateFakeResponse = () => {
+  useEffect(() => {
+    loadMessages();
+  }, [loadMessages]);
+
+  const generateFakeResponse = async () => {
     const responses = [
       'תודה על המידע! מתי אפשר לבוא לקחת?',
       'האם אפשר לקבל תמונה של הספה?',
       'מה המידות של הספה?',
       'האם יש אפשרות למשלוח?',
     ];
-    const newMessage: Message = {
-      id: `msg-${Date.now()}`,
-      senderId: 'other',
-      text: responses[Math.floor(Math.random() * responses.length)],
-      timestamp: new Date().toISOString(),
-      read: false,
-    };
-    setMessages((prevMessages) => [...prevMessages, newMessage]);
+    
+    const responseText = responses[Math.floor(Math.random() * responses.length)];
+    
+    try {
+      await sendMessage({
+        conversationId,
+        senderId: otherUserId,
+        text: responseText,
+        timestamp: new Date().toISOString(),
+        read: false,
+        type: 'text',
+      });
+      
+      // טעינה מחדש של ההודעות
+      loadMessages();
+    } catch (error) {
+      console.error('❌ Send fake response error:', error);
+    }
   };
 
-  const handleSendMessage = () => {
-    if (inputText.trim() === '') return;
+  const handleSendMessage = async () => {
+    if (inputText.trim() === '' || !selectedUser) return;
 
-    const newMessage: Message = {
-      id: `msg-${Date.now()}`,
-      senderId: 'me',
-      text: inputText.trim(),
-      timestamp: new Date().toISOString(),
-      read: false,
-    };
-    setMessages((prevMessages) => [...prevMessages, newMessage]);
-    setInputText('');
-
-    setTimeout(generateFakeResponse, 1500 + Math.random() * 1000);
+    try {
+      await sendMessage({
+        conversationId,
+        senderId: selectedUser.id,
+        text: inputText.trim(),
+        timestamp: new Date().toISOString(),
+        read: false,
+        type: 'text',
+      });
+      
+      setInputText('');
+      
+      // טעינה מחדש של ההודעות
+      loadMessages();
+      
+      // תגובה אוטומטית אחרי זמן קצר
+      setTimeout(generateFakeResponse, 1500 + Math.random() * 1000);
+    } catch (error) {
+      console.error('❌ Send message error:', error);
+      Alert.alert('שגיאה', 'שגיאה בשליחת ההודעה');
+    }
   };
 
   const renderMessage = ({ item }: { item: Message }) => (
     <ChatMessageBubble
       message={item}
-      isMyMessage={item.senderId === 'me'}
+      isMyMessage={item.senderId === selectedUser?.id}
       userAvatar={userAvatar}
     />
   );
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <StatusBar backgroundColor={colors.backgroundSecondary} barStyle="dark-content" />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
           <Icon name="arrow-back" size={24} color={colors.textPrimary} />
@@ -113,7 +139,7 @@ export default function ChatDetailScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 100}
       >
         <FlatList
           ref={flatListRef}
@@ -145,6 +171,7 @@ export default function ChatDetailScreen() {
             <Text style={styles.sendButtonText}>שלח</Text>
           </TouchableOpacity>
         </View>
+        {Platform.OS === 'android' && <View style={styles.androidBottomSpacer} />}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -153,7 +180,6 @@ export default function ChatDetailScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    marginTop: Platform.OS === 'android' ? 30 : 0,
     backgroundColor: colors.backgroundSecondary,
   },
   header: {
@@ -204,6 +230,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: 15,
     paddingVertical: 10,
+    paddingBottom: Platform.OS === 'android' ? 20 : 10, // מרווח נוסף לאנדרואיד
     backgroundColor: colors.backgroundPrimary,
     borderTopWidth: 1,
     borderTopColor: colors.border,
@@ -236,5 +263,9 @@ const styles = StyleSheet.create({
     color: colors.backgroundPrimary,
     fontWeight: 'bold',
     fontSize: FontSizes.body,
+  },
+  androidBottomSpacer: {
+    height: 20,
+    backgroundColor: colors.backgroundPrimary,
   },
 });

@@ -1,7 +1,7 @@
 // components/ChatMessageBubble.tsx
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
-import { Message, ChatUser } from '../globals/fakeData'; // Adjust path
+import { Message } from '../utils/chatService'; // Use new Message type
 import colors from '../globals/colors'; // Assuming you have a Colors file
 import { FontSizes } from '../globals/constants';
 
@@ -28,9 +28,6 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, isMyMess
       )}
       <View style={[styles.bubble, bubbleStyle]}>
         {message.text && <Text style={[styles.messageText, textStyle]}>{message.text}</Text>}
-        {message.image && (
-          <Image source={{ uri: message.image }} style={styles.messageImage} />
-        )}
         <Text style={[styles.timestamp, isMyMessage ? styles.myTimestamp : styles.otherTimestamp]}>
           {formatTimestamp(message.timestamp)}
         </Text>
