@@ -1,19 +1,35 @@
 import React from 'react';
 import styles from '../globals/styles'; // your styles file
 import Icon from 'react-native-vector-icons/Ionicons';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Animated } from 'react-native';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { useRoute, RouteProp } from '@react-navigation/native';
+import { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
 
 
 interface TopBarNavigatorProps {
   navigation: NavigationProp<ParamListBase>;
+  hideTopBar?: boolean;
 }
 
-function TopBarNavigator({ navigation }: TopBarNavigatorProps) {
+function TopBarNavigator({ navigation, hideTopBar = false }: TopBarNavigatorProps) {
   
   const route = useRoute();
+  const translateY = useSharedValue(0);
+
+  // אנימציה להסתרת/הצגת הטופ בר
+  React.useEffect(() => {
+    translateY.value = withTiming(hideTopBar ? -100 : 0, {
+      duration: 300,
+    });
+  }, [hideTopBar]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: translateY.value }],
+    };
+  });
 
   // Debug logs
   console.log('🔍 TopBarNavigator - Current route name:', route.name);
@@ -57,7 +73,7 @@ function TopBarNavigator({ navigation }: TopBarNavigatorProps) {
 
 
   return (
-    <View style={styles.container_top_bar}>
+    <Animated.View style={[styles.container_top_bar, animatedStyle]}>
       {/* Left Icons Group */}
       <View style={{ flexDirection: 'row', gap: 5 }}>
         <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={{ marginRight: 5 }}>
@@ -81,7 +97,7 @@ function TopBarNavigator({ navigation }: TopBarNavigatorProps) {
           <Icon name="settings-outline" size={25} color="black" />
         </TouchableOpacity>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 

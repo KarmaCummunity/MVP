@@ -20,7 +20,7 @@ import Animated, {
   Extrapolation,
   runOnJS,
 } from "react-native-reanimated";
-import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import BubbleComp from "../components/BubbleComp";
 import colors from "../globals/colors";
@@ -43,8 +43,10 @@ const MID_POSITION = PANEL_HEIGHT / 2;
 
 export default function HomeScreen() {
   const isFocused = useIsFocused();
+  const navigation = useNavigation();
   const [showPosts, setShowPosts] = useState(false);
   const [isPersonalMode, setIsPersonalMode] = useState(true); // מצב אישי כברירת מחדל
+  const [hideTopBar, setHideTopBar] = useState(false); // מצב הסתרת הטופ בר
 
   // ערכים מונפשים לגלילה
   const scrollY = useSharedValue(0);
@@ -56,6 +58,11 @@ export default function HomeScreen() {
       setShowPosts(false);
     }
   }, [isFocused]);
+
+  // עדכון hideTopBar ב-route params
+  React.useEffect(() => {
+    (navigation as any).setParams({ hideTopBar });
+  }, [hideTopBar, navigation]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -76,8 +83,8 @@ export default function HomeScreen() {
     const offsetY = event.nativeEvent.contentOffset.y;
     scrollY.value = offsetY;
     
-    // סף נמוך מאוד - מגיב מהר
-    const threshold = 20;
+    // סף גבוה יותר - צריך גלילה משמעותית
+    const threshold = isPersonalMode ? 150 : 100;
     
     // אם הגלילה עוברת את הסף, נפתח מסך הפוסטים
     if (offsetY > threshold && !showPosts) {
@@ -169,7 +176,7 @@ export default function HomeScreen() {
       {showPosts ? (
         // מסך הפוסטים
         <View style={styles.postsContainer}>
-          <PostsReelsScreen />
+          <PostsReelsScreen onScroll={(hide) => setHideTopBar(hide)} />
         </View>
       ) : (
         // מסך הבית עם גלילה משופרת
