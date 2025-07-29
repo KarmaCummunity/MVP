@@ -17,25 +17,20 @@ function TopBarNavigator({ navigation, hideTopBar = false }: TopBarNavigatorProp
   
   const route = useRoute();
   const translateY = useSharedValue(0);
+  
+  console.log('🔝 TopBarNavigator - hideTopBar prop:', hideTopBar);
 
   // אנימציה להסתרת/הצגת הטופ בר
   React.useEffect(() => {
     console.log('🔝 TopBarNavigator - hideTopBar changed:', hideTopBar);
-    translateY.value = withTiming(hideTopBar ? -100 : 0, {
-      duration: 300,
+    translateY.value = withTiming(hideTopBar ? -60 : 0, {
+      duration: 200,
     });
   }, [hideTopBar]);
 
   const animatedStyle = useAnimatedStyle(() => {
     console.log('🔝 TopBarNavigator - translateY value:', translateY.value);
     return {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 1000,
-      height: hideTopBar ? 0 : 60, // גובה הטופ בר
-      opacity: hideTopBar ? 0 : 1,
       transform: [{ translateY: translateY.value }],
     };
   });

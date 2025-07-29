@@ -68,6 +68,7 @@ export default function HomeScreen() {
   useFocusEffect(
     React.useCallback(() => {
       setShowPosts(false);
+      setHideTopBar(false); // איפוס הסתרת הטופ בר
       postsTranslateY.value = withSpring(0, {
         damping: 20,
         stiffness: 150,
@@ -90,6 +91,7 @@ export default function HomeScreen() {
     // אם הגלילה עוברת את הסף, נפתח מסך הפוסטים
     if (offsetY > threshold && !showPosts) {
       setShowPosts(true);
+      setHideTopBar(false); // וידוא שהטופ בר מוצג כשנפתח מסך הפוסטים
       postsTranslateY.value = withSpring(0, {
         damping: 25,
         stiffness: 200,
