@@ -29,6 +29,11 @@ function TopBarNavigator({ navigation, hideTopBar = false }: TopBarNavigatorProp
   const animatedStyle = useAnimatedStyle(() => {
     console.log('🔝 TopBarNavigator - translateY value:', translateY.value);
     return {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 1000,
       height: hideTopBar ? 0 : 60, // גובה הטופ בר
       opacity: hideTopBar ? 0 : 1,
       transform: [{ translateY: translateY.value }],

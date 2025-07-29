@@ -21,9 +21,11 @@ export default function Home({
   
   return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={{ overflow: 'hidden' }}>
-          <TopBarNavigator navigation={navigation} hideTopBar={hideTopBar} />
-        </View>
+        {!hideTopBar && (
+          <View style={{ overflow: 'hidden' }}>
+            <TopBarNavigator navigation={navigation} hideTopBar={hideTopBar} />
+          </View>
+        )}
         <BottomNavigator />
       </SafeAreaView>
   );
