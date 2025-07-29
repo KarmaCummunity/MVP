@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 
@@ -146,30 +147,41 @@ const PostReelItem = ({ item }: { item: Item }) => {
 
 interface PostsReelsScreenProps {
   onScroll?: (hide: boolean) => void;
+  hideTopBar?: boolean;
 }
 
 /**
  * מסך פוסטים ורילס קהילתיים
  * מציג רשימה של פוסטים ורילס עם תמונות ותיאורים
  */
-export default function PostsReelsScreen({ onScroll }: PostsReelsScreenProps) {
+export default function PostsReelsScreen({ onScroll, hideTopBar = false }: PostsReelsScreenProps) {
+  // אנימציה למסך הפוסטים
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      marginTop: withTiming(hideTopBar ? -60 : 0, {
+        duration: 200,
+      }),
+    };
+  });
+
   const handleScroll = (event: any) => {
     const offsetY = event.nativeEvent.contentOffset.y;
     
     console.log('📱 PostsReelsScreen - Scroll offset:', offsetY);
     
-    // אם הגלילה עוברת 50 פיקסלים, מסתירים את הטופ בר
-    if (offsetY > 50) {
+    // סף נמוך יותר להסתרה (30px) וסף נמוך מאוד להחזרה (5px)
+    if (offsetY > 30) {
       console.log('📱 PostsReelsScreen - Hiding top bar');
       onScroll?.(true);
-    } else {
+    } else if (offsetY < 5) {
       console.log('📱 PostsReelsScreen - Showing top bar');
       onScroll?.(false);
     }
+    // בין 5-30px - שומרים על המצב הנוכחי
   };
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, animatedStyle]}>
       <FlatList
         data={data}
         keyExtractor={(item) => item.id}
@@ -182,7 +194,7 @@ export default function PostsReelsScreen({ onScroll }: PostsReelsScreenProps) {
         onScroll={handleScroll}
         scrollEventThrottle={16}
       />
-    </View>
+    </Animated.View>
   );
 }
 

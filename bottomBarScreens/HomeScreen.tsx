@@ -179,10 +179,13 @@ export default function HomeScreen() {
       {showPosts ? (
         // מסך הפוסטים
         <View style={styles.postsContainer}>
-          <PostsReelsScreen onScroll={(hide) => {
-            console.log('🏠 HomeScreen - Setting hideTopBar:', hide);
-            setHideTopBar(hide);
-          }} />
+          <PostsReelsScreen 
+            onScroll={(hide) => {
+              console.log('🏠 HomeScreen - Setting hideTopBar:', hide);
+              setHideTopBar(hide);
+            }}
+            hideTopBar={hideTopBar}
+          />
         </View>
       ) : (
         // מסך הבית עם גלילה משופרת
