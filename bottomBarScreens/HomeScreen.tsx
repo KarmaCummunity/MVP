@@ -39,6 +39,7 @@ import {
   currentUser 
 } from "../globals/fakeData";
 import { useUser } from "../context/UserContext";
+import GuestModeNotice from "../components/GuestModeNotice";
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 const PANEL_HEIGHT = SCREEN_HEIGHT - 50;
@@ -95,7 +96,7 @@ const FloatingBubble: React.FC<{
       transform: [
         { translateY: translateY.value },
         { scale: scale.value }
-      ],
+      ] as any,
       opacity: opacity.value,
     };
   });
@@ -182,7 +183,7 @@ export default function HomeScreen() {
    */
   const postsAnimatedStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ translateY: postsTranslateY.value }],
+      transform: [{ translateY: postsTranslateY.value }] as any,
     };
   });
 
@@ -252,14 +253,7 @@ export default function HomeScreen() {
               // מצב אישי - המסך המלא
               <View style={styles.personalModeContainer}>
                 {/* Guest Mode Notice */}
-                {isGuestMode && (
-                  <View style={styles.guestModeNotice}>
-                    <Ionicons name="information-circle-outline" size={20} color={colors.warning} />
-                    <Text style={styles.guestModeText}>
-                      אתה במצב אורח. התחבר כדי לגשת לכל הפיצ'רים
-                    </Text>
-                  </View>
-                )}
+                {isGuestMode && <GuestModeNotice />}
                 
                 {/* Header Section */}
                 <View style={styles.header}>
@@ -825,8 +819,8 @@ const styles = StyleSheet.create({
   // סטיילים למצב קהילתי
   communityModeContainer: {
     flex: 1,
-    paddingTop: 20,
-    minHeight: 800, // גובה מינימלי כדי לאפשר גלילה
+    minHeight: "100%", // גובה מינימלי כדי לאפשר גלילה
+    width: "100%",
   },
   communityModeTitle: {
     fontSize: FontSizes.heading2,
@@ -1073,22 +1067,5 @@ const styles = StyleSheet.create({
      borderColor: colors.warning + '30',
      borderWidth: 1,
    },
-   guestModeNotice: {
-     backgroundColor: colors.warningLight,
-     borderColor: colors.warning,
-     borderWidth: 1,
-     borderRadius: 8,
-     padding: 12,
-     marginHorizontal: 20,
-     marginBottom: 15,
-     flexDirection: 'row',
-     alignItems: 'center',
-   },
-   guestModeText: {
-     color: colors.warning,
-     fontSize: FontSizes.small,
-     fontWeight: '600',
-     marginLeft: 8,
-     flex: 1,
-   },
+
  });

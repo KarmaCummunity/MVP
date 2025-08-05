@@ -8,7 +8,7 @@ import { useUser } from '../context/UserContext';
 import { getConversations, createSampleData, Conversation as ChatConversation } from '../utils/chatService';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons as Icon } from '@expo/vector-icons';
 
 export default function ChatListScreen() {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();

@@ -22,6 +22,7 @@ import {
   categories 
 } from '../globals/fakeData';
 import { useUser } from '../context/UserContext';
+import GuestModeNotice from '../components/GuestModeNotice';
 
 interface SearchResult {
   id: string;
@@ -143,13 +144,15 @@ const SearchScreen = () => {
     }, 500);
   };
 
-  const handleSearch = (query: string) => {
+  const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
     setSearchQuery(query);
     if (query.trim().length > 0) {
       performSearch(query, selectedCategory);
     } else {
       setSearchResults([]);
     }
+    // For now, SearchScreen handles its own filtering logic, so we ignore the other parameters
+    // In the future, this could be enhanced to use the provided filters and sorts
   };
 
   const handleCategoryFilter = (category: string) => {
@@ -281,14 +284,7 @@ const SearchScreen = () => {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Guest Mode Notice */}
-        {isGuestMode && (
-          <View style={styles.guestModeNotice}>
-            <Ionicons name="information-circle-outline" size={20} color={colors.warning} />
-            <Text style={styles.guestModeText}>
-              אתה במצב אורח. התחבר כדי לגשת לכל הפיצ'רים
-            </Text>
-          </View>
-        )}
+        {isGuestMode && <GuestModeNotice />}
         
         {searchQuery.trim().length === 0 ? (
           // Default content when no search
@@ -597,24 +593,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  guestModeNotice: {
-    backgroundColor: colors.warningLight,
-    borderColor: colors.warning,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginHorizontal: 20,
-    marginBottom: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  guestModeText: {
-    color: colors.warning,
-    fontSize: FontSizes.small,
-    fontWeight: '600',
-    marginLeft: 8,
-    flex: 1,
-  },
+
 });
 
 export default SearchScreen;

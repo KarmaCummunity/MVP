@@ -273,7 +273,7 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
         { translateX: x + 0.5 * dx },
         { translateY: y + 0.5 * dy },
         { scale: animatedScale.value },
-      ],
+      ] as any,
       backgroundColor,
       borderColor,
       opacity: animatedOpacity.value,

@@ -15,10 +15,8 @@ import {
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { charityNames, FontSizes } from '../globals/constants';
 import colors from '../globals/colors';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons as Icon } from '@expo/vector-icons';
 import HeaderComp from '../components/HeaderComp';
-
-const suggestedAmounts = [50, 100, 180, 360, 500];
 
 export default function MoneyScreen({
   navigation,
@@ -35,14 +33,6 @@ export default function MoneyScreen({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("");
   const [selectedSort, setSelectedSort] = useState("");
-
-  // עדכון חיפוש לפי SearchBar
-  useEffect(() => {
-    // כאן נוכל להוסיף לוגיקה לקבלת החיפוש מ-SearchBar
-    // כרגע נשתמש בנתונים דמה
-    console.log('💰 MoneyScreen - Search updated:', { searchQuery, selectedFilter, selectedSort });
-  }, [searchQuery, selectedFilter, selectedSort]);
-
   // נתונים דמה לעמותות
   const dummyCharities = [
     {
@@ -134,6 +124,8 @@ export default function MoneyScreen({
       minDonation: 60,
     },
   ];
+
+  const [filteredCharities, setFilteredCharities] = useState(dummyCharities); // תוצאות החיפוש
 
   // נתונים דמה לתרומות אחרונות
   const dummyRecentDonations = [
@@ -298,6 +290,48 @@ export default function MoneyScreen({
     'צור קשר'
   ];
 
+  // אפשרויות סינון ומיון ספציפיות למסך הכסף
+  const moneyFilterOptions = [
+    "חינוך",
+    "בריאות",
+    "רווחה",
+    "סביבה",
+    "בעלי חיים",
+    "נוער בסיכון",
+    "קשישים",
+    "נכים",
+    "חולים",
+    "משפחות במצוקה",
+    "עולים חדשים",
+    "קהילה",
+  ];
+
+  const moneySortOptions = [
+    "אלפביתי",
+    "לפי מיקום",
+    "לפי תחום",
+    "לפי תאריך הקמה",
+    "לפי מספר תורמים",
+    "לפי דירוג",
+    "לפי רלוונטיות",
+  ];
+
+  // פונקציה לטיפול בתוצאות חיפוש מה-HeaderComp
+  const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
+    console.log('💰 MoneyScreen - Search received:', { 
+      query, 
+      filters: filters || [], 
+      sorts: sorts || [], 
+      resultsCount: results?.length || 0 
+    });
+    
+    // עדכון state עם תוצאות החיפוש
+    setSearchQuery(query);
+    setSelectedFilter(filters?.[0] || ""); // רק הסינון הראשון
+    setSelectedSort(sorts?.[0] || ""); // רק המיון הראשון
+    setFilteredCharities(results || dummyCharities);
+  };
+
   const handleDonate = () => {
     if (!selectedRecipient || !amount) {
       Alert.alert('שגיאה', 'אנא בחר נמען וסכום לפני התרומה.');
@@ -404,6 +438,10 @@ export default function MoneyScreen({
         onSelectMenuItem={handleSelectMenuItem}
         title=""
         placeholder={mode ? "חפש עמותות לתרומה" : "חפש עמותות לעזרה"}
+        filterOptions={moneyFilterOptions}
+        sortOptions={moneySortOptions}
+        searchData={dummyCharities}
+        onSearch={handleSearch}
       />
 
       <ScrollView 
@@ -425,7 +463,7 @@ export default function MoneyScreen({
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={localStyles.charitiesScrollContainer}
               >
-                {getFilteredCharities().map((charity) => (
+                {filteredCharities.map((charity) => (
                   <View key={charity.id} style={localStyles.charityCardWrapper}>
                     {renderCharityCard({ item: charity })}
                   </View>

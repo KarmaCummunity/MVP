@@ -102,21 +102,15 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
-        release {
-            storeFile file('/Users/navesarussi/kc-release-key.keystore')
-            storePassword 'kc123456'
-            keyAlias 'kc-key-alias'
-            keyPassword 'kc123456'
-        }
     }
     buildTypes {
         debug {
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug
         }
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug
             shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
@@ -181,6 +175,3 @@ dependencies {
         implementation jscFlavor
     }
 }
-
-// Apply Google Services plugin - temporarily disabled for testing
-// apply plugin: 'com.google.gms.google-services'

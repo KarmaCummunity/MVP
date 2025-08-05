@@ -12,7 +12,7 @@ import {
   Modal,
   Keyboard,
 } from "react-native";
-import Icon from "react-native-vector-icons/MaterialIcons"; // You'll need to install this library
+import { MaterialIcons as Icon } from '@expo/vector-icons';
 
 interface AutocompleteDropdownCompProps {
   label: string;

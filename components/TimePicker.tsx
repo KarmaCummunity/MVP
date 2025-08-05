@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes, UI_TEXT } from '../globals/constants';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons as Icon } from '@expo/vector-icons';
 
 interface TimePickerProps {
   value: string;

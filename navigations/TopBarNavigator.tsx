@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from '../globals/styles'; // your styles file
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons as Icon } from '@expo/vector-icons';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { useRoute, RouteProp } from '@react-navigation/native';
@@ -83,6 +83,20 @@ function TopBarNavigator({ navigation, hideTopBar = false }: TopBarNavigatorProp
 
   return (
     <Animated.View style={[styles.container_top_bar, animatedStyle]}>
+      {/* Right Icons Group */}
+      <View style={{ flexDirection: 'row', gap: 5 }}>
+        <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={{ padding: 4 }}>
+          <Icon name="settings-outline" size={24} color={colors.topNavIcon} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={{ padding: 4 }}>
+          <Icon name="information-circle-outline" size={24} color={colors.topNavIcon} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Title */}
+      <View style={{ alignItems: 'center' }}>
+        <Text style={styles.title}>{title}</Text>
+      </View>
       {/* Left Icons Group */}
       <View style={{ flexDirection: 'row', gap: 5 }}>
         {!isGuestMode && (
@@ -97,20 +111,6 @@ function TopBarNavigator({ navigation, hideTopBar = false }: TopBarNavigatorProp
         })()}
         <TouchableOpacity onPress={() => navigation.navigate('InactiveScreen')} style={{ padding: 4 }}>
           <Icon name="notifications-circle-outline" size={24} color={colors.topNavIcon} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Title */}
-      <View style={{ alignItems: 'center' }}>
-        <Text style={styles.title}>{title}</Text>
-      </View>
-      {/* Right Icons Group */}
-      <View style={{ flexDirection: 'row', gap: 5 }}>
-        <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={{ padding: 4 }}>
-          <Icon name="information-circle-outline" size={24} color={colors.topNavIcon} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={{ padding: 4 }}>
-          <Icon name="settings-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
       </View>
     </Animated.View>

@@ -619,3 +619,22 @@ export const statuses = [
   { value: 'completed', label: 'הושלם', color: '#4CAF50' },
   { value: 'cancelled', label: 'בוטל', color: '#9E9E9E' }
 ];
+
+// Donation Statistics for the Bubble Screen
+export const donationStats = [
+  // כסף - Money Donations
+  { id: 'money1', value: 125000, name: "תרומות כספיות השבוע", icon: "💰", category: 'money', color: '#4CAF50' },
+  { id: 'money2', value: 35, name: "תורמים פעילים החודש", icon: "💳", category: 'money', color: '#66BB6A' },
+  
+  // טרמפים - Ride Sharing  
+  { id: 'rides1', value: 245, name: "טרמפים שהתקיימו השבוע", icon: "🚗", category: 'rides', color: '#2196F3' },
+  { id: 'rides2', value: 89, name: "נהגים פעילים", icon: "🚙", category: 'rides', color: '#42A5F5' },
+  
+  // אוכל - Food Donations
+  { id: 'food1', value: 1580, name: "ק״ג אוכל נתרם השבוע", icon: "🍎", category: 'food', color: '#FF9800' },
+  { id: 'food2', value: 127, name: "משפחות שקיבלו אוכל", icon: "🍽️", category: 'food', color: '#FFB74D' },
+  
+  // חברי קהילה - Community Members
+  { id: 'members1', value: 52, name: "חברים חדשים השבוע", icon: "👥", category: 'members', color: '#9C27B0' },
+  { id: 'members2', value: 3247, name: "סה״כ חברי קהילה פעילים", icon: "🌟", category: 'members', color: '#BA68C8' }
+];

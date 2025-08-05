@@ -16,6 +16,7 @@ import { DonationsStackParamList } from '../globals/types';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { useUser } from '../context/UserContext';
+import GuestModeNotice from '../components/GuestModeNotice';
 
 interface DonationsScreenProps {
   navigation: NavigationProp<DonationsStackParamList>;
@@ -223,14 +224,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
 
               <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Guest Mode Notice */}
-                {isGuestMode && (
-                  <View style={styles.guestModeNotice}>
-                    <Ionicons name="information-circle-outline" size={20} color={colors.warning} />
-                    <Text style={styles.guestModeText}>
-                      אתה במצב אורח. התחבר כדי לגשת לכל הפיצ'רים
-                    </Text>
-                  </View>
-                )}
+                {isGuestMode && <GuestModeNotice />}
                 
           {/* Active Screens Section */}
           <View style={styles.categoriesSection}>
@@ -553,24 +547,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
-  guestModeNotice: {
-    backgroundColor: colors.warningLight,
-    borderColor: colors.warning,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginHorizontal: 20,
-    marginBottom: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  guestModeText: {
-    color: colors.warning,
-    fontSize: FontSizes.small,
-    fontWeight: '600',
-    marginLeft: 8,
-    flex: 1,
-  },
+
 });
 
 export default DonationsScreen;

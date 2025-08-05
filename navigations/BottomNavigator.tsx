@@ -3,7 +3,7 @@
 import React from "react";
 import { View, Platform, StyleSheet } from "react-native";
 import { createBottomTabNavigator, BottomTabNavigationOptions } from "@react-navigation/bottom-tabs";
-import Ionicons from "react-native-vector-icons/Ionicons";
+import { Ionicons } from "@expo/vector-icons";
 import SearchScreen from "../bottomBarScreens/SearchScreen";
 import ProfileScreen from "../bottomBarScreens/ProfileScreen";
 import HomeScreen from "../bottomBarScreens/HomeScreen"; // This is your HomeScreen with the drag handle
@@ -46,7 +46,7 @@ export default function BottomNavigator(): React.ReactElement {
    * @param {boolean} focused - True if the tab is currently focused.
    * @returns {string} The Ionicons icon name (e.g., "home" or "home-outline").
    */
-  const getTabBarIconName = (routeName: keyof BottomTabNavigatorParamList, focused: boolean): string => {
+  const getTabBarIconName = (routeName: keyof BottomTabNavigatorParamList, focused: boolean): keyof typeof Ionicons.glyphMap => {
     switch (routeName) {
       case "HomeScreen":
         return focused ? "home" : "home-outline";
@@ -92,11 +92,11 @@ export default function BottomNavigator(): React.ReactElement {
           },
         })}
       >
-        <Tab.Screen name="HomeScreen" component={HomeScreen} />
-        <Tab.Screen name="SearchScreen" component={SearchScreen} />
-        <Tab.Screen name="DonationsScreen" component={DonationsStack} />
-        {/* <Tab.Screen name="UsersScreen" component={UsersScreen} /> הסתרה לבדיקות */}
         {!isGuestMode && <Tab.Screen name="ProfileScreen" component={ProfileScreen} />}
+        <Tab.Screen name="DonationsScreen" component={DonationsStack} />
+        <Tab.Screen name="SearchScreen" component={SearchScreen} />
+        {/* <Tab.Screen name="UsersScreen" component={UsersScreen} /> הסתרה לבדיקות */}
+        <Tab.Screen name="HomeScreen" component={HomeScreen} />
       </Tab.Navigator>
     </View>
   );

@@ -29,6 +29,7 @@ import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes, UI_TEXT } from '../globals/constants';
 import { useUser } from '../context/UserContext';
+import GuestModeNotice from '../components/GuestModeNotice';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -317,12 +318,7 @@ export default function SettingsScreen() {
       )}
 
       {/* Guest Mode Notice */}
-      {isGuestMode && (
-        <View style={styles.guestNotice}>
-          <Ionicons name="person-outline" size={20} color={colors.warning} />
-          <Text style={styles.guestText}>אתה במצב אורח</Text>
-        </View>
-      )}
+      {isGuestMode && <GuestModeNotice variant="compact" />}
 
       {/* Settings List - Platform-specific scroll implementation */}
       {Platform.OS === 'web' ? (
@@ -581,21 +577,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '500',
   },
-  guestNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.warningLight,
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: 12,
-    padding: 16,
-  },
-  guestText: {
-    fontSize: FontSizes.body,
-    color: colors.warning,
-    marginLeft: 8,
-    fontWeight: '500',
-  },
+
   // Web: Custom scrollable container with CSS overflow
   webScrollContainer: {
     flex: 1,

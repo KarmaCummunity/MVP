@@ -13,6 +13,11 @@ interface HeaderSectionProps {
   onSelectMenuItem: (option: string) => void;
   title?: string; // Optional title for the screen
   placeholder?: string;
+  // New props for search functionality
+  filterOptions: string[]; // Filter options specific to each screen
+  sortOptions: string[]; // Sort options specific to each screen
+  searchData: any[]; // Data array to search through (charities, rides, etc.)
+  onSearch: (query: string, filters: string[], sorts: string[], results: any[]) => void; // Search handler function
 }
 
 const HeaderComp: React.FC<HeaderSectionProps> = ({
@@ -21,15 +26,25 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
   onToggleMode,
   onSelectMenuItem,
   placeholder,
+  filterOptions,
+  sortOptions,
+  searchData,
+  onSearch,
 }) => {
  
   return (
     <View style={headerStyles.headerContainer}>
       <View style={headerStyles.topRow}>
-        <ModeToggleButton mode={mode} onToggle={onToggleMode} />
         <MenuComp options={menuOptions} onSelectOption={onSelectMenuItem} />
+        <ModeToggleButton mode={mode} onToggle={onToggleMode} />
       </View>
-      <SearchBar placeholder={placeholder} />
+      <SearchBar 
+        placeholder={placeholder}
+        filterOptions={filterOptions}
+        sortOptions={sortOptions}
+        searchData={searchData}
+        onSearch={onSearch}
+      />
     </View>
   );
 };
