@@ -33,11 +33,33 @@ export default function TrumpScreen({
   const [fromLocation, setFromLocation] = useState("");
   const [toLocation, setToLocation] = useState("");
   const [departureTime, setDepartureTime] = useState("");
+  const [filteredRides, setFilteredRides] = useState(dummyRides);
 
-  // Update search based on SearchBar
-  useEffect(() => {
-    console.log('🚗 TrumpScreen - Search updated:', { searchQuery, selectedFilter, selectedSort });
-  }, [searchQuery, selectedFilter, selectedSort]);
+  // Filter and sort options for trump screen
+  const trumpFilterOptions = [
+    "עבודה",
+    "לימודים",
+    "בריאות",
+    "קניות",
+    "בילויים",
+    "משפחה",
+    "חירום",
+    "תיירות",
+    "ספורט",
+    "תרבות",
+    "דת",
+    "אחר"
+  ];
+
+  const trumpSortOptions = [
+    "אלפביתי",
+    "לפי מיקום",
+    "לפי תאריך",
+    "לפי שעה",
+    "לפי מחיר",
+    "לפי דירוג",
+    "לפי רלוונטיות",
+  ];
 
   // Mock data for rides
   const dummyRides = [
@@ -178,6 +200,30 @@ export default function TrumpScreen({
   ];
 
   // Function to filter rides
+  // Function to handle search results from HeaderComp
+  const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
+    console.log('🚗 TrumpScreen - Search received:', { 
+      query, 
+      filters: filters || [], 
+      sorts: sorts || [], 
+      resultsCount: results?.length || 0 
+    });
+    
+    // Update state with search results
+    setSearchQuery(query);
+    setSelectedFilter(filters?.[0] || "");
+    setSelectedSort(sorts?.[0] || "");
+    
+    // If results are provided from SearchBar, use them
+    if (results && results.length > 0) {
+      setFilteredRides(results);
+    } else {
+      // Otherwise, perform local filtering
+      const filtered = getFilteredRides();
+      setFilteredRides(filtered);
+    }
+  };
+
   const getFilteredRides = () => {
     let filtered = [...dummyRides];
 
@@ -186,7 +232,8 @@ export default function TrumpScreen({
       filtered = filtered.filter(ride =>
         ride.driverName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         ride.from.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        ride.to.toLowerCase().includes(searchQuery.toLowerCase())
+        ride.to.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ride.category.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -203,13 +250,23 @@ export default function TrumpScreen({
       case "לפי מיקום":
         filtered.sort((a, b) => a.from.localeCompare(b.from));
         break;
-      case "לפי מחיר":
-        filtered.sort((a, b) => a.price - b.price);
+      case "לפי תחום":
+        filtered.sort((a, b) => a.category.localeCompare(b.category));
+        break;
+      case "לפי תאריך":
+        filtered.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         break;
       case "לפי שעה":
         filtered.sort((a, b) => a.time.localeCompare(b.time));
         break;
+      case "לפי מחיר":
+        filtered.sort((a, b) => a.price - b.price);
+        break;
       case "לפי דירוג":
+        filtered.sort((a, b) => b.rating - a.rating);
+        break;
+      case "לפי רלוונטיות":
+        // Default - by rating
         filtered.sort((a, b) => b.rating - a.rating);
         break;
     }
@@ -375,7 +432,11 @@ export default function TrumpScreen({
         onToggleMode={handleToggleMode}
         onSelectMenuItem={handleSelectMenuItem}
         title=""
-        placeholder={mode ? "בחד יעד" : "חפש טרמפים זמינים"}
+        placeholder={mode ? "חפש יעד לטרמפ" : "חפש טרמפים זמינים"}
+        filterOptions={trumpFilterOptions}
+        sortOptions={trumpSortOptions}
+        searchData={dummyRides}
+        onSearch={handleSearch}
       />
 
       <FormHeader />
@@ -410,7 +471,7 @@ export default function TrumpScreen({
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={localStyles.ridesScrollContainer}
               >
-                {getFilteredRides().map((ride) => (
+                {filteredRides.map((ride) => (
                   <View key={ride.id} style={localStyles.rideCardWrapper}>
                     {renderRideCard({ item: ride })}
                   </View>

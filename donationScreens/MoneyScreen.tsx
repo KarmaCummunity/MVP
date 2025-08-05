@@ -14,7 +14,33 @@ import {
 } from 'react-native';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { FontSizes } from '../globals/constants';
-import { charityNames } from '../globals/fakeData';
+import { charityNames, charities, donations } from '../globals/fakeData';
+
+// Convert new charity format to old dummy format for compatibility
+const dummyCharities = charities.map((charity, index) => ({
+  id: index + 1,
+  name: charity.name,
+  category: charity.tags[0] || "כללי",
+  location: charity.location.city,
+  rating: charity.rating,
+  donors: charity.volunteersCount + charity.beneficiariesCount,
+  description: charity.description.substring(0, 100) + "...",
+  image: charity.tags[0] === "קשישים" ? "👴" : 
+        charity.tags[0] === "חינוך" ? "📚" : 
+        charity.tags[0] === "בעלי חיים" ? "🐕" : 
+        charity.tags[0] === "בריאות" ? "🏥" : "💝",
+  minDonation: 20 + (index * 10)
+}));
+
+// Convert donations to old format for recent donations
+const dummyRecentDonations = donations.slice(0, 5).map((donation, index) => ({
+  id: index + 1,
+  charityName: charities[index % charities.length]?.name || "עמותה לא ידועה",
+  amount: donation.amount || 100,
+  date: new Date(donation.createdAt).toLocaleDateString('he-IL'),
+  status: "הושלמה",
+  category: donation.category || "כללי"
+}));
 import { texts } from '../globals/texts';
 import colors from '../globals/colors';
 import { Ionicons as Icon } from '@expo/vector-icons';
@@ -26,152 +52,19 @@ export default function MoneyScreen({
   navigation: NavigationProp<ParamListBase>;
 }) {
   // Debug log for MoneyScreen
-  console.log('💰 MoneyScreen - Component rendered');
-  console.log('💰 MoneyScreen - Navigation object:', navigation);
-  console.log('💰 MoneyScreen - Navigation state:', JSON.stringify(navigation.getState(), null, 2));
+  // console.log('💰 MoneyScreen - Component rendered');
+  // console.log('💰 MoneyScreen - Navigation object:', navigation);
+  // console.log('💰 MoneyScreen - Navigation state:', JSON.stringify(navigation.getState(), null, 2));
   const [selectedRecipient, setSelectedRecipient] = useState<string>('');
   const [amount, setAmount] = useState<string>('50');
   const [mode, setMode] = useState(false); // false = seeker (needs help), true = offerer (wants to donate)
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("");
   const [selectedSort, setSelectedSort] = useState("");
-  // Mock data for charities
-  const dummyCharities = [
-    {
-      id: 1,
-      name: "לב זהב - עמותה לתמיכה בקשישים",
-      category: "רווחה",
-      location: "תל אביב",
-      rating: 4.8,
-      donors: 1250,
-      description: "תמיכה בקשישים בודדים וסיוע יומיומי",
-      image: "👴",
-      minDonation: 20,
-    },
-    {
-      id: 2,
-      name: "אור לילדים - עמותה לקידום חינוך",
-      category: "חינוך",
-      location: "ירושלים",
-      rating: 4.9,
-      donors: 2100,
-      description: "קידום חינוך לילדים ממשפחות מעוטות יכולת",
-      image: "📚",
-      minDonation: 30,
-    },
-    {
-      id: 3,
-      name: "חמלה לבעלי חיים - עמותה להצלת חיות",
-      category: "בעלי חיים",
-      location: "חיפה",
-      rating: 4.7,
-      donors: 890,
-      description: "הצלה וטיפול בבעלי חיים נטושים",
-      image: "🐕",
-      minDonation: 25,
-    },
-    {
-      id: 4,
-      name: "בריאות לכולם - קידום רפואה נגישה",
-      category: "בריאות",
-      location: "באר שבע",
-      rating: 4.6,
-      donors: 1560,
-      description: "קידום רפואה נגישה לכל האוכלוסיות",
-      image: "🏥",
-      minDonation: 40,
-    },
-    {
-      id: 5,
-      name: "ירוק בעיניים - שמירה על איכות הסביבה",
-      category: "סביבה",
-      location: "אילת",
-      rating: 4.5,
-      donors: 720,
-      description: "שמירה על איכות הסביבה והטבע",
-      image: "🌱",
-      minDonation: 15,
-    },
-    {
-      id: 6,
-      name: "פעמוני תקווה - תמיכה בנוער בסיכון",
-      category: "נוער בסיכון",
-      location: "אשדוד",
-      rating: 4.8,
-      donors: 980,
-      description: "תמיכה וטיפול בנוער בסיכון",
-      image: "🎭",
-      minDonation: 35,
-    },
-    {
-      id: 7,
-      name: "שביל האור - ליווי אנשים עם מוגבלויות",
-      category: "נכים",
-      location: "רמת גן",
-      rating: 4.9,
-      donors: 1340,
-      description: "ליווי ושילוב אנשים עם מוגבלויות",
-      image: "♿",
-      minDonation: 50,
-    },
-    {
-      id: 8,
-      name: "קול התקווה - תמיכה בחולי סרטן",
-      category: "חולים",
-      location: "פתח תקווה",
-      rating: 4.7,
-      donors: 2100,
-      description: "תמיכה נפשית ופיזית בחולי סרטן",
-      image: "💪",
-      minDonation: 60,
-    },
-  ];
 
   const [filteredCharities, setFilteredCharities] = useState(dummyCharities); // Search results
 
-  // Mock data for recent donations
-  const dummyRecentDonations = [
-    {
-      id: 1,
-      charityName: "לב זהב",
-      amount: 180,
-      date: "15.12.2023",
-      status: "הושלמה",
-      category: "רווחה",
-    },
-    {
-      id: 2,
-      charityName: "אור לילדים",
-      amount: 250,
-      date: "12.12.2023",
-      status: "הושלמה",
-      category: "חינוך",
-    },
-    {
-      id: 3,
-      charityName: "חמלה לבעלי חיים",
-      amount: 120,
-      date: "10.12.2023",
-      status: "הושלמה",
-      category: "בעלי חיים",
-    },
-    {
-      id: 4,
-      charityName: "בריאות לכולם",
-      amount: 300,
-      date: "08.12.2023",
-      status: "הושלמה",
-      category: "בריאות",
-    },
-    {
-      id: 5,
-      charityName: "ירוק בעיניים",
-      amount: 80,
-      date: "05.12.2023",
-      status: "הושלמה",
-      category: "סביבה",
-    },
-  ];
+
 
   // Function to filter charities by search and filter
   const getFilteredCharities = () => {
@@ -331,7 +224,15 @@ export default function MoneyScreen({
     setSearchQuery(query);
     setSelectedFilter(filters?.[0] || ""); // Only first filter
     setSelectedSort(sorts?.[0] || ""); // Only first sort
-    setFilteredCharities(results || dummyCharities);
+    
+    // If results are provided from SearchBar, use them
+    if (results && results.length > 0) {
+      setFilteredCharities(results);
+    } else {
+      // Otherwise, perform local filtering
+      const filtered = getFilteredCharities();
+      setFilteredCharities(filtered);
+    }
   };
 
   const handleDonate = () => {

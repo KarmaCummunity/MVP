@@ -100,8 +100,38 @@ const volunteerOpportunities = [
 
 const TimeScreen: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('כל הקטגוריות');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState("");
+  const [selectedSort, setSelectedSort] = useState("");
+  const [filteredOpportunities, setFilteredOpportunities] = useState(volunteerOpportunities);
 
   const categories = ['כל הקטגוריות', 'קשישים', 'חינוך', 'רווחה', 'חיות', 'סביבה', 'בריאות'];
+  
+  // Filter and sort options for time screen
+  const timeFilterOptions = [
+    "קשישים",
+    "חינוך", 
+    "רווחה",
+    "חיות",
+    "סביבה",
+    "בריאות",
+    "נוער",
+    "קהילה",
+    "ספורט",
+    "תרבות",
+    "מזון",
+    "ביגוד"
+  ];
+
+  const timeSortOptions = [
+    "אלפביתי",
+    "לפי מיקום",
+    "לפי תחום",
+    "לפי משך זמן",
+    "לפי תדירות",
+    "לפי מספר מתנדבים נדרש",
+    "לפי רלוונטיות",
+  ];
 
   const handleVolunteerPress = (opportunity: any) => {
     console.log('Volunteer opportunity pressed:', opportunity.title);
@@ -140,9 +170,46 @@ const TimeScreen: React.FC = () => {
     }
   };
 
-  const filteredOpportunities = selectedCategory === 'כל הקטגוריות' 
-    ? volunteerOpportunities 
-    : volunteerOpportunities.filter(opp => opp.category === selectedCategory);
+  // Function to handle search results from HeaderComp
+  const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
+    console.log('⏰ TimeScreen - Search received:', { 
+      query, 
+      filters: filters || [], 
+      sorts: sorts || [], 
+      resultsCount: results?.length || 0 
+    });
+    
+    // Update state with search results
+    setSearchQuery(query);
+    setSelectedFilter(filters?.[0] || "");
+    setSelectedSort(sorts?.[0] || "");
+    
+    // If results are provided from SearchBar, use them
+    if (results && results.length > 0) {
+      setFilteredOpportunities(results);
+    } else {
+      // Otherwise, perform local filtering
+      let filtered = [...volunteerOpportunities];
+      
+      // Filter by search query
+      if (query.trim() !== "") {
+        filtered = filtered.filter(opp => 
+          opp.title.toLowerCase().includes(query.toLowerCase()) ||
+          opp.organization.toLowerCase().includes(query.toLowerCase()) ||
+          opp.description.toLowerCase().includes(query.toLowerCase()) ||
+          opp.location.toLowerCase().includes(query.toLowerCase()) ||
+          opp.category.toLowerCase().includes(query.toLowerCase())
+        );
+      }
+      
+      // Filter by category
+      if (selectedCategory !== 'כל הקטגוריות') {
+        filtered = filtered.filter(opp => opp.category === selectedCategory);
+      }
+      
+      setFilteredOpportunities(filtered);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -153,7 +220,12 @@ const TimeScreen: React.FC = () => {
         menuOptions={['הגדרות', 'עזרה', 'צור קשר']}
         onToggleMode={() => console.log('Mode toggled')}
         onSelectMenuItem={(option: string) => console.log('Menu selected:', option)}
-        title="תרומת זמן"
+        title=""
+        placeholder="חפש הזדמנויות התנדבות..."
+        filterOptions={timeFilterOptions}
+        sortOptions={timeSortOptions}
+        searchData={volunteerOpportunities}
+        onSearch={handleSearch}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
