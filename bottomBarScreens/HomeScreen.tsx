@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { 
   View, 
   StyleSheet, 
@@ -34,12 +34,10 @@ import { texts } from "../globals/texts";
 import CommunityStatsPanel from "../components/CommunityStatsPanel";
 import PostsReelsScreen from "../components/PostsReelsScreen";
 import { 
-  communityStats, 
-  tasks, 
+  charities, 
   donations, 
   communityEvents, 
-  currentUser ,
-  recentActivities
+  currentUser 
 } from "../globals/fakeData";
 import { useUser } from "../context/UserContext";
 import GuestModeNotice from "../components/GuestModeNotice";
@@ -258,13 +256,13 @@ export default function HomeScreen() {
               {/* Stats Preview */}
               <View style={styles.statsPreview}>
                 <View style={styles.statsGrid}>
-                  {communityStats.slice(0, 4).map((stat, index) => (
+                  {charities[0]?.statistics?.slice(0, 4).map((stat, index) => (
                     <View key={index} style={styles.statCard}>
                       <Text style={styles.statIcon}>{stat.icon}</Text>
                       <Text style={styles.statValue}>{stat.value.toLocaleString()}</Text>
                       <Text style={styles.statName}>{stat.name}</Text>
                     </View>
-                  ))}
+                  )) || []}
                 </View>
               </View>
 

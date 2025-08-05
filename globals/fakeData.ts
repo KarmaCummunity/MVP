@@ -97,8 +97,8 @@ export const users = [
     interests: ['התנדבות', 'בישול', 'ספרים'],
     roles: ['user'],
     postsCount: 12,
-    followersCount: 150,
-    followingCount: 80,
+    followersCount: 0,
+    followingCount: 0,
     notifications: [
       { type: 'message', text: 'יש לך הודעה חדשה', date: '2024-07-28T10:00:00Z' },
       { type: 'system', text: 'ברוכה הבאה!', date: '2023-01-15T09:00:00Z' },
@@ -120,8 +120,8 @@ export const users = [
     interests: ['טכנולוגיה', 'ספורט', 'קהילה'],
     roles: ['user', 'admin'],
     postsCount: 20,
-    followersCount: 200,
-    followingCount: 120,
+    followersCount: 0,
+    followingCount: 0,
     notifications: [
       { type: 'like', text: 'מישהו אהב את הפוסט שלך', date: '2024-07-27T18:00:00Z' },
     ],
@@ -142,8 +142,8 @@ export const users = [
     interests: ['קוד', 'מוזיקה', 'טיולים'],
     roles: ['user'],
     postsCount: 5,
-    followersCount: 60,
-    followingCount: 40,
+    followersCount: 0,
+    followingCount: 0,
     notifications: [],
     settings: { language: 'he', darkMode: false, notificationsEnabled: false },
   },
@@ -162,8 +162,8 @@ export const users = [
     interests: ['ריצה', 'התנדבות', 'משפחה'],
     roles: ['user'],
     postsCount: 2,
-    followersCount: 30,
-    followingCount: 25,
+    followersCount: 0,
+    followingCount: 0,
     notifications: [
       { type: 'system', text: 'השלמת משימה!', date: '2024-07-15T08:00:00Z' },
     ],
@@ -184,8 +184,8 @@ export const users = [
     interests: ['הוראה', 'טיולים', 'ספרים'],
     roles: ['user'],
     postsCount: 8,
-    followersCount: 90,
-    followingCount: 60,
+    followersCount: 0,
+    followingCount: 0,
     notifications: [],
     settings: { language: 'he', darkMode: true, notificationsEnabled: true },
   },
@@ -204,8 +204,8 @@ export const users = [
     interests: ['עסקים', 'קהילה', 'ספורט'],
     roles: ['user', 'moderator'],
     postsCount: 15,
-    followersCount: 300,
-    followingCount: 180,
+    followersCount: 0,
+    followingCount: 0,
     notifications: [
       { type: 'follow', text: 'יש לך עוקב חדש', date: '2024-07-28T20:00:00Z' },
     ],
@@ -226,8 +226,8 @@ export const users = [
     interests: ['עיצוב', 'צילום', 'טיולים'],
     roles: ['user'],
     postsCount: 3,
-    followersCount: 40,
-    followingCount: 35,
+    followersCount: 0,
+    followingCount: 0,
     notifications: [],
     settings: { language: 'he', darkMode: false, notificationsEnabled: false },
   },
@@ -246,8 +246,8 @@ export const users = [
     interests: ['קוד', 'ספורט', 'משחקים'],
     roles: ['user'],
     postsCount: 10,
-    followersCount: 120,
-    followingCount: 70,
+    followersCount: 0,
+    followingCount: 0,
     notifications: [
       { type: 'comment', text: 'מישהו הגיב לפוסט שלך', date: '2024-07-28T15:00:00Z' },
     ],
@@ -268,8 +268,8 @@ export const users = [
     interests: ['חיות', 'טבע', 'התנדבות'],
     roles: ['user'],
     postsCount: 4,
-    followersCount: 55,
-    followingCount: 38,
+    followersCount: 0,
+    followingCount: 0,
     notifications: [],
     settings: { language: 'he', darkMode: false, notificationsEnabled: true },
   },
@@ -288,8 +288,8 @@ export const users = [
     interests: ['יוגה', 'מדיטציה', 'בריאות'],
     roles: ['user'],
     postsCount: 6,
-    followersCount: 70,
-    followingCount: 50,
+    followersCount: 0,
+    followingCount: 0,
     notifications: [
       { type: 'system', text: 'ברוך הבא!', date: '2023-07-01T09:00:00Z' },
     ],
@@ -560,8 +560,8 @@ export interface Charity {
   motivationalQuotes?: string[];
   statistics?: CharityStatistic[];
   events?: CommunityEvent[];
-  volunteers?: string[]; // IDs של משתמשים מתנדבים
-  beneficiaries?: string[]; // IDs של משתמשים מוטבים
+  volunteers?: string[]; // IDs של משתמשים מתנדבים (מתוך allUsers)
+  beneficiaries?: string[]; // IDs של משתמשים מוטבים (מתוך allUsers)
   projects?: CharityProject[];
   volunteerOpportunities?: CharityVolunteerOpportunity[];
   operatingHours?: CharityOperatingHours[];

@@ -7,6 +7,8 @@ import WebViewScreen from "../screens/WebViewScreen";
 import PostsReelsScreen from "../components/PostsReelsScreen";
 import BookmarksScreen from "../bottomBarScreens/BookmarksScreen";
 import UserProfileScreen from "../screens/UserProfileScreen";
+import FollowersScreen from "../screens/FollowersScreen";
+import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
 import LoginScreen from "../screens/LoginScreen";
 import { useUser } from '../context/UserContext';
 import colors from '../globals/colors';
@@ -92,6 +94,8 @@ export default function MainNavigator() {
       />
       {/* Screen we see that opens when user looks at another user */}
       <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} />
+      <Stack.Screen name="FollowersScreen" component={FollowersScreen} />
+      <Stack.Screen name="DiscoverPeopleScreen" component={DiscoverPeopleScreen} />
     </Stack.Navigator>
   );
 }

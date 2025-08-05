@@ -20,23 +20,23 @@ import Animated, {
   interpolate,
 } from "react-native-reanimated";
 import { FontSizes } from "../globals/constants";
-import { motivationalQuotes } from "../globals/fakeData";
+import { charities } from "../globals/fakeData";
 import { TouchableOpacity } from "react-native";
 import colors from "../globals/colors";
-import { donationStats } from "../globals/fakeData";
 
 // Get the dimensions of the device window for responsive sizing
 const { width, height } = Dimensions.get("window");
 
 // --- Constants ---
-const STATS_BUBBLE_COUNT = donationStats.length;
+const kcStats = charities[0]?.statistics || [];
+const STATS_BUBBLE_COUNT = kcStats.length;
 const BACKGROUND_BUBBLES_COUNT = 15; // בועות ריקות ברקע
 const MIN_SIZE = 60;
 const MAX_SIZE = 160;
 const BACKGROUND_MIN_SIZE = 30;
 const BACKGROUND_MAX_SIZE = 80;
-const MIN_VALUE = Math.min(...donationStats.map(s => s.value));
-const MAX_VALUE = Math.max(...donationStats.map(s => s.value));
+const MIN_VALUE = kcStats.length > 0 ? Math.min(...kcStats.map(s => s.value)) : 0;
+const MAX_VALUE = kcStats.length > 0 ? Math.max(...kcStats.map(s => s.value)) : 100;
 
 /**
  * ממיר מספר לערך גודל בועה בטווח המוגדר
@@ -119,8 +119,8 @@ const generateStatsLayout = () => {
   }
   
   // כעת יוצרים את בועות הסטטיסטיקות הראשיות
-  for (let i = 0; i < donationStats.length && attempts < maxAttempts; i++) {
-    const stat = donationStats[i];
+  for (let i = 0; i < kcStats.length && attempts < maxAttempts; i++) {
+    const stat = kcStats[i];
     const size = scaleNumberToSize(stat.value);
     
     let placed = false;
@@ -176,7 +176,8 @@ const DonationStatsScreen: React.FC = () => {
       return newId;
     });
     setCurrentSentenceIndex((prevIndex) => {
-      const newIndex = (prevIndex + 1) % motivationalQuotes.length;
+      const kcQuotes = charities[0]?.motivationalQuotes || [];
+      const newIndex = kcQuotes.length > 0 ? (prevIndex + 1) % kcQuotes.length : 0;
       return newIndex;
     });
   }, []);
@@ -185,8 +186,9 @@ const DonationStatsScreen: React.FC = () => {
    * מטפל בלחיצה על הודעה מוטיבציונית
    */
   const handleMessagePress = useCallback(() => {
+    const kcQuotes = charities[0]?.motivationalQuotes || [];
     setCurrentSentenceIndex(
-      (prevIndex) => (prevIndex + 1) % motivationalQuotes.length
+      (prevIndex) => kcQuotes.length > 0 ? (prevIndex + 1) % kcQuotes.length : 0
     );
   }, []);
 
@@ -219,7 +221,7 @@ const DonationStatsScreen: React.FC = () => {
           style={localStyles.messageButton}
         >
           <Text style={localStyles.messageText}>
-            {motivationalQuotes[currentSentenceIndex]}
+            {charities[0]?.motivationalQuotes?.[currentSentenceIndex] || 'אין ציטוטי מוטיבציה זמינים'}
           </Text>
         </TouchableOpacity>
       </View>

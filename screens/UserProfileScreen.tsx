@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,8 +16,9 @@ import type { SceneRendererProps, NavigationState } from 'react-native-tab-view'
 import { useRoute, useNavigation } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
-import { users } from '../globals/fakeData';
-import { characterTypes, CharacterType } from '../globals/characterTypes';
+import { allUsers, CharacterType } from '../globals/characterTypes';
+import { getFollowStats, followUser, unfollowUser } from '../utils/followService';
+import { useUser } from '../context/UserContext';
 
 // --- Type Definitions ---
 type TabRoute = {
@@ -91,18 +92,30 @@ export default function UserProfileScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const { userId, userName, characterData } = route.params as UserProfileRouteParams;
+  const { selectedUser } = useUser();
   
   const [index, setIndex] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followStats, setFollowStats] = useState({ followersCount: 0, followingCount: 0, isFollowing: false });
   const [routes] = useState<TabRoute[]>([
     { key: 'posts', title: 'פוסטים' },
     { key: 'reels', title: 'רילס' },
     { key: 'tagged', title: 'תיוגים' },
   ]);
 
-  // Find character data - use passed characterData or search in characterTypes
-  const character = characterData || characterTypes.find(char => char.id === userId);
-  // Fallback to old users array if character not found
-  const user = character || users.find(u => u.id === userId);
+  // Find character data - use passed characterData or search in allUsers
+  const character = characterData || allUsers.find(char => char.id === userId);
+  // Use character data only (no fallback to old users)
+  const user = character;
+
+  // Load follow stats
+  useEffect(() => {
+    if (user && selectedUser) {
+      const stats = getFollowStats(user.id, selectedUser.id);
+      setFollowStats(stats);
+      setIsFollowing(stats.isFollowing);
+    }
+  }, [user, selectedUser]);
 
   const renderScene = SceneMap({
     posts: PostsRoute,
@@ -189,14 +202,32 @@ export default function UserProfileScreen() {
               <Text style={styles.statNumber}>{user.postsCount || 0}</Text>
               <Text style={styles.statLabel}>פוסטים</Text>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{user.followersCount || 0}</Text>
+            <TouchableOpacity 
+              style={styles.statItem}
+              onPress={() => {
+                navigation.navigate('FollowersScreen' as never, {
+                  userId: user.id,
+                  type: 'followers',
+                  title: 'עוקבים'
+                } as never);
+              }}
+            >
+              <Text style={styles.statNumber}>{followStats.followersCount}</Text>
               <Text style={styles.statLabel}>עוקבים</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{user.followingCount || 0}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.statItem}
+              onPress={() => {
+                navigation.navigate('FollowersScreen' as never, {
+                  userId: user.id,
+                  type: 'following',
+                  title: 'עוקב אחרי'
+                } as never);
+              }}
+            >
+              <Text style={styles.statNumber}>{followStats.followingCount}</Text>
               <Text style={styles.statLabel}>עוקב אחרי</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -265,12 +296,45 @@ export default function UserProfileScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity 
-            style={styles.followButton}
-            onPress={() => Alert.alert('עקיבה', 'התחלת לעקוב אחרי המשתמש')}
-          >
-            <Text style={styles.followButtonText}>עקוב</Text>
-          </TouchableOpacity>
+          {selectedUser && selectedUser.id !== user.id && (
+            <TouchableOpacity 
+              style={[
+                styles.followButton,
+                isFollowing && styles.followingButton
+              ]}
+              onPress={() => {
+                if (!selectedUser) {
+                  Alert.alert('שגיאה', 'יש להתחבר תחילה');
+                  return;
+                }
+
+                if (isFollowing) {
+                  // ביטול עקיבה
+                  const success = unfollowUser(selectedUser.id, user.id);
+                  if (success) {
+                    setIsFollowing(false);
+                    setFollowStats(prev => ({ ...prev, followersCount: prev.followersCount - 1, isFollowing: false }));
+                    Alert.alert('ביטול עקיבה', 'ביטלת את העקיבה בהצלחה');
+                  }
+                } else {
+                  // התחלת עקיבה
+                  const success = followUser(selectedUser.id, user.id);
+                  if (success) {
+                    setIsFollowing(true);
+                    setFollowStats(prev => ({ ...prev, followersCount: prev.followersCount + 1, isFollowing: true }));
+                    Alert.alert('עקיבה', 'התחלת לעקוב בהצלחה');
+                  }
+                }
+              }}
+            >
+              <Text style={[
+                styles.followButtonText,
+                isFollowing && styles.followingButtonText
+              ]}>
+                {isFollowing ? 'עוקב' : 'עקוב'}
+              </Text>
+            </TouchableOpacity>
+          )}
           
                      <TouchableOpacity 
              style={styles.messageButton}
@@ -414,10 +478,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
+  followingButton: {
+    backgroundColor: colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   followButtonText: {
     color: colors.white,
     fontSize: FontSizes.body,
     fontWeight: '600',
+  },
+  followingButtonText: {
+    color: colors.textPrimary,
   },
   messageButton: {
     flex: 1,

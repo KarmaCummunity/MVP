@@ -112,6 +112,12 @@ export type RootStackParamList = {
   PostsReelsScreen: undefined; // ADD THIS LINE - this was probably missing
   BookmarksScreen: undefined;
   UserProfileScreen: undefined;
+  FollowersScreen: {
+    userId: string;
+    type: 'followers' | 'following';
+    title: string;
+  };
+  DiscoverPeopleScreen: undefined;
 };
 
 // --- Bottom Tab Navigator (BottomNavigator) Parameter List ---

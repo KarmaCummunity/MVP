@@ -23,6 +23,8 @@ import { currentUser, tasks, donations, communityEvents } from '../globals/fakeD
 import { useUser } from '../context/UserContext';
 import { createShadowStyle } from '../globals/styles';
 import { users } from '../globals/fakeData';
+import { allUsers } from '../globals/characterTypes';
+import { getFollowStats, followUser, unfollowUser } from '../utils/followService';
 
 // --- Type Definitions ---
 type TabRoute = {
@@ -83,9 +85,9 @@ export default function ProfileScreen() {
 
   // Function to select a random user
   const selectRandomUser = () => {
-    if (users.length > 0) {
-      const randomIndex = Math.floor(Math.random() * users.length);
-      const randomUser = users[randomIndex];
+    if (allUsers.length > 0) {
+      const randomIndex = Math.floor(Math.random() * allUsers.length);
+      const randomUser = allUsers[randomIndex];
       setSelectedUser(randomUser);
       setShowMenu(false);
       Alert.alert(texts.newUser, replaceText(texts.selectedUser, { name: randomUser.name }));
@@ -142,14 +144,15 @@ export default function ProfileScreen() {
     />
   );
 
-  // User Statistics
+  // User Statistics with real follow data
+  const currentUserStats = getFollowStats(selectedUser?.id || currentUser.id, selectedUser?.id || currentUser.id);
   const userStats = {
-    posts: 24,
-    followers: 156,
-    following: 89,
-    karmaPoints: currentUser.karmaPoints,
-    completedTasks: currentUser.completedTasks,
-    totalDonations: currentUser.totalDonations,
+    posts: selectedUser?.postsCount || 24,
+    followers: currentUserStats.followersCount,
+    following: currentUserStats.followingCount,
+    karmaPoints: selectedUser?.karmaPoints || currentUser.karmaPoints,
+    completedTasks: selectedUser?.completedTasks || currentUser.completedTasks,
+    totalDonations: selectedUser?.totalDonations || currentUser.totalDonations,
   };
 
   // Recent Activities
@@ -204,17 +207,35 @@ export default function ProfileScreen() {
           
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{selectedUser?.postsCount || userStats.posts}</Text>
+              <Text style={styles.statNumber}>{userStats.posts}</Text>
               <Text style={styles.statLabel}>פוסטים</Text>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{selectedUser?.followersCount || userStats.followers}</Text>
+            <TouchableOpacity 
+              style={styles.statItem}
+              onPress={() => {
+                navigation.navigate('FollowersScreen' as never, {
+                  userId: selectedUser?.id || currentUser.id,
+                  type: 'followers',
+                  title: 'עוקבים'
+                } as never);
+              }}
+            >
+              <Text style={styles.statNumber}>{userStats.followers}</Text>
               <Text style={styles.statLabel}>עוקבים</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{selectedUser?.followingCount || userStats.following}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.statItem}
+              onPress={() => {
+                navigation.navigate('FollowersScreen' as never, {
+                  userId: selectedUser?.id || currentUser.id,
+                  type: 'following',
+                  title: 'עוקב אחרי'
+                } as never);
+              }}
+            >
+              <Text style={styles.statNumber}>{userStats.following}</Text>
               <Text style={styles.statLabel}>עוקב/ת</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -361,7 +382,9 @@ export default function ProfileScreen() {
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity 
             style={styles.discoverPeopleButton}
-            onPress={() => Alert.alert(texts.discoverPeople, texts.findNewPeople)}
+            onPress={() => {
+              navigation.navigate('DiscoverPeopleScreen' as never);
+            }}
           >
             <Ionicons name="person-add-outline" size={18} color={colors.white} />
             <Text style={styles.discoverPeopleText}>גלה אנשים</Text>
