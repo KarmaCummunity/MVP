@@ -38,7 +38,7 @@ export default function SettingsScreen() {
   const { signOut, isGuestMode, selectedUser, isAuthenticated } = useUser();
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // האזנה לשינויים במצב ההתחברות
+  // Listen for authentication state changes
   useEffect(() => {
     console.log('⚙️ SettingsScreen - Auth state changed:', {
       isAuthenticated,
@@ -46,7 +46,7 @@ export default function SettingsScreen() {
       selectedUser: selectedUser?.name || 'null'
     });
     
-    // אם המשתמש לא מחובר יותר, עבור למסך הכניסה
+    // If user is no longer authenticated, go to login screen
     if (!isAuthenticated && !isGuestMode) {
       console.log('⚙️ SettingsScreen - User logged out, navigating to LoginScreen');
       navigation.navigate('LoginScreen' as never);
@@ -79,7 +79,7 @@ export default function SettingsScreen() {
     console.log('⚙️ SettingsScreen - Platform:', Platform.OS);
     console.log('⚙️ SettingsScreen - isGuestMode:', isGuestMode);
     
-    // מצב אורח - יציאה ישירה ללא התראה כי זה לא מסוכן
+    // Guest mode - direct logout without warning as it's not dangerous
     if (isGuestMode) {
       console.log('⚙️ SettingsScreen - Guest mode detected, direct logout without confirmation');
       signOut().then(() => {
@@ -92,9 +92,9 @@ export default function SettingsScreen() {
       return;
     }
     
-    // משתמש מחובר - הצג התראה כי זו פעולה מסוכנת
+    // Authenticated user - show warning as this is a dangerous action
     if (Platform.OS === 'web') {
-      // שימוש בדיאלוג אישור של הדפדפן לווב
+      // Use browser confirmation dialog for web
       console.log('⚙️ SettingsScreen - Using browser confirm for web');
       const confirmed = window.confirm('האם אתה בטוח שברצונך לצאת?');
       console.log('⚙️ SettingsScreen - Browser confirm result:', confirmed);
@@ -105,7 +105,7 @@ export default function SettingsScreen() {
         signOut().then(() => {
           console.log('⚙️ SettingsScreen - signOut() completed via browser');
           
-          // חכה קצת כדי לוודא שהמצב התעדכן
+          // Wait a bit to ensure state is updated
           setTimeout(() => {
             console.log('⚙️ SettingsScreen - Navigating to LoginScreen via browser after delay');
             navigation.navigate('LoginScreen' as never);
@@ -116,7 +116,7 @@ export default function SettingsScreen() {
         console.log('⚙️ SettingsScreen - Logout cancelled via browser');
       }
     } else {
-      // שימוש ב-React Native Alert לפלטפורמות מובייל
+      // Use React Native Alert for mobile platforms
       console.log('⚙️ SettingsScreen - Using React Native Alert for mobile');
       try {
         Alert.alert(
@@ -139,7 +139,7 @@ export default function SettingsScreen() {
                 await signOut();
                 console.log('⚙️ SettingsScreen - signOut() completed');
                 
-                // השהייה קצרה לוודא שהמצב התעדכן לפני הניווט
+                // Short delay to ensure state is updated before navigation
                 setTimeout(() => {
                   console.log('⚙️ SettingsScreen - Navigating to LoginScreen after delay');
                   navigation.navigate('LoginScreen' as never);
@@ -389,7 +389,7 @@ export default function SettingsScreen() {
               />
             </View>
 
-            {/* Logout Section - התנהגות שונה למצב אורח ולמשתמש מחובר */}
+            {/* Logout Section - different behavior for guest mode and authenticated user */}
             <View style={styles.section}>
               <SettingsItem
                 icon={isGuestMode ? "arrow-back-outline" : "log-out-outline"}
@@ -397,7 +397,7 @@ export default function SettingsScreen() {
                 subtitle={isGuestMode ? "יציאה ממצב אורח" : "יציאה מהחשבון"}
                 onPress={handleLogoutPress}
                 showArrow={false}
-                dangerous={!isGuestMode} // אדום רק למשתמש מחובר (פעולה מסוכנת)
+                dangerous={!isGuestMode} // Red only for authenticated user (dangerous action)
               />
             </View>
           </View>
@@ -506,7 +506,7 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* Logout Section - התנהגות שונה למצב אורח ולמשתמש מחובר */}
+        {/* Logout Section - different behavior for guest mode and authenticated user */}
         <View style={styles.section}>
           <SettingsItem
             icon={isGuestMode ? "arrow-back-outline" : "log-out-outline"}
@@ -514,7 +514,7 @@ export default function SettingsScreen() {
             subtitle={isGuestMode ? "יציאה ממצב אורח" : "יציאה מהחשבון"}
             onPress={handleLogoutPress}
             showArrow={false}
-            dangerous={!isGuestMode} // אדום רק למשתמש מחובר (פעולה מסוכנת)
+            dangerous={!isGuestMode} // Red only for authenticated user (dangerous action)
           />
         </View>
         </ScrollView>

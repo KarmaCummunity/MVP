@@ -18,6 +18,7 @@ import type { SceneRendererProps, NavigationState } from 'react-native-tab-view'
 import { useNavigation } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
+import { texts, replaceText } from '../globals/texts';
 import { currentUser, tasks, donations, communityEvents } from '../globals/fakeData';
 import { useUser } from '../context/UserContext';
 import { createShadowStyle } from '../globals/styles';
@@ -36,7 +37,7 @@ const PostsRoute = () => (
       <TouchableOpacity
         key={i}
         style={styles.postContainer}
-        onPress={() => Alert.alert('פוסט', `פוסט מספר ${i + 1}`)}
+        onPress={() => Alert.alert(texts.post, replaceText(texts.postNumber, { number: (i + 1).toString() }))}
       >
         <Image
           source={{ uri: `https://picsum.photos/300/300?random=${i}` }}
@@ -87,7 +88,7 @@ export default function ProfileScreen() {
       const randomUser = users[randomIndex];
       setSelectedUser(randomUser);
       setShowMenu(false);
-      Alert.alert('משתמש חדש', `נבחר המשתמש: ${randomUser.name}`);
+      Alert.alert(texts.newUser, replaceText(texts.selectedUser, { name: randomUser.name }));
     }
   };
   const [routes] = useState<TabRoute[]>([
@@ -249,7 +250,7 @@ export default function ProfileScreen() {
                     style={styles.menuItem}
                     onPress={() => {
                       setShowMenu(false);
-                      Alert.alert('שתף פרופיל', 'שיתוף הפרופיל שלך');
+                      Alert.alert(texts.shareProfile, texts.shareProfileDesc);
                     }}
                   >
                     <Ionicons name="share-outline" size={20} color={colors.textPrimary} />
@@ -260,7 +261,7 @@ export default function ProfileScreen() {
                     style={styles.menuItem}
                     onPress={() => {
                       setShowMenu(false);
-                      Alert.alert('ערוך פרופיל', 'עריכת פרטי הפרופיל');
+                      Alert.alert(texts.editProfile, texts.editProfileDesc);
                     }}
                   >
                     <Ionicons name="create-outline" size={20} color={colors.textPrimary} />
@@ -271,7 +272,7 @@ export default function ProfileScreen() {
                     style={styles.menuItem}
                     onPress={() => {
                       setShowMenu(false);
-                      Alert.alert('הגדרות', 'פתיחת הגדרות');
+                      Alert.alert(texts.settings, texts.openSettings);
                     }}
                   >
                     <Ionicons name="settings-outline" size={20} color={colors.textPrimary} />
@@ -282,7 +283,7 @@ export default function ProfileScreen() {
                     style={styles.menuItem}
                     onPress={() => {
                       setShowMenu(false);
-                      Alert.alert('עזרה', 'פתיחת עזרה');
+                      Alert.alert(texts.help, texts.openHelp);
                     }}
                   >
                     <Ionicons name="help-circle-outline" size={20} color={colors.textPrimary} />
@@ -334,21 +335,21 @@ export default function ProfileScreen() {
           <View style={styles.activityIcons}>
             <TouchableOpacity 
               style={styles.activityIconItem}
-              onPress={() => Alert.alert('פעילות', 'צפייה בפעילות שלך')}
+              onPress={() => Alert.alert(texts.activity, texts.viewActivity)}
             >
               <Ionicons name="star-outline" size={24} color={colors.pink} />
               <Text style={styles.activityIconText}>פעילות</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.activityIconItem}
-              onPress={() => Alert.alert('היסטוריה', 'היסטוריית פעילות')}
+              onPress={() => Alert.alert(texts.history, texts.activityHistory)}
             >
               <MaterialCommunityIcons name="history" size={24} color={colors.pink} />
               <Text style={styles.activityIconText}>היסטוריה</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.activityIconItem}
-              onPress={() => Alert.alert('מועדפים', 'המועדפים שלך')}
+              onPress={() => Alert.alert(texts.favorites, texts.yourFavorites)}
             >
               <Ionicons name="heart-outline" size={24} color={colors.pink} />
               <Text style={styles.activityIconText}>מועדפים</Text>
@@ -360,7 +361,7 @@ export default function ProfileScreen() {
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity 
             style={styles.discoverPeopleButton}
-            onPress={() => Alert.alert('גילוי אנשים', 'מציאת אנשים חדשים')}
+            onPress={() => Alert.alert(texts.discoverPeople, texts.findNewPeople)}
           >
             <Ionicons name="person-add-outline" size={18} color={colors.white} />
             <Text style={styles.discoverPeopleText}>גלה אנשים</Text>
@@ -399,7 +400,7 @@ export default function ProfileScreen() {
               <TouchableOpacity 
                 key={i} 
                 style={styles.storyHighlightItem}
-                onPress={() => Alert.alert('היילייט', `היילייט ${i + 1}`)}
+                onPress={() => Alert.alert(texts.highlight, replaceText(texts.highlightNumber, { number: (i + 1).toString() }))}
               >
                 <View style={styles.storyHighlightCircle}>
                   {i === 0 ? (

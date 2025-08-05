@@ -21,7 +21,7 @@ export default function App() {
 
   const prepareApp = useCallback(async () => {
     try {
-      // טעינת פונטים עם error handling טוב יותר
+      // Loading fonts with better error handling
       try {
         await Font.loadAsync({
           ...Ionicons.font,
@@ -29,10 +29,10 @@ export default function App() {
         });
               } catch (fontError) {
           console.warn('Font loading failed, continuing without custom fonts');
-          // לא נעצור את האפליקציה אם הפונטים נכשלו
+          // Don't stop the app if fonts fail to load
         }
 
-      // הסרת יצירת נתונים לדוגמה שיכולה לגרום לבעיות
+      // Removed demo data creation that could cause issues
       // await createSampleData();
 
       setAppIsReady(true);

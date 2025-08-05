@@ -17,6 +17,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { users } from '../globals/fakeData';
+import { characterTypes, CharacterType } from '../globals/characterTypes';
 
 // --- Type Definitions ---
 type TabRoute = {
@@ -27,6 +28,20 @@ type TabRoute = {
 type UserProfileRouteParams = {
   userId: string;
   userName: string;
+  characterData?: CharacterType;
+};
+
+// --- Helper Functions ---
+const getRoleDisplayName = (role: string): string => {
+  const roleTranslations: Record<string, string> = {
+    'user': 'משתמש',
+    'donor': 'תורם',
+    'volunteer': 'מתנדב',
+    'recipient': 'מקבל עזרה',
+    'organization': 'עמותה',
+    'student': 'סטודנט'
+  };
+  return roleTranslations[role] || role;
 };
 
 // --- Tab Components ---
@@ -75,7 +90,7 @@ const TaggedRoute = () => (
 export default function UserProfileScreen() {
   const route = useRoute();
   const navigation = useNavigation();
-  const { userId, userName } = route.params as UserProfileRouteParams;
+  const { userId, userName, characterData } = route.params as UserProfileRouteParams;
   
   const [index, setIndex] = useState(0);
   const [routes] = useState<TabRoute[]>([
@@ -84,8 +99,10 @@ export default function UserProfileScreen() {
     { key: 'tagged', title: 'תיוגים' },
   ]);
 
-  // מציאת המשתמש לפי ID
-  const user = users.find(u => u.id === userId);
+  // Find character data - use passed characterData or search in characterTypes
+  const character = characterData || characterTypes.find(char => char.id === userId);
+  // Fallback to old users array if character not found
+  const user = character || users.find(u => u.id === userId);
 
   const renderScene = SceneMap({
     posts: PostsRoute,
@@ -194,6 +211,56 @@ export default function UserProfileScreen() {
           <Text style={styles.joinDate}>
             הצטרף ב-{new Date(user.joinDate).toLocaleDateString('he-IL')}
           </Text>
+          
+          {/* Character-specific details */}
+          {character && (
+            <View style={styles.characterDetails}>
+              {/* Verification badge */}
+              {character.isVerified && (
+                <View style={styles.verificationBadge}>
+                  <Ionicons name="checkmark-circle" size={16} color={colors.info} />
+                  <Text style={styles.verifiedText}>מאומת</Text>
+                </View>
+              )}
+              
+              {/* Roles */}
+              <View style={styles.rolesContainer}>
+                {character.roles.map((role, index) => (
+                  <View key={index} style={styles.roleTag}>
+                    <Text style={styles.roleText}>{getRoleDisplayName(role)}</Text>
+                  </View>
+                ))}
+              </View>
+              
+              {/* Interests */}
+              <View style={styles.interestsContainer}>
+                <Text style={styles.sectionTitle}>תחומי עניין:</Text>
+                <View style={styles.interestsList}>
+                  {character.interests.slice(0, 4).map((interest, index) => (
+                    <Text key={index} style={styles.interestTag}>#{interest}</Text>
+                  ))}
+                </View>
+              </View>
+              
+              {/* Activity stats */}
+              <View style={styles.activityStats}>
+                <View style={styles.activityItem}>
+                  <Ionicons name="checkmark-done" size={16} color={colors.success} />
+                  <Text style={styles.activityText}>{character.completedTasks} משימות הושלמו</Text>
+                </View>
+                <View style={styles.activityItem}>
+                  <Ionicons name="heart" size={16} color={colors.error} />
+                  <Text style={styles.activityText}>{character.totalDonations} תרומות</Text>
+                </View>
+                {character.receivedDonations > 0 && (
+                  <View style={styles.activityItem}>
+                    <Ionicons name="gift" size={16} color={colors.warning} />
+                    <Text style={styles.activityText}>{character.receivedDonations} עזרות שהתקבלו</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Action Buttons */}
@@ -228,6 +295,8 @@ export default function UserProfileScreen() {
             <Text style={styles.karmaText}>נקודות קארמה: {user.karmaPoints}</Text>
           </View>
         </View>
+        
+
 
         {/* Tab View */}
         <View style={styles.tabViewContainer}>
@@ -385,6 +454,73 @@ const styles = StyleSheet.create({
   tabViewContainer: {
     flex: 1,
     minHeight: 400,
+  },
+  // New styles for character details
+  characterDetails: {
+    marginTop: 12,
+  },
+  verificationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  verifiedText: {
+    fontSize: FontSizes.small,
+    color: colors.info,
+    marginLeft: 4,
+    fontWeight: '600',
+  },
+  rolesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+    gap: 6,
+  },
+  roleTag: {
+    backgroundColor: colors.primary + '20',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  roleText: {
+    fontSize: FontSizes.small,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  interestsContainer: {
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: FontSizes.small,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  interestsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  interestTag: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+    backgroundColor: colors.backgroundTertiary,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  activityStats: {
+    marginTop: 8,
+  },
+  activityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  activityText: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+    marginLeft: 6,
   },
   tabBar: {
     backgroundColor: colors.backgroundPrimary,

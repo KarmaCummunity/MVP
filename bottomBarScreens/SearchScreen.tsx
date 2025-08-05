@@ -13,7 +13,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import SearchBar from '../components/SearchBar';
 import colors from '../globals/colors';
-import { FontSizes, UI_TEXT } from '../globals/constants';
+import { FontSizes } from '../globals/constants';
+import { texts } from '../globals/texts';
 import { 
   tasks, 
   donations, 
@@ -323,35 +324,35 @@ const SearchScreen = () => {
 
             {/* Quick Actions */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{UI_TEXT.quickActions}</Text>
+              <Text style={styles.sectionTitle}>{texts.quickActions}</Text>
               <View style={styles.quickActionsGrid}>
                 <TouchableOpacity
                   style={styles.quickAction}
                   onPress={() => Alert.alert('משימות דחופות', 'מציג משימות דחופות')}
                 >
                   <Ionicons name="flash-outline" size={24} color={colors.warning} />
-                  <Text style={styles.quickActionText}>{UI_TEXT.urgentTasks}</Text>
+                  <Text style={styles.quickActionText}>{texts.urgentTasks}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.quickAction}
                   onPress={() => Alert.alert('אירועים קרובים', 'מציג אירועים קרובים')}
                 >
                   <Ionicons name="calendar-outline" size={24} color={colors.success} />
-                  <Text style={styles.quickActionText}>{UI_TEXT.upcomingEvents}</Text>
+                  <Text style={styles.quickActionText}>{texts.upcomingEvents}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.quickAction}
                   onPress={() => Alert.alert('תרומות חדשות', 'מציג תרומות חדשות')}
                 >
                   <Ionicons name="heart-outline" size={24} color={colors.error} />
-                  <Text style={styles.quickActionText}>{UI_TEXT.newDonations}</Text>
+                  <Text style={styles.quickActionText}>{texts.newDonations}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.quickAction}
                   onPress={() => Alert.alert('מתנדבים פעילים', 'מציג מתנדבים פעילים')}
                 >
                   <Ionicons name="people-outline" size={24} color={colors.pink} />
-                  <Text style={styles.quickActionText}>{UI_TEXT.activeVolunteers}</Text>
+                  <Text style={styles.quickActionText}>{texts.activeVolunteers}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -362,7 +363,7 @@ const SearchScreen = () => {
             {isSearching ? (
               <View style={styles.loadingContainer}>
                 <Ionicons name="search" size={40} color={colors.textSecondary} />
-                <Text style={styles.loadingText}>{UI_TEXT.searching}</Text>
+                <Text style={styles.loadingText}>{texts.searching}</Text>
               </View>
             ) : searchResults.length > 0 ? (
               <>
@@ -379,9 +380,9 @@ const SearchScreen = () => {
             ) : (
               <View style={styles.noResultsContainer}>
                 <Ionicons name="search-outline" size={60} color={colors.textSecondary} />
-                <Text style={styles.noResultsTitle}>{UI_TEXT.noResultsFound}</Text>
+                <Text style={styles.noResultsTitle}>{texts.noResultsFound}</Text>
                 <Text style={styles.noResultsText}>
-                  {UI_TEXT.tryChangingSearchTerms}
+                  {texts.tryChangingSearchTerms}
                 </Text>
               </View>
             )}

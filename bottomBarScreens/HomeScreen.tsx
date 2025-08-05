@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   View, 
   StyleSheet, 
@@ -9,7 +9,8 @@ import {
   Image,
   Alert,
   SafeAreaView,
-  StatusBar
+  StatusBar,
+  Platform
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -29,6 +30,7 @@ import { Ionicons } from "@expo/vector-icons";
 import BubbleComp from "../components/BubbleComp";
 import colors from "../globals/colors";
 import { FontSizes } from "../globals/constants";
+import { texts } from "../globals/texts";
 import CommunityStatsPanel from "../components/CommunityStatsPanel";
 import PostsReelsScreen from "../components/PostsReelsScreen";
 import { 
@@ -36,18 +38,21 @@ import {
   tasks, 
   donations, 
   communityEvents, 
-  currentUser 
+  currentUser ,
+  recentActivities
 } from "../globals/fakeData";
 import { useUser } from "../context/UserContext";
 import GuestModeNotice from "../components/GuestModeNotice";
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
+
+
 const PANEL_HEIGHT = SCREEN_HEIGHT - 50;
 const CLOSED_POSITION = PANEL_HEIGHT - 60;
 const OPEN_POSITION = 0;
 const MID_POSITION = PANEL_HEIGHT / 2;
 
-// קומפוננטה מונפשת לבועה צפה
+// Animated floating bubble component
 const FloatingBubble: React.FC<{
   icon: string;
   value: string;
@@ -60,7 +65,7 @@ const FloatingBubble: React.FC<{
   const opacity = useSharedValue(0.8);
 
   useEffect(() => {
-    // אנימציה של ציפה למעלה ולמטה
+    // Floating up and down animation
     translateY.value = withDelay(
       delay,
       withRepeat(
@@ -70,7 +75,7 @@ const FloatingBubble: React.FC<{
       )
     );
 
-    // אנימציה של קנה מידה
+    // Scale animation
     scale.value = withDelay(
       delay + 500,
       withRepeat(
@@ -80,7 +85,7 @@ const FloatingBubble: React.FC<{
       )
     );
 
-    // אנימציה של שקיפות
+    // Opacity animation
     opacity.value = withDelay(
       delay + 1000,
       withRepeat(
@@ -115,38 +120,38 @@ export default function HomeScreen() {
   const navigation = useNavigation();
   const { selectedUser, setSelectedUser, isGuestMode } = useUser();
   const [showPosts, setShowPosts] = useState(false);
-  const [isPersonalMode, setIsPersonalMode] = useState(true); // מצב אישי כברירת מחדל
+  const [isPersonalMode, setIsPersonalMode] = useState(true); // Personal mode as default
   
-  // במצב אורח - תמיד מצב קהילתי
-  React.useEffect(() => {
+  // In guest mode - always community mode
+  useEffect(() => {
     if (isGuestMode) {
       console.log('🏠 HomeScreen - Guest mode detected, forcing community mode');
       setIsPersonalMode(false);
     }
   }, [isGuestMode]);
-  const [hideTopBar, setHideTopBar] = useState(false); // מצב הסתרת הטופ בר
+  const [hideTopBar, setHideTopBar] = useState(false); // Top bar hiding state
 
-  // ערכים מונפשים לגלילה
+  // Animated values for scrolling
   const scrollY = useSharedValue(0);
   const postsTranslateY = useSharedValue(0);
 
-  // איפוס מצב כאשר המסך מאבד פוקוס
-  React.useEffect(() => {
+  // Reset state when screen loses focus
+  useEffect(() => {
     if (!isFocused) {
       setShowPosts(false);
     }
   }, [isFocused]);
 
-  // עדכון hideTopBar ב-route params
-  React.useEffect(() => {
-    console.log('🏠 HomeScreen - Updating route params with hideTopBar:', hideTopBar);
+  // Update hideTopBar in route params
+  useEffect(() => {
+    // console.log('🏠 HomeScreen - Updating route params with hideTopBar:', hideTopBar);
     (navigation as any).setParams({ hideTopBar });
   }, [hideTopBar, navigation]);
 
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       setShowPosts(false);
-      setHideTopBar(false); // איפוס הסתרת הטופ בר
+      setHideTopBar(false); // Reset top bar hiding
       postsTranslateY.value = withSpring(0, {
         damping: 20,
         stiffness: 150,
@@ -163,13 +168,13 @@ export default function HomeScreen() {
     const offsetY = event.nativeEvent.contentOffset.y;
     scrollY.value = offsetY;
     
-    // סף גבוה יותר - צריך גלילה משמעותית
+    // Higher threshold - requires significant scrolling
     const threshold = 150;
     
-    // אם הגלילה עוברת את הסף, נפתח מסך הפוסטים
+    // If scrolling exceeds threshold, open posts screen
     if (offsetY > threshold && !showPosts) {
       setShowPosts(true);
-      setHideTopBar(false); // וידוא שהטופ בר מוצג כשנפתח מסך הפוסטים
+      setHideTopBar(false); // Ensure top bar is shown when posts screen opens
       postsTranslateY.value = withSpring(0, {
         damping: 25,
         stiffness: 200,
@@ -187,43 +192,13 @@ export default function HomeScreen() {
     };
   });
 
-  // Recent Activities
-  const recentActivities = [
-    {
-      id: '1',
-      type: 'task',
-      title: 'משימה הושלמה: איסוף מזון',
-      description: 'אנה כהן השלימה משימת איסוף מזון',
-      time: 'לפני שעה',
-      icon: 'checkmark-circle',
-      color: colors.success
-    },
-    {
-      id: '2',
-      type: 'donation',
-      title: 'תרומה חדשה: 500 ₪',
-      description: 'דני לוי תרם 500 ₪ לקניית ציוד',
-      time: 'לפני 3 שעות',
-      icon: 'heart',
-      color: colors.error
-    },
-    {
-      id: '3',
-      type: 'event',
-      title: 'אירוע חדש: יום קהילה',
-      description: 'אירוע קהילתי גדול יתקיים בשבוע הבא',
-      time: 'לפני יום',
-      icon: 'calendar',
-      color: colors.info
-    }
-  ];
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundPrimary} />
       
       {showPosts ? (
-        // מסך הפוסטים
+        // Posts screen
         <View style={styles.postsContainer}>
           <PostsReelsScreen 
             onScroll={(hide) => {
@@ -234,7 +209,7 @@ export default function HomeScreen() {
           />
         </View>
       ) : (
-        // מסך הבית עם גלילה משופרת
+        // Home screen with enhanced scrolling
         <View style={styles.homeContainer}>
           <ScrollView 
             style={styles.scrollContainer}
@@ -243,14 +218,14 @@ export default function HomeScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
-            {/* תוכן דינמי בהתאם למצב */}
+            {/* Dynamic content based on mode */}
 {/* Debug log - guest mode check */}
             {(() => {
               console.log('🏠 HomeScreen - isGuestMode:', isGuestMode, 'isPersonalMode:', isPersonalMode);
               return null;
             })()}
             {(isPersonalMode && !isGuestMode) ? (
-              // מצב אישי - המסך המלא
+              // Personal mode - full screen
               <View style={styles.personalModeContainer}>
                 {/* Guest Mode Notice */}
                 {isGuestMode && <GuestModeNotice />}
@@ -328,7 +303,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="💵"
                     value="125K"
-                    label="תרומות כספיות"
+                    label={texts.moneyDonations}
                     bubbleStyle={styles.moneyBubble}
                     delay={0}
                   />
@@ -337,7 +312,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="🍎"
                     value="2.1K"
-                    label={'ק"ג מזון'}
+                    label={texts.foodKg}
                     bubbleStyle={styles.foodBubble}
                     delay={200}
                   />
@@ -346,7 +321,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="👕"
                     value="1.5K"
-                    label={'ק"ג בגדים'}
+                    label={texts.clothingKg}
                     bubbleStyle={styles.clothingBubble}
                     delay={400}
                   />
@@ -355,7 +330,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="🩸"
                     value="350"
-                    label="ליטר דם"
+                    label={texts.bloodLiters}
                     bubbleStyle={styles.bloodBubble}
                     delay={600}
                   />
@@ -364,7 +339,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="⏰"
                     value="500"
-                    label="שעות התנדבות"
+                    label={texts.volunteerHours}
                     bubbleStyle={styles.timeBubble}
                     delay={800}
                   />
@@ -373,7 +348,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="🚗"
                     value="1.8K"
-                    label="טרמפים"
+                    label={texts.rides}
                     bubbleStyle={styles.transportBubble}
                     delay={1000}
                   />
@@ -382,7 +357,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="📚"
                     value="67"
-                    label="קורסים"
+                    label={texts.courses}
                     bubbleStyle={styles.educationBubble}
                     delay={1200}
                   />
@@ -391,7 +366,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="🌳"
                     value="750"
-                    label="עצים ניטעו"
+                    label={texts.treesPlanted}
                     bubbleStyle={styles.environmentBubble}
                     delay={1400}
                   />
@@ -400,7 +375,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="🐕"
                     value="120"
-                    label="חיות אומצו"
+                    label={texts.animalsAdopted}
                     bubbleStyle={styles.animalsBubble}
                     delay={1600}
                   />
@@ -409,7 +384,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="🎉"
                     value="78"
-                    label="אירועים"
+                    label={texts.events}
                     bubbleStyle={styles.eventsBubble}
                     delay={1800}
                   />
@@ -418,7 +393,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="♻️"
                     value="900"
-                    label="שקיות מיחזור"
+                    label={texts.recyclingBags}
                     bubbleStyle={styles.recyclingBubble}
                     delay={2000}
                   />
@@ -427,7 +402,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="🎭"
                     value="60"
-                    label="אירועי תרבות"
+                    label={texts.culturalEvents}
                     bubbleStyle={styles.cultureBubble}
                     delay={2200}
                   />
@@ -436,7 +411,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="🏥"
                     value="45"
-                    label="ביקורי רופא"
+                    label={texts.doctorVisits}
                     bubbleStyle={styles.healthBubble}
                     delay={2400}
                   />
@@ -445,7 +420,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="👴"
                     value="89"
-                    label="קשישים נתמכים"
+                    label={texts.elderlySupportCount}
                     bubbleStyle={styles.elderlyBubble}
                     delay={2600}
                   />
@@ -454,7 +429,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="👶"
                     value="156"
-                    label="ילדים נתמכים"
+                    label={texts.childrenSupportCount}
                     bubbleStyle={styles.childrenBubble}
                     delay={2800}
                   />
@@ -463,7 +438,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="⚽"
                     value="23"
-                    label="קבוצות ספורט"
+                    label={texts.sportsGroups}
                     bubbleStyle={styles.sportsBubble}
                     delay={3000}
                   />
@@ -472,7 +447,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="🎵"
                     value="34"
-                    label="שיעורי מוזיקה"
+                    label={texts.musicLessons}
                     bubbleStyle={styles.musicBubble}
                     delay={3200}
                   />
@@ -481,7 +456,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="🎨"
                     value="45"
-                    label="סדנאות יצירה"
+                    label={texts.artWorkshops}
                     bubbleStyle={styles.artBubble}
                     delay={3400}
                   />
@@ -490,7 +465,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="💻"
                     value="28"
-                    label="שיעורי מחשב"
+                    label={texts.computerLessons}
                     bubbleStyle={styles.techBubble}
                     delay={3600}
                   />
@@ -499,7 +474,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="🌱"
                     value="9"
-                    label="גינות קהילתיות"
+                    label={texts.communityGardens}
                     bubbleStyle={styles.gardenBubble}
                     delay={3800}
                   />
@@ -508,7 +483,7 @@ export default function HomeScreen() {
                   <FloatingBubble
                     icon="👑"
                     value="8"
-                    label="הנהגות קהילתיות"
+                    label={texts.communityLeaderships}
                     bubbleStyle={styles.leadershipBubble}
                     delay={4000}
                   />
@@ -516,7 +491,7 @@ export default function HomeScreen() {
               </View>
             </View>
           ) : (
-            // מצב קהילתי - רק בועות סטטיסטיקות
+            // Community mode - statistics bubbles only
             <View style={styles.communityModeContainer}>
               <BubbleComp />
             </View>
@@ -566,10 +541,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+    } : {
+      shadowColor: colors.shadowLight,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+    }),
     elevation: 3,
   },
   headerContent: {
@@ -665,10 +644,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 12,
     width: 150,
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+    } : {
+      shadowColor: colors.shadowLight,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    }),
     elevation: 2,
   },
   activityIcon: {
@@ -704,10 +687,14 @@ const styles = StyleSheet.create({
      alignItems: 'center',
      flex: 1,
      marginHorizontal: 5,
-     shadowColor: colors.shadowLight,
-     shadowOffset: { width: 0, height: 2 },
-     shadowOpacity: 0.15,
-     shadowRadius: 4,
+     ...(Platform.OS === 'web' ? {
+       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)'
+     } : {
+       shadowColor: colors.shadowLight,
+       shadowOffset: { width: 0, height: 2 },
+       shadowOpacity: 0.15,
+       shadowRadius: 4,
+     }),
      elevation: 3,
      minWidth: 80,
      minHeight: 80,
@@ -720,12 +707,12 @@ const styles = StyleSheet.create({
      statValue: {
      fontSize: FontSizes.medium,
      fontWeight: 'bold',
-     color: '#1976D2', // כחול כהה יותר לקריאות טובה
+     color: '#1976D2', // Darker blue for better readability
      marginBottom: 2,
    },
    statName: {
      fontSize: FontSizes.caption,
-     color: '#1565C0', // כחול כהה יותר לקריאות טובה
+     color: '#1565C0', // Darker blue for better readability
      textAlign: 'center',
      fontWeight: '500',
    },
@@ -737,10 +724,14 @@ const styles = StyleSheet.create({
     bottom: 10,
     borderTopLeftRadius: 250,
     borderTopRightRadius: 250,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0 -3px 8px rgba(0, 0, 0, 0.15)'
+    } : {
+      shadowColor: colors.black,
+      shadowOffset: { width: 0, height: -3 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+    }),
     elevation: 8,
   },
   panelHandle: {
@@ -749,7 +740,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: 20,
   },
-  // סטיילים חדשים למסך הפוסטים וגלילה
+  // New styles for posts screen and scrolling
   postsContainer: {
     flex: 1,
     backgroundColor: colors.backgroundPrimary,
@@ -781,7 +772,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 8,
   },
-  // סטיילים לכפתור הטוגל
+  // Toggle button styles
   toggleContainer: {
     position: 'absolute',
     bottom: 50,
@@ -816,16 +807,16 @@ const styles = StyleSheet.create({
   toggleTextActive: {
     color: colors.backgroundPrimary,
   },
-  // סטיילים למצב קהילתי
+  // Community mode styles
   communityModeContainer: {
     flex: 1,
-    minHeight: "100%", // גובה מינימלי כדי לאפשר גלילה
+    minHeight: "100%", // Minimum height to enable scrolling
     width: "100%",
   },
   communityModeTitle: {
     fontSize: FontSizes.heading2,
   },
-  // סטיילים לאינדיקטור יוזר נבחר
+  // Selected user indicator styles
   userSelectionIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -863,20 +854,20 @@ const styles = StyleSheet.create({
   clearUserButton: {
     padding: 4,
   },
-  // סטייל למיכל הבית
+  // Home container style
   homeContainer: {
     flex: 1,
     position: 'relative',
   },
-  // סטייל למצב אישי
+  // Personal mode style
   personalModeContainer: {
     flex: 1,
   },
-  // סטייל לתוכן הגלילה
+  // Scroll content style
   scrollContent: {
-    paddingBottom: 100, // מרווח בתחתית כדי לאפשר גלילה
+    paddingBottom: 100, // Bottom margin to enable scrolling
   },
-  // סטיילים לסטטיסטיקות אישיות
+  // Personal statistics styles
   personalStatsContainer: {
     paddingHorizontal: 20,
     marginBottom: 20,
@@ -887,9 +878,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
      personalStatCard: {
-     backgroundColor: '#E3F2FD', // כחול בהיר מאוד
+     backgroundColor: '#E3F2FD', // Very light blue
      padding: 15,
-     borderRadius: 50, // עגול לחלוטין
+     borderRadius: 50, // Fully rounded
      alignItems: 'center',
      flex: 1,
      marginHorizontal: 5,
@@ -910,16 +901,16 @@ const styles = StyleSheet.create({
      personalStatValue: {
      fontSize: FontSizes.large,
      fontWeight: 'bold',
-     color: '#1976D2', // כחול כהה יותר לקריאות טובה
+     color: '#1976D2', // Darker blue for better readability
      marginBottom: 2,
    },
    personalStatName: {
      fontSize: FontSizes.caption,
-     color: '#1565C0', // כחול כהה יותר לקריאות טובה
+     color: '#1565C0', // Darker blue for better readability
      textAlign: 'center',
      fontWeight: '500',
    },
-  // סטיילים לסטטיסטיקות קהילתיות צפות
+  // Floating community statistics styles
   floatingStatsContainer: {
     paddingHorizontal: 20,
     marginBottom: 20,
@@ -930,9 +921,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
      floatingBubble: {
-     backgroundColor: '#E3F2FD', // כחול בהיר מאוד
+     backgroundColor: '#E3F2FD', // Very light blue
      padding: 15,
-     borderRadius: 50, // עגול לחלוטין
+     borderRadius: 50, // Fully rounded
      alignItems: 'center',
      marginHorizontal: 5,
      marginBottom: 10,
@@ -952,16 +943,16 @@ const styles = StyleSheet.create({
      bubbleValue: {
      fontSize: FontSizes.large,
      fontWeight: 'bold',
-     color: '#1976D2', // כחול כהה יותר לקריאות טובה
+     color: '#1976D2', // Darker blue for better readability
      marginBottom: 2,
    },
    bubbleLabel: {
      fontSize: FontSizes.caption,
-     color: '#1565C0', // כחול כהה יותר לקריאות טובה
+     color: '#1565C0', // Darker blue for better readability
      textAlign: 'center',
      fontWeight: '500',
    },
-     // סטיילים לסוגי תרומות ספציפיות
+     // Specific donation types styles
    moneyBubble: {
      backgroundColor: colors.legacyLightGreen,
      borderColor: colors.success + '30',

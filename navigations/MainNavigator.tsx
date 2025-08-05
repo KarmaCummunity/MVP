@@ -25,7 +25,7 @@ export default function MainNavigator() {
     isAuthenticated
   });
 
-  // עדכון אוטומטי כשמצב ההתחברות משתנה
+  // Automatic update when authentication state changes
   useEffect(() => {
     console.log('🧭 MainNavigator - Auth state changed:', {
       selectedUser: selectedUser?.name || 'null',
@@ -57,7 +57,7 @@ export default function MainNavigator() {
     );
   }
 
-  // אם לא מחובר ולא במצב אורח – מציג מסך כניסה
+  // If not authenticated and not in guest mode - show login screen
   if (!isAuthenticated && !isGuestMode) {
     console.log('🧭 MainNavigator - User not authenticated, showing LoginScreen');
   } else {
@@ -67,7 +67,7 @@ export default function MainNavigator() {
   return (
     <Stack.Navigator 
       screenOptions={{ headerShown: false }}
-      initialRouteName={(!isAuthenticated && !isGuestMode) ? "LoginScreen" : "Home"}
+      initialRouteName={"LoginScreen"}
     >
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
       <Stack.Screen name="Home" component={HomeStack} />
@@ -90,6 +90,7 @@ export default function MainNavigator() {
           headerShown: true,
         }}
       />
+      {/* Screen we see that opens when user looks at another user */}
       <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} />
     </Stack.Navigator>
   );

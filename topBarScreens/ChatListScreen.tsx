@@ -16,7 +16,7 @@ export default function ChatListScreen() {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  // טעינת שיחות
+  // Loading conversations
   const loadConversations = useCallback(async () => {
     if (!selectedUser) {
       Alert.alert('שגיאה', 'יש לבחור יוזר תחילה');
@@ -24,7 +24,7 @@ export default function ChatListScreen() {
     }
 
     try {
-      // יצירת נתונים לדוגמה אם אין
+      // Create sample data if none exist
       await createSampleData();
       
       const userConversations = await getConversations(selectedUser.id);
@@ -48,7 +48,7 @@ export default function ChatListScreen() {
     const selectedConversation = conversations.find(conv => conv.id === conversationId);
     if (!selectedConversation) return;
 
-    // מציאת היוזר השני בשיחה
+    // Find the other user in conversation
     const otherParticipantId = selectedConversation.participants.find(id => id !== selectedUser?.id);
     const chattingUser = users.find(user => user.id === otherParticipantId);
 
@@ -63,7 +63,7 @@ export default function ChatListScreen() {
   };
 
   const renderItem = ({ item }: { item: ChatConversation }) => {
-    // מציאת היוזר השני בשיחה
+    // Find the other user in conversation
     const otherParticipantId = item.participants.find(id => id !== selectedUser?.id);
     const chattingUser = users.find(user => user.id === otherParticipantId);
     if (!chattingUser) return null;
@@ -78,7 +78,7 @@ export default function ChatListScreen() {
       status: chattingUser.bio,
     };
     
-    // יצירת אובייקט ChatConversation מותאם
+    // Create adapted ChatConversation object
     const chatConversation = {
       id: item.id,
       userId: otherParticipantId || '',

@@ -12,7 +12,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // Ensure @expo/vector-icons is installed
 import colors from "../globals/colors"; // Ensure this path is correct
-import { FontSizes, UI_TEXT, filterOptions as defaultFilterOptions, sortOptions as defaultSortOptions } from "../globals/constants";
+import { FontSizes, filterOptions as defaultFilterOptions, sortOptions as defaultSortOptions } from "../globals/constants";
+import { texts } from "../globals/texts";
 
 interface SearchBarProps {
   onHasActiveConditionsChange?: (isActive: boolean) => void;
@@ -178,7 +179,7 @@ const SearchBar = ({
           style={localStyles.buttonContainer}
           onPress={() => setIsSortModalVisible(true)}
         >
-          <Text style={localStyles.buttonText}>{UI_TEXT.sort}</Text>
+                      <Text style={localStyles.buttonText}>{texts.sort}</Text>
         </TouchableOpacity>
 
         {/* Filter Button (opens filter modal) */}
@@ -186,7 +187,7 @@ const SearchBar = ({
           style={localStyles.buttonContainer}
           onPress={() => setIsFilterModalVisible(true)}
         >
-          <Text style={localStyles.buttonText}>{UI_TEXT.filter}</Text>
+                      <Text style={localStyles.buttonText}>{texts.filter}</Text>
         </TouchableOpacity>
 
         {/* Search Input Field */}

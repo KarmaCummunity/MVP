@@ -10,7 +10,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
-import { FontSizes, UI_TEXT } from '../globals/constants';
+import { FontSizes } from '../globals/constants';
+import { texts } from '../globals/texts';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PANEL_HEIGHT = SCREEN_HEIGHT * 0.7;
@@ -97,41 +98,41 @@ export default function CommunityStatsPanel() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Real-time stats */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{UI_TEXT.realTimeData}</Text>
+          <Text style={styles.sectionTitle}>{texts.realTimeData}</Text>
           <View style={styles.statsGrid}>
-            <StatItem icon="people" value="3,847" label={UI_TEXT.activeMembers} />
-            <StatItem icon="heart" value="12,456" label={UI_TEXT.monthlyDonations} color={colors.pink} />
-            <StatItem icon="trending-up" value="+23%" label={UI_TEXT.monthlyGrowth} color={colors.success} />
-            <StatItem icon="globe" value="42" label={UI_TEXT.activeCities} color={colors.info} />
+            <StatItem icon="people" value="3,847" label={texts.activeMembers} />
+            <StatItem icon="heart" value="12,456" label={texts.monthlyDonations} color={colors.pink} />
+            <StatItem icon="trending-up" value="+23%" label={texts.monthlyGrowth} color={colors.success} />
+            <StatItem icon="globe" value="42" label={texts.activeCities} color={colors.info} />
           </View>
         </View>
 
         {/* Impact stats */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{UI_TEXT.communityImpact}</Text>
+          <Text style={styles.sectionTitle}>{texts.communityImpact}</Text>
           <View style={styles.impactCard}>
             <View style={styles.impactRow}>
               <Ionicons name="car" size={24} color={colors.info} />
-              <Text style={styles.impactText}>2,341 {UI_TEXT.sharedRides}</Text>
+              <Text style={styles.impactText}>2,341 {texts.sharedRides}</Text>
             </View>
             <View style={styles.impactRow}>
               <Ionicons name="restaurant" size={24} color={colors.pink} />
-              <Text style={styles.impactText}>5,678 {UI_TEXT.donatedMeals}</Text>
+              <Text style={styles.impactText}>5,678 {texts.donatedMeals}</Text>
             </View>
             <View style={styles.impactRow}>
               <Ionicons name="school" size={24} color={colors.warning} />
-              <Text style={styles.impactText}>892 {UI_TEXT.mentoringHours}</Text>
+              <Text style={styles.impactText}>892 {texts.mentoringHours}</Text>
             </View>
             <View style={styles.impactRow}>
               <Ionicons name="home" size={24} color={colors.legacyMediumPurple} />
-              <Text style={styles.impactText}>156 {UI_TEXT.supportedFamilies}</Text>
+              <Text style={styles.impactText}>156 {texts.supportedFamilies}</Text>
             </View>
           </View>
         </View>
 
         {/* Top contributors */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{UI_TEXT.topContributors}</Text>
+          <Text style={styles.sectionTitle}>{texts.topContributors}</Text>
           <View style={styles.leaderboard}>
             {['דוד כהן', 'שרה לוי', 'משה ישראלי', 'רחל אברהם', 'יוסף מזרחי'].map((name, index) => (
               <View key={index} style={styles.leaderItem}>
@@ -150,9 +151,9 @@ export default function CommunityStatsPanel() {
 
         {/* Activity graph placeholder */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{UI_TEXT.weeklyActivity}</Text>
+          <Text style={styles.sectionTitle}>{texts.weeklyActivity}</Text>
           <View style={styles.graphPlaceholder}>
-            <Text style={styles.graphText}>{UI_TEXT.activityGraphPlaceholder}</Text>
+            <Text style={styles.graphText}>{texts.activityGraphPlaceholder}</Text>
           </View>
         </View>
       </ScrollView>

@@ -19,7 +19,8 @@ import Animated, {
   Easing,
   interpolate,
 } from "react-native-reanimated";
-import { motivationalQuotes, FontSizes } from "../globals/constants";
+import { FontSizes } from "../globals/constants";
+import { motivationalQuotes } from "../globals/fakeData";
 import { TouchableOpacity } from "react-native";
 import colors from "../globals/colors";
 import { donationStats } from "../globals/fakeData";
@@ -193,13 +194,13 @@ const DonationStatsScreen: React.FC = () => {
     <View style={localStyles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       
-      {/* כותרת המסך */}
+      {/* Screen header */}
       <View style={localStyles.headerContainer}>
         <Text style={localStyles.title}>סטטיסטיקות תרומות</Text>
         <Text style={localStyles.subtitle}>הקהילה במספרים השבוע</Text>
       </View>
       
-      {/* מיכל הבועות */}
+      {/* Bubbles container */}
       <View style={localStyles.bubblesContainer}>
         {bubbles.map((bubble) => (
           <AnimatedStatsBubble
@@ -211,7 +212,7 @@ const DonationStatsScreen: React.FC = () => {
         ))}
       </View>
 
-      {/* מיכל ההודעה המוטיבציונית */}
+      {/* Motivational message container */}
       <View style={localStyles.messageContainer}>
         <TouchableOpacity 
           onPress={handleMessagePress}
@@ -388,12 +389,12 @@ const AnimatedStatsBubble: React.FC<AnimatedStatsBubbleProps> = ({
       >
         {!isBackground && (
           <View style={localStyles.bubbleContent}>
-            {/* אייקון */}
+            {/* Icon */}
             <Text style={[localStyles.bubbleIcon, { fontSize: iconSize }]}>
               {icon}
             </Text>
             
-            {/* ערך */}
+            {/* Value */}
             <Text
               style={[
                 localStyles.bubbleValue,
@@ -409,7 +410,7 @@ const AnimatedStatsBubble: React.FC<AnimatedStatsBubbleProps> = ({
               {value.toLocaleString()}
             </Text>
             
-            {/* שם */}
+            {/* Name */}
             <Text
               style={[
                 localStyles.bubbleName,

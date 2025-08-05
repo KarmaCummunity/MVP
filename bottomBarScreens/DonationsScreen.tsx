@@ -79,8 +79,8 @@ const donationCategories = [
     title: 'בגדים',
     subtitle: 'תרומת בגדים',
     icon: 'shirt-outline',
-    color: colors.info, // היה כחול-אפור
-    bgColor: colors.infoLight, // היה כחול-אפור בהיר
+    color: colors.info, // Was blue-gray
+    bgColor: colors.infoLight, // Was light blue-gray
     screen: '',
     description: 'תרומת בגדים לנזקקים',
   },
@@ -99,8 +99,8 @@ const donationCategories = [
     title: 'רהיטים',
     subtitle: 'תרומת רהיטים',
     icon: 'bed-outline',
-    color: colors.textPrimary, // היה חום
-    bgColor: colors.backgroundSecondary, // היה חום בהיר
+    color: colors.textPrimary, // Was brown
+    bgColor: colors.backgroundSecondary, // Was light brown
     screen: '',
     description: 'תרומת רהיטים לבית',
   },
@@ -120,7 +120,7 @@ const donationCategories = [
     subtitle: 'עזרה לחיות',
     icon: 'paw-outline',
     color: colors.orangeDark,
-    bgColor: colors.backgroundTertiary, // היה כתום בהיר
+    bgColor: colors.backgroundTertiary, // Was light orange
     screen: '',
     description: 'עזרה לחיות מחמד',
   },
@@ -129,8 +129,8 @@ const donationCategories = [
     title: 'דיור',
     subtitle: 'עזרה בדיור',
     icon: 'home-outline',
-    color: colors.info, // היה אינדיגו
-    bgColor: colors.infoLight, // היה אינדיגו בהיר
+    color: colors.info, // Was indigo
+    bgColor: colors.infoLight, // Was light indigo
     screen: '',
     description: 'עזרה בדיור וקורת גג',
   },
@@ -149,8 +149,8 @@ const donationCategories = [
     title: 'חינוך',
     subtitle: 'עזרה בלימודים',
     icon: 'book-outline',
-    color: colors.info, // היה סגול
-    bgColor: colors.infoLight, // היה סגול בהיר
+    color: colors.info, // Was purple
+    bgColor: colors.infoLight, // Was light purple
     screen: '',
     description: 'עזרה בלימודים וקורסים',
   },

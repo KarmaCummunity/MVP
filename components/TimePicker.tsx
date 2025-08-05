@@ -8,7 +8,8 @@ import {
   ScrollView,
 } from 'react-native';
 import colors from '../globals/colors';
-import { FontSizes, UI_TEXT } from '../globals/constants';
+import { FontSizes } from '../globals/constants';
+import { texts } from '../globals/texts';
 import { Ionicons as Icon } from '@expo/vector-icons';
 
 interface TimePickerProps {
@@ -21,8 +22,8 @@ interface TimePickerProps {
 export default function TimePicker({ 
   value, 
   onTimeChange, 
-  placeholder = UI_TEXT.timePlaceholder,
-  label = UI_TEXT.timeLabel
+  placeholder = texts.timePlaceholder,
+  label = texts.timeLabel
 }: TimePickerProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [selectedHour, setSelectedHour] = useState('00');
@@ -70,7 +71,7 @@ export default function TimePicker({
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{UI_TEXT.timePlaceholder}</Text>
+              <Text style={styles.modalTitle}>{texts.timePlaceholder}</Text>
               <TouchableOpacity onPress={handleCancel} style={styles.closeButton}>
                 <Icon name="close" size={24} color={colors.textPrimary} />
               </TouchableOpacity>

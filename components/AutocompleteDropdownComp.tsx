@@ -1,6 +1,7 @@
 // components/AutocompleteDropdownComp.tsx
 import React, { useState } from "react";
-import { UI_TEXT, FontSizes } from '../globals/constants';
+import { FontSizes } from '../globals/constants';
+import { texts } from '../globals/texts';
 import colors from '../globals/colors';
 import {
   View,
@@ -27,7 +28,7 @@ export default function AutocompleteDropdownComp({
   selectedValue,
   onValueChange,
   options,
-  placeholder = UI_TEXT.selectPlaceholder,
+  placeholder = texts.selectPlaceholder,
 }: AutocompleteDropdownCompProps) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -84,7 +85,7 @@ export default function AutocompleteDropdownComp({
               <Icon name="search" size={20} color={colors.dropdownSearchIcon} style={{ marginRight: 8 }} />
               <TextInput
                 style={dropdownStyles.searchInput}
-                placeholder={UI_TEXT.searchPlaceholder}
+                placeholder={texts.searchPlaceholder}
                 placeholderTextColor={colors.dropdownPlaceholder}
                 value={searchTerm}
                 onChangeText={setSearchTerm}
@@ -107,7 +108,7 @@ export default function AutocompleteDropdownComp({
                 </TouchableOpacity>
               )}
               ListEmptyComponent={
-                <Text style={dropdownStyles.noOptionsText}>{UI_TEXT.noOptions}</Text>
+                <Text style={dropdownStyles.noOptionsText}>{texts.noOptions}</Text>
               }
             />
           </View>

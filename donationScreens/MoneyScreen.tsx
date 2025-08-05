@@ -13,7 +13,9 @@ import {
   Platform,
 } from 'react-native';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
-import { charityNames, FontSizes } from '../globals/constants';
+import { FontSizes } from '../globals/constants';
+import { charityNames } from '../globals/fakeData';
+import { texts } from '../globals/texts';
 import colors from '../globals/colors';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import HeaderComp from '../components/HeaderComp';
@@ -33,7 +35,7 @@ export default function MoneyScreen({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("");
   const [selectedSort, setSelectedSort] = useState("");
-  // נתונים דמה לעמותות
+  // Mock data for charities
   const dummyCharities = [
     {
       id: 1,
@@ -125,9 +127,9 @@ export default function MoneyScreen({
     },
   ];
 
-  const [filteredCharities, setFilteredCharities] = useState(dummyCharities); // תוצאות החיפוש
+  const [filteredCharities, setFilteredCharities] = useState(dummyCharities); // Search results
 
-  // נתונים דמה לתרומות אחרונות
+  // Mock data for recent donations
   const dummyRecentDonations = [
     {
       id: 1,
@@ -171,11 +173,11 @@ export default function MoneyScreen({
     },
   ];
 
-  // פונקציה לסינון עמותות לפי חיפוש וסינון
+  // Function to filter charities by search and filter
   const getFilteredCharities = () => {
     let filtered = [...dummyCharities];
 
-    // סינון לפי חיפוש
+    // Filter by search
     if (searchQuery) {
       filtered = filtered.filter(charity =>
         charity.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -184,12 +186,12 @@ export default function MoneyScreen({
       );
     }
 
-    // סינון לפי קטגוריה
+    // Filter by category
     if (selectedFilter) {
       filtered = filtered.filter(charity => charity.category === selectedFilter);
     }
 
-    // מיון
+    // Sorting
     switch (selectedSort) {
       case "אלפביתי":
         filtered.sort((a, b) => a.name.localeCompare(b.name));
@@ -207,7 +209,7 @@ export default function MoneyScreen({
         filtered.sort((a, b) => b.rating - a.rating);
         break;
       case "לפי רלוונטיות":
-        // ברירת מחדל - לפי דירוג
+        // Default - by rating
         filtered.sort((a, b) => b.rating - a.rating);
         break;
     }
@@ -215,11 +217,11 @@ export default function MoneyScreen({
     return filtered;
   };
 
-  // פונקציה לסינון תרומות אחרונות
+  // Function to filter recent donations
   const getFilteredRecentDonations = () => {
     let filtered = [...dummyRecentDonations];
 
-    // סינון לפי חיפוש
+    // Filter by search
     if (searchQuery) {
       filtered = filtered.filter(donation =>
         donation.charityName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -227,7 +229,7 @@ export default function MoneyScreen({
       );
     }
 
-    // סינון לפי קטגוריה
+    // Filter by category
     if (selectedFilter) {
       filtered = filtered.filter(donation => donation.category === selectedFilter);
     }
@@ -235,7 +237,7 @@ export default function MoneyScreen({
     return filtered;
   };
 
-  // פונקציה להצגת פרטי עמותה במצב מחפש
+  // Function to show charity details in search mode
   const showCharityDetailsModal = (charity: any) => {
     Alert.alert(
       charity.name,
@@ -253,7 +255,7 @@ export default function MoneyScreen({
     );
   };
 
-  // פונקציה לבחירת סכום תרומה
+  // Function to select donation amount
   const showDonationAmountModal = (charity: any) => {
     Alert.prompt(
       'בחר סכום לתרומה',
@@ -290,7 +292,7 @@ export default function MoneyScreen({
     'צור קשר'
   ];
 
-  // אפשרויות סינון ומיון ספציפיות למסך הכסף
+  // Specific filter and sort options for money screen
   const moneyFilterOptions = [
     "חינוך",
     "בריאות",
@@ -316,7 +318,7 @@ export default function MoneyScreen({
     "לפי רלוונטיות",
   ];
 
-  // פונקציה לטיפול בתוצאות חיפוש מה-HeaderComp
+  // Function to handle search results from HeaderComp
   const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
     console.log('💰 MoneyScreen - Search received:', { 
       query, 
@@ -325,10 +327,10 @@ export default function MoneyScreen({
       resultsCount: results?.length || 0 
     });
     
-    // עדכון state עם תוצאות החיפוש
+    // Update state with search results
     setSearchQuery(query);
-    setSelectedFilter(filters?.[0] || ""); // רק הסינון הראשון
-    setSelectedSort(sorts?.[0] || ""); // רק המיון הראשון
+    setSelectedFilter(filters?.[0] || ""); // Only first filter
+    setSelectedSort(sorts?.[0] || ""); // Only first sort
     setFilteredCharities(results || dummyCharities);
   };
 
@@ -358,11 +360,11 @@ export default function MoneyScreen({
       style={localStyles.charityCard}
       onPress={() => {
         if (mode) {
-          // מצב תורם - בוחר עמותה לתרומה
+          // Donor mode - select charity for donation
           setSelectedRecipient(item.name);
           Alert.alert('עמותה נבחרה', `נבחרה: ${item.name}`);
         } else {
-          // מצב נזקק - מציג פרטי עמותה עם אפשרות לתרומה
+          // Beneficiary mode - show charity details with donation option
           showCharityDetailsModal(item);
         }
       }}
@@ -410,7 +412,7 @@ export default function MoneyScreen({
         <></>
       ) : (
         <View style={localStyles.formContainer}>
-          {/* מצב נזקק - הודעה לחיפוש עזרה */}
+          {/* Beneficiary mode - help search message */}
           <View style={localStyles.searchHelpContainer}>
             <Text style={localStyles.searchHelpTitle}>מחפש עזרה כספית?</Text>
             <Text style={localStyles.searchHelpText}>
@@ -437,7 +439,7 @@ export default function MoneyScreen({
         onToggleMode={handleToggleMode}
         onSelectMenuItem={handleSelectMenuItem}
         title=""
-        placeholder={mode ? "חפש עמותות לתרומה" : "חפש עמותות לעזרה"}
+        placeholder={mode ? texts.searchCharitiesForDonation : texts.searchCharitiesForHelp}
         filterOptions={moneyFilterOptions}
         sortOptions={moneySortOptions}
         searchData={dummyCharities}
@@ -452,7 +454,7 @@ export default function MoneyScreen({
         <FormHeader />
 
         {mode ? (
-          // מצב תורם - מציג עמותות לתרומה והיסטוריית תרומות
+          // Donor mode - show charities for donation and donation history
           <>
             <View style={localStyles.section}>
               <Text style={localStyles.sectionTitle}>
@@ -487,7 +489,7 @@ export default function MoneyScreen({
             </View>
           </>
         ) : (
-          // מצב נזקק - מציג עמותות שיכולות לעזור
+          // Beneficiary mode - show charities that can help
           <View style={localStyles.section}>
             <Text style={localStyles.sectionTitle}>
               {searchQuery || selectedFilter ? 'עמותות שיכולות לעזור' : 'עמותות מומלצות לעזרה'}
@@ -521,7 +523,7 @@ const localStyles = StyleSheet.create({
         paddingTop: 24,
     },
     scrollContent: {
-        paddingBottom: 100, // מרווח בתחתית המסך
+        paddingBottom: 100, // Bottom margin for screen
     },
     formContainer: {
       backgroundColor: colors.moneyFormBackground,

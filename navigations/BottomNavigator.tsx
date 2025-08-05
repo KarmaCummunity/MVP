@@ -95,7 +95,7 @@ export default function BottomNavigator(): React.ReactElement {
         {!isGuestMode && <Tab.Screen name="ProfileScreen" component={ProfileScreen} />}
         <Tab.Screen name="DonationsScreen" component={DonationsStack} />
         <Tab.Screen name="SearchScreen" component={SearchScreen} />
-        {/* <Tab.Screen name="UsersScreen" component={UsersScreen} /> הסתרה לבדיקות */}
+        {/* <Tab.Screen name="UsersScreen" component={UsersScreen} /> hidden for testing */}
         <Tab.Screen name="HomeScreen" component={HomeScreen} />
       </Tab.Navigator>
     </View>

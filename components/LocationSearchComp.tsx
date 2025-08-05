@@ -9,7 +9,8 @@ import {
   Platform,
 } from "react-native";
 import colors from "../globals/colors";
-import { FontSizes, UI_TEXT } from "../globals/constants";
+import { FontSizes } from "../globals/constants";
+import { texts } from "../globals/texts";
 import logger from '../utils/logger';
 
 interface PlacePrediction {
@@ -143,7 +144,7 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
       <TextInput
         value={query}
         onChangeText={handleChangeText}
-        placeholder={placeholder || UI_TEXT.locationPlaceholder}
+        placeholder={placeholder || texts.locationPlaceholder}
         placeholderTextColor={colors.black}
         style={local_styles.input}
       />
