@@ -1,6 +1,7 @@
 // components/AutocompleteDropdownComp.tsx
 import React, { useState } from "react";
-import { UI_TEXT } from '../globals/constants';
+import { UI_TEXT, FontSizes } from '../globals/constants';
+import colors from '../globals/colors';
 import {
   View,
   Text,
@@ -54,13 +55,13 @@ export default function AutocompleteDropdownComp({
           style={dropdownStyles.textInput}
           value={searchTerm || selectedValue} // Display search term or selected value
           placeholder={placeholder}
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.dropdownPlaceholder}
           editable={false} // Make it not directly editable, only through the modal
         />
         <Icon
           name={isModalVisible ? "arrow-drop-up" : "arrow-drop-down"}
           size={24}
-          color="#666"
+          color={colors.dropdownIcon}
         />
       </TouchableOpacity>
 
@@ -80,17 +81,17 @@ export default function AutocompleteDropdownComp({
         >
           <View style={dropdownStyles.modalContent}>
             <View style={dropdownStyles.searchContainer}>
-              <Icon name="search" size={20} color="#888" style={{ marginRight: 8 }} />
+              <Icon name="search" size={20} color={colors.dropdownSearchIcon} style={{ marginRight: 8 }} />
               <TextInput
                 style={dropdownStyles.searchInput}
                 placeholder={UI_TEXT.searchPlaceholder}
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.dropdownPlaceholder}
                 value={searchTerm}
                 onChangeText={setSearchTerm}
                 autoFocus={true} // Focus input when modal opens
               />
               <TouchableOpacity onPress={() => setIsModalVisible(false)}>
-                <Icon name="close" size={24} color="#666" />
+                <Icon name="close" size={24} color={colors.dropdownCloseIcon} />
               </TouchableOpacity>
             </View>
 
@@ -122,22 +123,22 @@ const dropdownStyles = StyleSheet.create({
     zIndex: 1, // Ensure dropdown is above other elements
   },
   label: {
-    fontSize: 16,
+    fontSize: FontSizes.medium,
     fontWeight: "600",
-    color: "#333",
+    color: colors.dropdownLabel,
     marginBottom: 8,
     textAlign: "right", // Align label to the right
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: colors.dropdownBackground,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: colors.dropdownBorder,
     paddingVertical: 12,
     paddingHorizontal: 15,
-    shadowColor: "#000",
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -145,23 +146,23 @@ const dropdownStyles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
-    color: "#333",
+    fontSize: FontSizes.medium,
+    color: colors.dropdownText,
     textAlign: "right", // Align text to the right
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    backgroundColor: colors.dropdownModalOverlay,
     justifyContent: "center",
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.dropdownModalBackground,
     borderRadius: 12,
     width: "90%",
     maxHeight: "70%",
     padding: 20,
-    shadowColor: "#000",
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -171,30 +172,30 @@ const dropdownStyles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: colors.dropdownSearchBorder,
     paddingBottom: 10,
     marginBottom: 10,
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: FontSizes.medium,
     paddingVertical: 8,
     textAlign: "right", // Align search input text to the right
   },
   optionItem: {
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: colors.dropdownOptionBorder,
   },
   optionText: {
-    fontSize: 16,
-    color: "#333",
+    fontSize: FontSizes.medium,
+    color: colors.dropdownText,
     textAlign: "right", // Align option text to the right
   },
   noOptionsText: {
     textAlign: "center",
     paddingVertical: 20,
-    color: "#777",
-    fontSize: 16,
+    color: colors.dropdownNoOptionsText,
+    fontSize: FontSizes.medium,
   },
 });

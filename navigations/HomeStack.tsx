@@ -8,7 +8,7 @@ import AboutKarmaCommunityScreen from "../topBarScreens/AboutKarmaCommunityScree
 
 const Stack = createStackNavigator();
 
-export default function DonationsStack() {
+export default function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="HomeMain" component={Home} />

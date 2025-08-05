@@ -1,39 +1,40 @@
 {
   "expo": {
-    "name": "Karma Community",
-    "slug": "karma-community",
+    "name": "KC",
+    "slug": "kc",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/images/icon.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/logo.png",
+      "image": "./assets/images/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "assetBundlePatterns": [
       "**/*"
-    ], 
+    ],
     "ios": {
-      "jsEngine": "hermes",
       "supportsTablet": true,
-      "bundleIdentifier": "com.karma-community.KC"
+      "bundleIdentifier": "com.navesarussi1.KarmaCommunity"
     },
     "android": {
-      "jsEngine": "hermes",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo.png",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.karma_community.KC"
+      "package": "com.navesarussi1.KarmaCommunity"
     },
     "web": {
-      "favicon": "./assets/images/logo.png"
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
     },
-    "plugins": [
-      "expo-font",
-      "expo-web-browser"
-    ],
+    "plugins": [],
+    "experiments": {
+      "typedRoutes": false
+    },
     "extra": {
       "eas": {
         "projectId": "e9adde31-7801-4e3c-a709-2454fe511c24"

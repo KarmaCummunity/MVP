@@ -13,12 +13,13 @@ import {
   Alert,
   SafeAreaView,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { ParamListBase } from '@react-navigation/native';
 import ChatMessageBubble from '../components/ChatMessageBubble';
 import { useUser } from '../context/UserContext';
-import { getMessages, sendMessage, markMessagesAsRead, Message } from '../utils/chatService';
+import { getMessages, sendMessage, markMessagesAsRead, Message, subscribeToMessages } from '../utils/chatService';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -37,11 +38,14 @@ export default function ChatDetailScreen() {
   const { selectedUser } = useUser();
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   // טעינת הודעות
   const loadMessages = useCallback(async () => {
     try {
+      setIsLoading(true);
       const conversationMessages = await getMessages(conversationId);
       setMessages(conversationMessages);
       
@@ -52,12 +56,29 @@ export default function ChatDetailScreen() {
     } catch (error) {
       console.error('❌ Load messages error:', error);
       Alert.alert('שגיאה', 'שגיאה בטעינת ההודעות');
+    } finally {
+      setIsLoading(false);
     }
   }, [conversationId, selectedUser]);
 
+  // Real-time subscription
   useEffect(() => {
     loadMessages();
-  }, [loadMessages]);
+
+    // Subscribe to real-time updates
+    const unsubscribe = subscribeToMessages(conversationId, (newMessages) => {
+      setMessages(newMessages);
+      
+      // Mark messages as read when they arrive
+      if (selectedUser) {
+        markMessagesAsRead(conversationId, selectedUser.id).catch(console.error);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [conversationId, selectedUser]);
 
   const generateFakeResponse = async () => {
     const responses = [
@@ -78,18 +99,16 @@ export default function ChatDetailScreen() {
         read: false,
         type: 'text',
       });
-      
-      // טעינה מחדש של ההודעות
-      loadMessages();
     } catch (error) {
       console.error('❌ Send fake response error:', error);
     }
   };
 
   const handleSendMessage = async () => {
-    if (inputText.trim() === '' || !selectedUser) return;
+    if (inputText.trim() === '' || !selectedUser || isSending) return;
 
     try {
+      setIsSending(true);
       await sendMessage({
         conversationId,
         senderId: selectedUser.id,
@@ -100,15 +119,11 @@ export default function ChatDetailScreen() {
       });
       
       setInputText('');
-      
-      // טעינה מחדש של ההודעות
-      loadMessages();
-      
-      // תגובה אוטומטית אחרי זמן קצר
-      setTimeout(generateFakeResponse, 1500 + Math.random() * 1000);
     } catch (error) {
       console.error('❌ Send message error:', error);
       Alert.alert('שגיאה', 'שגיאה בשליחת ההודעה');
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -118,6 +133,13 @@ export default function ChatDetailScreen() {
       isMyMessage={item.senderId === selectedUser?.id}
       userAvatar={userAvatar}
     />
+  );
+
+  const renderLoadingIndicator = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={colors.pink} />
+      <Text style={styles.loadingText}>טוען הודעות...</Text>
+    </View>
   );
 
   return (
@@ -141,15 +163,20 @@ export default function ChatDetailScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 100}
       >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={renderMessage}
-          contentContainerStyle={styles.messagesContainer}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-          onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        />
+        {isLoading ? (
+          renderLoadingIndicator()
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item) => item.id}
+            renderItem={renderMessage}
+            contentContainerStyle={styles.messagesContainer}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
 
         <View style={styles.inputContainer}>
           <TouchableOpacity onPress={() => Alert.alert('תמונה')}>
@@ -166,9 +193,18 @@ export default function ChatDetailScreen() {
             placeholderTextColor={colors.textSecondary}
             multiline
             textAlignVertical="center"
+            editable={!isSending}
           />
-          <TouchableOpacity onPress={handleSendMessage} style={styles.sendButton}>
-            <Text style={styles.sendButtonText}>שלח</Text>
+          <TouchableOpacity 
+            onPress={handleSendMessage} 
+            style={[styles.sendButton, isSending && styles.sendButtonDisabled]}
+            disabled={isSending}
+          >
+            {isSending ? (
+              <ActivityIndicator size="small" color={colors.backgroundPrimary} />
+            ) : (
+              <Text style={styles.sendButtonText}>שלח</Text>
+            )}
           </TouchableOpacity>
         </View>
         {Platform.OS === 'android' && <View style={styles.androidBottomSpacer} />}
@@ -218,6 +254,18 @@ const styles = StyleSheet.create({
   backButton: {
     marginRight: 15,
   },
+  // Loading indicator
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundPrimary,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+  },
   // Chat messages container
   messagesContainer: {
     flex: 1,
@@ -258,6 +306,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 60,
+  },
+  sendButtonDisabled: {
+    backgroundColor: colors.textSecondary,
   },
   sendButtonText: {
     color: colors.backgroundPrimary,

@@ -7,6 +7,7 @@ export interface Conversation {
   lastMessageText: string;
   lastMessageTime: string;
   unreadCount: number;
+  createdAt: string;
 }
 
 export interface Message {
@@ -19,9 +20,9 @@ export interface Message {
   type: 'text' | 'image' | 'file';
 }
 
-// מפתחות לאחסון
-const CONVERSATIONS_KEY = 'chat_conversations';
-const MESSAGES_KEY = 'chat_messages';
+// Storage keys
+const CONVERSATIONS_COLLECTION = 'conversations';
+const MESSAGES_COLLECTION = 'messages';
 
 // פונקציות עזר
 const generateId = (prefix: string): string => {
@@ -49,7 +50,7 @@ const setStoredData = async <T>(key: string, data: T): Promise<void> => {
 // פונקציות לשיחות
 export const createConversation = async (participants: string[]): Promise<string> => {
   try {
-    const conversations = await getStoredData<Conversation[]>(CONVERSATIONS_KEY, []);
+    const conversations = await getStoredData<Conversation[]>(CONVERSATIONS_COLLECTION, []);
     const conversationId = generateId('conv');
     
     const newConversation: Conversation = {
@@ -58,12 +59,13 @@ export const createConversation = async (participants: string[]): Promise<string
       lastMessageText: '',
       lastMessageTime: new Date().toISOString(),
       unreadCount: 0,
+      createdAt: new Date().toISOString(),
     };
 
     conversations.push(newConversation);
-    await setStoredData(CONVERSATIONS_KEY, conversations);
+    await setStoredData(CONVERSATIONS_COLLECTION, conversations);
     
-    console.log('✅ Conversation created:', conversationId);
+    console.log('✅ Conversation created (AsyncStorage):', conversationId);
     return conversationId;
   } catch (error) {
     console.error('❌ Create conversation error:', error);
@@ -73,7 +75,7 @@ export const createConversation = async (participants: string[]): Promise<string
 
 export const getConversations = async (userId: string): Promise<Conversation[]> => {
   try {
-    const conversations = await getStoredData<Conversation[]>(CONVERSATIONS_KEY, []);
+    const conversations = await getStoredData<Conversation[]>(CONVERSATIONS_COLLECTION, []);
     return conversations.filter(conv => 
       conv.participants.includes(userId)
     ).sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
@@ -85,7 +87,7 @@ export const getConversations = async (userId: string): Promise<Conversation[]> 
 
 export const getConversationById = async (conversationId: string): Promise<Conversation | null> => {
   try {
-    const conversations = await getStoredData<Conversation[]>(CONVERSATIONS_KEY, []);
+    const conversations = await getStoredData<Conversation[]>(CONVERSATIONS_COLLECTION, []);
     return conversations.find(conv => conv.id === conversationId) || null;
   } catch (error) {
     console.error('❌ Get conversation error:', error);
@@ -96,7 +98,7 @@ export const getConversationById = async (conversationId: string): Promise<Conve
 // פונקציות להודעות
 export const sendMessage = async (message: Omit<Message, 'id'>): Promise<string> => {
   try {
-    const messages = await getStoredData<Message[]>(MESSAGES_KEY, []);
+    const messages = await getStoredData<Message[]>(MESSAGES_COLLECTION, []);
     const messageId = generateId('msg');
     
     const newMessage: Message = {
@@ -105,20 +107,20 @@ export const sendMessage = async (message: Omit<Message, 'id'>): Promise<string>
     };
 
     messages.push(newMessage);
-    await setStoredData(MESSAGES_KEY, messages);
+    await setStoredData(MESSAGES_COLLECTION, messages);
 
     // עדכון השיחה
-    const conversations = await getStoredData<Conversation[]>(CONVERSATIONS_KEY, []);
+    const conversations = await getStoredData<Conversation[]>(CONVERSATIONS_COLLECTION, []);
     const conversationIndex = conversations.findIndex(conv => conv.id === message.conversationId);
     
     if (conversationIndex !== -1) {
       conversations[conversationIndex].lastMessageText = message.text;
       conversations[conversationIndex].lastMessageTime = message.timestamp;
       conversations[conversationIndex].unreadCount += 1;
-      await setStoredData(CONVERSATIONS_KEY, conversations);
+      await setStoredData(CONVERSATIONS_COLLECTION, conversations);
     }
 
-    console.log('✅ Message sent:', messageId);
+    console.log('✅ Message sent (AsyncStorage):', messageId);
     return messageId;
   } catch (error) {
     console.error('❌ Send message error:', error);
@@ -128,7 +130,7 @@ export const sendMessage = async (message: Omit<Message, 'id'>): Promise<string>
 
 export const getMessages = async (conversationId: string): Promise<Message[]> => {
   try {
-    const messages = await getStoredData<Message[]>(MESSAGES_KEY, []);
+    const messages = await getStoredData<Message[]>(MESSAGES_COLLECTION, []);
     return messages
       .filter(msg => msg.conversationId === conversationId)
       .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
@@ -141,44 +143,64 @@ export const getMessages = async (conversationId: string): Promise<Message[]> =>
 export const markMessagesAsRead = async (conversationId: string, userId: string): Promise<void> => {
   try {
     // סימון הודעות כנקראו
-    const messages = await getStoredData<Message[]>(MESSAGES_KEY, []);
+    const messages = await getStoredData<Message[]>(MESSAGES_COLLECTION, []);
     const updatedMessages = messages.map(msg => 
       msg.conversationId === conversationId && msg.senderId !== userId && !msg.read
         ? { ...msg, read: true }
         : msg
     );
-    await setStoredData(MESSAGES_KEY, updatedMessages);
+    await setStoredData(MESSAGES_COLLECTION, updatedMessages);
 
     // איפוס מונה ההודעות שלא נקראו
-    const conversations = await getStoredData<Conversation[]>(CONVERSATIONS_KEY, []);
+    const conversations = await getStoredData<Conversation[]>(CONVERSATIONS_COLLECTION, []);
     const conversationIndex = conversations.findIndex(conv => conv.id === conversationId);
     
     if (conversationIndex !== -1) {
       conversations[conversationIndex].unreadCount = 0;
-      await setStoredData(CONVERSATIONS_KEY, conversations);
+      await setStoredData(CONVERSATIONS_COLLECTION, conversations);
     }
 
-    console.log('✅ Messages marked as read');
+    console.log('✅ Messages marked as read (AsyncStorage)');
   } catch (error) {
     console.error('❌ Mark as read error:', error);
     throw error;
   }
 };
 
+// Real-time listener for messages (simplified for AsyncStorage)
+export const subscribeToMessages = (conversationId: string, callback: (messages: Message[]) => void) => {
+  console.warn('Real-time messages not available without Firebase - using polling instead');
+  
+  // Simple polling implementation
+  const pollMessages = async () => {
+    const messages = await getMessages(conversationId);
+    callback(messages);
+  };
+  
+  // Initial call
+  pollMessages();
+  
+  // Set up polling every 5 seconds
+  const interval = setInterval(pollMessages, 5000);
+  
+  // Return cleanup function
+  return () => clearInterval(interval);
+};
+
 // פונקציות נוספות
 export const deleteConversation = async (conversationId: string): Promise<void> => {
   try {
     // מחיקת השיחה
-    const conversations = await getStoredData<Conversation[]>(CONVERSATIONS_KEY, []);
+    const conversations = await getStoredData<Conversation[]>(CONVERSATIONS_COLLECTION, []);
     const filteredConversations = conversations.filter(conv => conv.id !== conversationId);
-    await setStoredData(CONVERSATIONS_KEY, filteredConversations);
+    await setStoredData(CONVERSATIONS_COLLECTION, filteredConversations);
 
     // מחיקת כל ההודעות של השיחה
-    const messages = await getStoredData<Message[]>(MESSAGES_KEY, []);
+    const messages = await getStoredData<Message[]>(MESSAGES_COLLECTION, []);
     const filteredMessages = messages.filter(msg => msg.conversationId !== conversationId);
-    await setStoredData(MESSAGES_KEY, filteredMessages);
+    await setStoredData(MESSAGES_COLLECTION, filteredMessages);
 
-    console.log('✅ Conversation deleted');
+    console.log('✅ Conversation deleted (AsyncStorage)');
   } catch (error) {
     console.error('❌ Delete conversation error:', error);
     throw error;
@@ -187,100 +209,16 @@ export const deleteConversation = async (conversationId: string): Promise<void> 
 
 export const clearAllData = async (): Promise<void> => {
   try {
-    await AsyncStorage.multiRemove([CONVERSATIONS_KEY, MESSAGES_KEY]);
-    console.log('✅ All chat data cleared');
+    await AsyncStorage.multiRemove([CONVERSATIONS_COLLECTION, MESSAGES_COLLECTION]);
+    console.log('✅ All chat data cleared (AsyncStorage)');
   } catch (error) {
     console.error('❌ Clear data error:', error);
     throw error;
   }
 };
 
-// יצירת נתונים לדוגמה
+// יצירת נתונים לדוגמה - כרגע ריק
 export const createSampleData = async (): Promise<void> => {
-  try {
-    const conversations = await getStoredData<Conversation[]>(CONVERSATIONS_KEY, []);
-    
-    if (conversations.length === 0) {
-      // יצירת שיחות לדוגמה
-      const sampleConversations: Conversation[] = [
-        {
-          id: 'conv_sample_1',
-          participants: ['u1', 'u2'],
-          lastMessageText: 'היי! איך אתה?',
-          lastMessageTime: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // לפני 5 דקות
-          unreadCount: 1,
-        },
-        {
-          id: 'conv_sample_2',
-          participants: ['u1', 'u3'],
-          lastMessageText: 'תודה על העזרה!',
-          lastMessageTime: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // לפני 30 דקות
-          unreadCount: 0,
-        },
-        {
-          id: 'conv_sample_3',
-          participants: ['u1', 'u4'],
-          lastMessageText: 'מתי ניפגש?',
-          lastMessageTime: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // לפני שעתיים
-          unreadCount: 2,
-        },
-      ];
-
-      await setStoredData(CONVERSATIONS_KEY, sampleConversations);
-
-      // יצירת הודעות לדוגמה
-      const sampleMessages: Message[] = [
-        {
-          id: 'msg_sample_1',
-          conversationId: 'conv_sample_1',
-          senderId: 'u2',
-          text: 'היי! איך אתה?',
-          timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-          read: false,
-          type: 'text',
-        },
-        {
-          id: 'msg_sample_2',
-          conversationId: 'conv_sample_1',
-          senderId: 'u1',
-          text: 'טוב תודה! איך אתה?',
-          timestamp: new Date(Date.now() - 1000 * 60 * 4).toISOString(),
-          read: true,
-          type: 'text',
-        },
-        {
-          id: 'msg_sample_3',
-          conversationId: 'conv_sample_2',
-          senderId: 'u3',
-          text: 'תודה על העזרה!',
-          timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-          read: true,
-          type: 'text',
-        },
-        {
-          id: 'msg_sample_4',
-          conversationId: 'conv_sample_3',
-          senderId: 'u4',
-          text: 'מתי ניפגש?',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-          read: false,
-          type: 'text',
-        },
-        {
-          id: 'msg_sample_5',
-          conversationId: 'conv_sample_3',
-          senderId: 'u4',
-          text: 'יש לך זמן היום?',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 1).toISOString(),
-          read: false,
-          type: 'text',
-        },
-      ];
-
-      await setStoredData(MESSAGES_KEY, sampleMessages);
-      console.log('✅ Sample data created');
-    }
-  } catch (error) {
-    console.error('❌ Create sample data error:', error);
-  }
+  // לא יוצרים נתונים אוטומטיים
+  console.log('✅ No automatic sample data created');
 }; 

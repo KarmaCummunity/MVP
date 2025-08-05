@@ -36,7 +36,7 @@ const SettingsItem: React.FC<SettingsItemProps> = memo((props) => {
     children
   } = props;
 
-  const textColor = isDestructive ? colors.danger : colors.textPrimary;
+    const textColor = isDestructive ? colors.danger : colors.textPrimary;
 
   const renderContent = () => {
     switch (type) {

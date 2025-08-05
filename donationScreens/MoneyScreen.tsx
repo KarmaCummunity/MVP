@@ -403,7 +403,7 @@ export default function MoneyScreen({
         onToggleMode={handleToggleMode}
         onSelectMenuItem={handleSelectMenuItem}
         title=""
-        placeholder={mode ? "חפש עמותות לתרומה" : "חפש עמותות שיכולות לעזור לך מבחינה כספית"}
+        placeholder={mode ? "חפש עמותות לתרומה" : "חפש עמותות לעזרה"}
       />
 
       <ScrollView 

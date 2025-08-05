@@ -21,6 +21,7 @@ import {
   users, 
   categories 
 } from '../globals/fakeData';
+import { useUser } from '../context/UserContext';
 
 interface SearchResult {
   id: string;
@@ -34,6 +35,7 @@ interface SearchResult {
 }
 
 const SearchScreen = () => {
+  const { isGuestMode } = useUser();
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -278,6 +280,16 @@ const SearchScreen = () => {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Guest Mode Notice */}
+        {isGuestMode && (
+          <View style={styles.guestModeNotice}>
+            <Ionicons name="information-circle-outline" size={20} color={colors.warning} />
+            <Text style={styles.guestModeText}>
+              אתה במצב אורח. התחבר כדי לגשת לכל הפיצ'רים
+            </Text>
+          </View>
+        )}
+        
         {searchQuery.trim().length === 0 ? (
           // Default content when no search
           <View style={styles.defaultContent}>
@@ -584,6 +596,24 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  guestModeNotice: {
+    backgroundColor: colors.warningLight,
+    borderColor: colors.warning,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 20,
+    marginBottom: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  guestModeText: {
+    color: colors.warning,
+    fontSize: FontSizes.small,
+    fontWeight: '600',
+    marginLeft: 8,
+    flex: 1,
   },
 });
 

@@ -1,5 +1,5 @@
 // screens/ProfileScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,14 +10,18 @@ import {
   TouchableOpacity,
   Dimensions,
   Alert,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { TabView, TabBar, SceneMap } from 'react-native-tab-view';
 import type { SceneRendererProps, NavigationState } from 'react-native-tab-view';
+import { useNavigation } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { currentUser, tasks, donations, communityEvents } from '../globals/fakeData';
 import { useUser } from '../context/UserContext';
+import { createShadowStyle } from '../globals/styles';
+import { users } from '../globals/fakeData';
 
 // --- Type Definitions ---
 type TabRoute = {
@@ -27,28 +31,26 @@ type TabRoute = {
 
 // --- Tab Components ---
 const PostsRoute = () => (
-  <ScrollView contentContainerStyle={styles.tabContentContainer}>
-    <View style={styles.postsGrid}>
-      {Array.from({ length: 12 }).map((_, i) => (
-        <TouchableOpacity
-          key={i}
-          style={styles.postContainer}
-          onPress={() => Alert.alert('פוסט', `פוסט מספר ${i + 1}`)}
-        >
-          <Image
-            source={{ uri: `https://picsum.photos/300/300?random=${i}` }}
-            style={styles.postImage}
-          />
-          <View style={styles.postOverlay}>
-            <View style={styles.postStats}>
-              <Ionicons name="heart" size={16} color={colors.white} />
-              <Text style={styles.postStatsText}>{Math.floor(Math.random() * 100) + 10}</Text>
-            </View>
+  <View style={styles.postsGrid}>
+    {Array.from({ length: 18 }).map((_, i) => (
+      <TouchableOpacity
+        key={i}
+        style={styles.postContainer}
+        onPress={() => Alert.alert('פוסט', `פוסט מספר ${i + 1}`)}
+      >
+        <Image
+          source={{ uri: `https://picsum.photos/300/300?random=${i}` }}
+          style={styles.postImage}
+        />
+        <View style={styles.postOverlay}>
+          <View style={styles.postStats}>
+            <Ionicons name="heart" size={16} color={colors.white} />
+            <Text style={styles.postStatsText}>{Math.floor(Math.random() * 100) + 10}</Text>
           </View>
-        </TouchableOpacity>
-      ))}
-    </View>
-  </ScrollView>
+        </View>
+      </TouchableOpacity>
+    ))}
+  </View>
 );
 
 const ReelsRoute = () => (
@@ -73,8 +75,21 @@ const TaggedRoute = () => (
 
 // --- Main Component ---
 export default function ProfileScreen() {
-  const { selectedUser } = useUser();
+  const { selectedUser, setSelectedUser } = useUser();
+  const navigation = useNavigation();
   const [index, setIndex] = useState(0);
+  const [showMenu, setShowMenu] = useState(false);
+
+  // Function to select a random user
+  const selectRandomUser = () => {
+    if (users.length > 0) {
+      const randomIndex = Math.floor(Math.random() * users.length);
+      const randomUser = users[randomIndex];
+      setSelectedUser(randomUser);
+      setShowMenu(false);
+      Alert.alert('משתמש חדש', `נבחר המשתמש: ${randomUser.name}`);
+    }
+  };
   const [routes] = useState<TabRoute[]>([
     { key: 'posts', title: 'פוסטים' },
     { key: 'reels', title: 'רילס' },
@@ -97,6 +112,8 @@ export default function ProfileScreen() {
       activeColor={colors.pink}
       inactiveColor={colors.textSecondary}
       pressColor={colors.backgroundSecondary}
+      tabStyle={{ flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'center' }}
+      scrollEnabled={false}
       renderTabBarItem={({ route, key }) => {
         const routeIndex = props.navigationState.routes.findIndex(r => r.key === route.key);
         const isFocused = props.navigationState.index === routeIndex;
@@ -164,30 +181,26 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.headerIcon}
-            onPress={() => Alert.alert('תפריט', 'פתיחת תפריט')}
-          >
-            <Ionicons name="menu" size={24} color={colors.textPrimary} />
-          </TouchableOpacity>
-          <Text style={styles.username}>{selectedUser?.name || currentUser.name}</Text>
-          <TouchableOpacity 
-            style={styles.headerIcon}
-            onPress={() => Alert.alert('הוסף', 'הוספת תוכן חדש')}
-          >
-            <Ionicons name="add-circle-outline" size={24} color={colors.textPrimary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Profile Info */}
+      <ScrollView 
+        style={styles.mainScrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.mainScrollContent}
+      >
+        {/* Profile Info with Menu Icon */}
         <View style={styles.profileInfo}>
-          <Image
-            source={{ uri: selectedUser?.avatar || currentUser.avatar }}
-            style={styles.profilePicture}
-          />
+            <TouchableOpacity 
+              style={styles.menuIcon}
+              onPress={() => setShowMenu(!showMenu)}
+            >
+              <Ionicons name="menu" size={24} color={colors.textPrimary} />
+            </TouchableOpacity>
+          <View style={styles.profileSection}>
+            <Image
+              source={{ uri: selectedUser?.avatar || currentUser.avatar }}
+              style={styles.profilePicture}
+            />
+          </View>
+          
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{selectedUser?.postsCount || userStats.posts}</Text>
@@ -204,13 +217,109 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Menu Modal with Backdrop */}
+        {showMenu && (
+          <TouchableWithoutFeedback onPress={() => setShowMenu(false)}>
+            <View style={styles.menuBackdrop}>
+              <TouchableWithoutFeedback onPress={() => {}}>
+                <View style={styles.menuOverlay}>
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setShowMenu(false);
+                      navigation.navigate('BookmarksScreen' as never);
+                    }}
+                  >
+                    <Ionicons name="bookmark-outline" size={20} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>מועדפים</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setShowMenu(false);
+              
+                    }}
+                  >
+                    <Ionicons name="analytics-outline" size={20} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>סטטיסטיקות קהילה</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setShowMenu(false);
+                      Alert.alert('שתף פרופיל', 'שיתוף הפרופיל שלך');
+                    }}
+                  >
+                    <Ionicons name="share-outline" size={20} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>שתף פרופיל</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setShowMenu(false);
+                      Alert.alert('ערוך פרופיל', 'עריכת פרטי הפרופיל');
+                    }}
+                  >
+                    <Ionicons name="create-outline" size={20} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>ערוך פרופיל</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setShowMenu(false);
+                      Alert.alert('הגדרות', 'פתיחת הגדרות');
+                    }}
+                  >
+                    <Ionicons name="settings-outline" size={20} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>הגדרות</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setShowMenu(false);
+                      Alert.alert('עזרה', 'פתיחת עזרה');
+                    }}
+                  >
+                    <Ionicons name="help-circle-outline" size={20} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>עזרה</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setShowMenu(false);
+                      navigation.navigate('LoginScreen' as never);
+                    }}
+                  >
+                    <Ionicons name="log-in-outline" size={20} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>התחברות</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={selectRandomUser}
+                  >
+                    <Ionicons name="shuffle-outline" size={20} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>שנה משתמש</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        )}
+
         {/* Bio Section */}
         <View style={styles.bioSection}>
           <Text style={styles.fullName}>{selectedUser?.name || currentUser.name}</Text>
           <Text style={styles.bioText}>{selectedUser?.bio || currentUser.bio}</Text>
           <Text style={styles.locationText}>
             <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
-            {' '}{selectedUser?.location.city || currentUser.location}
+            {' '}{typeof selectedUser?.location === 'string' ? selectedUser.location : selectedUser?.location?.city || currentUser.location}
           </Text>
           
           {/* Karma Points */}
@@ -247,25 +356,14 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Action Buttons */}
+        {/* Action Buttons - Only Discover People */}
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity 
             style={styles.discoverPeopleButton}
             onPress={() => Alert.alert('גילוי אנשים', 'מציאת אנשים חדשים')}
           >
             <Ionicons name="person-add-outline" size={18} color={colors.white} />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={() => Alert.alert('שתף פרופיל', 'שיתוף הפרופיל שלך')}
-          >
-            <Text style={styles.actionButtonText}>שתף פרופיל</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={() => Alert.alert('ערוך פרופיל', 'עריכת פרטי הפרופיל')}
-          >
-            <Text style={styles.actionButtonText}>ערוך פרופיל</Text>
+            <Text style={styles.discoverPeopleText}>גלה אנשים</Text>
           </TouchableOpacity>
         </View>
 
@@ -321,14 +419,16 @@ export default function ProfileScreen() {
           </ScrollView>
         </View>
 
-        {/* Tab View */}
-        <TabView
-          navigationState={{ index, routes }}
-          renderScene={renderScene}
-          onIndexChange={setIndex}
-          initialLayout={{ width: Dimensions.get('window').width }}
-          renderTabBar={renderTabBar}
-        />
+        {/* Tab View Container */}
+        <View style={styles.tabViewContainer}>
+          <TabView
+            navigationState={{ index, routes }}
+            renderScene={renderScene}
+            onIndexChange={setIndex}
+            initialLayout={{ width: Dimensions.get('window').width }}
+            renderTabBar={renderTabBar}
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -339,25 +439,11 @@ const styles = StyleSheet.create({
     flex: 1, 
     backgroundColor: colors.backgroundPrimary 
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+  mainScrollView: {
+    flex: 1,
   },
-  username: {
-    fontSize: FontSizes.medium,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-  },
-  headerIcon: { 
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: colors.backgroundSecondary,
+  mainScrollContent: {
+    paddingBottom: 20,
   },
   profileInfo: {
     flexDirection: 'row',
@@ -365,12 +451,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 20,
   },
+  profileSection: {
+    position: 'relative',
+  },
   profilePicture: {
     width: 80,
     height: 80,
     borderRadius: 40,
     borderWidth: 3,
     borderColor: colors.pink,
+  },
+  menuIcon: { 
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: colors.backgroundSecondary,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.1, 4),
   },
   statsContainer: {
     flexDirection: 'row',
@@ -444,29 +542,23 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   actionButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
     marginBottom: 20,
-  },
-  actionButton: {
-    flex: 1,
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginHorizontal: 5,
-  },
-  actionButtonText: {
-    fontWeight: '600',
-    fontSize: FontSizes.body,
-    color: colors.textPrimary,
   },
   discoverPeopleButton: {
     backgroundColor: colors.pink,
     borderRadius: 12,
-    padding: 12,
-    marginHorizontal: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  discoverPeopleText: {
+    color: colors.white,
+    fontSize: FontSizes.body,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   activitiesSection: {
     paddingHorizontal: 20,
@@ -485,10 +577,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     marginBottom: 8,
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.1, 2),
     elevation: 2,
   },
   activityIcon: {
@@ -544,10 +633,15 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
+  tabViewContainer: {
+    height: 600, // Fixed height for TabView
+  },
   tabBar: {
     backgroundColor: colors.backgroundPrimary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    elevation: 0,
+    shadowOpacity: 0,
   },
   tabBarIndicator: {
     backgroundColor: colors.pink,
@@ -555,35 +649,36 @@ const styles = StyleSheet.create({
   },
   tabBarItem: {
     flex: 1,
+    minWidth: 0,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   tabBarText: {
     fontSize: FontSizes.body,
     paddingVertical: 12,
   },
-  tabContentContainer: { 
-    minHeight: 400 
-  },
   postsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: 1,
+    paddingHorizontal: 2,
+    paddingTop: 10,
   },
   postContainer: {
-    width: Dimensions.get('window').width / 3 - 2,
-    height: Dimensions.get('window').width / 3 - 2,
-    margin: 1,
+    width: '32%',
+    aspectRatio: 1,
+    margin: 2,
     position: 'relative',
   },
   postImage: {
     width: '100%',
     height: '100%',
     borderRadius: 8,
+    backgroundColor: colors.backgroundSecondary,
   },
   postOverlay: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 6,
+    right: 6,
   },
   postStats: {
     flexDirection: 'row',
@@ -632,5 +727,36 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.body,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  menuBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    zIndex: 1000,
+  },
+  menuOverlay: {
+    position: 'absolute',
+    top: 100,
+    left: 16,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 12,
+    padding: 8,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 4 }, 0.2, 8),
+    zIndex: 1001,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  menuItemText: {
+    fontSize: FontSizes.body,
+    color: colors.textPrimary,
+    marginLeft: 12,
   },
 });

@@ -7,14 +7,14 @@ import SettingsItem, { SettingsItemProps } from '../components/SettingsItem';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { useTranslation } from 'react-i18next';
-import { signOut } from 'firebase/auth';
-import { auth } from '../config/firebaseConfig';
-import LanguageSelector from '../components/LanguageSelector';
+import { useUser } from '../context/UserContext';
+
 
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const [isLanguageModalVisible, setIsLanguageModalVisible] = useState(false);
+  const { signOut } = useUser();
+
 
   // State for toggle settings
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(true);
@@ -35,24 +35,44 @@ export default function SettingsScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      t('settings.logout'),
-      t('settings.logoutConfirm'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        { 
-          text: t('settings.logout'), 
-          onPress: async () => {
-            try {
-              await signOut(auth);
-              // Navigation will be handled automatically by auth state change
-            } catch (error) {
-              Alert.alert(t('common.error'), t('settings.logoutError'));
-            }
+    if (Platform.OS === 'web') {
+      // Use window.confirm for web
+      const confirmed = window.confirm(t('settings.logoutConfirm'));
+      if (confirmed) {
+        performLogout();
+      }
+    } else {
+      // Use Alert.alert for native platforms
+      Alert.alert(
+        t('settings.logout'),
+        t('settings.logoutConfirm'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          { 
+            text: t('settings.logout'), 
+            onPress: performLogout
           }
-        }
-      ]
-    );
+        ]
+      );
+    }
+  };
+
+  const performLogout = async () => {
+    try {
+      await signOut();
+      // MainNavigator יטפל בניווט אוטומטית כאשר המשתמש מתנתק
+      
+      // Force reload to login screen on web if navigation doesn't work
+      if (Platform.OS === 'web') {
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
+      }
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      // MainNavigator יטפל בניווט גם במקרה של שגיאה
+    }
   };
 
   const navigateTo = (screenName: string) => {
@@ -105,13 +125,7 @@ export default function SettingsScreen() {
       onValueChange: setEmailNotificationsEnabled,
     },
     { type: 'sectionHeader', title: t('settings.appPreferences') },
-    {
-      title: t('settings.language'),
-      iconName: 'language-outline',
-      type: 'value',
-      displayValue: i18n.language,
-      onPress: () => setIsLanguageModalVisible(true),
-    },
+
     {
       title: t('settings.darkMode'),
       iconName: 'moon-outline',
@@ -154,6 +168,8 @@ export default function SettingsScreen() {
       isDestructive: true,
     }
   ];
+  
+  console.log('🔄 settingsData created with', settingsData.length, 'items');
 
   const renderSettingItem = ({ item, index }: { item: any; index: number }) => {
     if (item.type === 'sectionHeader') {
@@ -188,10 +204,7 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.listContainer}
       />
       
-      <LanguageSelector
-        isVisible={isLanguageModalVisible}
-        onClose={() => setIsLanguageModalVisible(false)}
-      />
+
     </SafeAreaView>
   );
 }

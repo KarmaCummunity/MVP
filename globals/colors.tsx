@@ -143,6 +143,37 @@ const colors = {
   toggleInactive: 'rgba(255, 138, 101, 0.8)',
   toggleText: 'rgba(0, 0, 0, 0.95)',
 
+  // Autocomplete Dropdown Colors
+  dropdownLabel: '#333333',
+  dropdownBackground: '#FFFFFF',
+  dropdownBorder: '#DDDDDD',
+  dropdownText: '#333333',
+  dropdownPlaceholder: '#999999',
+  dropdownIcon: '#666666',
+  dropdownSearchIcon: '#888888',
+  dropdownCloseIcon: '#666666',
+  dropdownModalOverlay: 'rgba(0, 0, 0, 0.4)',
+  dropdownModalBackground: '#FFFFFF',
+  dropdownSearchBorder: '#EEEEEE',
+  dropdownOptionBorder: '#EEEEEE',
+  dropdownNoOptionsText: '#777777',
+
+  // Bubble Component Colors
+  bubbleBackground: 'rgba(100, 255, 255, 0.9)',
+  bubbleBackgroundSelected: 'rgba(250, 220, 220, 0.9)',
+  bubbleBackgroundDefault: 'rgba(173, 216, 255, 0.8)',
+  bubbleBackgroundInactive: 'rgba(0, 230, 255, 0.2)',
+  bubbleBorderSelected: 'rgba(0, 0, 0, 1)',
+  bubbleBorderDefault: 'rgba(255, 255, 255, 0.9)',
+  bubbleBorderInactive: 'rgba(255, 255, 255, 0.5)',
+  bubbleTextSelected: '#333333',
+  bubbleTextDefault: '#000000',
+  bubbleNameSelected: '#555555',
+  bubbleNameDefault: '#000000',
+  bubbleShadow: '#ffffff',
+  messageBackground: '#F5F5F5',
+  messageShadow: '#000000',
+
   // Legacy (לשימוש זמני במעבר)
   legacyGreen: '#4CAF50',
   legacyBlue: '#2196F3',

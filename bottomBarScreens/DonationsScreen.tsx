@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { DonationsStackParamList } from '../globals/types';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
+import { useUser } from '../context/UserContext';
 
 interface DonationsScreenProps {
   navigation: NavigationProp<DonationsStackParamList>;
@@ -175,6 +176,7 @@ const donationCategories = [
 ];
 
 const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
+  const { isGuestMode } = useUser();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const handleCategoryPress = (category: any) => {
@@ -220,6 +222,16 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
 
 
               <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+                {/* Guest Mode Notice */}
+                {isGuestMode && (
+                  <View style={styles.guestModeNotice}>
+                    <Ionicons name="information-circle-outline" size={20} color={colors.warning} />
+                    <Text style={styles.guestModeText}>
+                      אתה במצב אורח. התחבר כדי לגשת לכל הפיצ'רים
+                    </Text>
+                  </View>
+                )}
+                
           {/* Active Screens Section */}
           <View style={styles.categoriesSection}>
             <Text style={styles.sectionTitle}>פעולות אפשריות בקהילה</Text>
@@ -540,6 +552,24 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.small,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  guestModeNotice: {
+    backgroundColor: colors.warningLight,
+    borderColor: colors.warning,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 20,
+    marginBottom: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  guestModeText: {
+    color: colors.warning,
+    fontSize: FontSizes.small,
+    fontWeight: '600',
+    marginLeft: 8,
+    flex: 1,
   },
 });
 

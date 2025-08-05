@@ -1,17 +1,55 @@
 {
-  "name": "karma_community",
+  "name": "kc",
   "version": "1.0.0",
+  "description": "KC - הקיבוץ הקפיטליסטי של ישראל. פלטפורמה חינמית ללא מטרות רווח לחיבור קהילתי בישראל בין עמותות, תורמים ומתנדבים.",
   "main": "node_modules/expo/AppEntry.js",
+  "keywords": [
+    "react-native",
+    "expo",
+    "typescript",
+    "israel",
+    "community",
+    "charity",
+    "volunteering",
+    "donations",
+    "non-profit",
+    "hebrew",
+    "rtl",
+    "mobile-app",
+    "social-impact",
+    "karma",
+    "giving"
+  ],
+  "author": {
+    "name": "KC Team",
+    "email": "info@karmacommunity.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/kc-karma-community.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/kc-karma-community/issues"
+  },
+  "homepage": "https://github.com/your-username/kc-karma-community#readme",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build:android": "expo build:android",
+    "build:ios": "expo build:ios",
+    "build:web": "expo build:web",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "npx eslint . --ext .ts,.tsx",
+    "type-check": "tsc --noEmit",
+    "clean": "expo r -c"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
     "@expo/webpack-config": "^19.0.1",
-    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-async-storage/async-storage": "^1.24.0",
     "@react-native-clipboard/clipboard": "^1.16.3",
     "@react-native-community/datetimepicker": "8.4.1",
     "@react-native-picker/picker": "2.11.1",
@@ -21,28 +59,30 @@
     "@react-navigation/native-stack": "^6.9.13",
     "@react-navigation/stack": "^6.3.17",
     "canvas": "^3.1.2",
-    "expo": "53.0.13",
+    "expo": "53.0.20",
+    "expo-dev-client": "~5.2.4",
     "expo-font": "~13.3.1",
+    "expo-linear-gradient": "^14.1.5",
+    "expo-linking": "^7.1.7",
     "expo-localization": "^16.1.6",
+    "expo-router": "^5.1.4",
     "expo-screen-orientation": "~8.1.7",
     "expo-splash-screen": "~0.30.9",
     "expo-sqlite": "~15.2.14",
     "expo-status-bar": "~2.2.3",
     "expo-updates": "^0.28.17",
     "expo-web-browser": "~14.2.0",
-    "firebase": "^11.9.0",
     "i18next": "^25.3.2",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-i18next": "^15.6.0",
-    "react-native": "0.79.4",
+    "react-native": "0.79.5",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-google-places-autocomplete": "^2.5.7",
     "react-native-haptic-feedback": "^2.3.3",
     "react-native-immersive": "^2.0.0",
     "react-native-modal": "^14.0.0-rc.1",
     "react-native-pager-view": "6.7.1",
-    "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-system-navigation-bar": "^2.6.4",
@@ -60,10 +100,50 @@
     "typescript": "^5.1.3"
   },
   "private": true,
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
   "expo": {
+    "name": "KC - הקיבוץ הקפיטליסטי",
+    "slug": "kc-karma-community",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.karmacommunity.kc"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "package": "com.karmacommunity.kc"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "webpack"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "scheme": "kc",
     "doctor": {
       "reactNativeDirectoryCheck": {
-        "listUnknownPackages": false
+        "listUnknownPackages": false,
+        "exclude": [
+          "react-native-system-navigation-bar"
+        ]
       }
     }
   }

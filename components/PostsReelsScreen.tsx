@@ -8,9 +8,14 @@ import {
   Dimensions,
   TouchableOpacity,
   Alert,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import { useNavigation } from '@react-navigation/native';
+import { useUser } from '../context/UserContext';
+import CommentsModal from './CommentsModal';
+import { isBookmarked, addBookmark, removeBookmark } from '../utils/bookmarksService';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 
@@ -82,21 +87,92 @@ const data = generateFakeData();
  * @param item - הפריט להצגה
  */
 const PostReelItem = ({ item }: { item: Item }) => {
+  const navigation = useNavigation();
+  const { selectedUser } = useUser();
   const [isLiked, setIsLiked] = useState(item.isLiked);
   const [likesCount, setLikesCount] = useState(item.likes);
+  const [showComments, setShowComments] = useState(false);
+  const [isBookmarkedState, setIsBookmarkedState] = useState(false);
 
   const handleLike = () => {
     setIsLiked(!isLiked);
     setLikesCount(isLiked ? likesCount - 1 : likesCount + 1);
+    
+    // כאן בעתיד נוסיף API call לשמירת הלייק
+    console.log(`❤️ ${isLiked ? 'Unlike' : 'Like'} post ${item.id} by user ${selectedUser?.id}`);
   };
 
   const handleProfilePress = () => {
-    Alert.alert('פרופיל משתמש', `פתיחת פרופיל של ${item.user.name}`);
+    // ניווט לפרופיל היוזר
+    (navigation as any).navigate('UserProfileScreen', { 
+      userId: item.user.id,
+      userName: item.user.name 
+    });
   };
 
   const handleComment = () => {
-    Alert.alert('תגובה', 'פתיחת חלון תגובה');
+    // פתיחת מודל תגובות
+    setShowComments(true);
   };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `${item.title}\n\n${item.description}\n\nשותף מ-Karma Community`,
+        title: item.title,
+      });
+    } catch (error) {
+      console.error('❌ Share error:', error);
+    }
+  };
+
+  const handlePostPress = () => {
+    // פתיחת הפוסט במסך מלא
+    Alert.alert(
+      'פתיחת פוסט',
+      'האם ברצונך לפתוח את הפוסט במסך מלא?',
+      [
+        { text: 'ביטול', style: 'cancel' },
+        { 
+          text: 'פתח', 
+          onPress: () => {
+            // כאן נוסיף ניווט למסך פוסט מלא
+            console.log('📱 Opening full post:', item.id);
+          }
+        }
+      ]
+    );
+  };
+
+  const handleBookmark = async () => {
+    if (!selectedUser) return;
+
+    try {
+      if (isBookmarkedState) {
+        await removeBookmark(selectedUser.id, item.id);
+        setIsBookmarkedState(false);
+        console.log('📖 Bookmark removed');
+      } else {
+        await addBookmark(selectedUser.id, item);
+        setIsBookmarkedState(true);
+        console.log('📖 Bookmark added');
+      }
+    } catch (error) {
+      console.error('❌ Bookmark error:', error);
+    }
+  };
+
+  // בדיקת מצב השמירה בטעינה
+  React.useEffect(() => {
+    const checkBookmarkStatus = async () => {
+      if (selectedUser) {
+        const bookmarked = await isBookmarked(selectedUser.id, item.id);
+        setIsBookmarkedState(bookmarked);
+      }
+    };
+    
+    checkBookmarkStatus();
+  }, [selectedUser, item.id]);
 
   return (
     <View style={[styles.itemContainer, item.type === 'reel' && styles.reelItem]}>
@@ -113,7 +189,9 @@ const PostReelItem = ({ item }: { item: Item }) => {
       </View>
 
       {/* Content */}
-      <Image source={{ uri: item.thumbnail }} style={styles.thumbnail} />
+      <TouchableOpacity onPress={handlePostPress} activeOpacity={0.9}>
+        <Image source={{ uri: item.thumbnail }} style={styles.thumbnail} />
+      </TouchableOpacity>
       
       {/* Description */}
       <View style={styles.contentContainer}>
@@ -137,10 +215,27 @@ const PostReelItem = ({ item }: { item: Item }) => {
           <Text style={styles.actionText}>{item.comments}</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.actionButton}>
+        <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
           <Ionicons name="share-outline" size={24} color={colors.textSecondary} />
         </TouchableOpacity>
+
+        <TouchableOpacity style={styles.actionButton} onPress={handleBookmark}>
+          <Ionicons 
+            name={isBookmarkedState ? "bookmark" : "bookmark-outline"} 
+            size={24} 
+            color={isBookmarkedState ? colors.primary : colors.textSecondary} 
+          />
+        </TouchableOpacity>
       </View>
+
+      {/* Comments Modal */}
+      <CommentsModal
+        visible={showComments}
+        onClose={() => setShowComments(false)}
+        postId={item.id}
+        postTitle={item.title}
+        postUser={item.user}
+      />
     </View>
   );
 };
