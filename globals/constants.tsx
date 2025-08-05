@@ -342,14 +342,12 @@ export const UI_TEXT = {
   // Common Actions
   back: "חזור",
   save: "שמור",
-  cancel: "ביטול",
   delete: "מחק",
   edit: "ערוך",
   add: "הוסף",
   search: "חיפוש",
   filter: "סינון",
   sort: "מיון",
-  clear: "נקה",
   confirm: "אישור",
   close: "סגור",
   next: "הבא",
@@ -406,7 +404,6 @@ export const UI_TEXT = {
   timeTitle: "תרומת זמן",
   knowledgeTitle: "תרומת ידע",
   trumpTitle: "טרמפים",
-  settingsTitle: "הגדרות",
   profileTitle: "פרופיל",
   searchTitle: "חיפוש",
   homeTitle: "בית",
@@ -593,5 +590,42 @@ export const UI_TEXT = {
 
   // Bubble Component Text
   bubbleTitle: "הקהילה במספרים",
+
+  // Settings Screen
+  settingsTitle: "הגדרות",
+  settingsSubtitle: "הגדרות האפליקציה",
+  
+  // Settings Sections
+  accountSection: "חשבון",
+  notificationsSection: "התראות", 
+  appPreferencesSection: "העדפות אפליקציה",
+  helpSupportSection: "עזרה ותמיכה",
+  
+  // Settings Items
+  editProfile: "עריכת פרופיל",
+  privacy: "פרטיות",
+  privacyVisibility: "הצג סטטוס מקוון",
+  pushNotifications: "התראות דחיפה",
+  emailNotifications: "התראות דוא\"ל",
+  darkMode: "מצב כהה",
+  dataSaver: "חיסכון בנתונים",
+  clearCache: "ניקוי מטמון",
+  helpCenter: "מרכז העזרה",
+  about: "אודות",
+  logout: "התנתק",
+  
+  // Settings Alerts
+  clearCacheTitle: "ניקוי מטמון",
+  clearCacheMessage: "האם אתה בטוח שברצונך לנקות את המטמון של האפליקציה? פעולה זו תפנה שטח אחסון.",
+  cacheClearedTitle: "המטמון נוקה",
+  cacheClearedMessage: "המטמון של האפליקציה נוקה בהצלחה.",
+  logoutTitle: "התנתק",
+  logoutMessage: "האם אתה בטוח שברצונך להתנתק?",
+  linkErrorTitle: "שגיאה",
+  linkErrorMessage: "לא ניתן לפתוח את הקישור",
+  
+  // Common Actions
+  cancel: "ביטול",
+  clear: "נקה",
 };
 

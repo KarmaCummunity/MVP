@@ -6,6 +6,7 @@ import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import colors from '../globals/colors';
+import { useUser } from '../context/UserContext';
 
 
 
@@ -17,7 +18,10 @@ interface TopBarNavigatorProps {
 function TopBarNavigator({ navigation, hideTopBar = false }: TopBarNavigatorProps) {
   
   const route = useRoute();
+  const { isGuestMode } = useUser();
   const translateY = useSharedValue(0);
+  
+  console.log('🔝 TopBarNavigator - isGuestMode:', isGuestMode);
   
   ////console.log('🔝 TopBarNavigator - hideTopBar prop:', hideTopBar);
 
@@ -81,9 +85,16 @@ function TopBarNavigator({ navigation, hideTopBar = false }: TopBarNavigatorProp
     <Animated.View style={[styles.container_top_bar, animatedStyle]}>
       {/* Left Icons Group */}
       <View style={{ flexDirection: 'row', gap: 5 }}>
-        <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={{ padding: 4 }}>
-          <Icon name="chatbubbles-outline" size={24} color={colors.topNavIcon} />
-        </TouchableOpacity>
+        {!isGuestMode && (
+          <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={{ padding: 4 }}>
+            <Icon name="chatbubbles-outline" size={24} color={colors.topNavIcon} />
+          </TouchableOpacity>
+        )}
+{/* Debug log for guest mode */}
+        {isGuestMode && (() => {
+          console.log('🔝 TopBarNavigator - Chat hidden in guest mode');
+          return null;
+        })()}
         <TouchableOpacity onPress={() => navigation.navigate('InactiveScreen')} style={{ padding: 4 }}>
           <Icon name="notifications-circle-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>

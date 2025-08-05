@@ -1,275 +1,424 @@
-// SettingsScreen.tsx
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, Alert, Linking, Platform, SafeAreaView, TouchableOpacity, Animated } from 'react-native';
-import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
+/**
+ * SettingsScreen - Modern Settings Interface
+ * 
+ * Features:
+ * - Platform-specific scrolling (CSS overflow for web, ScrollView for native)
+ * - User profile display for logged-in users
+ * - Guest mode support with appropriate UI adjustments
+ * - Comprehensive settings options with modern UI design
+ * - Smooth scrolling on all platforms
+ * 
+ * @author Karma Community Team
+ * @version 2.0.0
+ */
+
+import React, { useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  SafeAreaView,
+  Alert,
+  Platform,
+  Dimensions,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import SettingsItem, { SettingsItemProps } from '../components/SettingsItem';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
-import { useTranslation } from 'react-i18next';
+import { FontSizes, UI_TEXT } from '../globals/constants';
 import { useUser } from '../context/UserContext';
 
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+
 export default function SettingsScreen() {
-  const { t, i18n } = useTranslation();
-  const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const { signOut } = useUser();
+  const navigation = useNavigation();
+  const { signOut, isGuestMode, selectedUser } = useUser();
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  // Animation values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
+  // Debug logs for development
+  console.log('⚙️ SettingsScreen - Rendered with isGuestMode:', isGuestMode);
+  console.log('⚙️ SettingsScreen - Platform:', Platform.OS);
+  console.log('⚙️ SettingsScreen - Screen dimensions:', { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
 
-  // State for toggle settings
-  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(true);
-  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(false);
-  const [dataSaverMode, setDataSaverMode] = useState(false);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
-  const [hideOnlineStatus, setHideOnlineStatus] = useState(false);
+  const handleBackPress = () => {
+    console.log('⚙️ SettingsScreen - Back pressed');
+    navigation.goBack();
+  };
 
-  useEffect(() => {
-    // Start animations when component mounts
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
+  const handleAboutPress = () => {
+    console.log('⚙️ SettingsScreen - About pressed');
+    navigation.navigate('AboutKarmaCommunityScreen' as never);
+  };
 
-  const handleClearCache = () => {
+  const handleLogoutPress = () => {
+    console.log('⚙️ SettingsScreen - Logout pressed');
     Alert.alert(
-      t('settings_clearCache'),
-      t('settings_clearCacheConfirm'),
+      'יציאה מהמערכת',
+      'האם אתה בטוח שברצונך לצאת?',
       [
-        { text: t('common_cancel'), style: 'cancel' },
-        { text: t('common_clear'), onPress: () => Alert.alert(t('settings_cacheCleared'), t('settings_cacheClearedSuccess')) }
+        {
+          text: 'ביטול',
+          style: 'cancel',
+        },
+        {
+          text: 'יציאה',
+          style: 'destructive',
+          onPress: async () => {
+            console.log('⚙️ SettingsScreen - Logout confirmed');
+            await signOut();
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'LoginScreen' as never }],
+            });
+          },
+        },
       ]
     );
   };
 
-  const handleLogout = () => {
-    if (Platform.OS === 'web') {
-      const confirmed = window.confirm(t('settings_logoutConfirm'));
-      if (confirmed) {
-        performLogout();
-      }
-    } else {
-      Alert.alert(
-        t('settings_logout'),
-        t('settings_logoutConfirm'),
-        [
-          { text: t('common_cancel'), style: 'cancel' },
-          { 
-            text: t('settings_logout'), 
-            onPress: performLogout
-          }
-        ]
-      );
-    }
+  const handleNotificationsPress = () => {
+    console.log('⚙️ SettingsScreen - Notifications pressed');
+    Alert.alert('התראות', 'הגדרות התראות יתווספו בקרוב');
   };
 
-  const performLogout = async () => {
-    try {
-      await signOut();
-      if (Platform.OS === 'web') {
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 1000);
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+  const handlePrivacyPress = () => {
+    console.log('⚙️ SettingsScreen - Privacy pressed');
+    Alert.alert('פרטיות', 'הגדרות פרטיות יתווספו בקרוב');
   };
 
-  const navigateTo = (screenName: string) => {
-    navigation.navigate(screenName);
+  const handleThemePress = () => {
+    console.log('⚙️ SettingsScreen - Theme pressed');
+    Alert.alert('ערכת נושא', 'בחירת ערכת נושא תתווסף בקרוב');
   };
 
-  const openLink = (url: string) => {
-    Linking.openURL(url).catch(err => Alert.alert(t('common_error'), t('settings_linkError')));
+  const handleLanguagePress = () => {
+    console.log('⚙️ SettingsScreen - Language pressed');
+    Alert.alert('שפה', 'בחירת שפה תתווסף בקרוב');
   };
 
-  const handleBackPress = () => {
-    navigation.goBack();
-  };
-
-  // Define your settings data as an array of objects
-  const settingsData: (SettingsItemProps | { type: 'sectionHeader', title?: string, icon?: string, color?: string })[] = [
-    { 
-      type: 'sectionHeader', 
-      title: t('settings_accountSection'),
-      icon: 'person-circle-outline',
-      color: colors.pink
-    },
-    {
-      title: t('settings_editProfile'),
-      iconName: 'person-outline',
-      type: 'navigate',
-      onPress: () => navigateTo('EditProfileScreen'),
-    },
-    {
-      title: t('settings_privacy'),
-      iconName: 'shield-checkmark-outline',
-      type: 'navigate',
-      onPress: () => navigateTo('PrivacySettingsScreen'),
-    },
-    {
-      title: t('settings_privacyVisibility'),
-      iconName: 'eye-off-outline',
-      type: 'toggle',
-      value: hideOnlineStatus,
-      onValueChange: setHideOnlineStatus,
-    },
-    { 
-      type: 'sectionHeader', 
-      title: t('settings_notifications'),
-      icon: 'notifications-circle-outline',
-      color: colors.orange
-    },
-    {
-      title: t('settings_notificationsPush'),
-      iconName: 'notifications-outline',
-      type: 'toggle',
-      value: pushNotificationsEnabled,
-      onValueChange: setPushNotificationsEnabled,
-    },
-    {
-      title: t('settings_notificationsEmail'),
-      iconName: 'mail-outline',
-      type: 'toggle',
-      value: emailNotificationsEnabled,
-      onValueChange: setEmailNotificationsEnabled,
-    },
-    { 
-      type: 'sectionHeader', 
-      title: t('settings_appPreferences'),
-      icon: 'settings-outline',
-      color: colors.blue
-    },
-    {
-      title: t('settings_darkMode'),
-      iconName: 'moon-outline',
-      type: 'toggle',
-      value: darkModeEnabled,
-      onValueChange: setDarkModeEnabled,
-    },
-    {
-      title: t('settings_dataSaver'),
-      iconName: 'cellular-outline',
-      type: 'toggle',
-      value: dataSaverMode,
-      onValueChange: setDataSaverMode,
-    },
-    {
-      title: t('settings_clearCache'),
-      iconName: 'trash-outline',
-      type: 'button',
-      onPress: handleClearCache,
-    },
-    { 
-      type: 'sectionHeader', 
-      title: t('settings_helpSupport'),
-      icon: 'help-circle-outline',
-      color: colors.success
-    },
-    {
-      title: t('settings_helpCenter'),
-      iconName: 'help-circle-outline',
-      type: 'navigate',
-      onPress: () => openLink('https://help.karmacommunity.com'),
-    },
-    {
-      title: t('settings_about'),
-      iconName: 'information-circle-outline',
-      type: 'navigate',
-      onPress: () => navigateTo('AboutScreen'),
-    },
-    { type: 'sectionHeader' },
-    {
-      title: t('settings_logout'),
-      iconName: 'log-out-outline',
-      type: 'button',
-      onPress: handleLogout,
-      isDestructive: true,
-    }
-  ];
-  
-  console.log('🔄 settingsData created with', settingsData.length, 'items');
-
-  const renderSettingItem = ({ item, index }: { item: any; index: number }) => {
-    if (item.type === 'sectionHeader') {
-      return item.title ? (
-        <Animated.View 
-          style={[
-            styles.sectionHeaderContainer,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            }
-          ]}
-        >
-          <View style={styles.sectionHeaderContent}>
-            {item.icon && (
-              <View style={[styles.sectionIconContainer, { backgroundColor: item.color + '15' }]}>
-                <Ionicons name={item.icon} size={20} color={item.color} />
-              </View>
-            )}
-            <Text style={[styles.sectionHeader, { textAlign: 'right' }]}>{item.title}</Text>
-          </View>
-        </Animated.View>
-      ) : (
-        <View style={styles.sectionSpacer} />
-      );
-    }
-    return (
-      <Animated.View
-        style={{
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
-        }}
-      >
-        <SettingsItem {...item} />
-      </Animated.View>
+  const handleClearCachePress = () => {
+    console.log('⚙️ SettingsScreen - Clear cache pressed');
+    Alert.alert(
+      'ניקוי מטמון',
+      'האם אתה בטוח שברצונך לנקות את המטמון?',
+      [
+        {
+          text: 'ביטול',
+          style: 'cancel',
+        },
+        {
+          text: 'נקה',
+          style: 'destructive',
+          onPress: () => {
+            console.log('⚙️ SettingsScreen - Cache cleared');
+            Alert.alert('הושלם', 'המטמון נוקה בהצלחה');
+          },
+        },
+      ]
     );
   };
 
+  // Test function for scroll functionality (development only)
+  const handleScrollTest = () => {
+    console.log('🧪 SettingsScreen - Testing scroll functionality');
+    if (scrollViewRef.current) {
+      console.log('🧪 SettingsScreen - ScrollView ref exists, attempting to scroll');
+      scrollViewRef.current.scrollTo({ y: 200, animated: true });
+      setTimeout(() => {
+        console.log('🧪 SettingsScreen - Scrolling back to top');
+        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+      }, 2000);
+    } else {
+      console.log('🧪 SettingsScreen - ScrollView ref is null!');
+    }
+  };
+
+  const SettingsItem = ({ 
+    icon, 
+    title, 
+    subtitle, 
+    onPress, 
+    showArrow = true,
+    color = colors.textPrimary,
+    dangerous = false 
+  }: {
+    icon: string;
+    title: string;
+    subtitle?: string;
+    onPress: () => void;
+    showArrow?: boolean;
+    color?: string;
+    dangerous?: boolean;
+  }) => (
+    <TouchableOpacity
+      style={[styles.settingsItem, dangerous && styles.dangerousItem]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.settingsItemLeft}>
+        <View style={[styles.iconContainer, dangerous && styles.dangerousIconContainer]}>
+          <Ionicons 
+            name={icon as any} 
+            size={22} 
+            color={dangerous ? colors.error : colors.primary} 
+          />
+              </View>
+        <View style={styles.textContainer}>
+          <Text style={[styles.settingsTitle, { color: dangerous ? colors.error : color }]}>
+            {title}
+          </Text>
+          {subtitle && (
+            <Text style={styles.settingsSubtitle}>{subtitle}</Text>
+          )}
+        </View>
+          </View>
+      {showArrow && (
+        <Ionicons 
+          name="chevron-forward" 
+          size={20} 
+          color={colors.textSecondary} 
+        />
+      )}
+    </TouchableOpacity>
+  );
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
-      {/* Modern Header */}
-      <Animated.View 
-        style={[
-          styles.header,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-          }
-        ]}
-      >
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={handleBackPress}
+          activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>{t('settings_title')}</Text>
-          <Text style={styles.headerSubtitle}>הגדרות האפליקציה</Text>
-        </View>
+        <Text style={styles.headerTitle}>הגדרות</Text>
         <View style={styles.headerSpacer} />
-      </Animated.View>
-      
-      <FlatList
-        data={settingsData}
-        renderItem={renderSettingItem}
-        keyExtractor={(item, index) => index.toString()}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContainer}
-      />
+      </View>
+
+      {/* User Info Section - Only for logged in users */}
+      {!isGuestMode && selectedUser && (
+        <View style={styles.userSection}>
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>{selectedUser.name}</Text>
+            <Text style={styles.userEmail}>{selectedUser.email}</Text>
+            <Text style={styles.karmaPoints}>
+              {selectedUser.karmaPoints.toLocaleString()} נקודות קארמה
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Guest Mode Notice */}
+      {isGuestMode && (
+        <View style={styles.guestNotice}>
+          <Ionicons name="person-outline" size={20} color={colors.warning} />
+          <Text style={styles.guestText}>אתה במצב אורח</Text>
+        </View>
+      )}
+
+      {/* Settings List - Platform-specific scroll implementation */}
+      {Platform.OS === 'web' ? (
+        // Web: Custom scrollable View with CSS overflow
+        <View style={styles.webScrollContainer}>
+          <View style={styles.webScrollContent}>
+            {/* App Settings Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>הגדרות אפליקציה</Text>
+              
+              <SettingsItem
+                icon="notifications-outline"
+                title="התראות"
+                subtitle="ניהול התראות ועדכונים"
+                onPress={handleNotificationsPress}
+              />
+              
+              <SettingsItem
+                icon="color-palette-outline"
+                title="ערכת נושא"
+                subtitle="בהיר, כהה או אוטומטי"
+                onPress={handleThemePress}
+              />
+              
+              <SettingsItem
+                icon="language-outline"
+                title="שפה"
+                subtitle="עברית (ברירת מחדל)"
+                onPress={handleLanguagePress}
+              />
+            </View>
+
+            {/* Privacy & Security Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>פרטיות ואבטחה</Text>
+              
+              <SettingsItem
+                icon="shield-outline"
+                title="הגדרות פרטיות"
+                subtitle="ניהול נתונים אישיים"
+                onPress={handlePrivacyPress}
+              />
+              
+              <SettingsItem
+                icon="trash-outline"
+                title="ניקוי מטמון"
+                subtitle="פינוי זיכרון זמני"
+                onPress={handleClearCachePress}
+              />
+              
+              <SettingsItem
+                icon="flask-outline"
+                title="בדיקת גלילה"
+                subtitle="בדיקה שהגלילה עובדת (למפתחים)"
+                onPress={handleScrollTest}
+              />
+            </View>
+
+            {/* About Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>מידע</Text>
+              
+              <SettingsItem
+                icon="information-circle-outline"
+                title="אודות קארמה קהילה"
+                subtitle="גרסה, תנאי שימוש ועוד"
+                onPress={handleAboutPress}
+              />
+            </View>
+
+            {/* Logout Section */}
+            <View style={styles.section}>
+              <SettingsItem
+                icon="log-out-outline"
+                title="יציאה מהמערכת"
+                subtitle={isGuestMode ? "חזרה למסך הכניסה" : "יציאה מהחשבון"}
+                onPress={handleLogoutPress}
+                showArrow={false}
+                dangerous={true}
+              />
+            </View>
+          </View>
+        </View>
+      ) : (
+        // Native: Standard ScrollView for iOS/Android
+        <ScrollView 
+          ref={scrollViewRef}
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={true}
+          scrollEnabled={true}
+          bounces={Platform.OS === 'ios'}
+          overScrollMode={Platform.OS === 'android' ? 'auto' : undefined}
+          nestedScrollEnabled={true}
+          keyboardShouldPersistTaps="handled"
+          onScroll={(event) => {
+            const offsetY = event.nativeEvent.contentOffset.y;
+            console.log('📜 SettingsScreen - NATIVE Scroll event triggered! OffsetY:', offsetY);
+            console.log('📜 SettingsScreen - Content size:', event.nativeEvent.contentSize);
+            console.log('📜 SettingsScreen - Layout measurement:', event.nativeEvent.layoutMeasurement);
+          }}
+          onScrollBeginDrag={() => {
+            console.log('📜 SettingsScreen - Scroll begin drag detected!');
+          }}
+          onScrollEndDrag={() => {
+            console.log('📜 SettingsScreen - Scroll end drag detected!');
+          }}
+          onMomentumScrollBegin={() => {
+            console.log('📜 SettingsScreen - Momentum scroll begin!');
+          }}
+          onMomentumScrollEnd={() => {
+            console.log('📜 SettingsScreen - Momentum scroll end!');
+          }}
+          onContentSizeChange={(contentWidth, contentHeight) => {
+            console.log('📜 SettingsScreen - Content size changed:', { contentWidth, contentHeight });
+            console.log('📜 SettingsScreen - Screen height:', SCREEN_HEIGHT);
+            console.log('📜 SettingsScreen - Should scroll:', contentHeight > SCREEN_HEIGHT);
+          }}
+          onLayout={(event) => {
+            console.log('📜 SettingsScreen - ScrollView layout:', event.nativeEvent.layout);
+          }}
+          scrollEventThrottle={16}
+        >
+        {/* App Settings Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>הגדרות אפליקציה</Text>
+          
+          <SettingsItem
+            icon="notifications-outline"
+            title="התראות"
+            subtitle="ניהול התראות ועדכונים"
+            onPress={handleNotificationsPress}
+          />
+          
+          <SettingsItem
+            icon="color-palette-outline"
+            title="ערכת נושא"
+            subtitle="בהיר, כהה או אוטומטי"
+            onPress={handleThemePress}
+          />
+          
+          <SettingsItem
+            icon="language-outline"
+            title="שפה"
+            subtitle="עברית (ברירת מחדל)"
+            onPress={handleLanguagePress}
+          />
+        </View>
+
+        {/* Privacy & Security Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>פרטיות ואבטחה</Text>
+          
+          <SettingsItem
+            icon="shield-outline"
+            title="הגדרות פרטיות"
+            subtitle="ניהול נתונים אישיים"
+            onPress={handlePrivacyPress}
+          />
+          
+          <SettingsItem
+            icon="trash-outline"
+            title="ניקוי מטמון"
+            subtitle="פינוי זיכרון זמני"
+            onPress={handleClearCachePress}
+          />
+          
+          <SettingsItem
+            icon="flask-outline"
+            title="בדיקת גלילה"
+            subtitle="בדיקה שהגלילה עובדת (למפתחים)"
+            onPress={handleScrollTest}
+          />
+        </View>
+
+        {/* About Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>מידע</Text>
+          
+          <SettingsItem
+            icon="information-circle-outline"
+            title="אודות קארמה קהילה"
+            subtitle="גרסה, תנאי שימוש ועוד"
+            onPress={handleAboutPress}
+          />
+        </View>
+
+        {/* Logout Section */}
+        <View style={styles.section}>
+          <SettingsItem
+            icon="log-out-outline"
+            title="יציאה מהמערכת"
+            subtitle={isGuestMode ? "חזרה למסך הכניסה" : "יציאה מהחשבון"}
+            onPress={handleLogoutPress}
+            showArrow={false}
+            dangerous={true}
+          />
+        </View>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -277,72 +426,145 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
     paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     backgroundColor: colors.background,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   backButton: {
     padding: 8,
-    borderRadius: 20,
+    borderRadius: 12,
     backgroundColor: colors.backgroundSecondary,
   },
-  headerTitleContainer: {
-    flex: 1,
-    alignItems: 'center',
-  },
   headerTitle: {
-    fontSize: FontSizes.heading2,
-    fontWeight: 'bold',
-    color: colors.text,
-    textAlign: 'center',
-  },
-  headerSubtitle: {
-    fontSize: FontSizes.body,
-    color: colors.textSecondary,
-    marginTop: 4,
+    fontSize: FontSizes.heading1,
+    fontWeight: '700',
+    color: colors.textPrimary,
   },
   headerSpacer: {
     width: 40,
   },
-  listContainer: {
-    paddingBottom: 20,
-  },
-  sectionHeaderContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+  userSection: {
     backgroundColor: colors.backgroundSecondary,
-    marginTop: 8,
+    marginHorizontal: 20,
+    marginTop: 20,
+    borderRadius: 16,
+    padding: 20,
   },
-  sectionHeaderContent: {
+  userInfo: {
+    alignItems: 'center',
+  },
+  userName: {
+    fontSize: FontSizes.medium,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+    marginBottom: 8,
+  },
+  karmaPoints: {
+    fontSize: FontSizes.body,
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  guestNotice: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.warningLight,
+    marginHorizontal: 20,
+    marginTop: 20,
+    borderRadius: 12,
+    padding: 16,
   },
-  sectionIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
+  guestText: {
+    fontSize: FontSizes.body,
+    color: colors.warning,
+    marginLeft: 8,
+    fontWeight: '500',
   },
-  sectionHeader: {
+  // Web: Custom scrollable container with CSS overflow
+  webScrollContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+    ...(Platform.OS === 'web' && {
+      overflow: 'auto' as any, // Enable native web scrolling
+    }),
+    height: '100%',
+    maxHeight: SCREEN_HEIGHT - 200, // Reserve space for header
+  } as any,
+  webScrollContent: {
+    paddingBottom: 40,
+    minHeight: SCREEN_HEIGHT * 1.2, // Ensure content is scrollable
+  },
+  // Native: Standard ScrollView styles
+  scrollView: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  section: {
+    marginTop: 32,
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
     fontSize: FontSizes.body,
     fontWeight: '600',
     color: colors.textSecondary,
+    marginBottom: 16,
+    marginRight: 4,
   },
-  sectionSpacer: {
-    height: 20,
+  settingsItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+  },
+  dangerousItem: {
+    backgroundColor: colors.errorLight,
+  },
+  settingsItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.pinkLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  dangerousIconContainer: {
+    backgroundColor: colors.errorLight,
+  },
+  textContainer: {
+    flex: 1,
+  },
+  settingsTitle: {
+    fontSize: FontSizes.body,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  settingsSubtitle: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
   },
 });

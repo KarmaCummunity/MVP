@@ -115,6 +115,14 @@ export default function HomeScreen() {
   const { selectedUser, setSelectedUser, isGuestMode } = useUser();
   const [showPosts, setShowPosts] = useState(false);
   const [isPersonalMode, setIsPersonalMode] = useState(true); // מצב אישי כברירת מחדל
+  
+  // במצב אורח - תמיד מצב קהילתי
+  React.useEffect(() => {
+    if (isGuestMode) {
+      console.log('🏠 HomeScreen - Guest mode detected, forcing community mode');
+      setIsPersonalMode(false);
+    }
+  }, [isGuestMode]);
   const [hideTopBar, setHideTopBar] = useState(false); // מצב הסתרת הטופ בר
 
   // ערכים מונפשים לגלילה
@@ -230,12 +238,17 @@ export default function HomeScreen() {
           <ScrollView 
             style={styles.scrollContainer}
             onScroll={handleScroll}
-            scrollEventThrottle={16}
+            scrollEventThrottle={50}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
             {/* תוכן דינמי בהתאם למצב */}
-            {isPersonalMode ? (
+{/* Debug log - guest mode check */}
+            {(() => {
+              console.log('🏠 HomeScreen - isGuestMode:', isGuestMode, 'isPersonalMode:', isPersonalMode);
+              return null;
+            })()}
+            {(isPersonalMode && !isGuestMode) ? (
               // מצב אישי - המסך המלא
               <View style={styles.personalModeContainer}>
                 {/* Guest Mode Notice */}
@@ -516,8 +529,9 @@ export default function HomeScreen() {
           )}
           </ScrollView>
           
-          {/* Toggle Button */}
-          <View style={styles.toggleContainer}>
+          {/* Toggle Button - Hidden in guest mode */}
+          {!isGuestMode && (
+            <View style={styles.toggleContainer}>
             <TouchableOpacity 
               style={[styles.toggleButton, isPersonalMode && styles.toggleButtonActive]}
               onPress={() => setIsPersonalMode(!isPersonalMode)}
@@ -538,7 +552,8 @@ export default function HomeScreen() {
                 color={!isPersonalMode ? colors.backgroundPrimary : colors.textSecondary} 
               />
             </TouchableOpacity>
-          </View>
+            </View>
+          )}
         </View>
       )}
     </SafeAreaView>

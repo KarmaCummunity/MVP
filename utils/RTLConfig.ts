@@ -1,19 +1,19 @@
 import { I18nManager, Platform } from 'react-native';
-import i18next from './i18n';
 
-// Languages that should use RTL layout
+// Hebrew is RTL language
 const RTL_LANGUAGES = ['he', 'ar'];
 
 export const isRTLLanguage = (language: string): boolean => {
   return RTL_LANGUAGES.includes(language);
 };
 
-export const setupRTL = (language?: string): void => {
-  const shouldBeRTL = isRTLLanguage(language || i18next.language);
+export const setupRTL = (): void => {
+  // Always use RTL for Hebrew
+  const shouldBeRTL = true;
   
   // Only change if needed
   if (I18nManager.isRTL !== shouldBeRTL) {
-    // Enable/disable RTL support based on language
+    // Enable RTL support for Hebrew
     I18nManager.allowRTL(shouldBeRTL);
     I18nManager.forceRTL(shouldBeRTL);
     
@@ -77,7 +77,5 @@ export interface RTLStyleObject {
   paddingRight?: number;
 }
 
-// Listen for language changes and update RTL accordingly
-i18next.on('languageChanged', (lng) => {
-  setupRTL(lng);
-});
+// Setup RTL on import
+setupRTL();
