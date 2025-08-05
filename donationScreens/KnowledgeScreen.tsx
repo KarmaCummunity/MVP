@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,12 @@ import {
   Linking,
   Alert,
 } from 'react-native';
+import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { texts } from '../globals/texts';
+import { useUser } from '../context/UserContext';
 import HeaderComp from '../components/HeaderComp';
 
 // Mock data for educational content
@@ -122,12 +124,30 @@ const communityContent = [
   },
 ];
 
-const KnowledgeScreen: React.FC = () => {
+export default function KnowledgeScreen({
+  navigation,
+}: {
+  navigation: NavigationProp<ParamListBase>;
+}) {
+  const { selectedUser } = useUser();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("");
   const [selectedSort, setSelectedSort] = useState("");
   const [filteredEducationalLinks, setFilteredEducationalLinks] = useState(educationalLinks);
   const [filteredCommunityContent, setFilteredCommunityContent] = useState(communityContent);
+  const [selectedMentorship, setSelectedMentorship] = useState<any>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('📚 KnowledgeScreen - Screen focused, refreshing data...');
+      // Reset form when returning to screen
+      setSelectedMentorship(null);
+      // Force re-render by updating refresh key
+      setRefreshKey(prev => prev + 1);
+    }, [])
+  );
 
   // Filter and sort options for knowledge screen
   const knowledgeFilterOptions = [
@@ -578,6 +598,4 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
-});
-
-export default KnowledgeScreen; 
+}); 

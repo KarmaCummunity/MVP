@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, NavigationProp, ParamListBase } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { allUsers, CharacterType } from '../globals/characterTypes';
@@ -24,16 +24,27 @@ import {
 import { useUser } from '../context/UserContext';
 
 export default function DiscoverPeopleScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { selectedUser } = useUser();
   const [suggestions, setSuggestions] = useState<CharacterType[]>([]);
   const [popularUsers, setPopularUsers] = useState<CharacterType[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'suggestions' | 'popular'>('suggestions');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     loadUsers();
   }, []);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔍 DiscoverPeopleScreen - Screen focused, refreshing data...');
+      loadUsers();
+      // Force re-render by updating refresh key
+      setRefreshKey(prev => prev + 1);
+    }, [])
+  );
 
   const loadUsers = () => {
     setLoading(true);
@@ -89,11 +100,11 @@ export default function DiscoverPeopleScreen() {
         <TouchableOpacity 
           style={styles.userInfo}
           onPress={() => {
-            navigation.navigate('UserProfileScreen' as never, {
+            navigation.navigate('UserProfileScreen' as any, {
               userId: item.id,
               userName: item.name,
               characterData: item
-            } as never);
+            });
           }}
         >
           <Image source={{ uri: item.avatar }} style={styles.avatar} />

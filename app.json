@@ -1,7 +1,7 @@
 {
-  "expo": {
-    "name": "KC",
-    "slug": "kc",
+      "expo": {
+      "name": "KC",
+      "slug": "karma-community",
     "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

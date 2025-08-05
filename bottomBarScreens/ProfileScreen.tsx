@@ -1,5 +1,5 @@
 // screens/ProfileScreen.tsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { TabView, TabBar, SceneMap } from 'react-native-tab-view';
 import type { SceneRendererProps, NavigationState } from 'react-native-tab-view';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { texts, replaceText } from '../globals/texts';
@@ -82,6 +82,27 @@ export default function ProfileScreen() {
   const navigation = useNavigation();
   const [index, setIndex] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
+  const [userStats, setUserStats] = useState({
+    posts: 0,
+    followers: 0,
+    following: 0,
+    karmaPoints: 0,
+    completedTasks: 0,
+    totalDonations: 0,
+  });
+
+  // Function to update user statistics
+  const updateUserStats = () => {
+    const currentUserStats = getFollowStats(selectedUser?.id || currentUser.id, selectedUser?.id || currentUser.id);
+    setUserStats({
+      posts: selectedUser?.postsCount || 24,
+      followers: currentUserStats.followersCount,
+      following: currentUserStats.followingCount,
+      karmaPoints: selectedUser?.karmaPoints || currentUser.karmaPoints,
+      completedTasks: selectedUser?.completedTasks || currentUser.completedTasks,
+      totalDonations: selectedUser?.totalDonations || currentUser.totalDonations,
+    });
+  };
 
   // Function to select a random user
   const selectRandomUser = () => {
@@ -98,6 +119,26 @@ export default function ProfileScreen() {
     { key: 'reels', title: 'רילס' },
     { key: 'tagged', title: 'תיוגים' },
   ]);
+
+  // Update stats when selectedUser changes
+  useEffect(() => {
+    updateUserStats();
+  }, [selectedUser]);
+
+  // Refresh stats when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('👤 ProfileScreen - Screen focused, refreshing stats...');
+      updateUserStats();
+      
+      // Force re-render by updating a timestamp
+      const refreshTimestamp = Date.now();
+      setUserStats(prevStats => ({
+        ...prevStats,
+        refreshTimestamp
+      }));
+    }, [selectedUser])
+  );
 
   const renderScene = SceneMap({
     posts: PostsRoute,
@@ -144,16 +185,7 @@ export default function ProfileScreen() {
     />
   );
 
-  // User Statistics with real follow data
-  const currentUserStats = getFollowStats(selectedUser?.id || currentUser.id, selectedUser?.id || currentUser.id);
-  const userStats = {
-    posts: selectedUser?.postsCount || 24,
-    followers: currentUserStats.followersCount,
-    following: currentUserStats.followingCount,
-    karmaPoints: selectedUser?.karmaPoints || currentUser.karmaPoints,
-    completedTasks: selectedUser?.completedTasks || currentUser.completedTasks,
-    totalDonations: selectedUser?.totalDonations || currentUser.totalDonations,
-  };
+  // User Statistics are now managed by state and updated via useFocusEffect
 
   // Recent Activities
   const recentActivities = [

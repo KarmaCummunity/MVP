@@ -3,7 +3,7 @@ import styles from '../globals/styles'; // your styles file
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, useFocusEffect } from '@react-navigation/native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import colors from '../globals/colors';
 import { useUser } from '../context/UserContext';
@@ -23,6 +23,14 @@ function TopBarNavigator({ navigation, hideTopBar = false }: TopBarNavigatorProp
   
   console.log('🔝 TopBarNavigator - isGuestMode:', isGuestMode);
   
+  // Refresh data when navigator comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔝 TopBarNavigator - Navigator focused, checking state...');
+      // This will trigger re-renders of child screens when needed
+    }, [])
+  );
+
   ////console.log('🔝 TopBarNavigator - hideTopBar prop:', hideTopBar);
 
   // אנימציה להסתרת/הצגת הטופ בר

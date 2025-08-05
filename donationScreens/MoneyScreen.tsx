@@ -12,7 +12,7 @@ import {
   TextInput,
   Platform,
 } from 'react-native';
-import { NavigationProp, ParamListBase } from '@react-navigation/native';
+import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import { FontSizes } from '../globals/constants';
 import { charityNames, charities, donations } from '../globals/fakeData';
 
@@ -61,10 +61,21 @@ export default function MoneyScreen({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("");
   const [selectedSort, setSelectedSort] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const [filteredCharities, setFilteredCharities] = useState(dummyCharities); // Search results
 
-
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('💰 MoneyScreen - Screen focused, refreshing data...');
+      // Reset form when returning to screen
+      setAmount('');
+      setSelectedRecipient('');
+      // Force re-render by updating refresh key
+      setRefreshKey(prev => prev + 1);
+    }, [])
+  );
 
   // Function to filter charities by search and filter
   const getFilteredCharities = () => {

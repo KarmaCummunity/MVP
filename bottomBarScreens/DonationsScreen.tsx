@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import { NavigationProp } from '@react-navigation/native';
+import { NavigationProp, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { DonationsStackParamList } from '../globals/types';
 import colors from '../globals/colors';
@@ -179,6 +179,15 @@ const donationCategories = [
 const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
   const { isGuestMode } = useUser();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('💰 DonationsScreen - Screen focused, refreshing data...');
+      // Reset selected category when returning to screen
+      setSelectedCategory(null);
+    }, [])
+  );
 
   const handleCategoryPress = (category: any) => {
     console.log('Category pressed:', category.title);

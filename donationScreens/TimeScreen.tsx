@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,11 @@ import {
   Linking,
   Alert,
 } from 'react-native';
+import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
+import { useUser } from '../context/UserContext';
 import HeaderComp from '../components/HeaderComp';
 
 // Mock data for volunteer opportunities
@@ -98,12 +100,30 @@ const volunteerOpportunities = [
   },
 ];
 
-const TimeScreen: React.FC = () => {
+export default function TimeScreen({
+  navigation,
+}: {
+  navigation: NavigationProp<ParamListBase>;
+}) {
+  const { selectedUser } = useUser();
   const [selectedCategory, setSelectedCategory] = useState<string>('כל הקטגוריות');
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("");
   const [selectedSort, setSelectedSort] = useState("");
   const [filteredOpportunities, setFilteredOpportunities] = useState(volunteerOpportunities);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('⏰ TimeScreen - Screen focused, refreshing data...');
+      // Reset form when returning to screen
+      setSelectedTask(null);
+      // Force re-render by updating refresh key
+      setRefreshKey(prev => prev + 1);
+    }, [])
+  );
 
   const categories = ['כל הקטגוריות', 'קשישים', 'חינוך', 'רווחה', 'חיות', 'סביבה', 'בריאות'];
   
@@ -455,10 +475,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundPrimary,
     borderRadius: 15,
     overflow: 'hidden',
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 3,
   },
   opportunityImage: {
@@ -565,10 +582,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 15,
     alignItems: 'center',
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 2,
   },
   statNumber: {
@@ -583,6 +597,4 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
-});
-
-export default TimeScreen; 
+}); 

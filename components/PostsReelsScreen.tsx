@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../context/UserContext';
 import CommentsModal from './CommentsModal';
 import { isBookmarked, addBookmark, removeBookmark } from '../utils/bookmarksService';
@@ -296,6 +296,14 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false }: Posts
       }),
     };
   });
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('📱 PostsReelsScreen - Screen focused, refreshing data...');
+      // Here you can add any data refresh logic if needed
+    }, [])
+  );
 
   const [lastOffsetY, setLastOffsetY] = useState(0);
   

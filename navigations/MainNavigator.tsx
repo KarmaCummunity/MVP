@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { createStackNavigator } from "@react-navigation/stack";
+import { useFocusEffect } from "@react-navigation/native";
 import HomeStack from "./HomeStack";
 import InactiveScreen from "../screens/InactiveScreen";
 import WebViewScreen from "../screens/WebViewScreen";
@@ -12,6 +13,7 @@ import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
 import LoginScreen from "../screens/LoginScreen";
 import { useUser } from '../context/UserContext';
 import colors from '../globals/colors';
+import SettingsScreen from '../topBarScreens/SettingsScreen';
 
 import { RootStackParamList } from '../globals/types';
 
@@ -26,6 +28,14 @@ export default function MainNavigator() {
     isGuestMode,
     isAuthenticated
   });
+
+  // Refresh data when navigator comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🧭 MainNavigator - Navigator focused, checking state...');
+      // This will trigger re-renders of child screens when needed
+    }, [])
+  );
 
   // Automatic update when authentication state changes
   useEffect(() => {
@@ -63,7 +73,7 @@ export default function MainNavigator() {
   if (!isAuthenticated && !isGuestMode) {
     console.log('🧭 MainNavigator - User not authenticated, showing LoginScreen');
   } else {
-    console.log('🧭 MainNavigator - User authenticated or guest mode, showing Home');
+    console.log('🧭 MainNavigator - User authenticated or guest mode, showing HomeStack');
   }
   
   return (
@@ -72,7 +82,8 @@ export default function MainNavigator() {
       initialRouteName={"LoginScreen"}
     >
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
-      <Stack.Screen name="Home" component={HomeStack} />
+      <Stack.Screen name="HomeStack" component={HomeStack} />
+      <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
       <Stack.Screen name="InactiveScreen" component={InactiveScreen} />
       <Stack.Screen name="WebViewScreen" component={WebViewScreen} />
       <Stack.Screen

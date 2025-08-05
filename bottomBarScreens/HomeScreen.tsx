@@ -119,6 +119,7 @@ export default function HomeScreen() {
   const { selectedUser, setSelectedUser, isGuestMode } = useUser();
   const [showPosts, setShowPosts] = useState(false);
   const [isPersonalMode, setIsPersonalMode] = useState(true); // Personal mode as default
+  const [refreshKey, setRefreshKey] = useState(0);
   
   // In guest mode - always community mode
   useEffect(() => {
@@ -132,6 +133,15 @@ export default function HomeScreen() {
   // Animated values for scrolling
   const scrollY = useSharedValue(0);
   const postsTranslateY = useSharedValue(0);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🏠 HomeScreen - Screen focused, refreshing data...');
+      // Force re-render by updating refresh key
+      setRefreshKey(prev => prev + 1);
+    }, [])
+  );
 
   // Reset state when screen loses focus
   useEffect(() => {
@@ -539,14 +549,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-    } : {
-      shadowColor: colors.shadowLight,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-    }),
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 3,
   },
   headerContent: {
@@ -642,14 +645,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 12,
     width: 150,
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
-    } : {
-      shadowColor: colors.shadowLight,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
-    }),
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
     elevation: 2,
   },
   activityIcon: {
@@ -685,14 +681,7 @@ const styles = StyleSheet.create({
      alignItems: 'center',
      flex: 1,
      marginHorizontal: 5,
-     ...(Platform.OS === 'web' ? {
-       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)'
-     } : {
-       shadowColor: colors.shadowLight,
-       shadowOffset: { width: 0, height: 2 },
-       shadowOpacity: 0.15,
-       shadowRadius: 4,
-     }),
+         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
      elevation: 3,
      minWidth: 80,
      minHeight: 80,
@@ -722,14 +711,7 @@ const styles = StyleSheet.create({
     bottom: 10,
     borderTopLeftRadius: 250,
     borderTopRightRadius: 250,
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0 -3px 8px rgba(0, 0, 0, 0.15)'
-    } : {
-      shadowColor: colors.black,
-      shadowOffset: { width: 0, height: -3 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-    }),
+    boxShadow: '0 -3px 8px rgba(0, 0, 0, 0.15)',
     elevation: 8,
   },
   panelHandle: {
@@ -791,10 +773,7 @@ const styles = StyleSheet.create({
   },
   toggleButtonActive: {
     backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.4,
-    shadowRadius: 2,
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.4)',
     elevation: 3,
   },
   toggleText: {
@@ -883,10 +862,7 @@ const styles = StyleSheet.create({
      flex: 1,
      marginHorizontal: 5,
      marginBottom: 10,
-     shadowColor: colors.shadowLight,
-     shadowOffset: { width: 0, height: 2 },
-     shadowOpacity: 0.15,
-     shadowRadius: 4,
+     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
      elevation: 3,
      minWidth: 80,
      minHeight: 80,
@@ -925,10 +901,7 @@ const styles = StyleSheet.create({
      alignItems: 'center',
      marginHorizontal: 5,
      marginBottom: 10,
-     shadowColor: colors.shadowLight,
-     shadowOffset: { width: 0, height: 2 },
-     shadowOpacity: 0.15,
-     shadowRadius: 4,
+     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
      elevation: 3,
      minWidth: 80,
      minHeight: 80,

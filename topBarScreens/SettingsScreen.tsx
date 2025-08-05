@@ -12,7 +12,7 @@
  * @version 2.0.0
  */
 
-import React, { useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,7 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes, UI_TEXT } from '../globals/constants';
@@ -37,6 +37,16 @@ export default function SettingsScreen() {
   const navigation = useNavigation();
   const { signOut, isGuestMode, selectedUser, isAuthenticated } = useUser();
   const scrollViewRef = useRef<ScrollView>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('⚙️ SettingsScreen - Screen focused, refreshing data...');
+      // Force re-render by updating refresh key
+      setRefreshKey(prev => prev + 1);
+    }, [])
+  );
 
   // Listen for authentication state changes
   useEffect(() => {

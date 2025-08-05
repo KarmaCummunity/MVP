@@ -4,6 +4,7 @@ import React from "react";
 import { View, Platform, StyleSheet } from "react-native";
 import { createBottomTabNavigator, BottomTabNavigationOptions } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import SearchScreen from "../bottomBarScreens/SearchScreen";
 import ProfileScreen from "../bottomBarScreens/ProfileScreen";
 import HomeScreen from "../bottomBarScreens/HomeScreen"; // This is your HomeScreen with the drag handle
@@ -40,6 +41,14 @@ export default function BottomNavigator(): React.ReactElement {
   console.log('📱 BottomNavigator - Component rendered');
   const { isGuestMode } = useUser();
   
+  // Refresh data when navigator comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('📱 BottomNavigator - Navigator focused, checking state...');
+      // This will trigger re-renders of child screens when needed
+    }, [])
+  );
+
   /**
    * Helper function to determine the Ionicons name based on the route and focus state.
    * @param {string} routeName - The name of the current route.

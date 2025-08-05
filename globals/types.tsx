@@ -104,7 +104,7 @@ export interface TrumpScreenProps {
 // --- Root Stack Navigator (MainNavigator) Parameter List ---
 // This lists all the screens directly in your MainNavigator.tsx
 export type RootStackParamList = {
-  Home: NavigatorScreenParams<BottomTabNavigatorParamList>;
+  HomeStack: NavigatorScreenParams<BottomTabNavigatorParamList>;
   FirstScreen: undefined;
   LoginScreen: undefined;
   InactiveScreen: undefined;

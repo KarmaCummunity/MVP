@@ -7,11 +7,14 @@ import * as Font from 'expo-font';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import MainNavigator from './navigations/MainNavigator';
 import colors from './globals/colors';
 import { UserProvider } from './context/UserContext';
 import { FontSizes } from "./globals/constants";
+import './utils/RTLConfig';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -52,6 +55,8 @@ export default function App() {
     prepareApp();
   }, [prepareApp]);
 
+
+
   if (fontError) {
     return (
       <View style={errorStyles.container}>
@@ -77,14 +82,18 @@ export default function App() {
   }
 
   return (
-    <UserProvider>
-      <NavigationContainer>
-        <View style={{ flex: 1 }}>
-          <MainNavigator />
-          <StatusBar style="auto" />
-        </View>
-      </NavigationContainer>
-    </UserProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+                 <UserProvider>
+           <NavigationContainer>
+             <View style={{ flex: 1 }}>
+               <MainNavigator />
+               <StatusBar style="auto" />
+             </View>
+           </NavigationContainer>
+         </UserProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { TabView, TabBar, SceneMap } from 'react-native-tab-view';
 import type { SceneRendererProps, NavigationState } from 'react-native-tab-view';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { allUsers, CharacterType } from '../globals/characterTypes';
@@ -116,6 +116,25 @@ export default function UserProfileScreen() {
       setIsFollowing(stats.isFollowing);
     }
   }, [user, selectedUser]);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('👤 UserProfileScreen - Screen focused, refreshing follow stats...');
+      if (user && selectedUser) {
+        const stats = getFollowStats(user.id, selectedUser.id);
+        setFollowStats(stats);
+        setIsFollowing(stats.isFollowing);
+        
+        // Force re-render by updating a timestamp
+        const refreshTimestamp = Date.now();
+        setFollowStats(prevStats => ({
+          ...prevStats,
+          refreshTimestamp
+        }));
+      }
+    }, [user, selectedUser])
+  );
 
   const renderScene = SceneMap({
     posts: PostsRoute,

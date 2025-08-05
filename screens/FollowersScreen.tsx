@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { allUsers, CharacterType } from '../globals/characterTypes';
@@ -36,10 +36,21 @@ export default function FollowersScreen() {
   const { selectedUser } = useUser();
   const [users, setUsers] = useState<CharacterType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     loadUsers();
   }, [userId, type]);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('👥 FollowersScreen - Screen focused, refreshing data...');
+      loadUsers();
+      // Force re-render by updating refresh key
+      setRefreshKey(prev => prev + 1);
+    }, [userId, type])
+  );
 
   const loadUsers = () => {
     setLoading(true);

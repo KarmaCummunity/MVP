@@ -1,7 +1,7 @@
 // screens/ChatListScreen.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, SafeAreaView, Platform, Alert } from 'react-native';
-import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
+import { useNavigation, NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import ChatListItem from '../components/ChatListItem';
 import { users, ChatUser } from '../globals/fakeData';
 import { useUser } from '../context/UserContext';
@@ -15,6 +15,7 @@ export default function ChatListScreen() {
   const { selectedUser } = useUser();
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Loading conversations
   const loadConversations = useCallback(async () => {
@@ -35,9 +36,15 @@ export default function ChatListScreen() {
     }
   }, [selectedUser]);
 
-  useEffect(() => {
-    loadConversations();
-  }, [loadConversations]);
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('💬 ChatListScreen - Screen focused, refreshing conversations...');
+      loadConversations();
+      // Force re-render by updating refresh key
+      setRefreshKey(prev => prev + 1);
+    }, [selectedUser])
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);

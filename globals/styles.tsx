@@ -11,10 +11,7 @@ export const createShadowStyle = (shadowColor: string, shadowOffset: { width: nu
     };
   } else {
     return {
-      shadowColor,
-      shadowOffset,
-      shadowOpacity,
-      shadowRadius,
+      boxShadow: `${shadowOffset.width}px ${shadowOffset.height}px ${shadowRadius}px rgba(0, 0, 0, ${shadowOpacity})`,
     };
   }
 };

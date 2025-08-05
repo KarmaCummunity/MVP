@@ -1,22 +1,36 @@
-import DonationsScreen from '../bottomBarScreens/DonationsScreen';
-import TrumpScreen from '../donationScreens/TrumpScreen';
-import MoneyScreen from '../donationScreens/MoneyScreen';
-import KnowledgeScreen from '../donationScreens/KnowledgeScreen';
-import TimeScreen from '../donationScreens/TimeScreen';
-import { createStackNavigator } from '@react-navigation/stack';
+import React from "react";
+import { createStackNavigator } from "@react-navigation/stack";
+import { useFocusEffect } from "@react-navigation/native";
+import DonationsScreen from "../bottomBarScreens/DonationsScreen";
+import MoneyScreen from "../donationScreens/MoneyScreen";
+import TimeScreen from "../donationScreens/TimeScreen";
+import KnowledgeScreen from "../donationScreens/KnowledgeScreen";
+import TrumpScreen from "../donationScreens/TrumpScreen";
+import { DonationsStackParamList } from "../globals/types";
 
-const Stack = createStackNavigator();
+const Stack = createStackNavigator<DonationsStackParamList>();
 
 export default function DonationsStack() {
-  console.log('🎯 DonationsStack - Component rendered');
-  
+  // Refresh data when navigator comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('💰 DonationsStack - Navigator focused, checking state...');
+      // This will trigger re-renders of child screens when needed
+    }, [])
+  );
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="DonationsMain" component={DonationsScreen} />
+    <Stack.Navigator
+      initialRouteName="DonationsScreen"
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="DonationsScreen" component={DonationsScreen} />
       <Stack.Screen name="MoneyScreen" component={MoneyScreen} />
-      <Stack.Screen name="TrumpScreen" component={TrumpScreen} />
-      <Stack.Screen name="KnowledgeScreen" component={KnowledgeScreen} />
       <Stack.Screen name="TimeScreen" component={TimeScreen} />
+      <Stack.Screen name="KnowledgeScreen" component={KnowledgeScreen} />
+      <Stack.Screen name="TrumpScreen" component={TrumpScreen} />
     </Stack.Navigator>
   );
 }

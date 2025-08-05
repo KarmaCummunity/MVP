@@ -1,38 +1,30 @@
-import ChatScreen from "../topBarScreens/ChatScreen";
-import Home from "../navigations/Home";
+import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import ChatListScreen from "../topBarScreens/ChatListScreen";
-import ChatDetailScreen from "../screens/ChatDetailScreen";
-import SettingsScreen from "../topBarScreens/SettingsScreen";
-import AboutKarmaCommunityScreen from "../topBarScreens/AboutKarmaCommunityScreen";
+import { useFocusEffect } from "@react-navigation/native";
+import Home from "./Home";
+import TopBarNavigator from "./TopBarNavigator";
+import { RootStackParamList } from "../globals/types";
 
-const Stack = createStackNavigator();
+const Stack = createStackNavigator<RootStackParamList>();
 
 export default function HomeStack() {
+  // Refresh data when navigator comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🏠 HomeStack - Navigator focused, checking state...');
+      // This will trigger re-renders of child screens when needed
+    }, [])
+  );
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      initialRouteName="Home"
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
       <Stack.Screen name="HomeMain" component={Home} />
-      <Stack.Screen name="ChatScreen" component={ChatScreen} />
-      <Stack.Screen
-        name="ChatListScreen"
-        component={ChatListScreen}
-        options={{ headerShown: false }} // Hide default header
-      />
-      <Stack.Screen
-        name="ChatDetailScreen"
-        component={ChatDetailScreen}
-        options={{ headerShown: false }} // Hide default header
-      />
-      <Stack.Screen
-        name="SettingsScreen" // <-- Define the name for your Settings screen
-        component={SettingsScreen}
-        options={{ headerShown: false }} // We custom-build the header
-      />
-      <Stack.Screen
-        name="AboutKarmaCommunityScreen"
-        component={AboutKarmaCommunityScreen}
-        options={{ title: "אודות קהילת קארמה" }}
-      />
+      <Stack.Screen name="TopBarNavigator" component={TopBarNavigator} />
     </Stack.Navigator>
   );
 }

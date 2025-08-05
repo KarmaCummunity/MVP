@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -24,6 +24,7 @@ import {
 } from '../globals/fakeData';
 import { useUser } from '../context/UserContext';
 import GuestModeNotice from '../components/GuestModeNotice';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface SearchResult {
   id: string;
@@ -42,6 +43,16 @@ const SearchScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [isSearching, setIsSearching] = useState(false);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('🔍 SearchScreen - Screen focused, refreshing data...');
+      // Clear search results when returning to screen
+      setSearchResults([]);
+      setSearchQuery('');
+    }, [])
+  );
 
   // Popular searches
   const popularSearches = [

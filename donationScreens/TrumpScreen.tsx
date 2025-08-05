@@ -10,7 +10,7 @@ import {
   TextInput,
   Platform,
 } from 'react-native';
-import { NavigationProp, ParamListBase } from '@react-navigation/native';
+import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';  
 import { Ionicons as Icon } from '@expo/vector-icons';
@@ -34,6 +34,20 @@ export default function TrumpScreen({
   const [toLocation, setToLocation] = useState("");
   const [departureTime, setDepartureTime] = useState("");
   const [filteredRides, setFilteredRides] = useState(dummyRides);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('🚗 TrumpScreen - Screen focused, refreshing data...');
+      // Reset form when returning to screen
+      setFromLocation('');
+      setToLocation('');
+      setDepartureTime('');
+      // Force re-render by updating refresh key
+      setRefreshKey(prev => prev + 1);
+    }, [])
+  );
 
   // Filter and sort options for trump screen
   const trumpFilterOptions = [
