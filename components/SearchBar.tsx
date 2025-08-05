@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons"; // Ensure @expo/vector-icons is i
 import colors from "../globals/colors"; // Ensure this path is correct
 import { FontSizes, filterOptions as defaultFilterOptions, sortOptions as defaultSortOptions } from "../globals/constants";
 import { texts } from "../globals/texts";
+import { createShadowStyle } from "../globals/styles";
 
 interface SearchBarProps {
   onHasActiveConditionsChange?: (isActive: boolean) => void;
@@ -388,10 +389,7 @@ const localStyles = StyleSheet.create({
     borderRadius: 25,
     marginHorizontal: 20,
     marginTop: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...createShadowStyle("#000", { width: 0, height: 2 }, 0.1, 4),
     elevation: 3,
     paddingVertical: 2,
     borderWidth: 1,
@@ -434,10 +432,7 @@ const localStyles = StyleSheet.create({
     padding: 20,
     width: "80%",
     maxHeight: "70%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    ...createShadowStyle("#000", { width: 0, height: 2 }, 0.25, 4),
     elevation: 5,
   },
   modalTitle: {
@@ -519,10 +514,7 @@ const localStyles = StyleSheet.create({
     borderRadius: 18,
     flexDirection: "row-reverse",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    ...createShadowStyle("#000", { width: 0, height: 1 }, 0.1, 2),
     elevation: 2,
   },
   selectedFilterSortButtonText: {
