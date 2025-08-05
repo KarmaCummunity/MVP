@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { createStackNavigator } from "@react-navigation/stack";
 import HomeStack from "./HomeStack";
@@ -16,10 +16,28 @@ import { RootStackParamList } from '../globals/types';
 const Stack = createStackNavigator<RootStackParamList>();
 
 export default function MainNavigator() {
-  const { selectedUser, isLoading, isGuestMode } = useUser();
+  const { selectedUser, isLoading, isGuestMode, isAuthenticated } = useUser();
+
+  console.log('🧭 MainNavigator - Render state:', {
+    selectedUser: selectedUser?.name || 'null',
+    isLoading,
+    isGuestMode,
+    isAuthenticated
+  });
+
+  // עדכון אוטומטי כשמצב ההתחברות משתנה
+  useEffect(() => {
+    console.log('🧭 MainNavigator - Auth state changed:', {
+      selectedUser: selectedUser?.name || 'null',
+      isLoading,
+      isGuestMode,
+      isAuthenticated
+    });
+  }, [selectedUser, isLoading, isGuestMode, isAuthenticated]);
 
   // אם טוען – מציג מסך טעינה
   if (isLoading) {
+    console.log('🧭 MainNavigator - Showing loading screen');
     return (
       <View style={{
         flex: 1,
@@ -38,11 +56,18 @@ export default function MainNavigator() {
       </View>
     );
   }
+
+  // אם לא מחובר ולא במצב אורח – מציג מסך כניסה
+  if (!isAuthenticated && !isGuestMode) {
+    console.log('🧭 MainNavigator - User not authenticated, showing LoginScreen');
+  } else {
+    console.log('🧭 MainNavigator - User authenticated or guest mode, showing Home');
+  }
   
   return (
     <Stack.Navigator 
       screenOptions={{ headerShown: false }}
-      initialRouteName="LoginScreen"
+      initialRouteName={(!isAuthenticated && !isGuestMode) ? "LoginScreen" : "Home"}
     >
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
       <Stack.Screen name="Home" component={HomeStack} />

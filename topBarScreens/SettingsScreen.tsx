@@ -12,7 +12,7 @@
  * @version 2.0.0
  */
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -34,8 +34,23 @@ const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function SettingsScreen() {
   const navigation = useNavigation();
-  const { signOut, isGuestMode, selectedUser } = useUser();
+  const { signOut, isGuestMode, selectedUser, isAuthenticated } = useUser();
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // האזנה לשינויים במצב ההתחברות
+  useEffect(() => {
+    console.log('⚙️ SettingsScreen - Auth state changed:', {
+      isAuthenticated,
+      isGuestMode,
+      selectedUser: selectedUser?.name || 'null'
+    });
+    
+    // אם המשתמש לא מחובר יותר, עבור למסך הכניסה
+    if (!isAuthenticated && !isGuestMode) {
+      console.log('⚙️ SettingsScreen - User logged out, navigating to LoginScreen');
+      navigation.navigate('LoginScreen' as never);
+    }
+  }, [isAuthenticated, isGuestMode, selectedUser, navigation]);
 
   // Debug logs for development
   console.log('⚙️ SettingsScreen - Rendered with isGuestMode:', isGuestMode);
@@ -52,72 +67,161 @@ export default function SettingsScreen() {
     navigation.navigate('AboutKarmaCommunityScreen' as never);
   };
 
+    /**
+   * מטפל בלחיצה על כפתור היציאה
+   * לוגיקה שונה למצב אורח ולמשתמש מחובר:
+   * - מצב אורח: יציאה ישירה ללא התראה (רק חזרה למסך הכניסה)
+   * - משתמש מחובר: הצגת התראה לפני היציאה (פעולה מסוכנת)
+   */
   const handleLogoutPress = () => {
-    console.log('⚙️ SettingsScreen - Logout pressed');
-    Alert.alert(
-      'יציאה מהמערכת',
-      'האם אתה בטוח שברצונך לצאת?',
-      [
-        {
-          text: 'ביטול',
-          style: 'cancel',
-        },
-        {
-          text: 'יציאה',
-          style: 'destructive',
-          onPress: async () => {
-            console.log('⚙️ SettingsScreen - Logout confirmed');
-            await signOut();
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'LoginScreen' as never }],
-            });
-          },
-        },
-      ]
-    );
+    console.log('⚙️ 14SettingsScreen - Logout pressed');
+    console.log('⚙️ SettingsScreen - Platform:', Platform.OS);
+    console.log('⚙️ SettingsScreen - isGuestMode:', isGuestMode);
+    
+    // מצב אורח - יציאה ישירה ללא התראה כי זה לא מסוכן
+    if (isGuestMode) {
+      console.log('⚙️ SettingsScreen - Guest mode detected, direct logout without confirmation');
+      signOut().then(() => {
+        console.log('⚙️ SettingsScreen - Guest logout completed');
+        setTimeout(() => {
+          console.log('⚙️ SettingsScreen - Navigating to LoginScreen after guest logout');
+          navigation.navigate('LoginScreen' as never);
+        }, 100);
+      });
+      return;
+    }
+    
+    // משתמש מחובר - הצג התראה כי זו פעולה מסוכנת
+    if (Platform.OS === 'web') {
+      // שימוש בדיאלוג אישור של הדפדפן לווב
+      console.log('⚙️ SettingsScreen - Using browser confirm for web');
+      const confirmed = window.confirm('האם אתה בטוח שברצונך לצאת?');
+      console.log('⚙️ SettingsScreen - Browser confirm result:', confirmed);
+      
+      if (confirmed) {
+        console.log('⚙️ SettingsScreen - Logout confirmed via browser');
+        console.log('⚙️ SettingsScreen - Calling signOut() via browser');
+        signOut().then(() => {
+          console.log('⚙️ SettingsScreen - signOut() completed via browser');
+          
+          // חכה קצת כדי לוודא שהמצב התעדכן
+          setTimeout(() => {
+            console.log('⚙️ SettingsScreen - Navigating to LoginScreen via browser after delay');
+            navigation.navigate('LoginScreen' as never);
+            console.log('⚙️ SettingsScreen - Navigation to LoginScreen completed via browser');
+          }, 100);
+        });
+      } else {
+        console.log('⚙️ SettingsScreen - Logout cancelled via browser');
+      }
+    } else {
+      // שימוש ב-React Native Alert לפלטפורמות מובייל
+      console.log('⚙️ SettingsScreen - Using React Native Alert for mobile');
+      try {
+        Alert.alert(
+          'יציאה מהמערכת',
+          'האם אתה בטוח שברצונך לצאת?',
+          [
+            {
+              text: 'ביטול',
+              style: 'cancel',
+              onPress: () => {
+                console.log('⚙️ SettingsScreen - Cancel pressed');
+              },
+            },
+            {
+              text: 'יציאה',
+              style: 'destructive',
+              onPress: async () => {
+                console.log('⚙️ SettingsScreen - Logout confirmed');
+                console.log('⚙️ SettingsScreen - Calling signOut()');
+                await signOut();
+                console.log('⚙️ SettingsScreen - signOut() completed');
+                
+                // השהייה קצרה לוודא שהמצב התעדכן לפני הניווט
+                setTimeout(() => {
+                  console.log('⚙️ SettingsScreen - Navigating to LoginScreen after delay');
+                  navigation.navigate('LoginScreen' as never);
+                  console.log('⚙️ SettingsScreen - Navigation to LoginScreen completed');
+                }, 100);
+              },
+            },
+          ]
+        );
+        console.log('⚙️ SettingsScreen - Alert.alert called successfully');
+      } catch (error) {
+        console.error('⚙️ SettingsScreen - Error showing alert:', error);
+      }
+    }
+    
+    console.log('⚙️ 13SettingsScreen - Logout pressed');
   };
 
   const handleNotificationsPress = () => {
     console.log('⚙️ SettingsScreen - Notifications pressed');
-    Alert.alert('התראות', 'הגדרות התראות יתווספו בקרוב');
+    if (Platform.OS === 'web') {
+      alert('הגדרות התראות יתווספו בקרוב');
+    } else {
+      Alert.alert('התראות', 'הגדרות התראות יתווספו בקרוב');
+    }
   };
 
   const handlePrivacyPress = () => {
     console.log('⚙️ SettingsScreen - Privacy pressed');
-    Alert.alert('פרטיות', 'הגדרות פרטיות יתווספו בקרוב');
+    if (Platform.OS === 'web') {
+      alert('הגדרות פרטיות יתווספו בקרוב');
+    } else {
+      Alert.alert('פרטיות', 'הגדרות פרטיות יתווספו בקרוב');
+    }
   };
 
   const handleThemePress = () => {
     console.log('⚙️ SettingsScreen - Theme pressed');
-    Alert.alert('ערכת נושא', 'בחירת ערכת נושא תתווסף בקרוב');
+    if (Platform.OS === 'web') {
+      alert('בחירת ערכת נושא תתווסף בקרוב');
+    } else {
+      Alert.alert('ערכת נושא', 'בחירת ערכת נושא תתווסף בקרוב');
+    }
   };
 
   const handleLanguagePress = () => {
     console.log('⚙️ SettingsScreen - Language pressed');
-    Alert.alert('שפה', 'בחירת שפה תתווסף בקרוב');
+    if (Platform.OS === 'web') {
+      alert('בחירת שפה תתווסף בקרוב');
+    } else {
+      Alert.alert('שפה', 'בחירת שפה תתווסף בקרוב');
+    }
   };
 
   const handleClearCachePress = () => {
     console.log('⚙️ SettingsScreen - Clear cache pressed');
-    Alert.alert(
-      'ניקוי מטמון',
-      'האם אתה בטוח שברצונך לנקות את המטמון?',
-      [
-        {
-          text: 'ביטול',
-          style: 'cancel',
-        },
-        {
-          text: 'נקה',
-          style: 'destructive',
-          onPress: () => {
-            console.log('⚙️ SettingsScreen - Cache cleared');
-            Alert.alert('הושלם', 'המטמון נוקה בהצלחה');
+    
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('האם אתה בטוח שברצונך לנקות את המטמון?');
+      if (confirmed) {
+        console.log('⚙️ SettingsScreen - Cache cleared');
+        alert('המטמון נוקה בהצלחה');
+      }
+    } else {
+      Alert.alert(
+        'ניקוי מטמון',
+        'האם אתה בטוח שברצונך לנקות את המטמון?',
+        [
+          {
+            text: 'ביטול',
+            style: 'cancel',
           },
-        },
-      ]
-    );
+          {
+            text: 'נקה',
+            style: 'destructive',
+            onPress: () => {
+              console.log('⚙️ SettingsScreen - Cache cleared');
+              Alert.alert('הושלם', 'המטמון נוקה בהצלחה');
+            },
+          },
+        ]
+      );
+    }
   };
 
   // Test function for scroll functionality (development only)
@@ -289,15 +393,15 @@ export default function SettingsScreen() {
               />
             </View>
 
-            {/* Logout Section */}
+            {/* Logout Section - התנהגות שונה למצב אורח ולמשתמש מחובר */}
             <View style={styles.section}>
               <SettingsItem
-                icon="log-out-outline"
-                title="יציאה מהמערכת"
-                subtitle={isGuestMode ? "חזרה למסך הכניסה" : "יציאה מהחשבון"}
+                icon={isGuestMode ? "arrow-back-outline" : "log-out-outline"}
+                title={isGuestMode ? "חזרה למסך הכניסה" : "יציאה מהמערכת"}
+                subtitle={isGuestMode ? "יציאה ממצב אורח" : "יציאה מהחשבון"}
                 onPress={handleLogoutPress}
                 showArrow={false}
-                dangerous={true}
+                dangerous={!isGuestMode} // אדום רק למשתמש מחובר (פעולה מסוכנת)
               />
             </View>
           </View>
@@ -406,15 +510,15 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* Logout Section */}
+        {/* Logout Section - התנהגות שונה למצב אורח ולמשתמש מחובר */}
         <View style={styles.section}>
           <SettingsItem
-            icon="log-out-outline"
-            title="יציאה מהמערכת"
-            subtitle={isGuestMode ? "חזרה למסך הכניסה" : "יציאה מהחשבון"}
+            icon={isGuestMode ? "arrow-back-outline" : "log-out-outline"}
+            title={isGuestMode ? "חזרה למסך הכניסה" : "יציאה מהמערכת"}
+            subtitle={isGuestMode ? "יציאה ממצב אורח" : "יציאה מהחשבון"}
             onPress={handleLogoutPress}
             showArrow={false}
-            dangerous={true}
+            dangerous={!isGuestMode} // אדום רק למשתמש מחובר (פעולה מסוכנת)
           />
         </View>
         </ScrollView>

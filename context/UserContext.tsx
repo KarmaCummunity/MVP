@@ -53,43 +53,54 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
+      console.log('🔐 UserContext - checkAuthStatus - Starting auth check');
       setIsLoading(true);
       
       // Check AsyncStorage for stored user and guest mode
       const storedUserData = await AsyncStorage.getItem('current_user');
       const guestModeData = await AsyncStorage.getItem('guest_mode');
       
+      console.log('🔐 UserContext - checkAuthStatus - storedUserData:', storedUserData ? 'exists' : 'null');
+      console.log('🔐 UserContext - checkAuthStatus - guestModeData:', guestModeData);
+      
       if (guestModeData === 'true') {
         // מצב אורח פעיל
+        console.log('🔐 UserContext - checkAuthStatus - Setting guest mode');
         setIsGuestMode(true);
         setIsAuthenticated(true);
         setSelectedUserState(null);
       } else if (storedUserData) {
         try {
           const user = JSON.parse(storedUserData);
+          console.log('🔐 UserContext - checkAuthStatus - Parsed user:', user?.name || 'invalid');
           if (user && user.id && user.name) {
+            console.log('🔐 UserContext - checkAuthStatus - Setting authenticated user');
             setSelectedUserState(user);
             setIsAuthenticated(true);
             setIsGuestMode(false);
           } else {
+            console.log('🔐 UserContext - checkAuthStatus - Invalid user data, removing');
             await AsyncStorage.removeItem('current_user');
             setIsAuthenticated(false);
             setIsGuestMode(false);
           }
         } catch (parseError) {
+          console.log('🔐 UserContext - checkAuthStatus - Parse error, removing user data');
           await AsyncStorage.removeItem('current_user');
           setIsAuthenticated(false);
           setIsGuestMode(false);
         }
       } else {
+        console.log('🔐 UserContext - checkAuthStatus - No stored data, setting unauthenticated');
         setIsAuthenticated(false);
         setIsGuestMode(false);
       }
     } catch (error) {
-      console.error('Auth status check failed:', error);
+      console.error('🔐 UserContext - checkAuthStatus - Error:', error);
       setIsAuthenticated(false);
       setIsGuestMode(false);
     } finally {
+      console.log('🔐 UserContext - checkAuthStatus - Auth check completed');
       setIsLoading(false);
     }
   };
@@ -117,21 +128,48 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
   };
 
+  /**
+   * פונקציית יציאה מהמערכת
+   * מוחקת את כל הנתונים המאוחסנים ומאפסת את מצב המשתמש
+   * עובדת גם למצב אורח וגם למשתמש מחובר
+   */
   const signOut = async () => {
     try {
-      console.log('🔐 UserContext - signOut');
+      console.log('🔐 UserContext - signOut - Starting sign out process');
       setIsLoading(true);
+      
+      // מחיקת נתוני המשתמש מ-AsyncStorage
+      console.log('🔐 UserContext - signOut - Removing current_user from AsyncStorage');
       await AsyncStorage.removeItem('current_user');
+      
+      console.log('🔐 UserContext - signOut - Removing guest_mode from AsyncStorage');
       await AsyncStorage.removeItem('guest_mode');
-      setSelectedUser(null);
+      
+      // בדיקה שהנתונים נמחקו בהצלחה
+      const checkUser = await AsyncStorage.getItem('current_user');
+      const checkGuest = await AsyncStorage.getItem('guest_mode');
+      console.log('🔐 UserContext - signOut - After removal check - current_user:', checkUser ? 'still exists' : 'removed');
+      console.log('🔐 UserContext - signOut - After removal check - guest_mode:', checkGuest ? 'still exists' : 'removed');
+      
+      // איפוס מצב המשתמש
+      console.log('🔐 UserContext - signOut - Setting user state to null');
+      setSelectedUserState(null);
+      
+      console.log('🔐 UserContext - signOut - Setting isAuthenticated to false');
       setIsAuthenticated(false);
+      
+      console.log('🔐 UserContext - signOut - Setting isGuestMode to false');
       setIsGuestMode(false);
+      
+      console.log('🔐 UserContext - signOut - Sign out completed successfully');
     } catch (error) {
-      console.error('Sign out failed:', error);
-      setSelectedUser(null);
+      console.error('🔐 UserContext - signOut - Error during sign out:', error);
+      // גם במקרה של שגיאה - מאפס את המצב
+      setSelectedUserState(null);
       setIsAuthenticated(false);
       setIsGuestMode(false);
     } finally {
+      console.log('🔐 UserContext - signOut - Setting isLoading to false');
       setIsLoading(false);
     }
   };
