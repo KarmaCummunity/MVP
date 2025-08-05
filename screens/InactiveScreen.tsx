@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import colors from '../globals/colors';
-import { FontSizes, UI_TEXT } from '../globals/constants';
+import { FontSizes } from '../globals/constants';
+import { texts } from '../globals/texts';
 
 export default function InactiveScreen() {
   const navigation = useNavigation();
@@ -10,10 +11,10 @@ export default function InactiveScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.message}>
-        {UI_TEXT.inactiveMessage}
+        {texts.inactiveMessage}
       </Text>
       <TouchableOpacity style={styles.button} onPress={() => navigation.goBack()}>
-        <Text style={styles.buttonText}>{UI_TEXT.back}</Text>
+        <Text style={styles.buttonText}>{texts.back}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -33,7 +34,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   button: {
-    backgroundColor: colors.pink, // ורוד נעים
+    backgroundColor: colors.pink, // Nice pink
     paddingHorizontal: 30,
     paddingVertical: 12,
     borderRadius: 25,

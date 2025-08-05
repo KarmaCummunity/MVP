@@ -12,16 +12,27 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // Ensure @expo/vector-icons is installed
 import colors from "../globals/colors"; // Ensure this path is correct
-import { FontSizes, UI_TEXT } from "../globals/constants";
-import { filterOptions, sortOptions } from "../globals/constants"; // Ensure this path is correct
+import { FontSizes, filterOptions as defaultFilterOptions, sortOptions as defaultSortOptions } from "../globals/constants";
+import { texts } from "../globals/texts";
 
 interface SearchBarProps {
   onHasActiveConditionsChange?: (isActive: boolean) => void;
-  onSearch?: (query: string) => void;
+  onSearch?: (query: string, filters?: string[], sorts?: string[], results?: any[]) => void;
   placeholder?: string;
+  // New props for dynamic filter/sort options and search data (optional for backward compatibility)
+  filterOptions?: string[];
+  sortOptions?: string[];
+  searchData?: any[];
 }
 
-const SearchBar = ({ onHasActiveConditionsChange, onSearch, placeholder }: SearchBarProps) => {
+const SearchBar = ({ 
+  onHasActiveConditionsChange, 
+  onSearch, 
+  placeholder,
+  filterOptions = defaultFilterOptions,
+  sortOptions = defaultSortOptions,
+  searchData = []
+}: SearchBarProps) => {
   const [searchText, setSearchText] = useState("");
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [isSortModalVisible, setIsSortModalVisible] = useState(false);
@@ -62,12 +73,49 @@ const SearchBar = ({ onHasActiveConditionsChange, onSearch, placeholder }: Searc
   }, [selectedFilters, selectedSorts]); // Add onHasActiveConditionsChange to dependencies
 
   const handleSearch = () => {
-    if (searchText.trim() !== "") {
-      onSearch?.(searchText);
-      // console.log("Searching with:", { searchText, selectedFilters, selectedSorts });
-    } else {
-      Alert.alert(UI_TEXT.searchTextRequired);
+    // For backward compatibility, if no searchData is provided, just call onSearch with basic parameters
+    if (searchData.length === 0) {
+      onSearch?.(searchText, selectedFilters, selectedSorts, []);
+      return;
     }
+    
+    // Perform search on the provided data
+    let results = [...searchData];
+    
+    // Filter by search text if provided
+    if (searchText.trim() !== "") {
+      results = results.filter(item => {
+        // Generic search - check if any property contains the search text
+        const itemStr = JSON.stringify(item).toLowerCase();
+        return itemStr.includes(searchText.toLowerCase());
+      });
+    }
+    
+    // Apply filters if any are selected
+    if (selectedFilters.length > 0) {
+      results = results.filter(item => {
+        // Generic filter logic - check if item matches any selected filter
+        const itemStr = JSON.stringify(item).toLowerCase();
+        return selectedFilters.some(filter => itemStr.includes(filter.toLowerCase()));
+      });
+    }
+    
+    // Apply sorting if any is selected
+    if (selectedSorts.length > 0) {
+      const sortOption = selectedSorts[0]; // Only one sort at a time
+      // Basic sorting logic - this can be enhanced based on specific needs
+      if (sortOption === "אלפביתי") {
+        results.sort((a, b) => {
+          const aStr = JSON.stringify(a).toLowerCase();
+          const bStr = JSON.stringify(b).toLowerCase();
+          return aStr.localeCompare(bStr, 'he');
+        });
+      }
+      // Add more sorting options as needed
+    }
+    
+    // Call the parent's search handler with all the parameters
+    onSearch?.(searchText, selectedFilters, selectedSorts, results);
   };
 
   const handleFilterSelection = (option: string) => {
@@ -107,9 +155,13 @@ const SearchBar = ({ onHasActiveConditionsChange, onSearch, placeholder }: Searc
   // Handle text input changes
   const handleTextChange = (text: string) => {
     setSearchText(text);
-    // Call onSearch with empty string to clear results when input is empty
+    // Call onSearch to clear results when input is empty
     if (text.trim() === '') {
-      onSearch?.('');
+      if (searchData.length > 0) {
+        onSearch?.('', selectedFilters, selectedSorts, searchData);
+      } else {
+        onSearch?.('', selectedFilters, selectedSorts, []);
+      }
     }
   };
 
@@ -127,7 +179,7 @@ const SearchBar = ({ onHasActiveConditionsChange, onSearch, placeholder }: Searc
           style={localStyles.buttonContainer}
           onPress={() => setIsSortModalVisible(true)}
         >
-          <Text style={localStyles.buttonText}>{UI_TEXT.sort}</Text>
+                      <Text style={localStyles.buttonText}>{texts.sort}</Text>
         </TouchableOpacity>
 
         {/* Filter Button (opens filter modal) */}
@@ -135,7 +187,7 @@ const SearchBar = ({ onHasActiveConditionsChange, onSearch, placeholder }: Searc
           style={localStyles.buttonContainer}
           onPress={() => setIsFilterModalVisible(true)}
         >
-          <Text style={localStyles.buttonText}>{UI_TEXT.filter}</Text>
+                      <Text style={localStyles.buttonText}>{texts.filter}</Text>
         </TouchableOpacity>
 
         {/* Search Input Field */}

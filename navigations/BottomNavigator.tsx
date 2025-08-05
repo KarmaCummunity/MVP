@@ -3,23 +3,24 @@
 import React from "react";
 import { View, Platform, StyleSheet } from "react-native";
 import { createBottomTabNavigator, BottomTabNavigationOptions } from "@react-navigation/bottom-tabs";
-import Ionicons from "react-native-vector-icons/Ionicons";
+import { Ionicons } from "@expo/vector-icons";
 import SearchScreen from "../bottomBarScreens/SearchScreen";
 import ProfileScreen from "../bottomBarScreens/ProfileScreen";
 import HomeScreen from "../bottomBarScreens/HomeScreen"; // This is your HomeScreen with the drag handle
 import DonationsStack from "./DonationsStack"; // Assuming this is another stack navigator
-import UsersScreen from "../bottomBarScreens/UsersScreen";
+// import UsersScreen from "../bottomBarScreens/UsersScreen"; // הסתרה לבדיקות
+import BookmarksScreen from "../bottomBarScreens/BookmarksScreen";
 import styles from "../globals/styles"; // Adjust path if needed
 import colors from "../globals/colors"; // Adjust path if needed
+import { useUser } from "../context/UserContext";
 
 // Define the type for your bottom tab navigator's route names and their parameters.
 export type BottomTabNavigatorParamList = {
   DonationsScreen: undefined; // Assuming DonationsStack is just a wrapper for its root screen here
-  TodoListScreen: undefined;
   HomeScreen: undefined;
   SearchScreen: undefined;
   ProfileScreen: undefined;
-  UsersScreen: undefined;
+  // UsersScreen: undefined; // הסתרה לבדיקות
 };
 
 // Create an instance of the Bottom Tab Navigator with its parameter list type
@@ -37,6 +38,7 @@ const Tab = createBottomTabNavigator<BottomTabNavigatorParamList>();
  */
 export default function BottomNavigator(): React.ReactElement {
   console.log('📱 BottomNavigator - Component rendered');
+  const { isGuestMode } = useUser();
   
   /**
    * Helper function to determine the Ionicons name based on the route and focus state.
@@ -44,7 +46,7 @@ export default function BottomNavigator(): React.ReactElement {
    * @param {boolean} focused - True if the tab is currently focused.
    * @returns {string} The Ionicons icon name (e.g., "home" or "home-outline").
    */
-  const getTabBarIconName = (routeName: keyof BottomTabNavigatorParamList, focused: boolean): string => {
+  const getTabBarIconName = (routeName: keyof BottomTabNavigatorParamList, focused: boolean): keyof typeof Ionicons.glyphMap => {
     switch (routeName) {
       case "HomeScreen":
         return focused ? "home" : "home-outline";
@@ -54,8 +56,8 @@ export default function BottomNavigator(): React.ReactElement {
         return focused ? "heart" : "heart-outline";
       case "ProfileScreen":
         return focused ? "person" : "person-outline";
-      case "UsersScreen":
-        return focused ? "people" : "people-outline";
+      // case "UsersScreen": // הסתרה לבדיקות
+      //   return focused ? "people" : "people-outline";
 
       // case "LocationSearchScreen": // Uncomment if you add this screen to the navigator
       //   return focused ? "globe" : "globe-outline";
@@ -90,11 +92,11 @@ export default function BottomNavigator(): React.ReactElement {
           },
         })}
       >
-        <Tab.Screen name="HomeScreen" component={HomeScreen} />
-        <Tab.Screen name="SearchScreen" component={SearchScreen} />
+        {!isGuestMode && <Tab.Screen name="ProfileScreen" component={ProfileScreen} />}
         <Tab.Screen name="DonationsScreen" component={DonationsStack} />
-        <Tab.Screen name="UsersScreen" component={UsersScreen} />
-        <Tab.Screen name="ProfileScreen" component={ProfileScreen} />
+        <Tab.Screen name="SearchScreen" component={SearchScreen} />
+        {/* <Tab.Screen name="UsersScreen" component={UsersScreen} /> hidden for testing */}
+        <Tab.Screen name="HomeScreen" component={HomeScreen} />
       </Tab.Navigator>
     </View>
   );

@@ -15,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { DonationsStackParamList } from '../globals/types';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
+import { useUser } from '../context/UserContext';
+import GuestModeNotice from '../components/GuestModeNotice';
 
 interface DonationsScreenProps {
   navigation: NavigationProp<DonationsStackParamList>;
@@ -77,8 +79,8 @@ const donationCategories = [
     title: 'בגדים',
     subtitle: 'תרומת בגדים',
     icon: 'shirt-outline',
-    color: colors.info, // היה כחול-אפור
-    bgColor: colors.infoLight, // היה כחול-אפור בהיר
+    color: colors.info, // Was blue-gray
+    bgColor: colors.infoLight, // Was light blue-gray
     screen: '',
     description: 'תרומת בגדים לנזקקים',
   },
@@ -97,8 +99,8 @@ const donationCategories = [
     title: 'רהיטים',
     subtitle: 'תרומת רהיטים',
     icon: 'bed-outline',
-    color: colors.textPrimary, // היה חום
-    bgColor: colors.backgroundSecondary, // היה חום בהיר
+    color: colors.textPrimary, // Was brown
+    bgColor: colors.backgroundSecondary, // Was light brown
     screen: '',
     description: 'תרומת רהיטים לבית',
   },
@@ -118,7 +120,7 @@ const donationCategories = [
     subtitle: 'עזרה לחיות',
     icon: 'paw-outline',
     color: colors.orangeDark,
-    bgColor: colors.backgroundTertiary, // היה כתום בהיר
+    bgColor: colors.backgroundTertiary, // Was light orange
     screen: '',
     description: 'עזרה לחיות מחמד',
   },
@@ -127,8 +129,8 @@ const donationCategories = [
     title: 'דיור',
     subtitle: 'עזרה בדיור',
     icon: 'home-outline',
-    color: colors.info, // היה אינדיגו
-    bgColor: colors.infoLight, // היה אינדיגו בהיר
+    color: colors.info, // Was indigo
+    bgColor: colors.infoLight, // Was light indigo
     screen: '',
     description: 'עזרה בדיור וקורת גג',
   },
@@ -147,8 +149,8 @@ const donationCategories = [
     title: 'חינוך',
     subtitle: 'עזרה בלימודים',
     icon: 'book-outline',
-    color: colors.info, // היה סגול
-    bgColor: colors.infoLight, // היה סגול בהיר
+    color: colors.info, // Was purple
+    bgColor: colors.infoLight, // Was light purple
     screen: '',
     description: 'עזרה בלימודים וקורסים',
   },
@@ -175,6 +177,7 @@ const donationCategories = [
 ];
 
 const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
+  const { isGuestMode } = useUser();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const handleCategoryPress = (category: any) => {
@@ -220,6 +223,9 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
 
 
               <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+                {/* Guest Mode Notice */}
+                {isGuestMode && <GuestModeNotice />}
+                
           {/* Active Screens Section */}
           <View style={styles.categoriesSection}>
             <Text style={styles.sectionTitle}>פעולות אפשריות בקהילה</Text>
@@ -541,6 +547,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
+
 });
 
 export default DonationsScreen;

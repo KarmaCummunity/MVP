@@ -13,7 +13,7 @@ import {
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';  
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons as Icon } from '@expo/vector-icons';
 import HeaderComp from '../components/HeaderComp';
 import TimePicker from '../components/TimePicker';
 
@@ -34,12 +34,12 @@ export default function TrumpScreen({
   const [toLocation, setToLocation] = useState("");
   const [departureTime, setDepartureTime] = useState("");
 
-  // עדכון חיפוש לפי SearchBar
+  // Update search based on SearchBar
   useEffect(() => {
     console.log('🚗 TrumpScreen - Search updated:', { searchQuery, selectedFilter, selectedSort });
   }, [searchQuery, selectedFilter, selectedSort]);
 
-  // נתונים דמה לטרמפים
+  // Mock data for rides
   const dummyRides = [
     {
       id: 1,
@@ -121,7 +121,7 @@ export default function TrumpScreen({
     },
   ];
 
-  // נתונים דמה לטרמפים אחרונים
+  // Mock data for recent rides
   const dummyRecentRides = [
     {
       id: 1,
@@ -152,7 +152,7 @@ export default function TrumpScreen({
     },
   ];
 
-  // נתונים דמה לקבוצות
+  // Mock data for groups
   const dummyGroups = [
     {
       id: 1,
@@ -177,11 +177,11 @@ export default function TrumpScreen({
     },
   ];
 
-  // פונקציה לסינון טרמפים
+  // Function to filter rides
   const getFilteredRides = () => {
     let filtered = [...dummyRides];
 
-    // סינון לפי חיפוש
+    // Filter by search
     if (searchQuery) {
       filtered = filtered.filter(ride =>
         ride.driverName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -190,12 +190,12 @@ export default function TrumpScreen({
       );
     }
 
-    // סינון לפי קטגוריה
+    // Filter by category
     if (selectedFilter) {
       filtered = filtered.filter(ride => ride.category === selectedFilter);
     }
 
-    // מיון
+    // Sorting
     switch (selectedSort) {
       case "אלפביתי":
         filtered.sort((a, b) => a.driverName.localeCompare(b.driverName));
@@ -217,7 +217,7 @@ export default function TrumpScreen({
     return filtered;
   };
 
-  // פונקציה להצגת פרטי טרמפ
+  // Function to show ride details
   const showRideDetailsModal = (ride: any) => {
     Alert.alert(
       `טרמפ של ${ride.driverName}`,
@@ -262,10 +262,10 @@ export default function TrumpScreen({
       style={localStyles.rideCard}
       onPress={() => {
         if (mode) {
-          // מצב תורם - בוחר טרמפ להצטרף
+          // Donor mode - select ride to join
           Alert.alert('טרמפ נבחר', `נבחר: ${item.driverName}`);
         } else {
-          // מצב נזקק - מציג פרטי טרמפ עם אפשרות להצטרף
+          // Beneficiary mode - show ride details with join option
           showRideDetailsModal(item);
         }
       }}
@@ -343,7 +343,7 @@ export default function TrumpScreen({
 
       {mode ? (
         <View style={localStyles.formContainer}>
-          {/* מצב מציע - טופס יצירת טרמפ */}
+          {/* Provider mode - ride creation form */}
           <TimePicker
             value={departureTime}
             onTimeChange={setDepartureTime}
@@ -353,7 +353,7 @@ export default function TrumpScreen({
         </View>
       ) : (
         <View style={localStyles.formContainer}>
-          {/* מצב נזקק - הודעה לחיפוש טרמפ */}
+          {/* Beneficiary mode - ride search message */}
  
 
           <TimePicker
@@ -399,7 +399,7 @@ export default function TrumpScreen({
               </View>
             </View>
         ) : (
-          // מצב נזקק - מציג טרמפים זמינים וקבוצות
+          // Beneficiary mode - show available rides and groups
           <>
             <View style={localStyles.section}>
               <Text style={localStyles.sectionTitle}>
@@ -450,7 +450,7 @@ const localStyles = StyleSheet.create({
         paddingTop: 24,
     },
     scrollContent: {
-        paddingBottom: 100, // מרווח בתחתית המסך
+        paddingBottom: 100, // Bottom margin for screen
     },
     formContainer: {
       padding: 5,

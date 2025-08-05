@@ -3,7 +3,7 @@ import colors from '../globals/colors'
 import { FontSizes } from '../globals/constants';
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons as Icon } from '@expo/vector-icons';
 import styles from '../globals/styles';
 
 // Changed this line to use const and wrap with memo

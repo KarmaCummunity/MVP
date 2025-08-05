@@ -9,7 +9,9 @@ import {
   Platform,
 } from "react-native";
 import colors from "../globals/colors";
-import { FontSizes, UI_TEXT } from "../globals/constants";
+import { FontSizes } from "../globals/constants";
+import { texts } from "../globals/texts";
+import logger from '../utils/logger';
 
 interface PlacePrediction {
   description: string;
@@ -38,6 +40,7 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
   );
 
   const searchGooglePlaces = async (inputText: string) => {
+    const startTime = Date.now();
     const url =
       Platform.OS === "web"
         ? `http://localhost:3001/autocomplete?input=${encodeURIComponent(
@@ -48,10 +51,32 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
           )}&key=${GOOGLE_API_KEY}&language=he&components=country:il`;
 
     try {
+      logger.info('Google Places API call started', {
+        screen: 'LocationSearch',
+        action: 'search_places',
+        input: inputText,
+        platform: Platform.OS
+      });
+
       const response = await fetch(url);
       const json = await response.json();
+      const duration = Date.now() - startTime;
+
+      logger.info('Google Places API call completed', {
+        screen: 'LocationSearch',
+        action: 'search_places_complete',
+        status: response.status,
+        duration,
+        resultsCount: Platform.OS === "web" ? json.length : json.predictions?.length || 0
+      });
 
       if (Platform.OS !== "web" && json.status !== "OK") {
+        logger.warn('Google Places API error', {
+          screen: 'LocationSearch',
+          action: 'search_places_error',
+          status: json.status,
+          errorMessage: json.error_message
+        });
         console.warn("Google Places returned:", json.status, json.error_message);
         setResults([]);
         return;
@@ -60,6 +85,13 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
       // On web, we already get predictions directly from the backend
       setResults(Platform.OS === "web" ? json : json.predictions);
     } catch (error) {
+      const duration = Date.now() - startTime;
+      logger.error('Google Places API call failed', {
+        screen: 'LocationSearch',
+        action: 'search_places_failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        duration
+      });
       console.error("Autocomplete error:", error);
       setResults([]);
     }
@@ -75,6 +107,11 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
 
     const timer = setTimeout(() => {
       if (text.length > 1) {
+        logger.info('Location search triggered', {
+          screen: 'LocationSearch',
+          action: 'search_triggered',
+          queryLength: text.length
+        });
         searchGooglePlaces(text);
       } else {
         setResults([]);
@@ -84,6 +121,11 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
   };
 
   const handleSelect = (item: PlacePrediction) => {
+    logger.info('Location selected', {
+      screen: 'LocationSearch',
+      action: 'location_selected',
+      selectedLocation: item.description
+    });
     setQuery(item.description);
     setResults([]);
     onLocationSelected(item.description);
@@ -102,7 +144,7 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
       <TextInput
         value={query}
         onChangeText={handleChangeText}
-        placeholder={placeholder || UI_TEXT.locationPlaceholder}
+        placeholder={placeholder || texts.locationPlaceholder}
         placeholderTextColor={colors.black}
         style={local_styles.input}
       />

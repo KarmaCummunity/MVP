@@ -3,6 +3,22 @@ import colors from "./colors";
 
 const { width } = Dimensions.get('window');
 
+// Helper function to create shadow styles that work on both web and mobile
+export const createShadowStyle = (shadowColor: string, shadowOffset: { width: number, height: number }, shadowOpacity: number, shadowRadius: number) => {
+  if (Platform.OS === 'web') {
+    return {
+      boxShadow: `${shadowOffset.width}px ${shadowOffset.height}px ${shadowRadius}px rgba(0, 0, 0, ${shadowOpacity})`,
+    };
+  } else {
+    return {
+      shadowColor,
+      shadowOffset,
+      shadowOpacity,
+      shadowRadius,
+    };
+  }
+};
+
 
 const styles = StyleSheet.create({
   /**

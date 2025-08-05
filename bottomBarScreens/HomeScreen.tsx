@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   View, 
   StyleSheet, 
@@ -9,22 +9,28 @@ import {
   Image,
   Alert,
   SafeAreaView,
-  StatusBar
+  StatusBar,
+  Platform
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withRepeat,
+  withTiming,
+  withDelay,
   interpolate,
   Extrapolation,
   runOnJS,
+  Easing,
 } from "react-native-reanimated";
 import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import BubbleComp from "../components/BubbleComp";
 import colors from "../globals/colors";
 import { FontSizes } from "../globals/constants";
+import { texts } from "../globals/texts";
 import CommunityStatsPanel from "../components/CommunityStatsPanel";
 import PostsReelsScreen from "../components/PostsReelsScreen";
 import { 
@@ -32,45 +38,120 @@ import {
   tasks, 
   donations, 
   communityEvents, 
-  currentUser 
+  currentUser ,
+  recentActivities
 } from "../globals/fakeData";
 import { useUser } from "../context/UserContext";
+import GuestModeNotice from "../components/GuestModeNotice";
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
+
+
 const PANEL_HEIGHT = SCREEN_HEIGHT - 50;
 const CLOSED_POSITION = PANEL_HEIGHT - 60;
 const OPEN_POSITION = 0;
 const MID_POSITION = PANEL_HEIGHT / 2;
 
+// Animated floating bubble component
+const FloatingBubble: React.FC<{
+  icon: string;
+  value: string;
+  label: string;
+  bubbleStyle: any;
+  delay: number;
+}> = ({ icon, value, label, bubbleStyle, delay }) => {
+  const translateY = useSharedValue(0);
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(0.8);
+
+  useEffect(() => {
+    // Floating up and down animation
+    translateY.value = withDelay(
+      delay,
+      withRepeat(
+        withTiming(-10, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
+        -1,
+        true
+      )
+    );
+
+    // Scale animation
+    scale.value = withDelay(
+      delay + 500,
+      withRepeat(
+        withTiming(1.05, { duration: 3000, easing: Easing.inOut(Easing.sin) }),
+        -1,
+        true
+      )
+    );
+
+    // Opacity animation
+    opacity.value = withDelay(
+      delay + 1000,
+      withRepeat(
+        withTiming(1, { duration: 2500, easing: Easing.inOut(Easing.sin) }),
+        -1,
+        true
+      )
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateY: translateY.value },
+        { scale: scale.value }
+      ] as any,
+      opacity: opacity.value,
+    };
+  });
+
+  return (
+    <Animated.View style={[styles.floatingBubble, bubbleStyle, animatedStyle]}>
+      <Text style={styles.bubbleIcon}>{icon}</Text>
+      <Text style={styles.bubbleValue}>{value}</Text>
+      <Text style={styles.bubbleLabel}>{label}</Text>
+    </Animated.View>
+  );
+};
+
 export default function HomeScreen() {
   const isFocused = useIsFocused();
   const navigation = useNavigation();
-  const { selectedUser, setSelectedUser } = useUser();
+  const { selectedUser, setSelectedUser, isGuestMode } = useUser();
   const [showPosts, setShowPosts] = useState(false);
-  const [isPersonalMode, setIsPersonalMode] = useState(true); // מצב אישי כברירת מחדל
-  const [hideTopBar, setHideTopBar] = useState(false); // מצב הסתרת הטופ בר
+  const [isPersonalMode, setIsPersonalMode] = useState(true); // Personal mode as default
+  
+  // In guest mode - always community mode
+  useEffect(() => {
+    if (isGuestMode) {
+      console.log('🏠 HomeScreen - Guest mode detected, forcing community mode');
+      setIsPersonalMode(false);
+    }
+  }, [isGuestMode]);
+  const [hideTopBar, setHideTopBar] = useState(false); // Top bar hiding state
 
-  // ערכים מונפשים לגלילה
+  // Animated values for scrolling
   const scrollY = useSharedValue(0);
   const postsTranslateY = useSharedValue(0);
 
-  // איפוס מצב כאשר המסך מאבד פוקוס
-  React.useEffect(() => {
+  // Reset state when screen loses focus
+  useEffect(() => {
     if (!isFocused) {
       setShowPosts(false);
     }
   }, [isFocused]);
 
-  // עדכון hideTopBar ב-route params
-  React.useEffect(() => {
-    console.log('🏠 HomeScreen - Updating route params with hideTopBar:', hideTopBar);
+  // Update hideTopBar in route params
+  useEffect(() => {
+    // console.log('🏠 HomeScreen - Updating route params with hideTopBar:', hideTopBar);
     (navigation as any).setParams({ hideTopBar });
   }, [hideTopBar, navigation]);
 
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       setShowPosts(false);
-      setHideTopBar(false); // איפוס הסתרת הטופ בר
+      setHideTopBar(false); // Reset top bar hiding
       postsTranslateY.value = withSpring(0, {
         damping: 20,
         stiffness: 150,
@@ -87,13 +168,13 @@ export default function HomeScreen() {
     const offsetY = event.nativeEvent.contentOffset.y;
     scrollY.value = offsetY;
     
-    // סף גבוה יותר - צריך גלילה משמעותית
-    const threshold = isPersonalMode ? 150 : 100;
+    // Higher threshold - requires significant scrolling
+    const threshold = 150;
     
-    // אם הגלילה עוברת את הסף, נפתח מסך הפוסטים
+    // If scrolling exceeds threshold, open posts screen
     if (offsetY > threshold && !showPosts) {
       setShowPosts(true);
-      setHideTopBar(false); // וידוא שהטופ בר מוצג כשנפתח מסך הפוסטים
+      setHideTopBar(false); // Ensure top bar is shown when posts screen opens
       postsTranslateY.value = withSpring(0, {
         damping: 25,
         stiffness: 200,
@@ -107,79 +188,17 @@ export default function HomeScreen() {
    */
   const postsAnimatedStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ translateY: postsTranslateY.value }],
+      transform: [{ translateY: postsTranslateY.value }] as any,
     };
   });
 
-  // Quick Actions
-  const quickActions = [
-    {
-      id: 'create-task',
-      title: 'צור משימה',
-      icon: 'add-circle-outline',
-      color: colors.pink,
-      onPress: () => Alert.alert('יצירת משימה', 'פתיחת טופס יצירת משימה חדשה')
-    },
-    {
-      id: 'donate',
-      title: 'תרום',
-      icon: 'heart-outline',
-      color: colors.error,
-      onPress: () => Alert.alert('תרומה', 'פתיחת טופס תרומה')
-    },
-    {
-      id: 'join-event',
-      title: 'הצטרף לאירוע',
-      icon: 'calendar-outline',
-      color: colors.success,
-      onPress: () => Alert.alert('הצטרפות לאירוע', 'בחירת אירוע להצטרפות')
-    },
-    {
-      id: 'chat',
-      title: 'צ\'אט',
-      icon: 'chatbubbles-outline',
-      color: colors.info,
-      onPress: () => Alert.alert('צ\'אט', 'פתיחת רשימת צ\'אטים')
-    }
-  ];
-
-  // Recent Activities
-  const recentActivities = [
-    {
-      id: '1',
-      type: 'task',
-      title: 'משימה הושלמה: איסוף מזון',
-      description: 'אנה כהן השלימה משימת איסוף מזון',
-      time: 'לפני שעה',
-      icon: 'checkmark-circle',
-      color: colors.success
-    },
-    {
-      id: '2',
-      type: 'donation',
-      title: 'תרומה חדשה: 500 ₪',
-      description: 'דני לוי תרם 500 ₪ לקניית ציוד',
-      time: 'לפני 3 שעות',
-      icon: 'heart',
-      color: colors.error
-    },
-    {
-      id: '3',
-      type: 'event',
-      title: 'אירוע חדש: יום קהילה',
-      description: 'אירוע קהילתי גדול יתקיים בשבוע הבא',
-      time: 'לפני יום',
-      icon: 'calendar',
-      color: colors.info
-    }
-  ];
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundPrimary} />
       
       {showPosts ? (
-        // מסך הפוסטים
+        // Posts screen
         <View style={styles.postsContainer}>
           <PostsReelsScreen 
             onScroll={(hide) => {
@@ -190,19 +209,27 @@ export default function HomeScreen() {
           />
         </View>
       ) : (
-        // מסך הבית עם גלילה משופרת
+        // Home screen with enhanced scrolling
         <View style={styles.homeContainer}>
           <ScrollView 
             style={styles.scrollContainer}
             onScroll={handleScroll}
-            scrollEventThrottle={16}
+            scrollEventThrottle={50}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
-            {/* תוכן דינמי בהתאם למצב */}
-            {isPersonalMode ? (
-              // מצב אישי - המסך המלא
+            {/* Dynamic content based on mode */}
+{/* Debug log - guest mode check */}
+            {(() => {
+              console.log('🏠 HomeScreen - isGuestMode:', isGuestMode, 'isPersonalMode:', isPersonalMode);
+              return null;
+            })()}
+            {(isPersonalMode && !isGuestMode) ? (
+              // Personal mode - full screen
               <View style={styles.personalModeContainer}>
+                {/* Guest Mode Notice */}
+                {isGuestMode && <GuestModeNotice />}
+                
                 {/* Header Section */}
                 <View style={styles.header}>
                 <View style={styles.headerContent}>
@@ -228,75 +255,6 @@ export default function HomeScreen() {
                 </View>
               </View>
 
-              {/* User Selection Indicator */}
-              {selectedUser && (
-                <View style={styles.userSelectionIndicator}>
-                  <View style={styles.selectedUserInfo}>
-                    <Image source={{ uri: selectedUser.avatar }} style={styles.selectedUserAvatar} />
-                    <Text style={styles.selectedUserName}>{selectedUser.name}</Text>
-                    <Text style={styles.selectedUserLocation}>{selectedUser.location.city}</Text>
-                  </View>
-                  <TouchableOpacity 
-                    style={styles.clearUserButton}
-                    onPress={() => {
-                      Alert.alert(
-                        'נקה יוזר', 
-                        'האם אתה בטוח שברצונך לנקות את היוזר הנבחר?',
-                        [
-                          { text: 'ביטול', style: 'cancel' },
-                          { 
-                            text: 'נקה', 
-                            style: 'destructive',
-                            onPress: () => setSelectedUser(null)
-                          }
-                        ]
-                      );
-                    }}
-                  >
-                    <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              {/* Quick Actions */}
-              <View style={styles.quickActionsContainer}>
-                <Text style={styles.sectionTitle}>פעולות מהירות</Text>
-                <View style={styles.quickActionsGrid}>
-                  {quickActions.map((action) => (
-                    <TouchableOpacity
-                      key={action.id}
-                      style={styles.quickActionButton}
-                      onPress={action.onPress}
-                    >
-                      <View style={[styles.quickActionIcon, { backgroundColor: action.color + '20' }]}>
-                        <Ionicons name={action.icon as any} size={24} color={action.color} />
-                      </View>
-                      <Text style={styles.quickActionText}>{action.title}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              {/* Recent Activities */}
-              <View style={styles.activitiesContainer}>
-                <Text style={styles.sectionTitle}>פעילות אחרונה</Text>
-                <View style={styles.activitiesScroll}>
-                  {recentActivities.map((activity) => (
-                    <TouchableOpacity
-                      key={activity.id}
-                      style={styles.activityCard}
-                      onPress={() => Alert.alert(activity.title, activity.description)}
-                    >
-                      <View style={[styles.activityIcon, { backgroundColor: activity.color + '20' }]}>
-                        <Ionicons name={activity.icon as any} size={20} color={activity.color} />
-                      </View>
-                      <Text style={styles.activityTitle} numberOfLines={2}>{activity.title}</Text>
-                      <Text style={styles.activityTime}>{activity.time}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
               {/* Stats Preview */}
               <View style={styles.statsPreview}>
                 <View style={styles.statsGrid}>
@@ -309,17 +267,240 @@ export default function HomeScreen() {
                   ))}
                 </View>
               </View>
+
+              {/* Additional Personal Statistics */}
+              <View style={styles.personalStatsContainer}>
+                <Text style={styles.sectionTitle}>הסטטיסטיקות שלי</Text>
+                <View style={styles.personalStatsGrid}>
+                  <View style={styles.personalStatCard}>
+                    <Text style={styles.personalStatIcon}>🎯</Text>
+                    <Text style={styles.personalStatValue}>45</Text>
+                    <Text style={styles.personalStatName}>משימות הושלמו</Text>
+                  </View>
+                  <View style={styles.personalStatCard}>
+                    <Text style={styles.personalStatIcon}>💝</Text>
+                    <Text style={styles.personalStatValue}>12</Text>
+                    <Text style={styles.personalStatName}>תרומות</Text>
+                  </View>
+                  <View style={styles.personalStatCard}>
+                    <Text style={styles.personalStatIcon}>⏰</Text>
+                    <Text style={styles.personalStatValue}>156</Text>
+                    <Text style={styles.personalStatName}>שעות התנדבות</Text>
+                  </View>
+                  <View style={styles.personalStatCard}>
+                    <Text style={styles.personalStatIcon}>🏆</Text>
+                    <Text style={styles.personalStatValue}>8</Text>
+                    <Text style={styles.personalStatName}>הישגים</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Floating Statistics Bubbles */}
+              <View style={styles.floatingStatsContainer}>
+                <Text style={styles.sectionTitle}>סטטיסטיקות קהילתיות</Text>
+                <View style={styles.bubblesContainer}>
+                  {/* Money Donations */}
+                  <FloatingBubble
+                    icon="💵"
+                    value="125K"
+                    label={texts.moneyDonations}
+                    bubbleStyle={styles.moneyBubble}
+                    delay={0}
+                  />
+                  
+                  {/* Food Donations */}
+                  <FloatingBubble
+                    icon="🍎"
+                    value="2.1K"
+                    label={texts.foodKg}
+                    bubbleStyle={styles.foodBubble}
+                    delay={200}
+                  />
+                  
+                  {/* Clothing Donations */}
+                  <FloatingBubble
+                    icon="👕"
+                    value="1.5K"
+                    label={texts.clothingKg}
+                    bubbleStyle={styles.clothingBubble}
+                    delay={400}
+                  />
+                  
+                  {/* Blood Donations */}
+                  <FloatingBubble
+                    icon="🩸"
+                    value="350"
+                    label={texts.bloodLiters}
+                    bubbleStyle={styles.bloodBubble}
+                    delay={600}
+                  />
+                  
+                  {/* Time Volunteering */}
+                  <FloatingBubble
+                    icon="⏰"
+                    value="500"
+                    label={texts.volunteerHours}
+                    bubbleStyle={styles.timeBubble}
+                    delay={800}
+                  />
+                  
+                  {/* Transportation */}
+                  <FloatingBubble
+                    icon="🚗"
+                    value="1.8K"
+                    label={texts.rides}
+                    bubbleStyle={styles.transportBubble}
+                    delay={1000}
+                  />
+                  
+                  {/* Education */}
+                  <FloatingBubble
+                    icon="📚"
+                    value="67"
+                    label={texts.courses}
+                    bubbleStyle={styles.educationBubble}
+                    delay={1200}
+                  />
+                  
+                  {/* Environment */}
+                  <FloatingBubble
+                    icon="🌳"
+                    value="750"
+                    label={texts.treesPlanted}
+                    bubbleStyle={styles.environmentBubble}
+                    delay={1400}
+                  />
+                  
+                  {/* Animals */}
+                  <FloatingBubble
+                    icon="🐕"
+                    value="120"
+                    label={texts.animalsAdopted}
+                    bubbleStyle={styles.animalsBubble}
+                    delay={1600}
+                  />
+                  
+                  {/* Events */}
+                  <FloatingBubble
+                    icon="🎉"
+                    value="78"
+                    label={texts.events}
+                    bubbleStyle={styles.eventsBubble}
+                    delay={1800}
+                  />
+                  
+                  {/* Recycling */}
+                  <FloatingBubble
+                    icon="♻️"
+                    value="900"
+                    label={texts.recyclingBags}
+                    bubbleStyle={styles.recyclingBubble}
+                    delay={2000}
+                  />
+                  
+                  {/* Culture */}
+                  <FloatingBubble
+                    icon="🎭"
+                    value="60"
+                    label={texts.culturalEvents}
+                    bubbleStyle={styles.cultureBubble}
+                    delay={2200}
+                  />
+                  
+                  {/* Health */}
+                  <FloatingBubble
+                    icon="🏥"
+                    value="45"
+                    label={texts.doctorVisits}
+                    bubbleStyle={styles.healthBubble}
+                    delay={2400}
+                  />
+                  
+                  {/* Elderly Care */}
+                  <FloatingBubble
+                    icon="👴"
+                    value="89"
+                    label={texts.elderlySupportCount}
+                    bubbleStyle={styles.elderlyBubble}
+                    delay={2600}
+                  />
+                  
+                  {/* Children */}
+                  <FloatingBubble
+                    icon="👶"
+                    value="156"
+                    label={texts.childrenSupportCount}
+                    bubbleStyle={styles.childrenBubble}
+                    delay={2800}
+                  />
+                  
+                  {/* Sports */}
+                  <FloatingBubble
+                    icon="⚽"
+                    value="23"
+                    label={texts.sportsGroups}
+                    bubbleStyle={styles.sportsBubble}
+                    delay={3000}
+                  />
+                  
+                  {/* Music */}
+                  <FloatingBubble
+                    icon="🎵"
+                    value="34"
+                    label={texts.musicLessons}
+                    bubbleStyle={styles.musicBubble}
+                    delay={3200}
+                  />
+                  
+                  {/* Art */}
+                  <FloatingBubble
+                    icon="🎨"
+                    value="45"
+                    label={texts.artWorkshops}
+                    bubbleStyle={styles.artBubble}
+                    delay={3400}
+                  />
+                  
+                  {/* Technology */}
+                  <FloatingBubble
+                    icon="💻"
+                    value="28"
+                    label={texts.computerLessons}
+                    bubbleStyle={styles.techBubble}
+                    delay={3600}
+                  />
+                  
+                  {/* Gardening */}
+                  <FloatingBubble
+                    icon="🌱"
+                    value="9"
+                    label={texts.communityGardens}
+                    bubbleStyle={styles.gardenBubble}
+                    delay={3800}
+                  />
+                  
+                  {/* Leadership */}
+                  <FloatingBubble
+                    icon="👑"
+                    value="8"
+                    label={texts.communityLeaderships}
+                    bubbleStyle={styles.leadershipBubble}
+                    delay={4000}
+                  />
+                </View>
+              </View>
             </View>
           ) : (
-            // מצב קהילתי - רק בועות סטטיסטיקות
+            // Community mode - statistics bubbles only
             <View style={styles.communityModeContainer}>
               <BubbleComp />
             </View>
           )}
           </ScrollView>
           
-          {/* Toggle Button */}
-          <View style={styles.toggleContainer}>
+          {/* Toggle Button - Hidden in guest mode */}
+          {!isGuestMode && (
+            <View style={styles.toggleContainer}>
             <TouchableOpacity 
               style={[styles.toggleButton, isPersonalMode && styles.toggleButtonActive]}
               onPress={() => setIsPersonalMode(!isPersonalMode)}
@@ -340,7 +521,8 @@ export default function HomeScreen() {
                 color={!isPersonalMode ? colors.backgroundPrimary : colors.textSecondary} 
               />
             </TouchableOpacity>
-          </View>
+            </View>
+          )}
         </View>
       )}
     </SafeAreaView>
@@ -359,10 +541,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+    } : {
+      shadowColor: colors.shadowLight,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+    }),
     elevation: 3,
   },
   headerContent: {
@@ -458,10 +644,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 12,
     width: 150,
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+    } : {
+      shadowColor: colors.shadowLight,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    }),
     elevation: 2,
   },
   activityIcon: {
@@ -490,34 +680,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  statCard: {
-    backgroundColor: colors.backgroundPrimary,
-    padding: 15,
-    borderRadius: 12,
-    alignItems: 'center',
-    flex: 1,
-    marginHorizontal: 5,
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
+     statCard: {
+     backgroundColor: '#E3F2FD', // כחול בהיר מאוד
+     padding: 15,
+     borderRadius: 50, // עגול לחלוטין
+     alignItems: 'center',
+     flex: 1,
+     marginHorizontal: 5,
+     ...(Platform.OS === 'web' ? {
+       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)'
+     } : {
+       shadowColor: colors.shadowLight,
+       shadowOffset: { width: 0, height: 2 },
+       shadowOpacity: 0.15,
+       shadowRadius: 4,
+     }),
+     elevation: 3,
+     minWidth: 80,
+     minHeight: 80,
+     justifyContent: 'center',
+   },
   statIcon: {
     fontSize: FontSizes.heading1,
     marginBottom: 5,
   },
-  statValue: {
-    fontSize: FontSizes.medium,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-    marginBottom: 2,
-  },
-  statName: {
-    fontSize: FontSizes.caption,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
+     statValue: {
+     fontSize: FontSizes.medium,
+     fontWeight: 'bold',
+     color: '#1976D2', // Darker blue for better readability
+     marginBottom: 2,
+   },
+   statName: {
+     fontSize: FontSizes.caption,
+     color: '#1565C0', // Darker blue for better readability
+     textAlign: 'center',
+     fontWeight: '500',
+   },
   panel: {
     height: PANEL_HEIGHT,
     width: "100%",
@@ -526,10 +724,14 @@ const styles = StyleSheet.create({
     bottom: 10,
     borderTopLeftRadius: 250,
     borderTopRightRadius: 250,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0 -3px 8px rgba(0, 0, 0, 0.15)'
+    } : {
+      shadowColor: colors.black,
+      shadowOffset: { width: 0, height: -3 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+    }),
     elevation: 8,
   },
   panelHandle: {
@@ -538,7 +740,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: 20,
   },
-  // סטיילים חדשים למסך הפוסטים וגלילה
+  // New styles for posts screen and scrolling
   postsContainer: {
     flex: 1,
     backgroundColor: colors.backgroundPrimary,
@@ -570,7 +772,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 8,
   },
-  // סטיילים לכפתור הטוגל
+  // Toggle button styles
   toggleContainer: {
     position: 'absolute',
     bottom: 50,
@@ -605,16 +807,16 @@ const styles = StyleSheet.create({
   toggleTextActive: {
     color: colors.backgroundPrimary,
   },
-  // סטיילים למצב קהילתי
+  // Community mode styles
   communityModeContainer: {
     flex: 1,
-    paddingTop: 20,
-    minHeight: 800, // גובה מינימלי כדי לאפשר גלילה
+    minHeight: "100%", // Minimum height to enable scrolling
+    width: "100%",
   },
   communityModeTitle: {
     fontSize: FontSizes.heading2,
   },
-  // סטיילים לאינדיקטור יוזר נבחר
+  // Selected user indicator styles
   userSelectionIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -652,17 +854,209 @@ const styles = StyleSheet.create({
   clearUserButton: {
     padding: 4,
   },
-  // סטייל למיכל הבית
+  // Home container style
   homeContainer: {
     flex: 1,
     position: 'relative',
   },
-  // סטייל למצב אישי
+  // Personal mode style
   personalModeContainer: {
     flex: 1,
   },
-  // סטייל לתוכן הגלילה
+  // Scroll content style
   scrollContent: {
-    paddingBottom: 100, // מרווח בתחתית כדי לאפשר גלילה
+    paddingBottom: 100, // Bottom margin to enable scrolling
   },
-});
+  // Personal statistics styles
+  personalStatsContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  personalStatsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+  },
+     personalStatCard: {
+     backgroundColor: '#E3F2FD', // Very light blue
+     padding: 15,
+     borderRadius: 50, // Fully rounded
+     alignItems: 'center',
+     flex: 1,
+     marginHorizontal: 5,
+     marginBottom: 10,
+     shadowColor: colors.shadowLight,
+     shadowOffset: { width: 0, height: 2 },
+     shadowOpacity: 0.15,
+     shadowRadius: 4,
+     elevation: 3,
+     minWidth: 80,
+     minHeight: 80,
+     justifyContent: 'center',
+   },
+  personalStatIcon: {
+    fontSize: FontSizes.heading2,
+    marginBottom: 5,
+  },
+     personalStatValue: {
+     fontSize: FontSizes.large,
+     fontWeight: 'bold',
+     color: '#1976D2', // Darker blue for better readability
+     marginBottom: 2,
+   },
+   personalStatName: {
+     fontSize: FontSizes.caption,
+     color: '#1565C0', // Darker blue for better readability
+     textAlign: 'center',
+     fontWeight: '500',
+   },
+  // Floating community statistics styles
+  floatingStatsContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  bubblesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+  },
+     floatingBubble: {
+     backgroundColor: '#E3F2FD', // Very light blue
+     padding: 15,
+     borderRadius: 50, // Fully rounded
+     alignItems: 'center',
+     marginHorizontal: 5,
+     marginBottom: 10,
+     shadowColor: colors.shadowLight,
+     shadowOffset: { width: 0, height: 2 },
+     shadowOpacity: 0.15,
+     shadowRadius: 4,
+     elevation: 3,
+     minWidth: 80,
+     minHeight: 80,
+     justifyContent: 'center',
+   },
+  bubbleIcon: {
+    fontSize: FontSizes.heading2,
+    marginBottom: 5,
+  },
+     bubbleValue: {
+     fontSize: FontSizes.large,
+     fontWeight: 'bold',
+     color: '#1976D2', // Darker blue for better readability
+     marginBottom: 2,
+   },
+   bubbleLabel: {
+     fontSize: FontSizes.caption,
+     color: '#1565C0', // Darker blue for better readability
+     textAlign: 'center',
+     fontWeight: '500',
+   },
+     // Specific donation types styles
+   moneyBubble: {
+     backgroundColor: colors.legacyLightGreen,
+     borderColor: colors.success + '30',
+     borderWidth: 1,
+   },
+   foodBubble: {
+     backgroundColor: colors.successLight,
+     borderColor: colors.success + '30',
+     borderWidth: 1,
+   },
+   clothingBubble: {
+     backgroundColor: colors.infoLight,
+     borderColor: colors.info + '30',
+     borderWidth: 1,
+   },
+   bloodBubble: {
+     backgroundColor: colors.errorLight,
+     borderColor: colors.error + '30',
+     borderWidth: 1,
+   },
+   timeBubble: {
+     backgroundColor: colors.warningLight,
+     borderColor: colors.warning + '30',
+     borderWidth: 1,
+   },
+   transportBubble: {
+     backgroundColor: colors.legacyLightBlue,
+     borderColor: colors.info + '30',
+     borderWidth: 1,
+   },
+   educationBubble: {
+     backgroundColor: colors.successLight,
+     borderColor: colors.success + '30',
+     borderWidth: 1,
+   },
+   environmentBubble: {
+     backgroundColor: colors.legacyLightGreen,
+     borderColor: colors.success + '30',
+     borderWidth: 1,
+   },
+   animalsBubble: {
+     backgroundColor: colors.legacyLightOrange,
+     borderColor: colors.warning + '30',
+     borderWidth: 1,
+   },
+   eventsBubble: {
+     backgroundColor: colors.legacyLightPink,
+     borderColor: colors.pink + '30',
+     borderWidth: 1,
+   },
+   recyclingBubble: {
+     backgroundColor: colors.successLight,
+     borderColor: colors.success + '30',
+     borderWidth: 1,
+   },
+      cultureBubble: {
+     backgroundColor: colors.legacyLightPurple,
+     borderColor: colors.info + '30',
+     borderWidth: 1,
+   },
+   healthBubble: {
+     backgroundColor: colors.legacyLightRed,
+     borderColor: colors.error + '30',
+     borderWidth: 1,
+   },
+   elderlyBubble: {
+     backgroundColor: colors.legacyLightBlue,
+     borderColor: colors.info + '30',
+     borderWidth: 1,
+   },
+   childrenBubble: {
+     backgroundColor: colors.legacyLightPink,
+     borderColor: colors.pink + '30',
+     borderWidth: 1,
+   },
+   sportsBubble: {
+     backgroundColor: colors.legacyLightGreen,
+     borderColor: colors.success + '30',
+     borderWidth: 1,
+   },
+   musicBubble: {
+     backgroundColor: colors.legacyLightPurple,
+     borderColor: colors.info + '30',
+     borderWidth: 1,
+   },
+   artBubble: {
+     backgroundColor: colors.legacyLightOrange,
+     borderColor: colors.warning + '30',
+     borderWidth: 1,
+   },
+   techBubble: {
+     backgroundColor: colors.legacyLightBlue,
+     borderColor: colors.info + '30',
+     borderWidth: 1,
+   },
+   gardenBubble: {
+     backgroundColor: colors.successLight,
+     borderColor: colors.success + '30',
+     borderWidth: 1,
+   },
+   leadershipBubble: {
+     backgroundColor: colors.legacyLightYellow,
+     borderColor: colors.warning + '30',
+     borderWidth: 1,
+   },
+
+ });

@@ -1,27 +1,17 @@
 // App.tsx
 'use strict';
-import React, { useCallback, useEffect, useState } from "react";
-import MainNavigator from "./navigations/MainNavigator";
-import { NavigationContainer } from "@react-navigation/native";
-import * as Font from "expo-font";
-// Make sure you import ALL icon sets from @expo/vector-icons that you plan to use this way
-import { Ionicons, MaterialIcons } from "@expo/vector-icons"; // Import MaterialIcons here too if you're using it from @expo/vector-icons
-import * as SplashScreen from "expo-splash-screen";
-import {
-  View,
-  Text,
-  ActivityIndicator,
-  StyleSheet,
-  Platform,
-} from "react-native";
-import styles from "./globals/styles";
-import colors from "./globals/colors";
-import { FontSizes } from "./globals/constants";
-import './utils/i18n';
-import { I18nextProvider } from 'react-i18next';
-import i18n from './utils/i18n';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Text, ActivityIndicator, Platform, StyleSheet } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import * as Font from 'expo-font';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+
+import MainNavigator from './navigations/MainNavigator';
+import colors from './globals/colors';
 import { UserProvider } from './context/UserContext';
-import { createSampleData } from './utils/chatService';
+import { FontSizes } from "./globals/constants";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -31,27 +21,30 @@ export default function App() {
 
   const prepareApp = useCallback(async () => {
     try {
-      await Font.loadAsync({
-        // CORRECT WAY TO LOAD IONICONS:
-        ...Ionicons.font, // This spreads the { 'Ionicons': require(...) } object
+      // Loading fonts with better error handling
+      try {
+        await Font.loadAsync({
+          ...Ionicons.font,
+          ...MaterialIcons.font,
+        });
+              } catch (fontError) {
+          console.warn('Font loading failed, continuing without custom fonts');
+          // Don't stop the app if fonts fail to load
+        }
 
-        // CORRECT WAY TO LOAD MATERIALICONS (if imported from @expo/vector-icons):
-        ...MaterialIcons.font, // This spreads the { 'MaterialIcons': require(...) } object
-
-        // If you had any OTHER custom fonts (e.g., in your assets/fonts folder):
-        // 'MyCustomFont-Regular': require('./assets/fonts/MyCustomFont-Regular.ttf'),
-        // 'MyCustomFont-Bold': require('./assets/fonts/MyCustomFont-Bold.ttf'),
-      });
-
-      // יצירת נתונים לדוגמה לצ'אט
-      await createSampleData();
+      // Removed demo data creation that could cause issues
+      // await createSampleData();
 
       setAppIsReady(true);
     } catch (e: any) {
       console.warn("App preparation failed:", e);
       setFontError(e);
     } finally {
-      await SplashScreen.hideAsync();
+      try {
+        await SplashScreen.hideAsync();
+      } catch (splashError) {
+        console.warn('Failed to hide splash screen:', splashError);
+      }
     }
   }, []);
 
@@ -78,21 +71,20 @@ export default function App() {
     return (
       <View style={loadingStyles.container}>
         <ActivityIndicator size="large" color={colors.info}/>
-        <Text style={loadingStyles.loadingText}>Loading...</Text>
+        <Text style={loadingStyles.loadingText}>טוען...</Text>
       </View>
     );
   }
 
   return (
-    <I18nextProvider i18n={i18n}>
-      <UserProvider>
-        <View style={styles.container}>
-          <NavigationContainer>
-            <MainNavigator />
-          </NavigationContainer>
+    <UserProvider>
+      <NavigationContainer>
+        <View style={{ flex: 1 }}>
+          <MainNavigator />
+          <StatusBar style="auto" />
         </View>
-      </UserProvider>
-    </I18nextProvider>
+      </NavigationContainer>
+    </UserProvider>
   );
 }
 

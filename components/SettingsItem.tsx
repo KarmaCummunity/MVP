@@ -4,7 +4,7 @@
 
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Switch, Platform } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 
 type SettingItemType = 'navigate' | 'toggle' | 'button' | 'value';
@@ -12,7 +12,7 @@ type SettingItemType = 'navigate' | 'toggle' | 'button' | 'value';
 export interface SettingsItemProps {
   title: string;
   description?: string;
-  iconName?: string;
+  iconName?: keyof typeof Ionicons.glyphMap;
   type: SettingItemType;
   onPress?: () => void;
   value?: boolean;
@@ -36,7 +36,7 @@ const SettingsItem: React.FC<SettingsItemProps> = memo((props) => {
     children
   } = props;
 
-  const textColor = isDestructive ? colors.danger : colors.textPrimary;
+    const textColor = isDestructive ? colors.danger : colors.textPrimary;
 
   const renderContent = () => {
     switch (type) {
@@ -56,7 +56,7 @@ const SettingsItem: React.FC<SettingsItemProps> = memo((props) => {
             <Text style={styles.valueText}>{displayValue}</Text>
             {/* Chevron should appear BEFORE the value text in RTL visually,
                 so we place it after the text when using row-reverse on the container */}
-            <Icon 
+            <Ionicons 
               name="chevron-back-outline" // Changed to 'chevron-back-outline' for RTL visual consistency
               size={20} 
               color={colors.textSecondary} 
@@ -66,7 +66,7 @@ const SettingsItem: React.FC<SettingsItemProps> = memo((props) => {
         );
       case 'navigate':
         return (
-          <Icon name="chevron-back-outline" size={20} color={colors.textSecondary} style={styles.chevron}/> // Changed to 'chevron-back-outline' for RTL visual consistency
+          <Ionicons name="chevron-back-outline" size={20} color={colors.textSecondary} style={styles.chevron}/> // Changed to 'chevron-back-outline' for RTL visual consistency
         );
       case 'button':
         return null;
@@ -83,7 +83,7 @@ const SettingsItem: React.FC<SettingsItemProps> = memo((props) => {
       activeOpacity={type === 'toggle' ? 1 : 0.7}
     >
       {iconName && (
-        <Icon name={iconName} size={24} color={textColor} style={styles.icon} />
+        <Ionicons name={iconName} size={24} color={textColor} style={styles.icon} />
       )}
       <View style={styles.textContainer}>
         {/* Explicitly setting textAlign: 'right' for all text for RTL */}

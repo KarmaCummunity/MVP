@@ -12,7 +12,7 @@ export default function DonationsStack() {
   
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="DonationsScreen" component={DonationsScreen} />
+      <Stack.Screen name="DonationsMain" component={DonationsScreen} />
       <Stack.Screen name="MoneyScreen" component={MoneyScreen} />
       <Stack.Screen name="TrumpScreen" component={TrumpScreen} />
       <Stack.Screen name="KnowledgeScreen" component={KnowledgeScreen} />

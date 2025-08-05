@@ -17,7 +17,9 @@ import Animated, {
   withDelay,
   Easing,
 } from "react-native-reanimated";
-import { motivationalQuotes, FontSizes, UI_TEXT } from "../globals/constants";
+import { FontSizes, BUBBLE_CONSTANTS } from "../globals/constants";
+import { motivationalQuotes } from "../globals/fakeData";
+import { texts } from "../globals/texts";
 import { TouchableOpacity } from "react-native";
 import colors from "../globals/colors";
 import { communityStats } from "../globals/fakeData";
@@ -27,11 +29,11 @@ import { BubbleData } from "../globals/types";
 const { width, height } = Dimensions.get("window");
 
 // --- Constants ---
-const NUM_BUBBLES = 30; // מספר הבועות שיוצגו על המסך
-const MIN_SIZE = 50; // גודל מינימלי לבועה
-const MAX_SIZE = 150; // גודל מקסימלי לבועה
-const MIN_NUMBER = 1; // ערך מינימלי לבועה
-const MAX_NUMBER = 100; // ערך מקסימלי לבועה
+const NUM_BUBBLES = BUBBLE_CONSTANTS.NUM_BUBBLES;
+const MIN_SIZE = BUBBLE_CONSTANTS.MIN_SIZE;
+const MAX_SIZE = BUBBLE_CONSTANTS.MAX_SIZE;
+const MIN_NUMBER = BUBBLE_CONSTANTS.MIN_NUMBER;
+const MAX_NUMBER = BUBBLE_CONSTANTS.MAX_NUMBER;
 
 /**
  * ממיר מספר לערך גודל בועה בטווח המוגדר
@@ -65,7 +67,7 @@ const isOverlapping = (
     const dx = b.x - x;
     const dy = b.y - y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    if (distance < (b.size + size) / 2.5) {
+    if (distance < (b.size + size) / BUBBLE_CONSTANTS.OVERLAP_THRESHOLD) {
       return true;
     }
   }
@@ -83,17 +85,17 @@ const generateBubbles = (): BubbleData[] => {
   let index = 0;
   const mainBubbles: BubbleData[] = [];
   
-  // יוצר בועות ראשיות עד שמגיע למספר הרצוי או מנסה 1000 פעמים
-  while (mainBubbles.length < NUM_BUBBLES && attempts < 1000) {
+  // Creates main bubbles until reaching desired count or after maximum attempts
+  while (mainBubbles.length < NUM_BUBBLES && attempts < BUBBLE_CONSTANTS.MAX_ATTEMPTS) {
     const value = Math.floor(Math.random() * MAX_NUMBER) + 1;
     const size = scaleNumberToSize(value);
     const x = Math.random() * (width - size);
-    const y = Math.random() * (height - size - 150); // משאיר מקום להודעה
+    const y = Math.random() * (height - size - BUBBLE_CONSTANTS.HEIGHT_OFFSET); // Leave space for message
     const directionX = Math.random() > 0.5 ? 1 : -1;
     const directionY = Math.random() > 0.5 ? 1 : -1;
     const delay = Math.random() * 1000;
 
-    // משתמש בשמות מסטטיסטיקות הקהילה
+    // Use community statistics names
     const name = communityStats[index++ % communityStats.length].name;
 
     if (!isOverlapping(x, y, size, mainBubbles)) {
@@ -151,9 +153,9 @@ const BubbleComp: React.FC = () => {
 
   return (
     <View style={localStyles.container}>
-      <Text style={localStyles.title}>הקהילה במספרים</Text>
+              <Text style={localStyles.title}>{texts.bubbleTitle}</Text>
       
-      {/* מיכל הבועות */}
+      {/* Bubbles container */}
       <View style={localStyles.bubblesContainer}>
         {bubbles.map((bubble) => (
           <AnimatedBubble
@@ -165,7 +167,7 @@ const BubbleComp: React.FC = () => {
         ))}
       </View>
 
-      {/* מיכל ההודעה המוטיבציונית - מיקום קבוע */}
+      {/* Motivational message container - fixed position */}
       <View style={localStyles.messageContainer}>
         <TouchableOpacity onPress={handleMessagePress}>
           <Text style={localStyles.messageText}>
@@ -203,16 +205,16 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
   id,
 }) => {
   const offset = useSharedValue(0);
-  const animatedOpacity = useSharedValue(isBackground ? 0.2 : 1);
+  const animatedOpacity = useSharedValue(isBackground ? BUBBLE_CONSTANTS.OPACITY_BACKGROUND : 1);
   const animatedScale = useSharedValue(1);
 
-  // אפקט אנימציית ציפה
+  // Floating animation effect
   useEffect(() => {
     offset.value = withRepeat(
       withDelay(
         delay,
         withTiming(1, {
-          duration: 4000 + Math.random() * 2000,
+          duration: BUBBLE_CONSTANTS.ANIMATION_DURATION + Math.random() * BUBBLE_CONSTANTS.ANIMATION_DELAY,
           easing: Easing.inOut(Easing.ease),
         })
       ),
@@ -221,15 +223,15 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
     );
   }, [delay, offset]);
 
-  // אפקטי אנימציה לבחירה
+  // Selection animation effects
   useEffect(() => {
     if (!isBackground) {
-      animatedOpacity.value = withTiming(isSelected ? 1 : 0.7, {
-        duration: 200,
+      animatedOpacity.value = withTiming(isSelected ? BUBBLE_CONSTANTS.OPACITY_SELECTED : BUBBLE_CONSTANTS.OPACITY_DEFAULT, {
+        duration: BUBBLE_CONSTANTS.ANIMATION_DURATION_SHORT,
       });
-      animatedScale.value = withSpring(isSelected ? 1.1 : 1, {
-        damping: 10,
-        stiffness: 100,
+      animatedScale.value = withSpring(isSelected ? BUBBLE_CONSTANTS.SCALE_SELECTED : BUBBLE_CONSTANTS.SCALE_DEFAULT, {
+        damping: BUBBLE_CONSTANTS.ANIMATION_DAMPING,
+        stiffness: BUBBLE_CONSTANTS.ANIMATION_STIFFNESS,
       });
     }
   }, [isSelected, isBackground, animatedOpacity, animatedScale]);
@@ -246,43 +248,43 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
     [id, isBackground, onPress]
   );
 
-  // סגנון מונפש לבועה
+  // Animated bubble style
   const animatedStyle = useAnimatedStyle(() => {
     const dx =
       Math.sin(offset.value * Math.PI * 2) *
-      (isBackground ? 8 : 5) *
+      (isBackground ? BUBBLE_CONSTANTS.MOVEMENT_BACKGROUND : BUBBLE_CONSTANTS.MOVEMENT_FOREGROUND) *
       directionX;
     const dy =
       Math.cos(offset.value * Math.PI * 2) *
-      (isBackground ? 8 : 5) *
+      (isBackground ? BUBBLE_CONSTANTS.MOVEMENT_BACKGROUND : BUBBLE_CONSTANTS.MOVEMENT_FOREGROUND) *
       directionY;
 
     const backgroundColor = isBackground
-      ? "rgba(0, 230, 255, 0.2)"
+      ? colors.bubbleBackgroundInactive
       : isSelected
-      ? "rgba(250, 220, 220, 0.9)"
-      : "rgba(173, 216, 255, 0.8)";
+      ? colors.bubbleBackgroundSelected
+      : colors.bubbleBackgroundDefault;
     const borderColor = isBackground
-      ? "rgba(255, 255, 255, 0.5)"
+      ? colors.bubbleBorderInactive
       : isSelected
-      ? "rgba(0, 0, 0, 1)"
-      : "rgba(255, 255, 255, 0.9)";
+      ? colors.bubbleBorderSelected
+      : colors.bubbleBorderDefault;
 
     return {
       transform: [
         { translateX: x + 0.5 * dx },
         { translateY: y + 0.5 * dy },
         { scale: animatedScale.value },
-      ],
+      ] as any,
       backgroundColor,
       borderColor,
       opacity: animatedOpacity.value,
     };
   });
 
-  // חישוב גדלי פונט דינמיים לפי גודל הבועה
-  const fontSize = Math.max(10, size / 7);
-  const nameSize = Math.max(8, size / 10);
+  // Calculate dynamic font sizes based on bubble size
+  const fontSize = Math.max(BUBBLE_CONSTANTS.MIN_FONT_SIZE, size / BUBBLE_CONSTANTS.FONT_SIZE_RATIO);
+  const nameSize = Math.max(BUBBLE_CONSTANTS.MIN_NAME_SIZE, size / BUBBLE_CONSTANTS.NAME_SIZE_RATIO);
 
   return (
     <TouchableWithoutFeedback onPress={handleInternalPress}>
@@ -304,14 +306,14 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
               style={[
                 localStyles.bubbleText,
                 {
-                  fontSize: size * 0.2,
-                  color: isSelected ? "#333" : "#000",
+                  fontSize: size * BUBBLE_CONSTANTS.TEXT_SIZE_RATIO,
+                  color: isSelected ? colors.bubbleTextSelected : colors.bubbleTextDefault,
                   marginBottom: 2,
                 },
               ]}
               numberOfLines={1}
               adjustsFontSizeToFit
-              minimumFontScale={0.5}
+              minimumFontScale={BUBBLE_CONSTANTS.MIN_FONT_SCALE}
             >
               {value?.toLocaleString()}
             </Text>
@@ -320,13 +322,13 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
                 localStyles.bubbleName,
                 {
                   fontSize: nameSize,
-                  color: isSelected ? "#555" : "#000",
-                  lineHeight: nameSize * 1.2,
+                  color: isSelected ? colors.bubbleNameSelected : colors.bubbleNameDefault,
+                  lineHeight: nameSize * BUBBLE_CONSTANTS.NAME_LINE_HEIGHT_RATIO,
                 },
               ]}
               numberOfLines={3}
               adjustsFontSizeToFit
-              minimumFontScale={0.3}
+              minimumFontScale={BUBBLE_CONSTANTS.MIN_NAME_SCALE}
             >
               {name}
             </Text>
@@ -341,7 +343,7 @@ const AnimatedBubble: React.FC<AnimatedBubbleProps> = ({
 const localStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(100, 255, 255, 0.9)' // רקע כחול בהיר
+    backgroundColor: colors.bubbleBackground
   },
   bubblesContainer: {
     flex: 1,
@@ -350,10 +352,10 @@ const localStyles = StyleSheet.create({
   bubble: {
     position: "absolute",
     borderWidth: 1,
-    shadowColor: "#ffffff",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: -1, height: -1 },
-    shadowRadius: 3,
+    shadowColor: colors.bubbleShadow,
+    shadowOpacity: BUBBLE_CONSTANTS.SHADOW_OPACITY,
+    shadowOffset: { width: BUBBLE_CONSTANTS.SHADOW_OFFSET, height: BUBBLE_CONSTANTS.SHADOW_OFFSET },
+    shadowRadius: BUBBLE_CONSTANTS.SHADOW_RADIUS,
     justifyContent: "center",
     alignItems: "center",
     padding: 4,
@@ -377,8 +379,8 @@ const localStyles = StyleSheet.create({
     fontWeight: "bold",
   },
   messageContainer: {
-    marginVertical: 80,
-    marginHorizontal: 20,
+    marginVertical: BUBBLE_CONSTANTS.MESSAGE_MARGIN_VERTICAL,
+    marginHorizontal: BUBBLE_CONSTANTS.MESSAGE_MARGIN_HORIZONTAL,
     alignSelf: "center",
     zIndex: 1000,
     alignItems: "center",
@@ -386,24 +388,24 @@ const localStyles = StyleSheet.create({
   },
   title: {
     textAlign: "center",
-    fontSize: 25,
-    marginTop: 10,
+    fontSize: BUBBLE_CONSTANTS.TITLE_FONT_SIZE,
+    marginTop: BUBBLE_CONSTANTS.TITLE_MARGIN_TOP,
     fontWeight: "bold",
   },
   messageText: {
-    fontSize: 14,
+    fontSize: FontSizes.small,
     fontWeight: "bold",
-    backgroundColor: colors.lightGray,
+    backgroundColor: colors.messageBackground,
     textAlign: "center",
-    paddingHorizontal: 5,
-    paddingVertical: 8,
-    borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    opacity: 0.78,
-    elevation: 1,
+    paddingHorizontal: BUBBLE_CONSTANTS.MESSAGE_PADDING_HORIZONTAL,
+    paddingVertical: BUBBLE_CONSTANTS.MESSAGE_PADDING_VERTICAL,
+    borderRadius: BUBBLE_CONSTANTS.MESSAGE_BORDER_RADIUS,
+    shadowColor: colors.messageShadow,
+    shadowOffset: { width: 0, height: BUBBLE_CONSTANTS.MESSAGE_SHADOW_OFFSET },
+    shadowOpacity: BUBBLE_CONSTANTS.MESSAGE_SHADOW_OPACITY,
+    shadowRadius: BUBBLE_CONSTANTS.MESSAGE_SHADOW_RADIUS,
+    opacity: BUBBLE_CONSTANTS.MESSAGE_OPACITY,
+    elevation: BUBBLE_CONSTANTS.MESSAGE_ELEVATION,
   },
 });
 

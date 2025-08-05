@@ -13,7 +13,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import SearchBar from '../components/SearchBar';
 import colors from '../globals/colors';
-import { FontSizes, UI_TEXT } from '../globals/constants';
+import { FontSizes } from '../globals/constants';
+import { texts } from '../globals/texts';
 import { 
   tasks, 
   donations, 
@@ -21,6 +22,8 @@ import {
   users, 
   categories 
 } from '../globals/fakeData';
+import { useUser } from '../context/UserContext';
+import GuestModeNotice from '../components/GuestModeNotice';
 
 interface SearchResult {
   id: string;
@@ -34,6 +37,7 @@ interface SearchResult {
 }
 
 const SearchScreen = () => {
+  const { isGuestMode } = useUser();
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -141,13 +145,15 @@ const SearchScreen = () => {
     }, 500);
   };
 
-  const handleSearch = (query: string) => {
+  const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
     setSearchQuery(query);
     if (query.trim().length > 0) {
       performSearch(query, selectedCategory);
     } else {
       setSearchResults([]);
     }
+    // For now, SearchScreen handles its own filtering logic, so we ignore the other parameters
+    // In the future, this could be enhanced to use the provided filters and sorts
   };
 
   const handleCategoryFilter = (category: string) => {
@@ -278,6 +284,9 @@ const SearchScreen = () => {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Guest Mode Notice */}
+        {isGuestMode && <GuestModeNotice />}
+        
         {searchQuery.trim().length === 0 ? (
           // Default content when no search
           <View style={styles.defaultContent}>
@@ -315,35 +324,35 @@ const SearchScreen = () => {
 
             {/* Quick Actions */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{UI_TEXT.quickActions}</Text>
+              <Text style={styles.sectionTitle}>{texts.quickActions}</Text>
               <View style={styles.quickActionsGrid}>
                 <TouchableOpacity
                   style={styles.quickAction}
                   onPress={() => Alert.alert('משימות דחופות', 'מציג משימות דחופות')}
                 >
                   <Ionicons name="flash-outline" size={24} color={colors.warning} />
-                  <Text style={styles.quickActionText}>{UI_TEXT.urgentTasks}</Text>
+                  <Text style={styles.quickActionText}>{texts.urgentTasks}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.quickAction}
                   onPress={() => Alert.alert('אירועים קרובים', 'מציג אירועים קרובים')}
                 >
                   <Ionicons name="calendar-outline" size={24} color={colors.success} />
-                  <Text style={styles.quickActionText}>{UI_TEXT.upcomingEvents}</Text>
+                  <Text style={styles.quickActionText}>{texts.upcomingEvents}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.quickAction}
                   onPress={() => Alert.alert('תרומות חדשות', 'מציג תרומות חדשות')}
                 >
                   <Ionicons name="heart-outline" size={24} color={colors.error} />
-                  <Text style={styles.quickActionText}>{UI_TEXT.newDonations}</Text>
+                  <Text style={styles.quickActionText}>{texts.newDonations}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.quickAction}
                   onPress={() => Alert.alert('מתנדבים פעילים', 'מציג מתנדבים פעילים')}
                 >
                   <Ionicons name="people-outline" size={24} color={colors.pink} />
-                  <Text style={styles.quickActionText}>{UI_TEXT.activeVolunteers}</Text>
+                  <Text style={styles.quickActionText}>{texts.activeVolunteers}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -354,7 +363,7 @@ const SearchScreen = () => {
             {isSearching ? (
               <View style={styles.loadingContainer}>
                 <Ionicons name="search" size={40} color={colors.textSecondary} />
-                <Text style={styles.loadingText}>{UI_TEXT.searching}</Text>
+                <Text style={styles.loadingText}>{texts.searching}</Text>
               </View>
             ) : searchResults.length > 0 ? (
               <>
@@ -371,9 +380,9 @@ const SearchScreen = () => {
             ) : (
               <View style={styles.noResultsContainer}>
                 <Ionicons name="search-outline" size={60} color={colors.textSecondary} />
-                <Text style={styles.noResultsTitle}>{UI_TEXT.noResultsFound}</Text>
+                <Text style={styles.noResultsTitle}>{texts.noResultsFound}</Text>
                 <Text style={styles.noResultsText}>
-                  {UI_TEXT.tryChangingSearchTerms}
+                  {texts.tryChangingSearchTerms}
                 </Text>
               </View>
             )}
@@ -585,6 +594,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
+
 });
 
 export default SearchScreen;

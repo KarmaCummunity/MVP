@@ -110,6 +110,8 @@ export type RootStackParamList = {
   InactiveScreen: undefined;
   WebViewScreen: undefined;
   PostsReelsScreen: undefined; // ADD THIS LINE - this was probably missing
+  BookmarksScreen: undefined;
+  UserProfileScreen: undefined;
 };
 
 // --- Bottom Tab Navigator (BottomNavigator) Parameter List ---
@@ -150,5 +152,4 @@ export type BottomTabNavigationPropType<
 
 // You might also need a type for the 'route' prop if you're accessing params:
 // import { RouteProp } from '@react-navigation/native';
-import PostsReelsScreen from "../components/PostsReelsScreen";
 // export type PostsReelsScreenRouteProp = RouteProp<RootStackParamList, 'PostsReelsScreen'>;

@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
+import { texts } from '../globals/texts';
 import HeaderComp from '../components/HeaderComp';
 
 // Mock data for educational content
@@ -158,8 +159,8 @@ const KnowledgeScreen: React.FC = () => {
         menuOptions={[]}
         onToggleMode={() => {}}
         onSelectMenuItem={() => {}}
-        title="תרומת ידע"
-        placeholder="חפש קורסים ושיעורים"
+        title={texts.knowledgeDonationTitle}
+        placeholder={texts.searchCoursesAndLessons}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

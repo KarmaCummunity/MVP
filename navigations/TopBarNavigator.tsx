@@ -1,11 +1,12 @@
 import React from 'react';
 import styles from '../globals/styles'; // your styles file
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons as Icon } from '@expo/vector-icons';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import colors from '../globals/colors';
+import { useUser } from '../context/UserContext';
 
 
 
@@ -17,7 +18,10 @@ interface TopBarNavigatorProps {
 function TopBarNavigator({ navigation, hideTopBar = false }: TopBarNavigatorProps) {
   
   const route = useRoute();
+  const { isGuestMode } = useUser();
   const translateY = useSharedValue(0);
+  
+  console.log('🔝 TopBarNavigator - isGuestMode:', isGuestMode);
   
   ////console.log('🔝 TopBarNavigator - hideTopBar prop:', hideTopBar);
 
@@ -79,13 +83,13 @@ function TopBarNavigator({ navigation, hideTopBar = false }: TopBarNavigatorProp
 
   return (
     <Animated.View style={[styles.container_top_bar, animatedStyle]}>
-      {/* Left Icons Group */}
+      {/* Right Icons Group */}
       <View style={{ flexDirection: 'row', gap: 5 }}>
-        <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={{ padding: 4 }}>
-          <Icon name="chatbubbles-outline" size={24} color={colors.topNavIcon} />
+        <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={{ padding: 4 }}>
+          <Icon name="settings-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('InactiveScreen')} style={{ padding: 4 }}>
-          <Icon name="notifications-circle-outline" size={24} color={colors.topNavIcon} />
+        <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={{ padding: 4 }}>
+          <Icon name="information-circle-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
       </View>
 
@@ -93,13 +97,20 @@ function TopBarNavigator({ navigation, hideTopBar = false }: TopBarNavigatorProp
       <View style={{ alignItems: 'center' }}>
         <Text style={styles.title}>{title}</Text>
       </View>
-      {/* Right Icons Group */}
+      {/* Left Icons Group */}
       <View style={{ flexDirection: 'row', gap: 5 }}>
-        <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={{ padding: 4 }}>
-          <Icon name="information-circle-outline" size={24} color={colors.topNavIcon} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={{ padding: 4 }}>
-          <Icon name="settings-outline" size={24} color={colors.topNavIcon} />
+        {!isGuestMode && (
+          <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={{ padding: 4 }}>
+            <Icon name="chatbubbles-outline" size={24} color={colors.topNavIcon} />
+          </TouchableOpacity>
+        )}
+{/* Debug log for guest mode */}
+        {isGuestMode && (() => {
+          console.log('🔝 TopBarNavigator - Chat hidden in guest mode');
+          return null;
+        })()}
+        <TouchableOpacity onPress={() => navigation.navigate('InactiveScreen')} style={{ padding: 4 }}>
+          <Icon name="notifications-circle-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
       </View>
     </Animated.View>

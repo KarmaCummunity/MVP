@@ -8,6 +8,7 @@ import {
   LayoutChangeEvent,
 } from "react-native";
 import colors from "../globals/colors";
+import { FontSizes } from "../globals/constants";
 
 interface AutocompleteInputOnlyProps {
   label: string;
@@ -51,7 +52,7 @@ const AutocompleteInputOnly: React.FC<AutocompleteInputOnlyProps> = ({
           onBlur={onBlur}
           onLayout={handleLayout}
           placeholder={placeholder}
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.dropdownPlaceholder}
         />
       </View>
     </View>
@@ -63,21 +64,21 @@ const localStyles = StyleSheet.create({
     marginBottom: 10,
   },
   label: {
-    fontSize: 16,
+    fontSize: FontSizes.medium,
     marginBottom: 5,
-    color: '#333',
+    color: colors.dropdownLabel,
     textAlign: 'right',
   },
   inputContainer: {
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.dropdownBorder,
     borderRadius: 8,
-    backgroundColor: "white",
+    backgroundColor: colors.dropdownBackground,
   },
   input: {
     height: 40,
     paddingHorizontal: 10,
-    fontSize: 16,
+    fontSize: FontSizes.medium,
     textAlign: 'right',
     writingDirection: 'rtl',
   },

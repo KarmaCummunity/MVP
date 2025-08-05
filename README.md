@@ -1,192 +1,269 @@
-Karma Community Platform Demo
-![Project Screenshot/Logo - Optional but Recommended]
-(Replace this with a screenshot of your app or your project's logo for better visual appeal)
+# KC - הקיבוץ הקפיטליסטי של ישראל
 
-Table of Contents
-About the Project
+אפליקציה חינמית ללא מטרות רווח לחיבור קהילתי בישראל. פלטפורמה המחברת בין עמותות, תורמים ומתנדבים קבועים.
 
-Features
+## 🎯 מטרת הפרויקט
 
-Technologies Used
+האפליקציה מיועדת ליצור קהילה דיגיטלית בישראל שמחברת בין:
+- **עמותות** - שמחפשות תורמים ומתנדבים
+- **תורמים** - שמחפשים איך לתרום כסף, זמן או ידע
+- **מתנדבים קבועים** - שמחפשים הזדמנויות להתנדבות
 
-Getting Started
+## 🚀 תכונות עיקריות
 
-Prerequisites
+### 🔐 מערכת אותנטיקציה
+- **15 סוגי דמויות** - בחירת דמות להתחברות (תורמים, משתמשים, עמותות, סטודנטים ועוד)
+- **לוגין דמה** - כפתור "התחבר עם Google" שפשוט מתחבר עם הדמות הנבחרת
+- **מצב אורח** - אפשרות לגלול באפליקציה ללא התחברות
+- **אחסון מקומי** - כל המידע נשמר במכשיר המשתמש עם AsyncStorage
 
-Installation
+### 🏗️ ארכיטקטורה
+- **פרונט בלבד** - אין צורך בשרת או פיירבייס
+- **React Native + Expo** - תמיכה ב-Android, iOS ו-Web
+- **TypeScript** - טיפוסים חזקים ובטיחות קוד
+- **Context API** - ניהול מצב גלובלי
 
-Running the Demo
+## 👥 סוגי דמויות
 
-Usage
+### תורמים ומתנדבים
+1. **יוסי התורם הגדול** - איש עסקים שתורם הרבה כסף וזמן
+2. **שרה המתנדבת הפעילה** - אמא שמתנדבת הרבה זמן ומוסרת חפצים
+3. **דני הסטודנט** - סטודנט שמשתמש בידע ומטייל בטרמפים
+4. **משה הפרילנסר** - מעצב שמציע שירותים מקצועיים
+5. **ליאת הקשישה הפעילה** - קשישה שמתנדבת ומקבלת עזרה
+6. **דוד החקלאי** - חקלאי שתורם מזון טרי
+7. **נועה הסטודנטית הרפואית** - סטודנטית שמציעה ייעוץ רפואי
+8. **מיכל הפסיכולוגית** - פסיכולוגית שמציעה ייעוץ חינם
+9. **יוסי הנהג הפעיל** - נהג שמציע טרמפים
+10. **דנה המתכנתת הצעירה** - מתכנתת שמציעה שירותי פיתוח
+11. **שירה האמנית** - אמנית שמציעה סדנאות יצירה
 
-Project Structure
+### עמותות ומקבלי עזרה
+12. **עמותת "יד ביד"** - עמותה שמארגנת אירועים קהילתיים
+13. **רחל המשפחה החד הורית** - אמא חד הורית שמקבלת עזרה
+14. **עומר המשפחה הגדולה** - אבא למשפחה גדולה
+15. **אבי המשפחה החדשה** - משפחה חדשה שמקבלת עזרה
 
-Future Enhancements
+## 🏗️ ארכיטקטורת המערכת
 
-License
+### 📁 מבנה הפרויקט
+```
+MVP/
+├── screens/                    # מסכי האפליקציה הראשיים
+│   ├── LoginScreen.tsx        # מסך לוגין עם בחירת דמויות
+│   ├── UserProfileScreen.tsx  # פרופיל משתמש
+│   └── InactiveScreen.tsx     # מסך לא פעיל
+├── context/                   # ניהול מצב האפליקציה
+│   └── UserContext.tsx        # ניהול משתמשים ואותנטיקציה
+├── navigations/               # ניווט האפליקציה
+│   ├── MainNavigator.tsx      # ניווט ראשי
+│   ├── HomeStack.tsx          # ניווט מסך הבית
+│   └── BottomNavigator.tsx    # ניווט תפריט תחתון
+├── bottomBarScreens/          # מסכי התפריט התחתון
+│   ├── HomeScreen.tsx         # מסך הבית
+│   ├── DonationsScreen.tsx    # מסך תרומות
+│   ├── SearchScreen.tsx       # מסך חיפוש
+│   ├── ProfileScreen.tsx      # מסך פרופיל
+│   └── UsersScreen.tsx        # מסך משתמשים
+├── donationScreens/           # מסכי תרומות
+│   ├── MoneyScreen.tsx        # תרומות כסף
+│   ├── TimeScreen.tsx         # תרומות זמן
+│   ├── KnowledgeScreen.tsx    # תרומות ידע
+│   └── TrumpScreen.tsx        # טרמפים
+├── components/                # רכיבים לשימוש חוזר
+│   ├── SettingsItem.tsx       # פריט הגדרות
+│   ├── HeaderComp.tsx         # כותרת עליונה
+│   └── SearchBar.tsx          # סרגל חיפוש
+├── globals/                   # נתונים גלובליים
+│   ├── characterTypes.ts      # 15 סוגי הדמויות
+│   ├── colors.tsx             # פלטת צבעים
+│   ├── constants.tsx          # קבועים
+│   └── types.tsx              # הגדרות טיפוסים
+├── locales/                   # תרגומים
+│   ├── he.json                # עברית
+│   └── en.json                # אנגלית
+└── utils/                     # פונקציות עזר
+    ├── i18n.ts                # בינלאומיות
+    └── logger.ts              # לוגים
+```
 
-Contact
+### 🔄 מנגנון אותנטיקציה
 
-About the Project
-This project serves as a proof-of-concept and demonstration of future functionalities intended for the Karma Community Platform. Built with React Native and Expo, it aims to provide a tangible preview of key features and user experiences envisioned for the platform.
+#### UserContext.tsx
+```typescript
+interface UserContextType {
+  selectedUser: User | null;           // משתמש נוכחי
+  isGuestMode: boolean;                // מצב אורח
+  isLoading: boolean;                  // מצב טעינה
+  isAuthenticated: boolean;            // אותנטיקציה
+  setSelectedUser: (user: User) => void; // הגדרת משתמש
+  setGuestMode: () => void;            // כניסה כאורח
+  signOut: () => void;                 // התנתקות
+}
+```
 
-The Karma Community Platform seeks to foster connections and facilitate services within a community, and this demo specifically highlights core interactions such as ride-sharing services and a comprehensive user settings interface, all designed with a focus on usability and Right-to-Left (RTL) language support for Hebrew speakers.
+#### זרימת אותנטיקציה
+1. **טעינה ראשונית** - `checkAuthStatus()` בודק AsyncStorage
+2. **כניסה עם משתמש** - `setSelectedUser()` שומר במטמון ומנווט
+3. **כניסה כאורח** - `setGuestMode()` מפעיל מצב אורח
+4. **התנתקות** - `signOut()` מנקה מטמון ומחזיר ללוגין
 
-Features
-This demo currently showcases the following core functionalities:
+#### LoginScreen.tsx
+```typescript
+// useEffect לניווט אוטומטי
+useEffect(() => {
+  if (selectedUser || isGuestMode) {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Home' }],
+    });
+  }
+}, [selectedUser, isGuestMode, navigation]);
+```
 
-Ride-Sharing Module:
+### 🧭 מערכת ניווט
 
-Search for Rides (מחפש): Users can search for available rides based on origin, destination, and desired time.
+#### MainNavigator.tsx
+- **ניווט ראשי** - Stack Navigator עם מסכי לוגין ובית
+- **טעינה** - מציג מסך טעינה בזמן בדיקת אותנטיקציה
+- **ניווט אוטומטי** - LoginScreen מנווט אוטומטית ל-Home
 
-Offer Rides (מציע): Users can switch modes to offer rides, changing the primary action button accordingly.
+#### BottomNavigator.tsx
+- **5 מסכים עיקריים** - בית, תרומות, חיפוש, פרופיל, משתמשים
+- **ניווט חלק** - עם אנימציות ומעברים
 
-Location Search Integration: Seamless location input powered by Google Places Autocomplete API for accurate origin and destination selection.
+## 🛠️ התקנה והרצה
 
-Time Selection: Intuitive interface for selecting specific times for rides.
+### דרישות מקדימות
+- Node.js (גרסה 16 ומעלה)
+- npm או yarn
+- Expo CLI: `npm install -g @expo/cli`
 
-Dynamic UI: Button text adapts based on the selected mode ("חפש" / "פרסם").
+### התקנה
+```bash
+# שכפול הפרויקט
+git clone <repository-url>
+cd MVP
 
-WhatsApp Group Integration: Direct links to relevant WhatsApp community groups, allowing users to connect and coordinate outside the app.
-
-Comprehensive Settings Interface:
-
-User Account Settings: Options for editing profile, changing password, privacy, and security settings.
-
-Notification Management: Toggles for push and email notifications.
-
-App Preferences: Customization options including language selection, dark mode, data saver, and autoplay video settings.
-
-Utility Actions: Functionality for clearing app cache.
-
-Help & Support: Links to help center, problem reporting, contact, privacy policy, and terms of service.
-
-About Section: Displays app version information.
-
-Account Management: Options for logging out and deleting the account.
-
-Right-to-Left (RTL) Language Support:
-
-The entire application interface, including text alignment, layout direction, and icon placement, is meticulously designed and implemented to provide a natural and intuitive experience for Hebrew users.
-
-Technologies Used
-This project leverages the following key technologies and libraries:
-
-React Native: A framework for building native mobile apps using React.
-
-Expo: A set of tools and services built on top of React Native that allows for rapid development, testing, and deployment. This project uses the managed workflow.
-
-TypeScript: A strongly typed superset of JavaScript that enhances code quality and maintainability.
-
-@react-native-community/datetimepicker: For native date and time picker components.
-
-react-native-vector-icons: For a wide range of customizable vector icons.
-
-@react-native-picker/picker: For a customizable cross-platform dropdown picker.
-
-Google Places Autocomplete API: Used for intelligent location search suggestions.
-
-react-navigation: For handling app navigation.
-
-Getting Started
-To get a local copy up and running, follow these simple steps.
-
-Prerequisites
-Make sure you have the following installed on your machine:
-
-Node.js (LTS version recommended)
-
-npm (comes with Node.js) or Yarn
-
-Expo CLI:
-
-Bash
-
-npm install -g expo-cli
-# OR
-yarn global add expo-cli
-For mobile testing: The Expo Go app installed on your iOS or Android device.
-
-Installation
-Clone the repository:
-
-Bash
-
-git clone [YOUR_REPO_URL_HERE]
-cd [YOUR_PROJECT_FOLDER_NAME]
-(Replace [YOUR_REPO_URL_HERE] and [YOUR_PROJECT_FOLDER_NAME] with your actual repository URL and project folder name)
-
-Install dependencies:
-
-Bash
-
+# התקנת תלויות
 npm install
-# OR
-yarn install
-Google Places API Key:
 
-Obtain a Google Places API key from the Google Cloud Console.
+# הרצת האפליקציה
+npm start
+```
 
-Enable the "Places API" for your project.
+### הרצה על פלטפורמות שונות
+```bash
+# Android
+npm run android
 
-Important: Restrict your API key to prevent unauthorized use (e.g., by IP address, Android/iOS app restriction).
+# iOS
+npm run ios
 
-Replace "AIzaSyAgkx8Jp2AfhhYL0wwgcOqONpaJ0-Mkcf8" in components/LocationSearchComp.tsx with your actual API key.
+# Web
+npm run web
 
-Running the Demo
-You have two main options to run the demo:
+# מכשיר פיזי
+# סרוק את ה-QR code עם Expo Go
+```
 
-On a Mobile Device (Recommended for full experience):
+## 🎨 עיצוב וממשק
 
-Bash
+### פלטת צבעים
+```typescript
+const colors = {
+  pink: '#FF6B9D',           // צבע ראשי
+  orange: '#FF8A65',         // צבע משני
+  backgroundPrimary: '#FFFFFF',
+  backgroundSecondary: '#FFF8F8',
+  textPrimary: '#2C2C2C',
+  textSecondary: '#666666',
+  // ... ועוד
+};
+```
 
-expo start
-This will open the Expo Dev Tools in your browser. Scan the QR code displayed using the Expo Go app on your mobile device.
+### תמיכה ב-RTL
+- כל הטקסטים מיושרים לימין
+- ניווט מימין לשמאל
+- תמיכה מלאה בעברית
 
-In a Web Browser:
+### רספונסיביות
+- תמיכה במסכים שונים
+- התאמה למובייל וטאבלט
+- תמיכה ב-Web
 
-Bash
+## 🔧 פיתוח ותחזוקה
 
-expo start --web
-This will open the app in your default web browser. Note that some native functionalities (like direct WhatsApp linking on all platforms, or specific DateTimePicker displays) might behave differently or be unavailable on the web.
+### הוספת דמות חדשה
+1. הוסף ל-`globals/characterTypes.ts`
+2. הוסף תמונה ל-`assets/images/`
+3. עדכן תרגומים ב-`locales/`
 
-Usage
-Navigate through the app to explore the ride-sharing search/offer interface.
+### הוספת מסך חדש
+1. צור קובץ ב-`screens/` או `bottomBarScreens/`
+2. הוסף לניווט המתאים
+3. הוסף תרגומים
 
-Experiment with the location search and time selection.
+### לוגים ודיבוג
+```typescript
+// לוגים עם emoji לזיהוי קל
+console.log('🔐 LoginScreen - character:', character);
+console.log('🔄 settingsData created with', settingsData.length, 'items');
+```
 
-Visit the settings screen to see various user configuration options and toggles.
+## 📱 תכונות טכניות
 
-Observe the RTL layout and text direction throughout the application.
+### אחסון מקומי
+- **AsyncStorage** - שמירת נתוני משתמש
+- **מצב אורח** - שמירה ב-`guest_mode`
+- **נתוני משתמש** - שמירה ב-`current_user`
 
-Project Structure
-.
-├── assets/                     # Static assets (images, fonts)
-├── components/                 # Reusable UI components (e.g., SettingsItem, LocationSearchComp)
-├── globals/                    # Global styles, constants, colors
-├── screens/                    # Main application screens (e.g., TrumpScreen, SettingsScreen)
-├── App.tsx                     # Main application entry point
-├── app.json                    # Expo configuration file
-├── package.json                # Project dependencies and scripts
-└── tsconfig.json               # TypeScript configuration
-Future Enhancements
-This demo lays the groundwork for the Karma Community Platform. Future development will focus on:
+### ביצועים
+- **Lazy Loading** - טעינה לפי דרישה
+- **Memoization** - שימוש ב-React.memo
+- **Optimized Images** - תמונות מותאמות
 
-Backend integration for actual ride matching and user management.
+### אבטחה
+- **אחסון מקומי בלבד** - אין שליחה לשרת
+- **ניקוי נתונים** - פונקציה לניקוי מטמון
+- **טיפול בשגיאות** - try-catch בכל הפונקציות
 
-User authentication and profiles.
+## 🚀 עתיד הפרויקט
 
-Real-time updates and push notifications for ride status.
+### תכונות מתוכננות
+- [ ] אינטגרציה עם Google Auth
+- [ ] הודעות push
+- [ ] צ'אט בין משתמשים
+- [ ] מערכת דירוגים
+- [ ] מפות ואינטגרציה GPS
 
-Integration with mapping services for route visualization.
+### שיפורים טכניים
+- [ ] Unit Tests
+- [ ] E2E Tests
+- [ ] CI/CD Pipeline
+- [ ] Performance Monitoring
+- [ ] Error Tracking
 
-Expanded community features beyond ride-sharing.
+## 📄 רישיון
 
-License
-Distributed under the MIT License. See LICENSE for more information.
-(Create a LICENSE file in your root directory if you choose this license)
+הפרויקט הוא חינמי לחלוטין ללא מטרות רווח. מיועד לקהילה הישראלית בלבד.
 
-Contact
-[Your Name/Team Name] - [Your Email Address]
-[Your Project Link (e.g., GitHub Profile, Company Website)]
+## 🤝 תרומה לפרויקט
+
+1. Fork את הפרויקט
+2. צור branch חדש: `git checkout -b feature/amazing-feature`
+3. Commit את השינויים: `git commit -m 'Add amazing feature'`
+4. Push ל-branch: `git push origin feature/amazing-feature`
+5. פתח Pull Request
+
+## 📞 תמיכה
+
+- **דוחות באגים** - פתח Issue ב-GitHub
+- **בקשות תכונות** - פתח Feature Request
+- **שאלות** - פתח Discussion
+
+---
+
+**KC - הקיבוץ הקפיטליסטי של ישראל** 🇮🇱
+*חיבור קהילתי דיגיטלי*
 

@@ -8,11 +8,18 @@ import {
   Dimensions,
   TouchableOpacity,
   Alert,
+  Share,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import { useNavigation } from '@react-navigation/native';
+import { useUser } from '../context/UserContext';
+import CommentsModal from './CommentsModal';
+import { isBookmarked, addBookmark, removeBookmark } from '../utils/bookmarksService';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
+import { characterTypes, CharacterType } from '../globals/characterTypes';
 
 const { width } = Dimensions.get('window');
 
@@ -41,35 +48,64 @@ type Item = {
 };
 
 /**
- * יוצר נתונים מדומים לפוסטים ורילס
- * @returns מערך של פריטים עם נתונים אקראיים
+ * יוצר נתונים מדומים לפוסטים ורילס עם הדמיות האמיתיות שלנו
+ * @returns מערך של פריטים עם נתונים מהדמיות
  */
 const generateFakeData = (): Item[] => {
   const data: Item[] = [];
-  const userNames = ['אנה כהן', 'דני לוי', 'שרה אברהם', 'משה דוד', 'רחל גולדברג', 'יוסי שפירא'];
+  
+  // פוסטים אמיתיים מהדמיות שלנו
+  const postTopics = [
+    'תרומה לקהילה', 'התנדבות השבוע', 'שיתוף ידע', 'בקשת עזרה', 'הודיה לקהילה',
+    'אירוע קהילתי', 'טיפ מועיל', 'חוויה אישית', 'פרויקט חדש', 'הישג אישי',
+    'בקשת ייעוץ', 'שיתוף חוויה', 'הזמנה לפעילות', 'עדכון פרויקט', 'תודות לקהילה'
+  ];
   
   for (let i = 1; i <= NUM_ITEMS; i++) {
     const type = Math.random() < 0.5 ? 'post' : 'reel';
-    const randomUser = userNames[Math.floor(Math.random() * userNames.length)];
-    const randomLikes = Math.floor(Math.random() * 500) + 10;
-    const randomComments = Math.floor(Math.random() * 50) + 1;
+    const randomCharacter = characterTypes[Math.floor(Math.random() * characterTypes.length)];
+    const randomTopic = postTopics[Math.floor(Math.random() * postTopics.length)];
+    const randomLikes = Math.floor(Math.random() * (randomCharacter.followersCount * 0.1)) + 5;
+    const randomComments = Math.floor(Math.random() * 30) + 1;
+    
+    // יצירת תיאור ייחודי לכל דמות
+    const getCharacterSpecificDescription = (character: CharacterType, topic: string) => {
+      const descriptions = {
+        'char1': `איש העסקים יוסי שותף: "${topic} - חשוב לי לתרום לקהילה שלנו כי ביחד נחזקים. השקעתי השבוע ב..."
+💼 תרומה עסקית | 🤝 שיתוף קהילתי`,
+        'char2': `שרה המתנדבת מספרת: "${topic} - השבוע התנדבתי בספרייה עם הילדים ומה שקרה פה היה פשוט קסום..."
+👩‍👧‍👦 אמא מתנדבת | ✨ יצירה וחינוך`,
+        'char3': `עמותת 'יד ביד' מעדכנת: "${topic} - הארגנו השבוע אירוע קהילתי נהדר! תודה לכל המתנדבים..."
+🏢 עמותה קהילתית | 🤲 עזרה הדדית`,
+        'char4': `דני הסטודנט שותף: "${topic} - כמו סטודנט שמתמחה בתכנות, רציתי לשתף איתכם..."
+💻 סטודנט טכנולוגיה | 🚗 טרמפים`,
+        'char5': `רחל, אמא חד הורית מודה: "${topic} - כאמא לשתיים, הקהילה הזאת מאפשרת לי לתת ולקבל..."
+👩‍👧‍👧 אמא חד הורית | 💪 חוזק קהילתי`,
+        'char6': `משה הפרילנסר מציע: "${topic} - כמעצב גרפי, אני מאמין בכוח של עיצוב טוב לשנות..."
+🎨 מעצב גרפי | 💡 יצירתיות`,
+        'char7': `ליאת הקשישה הפעילה מלמדת: "${topic} - בגיל שלי למדתי שחכמת החיים היא לתת ולקבל..."
+👵 קשישה פעילה | 🧶 סריגה ותרבות`
+      };
+      return descriptions[character.id as keyof typeof descriptions] || 
+        `${character.name} שותף: "${topic} - הקהילה שלנו היא המקום שבו אני מרגיש שייך ויכול לתרום..."\n🌟 חבר קהילה | 💫 תרומה משמעותית`;
+    };
     
     data.push({
       id: `${type}-${i}`,
       type,
-      title: `${type === 'post' ? 'פוסט' : 'ריל'} #${i}`,
-      description: `תיאור מעניין של ${type === 'post' ? 'הפוסט' : 'הריל'} מספר ${i}. זהו תוכן קהילתי שמעודד שיתוף ודיון.`,
+      title: `${randomTopic} | ${randomCharacter.name}`,
+      description: getCharacterSpecificDescription(randomCharacter, randomTopic),
       thumbnail: `https://picsum.photos/seed/${type}-${i}/300/200`,
       user: {
-        id: `user-${i}`,
-        name: randomUser,
-        avatar: `https://picsum.photos/seed/user-${i}/100/100`,
-        karmaPoints: Math.floor(Math.random() * 1000) + 100,
+        id: randomCharacter.id,
+        name: randomCharacter.name,
+        avatar: randomCharacter.avatar,
+        karmaPoints: randomCharacter.karmaPoints,
       },
       likes: randomLikes,
       comments: randomComments,
-      isLiked: Math.random() < 0.3, // 30% סיכוי שהמשתמש הנוכחי עשה לייק
-      timestamp: `${Math.floor(Math.random() * 24)} שעות`,
+      isLiked: Math.random() < 0.3, // 30% chance current user liked it
+      timestamp: `${Math.floor(Math.random() * 72) + 1} שעות`,
     });
   }
   return data;
@@ -82,21 +118,95 @@ const data = generateFakeData();
  * @param item - הפריט להצגה
  */
 const PostReelItem = ({ item }: { item: Item }) => {
+  const navigation = useNavigation();
+  const { selectedUser } = useUser();
   const [isLiked, setIsLiked] = useState(item.isLiked);
   const [likesCount, setLikesCount] = useState(item.likes);
+  const [showComments, setShowComments] = useState(false);
+  const [isBookmarkedState, setIsBookmarkedState] = useState(false);
 
   const handleLike = () => {
     setIsLiked(!isLiked);
     setLikesCount(isLiked ? likesCount - 1 : likesCount + 1);
+    
+    // כאן בעתיד נוסיף API call לשמירת הלייק
+    console.log(`❤️ ${isLiked ? 'Unlike' : 'Like'} post ${item.id} by user ${selectedUser?.id}`);
   };
 
   const handleProfilePress = () => {
-    Alert.alert('פרופיל משתמש', `פתיחת פרופיל של ${item.user.name}`);
+    // Navigate to user profile with character data
+    console.log(`🔗 Navigating to profile: ${item.user.name} (${item.user.id})`);
+    (navigation as any).navigate('UserProfileScreen', { 
+      userId: item.user.id,
+      userName: item.user.name,
+      // Pass additional character data for better profile display
+      characterData: characterTypes.find(char => char.id === item.user.id)
+    });
   };
 
   const handleComment = () => {
-    Alert.alert('תגובה', 'פתיחת חלון תגובה');
+    // פתיחת מודל תגובות
+    setShowComments(true);
   };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `${item.title}\n\n${item.description}\n\nשותף מ-Karma Community`,
+        title: item.title,
+      });
+    } catch (error) {
+      console.error('❌ Share error:', error);
+    }
+  };
+
+  const handlePostPress = () => {
+    // פתיחת הפוסט במסך מלא
+    Alert.alert(
+      'פתיחת פוסט',
+      'האם ברצונך לפתוח את הפוסט במסך מלא?',
+      [
+        { text: 'ביטול', style: 'cancel' },
+        { 
+          text: 'פתח', 
+          onPress: () => {
+            // כאן נוסיף ניווט למסך פוסט מלא
+            console.log('📱 Opening full post:', item.id);
+          }
+        }
+      ]
+    );
+  };
+
+  const handleBookmark = async () => {
+    if (!selectedUser) return;
+
+    try {
+      if (isBookmarkedState) {
+        await removeBookmark(selectedUser.id, item.id);
+        setIsBookmarkedState(false);
+        console.log('📖 Bookmark removed');
+      } else {
+        await addBookmark(selectedUser.id, item);
+        setIsBookmarkedState(true);
+        console.log('📖 Bookmark added');
+      }
+    } catch (error) {
+      console.error('❌ Bookmark error:', error);
+    }
+  };
+
+  // בדיקת מצב השמירה בטעינה
+  React.useEffect(() => {
+    const checkBookmarkStatus = async () => {
+      if (selectedUser) {
+        const bookmarked = await isBookmarked(selectedUser.id, item.id);
+        setIsBookmarkedState(bookmarked);
+      }
+    };
+    
+    checkBookmarkStatus();
+  }, [selectedUser, item.id]);
 
   return (
     <View style={[styles.itemContainer, item.type === 'reel' && styles.reelItem]}>
@@ -113,7 +223,9 @@ const PostReelItem = ({ item }: { item: Item }) => {
       </View>
 
       {/* Content */}
-      <Image source={{ uri: item.thumbnail }} style={styles.thumbnail} />
+      <TouchableOpacity onPress={handlePostPress} activeOpacity={0.9}>
+        <Image source={{ uri: item.thumbnail }} style={styles.thumbnail} />
+      </TouchableOpacity>
       
       {/* Description */}
       <View style={styles.contentContainer}>
@@ -137,10 +249,27 @@ const PostReelItem = ({ item }: { item: Item }) => {
           <Text style={styles.actionText}>{item.comments}</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.actionButton}>
+        <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
           <Ionicons name="share-outline" size={24} color={colors.textSecondary} />
         </TouchableOpacity>
+
+        <TouchableOpacity style={styles.actionButton} onPress={handleBookmark}>
+          <Ionicons 
+            name={isBookmarkedState ? "bookmark" : "bookmark-outline"} 
+            size={24} 
+            color={isBookmarkedState ? colors.primary : colors.textSecondary} 
+          />
+        </TouchableOpacity>
       </View>
+
+      {/* Comments Modal */}
+      <CommentsModal
+        visible={showComments}
+        onClose={() => setShowComments(false)}
+        postId={item.id}
+        postTitle={item.title}
+        postUser={item.user}
+      />
     </View>
   );
 };
@@ -221,10 +350,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: colors.backgroundPrimary,
     elevation: 2,
-    shadowColor: colors.shadowLight,
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 4,
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)'
+    } : {
+      shadowColor: colors.shadowLight,
+      shadowOpacity: 0.1,
+      shadowOffset: { width: 0, height: 1 },
+      shadowRadius: 4,
+    }),
   },
   reelItem: {
     backgroundColor: '#e0f7fa', // צבע שונה לרילס
