@@ -18,7 +18,7 @@ export default function HomeStack() {
 
   return (
     <Stack.Navigator
-      initialRouteName="Home"
+      initialRouteName="HomeMain"
       screenOptions={{
         headerShown: false,
       }}

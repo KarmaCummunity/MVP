@@ -36,34 +36,53 @@ export default function FollowersScreen() {
   const { selectedUser } = useUser();
   const [users, setUsers] = useState<CharacterType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [followStats, setFollowStats] = useState<Record<string, { isFollowing: boolean }>>({});
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    loadUsers();
+    const loadUsersEffect = async () => {
+      await loadUsers();
+    };
+    loadUsersEffect();
   }, [userId, type]);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('👥 FollowersScreen - Screen focused, refreshing data...');
-      loadUsers();
-      // Force re-render by updating refresh key
-      setRefreshKey(prev => prev + 1);
+      const refreshUsers = async () => {
+        console.log('👥 FollowersScreen - Screen focused, refreshing data...');
+        await loadUsers();
+        // Force re-render by updating refresh key
+        setRefreshKey(prev => prev + 1);
+      };
+      refreshUsers();
     }, [userId, type])
   );
 
-  const loadUsers = () => {
+  const loadUsers = async () => {
     setLoading(true);
     try {
       let userList: CharacterType[] = [];
       
       if (type === 'followers') {
-        userList = getFollowers(userId);
+        userList = await getFollowers(userId);
       } else {
-        userList = getFollowing(userId);
+        userList = await getFollowing(userId);
       }
       
       setUsers(userList);
+      
+      // Load follow stats for all users
+      const stats: Record<string, { isFollowing: boolean }> = {};
+      
+      for (const user of userList) {
+        if (selectedUser) {
+          const userStats = await getFollowStats(user.id, selectedUser.id);
+          stats[user.id] = { isFollowing: userStats.isFollowing };
+        }
+      }
+      
+      setFollowStats(stats);
     } catch (error) {
       console.error('Error loading users:', error);
       Alert.alert('שגיאה', 'שגיאה בטעינת המשתמשים');
@@ -72,33 +91,44 @@ export default function FollowersScreen() {
     }
   };
 
-  const handleFollowToggle = (targetUserId: string) => {
+  const handleFollowToggle = async (targetUserId: string) => {
     if (!selectedUser) {
       Alert.alert('שגיאה', 'יש להתחבר תחילה');
       return;
     }
 
-    const currentStats = getFollowStats(targetUserId, selectedUser.id);
-    
-    if (currentStats.isFollowing) {
-      // ביטול עקיבה
-      const success = unfollowUser(selectedUser.id, targetUserId);
-      if (success) {
-        Alert.alert('ביטול עקיבה', 'ביטלת את העקיבה בהצלחה');
-        loadUsers(); // רענון הרשימה
+    try {
+      const currentStats = followStats[targetUserId] || { isFollowing: false };
+      
+      if (currentStats.isFollowing) {
+        // ביטול עקיבה
+        const success = await unfollowUser(selectedUser.id, targetUserId);
+        if (success) {
+          setFollowStats(prev => ({
+            ...prev,
+            [targetUserId]: { isFollowing: false }
+          }));
+          Alert.alert('ביטול עקיבה', 'ביטלת את העקיבה בהצלחה');
+        }
+      } else {
+        // התחלת עקיבה
+        const success = await followUser(selectedUser.id, targetUserId);
+        if (success) {
+          setFollowStats(prev => ({
+            ...prev,
+            [targetUserId]: { isFollowing: true }
+          }));
+          Alert.alert('עקיבה', 'התחלת לעקוב בהצלחה');
+        }
       }
-    } else {
-      // התחלת עקיבה
-      const success = followUser(selectedUser.id, targetUserId);
-      if (success) {
-        Alert.alert('עקיבה', 'התחלת לעקוב בהצלחה');
-        loadUsers(); // רענון הרשימה
-      }
+    } catch (error) {
+      console.error('❌ Follow toggle error:', error);
+      Alert.alert('שגיאה', 'אירעה שגיאה בביצוע הפעולה');
     }
   };
 
   const renderUserItem = ({ item }: { item: CharacterType }) => {
-    const currentStats = getFollowStats(item.id, selectedUser?.id || '');
+    const currentStats = followStats[item.id] || { isFollowing: false };
     const isCurrentUser = selectedUser?.id === item.id;
 
     return (
@@ -106,11 +136,11 @@ export default function FollowersScreen() {
         <TouchableOpacity 
           style={styles.userInfo}
           onPress={() => {
-            navigation.navigate('UserProfileScreen' as never, {
+            (navigation as any).navigate('UserProfileScreen', {
               userId: item.id,
               userName: item.name,
               characterData: item
-            } as never);
+            });
           }}
         >
           <Image source={{ uri: item.avatar }} style={styles.avatar} />

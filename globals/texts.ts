@@ -419,12 +419,11 @@ export const texts = {
   // === טקסטים מ-ProfileScreen.tsx ===
   // Alert titles and descriptions
   post: "פוסט",
-  postNumber: "פוסט מספר {{number}}",
+  // postNumber: "פוסט מספר {{number}}", // duplicate - removed
   newUser: "משתמש חדש",
-  selectedUser: "נבחר המשתמש: {{name}}",
+  // selectedUser: "נבחר המשתמש: {{name}}", // duplicate - removed
   shareProfile: "שתף פרופיל",
   shareProfileDesc: "שיתוף הפרופיל שלך",
-  editProfile: "ערוך פרופיל", 
   editProfileDesc: "עריכת פרטי הפרופיל",
   settings: "הגדרות",
   openSettings: "פתיחת הגדרות",
@@ -439,14 +438,14 @@ export const texts = {
   discoverPeople: "גילוי אנשים",
   findNewPeople: "מציאת אנשים חדשים",
   highlight: "היילייט",
-  highlightNumber: "היילייט {{number}}",
+  // highlightNumber: "היילייט {{number}}", // duplicate - removed
 
   // === טקסטים מ-MoneyScreen.tsx ===
-  searchCharitiesForDonation: "חפש עמותות לתרומה",
-  searchCharitiesForHelp: "חפש עמותות לעזרה",
+  // searchCharitiesForDonation: "חפש עמותות לתרומה", // duplicate - removed
+  // searchCharitiesForHelp: "חפש עמותות לעזרה", // duplicate - removed
 
   // === טקסטים מ-KnowledgeScreen.tsx ===
-  searchCoursesAndLessons: "חפש קורסים ושיעורים",
+  // searchCoursesAndLessons: "חפש קורסים ושיעורים", // duplicate - removed
   knowledgeDonationTitle: "תרומת ידע",
 };
 

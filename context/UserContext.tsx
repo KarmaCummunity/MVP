@@ -48,6 +48,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   // Check authentication status on app start
   useEffect(() => {
+    console.log('🔐 UserContext - useEffect - Starting auth check');
     checkAuthStatus();
   }, []);
 

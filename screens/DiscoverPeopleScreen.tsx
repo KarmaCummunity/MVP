@@ -31,6 +31,7 @@ export default function DiscoverPeopleScreen() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'suggestions' | 'popular'>('suggestions');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [followStats, setFollowStats] = useState<Record<string, { isFollowing: boolean }>>({});
 
   useEffect(() => {
     loadUsers();
@@ -46,18 +47,31 @@ export default function DiscoverPeopleScreen() {
     }, [])
   );
 
-  const loadUsers = () => {
+  const loadUsers = async () => {
     setLoading(true);
     try {
       if (selectedUser) {
-        const userSuggestions = getFollowSuggestions(selectedUser.id, 20);
+        const userSuggestions = await getFollowSuggestions(selectedUser.id, 20);
         setSuggestions(userSuggestions);
       } else {
         setSuggestions(allUsers.slice(0, 20));
       }
       
-      const popular = getPopularUsers(20);
+      const popular = await getPopularUsers(20);
       setPopularUsers(popular);
+      
+      // Load follow stats for all users
+      const allUsersToCheck = [...suggestions, ...popular];
+      const stats: Record<string, { isFollowing: boolean }> = {};
+      
+      for (const user of allUsersToCheck) {
+        if (selectedUser) {
+          const userStats = await getFollowStats(user.id, selectedUser.id);
+          stats[user.id] = { isFollowing: userStats.isFollowing };
+        }
+      }
+      
+      setFollowStats(stats);
     } catch (error) {
       console.error('Error loading users:', error);
       Alert.alert('שגיאה', 'שגיאה בטעינת המשתמשים');
@@ -66,33 +80,44 @@ export default function DiscoverPeopleScreen() {
     }
   };
 
-  const handleFollowToggle = (targetUserId: string) => {
+  const handleFollowToggle = async (targetUserId: string) => {
     if (!selectedUser) {
       Alert.alert('שגיאה', 'יש להתחבר תחילה');
       return;
     }
 
-    const currentStats = getFollowStats(targetUserId, selectedUser.id);
-    
-    if (currentStats.isFollowing) {
-      // ביטול עקיבה
-      const success = unfollowUser(selectedUser.id, targetUserId);
-      if (success) {
-        Alert.alert('ביטול עקיבה', 'ביטלת את העקיבה בהצלחה');
-        loadUsers(); // רענון הרשימה
+    try {
+      const currentStats = followStats[targetUserId] || { isFollowing: false };
+      
+      if (currentStats.isFollowing) {
+        // ביטול עקיבה
+        const success = await unfollowUser(selectedUser.id, targetUserId);
+        if (success) {
+          setFollowStats(prev => ({
+            ...prev,
+            [targetUserId]: { isFollowing: false }
+          }));
+          Alert.alert('ביטול עקיבה', 'ביטלת את העקיבה בהצלחה');
+        }
+      } else {
+        // התחלת עקיבה
+        const success = await followUser(selectedUser.id, targetUserId);
+        if (success) {
+          setFollowStats(prev => ({
+            ...prev,
+            [targetUserId]: { isFollowing: true }
+          }));
+          Alert.alert('עקיבה', 'התחלת לעקוב בהצלחה');
+        }
       }
-    } else {
-      // התחלת עקיבה
-      const success = followUser(selectedUser.id, targetUserId);
-      if (success) {
-        Alert.alert('עקיבה', 'התחלת לעקוב בהצלחה');
-        loadUsers(); // רענון הרשימה
-      }
+    } catch (error) {
+      console.error('❌ Follow toggle error:', error);
+      Alert.alert('שגיאה', 'אירעה שגיאה בביצוע הפעולה');
     }
   };
 
   const renderUserItem = ({ item }: { item: CharacterType }) => {
-    const currentStats = getFollowStats(item.id, selectedUser?.id || '');
+    const currentStats = followStats[item.id] || { isFollowing: false };
     const isCurrentUser = selectedUser?.id === item.id;
 
     return (

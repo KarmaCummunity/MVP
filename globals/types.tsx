@@ -107,6 +107,17 @@ export type RootStackParamList = {
   HomeStack: NavigatorScreenParams<BottomTabNavigatorParamList>;
   FirstScreen: undefined;
   LoginScreen: undefined;
+  SettingsScreen: undefined;
+  ChatListScreen: undefined;
+  NewChatScreen: undefined;
+  ChatDetailScreen: {
+    conversationId: string;
+    userName: string;
+    userAvatar: string;
+    otherUserId: string;
+  };
+  NotificationsScreen: undefined;
+  AboutKarmaCommunityScreen: undefined;
   InactiveScreen: undefined;
   WebViewScreen: undefined;
   PostsReelsScreen: undefined; // ADD THIS LINE - this was probably missing

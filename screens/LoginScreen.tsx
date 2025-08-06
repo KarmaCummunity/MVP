@@ -10,18 +10,47 @@ import {
   ScrollView,
   Image,
   Alert,
+  Animated,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { characterTypes } from '../globals/characterTypes';
 import { useUser } from '../context/UserContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 export default function LoginScreen() {
   const { setSelectedUser, setGuestMode, selectedUser, isGuestMode } = useUser();
   const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
+  const [animationValues] = useState(() => 
+    characterTypes.reduce((acc, character) => {
+      acc[character.id] = new Animated.Value(1);
+      return acc;
+    }, {} as Record<string, Animated.Value>)
+  );
   const navigation = useNavigation<any>();
 
   const handleCharacterSelect = (characterId: string) => {
-    setSelectedCharacter(characterId);
+    // אם הדמות כבר נבחרה, בטל את הבחירה
+    if (selectedCharacter === characterId) {
+      setSelectedCharacter(null);
+      console.log('🔐 LoginScreen - Character deselected:', characterId);
+      
+      // אנימציה לביטול בחירה
+      Animated.spring(animationValues[characterId], {
+        toValue: 1,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // אחרת, בחר את הדמות החדשה
+      setSelectedCharacter(characterId);
+      console.log('🔐 LoginScreen - Character selected:', characterId);
+      
+      // אנימציה לבחירה
+      Animated.spring(animationValues[characterId], {
+        toValue: 1.05,
+        useNativeDriver: true,
+      }).start();
+    }
   };
 
   const handleLoginWithGoogle = async () => {
@@ -85,21 +114,20 @@ export default function LoginScreen() {
     }
   }, [selectedUser, isGuestMode, navigation]);
 
-  const handleClearData = async () => {
-    try {
-      await AsyncStorage.removeItem('current_user');
-      await AsyncStorage.removeItem('guest_mode');
-      Alert.alert('ניקוי נתונים', 'הנתונים נוקו בהצלחה. אנא הפעל מחדש את האפליקציה.');
-    } catch (error) {
-      Alert.alert('שגיאה', 'אירעה שגיאה בניקוי הנתונים');
-    }
-  };
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
       
       <View style={styles.container}>
+        {/* Background Logo */}
+        <View style={styles.backgroundLogoContainer}>
+          <Image 
+            source={require('../assets/images/logo.png')} 
+            style={styles.backgroundLogo} 
+            resizeMode="contain"
+          />
+        </View>
+        
         {/* Header Section */}
         <View style={styles.headerSection}>
           <Text style={styles.title}>ברוכים הבאים!</Text>
@@ -113,13 +141,20 @@ export default function LoginScreen() {
               ]}
               onPress={handleLoginWithGoogle}
               disabled={!selectedCharacter}
+              activeOpacity={selectedCharacter ? 0.8 : 1}
             >
-              <Text style={styles.googleButtonText}>התחבר עם Google</Text>
+              <Text style={[
+                styles.googleButtonText,
+                !selectedCharacter && styles.disabledButtonText
+              ]}>
+                {selectedCharacter ? 'התחבר עם Google' : 'בחר דמות תחילה'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.guestButton}
               onPress={handleGuestMode}
+              activeOpacity={0.8}
             >
               <Text style={styles.guestButtonText}>המשך כאורח</Text>
             </TouchableOpacity>
@@ -129,6 +164,7 @@ export default function LoginScreen() {
         {/* Characters Section */}
         <View style={styles.charactersSection}>
           <Text style={styles.characterTitle}>בחר דמות להתחברות:</Text>
+          <Text style={styles.characterSubtitle}>לחץ שוב על דמות נבחרת כדי לבטל</Text>
           
           <ScrollView 
             horizontal 
@@ -138,24 +174,59 @@ export default function LoginScreen() {
           >
             {characterTypes && characterTypes.length > 0 ? (
               characterTypes.map((character) => (
-                <TouchableOpacity
+                <Animated.View
                   key={character.id}
                   style={[
                     styles.characterCard,
-                    selectedCharacter === character.id && styles.selectedCharacter
+                    selectedCharacter === character.id && styles.selectedCharacter,
+                    {
+                      transform: [{ scale: animationValues[character.id] }],
+                    }
                   ]}
-                  onPress={() => handleCharacterSelect(character.id)}
                 >
-                  <Image source={{ uri: character.avatar }} style={styles.characterAvatar} />
-                  <View style={styles.characterInfo}>
-                    <Text style={styles.characterName}>{character.name}</Text>
-                    <Text style={styles.characterDescription}>{character.description}</Text>
-                    <View style={styles.characterStats}>
-                      <Text style={styles.characterStat}>💎 {character.karmaPoints} נקודות</Text>
-                      <Text style={styles.characterStat}>📍 {character.location.city}</Text>
+                  <TouchableOpacity
+                    style={styles.characterTouchable}
+                    onPress={() => handleCharacterSelect(character.id)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.avatarContainer}>
+                      <Image source={{ uri: character.avatar }} style={styles.characterAvatar} />
+                      {selectedCharacter === character.id && (
+                        <View style={styles.checkmarkContainer}>
+                          <Ionicons name="checkmark-circle" size={24} color="#FF6B9D" />
+                        </View>
+                      )}
                     </View>
-                  </View>
-                </TouchableOpacity>
+                    <View style={styles.characterInfo}>
+                      <Text style={[
+                        styles.characterName,
+                        selectedCharacter === character.id && styles.selectedCharacterName
+                      ]}>
+                        {character.name}
+                      </Text>
+                      <Text style={[
+                        styles.characterDescription,
+                        selectedCharacter === character.id && styles.selectedCharacterDescription
+                      ]}>
+                        {character.description}
+                      </Text>
+                      <View style={styles.characterStats}>
+                        <Text style={[
+                          styles.characterStat,
+                          selectedCharacter === character.id && styles.selectedCharacterStat
+                        ]}>
+                          💎 {character.karmaPoints} נקודות
+                        </Text>
+                        <Text style={[
+                          styles.characterStat,
+                          selectedCharacter === character.id && styles.selectedCharacterStat
+                        ]}>
+                          📍 {character.location.city}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                </Animated.View>
               ))
             ) : (
               <View style={styles.errorContainer}>
@@ -171,13 +242,6 @@ export default function LoginScreen() {
           <Text style={styles.infoText}>
             האפליקציה חינמית לחלוטין ללא מטרות רווח
           </Text>
-
-          <TouchableOpacity
-            style={styles.clearDataButton}
-            onPress={handleClearData}
-          >
-            <Text style={styles.clearDataButtonText}>ניקוי נתונים (לבדיקה)</Text>
-          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
@@ -187,14 +251,32 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F9FF',
   },
   container: {
     flex: 1,
     padding: 20,
+    position: 'relative',
+  },
+  backgroundLogoContainer: {
+    position: 'absolute',
+    top: 50,
+    left: 0,
+    right: 0,
+    height: '50%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    opacity: 0.4,
+  },
+  backgroundLogo: {
+    width: '145%',
+    height: '145%',
   },
   headerSection: {
     marginBottom: 30,
+    alignItems: 'center',
+    zIndex: 1,
   },
   charactersSection: {
     flex: 1,
@@ -204,25 +286,33 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   title: {
-    marginTop: 40,
-    fontSize: 32,
+    marginTop: 20,
+    fontSize: 36,
     fontWeight: 'bold',
     color: '#2C2C2C',
     marginBottom: 20,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 18,
-    color: '#666666',
+    fontSize: 20,
+    color: '#444444',
     textAlign: 'center',
     marginBottom: 100,
+    fontWeight: '600',
   },
   characterTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '700',
     color: '#2C2C2C',
     marginBottom: 5,
     textAlign: 'center',
+  },
+  characterSubtitle: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 15,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   charactersContainer: {
     flex: 1,
@@ -247,18 +337,50 @@ const styles = StyleSheet.create({
   },
   characterCard: {
     flexDirection: 'column',
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 12,
     marginRight: 10,
     borderWidth: 2,
     borderColor: 'transparent',
-    width: '3%',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    height: Platform.OS === 'web' ? '90%' : '80%',
+    width: Platform.OS === 'web' ? '9%' : '3%',
+  },
+  characterTouchable: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: 8,
+  },
+  checkmarkContainer: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   selectedCharacter: {
     borderColor: '#FF6B9D',
-    backgroundColor: '#FFF0F5',
+    backgroundColor: 'rgba(255, 240, 245, 0.95)',
+    transform: [{ scale: 1.05 }],
+    shadowColor: '#FF6B9D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   characterAvatar: {
     width: 60,
@@ -291,6 +413,17 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#888888',
   },
+  selectedCharacterName: {
+    color: '#FF6B9D',
+    fontWeight: '700',
+  },
+  selectedCharacterDescription: {
+    color: '#FF6B9D',
+  },
+  selectedCharacterStat: {
+    color: '#FF6B9D',
+    fontWeight: '600',
+  },
   buttonsContainer: {
     marginBottom: 20,
   },
@@ -300,9 +433,18 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   disabledButton: {
     backgroundColor: '#CCCCCC',
+    opacity: 0.6,
+  },
+  disabledButtonText: {
+    color: '#999999',
   },
   googleButtonText: {
     fontSize: 16,
@@ -310,12 +452,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   guestButton: {
-    backgroundColor: '#FFF8F8',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E8E8E8',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   guestButtonText: {
     fontSize: 16,

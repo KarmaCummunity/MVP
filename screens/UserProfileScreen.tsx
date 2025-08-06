@@ -17,7 +17,7 @@ import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/nativ
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { allUsers, CharacterType } from '../globals/characterTypes';
-import { getFollowStats, followUser, unfollowUser } from '../utils/followService';
+import { getFollowStats, followUser, unfollowUser, getUpdatedFollowCounts } from '../utils/followService';
 import { useUser } from '../context/UserContext';
 
 // --- Type Definitions ---
@@ -94,9 +94,18 @@ export default function UserProfileScreen() {
   const { userId, userName, characterData } = route.params as UserProfileRouteParams;
   const { selectedUser } = useUser();
   
+  // Check if user is viewing their own profile
+  useEffect(() => {
+    if (selectedUser && selectedUser.id === userId) {
+      // Navigate to user's own profile screen
+      (navigation as any).navigate('Profile'); // Navigate to ProfileScreen instead
+    }
+  }, [selectedUser, userId, navigation]);
+  
   const [index, setIndex] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followStats, setFollowStats] = useState({ followersCount: 0, followingCount: 0, isFollowing: false });
+  const [updatedCounts, setUpdatedCounts] = useState({ followersCount: 0, followingCount: 0 });
   const [routes] = useState<TabRoute[]>([
     { key: 'posts', title: 'פוסטים' },
     { key: 'reels', title: 'רילס' },
@@ -108,31 +117,60 @@ export default function UserProfileScreen() {
   // Use character data only (no fallback to old users)
   const user = character;
 
+  // Reset state when userId changes
+  useEffect(() => {
+    console.log('👤 UserProfileScreen - userId changed:', userId);
+    setIsFollowing(false);
+    setFollowStats({ followersCount: 0, followingCount: 0, isFollowing: false });
+    setUpdatedCounts({ followersCount: 0, followingCount: 0 });
+  }, [userId]);
+
   // Load follow stats
   useEffect(() => {
-    if (user && selectedUser) {
-      const stats = getFollowStats(user.id, selectedUser.id);
-      setFollowStats(stats);
-      setIsFollowing(stats.isFollowing);
-    }
+    const loadFollowStats = async () => {
+      if (user && selectedUser) {
+        try {
+          console.log('👤 UserProfileScreen - Loading follow stats for user:', user.name);
+          const stats = await getFollowStats(user.id, selectedUser.id);
+          const counts = await getUpdatedFollowCounts(user.id);
+          setFollowStats(stats);
+          setUpdatedCounts(counts);
+          setIsFollowing(stats.isFollowing);
+        } catch (error) {
+          console.error('❌ Load follow stats error:', error);
+        }
+      }
+    };
+    
+    loadFollowStats();
   }, [user, selectedUser]);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('👤 UserProfileScreen - Screen focused, refreshing follow stats...');
-      if (user && selectedUser) {
-        const stats = getFollowStats(user.id, selectedUser.id);
-        setFollowStats(stats);
-        setIsFollowing(stats.isFollowing);
-        
-        // Force re-render by updating a timestamp
-        const refreshTimestamp = Date.now();
-        setFollowStats(prevStats => ({
-          ...prevStats,
-          refreshTimestamp
-        }));
-      }
+      const refreshFollowStats = async () => {
+        console.log('👤 UserProfileScreen - Screen focused, refreshing follow stats...');
+        if (user && selectedUser) {
+          try {
+            const stats = await getFollowStats(user.id, selectedUser.id);
+            const counts = await getUpdatedFollowCounts(user.id);
+            setFollowStats(stats);
+            setUpdatedCounts(counts);
+            setIsFollowing(stats.isFollowing);
+            
+            // Force re-render by updating a timestamp
+            const refreshTimestamp = Date.now();
+            setFollowStats(prevStats => ({
+              ...prevStats,
+              refreshTimestamp
+            }));
+          } catch (error) {
+            console.error('❌ Refresh follow stats error:', error);
+          }
+        }
+      };
+      
+      refreshFollowStats();
     }, [user, selectedUser])
   );
 
@@ -185,10 +223,13 @@ export default function UserProfileScreen() {
         <View style={styles.errorContainer}>
           <Ionicons name="person-outline" size={60} color={colors.textSecondary} />
           <Text style={styles.errorText}>משתמש לא נמצא</Text>
+          <Text style={styles.errorSubtext}>userId: {userId}</Text>
         </View>
       </SafeAreaView>
     );
   }
+
+  console.log('👤 UserProfileScreen - Rendering profile for user:', user.name, 'userId:', userId);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -231,7 +272,7 @@ export default function UserProfileScreen() {
                 } as never);
               }}
             >
-              <Text style={styles.statNumber}>{followStats.followersCount}</Text>
+              <Text style={styles.statNumber}>{updatedCounts.followersCount}</Text>
               <Text style={styles.statLabel}>עוקבים</Text>
             </TouchableOpacity>
             <TouchableOpacity 
@@ -244,7 +285,7 @@ export default function UserProfileScreen() {
                 } as never);
               }}
             >
-              <Text style={styles.statNumber}>{followStats.followingCount}</Text>
+              <Text style={styles.statNumber}>{updatedCounts.followingCount}</Text>
               <Text style={styles.statLabel}>עוקב אחרי</Text>
             </TouchableOpacity>
           </View>
@@ -321,28 +362,37 @@ export default function UserProfileScreen() {
                 styles.followButton,
                 isFollowing && styles.followingButton
               ]}
-              onPress={() => {
+              onPress={async () => {
                 if (!selectedUser) {
                   Alert.alert('שגיאה', 'יש להתחבר תחילה');
                   return;
                 }
 
-                if (isFollowing) {
-                  // ביטול עקיבה
-                  const success = unfollowUser(selectedUser.id, user.id);
-                  if (success) {
+                try {
+                  if (isFollowing) {
+                    // ביטול עקיבה
+                    const success = await unfollowUser(selectedUser.id, user.id);
+                                      if (success) {
                     setIsFollowing(false);
-                    setFollowStats(prev => ({ ...prev, followersCount: prev.followersCount - 1, isFollowing: false }));
+                    const newCounts = await getUpdatedFollowCounts(user.id);
+                    setUpdatedCounts(newCounts);
+                    setFollowStats(prev => ({ ...prev, isFollowing: false }));
                     Alert.alert('ביטול עקיבה', 'ביטלת את העקיבה בהצלחה');
                   }
-                } else {
-                  // התחלת עקיבה
-                  const success = followUser(selectedUser.id, user.id);
-                  if (success) {
+                  } else {
+                    // התחלת עקיבה
+                    const success = await followUser(selectedUser.id, user.id);
+                                      if (success) {
                     setIsFollowing(true);
-                    setFollowStats(prev => ({ ...prev, followersCount: prev.followersCount + 1, isFollowing: true }));
+                    const newCounts = await getUpdatedFollowCounts(user.id);
+                    setUpdatedCounts(newCounts);
+                    setFollowStats(prev => ({ ...prev, isFollowing: true }));
                     Alert.alert('עקיבה', 'התחלת לעקוב בהצלחה');
                   }
+                  }
+                } catch (error) {
+                  console.error('❌ Follow/Unfollow error:', error);
+                  Alert.alert('שגיאה', 'אירעה שגיאה בביצוע הפעולה');
                 }
               }}
             >
@@ -410,6 +460,11 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.medium,
     color: colors.textSecondary,
     marginTop: 16,
+  },
+  errorSubtext: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+    marginTop: 8,
   },
   header: {
     flexDirection: 'row',

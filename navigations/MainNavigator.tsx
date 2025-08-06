@@ -14,6 +14,11 @@ import LoginScreen from "../screens/LoginScreen";
 import { useUser } from '../context/UserContext';
 import colors from '../globals/colors';
 import SettingsScreen from '../topBarScreens/SettingsScreen';
+import ChatListScreen from '../topBarScreens/ChatListScreen';
+import AboutKarmaCommunityScreen from '../topBarScreens/AboutKarmaCommunityScreen';
+import NewChatScreen from '../screens/NewChatScreen';
+import ChatDetailScreen from '../screens/ChatDetailScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 
 import { RootStackParamList } from '../globals/types';
 
@@ -69,6 +74,8 @@ export default function MainNavigator() {
     );
   }
 
+  console.log('🧭 MainNavigator - Loading completed, rendering navigator');
+
   // If not authenticated and not in guest mode - show login screen
   if (!isAuthenticated && !isGuestMode) {
     console.log('🧭 MainNavigator - User not authenticated, showing LoginScreen');
@@ -84,6 +91,11 @@ export default function MainNavigator() {
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
       <Stack.Screen name="HomeStack" component={HomeStack} />
       <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
+      <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
+      <Stack.Screen name="NewChatScreen" component={NewChatScreen} />
+      <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
+      <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
+      <Stack.Screen name="AboutKarmaCommunityScreen" component={AboutKarmaCommunityScreen} />
       <Stack.Screen name="InactiveScreen" component={InactiveScreen} />
       <Stack.Screen name="WebViewScreen" component={WebViewScreen} />
       <Stack.Screen

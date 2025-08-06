@@ -33,7 +33,7 @@ export default function TrumpScreen({
   const [fromLocation, setFromLocation] = useState("");
   const [toLocation, setToLocation] = useState("");
   const [departureTime, setDepartureTime] = useState("");
-  const [filteredRides, setFilteredRides] = useState(dummyRides);
+  const [filteredRides, setFilteredRides] = useState([]); // Initialize with empty array, will be set after dummyRides is defined
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Refresh data when screen comes into focus
@@ -75,7 +75,7 @@ export default function TrumpScreen({
     "לפי רלוונטיות",
   ];
 
-  // Mock data for rides
+  // Mock data for rides (moved before use)
   const dummyRides = [
     {
       id: 1,
@@ -156,6 +156,11 @@ export default function TrumpScreen({
       category: "בילוי",
     },
   ];
+
+  // Now set the initial filtered rides
+  useEffect(() => {
+    setFilteredRides(dummyRides);
+  }, []);
 
   // Mock data for recent rides
   const dummyRecentRides = [

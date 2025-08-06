@@ -12,7 +12,9 @@ interface ChatListItemProps {
 }
 
 const ChatListItem: React.FC<ChatListItemProps> = ({ conversation, user, onPress }) => {
-  const isUnread = conversation.messages.some(msg => msg.senderId === user.id && !msg.read);
+  // Use unreadCount directly instead of checking the messages array
+  // This is because the messages array is not loaded in the ChatListScreen
+  const isUnread = conversation.unreadCount > 0;
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -45,7 +47,7 @@ const ChatListItem: React.FC<ChatListItemProps> = ({ conversation, user, onPress
           <Text style={styles.timestamp}>{formatTimestamp(conversation.lastMessageTimestamp)}</Text>
         </View>
         <Text style={[styles.lastMessage, isUnread && styles.unreadMessage]} numberOfLines={1}>
-          {conversation.lastMessageText}
+          {conversation.lastMessageText || 'התחל שיחה חדשה...'}
         </Text>
       </View>
     </TouchableOpacity>
