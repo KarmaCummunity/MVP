@@ -1,0 +1,23 @@
+#!/bin/bash
+
+echo "🚀 מתחיל את הפרויקט Expo..."
+echo ""
+
+# בדיקה אם התלויות מותקנות
+if [ ! -d "node_modules" ]; then
+    echo "📦 מתקין תלויות..."
+    npm install
+fi
+
+echo "🔧 מריץ את הפרויקט..."
+echo ""
+echo "📱 כדי לראות את האפליקציה על הפלאפון:"
+echo "1. פתח את אפליקציית Expo Go על הפלאפון"
+echo "2. סרוק את ה-QR code שיופיע למטה"
+echo "3. או הקלד את הקוד שיופיע"
+echo ""
+echo "🌐 אם אתה לא באותה רשת WiFi, השתמש ב: npx expo start --tunnel"
+echo ""
+
+# הרצת הפרויקט
+npx expo start
