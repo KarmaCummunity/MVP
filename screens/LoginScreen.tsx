@@ -11,6 +11,7 @@ import {
   Image,
   Alert,
   Animated,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { characterTypes } from '../globals/characterTypes';
@@ -174,20 +175,21 @@ export default function LoginScreen() {
           >
             {characterTypes && characterTypes.length > 0 ? (
               characterTypes.map((character) => (
-                <Animated.View
+                <TouchableOpacity
                   key={character.id}
                   style={[
                     styles.characterCard,
                     selectedCharacter === character.id && styles.selectedCharacter,
-                    {
-                      transform: [{ scale: animationValues[character.id] }],
-                    }
                   ]}
+                  onPress={() => handleCharacterSelect(character.id)}
+                  activeOpacity={0.7}
                 >
-                  <TouchableOpacity
-                    style={styles.characterTouchable}
-                    onPress={() => handleCharacterSelect(character.id)}
-                    activeOpacity={0.7}
+                  <Animated.View
+                    style={{
+                      transform: [{ scale: animationValues[character.id] }],
+                      width: '100%',
+                      height: '100%',
+                    }}
                   >
                     <View style={styles.avatarContainer}>
                       <Image source={{ uri: character.avatar }} style={styles.characterAvatar} />
@@ -225,8 +227,8 @@ export default function LoginScreen() {
                         </Text>
                       </View>
                     </View>
-                  </TouchableOpacity>
-                </Animated.View>
+                  </Animated.View>
+                </TouchableOpacity>
               ))
             ) : (
               <View style={styles.errorContainer}>
@@ -310,7 +312,7 @@ const styles = StyleSheet.create({
   characterSubtitle: {
     fontSize: 14,
     color: '#666666',
-    marginBottom: 15,
+    marginBottom: 5,
     textAlign: 'center',
     fontStyle: 'italic',
   },
@@ -339,23 +341,24 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 12,
-    marginRight: 10,
+    padding: 16,
+    marginRight: 12,
+    marginBottom: 12,
+    marginTop: 12,
     borderWidth: 2,
     borderColor: 'transparent',
     alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    height: Platform.OS === 'web' ? '90%' : '80%',
-    width: Platform.OS === 'web' ? '9%' : '3%',
+    minHeight: 220,
+    width: Math.max(Dimensions.get('window').width * 0.3, 130), // 30% מהמסך או מינימום 130px
+    maxWidth: 170,
   },
-  characterTouchable: {
-    width: '100%',
-    alignItems: 'center',
-  },
+
   avatarContainer: {
     position: 'relative',
     marginBottom: 8,
@@ -373,7 +376,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   selectedCharacter: {
-    borderColor: '#FF6B9D',
+    // borderColor: '#FF6B9D',
     backgroundColor: 'rgba(255, 240, 245, 0.95)',
     transform: [{ scale: 1.05 }],
     shadowColor: '#FF6B9D',
@@ -391,27 +394,36 @@ const styles = StyleSheet.create({
   characterInfo: {
     alignItems: 'center',
     width: '100%',
+    flex: 1,
+    justifyContent: 'space-between',
   },
   characterName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#2C2C2C',
-    marginBottom: 4,
+    marginBottom: 6,
+    textAlign: 'center',
+    flexWrap: 'wrap',
   },
   characterDescription: {
     fontSize: 12,
     color: '#666666',
-    marginBottom: 6,
+    marginBottom: 8,
     lineHeight: 16,
+    textAlign: 'center',
+    flexWrap: 'wrap',
   },
   characterStats: {
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
+    width: '100%',
   },
   characterStat: {
     fontSize: 10,
     color: '#888888',
+    textAlign: 'center',
+    flexWrap: 'wrap',
   },
   selectedCharacterName: {
     color: '#FF6B9D',

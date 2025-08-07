@@ -116,7 +116,7 @@ const FloatingBubble: React.FC<{
 export default function HomeScreen() {
   const isFocused = useIsFocused();
   const navigation = useNavigation();
-  const { selectedUser, setSelectedUser, isGuestMode } = useUser();
+  const { selectedUser, setSelectedUser, isGuestMode, resetHomeScreenTrigger } = useUser();
   const [showPosts, setShowPosts] = useState(false);
   const [isPersonalMode, setIsPersonalMode] = useState(true); // Personal mode as default
   const [refreshKey, setRefreshKey] = useState(0);
@@ -150,11 +150,17 @@ export default function HomeScreen() {
     }
   }, [isFocused]);
 
-  // Update hideTopBar in route params
+  // Listen to resetHomeScreenTrigger from context
   useEffect(() => {
-    // console.log('🏠 HomeScreen - Updating route params with hideTopBar:', hideTopBar);
-    (navigation as any).setParams({ hideTopBar });
-  }, [hideTopBar, navigation]);
+    console.log('🏠 HomeScreen - resetHomeScreenTrigger changed, resetting showPosts');
+    setShowPosts(false);
+  }, [resetHomeScreenTrigger]);
+
+  // Update hideTopBar and showPosts in route params
+  useEffect(() => {
+    console.log('🏠 HomeScreen - Updating route params with hideTopBar:', hideTopBar, 'showPosts:', showPosts);
+    (navigation as any).setParams({ hideTopBar, showPosts });
+  }, [hideTopBar, showPosts, navigation]);
 
   useFocusEffect(
     useCallback(() => {
@@ -168,6 +174,7 @@ export default function HomeScreen() {
     }, [])
   );
 
+  
   /**
    * מטפל בגלילה למטה
    * כאשר הגלילה עוברת סף מסוים, נפתח מסך הפוסטים
@@ -181,6 +188,7 @@ export default function HomeScreen() {
     
     // If scrolling exceeds threshold, open posts screen
     if (offsetY > threshold && !showPosts) {
+      console.log('🏠 HomeScreen - Opening posts screen (scroll threshold reached)');
       setShowPosts(true);
       setHideTopBar(false); // Ensure top bar is shown when posts screen opens
       postsTranslateY.value = withSpring(0, {
@@ -248,7 +256,6 @@ export default function HomeScreen() {
                     />
                     <View style={styles.userDetails}>
                       <Text style={styles.welcomeText}>שלום, {selectedUser?.name || currentUser.name}!</Text>
-                      <Text style={styles.karmaText}>קארמה: {selectedUser?.karmaPoints || currentUser.karmaPoints} נקודות</Text>
                     </View>
                   </View>
                   <TouchableOpacity 
@@ -263,49 +270,8 @@ export default function HomeScreen() {
                 </View>
               </View>
 
-              {/* Stats Preview */}
-              <View style={styles.statsPreview}>
-                <View style={styles.statsGrid}>
-                  {charities[0]?.statistics?.slice(0, 4).map((stat, index) => (
-                    <View key={index} style={styles.statCard}>
-                      <Text style={styles.statIcon}>{stat.icon}</Text>
-                      <Text style={styles.statValue}>{stat.value.toLocaleString()}</Text>
-                      <Text style={styles.statName}>{stat.name}</Text>
-                    </View>
-                  )) || []}
-                </View>
-              </View>
-
-              {/* Additional Personal Statistics */}
-              <View style={styles.personalStatsContainer}>
-                <Text style={styles.sectionTitle}>הסטטיסטיקות שלי</Text>
-                <View style={styles.personalStatsGrid}>
-                  <View style={styles.personalStatCard}>
-                    <Text style={styles.personalStatIcon}>🎯</Text>
-                    <Text style={styles.personalStatValue}>45</Text>
-                    <Text style={styles.personalStatName}>משימות הושלמו</Text>
-                  </View>
-                  <View style={styles.personalStatCard}>
-                    <Text style={styles.personalStatIcon}>💝</Text>
-                    <Text style={styles.personalStatValue}>12</Text>
-                    <Text style={styles.personalStatName}>תרומות</Text>
-                  </View>
-                  <View style={styles.personalStatCard}>
-                    <Text style={styles.personalStatIcon}>⏰</Text>
-                    <Text style={styles.personalStatValue}>156</Text>
-                    <Text style={styles.personalStatName}>שעות התנדבות</Text>
-                  </View>
-                  <View style={styles.personalStatCard}>
-                    <Text style={styles.personalStatIcon}>🏆</Text>
-                    <Text style={styles.personalStatValue}>8</Text>
-                    <Text style={styles.personalStatName}>הישגים</Text>
-                  </View>
-                </View>
-              </View>
-
               {/* Floating Statistics Bubbles */}
               <View style={styles.floatingStatsContainer}>
-                <Text style={styles.sectionTitle}>סטטיסטיקות קהילתיות</Text>
                 <View style={styles.bubblesContainer}>
                   {/* Money Donations */}
                   <FloatingBubble
@@ -544,8 +510,6 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: colors.backgroundPrimary,
-    paddingTop: 50,
-    paddingBottom: 20,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,

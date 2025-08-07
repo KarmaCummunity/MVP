@@ -5,23 +5,15 @@ import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import styles from '../globals/styles';
+import ScreenWrapper from '../components/ScreenWrapper';
 
 // Changed this line to use const and wrap with memo
 const AboutKarmaCommunityScreen = memo(() => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   return (
-    <SafeAreaView style={localStyles.safeArea}>
-      <View style={localStyles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={localStyles.headerButton}
-        >
-          <Icon name='arrow-back' size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={localStyles.headerTitle}>אודות</Text>
-        <View style={localStyles.headerButton} />
-      </View>
+    <>
+      <ScreenWrapper navigation={navigation} style={localStyles.safeArea}>
       <ScrollView style={localStyles.container}>
         {/* Header Section */}
         <Text style={localStyles.mainTitle}>
@@ -304,8 +296,9 @@ const AboutKarmaCommunityScreen = memo(() => {
             כתובת: רחוב הדוגמה 1, עיר הדוגמה
           </Text>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+              </ScrollView>
+      </ScreenWrapper>
+    </>
   )
 }); // Closing memo parenthesis and semicolon
 

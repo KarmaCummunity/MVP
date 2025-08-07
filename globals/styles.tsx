@@ -17,7 +17,7 @@ export const createShadowStyle = (shadowColor: string, shadowOffset: { width: nu
 };
 
 
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
   /**
    * Container for the bottom navigation bar.
    * Flexes to take available space and aligns content to the bottom.
@@ -49,8 +49,6 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-
-    // borderRadius: 1000,
   },
   /**
    * Generic content container that centers its children both vertically and horizontally.
@@ -500,6 +498,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.black,
     marginBottom: 8,
+    textAlign: 'center',
+  },
+  /**
+   * Top bar title style for navigation headers.
+   */
+  topBarTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.topNavTitle,
     textAlign: 'center',
   },
   /**

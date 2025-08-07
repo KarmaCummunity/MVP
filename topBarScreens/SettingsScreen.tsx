@@ -30,6 +30,7 @@ import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { useUser } from '../context/UserContext';
 import GuestModeNotice from '../components/GuestModeNotice';
+import ScreenWrapper from '../components/ScreenWrapper';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -300,19 +301,7 @@ export default function SettingsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={handleBackPress}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>הגדרות</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+    <ScreenWrapper navigation={navigation} style={styles.container}>
 
       {/* User Info Section - Only for logged in users */}
       {!isGuestMode && selectedUser && (
@@ -426,9 +415,7 @@ export default function SettingsScreen() {
           keyboardShouldPersistTaps="handled"
           onScroll={(event) => {
             const offsetY = event.nativeEvent.contentOffset.y;
-            console.log('📜 SettingsScreen - NATIVE Scroll event triggered! OffsetY:', offsetY);
-            console.log('📜 SettingsScreen - Content size:', event.nativeEvent.contentSize);
-            console.log('📜 SettingsScreen - Layout measurement:', event.nativeEvent.layoutMeasurement);
+            // console.log('📜 SettingsScreen - Layout measurement:', event.nativeEvent.layoutMeasurement);
           }}
           onScrollBeginDrag={() => {
             console.log('📜 SettingsScreen - Scroll begin drag detected!');
@@ -529,7 +516,7 @@ export default function SettingsScreen() {
         </View>
         </ScrollView>
       )}
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 }
 
@@ -537,6 +524,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    marginTop: Platform.OS === 'android' ? 30 : 0,
   },
   header: {
     flexDirection: 'row',

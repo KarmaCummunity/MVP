@@ -138,6 +138,10 @@ export type BottomTabNavigatorParamList = {
   HomeScreen: undefined; // This is the HomeScreen with the drag handle
   SearchScreen: undefined;
   ProfileScreen: undefined;
+  SettingsScreen: undefined;
+  ChatListScreen: undefined;
+  AboutKarmaCommunityScreen: undefined;
+  NotificationsScreen: undefined;
 };
 
 // --- Donations Stack (Example - adjust if you have internal screens) ---

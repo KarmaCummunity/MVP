@@ -13,7 +13,10 @@ export default function Home({
   navigation: NavigationProp<ParamListBase>;
 }) {
   const [hideTopBar, setHideTopBar] = useState(false);
+  const [showPosts, setShowPosts] = useState(false);
   const route = useRoute();
+  
+  console.log('🏠 Home - Component rendered, showPosts:', showPosts, 'hideTopBar:', hideTopBar);
   
   // console.log('🏠 Home - Component rendered');
   // console.log('🏠 Home - hideTopBar state:', hideTopBar);
@@ -33,14 +36,16 @@ export default function Home({
         const state = navigation.getState();
         const homeScreenRoute = state.routes.find(r => r.name === 'HomeStack')?.state?.routes?.find(r => r.name === 'HomeMain')?.state?.routes?.find(r => r.name === 'HomeScreen');
         const homeScreenHideTopBar = (homeScreenRoute?.params as any)?.hideTopBar || false;
-        // console.log('🏠 Home - HomeScreen hideTopBar:', homeScreenHideTopBar);
+        const homeScreenShowPosts = (homeScreenRoute?.params as any)?.showPosts || false;
+        // console.log('🏠 Home - HomeScreen params - hideTopBar:', homeScreenHideTopBar, 'showPosts:', homeScreenShowPosts);
         setHideTopBar(homeScreenHideTopBar);
+        setShowPosts(homeScreenShowPosts);
       };
       
       checkHomeScreenParams();
       
-      // בדיקה כל 100ms
-      const interval = setInterval(checkHomeScreenParams, 100);
+      // בדיקה כל 50ms - יותר מהיר
+      const interval = setInterval(checkHomeScreenParams, 50);
       return () => clearInterval(interval);
     }, [navigation])
   );
@@ -49,7 +54,7 @@ export default function Home({
       <SafeAreaView style={styles.safeArea}>
         {hideTopBar ? (<></>) : (
         <View style={{ overflow: 'hidden' }}>
-          <TopBarNavigator navigation={navigation} hideTopBar={hideTopBar} />
+          <TopBarNavigator navigation={navigation} hideTopBar={hideTopBar} showPosts={showPosts} />
         </View>
         )}
         <BottomNavigator />

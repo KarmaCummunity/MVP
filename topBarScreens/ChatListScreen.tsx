@@ -10,7 +10,9 @@ import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import ScreenWrapper from '../components/ScreenWrapper';
 
+// TODO: remove dummy data
 const DUMMY_USERS: ChatUser[] = [
   {
     id: 'dummy_user_1',
@@ -153,6 +155,16 @@ export default function ChatListScreen() {
         return null;
       }
 
+      // Convert User to ChatUser by adding missing properties
+      const chatUser: ChatUser = {
+        id: chattingUser.id,
+        name: chattingUser.name,
+        avatar: chattingUser.avatar,
+        isOnline: Math.random() > 0.5, // Random online status for demo
+        lastSeen: (chattingUser as any).lastActive || new Date().toISOString(),
+        status: (chattingUser as any).bio || ''
+      };
+
       const chatConversation = {
         id: item.id,
         userId: otherParticipantId || '',
@@ -166,20 +178,18 @@ export default function ChatListScreen() {
         <ChatListItem
           key={item.id}
           conversation={chatConversation}
-          user={chattingUser}
-          onPress={() => handlePressChat(item.id, chattingUser.id, chattingUser.name, chattingUser.avatar)}
+          user={chatUser}
+          onPress={() => handlePressChat(item.id, chatUser.id, chatUser.name, chatUser.avatar)}
         />
       );
     });
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
-          <Icon name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>צ'אטים</Text>
+    <>
+      <ScreenWrapper navigation={navigation} style={styles.safeArea}>
+      {/* Additional header elements for chat list */}
+      <View style={styles.additionalHeaderSection}>
         {__DEV__ && (
           <TouchableOpacity 
             onPress={async () => {
@@ -209,7 +219,8 @@ export default function ChatListScreen() {
       >
         {renderChatItems()}
       </ScrollView>
-    </SafeAreaView>
+    </ScreenWrapper>
+  </>
   );
 }
 
@@ -228,6 +239,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     backgroundColor: colors.backgroundSecondary,
+  },
+  additionalHeaderSection: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: colors.backgroundPrimary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: FontSizes.heading2,

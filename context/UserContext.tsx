@@ -32,6 +32,8 @@ interface UserContextType {
   isGuestMode: boolean;
   setGuestMode: () => Promise<void>;
   setDemoUser: () => Promise<void>;
+  resetHomeScreen: () => void;
+  resetHomeScreenTrigger: number;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -45,6 +47,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isGuestMode, setIsGuestMode] = useState(false);
+  const [resetHomeScreenTrigger, setResetHomeScreenTrigger] = useState(0);
 
   // Check authentication status on app start
   useEffect(() => {
@@ -225,6 +228,11 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
   };
 
+  const resetHomeScreen = () => {
+    console.log('🏠 UserContext - resetHomeScreen called');
+    setResetHomeScreenTrigger(prev => prev + 1);
+  };
+
   const value: UserContextType = {
     selectedUser,
     setSelectedUser,
@@ -235,6 +243,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     isGuestMode,
     setGuestMode,
     setDemoUser,
+    resetHomeScreen,
+    resetHomeScreenTrigger,
   };
 
   return (

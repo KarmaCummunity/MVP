@@ -4,13 +4,17 @@ import React from "react";
 import { View, Platform, StyleSheet } from "react-native";
 import { createBottomTabNavigator, BottomTabNavigationOptions } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import SearchScreen from "../bottomBarScreens/SearchScreen";
 import ProfileScreen from "../bottomBarScreens/ProfileScreen";
 import HomeScreen from "../bottomBarScreens/HomeScreen"; // This is your HomeScreen with the drag handle
 import DonationsStack from "./DonationsStack"; // Assuming this is another stack navigator
 // import UsersScreen from "../bottomBarScreens/UsersScreen"; // הסתרה לבדיקות
 import BookmarksScreen from "../bottomBarScreens/BookmarksScreen";
+import SettingsScreen from "../topBarScreens/SettingsScreen";
+import ChatListScreen from "../topBarScreens/ChatListScreen";
+import AboutKarmaCommunityScreen from "../topBarScreens/AboutKarmaCommunityScreen";
+import NotificationsScreen from "../screens/NotificationsScreen";
 import styles from "../globals/styles"; // Adjust path if needed
 import colors from "../globals/colors"; // Adjust path if needed
 import { useUser } from "../context/UserContext";
@@ -22,6 +26,10 @@ export type BottomTabNavigatorParamList = {
   SearchScreen: undefined;
   ProfileScreen: undefined;
   // UsersScreen: undefined; // הסתרה לבדיקות
+  SettingsScreen: undefined;
+  ChatListScreen: undefined;
+  AboutKarmaCommunityScreen: undefined;
+  NotificationsScreen: undefined;
 };
 
 // Create an instance of the Bottom Tab Navigator with its parameter list type
@@ -39,7 +47,8 @@ const Tab = createBottomTabNavigator<BottomTabNavigatorParamList>();
  */
 export default function BottomNavigator(): React.ReactElement {
   console.log('📱 BottomNavigator - Component rendered');
-  const { isGuestMode } = useUser();
+  const { isGuestMode, resetHomeScreen } = useUser();
+  const navigation = useNavigation();
   
   // Refresh data when navigator comes into focus
   useFocusEffect(
@@ -48,6 +57,8 @@ export default function BottomNavigator(): React.ReactElement {
       // This will trigger re-renders of child screens when needed
     }, [])
   );
+
+
 
   /**
    * Helper function to determine the Ionicons name based on the route and focus state.
@@ -78,34 +89,44 @@ export default function BottomNavigator(): React.ReactElement {
   return (
     <View style={styles.container_bottom_nav}>
       <Tab.Navigator
+        id={undefined}
         initialRouteName="HomeScreen"
-        screenOptions={({ route }): BottomTabNavigationOptions => ({
-          headerShown: false,
-          tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => {
-            const iconName = getTabBarIconName(route.name, focused);
-            return <Ionicons name={iconName} size={size} color={color} />;
-          },
-          tabBarActiveTintColor: colors.bottomNavActive,
-          tabBarInactiveTintColor: colors.bottomNavInactive,
-          tabBarShowLabel: false,
-          tabBarStyle: {
-            position: "absolute",
-            left: 20,
-            right: 20,
-            borderRadius: 25,
-            elevation: 8,
-            height: 40,
-            backgroundColor: colors.bottomNavBackground,
-            paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-            paddingTop: 6,
-          },
-        })}
+        screenOptions={({ route }): BottomTabNavigationOptions => {
+          return ({
+            headerShown: false,
+            tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number; }) => {
+              const iconName = getTabBarIconName(route.name, focused);
+              return <Ionicons name={iconName} size={size} color={color} />;
+            },
+            tabBarActiveTintColor: colors.bottomNavActive,
+            tabBarInactiveTintColor: colors.bottomNavInactive,
+            tabBarShowLabel: false,
+            tabBarStyle: {
+              position: "absolute",
+              left: 20,
+              right: 20,
+              borderRadius: 25,
+              elevation: 8,
+              height: '5%',
+              backgroundColor: colors.bottomNavBackground,
+            },
+          });
+        }}
       >
-        <Tab.Screen name="HomeScreen" component={HomeScreen} />
+        <Tab.Screen 
+          name="HomeScreen" 
+          component={HomeScreen}
+          listeners={({ navigation, route }) => ({
+            tabPress: (e) => {
+              console.log('🏠 HomeScreen - Tab button pressed (even if already on home screen)');
+              resetHomeScreen();
+            },
+          })}
+        />
         <Tab.Screen name="SearchScreen" component={SearchScreen} />
         <Tab.Screen name="DonationsScreen" component={DonationsStack} />
         {!isGuestMode && <Tab.Screen name="ProfileScreen" component={ProfileScreen} />}
-        {/* <Tab.Screen name="UsersScreen" component={UsersScreen} /> hidden for testing */}
+      
       </Tab.Navigator>
     </View>
   );

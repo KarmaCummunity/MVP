@@ -5,7 +5,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import HomeStack from "./HomeStack";
 import InactiveScreen from "../screens/InactiveScreen";
 import WebViewScreen from "../screens/WebViewScreen";
-import PostsReelsScreen from "../components/PostsReelsScreen";
+import PostsReelsScreenWrapper from "../components/PostsReelsScreenWrapper";
 import BookmarksScreen from "../bottomBarScreens/BookmarksScreen";
 import UserProfileScreen from "../screens/UserProfileScreen";
 import FollowersScreen from "../screens/FollowersScreen";
@@ -13,12 +13,12 @@ import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
 import LoginScreen from "../screens/LoginScreen";
 import { useUser } from '../context/UserContext';
 import colors from '../globals/colors';
-import SettingsScreen from '../topBarScreens/SettingsScreen';
-import ChatListScreen from '../topBarScreens/ChatListScreen';
-import AboutKarmaCommunityScreen from '../topBarScreens/AboutKarmaCommunityScreen';
 import NewChatScreen from '../screens/NewChatScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
+import SettingsScreen from '../topBarScreens/SettingsScreen';
+import ChatListScreen from '../topBarScreens/ChatListScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
+import AboutKarmaCommunityScreen from '../topBarScreens/AboutKarmaCommunityScreen';
 
 import { RootStackParamList } from '../globals/types';
 
@@ -85,22 +85,19 @@ export default function MainNavigator() {
   
   return (
     <Stack.Navigator 
+      id={undefined}
       screenOptions={{ headerShown: false }}
       initialRouteName={"LoginScreen"}
     >
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
       <Stack.Screen name="HomeStack" component={HomeStack} />
-      <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
-      <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
       <Stack.Screen name="NewChatScreen" component={NewChatScreen} />
       <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
-      <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
-      <Stack.Screen name="AboutKarmaCommunityScreen" component={AboutKarmaCommunityScreen} />
       <Stack.Screen name="InactiveScreen" component={InactiveScreen} />
       <Stack.Screen name="WebViewScreen" component={WebViewScreen} />
       <Stack.Screen
         name="PostsReelsScreen"
-        component={PostsReelsScreen}
+        component={PostsReelsScreenWrapper}
         options={{
           cardStyle: { backgroundColor: 'transparent' },
           presentation: 'transparentModal',
@@ -119,6 +116,12 @@ export default function MainNavigator() {
       <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} />
       <Stack.Screen name="FollowersScreen" component={FollowersScreen} />
       <Stack.Screen name="DiscoverPeopleScreen" component={DiscoverPeopleScreen} />
+      
+      {/* Top Bar Screens */}
+      <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
+      <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
+      <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
+      <Stack.Screen name="AboutKarmaCommunityScreen" component={AboutKarmaCommunityScreen} />
     </Stack.Navigator>
   );
 }

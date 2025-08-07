@@ -27,6 +27,7 @@ import {
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { Ionicons as Icon } from '@expo/vector-icons';
+import ScreenWrapper from '../components/ScreenWrapper';
 
 export default function NotificationsScreen() {
   const navigation = useNavigation();
@@ -239,27 +240,23 @@ export default function NotificationsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
-          <Icon name="arrow-back" size={24} color={colors.text} />
+    <>
+      <ScreenWrapper navigation={navigation} style={styles.safeArea}>
+      {/* Additional header actions for notifications */}
+      <View style={styles.additionalHeaderSection}>
+        <TouchableOpacity onPress={() => setShowSettings(!showSettings)} style={styles.headerButton}>
+          <Icon name="settings-outline" size={24} color={colors.textSecondary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>התראות</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => setShowSettings(!showSettings)} style={styles.headerButton}>
-            <Icon name="settings-outline" size={24} color={colors.textSecondary} />
+        {unreadCount > 0 && (
+          <TouchableOpacity onPress={handleMarkAllAsRead} style={styles.headerButton}>
+            <Icon name="checkmark-done" size={24} color={colors.primary} />
           </TouchableOpacity>
-          {unreadCount > 0 && (
-            <TouchableOpacity onPress={handleMarkAllAsRead} style={styles.headerButton}>
-              <Icon name="checkmark-done" size={24} color={colors.primary} />
-            </TouchableOpacity>
-          )}
-          {notifications.length > 0 && (
-            <TouchableOpacity onPress={handleClearAllNotifications} style={styles.headerButton}>
-              <Icon name="trash-outline" size={24} color={colors.error} />
-            </TouchableOpacity>
-          )}
-        </View>
+        )}
+        {notifications.length > 0 && (
+          <TouchableOpacity onPress={handleClearAllNotifications} style={styles.headerButton}>
+            <Icon name="trash-outline" size={24} color={colors.error} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {unreadCount > 0 && (
@@ -279,7 +276,8 @@ export default function NotificationsScreen() {
         }
         showsVerticalScrollIndicator={false}
       />
-    </SafeAreaView>
+    </ScreenWrapper>
+  </>
   );
 }
 
@@ -298,6 +296,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     backgroundColor: colors.backgroundSecondary,
+  },
+  additionalHeaderSection: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: colors.backgroundPrimary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: FontSizes.heading2,

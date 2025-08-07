@@ -16,10 +16,12 @@ import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../context/UserContext';
 import CommentsModal from './CommentsModal';
+import logger from '../utils/logger';
 import { isBookmarked, addBookmark, removeBookmark } from '../utils/bookmarksService';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { characterTypes, CharacterType } from '../globals/characterTypes';
+import ScreenWrapper from './ScreenWrapper';
 
 const { width } = Dimensions.get('window');
 
@@ -130,12 +132,11 @@ const PostReelItem = ({ item }: { item: Item }) => {
     setLikesCount(isLiked ? likesCount - 1 : likesCount + 1);
     
     // כאן בעתיד נוסיף API call לשמירת הלייק
-    console.log(`❤️ ${isLiked ? 'Unlike' : 'Like'} post ${item.id} by user ${selectedUser?.id}`);
+    logger.logUserAction('like-post', 'PostsReelsScreen', { postId: item.id, isLiked: !isLiked, userId: selectedUser?.id });
   };
 
   const handleProfilePress = () => {
-    // Navigate to user profile with character data
-    console.log(`🔗 Navigating to profile: ${item.user.name} (${item.user.id})`);
+    logger.logScreenNavigation('PostsReelsScreen', 'UserProfileScreen', selectedUser?.id);
     (navigation as any).navigate('UserProfileScreen', { 
       userId: item.user.id,
       userName: item.user.name,
@@ -156,7 +157,7 @@ const PostReelItem = ({ item }: { item: Item }) => {
         title: item.title,
       });
     } catch (error) {
-      console.error('❌ Share error:', error);
+      logger.logError(error, 'share-post', 'PostsReelsScreen', selectedUser?.id);
     }
   };
 
@@ -170,8 +171,7 @@ const PostReelItem = ({ item }: { item: Item }) => {
         { 
           text: 'פתח', 
           onPress: () => {
-            // כאן נוסיף ניווט למסך פוסט מלא
-            console.log('📱 Opening full post:', item.id);
+            logger.logUserAction('open-full-post', 'PostsReelsScreen', { postId: item.id });
           }
         }
       ]
@@ -185,14 +185,14 @@ const PostReelItem = ({ item }: { item: Item }) => {
       if (isBookmarkedState) {
         await removeBookmark(selectedUser.id, item.id);
         setIsBookmarkedState(false);
-        console.log('📖 Bookmark removed');
+        logger.logUserAction('remove-bookmark', 'PostsReelsScreen', { postId: item.id });
       } else {
         await addBookmark(selectedUser.id, item);
         setIsBookmarkedState(true);
-        console.log('📖 Bookmark added');
+        logger.logUserAction('add-bookmark', 'PostsReelsScreen', { postId: item.id });
       }
     } catch (error) {
-      console.error('❌ Bookmark error:', error);
+      logger.logError(error, 'bookmark-action', 'PostsReelsScreen', selectedUser?.id);
     }
   };
 
@@ -277,13 +277,15 @@ const PostReelItem = ({ item }: { item: Item }) => {
 interface PostsReelsScreenProps {
   onScroll?: (hide: boolean) => void;
   hideTopBar?: boolean;
+  showTopBar?: boolean; // האם להציג את TopBarNavigator
 }
 
 /**
  * מסך פוסטים ורילס קהילתיים
  * מציג רשימה של פוסטים ורילס עם תמונות ותיאורים
  */
-export default function PostsReelsScreen({ onScroll, hideTopBar = false }: PostsReelsScreenProps) {
+export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTopBar = false }: PostsReelsScreenProps) {
+  const navigation = useNavigation();
   console.log('📱 PostsReelsScreen - hideTopBar prop:', hideTopBar);
   
   // אנימציה למסך הפוסטים
@@ -300,8 +302,7 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false }: Posts
   // Refresh data when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('📱 PostsReelsScreen - Screen focused, refreshing data...');
-      // Here you can add any data refresh logic if needed
+      logger.logUserAction('screen-focused', 'PostsReelsScreen', { hideTopBar, showTopBar });
     }, [])
   );
 
@@ -327,20 +328,28 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false }: Posts
     setLastOffsetY(offsetY);
   };
 
-  return (
+  const content = (
+    <FlatList
+      data={data}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => <PostReelItem item={item} />}
+      contentContainerStyle={{ paddingBottom: 20 }}
+      showsVerticalScrollIndicator={false}
+      initialNumToRender={10}
+      maxToRenderPerBatch={10}
+      windowSize={21}
+      onScroll={handleScroll}
+      scrollEventThrottle={16}
+    />
+  );
+
+  return showTopBar ? (
+    <ScreenWrapper navigation={navigation} style={[styles.container, animatedStyle]}>
+      {content}
+    </ScreenWrapper>
+  ) : (
     <Animated.View style={[styles.container, animatedStyle]}>
-      <FlatList
-        data={data}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <PostReelItem item={item} />}
-        contentContainerStyle={{ paddingBottom: 20 }}
-        showsVerticalScrollIndicator={false}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={21}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-      />
+      {content}
     </Animated.View>
   );
 }
