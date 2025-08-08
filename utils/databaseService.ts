@@ -33,6 +33,22 @@ export const getDBKey = (collection: string, userId: string, itemId?: string) =>
 
 // Generic Database Service
 export class DatabaseService {
+  // Simple key-space versioning for future migrations
+  private static DB_VERSION = 1;
+  private static VERSION_KEY = 'db_version';
+
+  static async ensureVersion(): Promise<void> {
+    const v = await AsyncStorage.getItem(DatabaseService.VERSION_KEY);
+    if (!v) {
+      await AsyncStorage.setItem(DatabaseService.VERSION_KEY, String(DatabaseService.DB_VERSION));
+      return;
+    }
+    const current = Number(v);
+    if (current < DatabaseService.DB_VERSION) {
+      // Place for future migrations per version
+      await AsyncStorage.setItem(DatabaseService.VERSION_KEY, String(DatabaseService.DB_VERSION));
+    }
+  }
   // Generic CRUD operations
   static async create<T>(
     collection: string,
@@ -41,6 +57,7 @@ export class DatabaseService {
     data: T
   ): Promise<void> {
     try {
+      await this.ensureVersion();
       const key = getDBKey(collection, userId, itemId);
       await AsyncStorage.setItem(key, JSON.stringify(data));
       console.log(`✅ DatabaseService - Created ${collection} item:`, itemId);
@@ -56,6 +73,7 @@ export class DatabaseService {
     itemId: string
   ): Promise<T | null> {
     try {
+      await this.ensureVersion();
       const key = getDBKey(collection, userId, itemId);
       const item = await AsyncStorage.getItem(key);
       return item ? JSON.parse(item) : null;
@@ -105,6 +123,7 @@ export class DatabaseService {
     userId: string
   ): Promise<T[]> {
     try {
+      await this.ensureVersion();
       const keys = await AsyncStorage.getAllKeys();
       const userKeys = keys.filter(key => 
         key.startsWith(`${collection}_${userId}_`)

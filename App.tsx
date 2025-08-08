@@ -38,10 +38,21 @@ export default function App() {
     if (!notificationService) return;
 
     const subscription = notificationService.setupNotificationResponseListener((response: any) => {
-      console.log('📱 Notification clicked:', response);
+      try {
+        console.log('📱 Notification clicked:', response);
+        const data = response?.notification?.request?.content?.data || {};
+        const type = data?.type;
+        const conversationId = data?.conversationId;
 
-      if (navigationRef.current?.isReady()) {
-        navigationRef.current.navigate('NotificationsScreen');
+        if (navigationRef.current?.isReady()) {
+          if (type === 'message' && conversationId) {
+            navigationRef.current.navigate('ChatDetailScreen', { conversationId });
+          } else {
+            navigationRef.current.navigate('NotificationsScreen');
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to handle notification response:', err);
       }
     });
 

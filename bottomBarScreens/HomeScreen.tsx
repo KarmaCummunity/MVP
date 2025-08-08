@@ -473,30 +473,6 @@ export default function HomeScreen() {
           </ScrollView>
           
           {/* Toggle Button - Hidden in guest mode */}
-          {!isGuestMode && (
-            <View style={styles.toggleContainer}>
-            <TouchableOpacity 
-              style={[styles.toggleButton, isPersonalMode && styles.toggleButtonActive]}
-              onPress={() => setIsPersonalMode(!isPersonalMode)}
-            >
-              <Ionicons 
-                name="person" 
-                size={18} 
-                color={isPersonalMode ? colors.backgroundPrimary : colors.textSecondary} 
-              />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.toggleButton, !isPersonalMode && styles.toggleButtonActive]}
-              onPress={() => setIsPersonalMode(!isPersonalMode)}
-            >
-              <Ionicons 
-                name="people" 
-                size={18} 
-                color={!isPersonalMode ? colors.backgroundPrimary : colors.textSecondary} 
-              />
-            </TouchableOpacity>
-            </View>
-          )}
         </View>
       )}
     </SafeAreaView>

@@ -12,6 +12,25 @@ if (Platform.OS !== 'web') {
   }
 }
 
+// --- Simple in-app notification event bus ---
+type NotificationEventListener = (notification: NotificationData) => void;
+const notificationEventListeners: Set<NotificationEventListener> = new Set();
+
+export const subscribeToNotificationEvents = (listener: NotificationEventListener): (() => void) => {
+  notificationEventListeners.add(listener);
+  return () => notificationEventListeners.delete(listener);
+};
+
+const emitNotificationEvent = (notification: NotificationData) => {
+  notificationEventListeners.forEach((listener) => {
+    try {
+      listener(notification);
+    } catch (err) {
+      console.warn('Notification listener error:', err);
+    }
+  });
+};
+
 export interface NotificationData {
   id: string;
   title: string;
@@ -533,6 +552,9 @@ export const saveNotification = async (notification: NotificationData): Promise<
     
     await db.createNotification(notification.userId, notification.id, notification);
     console.log('✅ Notification saved to history');
+
+    // Emit in-app event so UI can update in real-time
+    emitNotificationEvent(notification);
   } catch (error) {
     console.error('❌ Save notification error:', error);
   }

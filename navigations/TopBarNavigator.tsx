@@ -79,7 +79,7 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
   const routeTitles: Record<string, string> = {
     // Bottom Tab Screens
     SearchScreen: 'חיפוש',
-    DonationsScreen: 'תרומות',
+    DonationsScreen: 'הקהילה במעשים',
     ProfileScreen: 'פרופיל',
     
     // Donation Stack Screens
@@ -134,7 +134,7 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
 
 
   return (
-    <SafeAreaView edges={['top']} style={{ backgroundColor: colors.backgroundSecondary }}>
+    <SafeAreaView edges={['top']} style={{ backgroundColor: 'transparent' }}>
       <Animated.View
         style={[styles.container_top_bar, animatedStyle]}
         onLayout={(e) => setMeasuredHeight(e.nativeEvent.layout.height)}

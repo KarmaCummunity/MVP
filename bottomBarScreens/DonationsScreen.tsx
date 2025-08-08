@@ -174,6 +174,87 @@ const donationCategories = [
     screen: '',
     description: 'עזרה טכנית ומחשבים',
   },
+  // --- New categories ---
+  {
+    id: 'music',
+    title: 'מוזיקה',
+    subtitle: 'נגינה ושיתוף מוזיקלי',
+    icon: 'musical-notes-outline',
+    color: colors.pink,
+    bgColor: colors.pinkLight,
+    screen: '',
+    description: 'נגינה, שיתופי פעולה מוזיקליים והופעות קהילתיות',
+  },
+  {
+    id: 'games',
+    title: 'משחקים',
+    subtitle: 'פעילויות ומשחקי חברה',
+    icon: 'game-controller-outline',
+    color: colors.orange,
+    bgColor: colors.orangeLight,
+    screen: '',
+    description: 'פעילויות קהילה ומשחקי חברה לכל הגילאים',
+  },
+  {
+    id: 'riddles',
+    title: 'חידות',
+    subtitle: 'חשיבה ואתגר',
+    icon: 'help-circle-outline',
+    color: colors.info,
+    bgColor: colors.infoLight,
+    screen: '',
+    description: 'חידות, אתגרים ומשימות חשיבה לקהילה',
+  },
+  {
+    id: 'recipes',
+    title: 'מתכונים',
+    subtitle: 'בישול ושיתוף',
+    icon: 'fast-food-outline',
+    color: colors.success,
+    bgColor: colors.successLight,
+    screen: '',
+    description: 'שיתוף מתכונים, ארוחות קהילתיות ובישול יחד',
+  },
+  {
+    id: 'plants',
+    title: 'צמחים',
+    subtitle: 'גינון ושתילה',
+    icon: 'flower-outline',
+    color: colors.success,
+    bgColor: colors.successLight,
+    screen: '',
+    description: 'גינון קהילתי, שתילים והחלפת צמחים',
+  },
+  {
+    id: 'waste',
+    title: 'פסולת',
+    subtitle: 'מיחזור והפרדה',
+    icon: 'trash-outline',
+    color: colors.warning,
+    bgColor: colors.warningLight,
+    screen: '',
+    description: 'פרויקטי ניקיון, מיחזור והפרדת פסולת',
+  },
+  {
+    id: 'art',
+    title: 'אמנות',
+    subtitle: 'יצירה ושיתוף',
+    icon: 'color-palette-outline',
+    color: colors.pink,
+    bgColor: colors.pinkLight,
+    screen: '',
+    description: 'יצירה אומנותית, סדנאות ושיתופי קהילה',
+  },
+  {
+    id: 'sports',
+    title: 'ספורט',
+    subtitle: 'אורח חיים פעיל',
+    icon: 'football-outline',
+    color: colors.orange,
+    bgColor: colors.orangeLight,
+    screen: '',
+    description: 'מפגשי ספורט, ריצות קהילתיות ופעילות גופנית',
+  },
 ];
 
 const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
@@ -237,7 +318,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                 
           {/* Active Screens Section */}
           <View style={styles.categoriesSection}>
-            <Text style={styles.sectionTitle}>פעולות אפשריות בקהילה</Text>
+            <Text style={styles.sectionTitle}>במיוחד בשבילך</Text>
             <View style={styles.activeCategoriesGrid}>
             {donationCategories.filter(category => category.screen).map((category) => (
               <TouchableOpacity
@@ -261,7 +342,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
 
         {/* Inactive Categories Section */}
         <View style={styles.categoriesSection}>
-          <Text style={styles.sectionTitle}>עובדים על על אופציות חדשות </Text>
+          <Text style={styles.sectionTitle}>כל הדרכים לפעול בקהילה</Text>
           <View style={styles.categoriesGrid}>
             {donationCategories.filter(category => !category.screen).map((category) => (
               <TouchableOpacity

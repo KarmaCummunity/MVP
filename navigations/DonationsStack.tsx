@@ -26,6 +26,7 @@ export default function DonationsStack() {
 
   return (
     <Stack.Navigator
+      id={undefined}
       initialRouteName="DonationsScreen"
       screenOptions={({ navigation, route }) => ({
         headerShown: true,

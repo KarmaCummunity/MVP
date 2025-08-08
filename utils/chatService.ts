@@ -50,7 +50,9 @@ export interface Message {
 }
 
 // Event listeners for real-time updates
+// Messages: key is `${conversationId}_${userId}` to scope polling per-user
 const messageListeners: Map<string, Set<(messages: Message[]) => void>> = new Map();
+// Conversations: key is `userId`
 const conversationListeners: Map<string, Set<(conversations: Conversation[]) => void>> = new Map();
 
 // פונקציות עזר
@@ -72,9 +74,9 @@ export const createConversation = async (participants: string[]): Promise<string
       createdAt: new Date().toISOString(),
     };
 
-    // שמירת השיחה לכל משתתף
+    // שמירת השיחה לכל משתתף (עותק ראשוני עם מונה 0 לכל אחד)
     for (const participantId of participants) {
-      await db.createChat(participantId, conversationId, newConversation);
+      await db.createChat(participantId, conversationId, { ...newConversation, unreadCount: 0 });
     }
     
     console.log('✅ Conversation created (Database):', conversationId);
@@ -131,60 +133,69 @@ export const sendMessage = async (message: Omit<Message, 'id'>): Promise<string>
       status: 'sent', // Default status for sent messages
     };
 
-    // שמירת ההודעה לכל משתתף בשיחה
-    const conversation = await getConversationById(message.conversationId, message.senderId);
-    if (conversation) {
-      for (const participantId of conversation.participants) {
-        await db.createMessage(participantId, messageId, newMessage);
-      }
+    // ודא שקיימת שיחה עבור כל משתתף, ושמור את ההודעה לכל משתתף
+    const senderView = await getConversationById(message.conversationId, message.senderId);
+    const participants = senderView?.participants || [];
+    if (participants.length === 0) {
+      throw new Error('Conversation not found or has no participants');
+    }
 
-      // עדכון השיחה לכל משתתף
-      let displayText = message.text;
-      if (message.type === 'image') {
-        displayText = '📷 תמונה';
-      } else if (message.type === 'video') {
-        displayText = '🎥 סרטון';
-      } else if (message.type === 'file') {
-        displayText = '📎 קובץ';
-      }
-      
-      const updatedConversation = {
-        ...conversation,
-        lastMessageText: displayText,
-        lastMessageTime: message.timestamp,
-        unreadCount: conversation.unreadCount + 1,
+    // שמירת ההודעה לכל משתתף
+    for (const participantId of participants) {
+      await db.createMessage(participantId, messageId, newMessage);
+    }
+
+    // עדכון נתוני השיחה לכל משתתף עם מונה נקראים נכון
+    let displayText = message.text;
+    if (message.type === 'image') displayText = '📷 תמונה';
+    else if (message.type === 'video') displayText = '🎥 סרטון';
+    else if (message.type === 'file') displayText = '📎 קובץ';
+
+    for (const participantId of participants) {
+      const existing = await db.getChat(participantId, message.conversationId);
+      const baseConv: Conversation = (existing as Conversation) || {
+        id: message.conversationId,
+        participants,
+        lastMessageText: '',
+        lastMessageTime: new Date().toISOString(),
+        unreadCount: 0,
+        createdAt: new Date().toISOString(),
       };
 
-      for (const participantId of conversation.participants) {
-        // Use create which will overwrite if exists
-        await db.createChat(participantId, message.conversationId, updatedConversation);
-        console.log(`💾 Updated conversation for participant ${participantId}`);
-      }
+      const isRecipient = participantId !== message.senderId;
+      const unreadCount = isRecipient ? (baseConv.unreadCount || 0) + 1 : 0;
+
+      const updatedConversation: Conversation = {
+        ...baseConv,
+        lastMessageText: displayText,
+        lastMessageTime: message.timestamp,
+        unreadCount,
+      };
+
+      await db.createChat(participantId, message.conversationId, updatedConversation);
+      console.log(`💾 Updated conversation for participant ${participantId}`);
     }
 
     console.log('✅ Message sent (Database):', messageId);
-    console.log('📢 Conversation participants:', conversation?.participants);
+    console.log('📢 Conversation participants:', participants);
     
-    // Notify listeners about the new message
-    notifyMessageListeners(message.conversationId);
+    // Notify listeners about the new message for each participant
+    for (const participantId of participants) {
+      notifyMessageListeners(message.conversationId, participantId);
+    }
     
     // Notify conversation listeners for all participants
-    if (conversation) {
-      console.log('📢 Notifying conversation listeners for participants:', conversation.participants);
-      conversation.participants.forEach(participantId => {
-        console.log(`📢 Notifying participant ${participantId}`);
-        notifyConversationListeners(participantId);
-        
-        // Send notification to other participants (not the sender)
-        if (participantId !== message.senderId) {
-          // Get sender name (in a real app, this would come from user service)
-          const senderName = 'משתמש'; // TODO: Get actual sender name
-          sendMessageNotification(senderName, message.text, message.conversationId, participantId);
-        }
-      });
-    } else {
-      console.log('❌ No conversation found for notifying listeners');
-    }
+    console.log('📢 Notifying conversation listeners for participants:', participants);
+    participants.forEach(participantId => {
+      console.log(`📢 Notifying participant ${participantId}`);
+      notifyConversationListeners(participantId);
+      
+      // Send notification to other participants (not the sender)
+      if (participantId !== message.senderId) {
+        const senderName = 'משתמש'; // TODO: Get actual sender name
+        sendMessageNotification(senderName, message.text, message.conversationId, participantId);
+      }
+    });
     
     return messageId;
   } catch (error) {
@@ -239,29 +250,29 @@ export const markMessagesAsRead = async (conversationId: string, userId: string)
 
 // Real-time listener for messages (improved with event system)
 export const subscribeToMessages = (conversationId: string, userId: string, callback: (messages: Message[]) => void) => {
-  // Add listener to the map
-  if (!messageListeners.has(conversationId)) {
-    messageListeners.set(conversationId, new Set());
+  const key = `${conversationId}_${userId}`;
+  if (!messageListeners.has(key)) {
+    messageListeners.set(key, new Set());
   }
-  messageListeners.get(conversationId)!.add(callback);
+  messageListeners.get(key)!.add(callback);
   
   // Initial call
   getMessages(conversationId, userId).then(callback);
   
-  // Set up polling every 3 seconds (faster than before)
+  // Set up polling every 2 seconds
   const interval = setInterval(async () => {
     const messages = await getMessages(conversationId, userId);
     callback(messages);
-  }, 3000);
+  }, 2000);
   
   // Return cleanup function
   return () => {
     clearInterval(interval);
-    const listeners = messageListeners.get(conversationId);
+    const listeners = messageListeners.get(key);
     if (listeners) {
       listeners.delete(callback);
       if (listeners.size === 0) {
-        messageListeners.delete(conversationId);
+        messageListeners.delete(key);
       }
     }
   };
@@ -302,20 +313,14 @@ export const subscribeToConversations = (userId: string, callback: (conversation
 };
 
 // Notify listeners when data changes
-const notifyMessageListeners = async (conversationId: string) => {
-  const listeners = messageListeners.get(conversationId);
-  if (listeners) {
-    // Get messages for all participants in the conversation
-    const conversation = await getConversationById(conversationId, 'temp'); // We need to get the conversation first
-    if (conversation) {
-      const messages = await getMessages(conversationId, conversation.participants[0]); // Use first participant as default
-      listeners.forEach(callback => {
-        if (typeof callback === 'function') {
-          callback(messages);
-        }
-      });
-    }
-  }
+const notifyMessageListeners = async (conversationId: string, userId: string) => {
+  const key = `${conversationId}_${userId}`;
+  const listeners = messageListeners.get(key);
+  if (!listeners || listeners.size === 0) return;
+  const messages = await getMessages(conversationId, userId);
+  listeners.forEach(callback => {
+    if (typeof callback === 'function') callback(messages);
+  });
 };
 
 const notifyConversationListeners = async (userId: string) => {

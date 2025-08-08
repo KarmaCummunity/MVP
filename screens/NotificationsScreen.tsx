@@ -23,6 +23,7 @@ import {
   getUnreadNotificationCount,
   getNotificationSettings,
   updateNotificationSettings,
+  subscribeToNotificationEvents,
 } from '../utils/notificationService';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
@@ -66,6 +67,34 @@ export default function NotificationsScreen() {
       console.log('🔔 NotificationsScreen - Screen focused, loading notifications...');
       console.log('🔔 NotificationsScreen - selectedUser in useFocusEffect:', selectedUser?.name || 'null');
       loadNotifications();
+
+      // Subscribe to in-app notification events for real-time updates
+      const unsubscribe = subscribeToNotificationEvents((notification) => {
+        if (!selectedUser) return;
+        if (notification.userId !== selectedUser.id) return;
+        console.log('🔔 NotificationsScreen - Realtime notification received');
+        // Prepend the new notification and update unread counter
+        setNotifications((prev) => [notification, ...prev]);
+        setUnreadCount((prev) => prev + (notification.read ? 0 : 1));
+      });
+
+      // Lightweight polling fallback to ensure UI stays in sync
+      const interval = setInterval(async () => {
+        if (!selectedUser) return;
+        try {
+          const userNotifications = await getNotifications(selectedUser.id);
+          setNotifications(userNotifications);
+          const count = userNotifications.filter(n => !n.read).length;
+          setUnreadCount(count);
+        } catch (e) {
+          console.warn('⚠️ NotificationsScreen - polling error', e);
+        }
+      }, 3000);
+
+      return () => {
+        unsubscribe?.();
+        clearInterval(interval);
+      };
     }, [loadNotifications, selectedUser])
   );
 
@@ -197,13 +226,25 @@ export default function NotificationsScreen() {
     }
   };
 
+  const handleOpen = async (item: NotificationData) => {
+    if (!selectedUser) return;
+    try {
+      await markNotificationAsRead(item.id, selectedUser.id);
+      if (item.type === 'message' && item.data?.conversationId) {
+        (navigation as any).navigate('ChatDetailScreen', { conversationId: item.data.conversationId });
+      }
+    } catch (error) {
+      console.error('❌ Open notification error:', error);
+    }
+  };
+
   const renderNotification = ({ item }: { item: NotificationData }) => (
     <TouchableOpacity
       style={[
         styles.notificationItem,
         !item.read && styles.unreadNotification,
       ]}
-      onPress={() => handleMarkAsRead(item.id)}
+      onPress={() => handleOpen(item)}
     >
       <View style={styles.notificationHeader}>
         <View style={styles.notificationIconContainer}>
@@ -244,9 +285,6 @@ export default function NotificationsScreen() {
       <ScreenWrapper navigation={navigation} style={styles.safeArea}>
       {/* Additional header actions for notifications */}
       <View style={styles.additionalHeaderSection}>
-        <TouchableOpacity onPress={() => setShowSettings(!showSettings)} style={styles.headerButton}>
-          <Icon name="settings-outline" size={24} color={colors.textSecondary} />
-        </TouchableOpacity>
         {unreadCount > 0 && (
           <TouchableOpacity onPress={handleMarkAllAsRead} style={styles.headerButton}>
             <Icon name="checkmark-done" size={24} color={colors.primary} />
@@ -284,7 +322,6 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    marginTop: Platform.OS === 'android' ? 30 : 0,
     backgroundColor: colors.backgroundSecondary,
   },
   header: {
@@ -303,7 +340,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: colors.backgroundPrimary,
+    // backgroundColor: colors.backgroundPrimary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },

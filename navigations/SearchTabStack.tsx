@@ -34,6 +34,7 @@ export default function SearchTabStack(): React.ReactElement {
 
   return (
     <Stack.Navigator
+      id={undefined}
       initialRouteName="SearchScreen"
       screenOptions={({ navigation }) => ({
         headerShown: true,

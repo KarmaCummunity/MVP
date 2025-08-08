@@ -41,6 +41,7 @@ export default function HomeTabStack(): React.ReactElement {
 
   return (
     <Stack.Navigator
+      id={undefined}
       initialRouteName="HomeScreen"
       screenOptions={({ navigation, route }) => ({
         headerShown: true,

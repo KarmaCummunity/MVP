@@ -28,6 +28,7 @@ export default function ProfileTabStack(): React.ReactElement {
 
   return (
     <Stack.Navigator
+      id={undefined}
       initialRouteName="ProfileScreen"
       screenOptions={({ navigation }) => ({
         headerShown: true,

@@ -13,6 +13,7 @@ const colors = {
   backgroundPrimary: '#FFFFFF',      // רקע ראשי
   //backgroundSecondary: '#FFF8F8',    // רקע משני (ורדרד)
   backgroundSecondary: '#EBF6FF', // רקע משני (כחול בהיר)
+  backgroundSecondary_2: '#F4FCFF', // רקע משני (כחול בהיר)
   backgroundSecondaryPink: 'rgba(255, 235, 240, 0.9)',
   backgroundTertiary: '#FFF5F0',     // רקע שלישי (כתמתם)
   cardBackground: '#FFFFFF',         // רקע כרטיסים

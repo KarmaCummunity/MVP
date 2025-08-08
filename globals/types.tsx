@@ -44,7 +44,11 @@ export type DonationsStackParamList = {
   TrumpScreen: undefined;
   KnowledgeScreen: undefined;
   TimeScreen: undefined;
-  // Add more screens here as needed
+  // Top bar accessible screens that are also used inside the Donations stack
+  ChatListScreen: undefined;
+  NotificationsScreen: undefined;
+  AboutKarmaCommunityScreen: undefined;
+  SettingsScreen: undefined;
 };
 
 export type SettingItemType = "navigate" | "toggle" | "button" | "value";

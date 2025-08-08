@@ -1,79 +1,48 @@
-// screens/ChatListScreen.tsx
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, SafeAreaView, Platform, Alert, Animated, Pressable } from 'react-native';
+// ChatListScreen – professional, concise, with in-file demo support and live updates
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Alert, TextInput, TouchableOpacity, Platform } from 'react-native';
 import { useNavigation, NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import ChatListItem from '../components/ChatListItem';
 import { users as allUsers, ChatUser } from '../globals/fakeData';
+import { allUsers as characterUsers } from '../globals/characterTypes';
 import { useUser } from '../context/UserContext';
-import { getConversations, Conversation as ChatConversation, subscribeToConversations, debugDatabaseContent } from '../utils/chatService';
+import { getConversations, Conversation as ChatConversation, subscribeToConversations } from '../utils/chatService';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
+import ScreenWrapper from '../components/ScreenWrapper';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import ScreenWrapper from '../components/ScreenWrapper';
 
-// TODO: remove dummy data
-const DUMMY_USERS: ChatUser[] = [
-  {
-    id: 'dummy_user_1',
-    name: 'יוזר דמה 1',
-    avatar: 'https://i.pravatar.cc/150?u=dummy_user_1',
-    isOnline: true,
-  },
-  {
-    id: 'dummy_user_2',
-    name: 'יוזר דמה 2',
-    avatar: 'https://i.pravatar.cc/150?u=dummy_user_2',
-    isOnline: false,
-    lastSeen: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-  },
+// Demo users (kept in-file for MVP – remove when real users are plugged in)
+const DEMO_USERS: ChatUser[] = [
+  { id: 'dummy_user_1', name: 'יוזר דמה 1', avatar: 'https://i.pravatar.cc/150?u=dummy_user_1', isOnline: true },
+  { id: 'dummy_user_2', name: 'יוזר דמה 2', avatar: 'https://i.pravatar.cc/150?u=dummy_user_2', isOnline: false, lastSeen: new Date(Date.now() - 86400000).toISOString() },
 ];
 
-const DUMMY_CONVERSATIONS: ChatConversation[] = [
-  {
-    id: 'dummy_conv_1',
-    participants: ['user001', 'dummy_user_1'],
-    lastMessageText: 'זוהי הודעת דמה ראשונה.',
-    lastMessageTime: new Date().toISOString(),
-    unreadCount: 2,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'dummy_conv_2',
-    participants: ['user001', 'dummy_user_2'],
-    lastMessageText: 'הודעת דמה שנייה, קצת יותר ארוכה.',
-    lastMessageTime: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-    unreadCount: 0,
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-  },
+// Demo conversations (merged with real ones; participant[0] will be switched to current user)
+const DEMO_CONVERSATIONS: ChatConversation[] = [
+  { id: 'dummy_conv_1', participants: ['user001', 'dummy_user_1'], lastMessageText: 'זוהי הודעת דמה ראשונה.', lastMessageTime: new Date().toISOString(), unreadCount: 2, createdAt: new Date().toISOString() },
+  { id: 'dummy_conv_2', participants: ['user001', 'dummy_user_2'], lastMessageText: 'הודעת דמה שנייה, קצת יותר ארוכה.', lastMessageTime: new Date(Date.now() - 3600000).toISOString(), unreadCount: 0, createdAt: new Date(Date.now() - 3600000).toISOString() },
 ];
-
 
 export default function ChatListScreen() {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { selectedUser } = useUser();
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const plusButtonScale = useRef(new Animated.Value(1)).current;
-  const plusButtonRotation = useRef(new Animated.Value(0)).current;
-
+  // Load conversations (real + demo)
   const loadConversations = useCallback(async () => {
     if (!selectedUser) {
       Alert.alert('שגיאה', 'יש לבחור יוזר תחילה');
       return;
     }
-
     setRefreshing(true);
     try {
-      console.log('💬 Loading conversations for user:', selectedUser.id);
-      const userConversations = await getConversations(selectedUser.id);
-      console.log('💬 Found real conversations:', userConversations.length);
-      
-      const allConversations = [...DUMMY_CONVERSATIONS.map(c => ({...c, participants: [selectedUser.id, c.participants[1]]})), ...userConversations];
-      
-      setConversations(allConversations);
+      const realConversations = await getConversations(selectedUser.id);
+      const demoForUser = DEMO_CONVERSATIONS.map(c => ({ ...c, participants: [selectedUser.id, c.participants[1]] }));
+      setConversations([...demoForUser, ...realConversations]);
     } catch (error) {
       console.error('❌ Load conversations error:', error);
       Alert.alert('שגיאה', 'שגיאה בטעינת השיחות');
@@ -82,192 +51,191 @@ export default function ChatListScreen() {
     }
   }, [selectedUser]);
 
+  // Subscribe to live updates while screen focused
   useFocusEffect(
     useCallback(() => {
-      console.log('💬 ChatListScreen - Screen focused');
       loadConversations();
-      
       if (!selectedUser) return;
-
-      const unsubscribe = subscribeToConversations(selectedUser.id, (updatedConversations) => {
-        console.log('💬 Received conversation update:', updatedConversations.length);
+      const unsubscribe = subscribeToConversations(selectedUser.id, updated => {
         setConversations(prev => {
-            const realConvs = prev.filter(c => !c.id.startsWith('dummy_'));
-            const updatedIds = new Set(updatedConversations.map(uc => uc.id));
-            const merged = [
-                ...DUMMY_CONVERSATIONS,
-                ...realConvs.filter(c => !updatedIds.has(c.id)),
-                ...updatedConversations
-            ];
-            return merged;
+          const prevReal = prev.filter(c => !c.id.startsWith('dummy_'));
+          const demoForUser = DEMO_CONVERSATIONS.map(c => ({ ...c, participants: [selectedUser.id, c.participants[1]] }));
+          const updatedIds = new Set(updated.map(c => c.id));
+          const merged = [
+            ...demoForUser,
+            ...prevReal.filter(c => !updatedIds.has(c.id)),
+            ...updated,
+          ];
+          return merged;
         });
       });
-
-      return () => {
-        console.log('💬 Cleaning up subscription');
-        unsubscribe();
-      };
+      return () => unsubscribe();
     }, [selectedUser, loadConversations])
   );
 
-  const onRefresh = useCallback(() => {
-    loadConversations();
-  }, [loadConversations]);
+  const onRefresh = useCallback(() => loadConversations(), [loadConversations]);
+
+  // Resolve display data for conversations (other user, last message, unread)
+  const combinedUsers = useMemo(() => {
+    // Merge fakeData users, demo users, and character users into ChatUser shape
+    const mappedCharacterUsers: ChatUser[] = characterUsers.map(u => ({
+      id: u.id,
+      name: u.name,
+      avatar: u.avatar,
+      isOnline: Boolean(u.isActive),
+      lastSeen: u.lastActive || new Date().toISOString(),
+      status: u.bio || '',
+    }));
+    return [...allUsers, ...DEMO_USERS, ...mappedCharacterUsers];
+  }, []);
+
+  const filteredSortedConversations = useMemo(() => {
+    if (!selectedUser) return [] as ChatConversation[];
+    const sorted = [...conversations].sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
+    if (!searchQuery.trim()) return sorted;
+    const q = searchQuery.trim().toLowerCase();
+    return sorted.filter(conv => {
+      const otherId = conv.participants.find(id => id !== selectedUser.id);
+      const other = combinedUsers.find(u => u.id === otherId);
+      return other?.name?.toLowerCase().includes(q);
+    });
+  }, [conversations, searchQuery, combinedUsers, selectedUser]);
 
   const handlePressChat = (conversationId: string, otherUserId: string, userName: string, userAvatar: string) => {
-    navigation.navigate('ChatDetailScreen', {
-      conversationId,
-      otherUserId,
-      userName,
-      userAvatar,
-    });
+    navigation.navigate('ChatDetailScreen', { conversationId, otherUserId, userName, userAvatar });
   };
 
-  const handlePlusButtonPress = () => {
+  // Create new chat – simple CTA next to the search bar
+  const handleNewChat = () => {
     if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     }
-    Animated.parallel([
-      Animated.sequence([
-        Animated.timing(plusButtonScale, { toValue: 0.8, duration: 100, useNativeDriver: true }),
-        Animated.spring(plusButtonScale, { toValue: 1, friction: 3, tension: 40, useNativeDriver: true }),
-      ]),
-      Animated.timing(plusButtonRotation, { toValue: 1, duration: 300, useNativeDriver: true }),
-    ]).start(() => {
-      plusButtonRotation.setValue(0);
-      navigation.navigate('NewChatScreen');
-    });
-  };
-
-  const renderChatItems = () => {
-    const combinedUsers = [...allUsers, ...DUMMY_USERS];
-
-    const sortedConversations = [...conversations].sort((a, b) => 
-        new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
-    );
-
-    return sortedConversations.map((item) => {
-      const otherParticipantId = item.participants.find(id => id !== selectedUser?.id);
-      const chattingUser = combinedUsers.find(user => user.id === otherParticipantId);
-      
-      if (!chattingUser) {
-        console.warn(`Could not find user for participant ID: ${otherParticipantId}`);
-        return null;
-      }
-
-      // Convert User to ChatUser by adding missing properties
-      const chatUser: ChatUser = {
-        id: chattingUser.id,
-        name: chattingUser.name,
-        avatar: chattingUser.avatar,
-        isOnline: Math.random() > 0.5, // Random online status for demo
-        lastSeen: (chattingUser as any).lastActive || new Date().toISOString(),
-        status: (chattingUser as any).bio || ''
-      };
-
-      const chatConversation = {
-        id: item.id,
-        userId: otherParticipantId || '',
-        messages: [],
-        lastMessageTimestamp: item.lastMessageTime,
-        lastMessageText: item.lastMessageText,
-        unreadCount: item.unreadCount,
-      };
-
-      return (
-        <ChatListItem
-          key={item.id}
-          conversation={chatConversation}
-          user={chatUser}
-          onPress={() => handlePressChat(item.id, chatUser.id, chatUser.name, chatUser.avatar)}
-        />
-      );
-    });
+    navigation.navigate('NewChatScreen');
   };
 
   return (
-    <>
-      <ScreenWrapper navigation={navigation} style={styles.safeArea}>
-      {/* Additional header elements for chat list */}
-      <View style={styles.additionalHeaderSection}>
-        {__DEV__ && (
-          <TouchableOpacity 
-            onPress={async () => {
-              if (selectedUser) {
-                await debugDatabaseContent(selectedUser.id);
-                Alert.alert('Debug', 'Check console for database content');
-              }
-            }}
-            style={styles.headerButton}
-          >
-            <Icon name="bug-outline" size={20} color={colors.error} />
-          </TouchableOpacity>
-        )}
-        <Pressable
-          onPress={handlePlusButtonPress}
-          style={({ pressed }) => [styles.headerButton, pressed && Platform.OS === 'ios' && styles.buttonPressed]}
-          android_ripple={{ color: colors.primary + '30', borderless: true }}
-        >
-          <Animated.View style={{ transform: [{ scale: plusButtonScale }, { rotate: plusButtonRotation.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '90deg'] }) }] }}>
-            <Icon name="add-circle-outline" size={24} color={colors.primary} />
-          </Animated.View>
-        </Pressable>
+    <ScreenWrapper navigation={navigation} style={styles.safeArea}>
+      {/* Search bar for conversations */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="חפש צ'אט לפי שם"
+          placeholderTextColor={colors.textSecondary}
+          style={styles.searchInput}
+        />
+        <TouchableOpacity onPress={handleNewChat} style={styles.newChatButton} activeOpacity={0.8}>
+          <Icon name="add-circle-outline" size={26} color={colors.primary} />
+        </TouchableOpacity>
       </View>
+
       <ScrollView
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        {renderChatItems()}
+        {filteredSortedConversations.map(item => {
+          const otherId = item.participants.find(id => id !== selectedUser?.id);
+          let chattingUser = combinedUsers.find(u => u.id === otherId);
+          if (!chattingUser) {
+            // Fallback user if not present in any static dataset
+            chattingUser = {
+              id: otherId || 'unknown',
+              name: `משתמש/ת`,
+              avatar: 'https://i.pravatar.cc/150?u=unknown',
+              isOnline: false,
+              lastSeen: new Date().toISOString(),
+              status: '',
+            };
+          }
+          const chatUser: ChatUser = {
+            id: chattingUser.id,
+            name: chattingUser.name,
+            avatar: chattingUser.avatar,
+            isOnline: Boolean((chattingUser as any).isOnline),
+            lastSeen: (chattingUser as any).lastActive || new Date().toISOString(),
+            status: (chattingUser as any).bio || '',
+          };
+          const chatConversation = {
+            id: item.id,
+            userId: otherId || '',
+            messages: [],
+            lastMessageTimestamp: item.lastMessageTime,
+            lastMessageText: item.lastMessageText,
+            unreadCount: item.unreadCount,
+          };
+          return (
+            <ChatListItem
+              key={item.id}
+              conversation={chatConversation}
+              user={chatUser}
+              onPress={() => handlePressChat(item.id, chatUser.id, chatUser.name, chatUser.avatar)}
+            />
+          );
+        })}
+        {filteredSortedConversations.length === 0 && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateTitle}>אין שיחות</Text>
+            <Text style={styles.emptyStateSubtitle}>התחל שיחה חדשה או נקה את החיפוש</Text>
+          </View>
+        )}
       </ScrollView>
     </ScreenWrapper>
-  </>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    marginTop: Platform.OS === 'android' ? 30 : 0,
     backgroundColor: colors.backgroundSecondary,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  searchContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 8,
+    paddingBottom: 12,
+    backgroundColor: colors.backgroundSecondary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    backgroundColor: colors.backgroundSecondary,
-  },
-  additionalHeaderSection: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+  },
+  searchInput: {
+    height: 44,
+    borderRadius: 12,
+    paddingHorizontal: 12,
     backgroundColor: colors.backgroundPrimary,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerTitle: {
-    fontSize: FontSizes.heading2,
-    fontWeight: 'bold',
+    borderWidth: 1,
+    borderColor: colors.border,
     color: colors.text,
-    textAlign: 'center',
+    textAlign: 'right',
+    fontSize: FontSizes.body,
     flex: 1,
   },
-  headerButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
+  newChatButton: {
+    marginLeft: 10,
+    height: 44,
+    width: 44,
     alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
   },
   listContent: {
     flexGrow: 1,
     paddingVertical: 8,
   },
-  buttonPressed: {
-    opacity: 0.7,
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyStateTitle: {
+    fontSize: FontSizes.heading2,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 6,
+  },
+  emptyStateSubtitle: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
   },
 });
