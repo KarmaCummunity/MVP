@@ -122,6 +122,9 @@ export default function BottomNavigator(): React.ReactElement {
           });
         }}
       >
+        {!isGuestMode && <Tab.Screen name="ProfileScreen" component={ProfileTabStack} />}
+        <Tab.Screen name="DonationsScreen" component={DonationsStack} />
+        <Tab.Screen name="SearchScreen" component={SearchTabStack} />
         <Tab.Screen 
           name="HomeScreen" 
           component={HomeTabStack}
@@ -132,9 +135,6 @@ export default function BottomNavigator(): React.ReactElement {
             },
           })}
         />
-        <Tab.Screen name="SearchScreen" component={SearchTabStack} />
-        <Tab.Screen name="DonationsScreen" component={DonationsStack} />
-        {!isGuestMode && <Tab.Screen name="ProfileScreen" component={ProfileTabStack} />}
       
       </Tab.Navigator>
   );

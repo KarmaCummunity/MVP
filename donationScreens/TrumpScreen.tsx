@@ -16,6 +16,8 @@ import { FontSizes } from '../globals/constants';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import HeaderComp from '../components/HeaderComp';
 import TimePicker from '../components/TimePicker';
+import { db } from '../utils/databaseService';
+import { useUser } from '../context/UserContext';
 
 export default function TrumpScreen({
   navigation,
@@ -28,13 +30,18 @@ export default function TrumpScreen({
   
   const [mode, setMode] = useState(false); // false = seeker (needs ride), true = offerer (offers ride)
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFilter, setSelectedFilter] = useState("");
-  const [selectedSort, setSelectedSort] = useState("");
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [selectedSorts, setSelectedSorts] = useState<string[]>([]);
   const [fromLocation, setFromLocation] = useState("");
   const [toLocation, setToLocation] = useState("");
   const [departureTime, setDepartureTime] = useState("");
-  const [filteredRides, setFilteredRides] = useState([]); // Initialize with empty array, will be set after dummyRides is defined
+  const [immediateDeparture, setImmediateDeparture] = useState(false);
+  const [seats, setSeats] = useState<number>(3);
+  const [price, setPrice] = useState<string>('0');
+  const [allRides, setAllRides] = useState<any[]>([]);
+  const [filteredRides, setFilteredRides] = useState<any[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const { selectedUser } = useUser();
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -49,20 +56,24 @@ export default function TrumpScreen({
     }, [])
   );
 
-  // Filter and sort options for trump screen
+  // Filter options ייעודיים לטרמפים
   const trumpFilterOptions = [
-    "עבודה",
-    "לימודים",
-    "בריאות",
-    "קניות",
-    "בילויים",
-    "משפחה",
-    "חירום",
-    "תיירות",
-    "ספורט",
-    "תרבות",
-    "דת",
-    "אחר"
+    'בלי השתתפות בהוצאות',
+    'לפי מגדר: נשים בלבד',
+    'לפי מגדר: גברים בלבד',
+    'לפי גיל: 18-25',
+    'לפי גיל: 25-40',
+    'לפי גיל: 40+',
+    'בלי צמתים',
+    'בלי אוטובוסים',
+    'בלי עישון',
+    'עם ילדים',
+    'עם חיות',
+    'מקום לציוד',
+    'כביש 6',
+    'מזגן',
+    'מוסיקה',
+    'נגישות',
   ];
 
   const trumpSortOptions = [
@@ -157,10 +168,23 @@ export default function TrumpScreen({
     },
   ];
 
-  // Now set the initial filtered rides
+  // טען טרמפים - שילוב דמה + מה-DB של המשתמש
   useEffect(() => {
-    setFilteredRides(dummyRides);
-  }, []);
+    const loadRides = async () => {
+      try {
+        const uid = selectedUser?.id || 'guest';
+        const userRides = await db.listRides(uid);
+        const merged = [...userRides, ...dummyRides];
+        setAllRides(merged);
+        setFilteredRides(merged);
+      } catch (e) {
+        setAllRides(dummyRides);
+        setFilteredRides(dummyRides);
+      }
+    };
+    loadRides();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedUser]);
 
   // Mock data for recent rides
   const dummyRecentRides = [
@@ -230,21 +254,15 @@ export default function TrumpScreen({
     
     // Update state with search results
     setSearchQuery(query);
-    setSelectedFilter(filters?.[0] || "");
-    setSelectedSort(sorts?.[0] || "");
+    setSelectedFilters(filters || []);
+    setSelectedSorts(sorts || []);
     
-    // If results are provided from SearchBar, use them
-    if (results && results.length > 0) {
-      setFilteredRides(results);
-    } else {
-      // Otherwise, perform local filtering
-      const filtered = getFilteredRides();
-      setFilteredRides(filtered);
-    }
+    const filtered = getFilteredRides();
+    setFilteredRides(filtered);
   };
 
   const getFilteredRides = () => {
-    let filtered = [...dummyRides];
+    let filtered = [...allRides];
 
     // Filter by search
     if (searchQuery) {
@@ -256,12 +274,26 @@ export default function TrumpScreen({
       );
     }
 
-    // Filter by category
-    if (selectedFilter) {
-      filtered = filtered.filter(ride => ride.category === selectedFilter);
+    // Apply selected filters (basic examples)
+    if (selectedFilters.length > 0) {
+      selectedFilters.forEach(f => {
+        if (f.includes('בלי השתתפות')) {
+          filtered = filtered.filter((ride: any) => (ride.price ?? 0) === 0);
+        }
+        if (f.includes('בלי עישון')) {
+          filtered = filtered.filter((ride: any) => ride.noSmoking);
+        }
+        if (f.includes('עם חיות')) {
+          filtered = filtered.filter((ride: any) => ride.petsAllowed);
+        }
+        if (f.includes('עם ילדים')) {
+          filtered = filtered.filter((ride: any) => ride.kidsFriendly);
+        }
+      });
     }
 
     // Sorting
+    const selectedSort = selectedSorts[0];
     switch (selectedSort) {
       case "אלפביתי":
         filtered.sort((a, b) => a.driverName.localeCompare(b.driverName));
@@ -291,6 +323,52 @@ export default function TrumpScreen({
     }
 
     return filtered;
+  };
+
+  // יצירת טרמפ ושמירה ל-DB
+  const handleCreateRide = async () => {
+    try {
+      if (!fromLocation || !toLocation) {
+        Alert.alert('שגיאה', 'נא למלא נקודת יציאה ויעד');
+        return;
+      }
+      const uid = selectedUser?.id || 'guest';
+      const rideId = `${Date.now()}`;
+      const timeToSave = immediateDeparture
+        ? new Date().toTimeString().slice(0, 5)
+        : (departureTime || new Date().toTimeString().slice(0, 5));
+      const ride = {
+        id: rideId,
+        driverId: uid,
+        driverName: selectedUser?.name || 'משתמש',
+        from: fromLocation,
+        to: toLocation,
+        date: new Date().toISOString().split('T')[0],
+        time: timeToSave,
+        seats: seats,
+        price: Number(price) || 0,
+        rating: 5,
+        image: '🚗',
+        category: 'אחר',
+        timestamp: new Date().toISOString(),
+        noSmoking: selectedFilters.includes('בלי עישון'),
+        petsAllowed: selectedFilters.includes('עם חיות'),
+        kidsFriendly: selectedFilters.includes('עם ילדים'),
+      } as any;
+
+      await db.createRide(uid, rideId, ride);
+      setFilteredRides(prev => [ride, ...prev]);
+      setFromLocation('');
+      setToLocation('');
+      setDepartureTime('');
+      setImmediateDeparture(false);
+      setSeats(3);
+      setPrice('0');
+
+      Alert.alert('הצלחה', 'הטרמפ פורסם ונשמר במסד הנתונים');
+    } catch (e) {
+      Alert.alert('שגיאה', 'נכשל לשמור את הטרמפ');
+    }
   };
 
   // Function to show ride details
@@ -415,29 +493,127 @@ export default function TrumpScreen({
 
   const FormHeader = () => (
     <View>
-      {/* Mode toggle is now handled by HeaderComp */}
-
       {mode ? (
         <View style={localStyles.formContainer}>
-          {/* Provider mode - ride creation form */}
-          <TimePicker
-            value={departureTime}
-            onTimeChange={setDepartureTime}
-            label="שעת יציאה"
-            placeholder="בחר שעת יציאה"
-          />
+          <View style={localStyles.row}>
+            <View style={localStyles.field}>
+              <Text style={localStyles.label}>מאת</Text>
+              <TextInput
+                style={localStyles.input}
+                value={fromLocation}
+                onChangeText={setFromLocation}
+                placeholder="מאיפה יוצאים"
+              />
+            </View>
+            <View style={localStyles.field}>
+              <Text style={localStyles.label}>אל</Text>
+              <TextInput
+                style={localStyles.input}
+                value={toLocation}
+                onChangeText={setToLocation}
+                placeholder="לאן מגיעים"
+              />
+            </View>
+          </View>
+
+          <View style={localStyles.row}>
+            <View style={[localStyles.field, { flex: 1 }]}>
+              <Text style={localStyles.label}>שעת יציאה</Text>
+              <View style={localStyles.timeRow}>
+                <View style={{ flex: 1 }}>
+                  <TimePicker
+                    value={departureTime}
+                    onTimeChange={setDepartureTime}
+                    placeholder="בחר שעת יציאה"
+                  />
+                </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    const newVal = !immediateDeparture;
+                    setImmediateDeparture(newVal);
+                    if (newVal) {
+                      const now = new Date();
+                      const t = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                      setDepartureTime(t);
+                    }
+                  }}
+                  style={localStyles.checkbox}
+                >
+                  <Icon
+                    name={immediateDeparture ? 'checkbox' : 'square-outline'}
+                    size={22}
+                    color={colors.pink}
+                  />
+                  <Text style={localStyles.checkboxLabel}>יציאה מיידית</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          <View style={localStyles.row}>
+            <View style={localStyles.fieldSmall}>
+              <Text style={localStyles.label}>מקומות</Text>
+              <View style={localStyles.counterRow}>
+                <TouchableOpacity style={localStyles.counterBtn} onPress={() => setSeats(Math.max(1, seats - 1))}>
+                  <Text style={localStyles.counterText}>-</Text>
+                </TouchableOpacity>
+                <Text style={localStyles.counterValue}>{seats}</Text>
+                <TouchableOpacity style={localStyles.counterBtn} onPress={() => setSeats(seats + 1)}>
+                  <Text style={localStyles.counterText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={localStyles.fieldSmall}>
+              <Text style={localStyles.label}>מחיר (₪)</Text>
+              <TextInput
+                style={localStyles.input}
+                keyboardType="numeric"
+                value={price}
+                onChangeText={setPrice}
+                placeholder="0"
+              />
+            </View>
+          </View>
+
+          <TouchableOpacity style={localStyles.offerButton} onPress={handleCreateRide}>
+            <Text style={localStyles.offerButtonText}>פרסם טרמפ</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <View style={localStyles.formContainer}>
-          {/* Beneficiary mode - ride search message */}
- 
-
-          <TimePicker
-            value={departureTime}
-            onTimeChange={setDepartureTime}
-            label="שעת יציאה"
-            placeholder="בחר שעת יציאה"
-          />
+          <View style={localStyles.row}>
+            <View style={[localStyles.field, { flex: 1 }]}>
+              <Text style={localStyles.label}>שעת יציאה</Text>
+              <View style={localStyles.timeRow}>
+                <View style={{ flex: 1 }}>
+                  <TimePicker
+                    value={departureTime}
+                    onTimeChange={setDepartureTime}
+                    placeholder="בחר שעת יציאה"
+                  />
+                </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    const newVal = !immediateDeparture;
+                    setImmediateDeparture(newVal);
+                    if (newVal) {
+                      const now = new Date();
+                      const t = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                      setDepartureTime(t);
+                    }
+                  }}
+                  style={localStyles.checkbox}
+                >
+                  <Icon
+                    name={immediateDeparture ? 'checkbox' : 'square-outline'}
+                    size={22}
+                    color={colors.pink}
+                  />
+                  <Text style={localStyles.checkboxLabel}>יציאה מיידית</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
         </View>
       )}
     </View>
@@ -483,7 +659,7 @@ export default function TrumpScreen({
           <>
             <View style={localStyles.section}>
               <Text style={localStyles.sectionTitle}>
-                {searchQuery || selectedFilter ? 'טרמפים זמינים' : 'טרמפים מומלצים'}
+                {searchQuery || selectedFilters.length > 0 ? 'טרמפים זמינים' : 'טרמפים מומלצים'}
               </Text>
               <ScrollView 
                 horizontal 
@@ -499,14 +675,29 @@ export default function TrumpScreen({
             </View>
 
             <View style={localStyles.section}>
-              <Text style={localStyles.sectionTitle}>קבוצות טרמפים</Text>
-              <ScrollView 
-                horizontal 
+              <Text style={localStyles.sectionTitle}>קבוצות וואטסאפ</Text>
+              <ScrollView
+                horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={localStyles.groupsScrollContainer}
               >
-                {dummyGroups.map((group) => (
-                  <View key={group.id} style={localStyles.groupCardWrapper}>
+                {dummyGroups.filter(g => g.type === 'whatsapp').map((group) => (
+                  <View key={`wa-${group.id}`} style={localStyles.groupCardWrapper}>
+                    {renderGroupCard({ item: group })}
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+
+            <View style={localStyles.section}>
+              <Text style={localStyles.sectionTitle}>קבוצות פייסבוק</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={localStyles.groupsScrollContainer}
+              >
+                {dummyGroups.filter(g => g.type === 'facebook').map((group) => (
+                  <View key={`fb-${group.id}`} style={localStyles.groupCardWrapper}>
                     {renderGroupCard({ item: group })}
                   </View>
                 ))}
@@ -538,6 +729,41 @@ const localStyles = StyleSheet.create({
       borderRadius: 15,
       marginBottom: 15,
     },
+    row: {
+      flexDirection: 'row-reverse',
+      gap: 10,
+      width: '100%',
+      marginBottom: 10,
+      paddingHorizontal: 8,
+    },
+    field: {
+      flex: 1,
+    },
+    fieldSmall: {
+      flex: 0.5,
+    },
+    timeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    checkbox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.moneyFormBorder,
+      backgroundColor: colors.moneyInputBackground,
+      marginLeft: 8,
+    },
+    checkboxLabel: {
+      fontSize: FontSizes.small,
+      color: colors.textPrimary,
+      fontWeight: '600',
+    },
     locationContainer: {
         marginBottom: 20,
     },
@@ -549,7 +775,7 @@ const localStyles = StyleSheet.create({
         fontWeight: '600',
         color: colors.textPrimary,
         marginBottom: 10,
-        textAlign: 'right',
+        textAlign: 'center',
     },
     input: {
         backgroundColor: colors.moneyInputBackground,
@@ -560,6 +786,35 @@ const localStyles = StyleSheet.create({
         color: colors.textPrimary,
         borderWidth: 1,
         borderColor: colors.moneyFormBorder,
+    },
+    counterRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.moneyInputBackground,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.moneyFormBorder,
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+    },
+    counterBtn: {
+      backgroundColor: colors.moneyFormBackground,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 8,
+    },
+    counterText: {
+      fontSize: FontSizes.medium,
+      fontWeight: 'bold',
+      color: colors.textPrimary,
+    },
+    counterValue: {
+      fontSize: FontSizes.medium,
+      fontWeight: 'bold',
+      color: colors.textPrimary,
+      minWidth: 30,
+      textAlign: 'center',
     },
     offerButton: {
         backgroundColor: colors.moneyButtonBackground,
@@ -579,8 +834,8 @@ const localStyles = StyleSheet.create({
     sectionTitle: {
         fontSize: FontSizes.heading2,
         fontWeight: 'bold',
+        alignSelf: 'center',
         color: colors.textPrimary,
-        marginBottom: 10,
         textAlign: 'right',
     },
     // Ride Cards Styles

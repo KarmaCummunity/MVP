@@ -21,6 +21,7 @@ export const DB_COLLECTIONS = {
   READ_RECEIPTS: 'read_receipts',
   VOICE_MESSAGES: 'voice_messages',
   CONVERSATION_METADATA: 'conversation_metadata',
+  RIDES: 'rides',
 } as const;
 
 // Database Keys Generator
@@ -474,6 +475,22 @@ export const db = {
   
   batchDeleteMessages: (userId: string, messageIds: string[]) => 
     DatabaseService.batchDelete(DB_COLLECTIONS.MESSAGES, userId, messageIds),
+
+  // Rides (Trump)
+  createRide: (userId: string, rideId: string, rideData: any) =>
+    DatabaseService.create(DB_COLLECTIONS.RIDES, userId, rideId, rideData),
+
+  getRide: (userId: string, rideId: string) =>
+    DatabaseService.read(DB_COLLECTIONS.RIDES, userId, rideId),
+
+  listRides: (userId: string) =>
+    DatabaseService.list(DB_COLLECTIONS.RIDES, userId),
+
+  updateRide: (userId: string, rideId: string, rideData: Partial<any>) =>
+    DatabaseService.update(DB_COLLECTIONS.RIDES, userId, rideId, rideData),
+
+  deleteRide: (userId: string, rideId: string) =>
+    DatabaseService.delete(DB_COLLECTIONS.RIDES, userId, rideId),
 };
 
 export default DatabaseService; 

@@ -398,7 +398,6 @@ const SearchBar = ({
       {/* --- Selected Filters Row --- */}
       {selectedFilters.length > 0 && (
         <View style={localStyles.selectedRowWrapper}>
-          <Text style={localStyles.rowLabel}>סינון:</Text>
           <ScrollView
             horizontal={true}
             showsHorizontalScrollIndicator={false}
@@ -417,13 +416,13 @@ const SearchBar = ({
               </TouchableOpacity>
             ))}
           </ScrollView>
+          <Text style={localStyles.rowLabel}>סינון:</Text>
         </View>
       )}
 
       {/* --- Selected Sorts Row --- */}
       {selectedSorts.length > 0 && (
         <View style={localStyles.selectedRowWrapper}>
-          <Text style={localStyles.rowLabel}>מיון:</Text>
           <ScrollView
             horizontal={true}
             showsHorizontalScrollIndicator={false}
@@ -442,6 +441,8 @@ const SearchBar = ({
               </TouchableOpacity>
             ))}
           </ScrollView>
+          <Text style={localStyles.rowLabel}>מיון:</Text>
+
         </View>
       )}
 
@@ -584,10 +585,9 @@ const localStyles = StyleSheet.create({
     flexGrow: 1,
   },
   selectedFilterSortButton: {
-    backgroundColor: colors.orange,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    marginTop: 5,
+    backgroundColor: colors.pinkLight,
+    paddingVertical: 2,
+    paddingHorizontal: 5,
     borderRadius: 18,
     flexDirection: "row-reverse",
     alignItems: "center",
@@ -596,8 +596,9 @@ const localStyles = StyleSheet.create({
   },
   selectedFilterSortButtonText: {
     fontSize: FontSizes.caption,
+    fontWeight: 'bold',
     color: colors.black,
-    marginLeft: 1,
+    marginLeft: 4,
   },
 
   // --- Static Filter Buttons Row Styles ---

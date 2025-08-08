@@ -139,8 +139,23 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
         style={[styles.container_top_bar, animatedStyle]}
         onLayout={(e) => setMeasuredHeight(e.nativeEvent.layout.height)}
       >
-      {/* Right Icons Group: Chat OR About (guest) */}
+
       <View style={{ flexDirection: 'row', gap: 5 }}>
+        <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={{ padding: 4 }}>
+          <Icon name="settings-outline" size={24} color={colors.topNavIcon} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('NotificationsScreen')} style={{ padding: 4 }}>
+          <Icon name="notifications-circle-outline" size={24} color={colors.topNavIcon} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Title */}
+      <View style={{ alignItems: 'center' }}>
+        <Text style={styles.topBarTitle}>{title}</Text>
+      </View>
+      {/* Left Icons Group: Notifications + Settings */}
+            {/* Right Icons Group: Chat OR About (guest) */}
+            <View style={{ flexDirection: 'row', gap: 5 }}>
         {isGuestMode ? (
           <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={{ padding: 4 }}>
             <Icon name="information-circle-outline" size={24} color={colors.topNavIcon} />
@@ -150,20 +165,6 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
             <Icon name="chatbubbles-outline" size={24} color={colors.topNavIcon} />
           </TouchableOpacity>
         )}
-      </View>
-
-      {/* Title */}
-      <View style={{ alignItems: 'center' }}>
-        <Text style={styles.topBarTitle}>{title}</Text>
-      </View>
-      {/* Left Icons Group: Notifications + Settings */}
-      <View style={{ flexDirection: 'row', gap: 5 }}>
-        <TouchableOpacity onPress={() => navigation.navigate('NotificationsScreen')} style={{ padding: 4 }}>
-          <Icon name="notifications-circle-outline" size={24} color={colors.topNavIcon} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={{ padding: 4 }}>
-          <Icon name="settings-outline" size={24} color={colors.topNavIcon} />
-        </TouchableOpacity>
       </View>
       </Animated.View>
     </SafeAreaView>

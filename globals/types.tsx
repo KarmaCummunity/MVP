@@ -49,6 +49,26 @@ export type DonationsStackParamList = {
   NotificationsScreen: undefined;
   AboutKarmaCommunityScreen: undefined;
   SettingsScreen: undefined;
+  // Category screens
+  FoodScreen: undefined;
+  ClothesScreen: undefined;
+  BooksScreen: undefined;
+  FurnitureScreen: undefined;
+  MedicalScreen: undefined;
+  AnimalsScreen: undefined;
+  HousingScreen: undefined;
+  SupportScreen: undefined;
+  EducationScreen: undefined;
+  EnvironmentScreen: undefined;
+  TechnologyScreen: undefined;
+  MusicScreen: undefined;
+  GamesScreen: undefined;
+  RiddlesScreen: undefined;
+  RecipesScreen: undefined;
+  PlantsScreen: undefined;
+  WasteScreen: undefined;
+  ArtScreen: undefined;
+  SportsScreen: undefined;
 };
 
 export type SettingItemType = "navigate" | "toggle" | "button" | "value";

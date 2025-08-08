@@ -46,7 +46,6 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingVertical: 8,
   },
   /**
    * Generic content container that centers its children both vertically and horizontally.

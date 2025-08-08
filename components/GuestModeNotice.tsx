@@ -36,34 +36,16 @@ const GuestModeNotice: React.FC<GuestModeNoticeProps> = ({
     }
   };
 
-  if (variant === 'compact') {
-    return (
-      <View style={styles.compactContainer}>
-        <Ionicons name="person-outline" size={16} color={colors.warning} />
-        <Text style={styles.compactText}>אתה במצב אורח</Text>
-        {showLoginButton && (
-          <TouchableOpacity style={styles.compactLoginButton} onPress={handleLoginPress}>
-            <Text style={styles.compactLoginText}>התחבר</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    );
-  }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.text}>
-          אתה במצב אורח. התחבר כדי לגשת לכל הפיצ'רים
-        </Text>
-        <Ionicons name="information-circle-outline" size={20} color={colors.warning} />
-      </View>
+    <>
       {showLoginButton && (
         <TouchableOpacity style={styles.loginButton} onPress={handleLoginPress}>
-          <Text style={styles.loginButtonText}>התחבר</Text>
+          <Text style={styles.loginButtonText}>אתה במצב אורח, מומלץ להתחבר</Text>
+          <Ionicons name="information-circle-outline" size={20} color={colors.warning} />
         </TouchableOpacity>
       )}
-    </View>
+    </>
   );
 };
 
@@ -92,11 +74,15 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   loginButton: {
-    backgroundColor: colors.primary,
+    margin: 10,
+    backgroundColor: colors.pinkDark,
     borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    alignSelf: 'flex-start',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    alignSelf: 'center',
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 6,
   },
   loginButtonText: {
     color: 'white',
