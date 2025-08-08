@@ -1,4 +1,35 @@
-import React, { useState, useCallback, useEffect } from 'react';
+/**
+ * 🚗 TrumpScreen - מסך טרמפים
+ * 
+ * מסך זה מאפשר למשתמשים לפרסם ולחפש טרמפים בקהילה.
+ * 
+ * פיצ'רים עיקריים:
+ * - מצב תורם: פרסום טרמפים עם הגדרות מיקום, זמן, מקומות ומחיר
+ * - מצב נזקק: חיפוש טרמפים זמינים עם פילטרים ומיון
+ * - היסטוריית טרמפים אישית
+ * - קישורים לקבוצות וואטסאפ ופייסבוק רלוונטיות
+ * - אינטגרציה עם וייז לניווט מיידי
+ * 
+ * מצבי פעולה:
+ * - mode = false: מצב נזקק (מחפש טרמפ)
+ * - mode = true: מצב תורם (מפרסם טרמפ)
+ * 
+ * נתונים:
+ * - שילוב נתונים מה-DB של המשתמש עם נתוני דמה
+ * - פילטרים ייעודיים לטרמפים (מגדר, גיל, עישון, חיות וכו')
+ * - מיון לפי אלפביתי, מיקום, תאריך, שעה, מחיר ודירוג
+ * 
+ * אינטגרציות:
+ * - מסד נתונים: שמירה וטעינה של טרמפים
+ * - וייז: ניווט אוטומטי ליעד
+ * - קישורים חיצוניים: קבוצות וואטסאפ ופייסבוק
+ * 
+ * @author Karma Community Team
+ * @version 1.0.0
+ * @since 2023
+ */
+
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -40,8 +71,11 @@ export default function TrumpScreen({
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
   const [seats, setSeats] = useState<number>(3);
   const [price, setPrice] = useState<string>('0');
+  const [need_to_pay, setNeedToPay] = useState<boolean>(false);
+  const priceInputRef = useRef<TextInput | null>(null);
   const [allRides, setAllRides] = useState<any[]>([]);
   const [filteredRides, setFilteredRides] = useState<any[]>([]);
+  const [recentRides, setRecentRides] = useState<any[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const { selectedUser } = useUser();
 
@@ -179,9 +213,22 @@ export default function TrumpScreen({
         const merged = [...userRides, ...dummyRides];
         setAllRides(merged);
         setFilteredRides(merged);
+        // בנה היסטוריה מהטרמפים של המשתמש
+        const userRecent = (userRides || []).map((r: any) => ({
+          id: r.id,
+          driverName: r.driverName || selectedUser?.name || 'משתמש',
+          from: r.from,
+          to: r.to,
+          date: r.date,
+          status: 'פורסם',
+          price: r.price || 0,
+        }));
+        setRecentRides(userRecent);
       } catch (e) {
         setAllRides(dummyRides);
         setFilteredRides(dummyRides);
+        // אם נכשל, נישאר עם דמה
+        setRecentRides([]);
       }
     };
     loadRides();
@@ -197,7 +244,7 @@ export default function TrumpScreen({
       to: "ירושלים",
       date: "10.12.2023",
       status: "הושלם",
-      price: 25,
+      price: 0,
     },
     {
       id: 2,
@@ -206,7 +253,7 @@ export default function TrumpScreen({
       to: "תל אביב",
       date: "08.12.2023",
       status: "הושלם",
-      price: 30,
+      price: 0,
     },
     {
       id: 3,
@@ -215,7 +262,7 @@ export default function TrumpScreen({
       to: "תל אביב",
       date: "05.12.2023",
       status: "הושלם",
-      price: 35,
+      price: 3,
     },
   ];
 
@@ -247,8 +294,17 @@ export default function TrumpScreen({
     },
   ];
 
-  // Function to filter rides
-  // Function to handle search results from HeaderComp
+  /**
+   * טיפול בתוצאות חיפוש מהרכיב HeaderComp
+   * 
+   * הפונקציה מקבלת תוצאות חיפוש, פילטרים ומיון
+   * ומעדכנת את המצב המקומי בהתאם.
+   * 
+   * @param {string} query - שאילתת החיפוש
+   * @param {string[]} filters - פילטרים נבחרים
+   * @param {string[]} sorts - אפשרויות מיון
+   * @param {any[]} results - תוצאות החיפוש
+   */
   const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
     console.log('🚗 TrumpScreen - Search received:', { 
       query, 
@@ -266,6 +322,16 @@ export default function TrumpScreen({
     setFilteredRides(filtered);
   };
 
+  /**
+   * סינון ומיון טרמפים לפי חיפוש, פילטרים ומיון
+   * 
+   * הפונקציה מסננת את כל הטרמפים לפי:
+   * - שאילתת חיפוש (שם נהג, מיקום, קטגוריה)
+   * - פילטרים נבחרים (מחיר, עישון, חיות וכו')
+   * - מיון (אלפביתי, מיקום, תאריך, שעה, מחיר, דירוג)
+   * 
+   * @returns {any[]} מערך טרמפים מסוננים וממוינים
+   */
   const getFilteredRides = () => {
     let filtered = [...allRides];
 
@@ -332,7 +398,15 @@ export default function TrumpScreen({
 
   // ללא תלות בחבילת מיקום - וייז ישתמש במיקום הנוכחי של המכשיר בעת הניווט
 
-  // יצירת טרמפ ושמירה ל-DB
+  /**
+   * יצירת טרמפ חדש ושמירה במסד הנתונים
+   * 
+   * הפונקציה בודקת תקינות הנתונים, יוצרת אובייקט טרמפ
+   * ושומרת אותו במסד הנתונים. אם נבחרה יציאה מיידית
+   * עם מיקום נוכחי, נפתח וייז לניווט אוטומטי.
+   * 
+   * @returns {Promise<void>}
+   */
   const handleCreateRide = async () => {
     try {
       // יעד מגיע מתיבת החיפוש (searchQuery)
@@ -370,6 +444,19 @@ export default function TrumpScreen({
 
       await db.createRide(uid, rideId, ride);
       setFilteredRides(prev => [ride, ...prev]);
+      // עדכן היסטוריה מיידית
+      setRecentRides(prev => [
+        {
+          id: rideId,
+          driverName: ride.driverName,
+          from: ride.from,
+          to: ride.to,
+          date: ride.date,
+          status: 'פורסם',
+          price: ride.price,
+        },
+        ...prev,
+      ]);
       setFromLocation('');
       setDepartureTime('');
       setImmediateDeparture(false);
@@ -398,22 +485,29 @@ export default function TrumpScreen({
     }
   };
 
-  // Function to show ride details
+  /**
+   * הצגת פרטי טרמפ בחלון דו-שיח
+   * 
+   * מציגה את כל פרטי הטרמפ ומאפשרת למשתמש
+   * להצטרף לטרמפ או לבטל.
+   * 
+   * @param {any} ride - אובייקט הטרמפ להצגה
+   */
   const showRideDetailsModal = (ride: any) => {
     Alert.alert(
       `טרמפ של ${ride.driverName}`,
-      `מ: ${ride.from}\nאל: ${ride.to}\nתאריך: ${ride.date}\nשעה: ${ride.time}\nמחיר: ₪${ride.price}\nמקומות פנויים: ${ride.seats}\n\nהאם תרצה להצטרף לטרמף זה?`,
+      `מ: ${ride.from}\nאל: ${ride.to}\nתאריך: ${ride.date}\nשעה: ${ride.time}\nמחיר: ₪${ride.price}\nמקומות פנויים: ${ride.seats}\n\nהאם תרצה להצטרף לטרמפ זה?`,
       [
         {
           text: 'לא עכשיו',
           style: 'cancel',
         },
         {
-          text: 'הצטרף לטרמף',
+          text: 'הצטרף לטרמפ',
           onPress: () => {
             Alert.alert(
               'בקשה נשלחה',
-              `בקשה להצטרף לטרמף של ${ride.driverName} נשלחה בהצלחה!`
+              `בקשה להצטרף לטרמפ של ${ride.driverName} נשלחה בהצלחה!`
             );
           },
         },
@@ -451,52 +545,65 @@ export default function TrumpScreen({
         }
       }}
     >
-      <View style={localStyles.rideCardHeader}>
-        <Text style={localStyles.rideEmoji}>{item.image}</Text>
+      {/* Row 1: emoji + driver name | rating */}
+      <View style={localStyles.rideRow}>
+        <View style={localStyles.rideRowLeft}>
+          <Text style={localStyles.rideEmoji}>{item.image}</Text>
+          <Text style={localStyles.rideDriverName}>{item.driverName}</Text>
+        </View>
         <View style={localStyles.rideRating}>
           <Text style={localStyles.ratingText}>⭐ {item.rating}</Text>
         </View>
       </View>
-      <Text style={localStyles.rideDriverName}>{item.driverName}</Text>
-      <View style={localStyles.rideRoute}>
-        <Text style={localStyles.rideFrom}>📍 {item.from}</Text>
-        <Text style={localStyles.rideArrow}>→</Text>
-        <Text style={localStyles.rideTo}>📍 {item.to}</Text>
-      </View>
-      <View style={localStyles.rideDetails}>
-        <Text style={localStyles.rideDateTime}>📅 {item.date} | 🕐 {item.time}</Text>
-        <Text style={localStyles.rideCategory}>🏷️ {item.category}</Text>
-      </View>
-      <View style={localStyles.rideStats}>
-        <Text style={localStyles.rideSeats}>💺 {item.seats} מקומות</Text>
-        <Text style={localStyles.ridePrice}>💰 ₪{item.price}</Text>
+
+      {/* Row 2: route | seats + price */}
+      <View style={localStyles.rideRow}>
+        <View style={localStyles.rideRowLeft}>
+          <Text numberOfLines={1} style={localStyles.rideRouteText}>{`${item.from} → ${item.to}`}</Text>
+        </View>
+        <View style={localStyles.rideRowRight}>
+          <Text style={localStyles.rideSeats}>💺 {item.seats}</Text>
+          <Text style={localStyles.ridePrice}>₪{item.price}</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
 
   const renderRecentRideCard = ({ item }: { item: any }) => (
-    <View style={localStyles.recentRideCard}>
-      <View style={localStyles.recentRideHeader}>
-        <Text style={localStyles.recentRideDriver}>{item.driverName}</Text>
-        <Text style={localStyles.recentRidePrice}>₪{item.price}</Text>
+    <View style={localStyles.rideCard}>
+      {/* Row 1: emoji + driver name | status */}
+      <View style={localStyles.rideRow}>
+        <View style={localStyles.rideRowLeft}>
+          <Text style={localStyles.rideEmoji}>🚗</Text>
+          <Text style={localStyles.rideDriverName}>{item.driverName}</Text>
+        </View>
+        <View style={localStyles.rideRating}>
+          <Text style={localStyles.ratingText}>{item.status}</Text>
+        </View>
       </View>
-      <View style={localStyles.recentRideDetails}>
-        <Text style={localStyles.recentRideRoute}>{item.from} → {item.to}</Text>
-        <Text style={localStyles.recentRideDate}>📅 {item.date}</Text>
+
+      {/* Row 2: route | date + restore */}
+      <View style={localStyles.rideRow}>
+        <View style={localStyles.rideRowLeft}>
+          <Text numberOfLines={1} style={localStyles.rideRouteText}>{`${item.from} → ${item.to}`}</Text>
+        </View>
+        <View style={localStyles.rideRowRight}>
+          {typeof item.price === 'number' && item.price > 0 && (
+            <Text style={localStyles.ridePrice}>₪{item.price}</Text>
+          )}
+          <Text style={localStyles.recentRideDateCompact}>📅 {item.date}</Text>
+          <TouchableOpacity
+            style={localStyles.restoreChip}
+            onPress={() => {
+              setFromLocation(item.from);
+              setToLocation(item.to);
+              Alert.alert('שחזור הושלם', `יעד שוחזר: ${item.from} → ${item.to}`);
+            }}
+          >
+            <Text style={localStyles.restoreChipText}>שחזר</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-      <View style={localStyles.recentRideStatus}>
-        <Text style={localStyles.recentRideStatusText}>✅ {item.status}</Text>
-      </View>
-      <TouchableOpacity 
-        style={localStyles.restoreButton}
-        onPress={() => {
-          setFromLocation(item.from);
-          setToLocation(item.to);
-          Alert.alert('שחזור הושלם', `יעד שוחזר: ${item.from} → ${item.to}`);
-        }}
-      >
-        <Text style={localStyles.restoreButtonText}>שחזר</Text>
-      </TouchableOpacity>
     </View>
   );
 
@@ -512,7 +619,6 @@ export default function TrumpScreen({
         <View style={localStyles.formContainer}>
           <View style={localStyles.row}>
             <View style={[localStyles.field, { flex: 1 }]}>
-              <Text style={localStyles.label}>שעת יציאה</Text>
               <View style={localStyles.timeRow}>
                 <View style={{ flex: 1 }}>
                   <TimePicker
@@ -585,14 +691,35 @@ export default function TrumpScreen({
               </View>
             </View>
             <View style={localStyles.fieldSmall}>
-              <Text style={localStyles.label}>השתתפות בדלק (₪)</Text>
-              <TextInput
-                style={localStyles.input}
-                keyboardType="numeric"
-                value={price}
-                onChangeText={setPrice}
-                placeholder="0"
-              />
+              <TouchableOpacity onPress={() => setNeedToPay(p => !p)} activeOpacity={0.8}>
+                <Text
+                  style={[
+                    localStyles.label,
+                    { color: need_to_pay ? colors.textPrimary : colors.textSecondary },
+                  ]}
+                >
+                  השתתפות בדלק (₪)
+                </Text>
+              </TouchableOpacity>
+              {need_to_pay && (
+                <View style={localStyles.inputWrapper}>
+                  <TextInput
+                    ref={priceInputRef}
+                    style={[localStyles.input, localStyles.inputWithAdornment]}
+                    keyboardType="number-pad"
+                    value={price}
+                    onChangeText={(t) => {
+                      const v = t.replace(/[^0-9]/g, '');
+                      setPrice(v);
+                      requestAnimationFrame(() => priceInputRef.current?.focus());
+                    }}
+                    placeholder="0"
+                    returnKeyType="done"
+                    blurOnSubmit={false}
+                  />
+                  <Text pointerEvents="none" style={localStyles.inputAdornment}>₪</Text>
+                </View>
+              )}
             </View>
           </View>
 
@@ -654,7 +781,7 @@ export default function TrumpScreen({
         onToggleMode={handleToggleMode}
         onSelectMenuItem={handleSelectMenuItem}
         title=""
-        placeholder={mode ? "חפש יעד לטרמפ" : "חפש טרמפים זמינים"}
+        placeholder={mode ? "הכנס יעד" : "חפש טרמפים זמינים"}
         filterOptions={trumpFilterOptions}
         sortOptions={trumpSortOptions}
         searchData={dummyRides}
@@ -662,36 +789,40 @@ export default function TrumpScreen({
       />
 
       <FormHeader />
-      
-      <ScrollView 
-        style={localStyles.container} 
-        contentContainerStyle={localStyles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
 
-        {mode ? (
-        
-            <View style={localStyles.section}>
-              <Text style={localStyles.sectionTitle}>היסטוריית טרמפים שלך</Text>
-              <View style={localStyles.recentRidesContainer}>
-                {dummyRecentRides.map((ride) => (
-                  <View key={ride.id} style={localStyles.recentRideCardWrapper}>
-                    {renderRecentRideCard({ item: ride })}
-                  </View>
-                ))}
-              </View>
+      {mode ? (
+        <ScrollView
+          style={localStyles.container}
+          contentContainerStyle={localStyles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="always"
+        >
+          <View style={localStyles.section}>
+            <Text style={localStyles.sectionTitle}>היסטוריית טרמפים שלך</Text>
+            <View style={localStyles.recentRidesContainer}>
+              {(recentRides.length > 0 ? recentRides : dummyRecentRides).map((ride) => (
+                <View key={ride.id} style={localStyles.recentRideCardWrapper}>
+                  {renderRecentRideCard({ item: ride })}
+                </View>
+              ))}
             </View>
-        ) : (
-          // Beneficiary mode - show available rides and groups
-          <>
-            <View style={localStyles.section}>
+          </View>
+        </ScrollView>
+      ) : (
+        // Beneficiary (seeker) mode - two independent vertical scroll sections
+        <View style={[localStyles.container, localStyles.noOuterScrollContainer]}> 
+          <View style={localStyles.sectionsContainer}>
+            {/* Rides section */}
+            <View style={localStyles.sectionWithScroller}>
               <Text style={localStyles.sectionTitle}>
                 {searchQuery || selectedFilters.length > 0 ? 'טרמפים זמינים' : 'טרמפים מומלצים'}
               </Text>
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={localStyles.ridesScrollContainer}
+              <ScrollView
+                style={localStyles.innerScroll}
+                contentContainerStyle={localStyles.ridesGridContainer}
+                showsVerticalScrollIndicator
+                nestedScrollEnabled
+                keyboardShouldPersistTaps="handled"
               >
                 {filteredRides.map((ride) => (
                   <View key={ride.id} style={localStyles.rideCardWrapper}>
@@ -701,34 +832,59 @@ export default function TrumpScreen({
               </ScrollView>
             </View>
 
-            <View style={localStyles.section}>
-              <Text style={localStyles.sectionTitle}>קבוצות טרמפים</Text>
-              <View style={localStyles.groupsTwoCols}>
-                <View style={localStyles.groupColumn}>
-                  <Text style={localStyles.groupColumnTitle}>וואטסאפ</Text>
-                  {dummyGroups.filter(g => g.type === 'whatsapp').map((group) => (
-                    <View key={`wa-${group.id}`} style={localStyles.groupLinkWrapper}>
-                      {renderGroupCard({ item: group })}
-                    </View>
-                  ))}
+            {/* Groups section */}
+            <View style={localStyles.sectionWithScroller}>
+              <Text style={localStyles.sectionTitle}>קבוצות רלוונטיות</Text>
+              <ScrollView
+                style={localStyles.innerScroll}
+                contentContainerStyle={localStyles.groupsContainer}
+                showsVerticalScrollIndicator
+                nestedScrollEnabled
+                keyboardShouldPersistTaps="handled"
+              >
+                <View style={localStyles.groupsTwoCols}>
+                  <View style={localStyles.groupColumn}>
+                    <Text style={localStyles.groupColumnTitle}>וואטסאפ</Text>
+                    {dummyGroups
+                      .filter(g => g.type === 'whatsapp')
+                      .filter(g => !searchQuery || g.name.includes(searchQuery))
+                      .map((group) => (
+                        <View key={`wa-${group.id}`} style={localStyles.groupLinkWrapper}>
+                          {renderGroupCard({ item: group })}
+                        </View>
+                      ))}
+                  </View>
+                  <View style={localStyles.groupColumn}>
+                    <Text style={localStyles.groupColumnTitle}>פייסבוק</Text>
+                    {dummyGroups
+                      .filter(g => g.type === 'facebook')
+                      .filter(g => !searchQuery || g.name.includes(searchQuery))
+                      .map((group) => (
+                        <View key={`fb-${group.id}`} style={localStyles.groupLinkWrapper}>
+                          {renderGroupCard({ item: group })}
+                        </View>
+                      ))}
+                  </View>
                 </View>
-                <View style={localStyles.groupColumn}>
-                  <Text style={localStyles.groupColumnTitle}>פייסבוק</Text>
-                  {dummyGroups.filter(g => g.type === 'facebook').map((group) => (
-                    <View key={`fb-${group.id}`} style={localStyles.groupLinkWrapper}>
-                      {renderGroupCard({ item: group })}
-                    </View>
-                  ))}
-                </View>
-              </View>
+              </ScrollView>
             </View>
-          </>
-        )}
-      </ScrollView>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
+/**
+ * סטיילים מקומיים למסך הטרמפים
+ * 
+ * הסטיילים מחולקים לקטגוריות:
+ * - Layout: safeArea, container, sections
+ * - Forms: inputs, buttons, checkboxes
+ * - Cards: ride cards, recent rides, groups
+ * - Typography: labels, text styles
+ * - Interactive: buttons, touchable elements
+ */
 const localStyles = StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -737,7 +893,7 @@ const localStyles = StyleSheet.create({
     container: {
         flex: 1,
         paddingHorizontal: 16,
-        paddingTop: 24,
+        paddingTop: 4,
     },
     scrollContent: {
         paddingBottom: 100, // Bottom margin for screen
@@ -752,7 +908,6 @@ const localStyles = StyleSheet.create({
       flexDirection: 'row-reverse',
       gap: 10,
       width: '100%',
-      marginBottom: 10,
       paddingHorizontal: 8,
     },
     field: {
@@ -764,7 +919,7 @@ const localStyles = StyleSheet.create({
     timeRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
+      gap: "15%",
     },
     checkbox: {
       flexDirection: 'row',
@@ -806,6 +961,19 @@ const localStyles = StyleSheet.create({
         color: colors.textPrimary,
         borderWidth: 1,
         borderColor: colors.moneyFormBorder,
+    },
+    inputWrapper: {
+        position: 'relative',
+        justifyContent: 'center',
+    },
+    inputWithAdornment: {
+        paddingRight: 36,
+    },
+    inputAdornment: {
+        position: 'absolute',
+        right: 12,
+        color: colors.textSecondary,
+        fontSize: FontSizes.body,
     },
     counterRow: {
       flexDirection: 'row',
@@ -849,46 +1017,77 @@ const localStyles = StyleSheet.create({
         fontWeight: 'bold',
     },
     section: {
-        marginBottom: 20,
+        marginBottom: 10,
     },
     sectionTitle: {
-        fontSize: FontSizes.heading2,
+        fontSize: FontSizes.body,
         fontWeight: 'bold',
         alignSelf: 'center',
         color: colors.textPrimary,
         textAlign: 'right',
     },
+    // Container that disables outer scroll in seeker mode
+    noOuterScrollContainer: {
+        flex: 1,
+    },
+    sectionsContainer: {
+        flex: 1,
+        gap: 5,
+    },
+    sectionWithScroller: {
+        flex: 1,
+        backgroundColor: colors.moneyFormBackground,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.moneyFormBorder,
+        paddingVertical: 8,
+        paddingHorizontal: 8,
+    },
+    innerScroll: {
+        flex: 1,
+    },
     // Ride Cards Styles
-    ridesScrollContainer: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+    ridesGridContainer: {
+        // paddingHorizontal: 8,
+        // paddingVertical: 8,
+        // paddingBottom: 8,
     },
     rideCardWrapper: {
-        marginRight: 12,
-        width: 280,
+        marginBottom: 8,
+        width: '100%',
     },
     rideCard: {
         backgroundColor: colors.moneyCardBackground,
-        borderRadius: 12,
-        padding: 16,
+        borderRadius: 10,
+        padding: 8,
         borderWidth: 1,
         borderColor: colors.moneyFormBorder,
-        minHeight: 200,
     },
-    rideCardHeader: {
-        flexDirection: 'row',
+    rideRow: {
+        flexDirection: 'row-reverse',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 8,
+        marginBottom: 4,
+    },
+    rideRowLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        flexShrink: 1,
+    },
+    rideRowRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
     rideEmoji: {
-        fontSize: FontSizes.displayLarge,
+        fontSize: FontSizes.heading2,
     },
     rideRating: {
         backgroundColor: colors.moneyStatusBackground,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 6,
     },
     ratingText: {
         fontSize: FontSizes.small,
@@ -896,52 +1095,17 @@ const localStyles = StyleSheet.create({
         fontWeight: 'bold',
     },
     rideDriverName: {
-        fontSize: FontSizes.body,
+        fontSize: FontSizes.small,
         fontWeight: 'bold',
         color: colors.textPrimary,
-        marginBottom: 8,
         textAlign: 'right',
     },
-    rideRoute: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    rideFrom: {
-        fontSize: FontSizes.body,
+    rideRouteText: {
+        fontSize: FontSizes.small,
         color: colors.textSecondary,
         flex: 1,
         textAlign: 'right',
-    },
-    rideArrow: {
-        fontSize: FontSizes.body,
-        color: colors.textSecondary,
-        marginHorizontal: 8,
-    },
-    rideTo: {
-        fontSize: FontSizes.body,
-        color: colors.textSecondary,
-        flex: 1,
-        textAlign: 'left',
-    },
-    rideDetails: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 8,
-    },
-    rideDateTime: {
-        fontSize: FontSizes.small,
-        color: colors.textSecondary,
-    },
-    rideCategory: {
-        fontSize: FontSizes.small,
-        color: colors.textSecondary,
-    },
-    rideStats: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 'auto',
+        marginLeft: 6,
     },
     rideSeats: {
         fontSize: FontSizes.small,
@@ -955,76 +1119,36 @@ const localStyles = StyleSheet.create({
     },
     // Recent Rides Styles
     recentRidesContainer: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingHorizontal: 8,
+        paddingVertical: 8,
     },
     recentRideCardWrapper: {
-        marginBottom: 12,
+        marginBottom: 8,
         width: '100%',
     },
-    recentRideCard: {
-        backgroundColor: colors.moneyCardBackground,
-        borderRadius: 12,
-        padding: 12,
+    recentRideDateCompact: {
+        fontSize: FontSizes.small,
+        color: colors.textSecondary,
+    },
+    restoreChip: {
+        backgroundColor: colors.moneyFormBackground,
         borderWidth: 1,
         borderColor: colors.moneyFormBorder,
-        minHeight: 120,
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
     },
-    recentRideHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 6,
-    },
-    recentRideDriver: {
-        fontSize: FontSizes.body,
-        fontWeight: 'bold',
+    restoreChipText: {
+        fontSize: FontSizes.small,
         color: colors.textPrimary,
-        textAlign: 'right',
-        flex: 1,
-    },
-    recentRidePrice: {
-        fontSize: FontSizes.body,
-        fontWeight: 'bold',
-        color: colors.moneyHistoryAmount,
-    },
-    recentRideDetails: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 6,
-    },
-    recentRideRoute: {
-        fontSize: FontSizes.small,
-        color: colors.textSecondary,
-        flex: 1,
-        textAlign: 'right',
-    },
-    recentRideDate: {
-        fontSize: FontSizes.small,
-        color: colors.textSecondary,
-    },
-    recentRideStatus: {
-        alignItems: 'flex-end',
-    },
-    recentRideStatusText: {
-        fontSize: FontSizes.small,
-        color: colors.moneyStatusText,
         fontWeight: '600',
     },
-    restoreButton: {
-        backgroundColor: colors.moneyButtonBackground,
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 8,
-    },
-    restoreButtonText: {
-        color: colors.backgroundPrimary,
-        fontSize: FontSizes.body,
-        fontWeight: 'bold',
-    },
     // Groups Styles (compact two columns)
+    groupsContainer: {
+      paddingHorizontal: 8,
+      paddingVertical: 8,
+      paddingBottom: 8,
+    },
     groupsTwoCols: {
       flexDirection: 'row-reverse',
       gap: 16,
@@ -1092,3 +1216,4 @@ const localStyles = StyleSheet.create({
         lineHeight: 20,
     },
 });
+
