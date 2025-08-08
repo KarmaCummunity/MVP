@@ -2,6 +2,7 @@ import React from 'react';
 import styles from '../globals/styles'; // your styles file
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { useRoute, useFocusEffect, useNavigationState } from '@react-navigation/native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
@@ -22,6 +23,7 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
   const route = useRoute();
   const { isGuestMode } = useUser();
   const translateY = useSharedValue(0);
+  const [measuredHeight, setMeasuredHeight] = React.useState(56);
   
   // Get the current active route name from navigation state
   const activeRouteName = useNavigationState(state => {
@@ -51,13 +53,12 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
 
   ////console.log('🔝 TopBarNavigator - hideTopBar prop:', hideTopBar);
 
-  // אנימציה להסתרת/הצגת הטופ בר
+  // מאפשר הסתרת טופ-בר דרך פרמטר מסך: route.params?.hideTopBar === true
+  const shouldHideTopBar = hideTopBar || (route?.params as any)?.hideTopBar === true;
+
   React.useEffect(() => {
-    //console.log('🔝 TopBarNavigator - hideTopBar changed:', hideTopBar);
-    translateY.value = withTiming(hideTopBar ? -60 : 0, {
-      duration: 200,
-    });
-  }, [hideTopBar]);
+    translateY.value = withTiming(shouldHideTopBar ? -measuredHeight : 0, { duration: 200 });
+  }, [shouldHideTopBar, measuredHeight]);
 
 
 
@@ -133,33 +134,39 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
 
 
   return (
-    <Animated.View style={[styles.container_top_bar, animatedStyle]}>
-      {/* Right Icons Group */}
+    <SafeAreaView edges={['top']} style={{ backgroundColor: colors.backgroundSecondary }}>
+      <Animated.View
+        style={[styles.container_top_bar, animatedStyle]}
+        onLayout={(e) => setMeasuredHeight(e.nativeEvent.layout.height)}
+      >
+      {/* Right Icons Group: Chat OR About (guest) */}
       <View style={{ flexDirection: 'row', gap: 5 }}>
-        {!isGuestMode && (
+        {isGuestMode ? (
+          <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={{ padding: 4 }}>
+            <Icon name="information-circle-outline" size={24} color={colors.topNavIcon} />
+          </TouchableOpacity>
+        ) : (
           <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={{ padding: 4 }}>
             <Icon name="chatbubbles-outline" size={24} color={colors.topNavIcon} />
           </TouchableOpacity>
         )}
-        <TouchableOpacity onPress={() => navigation.navigate('NotificationsScreen')} style={{ padding: 4 }}>
-          <Icon name="notifications-circle-outline" size={24} color={colors.topNavIcon} />
-        </TouchableOpacity>
       </View>
 
       {/* Title */}
       <View style={{ alignItems: 'center' }}>
         <Text style={styles.topBarTitle}>{title}</Text>
       </View>
-      {/* Left Icons Group */}
+      {/* Left Icons Group: Notifications + Settings */}
       <View style={{ flexDirection: 'row', gap: 5 }}>
-        <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={{ padding: 4 }}>
-          <Icon name="information-circle-outline" size={24} color={colors.topNavIcon} />
+        <TouchableOpacity onPress={() => navigation.navigate('NotificationsScreen')} style={{ padding: 4 }}>
+          <Icon name="notifications-circle-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={{ padding: 4 }}>
           <Icon name="settings-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
       </View>
-    </Animated.View>
+      </Animated.View>
+    </SafeAreaView>
   );
 }
 

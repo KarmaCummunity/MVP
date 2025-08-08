@@ -33,25 +33,23 @@ export default function App() {
   const [fontError, setFontError] = useState<Error | null>(null);
   const navigationRef = useRef<NavigationContainerRef<any>>(null);
 
-  // Setup notification response listener
+  // Setup notification response listener (iOS + Android)
   useEffect(() => {
-    if (notificationService && Platform.OS === 'android') {
-      const subscription = notificationService.setupNotificationResponseListener((response: any) => {
-        console.log('📱 Notification clicked:', response);
-        
-        // Navigate to notifications screen if user is logged in
-        if (navigationRef.current?.isReady()) {
-          // Check if user is logged in (you might need to get this from context)
-          navigationRef.current.navigate('NotificationsScreen');
-        }
-      });
-      
-      return () => {
-        if (subscription) {
-          subscription.remove();
-        }
-      };
-    }
+    if (!notificationService) return;
+
+    const subscription = notificationService.setupNotificationResponseListener((response: any) => {
+      console.log('📱 Notification clicked:', response);
+
+      if (navigationRef.current?.isReady()) {
+        navigationRef.current.navigate('NotificationsScreen');
+      }
+    });
+
+    return () => {
+      if (subscription && typeof subscription.remove === 'function') {
+        subscription.remove();
+      }
+    };
   }, []);
 
   const prepareApp = useCallback(async () => {

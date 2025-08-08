@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, SafeAreaView } from 'react-native';
+import { View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
-import TopBarNavigator from '../navigations/TopBarNavigator';
 import styles from '../globals/styles';
 
 interface ScreenWrapperProps {
@@ -21,15 +21,6 @@ export default function ScreenWrapper({
 }: ScreenWrapperProps) {
   return (
     <SafeAreaView style={[styles.safeArea, style]}>
-      {!hideTopBar && (
-        <View style={{ overflow: 'hidden' }}>
-          <TopBarNavigator 
-            navigation={navigation} 
-            hideTopBar={hideTopBar} 
-            showPosts={showPosts} 
-          />
-        </View>
-      )}
       {children}
     </SafeAreaView>
   );

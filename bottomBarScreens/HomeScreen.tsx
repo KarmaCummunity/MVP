@@ -41,6 +41,7 @@ import {
 } from "../globals/fakeData";
 import { useUser } from "../context/UserContext";
 import GuestModeNotice from "../components/GuestModeNotice";
+import FloatingBubblesOverlay from "../components/FloatingBubblesOverlay";
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -466,9 +467,8 @@ export default function HomeScreen() {
             </View>
           ) : (
             // Community mode - statistics bubbles only
-            <View style={styles.communityModeContainer}>
-              <BubbleComp />
-            </View>
+              // <BubbleComp />
+              <FloatingBubblesOverlay />
           )}
           </ScrollView>
           

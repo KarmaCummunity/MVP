@@ -1,4 +1,4 @@
-package com.navesarussi1.KarmaCommunity
+package com.navesarussi1.KC_ID
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

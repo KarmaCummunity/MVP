@@ -9,12 +9,18 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "ios": {
+        "simulator": true
       }
     },
     "preview": {
       "distribution": "internal",
       "android": {          
         "buildType": "apk"
+      },
+      "ios": {
+        "simulator": false
       },
       "env": {
         "ENVIRONMENT": "preview"
@@ -24,6 +30,9 @@
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
+      },
+      "ios": {
+        "resourceClass": "m-medium"
       },
       "env": {
         "ENVIRONMENT": "production"

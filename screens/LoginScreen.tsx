@@ -132,7 +132,7 @@ export default function LoginScreen() {
         {/* Header Section */}
         <View style={styles.headerSection}>
           <Text style={styles.title}>ברוכים הבאים!</Text>
-          <Text style={styles.subtitle}>KC - הקיבוץ הקפיטליסטי של ישראל</Text>
+          <Text style={styles.subtitle}>KC_ID - הקיבוץ הקפיטליסטי של ישראל</Text>
           
           <View style={styles.buttonsContainer}>
             <TouchableOpacity
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   selectedCharacter: {
-    // borderColor: '#FF6B9D',
+    // borderColor: '#FF6B9ֿD',
     backgroundColor: 'rgba(255, 240, 245, 0.95)',
     transform: [{ scale: 1.05 }],
     shadowColor: '#FF6B9D',

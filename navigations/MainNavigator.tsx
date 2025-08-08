@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { createStackNavigator } from "@react-navigation/stack";
 import { useFocusEffect } from "@react-navigation/native";
-import HomeStack from "./HomeStack";
+import BottomNavigator from "./BottomNavigator";
 import InactiveScreen from "../screens/InactiveScreen";
 import WebViewScreen from "../screens/WebViewScreen";
 import PostsReelsScreenWrapper from "../components/PostsReelsScreenWrapper";
@@ -80,7 +80,7 @@ export default function MainNavigator() {
   if (!isAuthenticated && !isGuestMode) {
     console.log('🧭 MainNavigator - User not authenticated, showing LoginScreen');
   } else {
-    console.log('🧭 MainNavigator - User authenticated or guest mode, showing HomeStack');
+    console.log('🧭 MainNavigator - User authenticated or guest mode, showing BottomNavigator');
   }
   
   return (
@@ -90,7 +90,7 @@ export default function MainNavigator() {
       initialRouteName={"LoginScreen"}
     >
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
-      <Stack.Screen name="HomeStack" component={HomeStack} />
+      <Stack.Screen name="HomeStack" component={BottomNavigator} />
       <Stack.Screen name="NewChatScreen" component={NewChatScreen} />
       <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
       <Stack.Screen name="InactiveScreen" component={InactiveScreen} />

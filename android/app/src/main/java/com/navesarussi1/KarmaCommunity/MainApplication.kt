@@ -1,4 +1,4 @@
-package com.navesarussi1.KarmaCommunity
+package com.navesarussi1.KC_ID
 
 import android.app.Application
 import android.content.res.Configuration

@@ -6,6 +6,11 @@ import MoneyScreen from "../donationScreens/MoneyScreen";
 import TimeScreen from "../donationScreens/TimeScreen";
 import KnowledgeScreen from "../donationScreens/KnowledgeScreen";
 import TrumpScreen from "../donationScreens/TrumpScreen";
+import ChatListScreen from "../topBarScreens/ChatListScreen";
+import NotificationsScreen from "../screens/NotificationsScreen";
+import AboutKarmaCommunityScreen from "../topBarScreens/AboutKarmaCommunityScreen";
+import SettingsScreen from "../topBarScreens/SettingsScreen";
+import TopBarNavigator from "./TopBarNavigator";
 import { DonationsStackParamList } from "../globals/types";
 
 const Stack = createStackNavigator<DonationsStackParamList>();
@@ -22,15 +27,25 @@ export default function DonationsStack() {
   return (
     <Stack.Navigator
       initialRouteName="DonationsScreen"
-      screenOptions={{
-        headerShown: false,
-      }}
+      screenOptions={({ navigation, route }) => ({
+        headerShown: true,
+        header: () => (
+          <TopBarNavigator
+            navigation={navigation as any}
+            hideTopBar={(route?.params as any)?.hideTopBar === true}
+          />
+        ),
+      })}
     >
       <Stack.Screen name="DonationsScreen" component={DonationsScreen} />
       <Stack.Screen name="MoneyScreen" component={MoneyScreen} />
       <Stack.Screen name="TimeScreen" component={TimeScreen} />
       <Stack.Screen name="KnowledgeScreen" component={KnowledgeScreen} />
       <Stack.Screen name="TrumpScreen" component={TrumpScreen} />
+      <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
+      <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
+      <Stack.Screen name="AboutKarmaCommunityScreen" component={AboutKarmaCommunityScreen} />
+      <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
     </Stack.Navigator>
   );
 }

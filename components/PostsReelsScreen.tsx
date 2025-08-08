@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../context/UserContext';
 import CommentsModal from './CommentsModal';
@@ -287,12 +288,14 @@ interface PostsReelsScreenProps {
 export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTopBar = false }: PostsReelsScreenProps) {
   const navigation = useNavigation();
   console.log('📱 PostsReelsScreen - hideTopBar prop:', hideTopBar);
+  const insets = useSafeAreaInsets();
   
   // אנימציה למסך הפוסטים
   const animatedStyle = useAnimatedStyle(() => {
     console.log('📱 PostsReelsScreen - animatedStyle - hideTopBar:', hideTopBar);
     return {
       flex: 1,
+      paddingTop: hideTopBar ? insets.top : 0,
       marginTop: withTiming(hideTopBar ? -60 : 0, {
         duration: 200,
       }),
