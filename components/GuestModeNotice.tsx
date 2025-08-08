@@ -36,7 +36,6 @@ const GuestModeNotice: React.FC<GuestModeNoticeProps> = ({
     }
   };
 
-
   return (
     <>
       {showLoginButton && (

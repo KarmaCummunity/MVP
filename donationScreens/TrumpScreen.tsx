@@ -9,6 +9,7 @@ import {
   ScrollView,
   TextInput,
   Platform,
+  Linking,
 } from 'react-native';
 import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import colors from '../globals/colors';
@@ -36,6 +37,7 @@ export default function TrumpScreen({
   const [toLocation, setToLocation] = useState("");
   const [departureTime, setDepartureTime] = useState("");
   const [immediateDeparture, setImmediateDeparture] = useState(false);
+  const [useCurrentLocation, setUseCurrentLocation] = useState(true);
   const [seats, setSeats] = useState<number>(3);
   const [price, setPrice] = useState<string>('0');
   const [allRides, setAllRides] = useState<any[]>([]);
@@ -225,6 +227,7 @@ export default function TrumpScreen({
       members: 1250,
       image: "🚗",
       type: "whatsapp",
+      link: 'https://chat.whatsapp.com/invite/te-aviv-jerusalem'
     },
     {
       id: 2,
@@ -232,6 +235,7 @@ export default function TrumpScreen({
       members: 890,
       image: "🚙",
       type: "whatsapp",
+      link: 'https://chat.whatsapp.com/invite/haifa-telaviv'
     },
     {
       id: 3,
@@ -239,6 +243,7 @@ export default function TrumpScreen({
       members: 650,
       image: "🚐",
       type: "facebook",
+      link: 'https://www.facebook.com/groups/beer-sheva-telaviv'
     },
   ];
 
@@ -325,11 +330,18 @@ export default function TrumpScreen({
     return filtered;
   };
 
+  // ללא תלות בחבילת מיקום - וייז ישתמש במיקום הנוכחי של המכשיר בעת הניווט
+
   // יצירת טרמפ ושמירה ל-DB
   const handleCreateRide = async () => {
     try {
-      if (!fromLocation || !toLocation) {
-        Alert.alert('שגיאה', 'נא למלא נקודת יציאה ויעד');
+      // יעד מגיע מתיבת החיפוש (searchQuery)
+      if (!searchQuery) {
+        Alert.alert('שגיאה', 'נא למלא יעד בתיבת החיפוש למעלה');
+        return;
+      }
+      if (!useCurrentLocation && !fromLocation) {
+        Alert.alert('שגיאה', 'נא למלא נקודת יציאה או לבחור יציאה מהמיקום הנוכחי');
         return;
       }
       const uid = selectedUser?.id || 'guest';
@@ -341,8 +353,8 @@ export default function TrumpScreen({
         id: rideId,
         driverId: uid,
         driverName: selectedUser?.name || 'משתמש',
-        from: fromLocation,
-        to: toLocation,
+        from: useCurrentLocation ? (fromLocation || 'מיקום נוכחי') : fromLocation,
+        to: searchQuery,
         date: new Date().toISOString().split('T')[0],
         time: timeToSave,
         seats: seats,
@@ -359,13 +371,28 @@ export default function TrumpScreen({
       await db.createRide(uid, rideId, ride);
       setFilteredRides(prev => [ride, ...prev]);
       setFromLocation('');
-      setToLocation('');
       setDepartureTime('');
       setImmediateDeparture(false);
+      setUseCurrentLocation(true);
       setSeats(3);
       setPrice('0');
 
       Alert.alert('הצלחה', 'הטרמפ פורסם ונשמר במסד הנתונים');
+
+      // אם יציאה מיידית ומיקום נוכחי - פותחים וייז ליעד
+      if (immediateDeparture && useCurrentLocation && searchQuery) {
+        const encodedDest = encodeURIComponent(searchQuery);
+        const wazeUrl = `waze://?q=${encodedDest}&navigate=yes`;
+        const fallback = `https://waze.com/ul?q=${encodedDest}&navigate=yes`;
+        try {
+          const canOpen = await Linking.canOpenURL(wazeUrl);
+          if (canOpen) {
+            await Linking.openURL(wazeUrl);
+          } else {
+            await Linking.openURL(fallback);
+          }
+        } catch {}
+      }
     } catch (e) {
       Alert.alert('שגיאה', 'נכשל לשמור את הטרמפ');
     }
@@ -474,20 +501,8 @@ export default function TrumpScreen({
   );
 
   const renderGroupCard = ({ item }: { item: any }) => (
-    <TouchableOpacity style={localStyles.groupCard}>
-      <View style={localStyles.groupCardHeader}>
-        <Text style={localStyles.groupEmoji}>{item.image}</Text>
-        <View style={localStyles.groupType}>
-          <Text style={localStyles.groupTypeText}>
-            {item.type === 'whatsapp' ? '📱' : '📘'}
-          </Text>
-        </View>
-      </View>
-      <Text style={localStyles.groupName}>{item.name}</Text>
-      <View style={localStyles.groupStats}>
-        <Text style={localStyles.groupMembers}>👥 {item.members} חברים</Text>
-        <Text style={localStyles.groupJoin}>הצטרף לקבוצה</Text>
-      </View>
+    <TouchableOpacity onPress={() => item.link && typeof item.link === 'string' ? Linking.openURL(item.link) : Alert.alert('שגיאה', 'אין קישור לקבוצה')}>
+      <Text style={localStyles.groupLinkText}>{item.name}</Text>
     </TouchableOpacity>
   );
 
@@ -495,27 +510,6 @@ export default function TrumpScreen({
     <View>
       {mode ? (
         <View style={localStyles.formContainer}>
-          <View style={localStyles.row}>
-            <View style={localStyles.field}>
-              <Text style={localStyles.label}>מאת</Text>
-              <TextInput
-                style={localStyles.input}
-                value={fromLocation}
-                onChangeText={setFromLocation}
-                placeholder="מאיפה יוצאים"
-              />
-            </View>
-            <View style={localStyles.field}>
-              <Text style={localStyles.label}>אל</Text>
-              <TextInput
-                style={localStyles.input}
-                value={toLocation}
-                onChangeText={setToLocation}
-                placeholder="לאן מגיעים"
-              />
-            </View>
-          </View>
-
           <View style={localStyles.row}>
             <View style={[localStyles.field, { flex: 1 }]}>
               <Text style={localStyles.label}>שעת יציאה</Text>
@@ -527,6 +521,7 @@ export default function TrumpScreen({
                     placeholder="בחר שעת יציאה"
                   />
                 </View>
+                <View>
                 <TouchableOpacity
                   onPress={() => {
                     const newVal = !immediateDeparture;
@@ -543,12 +538,38 @@ export default function TrumpScreen({
                     name={immediateDeparture ? 'checkbox' : 'square-outline'}
                     size={22}
                     color={colors.pink}
-                  />
+                    />
                   <Text style={localStyles.checkboxLabel}>יציאה מיידית</Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setUseCurrentLocation(!useCurrentLocation)}
+                  style={localStyles.checkbox}
+                  >
+                  <Icon
+                    name={useCurrentLocation ? 'checkbox' : 'square-outline'}
+                    size={22}
+                    color={colors.pink}
+                    />
+                  <Text style={localStyles.checkboxLabel}>יציאה מהמיקום</Text>
+                </TouchableOpacity>
+                    </View>
               </View>
             </View>
           </View>
+
+          {!useCurrentLocation && (
+            <View style={localStyles.row}>
+              <View style={localStyles.field}>
+                <Text style={localStyles.label}>נקודת יציאה</Text>
+                <TextInput
+                  style={localStyles.input}
+                  value={fromLocation}
+                  onChangeText={setFromLocation}
+                  placeholder="כתוב מאיפה יוצאים"
+                />
+              </View>
+            </View>
+          )}
 
           <View style={localStyles.row}>
             <View style={localStyles.fieldSmall}>
@@ -564,7 +585,7 @@ export default function TrumpScreen({
               </View>
             </View>
             <View style={localStyles.fieldSmall}>
-              <Text style={localStyles.label}>מחיר (₪)</Text>
+              <Text style={localStyles.label}>השתתפות בדלק (₪)</Text>
               <TextInput
                 style={localStyles.input}
                 keyboardType="numeric"
@@ -575,7 +596,14 @@ export default function TrumpScreen({
             </View>
           </View>
 
-          <TouchableOpacity style={localStyles.offerButton} onPress={handleCreateRide}>
+          <TouchableOpacity
+            style={[
+              localStyles.offerButton,
+              !searchQuery && { opacity: 0.5 },
+            ]}
+            onPress={handleCreateRide}
+            disabled={!searchQuery}
+          >
             <Text style={localStyles.offerButtonText}>פרסם טרמפ</Text>
           </TouchableOpacity>
         </View>
@@ -583,7 +611,6 @@ export default function TrumpScreen({
         <View style={localStyles.formContainer}>
           <View style={localStyles.row}>
             <View style={[localStyles.field, { flex: 1 }]}>
-              <Text style={localStyles.label}>שעת יציאה</Text>
               <View style={localStyles.timeRow}>
                 <View style={{ flex: 1 }}>
                   <TimePicker
@@ -675,33 +702,25 @@ export default function TrumpScreen({
             </View>
 
             <View style={localStyles.section}>
-              <Text style={localStyles.sectionTitle}>קבוצות וואטסאפ</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={localStyles.groupsScrollContainer}
-              >
-                {dummyGroups.filter(g => g.type === 'whatsapp').map((group) => (
-                  <View key={`wa-${group.id}`} style={localStyles.groupCardWrapper}>
-                    {renderGroupCard({ item: group })}
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-
-            <View style={localStyles.section}>
-              <Text style={localStyles.sectionTitle}>קבוצות פייסבוק</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={localStyles.groupsScrollContainer}
-              >
-                {dummyGroups.filter(g => g.type === 'facebook').map((group) => (
-                  <View key={`fb-${group.id}`} style={localStyles.groupCardWrapper}>
-                    {renderGroupCard({ item: group })}
-                  </View>
-                ))}
-              </ScrollView>
+              <Text style={localStyles.sectionTitle}>קבוצות טרמפים</Text>
+              <View style={localStyles.groupsTwoCols}>
+                <View style={localStyles.groupColumn}>
+                  <Text style={localStyles.groupColumnTitle}>וואטסאפ</Text>
+                  {dummyGroups.filter(g => g.type === 'whatsapp').map((group) => (
+                    <View key={`wa-${group.id}`} style={localStyles.groupLinkWrapper}>
+                      {renderGroupCard({ item: group })}
+                    </View>
+                  ))}
+                </View>
+                <View style={localStyles.groupColumn}>
+                  <Text style={localStyles.groupColumnTitle}>פייסבוק</Text>
+                  {dummyGroups.filter(g => g.type === 'facebook').map((group) => (
+                    <View key={`fb-${group.id}`} style={localStyles.groupLinkWrapper}>
+                      {renderGroupCard({ item: group })}
+                    </View>
+                  ))}
+                </View>
+              </View>
             </View>
           </>
         )}
@@ -713,7 +732,7 @@ export default function TrumpScreen({
 const localStyles = StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: colors.backgroundPrimary,
+      backgroundColor: colors.backgroundSecondary_2,
     },
     container: {
         flex: 1,
@@ -751,6 +770,7 @@ const localStyles = StyleSheet.create({
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
+      marginVertical: 3,
       paddingHorizontal: 8,
       paddingVertical: 6,
       borderRadius: 8,
@@ -1004,63 +1024,31 @@ const localStyles = StyleSheet.create({
         fontSize: FontSizes.body,
         fontWeight: 'bold',
     },
-    // Groups Styles
-    groupsScrollContainer: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+    // Groups Styles (compact two columns)
+    groupsTwoCols: {
+      flexDirection: 'row-reverse',
+      gap: 16,
+      paddingHorizontal: 16,
     },
-    groupCardWrapper: {
-        marginRight: 12,
-        width: 200,
+    groupColumn: {
+      flex: 1,
     },
-    groupCard: {
-        backgroundColor: colors.moneyCardBackground,
-        borderRadius: 12,
-        padding: 12,
-        borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
-        minHeight: 120,
+    groupColumnTitle: {
+      fontSize: FontSizes.body,
+      color: colors.textSecondary,
+      marginBottom: 6,
+      textAlign: 'right',
     },
-    groupCardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 8,
+    groupLinkWrapper: {
+      paddingVertical: 6,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
     },
-    groupEmoji: {
-        fontSize: FontSizes.heading1,
-    },
-    groupType: {
-        backgroundColor: colors.moneyStatusBackground,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 6,
-    },
-    groupTypeText: {
-        fontSize: FontSizes.caption,
-        color: colors.moneyStatusText,
-    },
-    groupName: {
-        fontSize: FontSizes.body,
-        fontWeight: 'bold',
-        color: colors.textPrimary,
-        marginBottom: 8,
-        textAlign: 'right',
-    },
-    groupStats: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 'auto',
-    },
-    groupMembers: {
-        fontSize: FontSizes.small,
-        color: colors.textSecondary,
-    },
-    groupJoin: {
-        fontSize: FontSizes.small,
-        color: colors.moneyHistoryAmount,
-        fontWeight: '600',
+    groupLinkText: {
+      fontSize: FontSizes.small,
+      color: colors.blue,
+      textDecorationLine: 'underline',
+      textAlign: 'right',
     },
     // Search Help Styles
     searchHelpContainer: {

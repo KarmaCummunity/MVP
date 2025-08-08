@@ -1,7 +1,7 @@
 {
-  "name": "KC_ID",
+  "name": "KarmaCommunity",
   "license": "0BSD",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "main": "index.js",
   "scripts": {
     "start": "expo start",
