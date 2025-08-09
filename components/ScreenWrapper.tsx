@@ -6,7 +6,7 @@ import styles from '../globals/styles';
 
 interface ScreenWrapperProps {
   children: React.ReactNode;
-  navigation: NavigationProp<ParamListBase>;
+  navigation?: NavigationProp<ParamListBase>;
   hideTopBar?: boolean;
   showPosts?: boolean;
   style?: object;

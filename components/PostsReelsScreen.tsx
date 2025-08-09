@@ -347,7 +347,7 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
   );
 
   return showTopBar ? (
-    <ScreenWrapper navigation={navigation} style={[styles.container, animatedStyle]}>
+    <ScreenWrapper style={[styles.container, animatedStyle]}>
       {content}
     </ScreenWrapper>
   ) : (

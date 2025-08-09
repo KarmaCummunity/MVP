@@ -34,7 +34,7 @@
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.navesarussi1.KC_ID",
+      "package": "com.navesarussi1.KarmaCommunity",
       "permissions": [
         "android.permission.VIBRATE",
         "android.permission.RECEIVE_BOOT_COMPLETED",

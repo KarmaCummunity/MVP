@@ -301,7 +301,7 @@ export default function SettingsScreen() {
   );
 
   return (
-    <ScreenWrapper navigation={navigation} style={styles.container}>
+    <ScreenWrapper style={styles.container}>
 
       {/* User Info Section - Only for logged in users */}
       {!isGuestMode && selectedUser && (
