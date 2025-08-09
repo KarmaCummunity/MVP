@@ -35,7 +35,7 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, isMyMess
             style={styles.fileContainer}
             onPress={() => Alert.alert('תמונה', 'פתיחת תמונה במסך מלא')}
           >
-            <Image source={{ uri: fileData.uri }} style={styles.messageImage} />
+            <Image source={{ uri: fileData.uri }} style={styles.messageImage as any} />
           </TouchableOpacity>
         );
       
@@ -46,7 +46,7 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, isMyMess
             onPress={() => Alert.alert('סרטון', 'נגינת סרטון')}
           >
             <View style={styles.videoContainer}>
-              <Image source={{ uri: fileData.thumbnail || fileData.uri }} style={styles.videoThumbnail} />
+              <Image source={{ uri: fileData.thumbnail || fileData.uri }} style={styles.videoThumbnail as any} />
               <View style={styles.playButton}>
                 <Icon name="play" size={24} color={colors.white} />
               </View>
@@ -85,7 +85,7 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, isMyMess
   return (
     <View style={containerStyle}>
       {!isMyMessage && (
-        <Image source={{ uri: userAvatar }} style={styles.avatar} />
+        <Image source={{ uri: userAvatar }} style={styles.avatar as any} />
       )}
       <View style={[styles.bubble, bubbleStyle]}>
         {message.text && <Text style={[styles.messageText, textStyle]}>{message.text}</Text>}

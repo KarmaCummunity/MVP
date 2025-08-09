@@ -265,11 +265,11 @@ export default function UserProfileScreen() {
             <TouchableOpacity 
               style={styles.statItem}
               onPress={() => {
-                navigation.navigate('FollowersScreen' as never, {
+                (navigation as any).navigate('FollowersScreen', {
                   userId: user.id,
                   type: 'followers',
                   title: 'עוקבים'
-                } as never);
+                });
               }}
             >
               <Text style={styles.statNumber}>{updatedCounts.followersCount}</Text>
@@ -278,11 +278,11 @@ export default function UserProfileScreen() {
             <TouchableOpacity 
               style={styles.statItem}
               onPress={() => {
-                navigation.navigate('FollowersScreen' as never, {
+                (navigation as any).navigate('FollowersScreen', {
                   userId: user.id,
                   type: 'following',
                   title: 'עוקב אחרי'
-                } as never);
+                });
               }}
             >
               <Text style={styles.statNumber}>{updatedCounts.followingCount}</Text>

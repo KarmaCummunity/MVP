@@ -57,7 +57,8 @@ export default function CommentsModal({
   const loadComments = async () => {
     try {
       setIsLoading(true);
-      const messages = await getMessages(`post-${postId}`);
+      // התאמה לחתימה החדשה של getMessages(conversationId, userId)
+      const messages = await getMessages(`post-${postId}`, selectedUser?.id || 'guest');
       
       // המרת הודעות לתגובות
       const commentsData: Comment[] = messages.map(msg => ({
@@ -97,6 +98,7 @@ export default function CommentsModal({
         timestamp: new Date().toISOString(),
         read: false,
         type: 'text',
+        status: 'sent',
       });
 
       setNewComment('');

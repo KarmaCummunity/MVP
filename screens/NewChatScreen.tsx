@@ -79,7 +79,7 @@ export default function NewChatScreen() {
       
       // אם אין חברים, הצג המלצות
       if (uniqueFriends.length === 0) {
-        const suggestions = getFollowSuggestions(selectedUser.id, 10);
+        const suggestions = await getFollowSuggestions(selectedUser.id, 10);
         setFriends(suggestions);
       } else {
         setFriends(uniqueFriends);
@@ -624,8 +624,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   sortChipActive: {
-    backgroundColor: colors.secondary,
-    borderColor: colors.secondary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   sortChipText: {
     fontSize: FontSizes.caption,
