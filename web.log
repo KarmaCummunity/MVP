@@ -1,0 +1,6 @@
+nohup: ignoring input
+Starting project at /workspace
+Metro is running in CI mode, reloads are disabled. Remove CI=true to enable watch mode.
+Starting Metro Bundler
+Waiting on http://localhost:19006
+Logs for your project will appear below.

@@ -1,0 +1,8 @@
+nohup: ignoring input
+Starting project at /workspace
+Metro is running in CI mode, reloads are disabled. Remove CI=true to enable watch mode.
+Starting Metro Bundler
+Tunnel connected.
+Tunnel ready.
+Waiting on http://localhost:8082
+Logs for your project will appear below.
