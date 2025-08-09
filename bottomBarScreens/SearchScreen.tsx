@@ -16,7 +16,6 @@ import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { texts } from '../globals/texts';
 import { 
-  tasks, 
   donations, 
   communityEvents, 
   users, 
@@ -24,6 +23,7 @@ import {
 } from '../globals/fakeData';
 import { useUser } from '../context/UserContext';
 import GuestModeNotice from '../components/GuestModeNotice';
+import { Pressable, Modal, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
 interface SearchResult {
@@ -43,6 +43,9 @@ const SearchScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [isSearching, setIsSearching] = useState(false);
+  const [aiVisible, setAiVisible] = useState(false);
+  const [aiText, setAiText] = useState('');
+  const [aiHistory, setAiHistory] = useState<{ role: 'user' | 'assistant'; text: string }[]>([]);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -67,7 +70,6 @@ const SearchScreen = () => {
   // Filter options
   const filterOptions = [
     { id: 'All', label: 'הכל', icon: 'grid-outline' },
-    { id: 'tasks', label: 'משימות', icon: 'checkbox-outline' },
     { id: 'donations', label: 'תרומות', icon: 'heart-outline' },
     { id: 'events', label: 'אירועים', icon: 'calendar-outline' },
     { id: 'users', label: 'משתמשים', icon: 'people-outline' },
@@ -80,24 +82,6 @@ const SearchScreen = () => {
     // Simulate API delay
     setTimeout(() => {
       let results: SearchResult[] = [];
-      
-      if (category === 'All' || category === 'tasks') {
-        results.push(...tasks
-          .filter(task => 
-            task.title.toLowerCase().includes(query.toLowerCase()) ||
-            task.description.toLowerCase().includes(query.toLowerCase())
-          )
-          .map(task => ({
-            id: task.id,
-            type: 'task' as const,
-            title: task.title,
-            description: task.description,
-            category: task.category,
-            location: task.location,
-            date: task.dueDate,
-          }))
-        );
-      }
       
       if (category === 'All' || category === 'donations') {
         results.push(...donations
@@ -231,7 +215,6 @@ const SearchScreen = () => {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'task': return 'checkbox-outline';
       case 'donation': return 'heart-outline';
       case 'event': return 'calendar-outline';
       case 'user': return 'person-outline';
@@ -241,7 +224,6 @@ const SearchScreen = () => {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'task': return colors.pink;
       case 'donation': return colors.error;
       case 'event': return colors.success;
       case 'user': return colors.info;
@@ -251,7 +233,6 @@ const SearchScreen = () => {
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case 'task': return 'משימה';
       case 'donation': return 'תרומה';
       case 'event': return 'אירוע';
       case 'user': return 'משתמש';
@@ -296,7 +277,7 @@ const SearchScreen = () => {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Guest Mode Notice */}
-        {isGuestMode && <GuestModeNotice />}
+        {/* הוסר באנר אורח המקומי – מופיע כעת גלובלית בכל האפליקציה */}
         
         {searchQuery.trim().length === 0 ? (
           // Default content when no search
@@ -400,6 +381,61 @@ const SearchScreen = () => {
           </View>
         )}
       </ScrollView>
+
+      {/* Floating AI Assistant Button */}
+      <Pressable
+        onPress={() => setAiVisible(true)}
+        style={styles.fab}
+      >
+        <Ionicons name="sparkles-outline" size={22} color={colors.white} />
+        <Text style={styles.fabText}>AI</Text>
+      </Pressable>
+
+      {/* AI Assistant Modal (פשוט/בסיסי) */}
+      <Modal animationType="slide" transparent visible={aiVisible} onRequestClose={() => setAiVisible(false)}>
+        <View style={styles.aiOverlay}>
+          <View style={styles.aiContainer}>
+            <View style={styles.aiHeader}>
+              <Text style={styles.aiTitle}>עוזר AI</Text>
+              <Pressable onPress={() => setAiVisible(false)}>
+                <Ionicons name="close" size={22} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+            <ScrollView style={styles.aiMessages} contentContainerStyle={{ paddingBottom: 10 }}>
+              {aiHistory.length === 0 ? (
+                <Text style={styles.aiPlaceholder}>שאלו כל דבר: איפה למצוא תרומות, איך לפרסם, או ניווט באפליקציה.</Text>
+              ) : (
+                aiHistory.map((m, idx) => (
+                  <View key={idx} style={[styles.aiBubble, m.role === 'user' ? styles.aiUser : styles.aiAssistant]}>
+                    <Text style={styles.aiBubbleText}>{m.text}</Text>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+            <View style={styles.aiInputRow}>
+              <TextInput
+                style={styles.aiInput}
+                value={aiText}
+                onChangeText={setAiText}
+                placeholder="איך אפשר לעזור?"
+                placeholderTextColor={colors.textSecondary}
+              />
+              <Pressable
+                style={styles.aiSend}
+                onPress={() => {
+                  if (!aiText.trim()) return;
+                  const userMsg = { role: 'user' as const, text: aiText.trim() };
+                  const assistantMsg = { role: 'assistant' as const, text: 'קיבלתי! אחזור עם תשובה בהקדם.' };
+                  setAiHistory(prev => [...prev, userMsg, assistantMsg]);
+                  setAiText('');
+                }}
+              >
+                <Ionicons name="send" size={18} color={colors.white} />
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -408,6 +444,103 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundPrimary,
+  },
+  aiOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  aiContainer: {
+    backgroundColor: colors.backgroundPrimary,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingTop: 10,
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  aiHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.backgroundTertiary,
+  },
+  aiTitle: {
+    fontSize: FontSizes.medium,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  aiMessages: {
+    maxHeight: 260,
+    marginTop: 8,
+  },
+  aiPlaceholder: {
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+  aiBubble: {
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    marginVertical: 4,
+    maxWidth: '85%',
+  },
+  aiUser: {
+    backgroundColor: colors.pinkLight,
+    alignSelf: 'flex-end',
+  },
+  aiAssistant: {
+    backgroundColor: colors.backgroundSecondary,
+    alignSelf: 'flex-start',
+  },
+  aiBubbleText: {
+    color: colors.textPrimary,
+    fontSize: FontSizes.body,
+  },
+  aiInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  aiInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: colors.textPrimary,
+    backgroundColor: colors.backgroundSecondary,
+  },
+  aiSend: {
+    backgroundColor: colors.pink,
+    padding: 10,
+    borderRadius: 20,
+  },
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 44,
+    backgroundColor: colors.pink,
+    borderRadius: 22,
+    height: "auto",
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    elevation: 4,
+  },
+  fabText: {
+    marginVertical: 5,
+    color: colors.white,
+    fontSize: FontSizes.small,
+    fontWeight: '700',
   },
   searchContainer: {
     paddingHorizontal: 20,

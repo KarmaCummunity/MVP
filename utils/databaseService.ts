@@ -491,6 +491,22 @@ export const db = {
 
   deleteRide: (userId: string, rideId: string) =>
     DatabaseService.delete(DB_COLLECTIONS.RIDES, userId, rideId),
+
+  // Donations / Items (generic items postings)
+  createDonation: (userId: string, donationId: string, donationData: any) =>
+    DatabaseService.create(DB_COLLECTIONS.DONATIONS, userId, donationId, donationData),
+
+  getDonation: (userId: string, donationId: string) =>
+    DatabaseService.read(DB_COLLECTIONS.DONATIONS, userId, donationId),
+
+  listDonations: (userId: string) =>
+    DatabaseService.list(DB_COLLECTIONS.DONATIONS, userId),
+
+  updateDonation: (userId: string, donationId: string, donationData: Partial<any>) =>
+    DatabaseService.update(DB_COLLECTIONS.DONATIONS, userId, donationId, donationData),
+
+  deleteDonation: (userId: string, donationId: string) =>
+    DatabaseService.delete(DB_COLLECTIONS.DONATIONS, userId, donationId),
 };
 
 export default DatabaseService; 
