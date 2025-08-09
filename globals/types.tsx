@@ -44,6 +44,8 @@ export type DonationsStackParamList = {
   TrumpScreen: undefined;
   KnowledgeScreen: undefined;
   TimeScreen: undefined;
+  ItemsScreen: undefined;
+  CategoryScreen: undefined;
   // Top bar accessible screens that are also used inside the Donations stack
   ChatListScreen: undefined;
   NotificationsScreen: undefined;

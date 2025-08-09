@@ -1,19 +1,28 @@
 import { StyleSheet, Dimensions, Platform } from "react-native";
 import colors from "./colors";
+import { biDiTextAlign, rowDirection, scaleSize } from "./responsive";
 
 const { width } = Dimensions.get('window');
 
 // Helper function to create shadow styles that work on both web and mobile
-export const createShadowStyle = (shadowColor: string, shadowOffset: { width: number, height: number }, shadowOpacity: number, shadowRadius: number) => {
+export const createShadowStyle = (
+  shadowColor: string,
+  shadowOffset: { width: number; height: number },
+  shadowOpacity: number,
+  shadowRadius: number
+) => {
   if (Platform.OS === 'web') {
     return {
       boxShadow: `${shadowOffset.width}px ${shadowOffset.height}px ${shadowRadius}px rgba(0, 0, 0, ${shadowOpacity})`,
-    };
-  } else {
-    return {
-      boxShadow: `${shadowOffset.width}px ${shadowOffset.height}px ${shadowRadius}px rgba(0, 0, 0, ${shadowOpacity})`,
-    };
+    } as any;
   }
+  return {
+    shadowColor,
+    shadowOffset,
+    shadowOpacity,
+    shadowRadius,
+    elevation: Math.max(1, Math.round(shadowRadius)),
+  } as any;
 };
 
 
@@ -75,7 +84,7 @@ export const styles = StyleSheet.create({
    * Header container with row layout, space between content, and bottom border.
    */
   header: {
-    flexDirection: 'row',
+    flexDirection: rowDirection('row'),
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -87,7 +96,7 @@ export const styles = StyleSheet.create({
    * Style for the main title in the header.
    */
   headerTitle: {
-    fontSize: 20,
+    fontSize: scaleSize(20),
     fontWeight: 'bold',
     color: colors.textSecondary,
   },
@@ -119,7 +128,7 @@ export const styles = StyleSheet.create({
    */
   icon: {
     marginHorizontal: 6,
-    fontSize: 22,
+    fontSize: scaleSize(22),
   },
   /**
    * General section container with padding.
@@ -139,7 +148,7 @@ export const styles = StyleSheet.create({
    * Title style for sections, bold and centered.
    */
   sectionTitle: {
-    fontSize: 18,
+    fontSize: scaleSize(18),
     fontWeight: 'bold',
     marginBottom: 5,
     textAlign: 'center',
@@ -165,11 +174,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 10,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    ...createShadowStyle(colors.black, { width: 0, height: 2 }, 0.1, 3),
   },
   /**
    * Text style for recent buttons.
@@ -211,17 +216,13 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
     margin: 10,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    ...createShadowStyle(colors.black, { width: 0, height: 2 }, 0.1, 3),
   },
   /**
    * Text style for category buttons, centered.
    */
   categoryButtonText: {
-    fontSize: 14,
+    fontSize: scaleSize(14),
     fontWeight: 'bold',
     color: colors.legacyMediumGray,
     textAlign: 'center',
@@ -230,7 +231,7 @@ export const styles = StyleSheet.create({
    * Bottom navigation bar style with row layout, space around items, white background, and top border.
    */
   bottomNav: {
-    flexDirection: 'row',
+    flexDirection: rowDirection('row'),
     justifyContent: 'space-around',
     alignItems: 'center',
     backgroundColor: colors.white,
@@ -249,7 +250,7 @@ export const styles = StyleSheet.create({
    * Icon style for bottom navigation items.
    */
   bottomNavIcon: {
-    fontSize: 20,
+    fontSize: scaleSize(20),
   },
   /**
    * Text style for bottom navigation items.
@@ -272,11 +273,7 @@ export const styles = StyleSheet.create({
     marginTop: -30,
     borderWidth: 4,
     borderColor: colors.legacyLightGray, // Match screen background color
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 5,
+    ...createShadowStyle(colors.black, { width: 0, height: 4 }, 0.2, 5),
   },
   /**
    * Icon style for the center icon in the bottom navigation.
@@ -306,7 +303,7 @@ export const styles = StyleSheet.create({
    * Text style within the search box.
    */
   searchText: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     fontWeight: 'bold',
     color: colors.orangeDark,
   },
@@ -314,7 +311,7 @@ export const styles = StyleSheet.create({
    * Container for search input fields, arranged in a row.
    */
   searchInputs: {
-    flexDirection: 'row',
+    flexDirection: rowDirection('row'),
     alignItems: 'center',
     justifyContent: 'space-between',
   },
@@ -327,7 +324,7 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 8,
     marginHorizontal: 5,
-    textAlign: 'right',
+    textAlign: biDiTextAlign('right'),
   },
   /**
    * Style for search icons.
@@ -341,7 +338,7 @@ export const styles = StyleSheet.create({
    * Container for filter buttons, arranged with space around, light orange background, and rounded bottom corners.
    */
   filterButtonsContainer: {
-    flexDirection: 'row',
+    flexDirection: rowDirection('row'),
     justifyContent: 'space-around',
     paddingVertical: 10,
     backgroundColor: colors.orangeLight,
@@ -375,7 +372,7 @@ export const styles = StyleSheet.create({
    * Style for an input field row, with right alignment for content.
    */
   inputField: {
-    flexDirection: 'row',
+    flexDirection: rowDirection('row'),
     alignItems: 'center',
     justifyContent: 'flex-end',
     marginBottom: 15,
@@ -384,7 +381,7 @@ export const styles = StyleSheet.create({
    * Style for input field labels.
    */
   inputLabel: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     marginRight: 10,
     fontWeight: 'bold',
   },
@@ -415,17 +412,13 @@ export const styles = StyleSheet.create({
    * Card style with row layout, white background, rounded corners, padding, and shadow.
    */
   card: {
-    flexDirection: 'row',
+    flexDirection: rowDirection('row'),
     backgroundColor: colors.white,
     borderRadius: 15,
     padding: 15,
     marginBottom: 10,
     alignItems: 'center',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    ...createShadowStyle(colors.black, { width: 0, height: 2 }, 0.1, 3),
   },
   /**
    * Style for images within cards, circular and with left margin.
@@ -447,7 +440,7 @@ export const styles = StyleSheet.create({
    * Title style for cards.
    */
   cardTitle: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     fontWeight: 'bold',
     marginBottom: 5,
   },
@@ -491,7 +484,7 @@ export const styles = StyleSheet.create({
    * Main title style, bold, black, and centered.
    */
   title: {
-    fontSize: 32,
+    fontSize: scaleSize(32),
     fontWeight: 'bold',
     color: colors.black,
     marginBottom: 8,
@@ -501,7 +494,7 @@ export const styles = StyleSheet.create({
    * Top bar title style for navigation headers.
    */
   topBarTitle: {
-    fontSize: 18,
+    fontSize: scaleSize(18),
     fontWeight: '600',
     color: colors.topNavTitle,
     textAlign: 'center',
@@ -510,7 +503,7 @@ export const styles = StyleSheet.create({
    * Subtitle style, with specific color and centered.
    */
   subtitle: {
-    fontSize: 18,
+    fontSize: scaleSize(18),
     color: '#555', // Keeping this as a literal as no specific gray color is defined in Colors for this
     marginBottom: 20,
     textAlign: 'center',
@@ -519,10 +512,10 @@ export const styles = StyleSheet.create({
    * Description text style, with specific color, line height, and right alignment.
    */
   description: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     color: '#444', // Keeping this as a literal as no specific gray color is defined in Colors for this
     lineHeight: 24,
-    textAlign: 'right',
+    textAlign: biDiTextAlign('right'),
   },
   /**
    * Bottom section container with padding, top border, and pink background.

@@ -27,7 +27,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import BubbleComp from "../components/BubbleComp";
 import colors from "../globals/colors";
 import { FontSizes } from "../globals/constants";
 import { texts } from "../globals/texts";
@@ -41,7 +40,8 @@ import {
 } from "../globals/fakeData";
 import { useUser } from "../context/UserContext";
 import GuestModeNotice from "../components/GuestModeNotice";
-import FloatingBubblesOverlay from "../components/FloatingBubblesOverlay";
+import CommunityStatsGrid from "../components/CommunityStatsGrid";
+import StatDetailsModal, { StatDetails } from "../components/StatDetailsModal";
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -119,14 +119,14 @@ export default function HomeScreen() {
   const navigation = useNavigation();
   const { selectedUser, setSelectedUser, isGuestMode, resetHomeScreenTrigger } = useUser();
   const [showPosts, setShowPosts] = useState(false);
-  const [isPersonalMode, setIsPersonalMode] = useState(true); // Personal mode as default
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedStat, setSelectedStat] = useState<StatDetails | null>(null);
+  const [isStatModalVisible, setIsStatModalVisible] = useState(false);
   
-  // In guest mode - always community mode
+  // אין הבדל לוגי בין מצבי אורח/יוזר מלבד הכותרת
   useEffect(() => {
     if (isGuestMode) {
-      console.log('🏠 HomeScreen - Guest mode detected, forcing community mode');
-      setIsPersonalMode(false);
+      console.log('🏠 HomeScreen - Guest mode active (header banner only)');
     }
   }, [isGuestMode]);
   const [hideTopBar, setHideTopBar] = useState(false); // Top bar hiding state
@@ -175,23 +175,28 @@ export default function HomeScreen() {
     }, [])
   );
 
-  
+  const handleSelectStat = (details: StatDetails) => {
+    setSelectedStat(details);
+    setIsStatModalVisible(true);
+  };
+
   /**
    * מטפל בגלילה למטה
    * כאשר הגלילה עוברת סף מסוים, נפתח מסך הפוסטים
    */
   const handleScroll = (event: any) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const offsetY = contentOffset.y;
     scrollY.value = offsetY;
-    
-    // Higher threshold - requires significant scrolling
-    const threshold = 150;
-    
-    // If scrolling exceeds threshold, open posts screen
-    if (offsetY > threshold && !showPosts) {
-      console.log('🏠 HomeScreen - Opening posts screen (scroll threshold reached)');
+
+    // פתיחת מסך הפוסטים כאשר סיימנו לגלול את כל התוכן (הכותרת + הסטטיסטיקות)
+    const nearBottomBuffer = 24;
+    const reachedEnd = offsetY + layoutMeasurement.height >= contentSize.height - nearBottomBuffer;
+
+    if (reachedEnd && !showPosts) {
+      console.log('🏠 HomeScreen - Opening posts screen (scrolled past categories to bottom)');
       setShowPosts(true);
-      setHideTopBar(false); // Ensure top bar is shown when posts screen opens
+      setHideTopBar(false);
       postsTranslateY.value = withSpring(0, {
         damping: 25,
         stiffness: 200,
@@ -214,7 +219,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundPrimary} />
       
-      {showPosts ? (
+       {showPosts ? (
         // Posts screen
         <View style={styles.postsContainer}>
           <PostsReelsScreen 
@@ -235,20 +240,11 @@ export default function HomeScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
-            {/* Dynamic content based on mode */}
-{/* Debug log - guest mode check */}
-            {(() => {
-              console.log('🏠 HomeScreen - isGuestMode:', isGuestMode, 'isPersonalMode:', isPersonalMode);
-              return null;
-            })()}
-            {(isPersonalMode && !isGuestMode) ? (
-              // Personal mode - full screen
-              <View style={styles.personalModeContainer}>
-                {/* Guest Mode Notice */}
-                {isGuestMode && <GuestModeNotice />}
-                
-                {/* Header Section */}
-                <View style={styles.header}>
+            {/* Header */}
+            {isGuestMode ? (
+                  <GuestModeNotice />
+            ) : (
+              <View style={styles.header}>
                 <View style={styles.headerContent}>
                   <View style={styles.userInfo}>
                     <Image 
@@ -270,208 +266,17 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
+            )}
 
-              {/* Floating Statistics Bubbles */}
-              <View style={styles.floatingStatsContainer}>
-                <View style={styles.bubblesContainer}>
-                  {/* Money Donations */}
-                  <FloatingBubble
-                    icon="💵"
-                    value="125K"
-                    label={texts.moneyDonations}
-                    bubbleStyle={styles.moneyBubble}
-                    delay={0}
-                  />
-                  
-                  {/* Food Donations */}
-                  <FloatingBubble
-                    icon="🍎"
-                    value="2.1K"
-                    label={texts.foodKg}
-                    bubbleStyle={styles.foodBubble}
-                    delay={200}
-                  />
-                  
-                  {/* Clothing Donations */}
-                  <FloatingBubble
-                    icon="👕"
-                    value="1.5K"
-                    label={texts.clothingKg}
-                    bubbleStyle={styles.clothingBubble}
-                    delay={400}
-                  />
-                  
-                  {/* Blood Donations */}
-                  <FloatingBubble
-                    icon="🩸"
-                    value="350"
-                    label={texts.bloodLiters}
-                    bubbleStyle={styles.bloodBubble}
-                    delay={600}
-                  />
-                  
-                  {/* Time Volunteering */}
-                  <FloatingBubble
-                    icon="⏰"
-                    value="500"
-                    label={texts.volunteerHours}
-                    bubbleStyle={styles.timeBubble}
-                    delay={800}
-                  />
-                  
-                  {/* Transportation */}
-                  <FloatingBubble
-                    icon="🚗"
-                    value="1.8K"
-                    label={texts.rides}
-                    bubbleStyle={styles.transportBubble}
-                    delay={1000}
-                  />
-                  
-                  {/* Education */}
-                  <FloatingBubble
-                    icon="📚"
-                    value="67"
-                    label={texts.courses}
-                    bubbleStyle={styles.educationBubble}
-                    delay={1200}
-                  />
-                  
-                  {/* Environment */}
-                  <FloatingBubble
-                    icon="🌳"
-                    value="750"
-                    label={texts.treesPlanted}
-                    bubbleStyle={styles.environmentBubble}
-                    delay={1400}
-                  />
-                  
-                  {/* Animals */}
-                  <FloatingBubble
-                    icon="🐕"
-                    value="120"
-                    label={texts.animalsAdopted}
-                    bubbleStyle={styles.animalsBubble}
-                    delay={1600}
-                  />
-                  
-                  {/* Events */}
-                  <FloatingBubble
-                    icon="🎉"
-                    value="78"
-                    label={texts.events}
-                    bubbleStyle={styles.eventsBubble}
-                    delay={1800}
-                  />
-                  
-                  {/* Recycling */}
-                  <FloatingBubble
-                    icon="♻️"
-                    value="900"
-                    label={texts.recyclingBags}
-                    bubbleStyle={styles.recyclingBubble}
-                    delay={2000}
-                  />
-                  
-                  {/* Culture */}
-                  <FloatingBubble
-                    icon="🎭"
-                    value="60"
-                    label={texts.culturalEvents}
-                    bubbleStyle={styles.cultureBubble}
-                    delay={2200}
-                  />
-                  
-                  {/* Health */}
-                  <FloatingBubble
-                    icon="🏥"
-                    value="45"
-                    label={texts.doctorVisits}
-                    bubbleStyle={styles.healthBubble}
-                    delay={2400}
-                  />
-                  
-                  {/* Elderly Care */}
-                  <FloatingBubble
-                    icon="👴"
-                    value="89"
-                    label={texts.elderlySupportCount}
-                    bubbleStyle={styles.elderlyBubble}
-                    delay={2600}
-                  />
-                  
-                  {/* Children */}
-                  <FloatingBubble
-                    icon="👶"
-                    value="156"
-                    label={texts.childrenSupportCount}
-                    bubbleStyle={styles.childrenBubble}
-                    delay={2800}
-                  />
-                  
-                  {/* Sports */}
-                  <FloatingBubble
-                    icon="⚽"
-                    value="23"
-                    label={texts.sportsGroups}
-                    bubbleStyle={styles.sportsBubble}
-                    delay={3000}
-                  />
-                  
-                  {/* Music */}
-                  <FloatingBubble
-                    icon="🎵"
-                    value="34"
-                    label={texts.musicLessons}
-                    bubbleStyle={styles.musicBubble}
-                    delay={3200}
-                  />
-                  
-                  {/* Art */}
-                  <FloatingBubble
-                    icon="🎨"
-                    value="45"
-                    label={texts.artWorkshops}
-                    bubbleStyle={styles.artBubble}
-                    delay={3400}
-                  />
-                  
-                  {/* Technology */}
-                  <FloatingBubble
-                    icon="💻"
-                    value="28"
-                    label={texts.computerLessons}
-                    bubbleStyle={styles.techBubble}
-                    delay={3600}
-                  />
-                  
-                  {/* Gardening */}
-                  <FloatingBubble
-                    icon="🌱"
-                    value="9"
-                    label={texts.communityGardens}
-                    bubbleStyle={styles.gardenBubble}
-                    delay={3800}
-                  />
-                  
-                  {/* Leadership */}
-                  <FloatingBubble
-                    icon="👑"
-                    value="8"
-                    label={texts.communityLeaderships}
-                    bubbleStyle={styles.leadershipBubble}
-                    delay={4000}
-                  />
-                </View>
-              </View>
-            </View>
-          ) : (
-            // Community mode - statistics bubbles only
-              // <BubbleComp />
-              <FloatingBubblesOverlay />
-          )}
+            {/* Community Stats Grid - press to open details */}
+            <CommunityStatsGrid onSelect={handleSelectStat} />
           </ScrollView>
-          
+          {/* Details modal */}
+          <StatDetailsModal 
+            visible={isStatModalVisible} 
+            onClose={() => setIsStatModalVisible(false)} 
+            details={selectedStat}
+          />
           {/* Toggle Button - Hidden in guest mode */}
         </View>
       )}

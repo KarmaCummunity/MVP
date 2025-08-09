@@ -5,6 +5,7 @@ import MenuComp from "../components/MenuComp";
 import ModeToggleButton from "../components/ModeToggleButton";
 import GuestModeNotice from "../components/GuestModeNotice";
 import colors from "../globals/colors";
+import { getScreenInfo, scaleSize, rowDirection } from "../globals/responsive";
 import { FontSizes } from "../globals/constants";
 import { useUser } from "../context/UserContext";
 
@@ -35,6 +36,9 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
 }) => {
   const { isGuestMode } = useUser();
  
+  const { isTablet, isDesktop } = getScreenInfo();
+  const horizontalPadding = isDesktop ? 24 : isTablet ? 20 : 16;
+  const containerRadius = isDesktop ? 24 : 30;
   return (
     <View style={headerStyles.headerContainer}>
       {/* מציג את הבאנר במצב אורח אם המשתמש במצב אורח */}
@@ -42,7 +46,7 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
         <GuestModeNotice variant="compact" showLoginButton={true} />
       )}
 
-      <View style={headerStyles.topRow}>
+      <View style={[headerStyles.topRow, { flexDirection: rowDirection('row') }]}>
         <MenuComp options={menuOptions} onSelectOption={onSelectMenuItem} />
         <ModeToggleButton mode={mode} onToggle={onToggleMode} />
       </View>
@@ -70,7 +74,6 @@ const headerStyles = StyleSheet.create({
     marginTop: 10,
   },
   topRow: {
-    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 6,

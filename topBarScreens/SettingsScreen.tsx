@@ -27,6 +27,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
+import { biDiTextAlign, rowDirection, getScreenInfo, scaleSize } from '../globals/responsive';
 import { FontSizes } from '../globals/constants';
 import { useUser } from '../context/UserContext';
 import GuestModeNotice from '../components/GuestModeNotice';
@@ -527,7 +528,7 @@ const styles = StyleSheet.create({
     marginTop: Platform.OS === 'android' ? 30 : 0,
   },
   header: {
-    flexDirection: 'row',
+    flexDirection: rowDirection('row'),
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
@@ -564,16 +565,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 4,
+    textAlign: biDiTextAlign('right'),
   },
   userEmail: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
     marginBottom: 8,
+    textAlign: biDiTextAlign('right'),
   },
   karmaPoints: {
     fontSize: FontSizes.body,
     color: colors.primary,
     fontWeight: '500',
+    textAlign: 'center',
   },
 
   // Web: Custom scrollable container with CSS overflow
@@ -608,9 +612,10 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: 16,
     marginRight: 4,
+    textAlign: biDiTextAlign('right'),
   },
   settingsItem: {
-    flexDirection: 'row',
+    flexDirection: rowDirection('row'),
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.backgroundSecondary,
@@ -622,7 +627,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.errorLight,
   },
   settingsItemLeft: {
-    flexDirection: 'row',
+    flexDirection: rowDirection('row'),
     alignItems: 'center',
     flex: 1,
   },
@@ -646,9 +651,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 2,
+    textAlign: biDiTextAlign('right'),
   },
   settingsSubtitle: {
     fontSize: FontSizes.small,
     color: colors.textSecondary,
+    textAlign: biDiTextAlign('right'),
   },
 });

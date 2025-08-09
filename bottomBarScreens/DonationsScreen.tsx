@@ -18,13 +18,15 @@ import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { useUser } from '../context/UserContext';
 import GuestModeNotice from '../components/GuestModeNotice';
+import DonationStatsFooter from '../components/DonationStatsFooter';
+import { donations, charities } from '../globals/fakeData';
 
 interface DonationsScreenProps {
   navigation: NavigationProp<DonationsStackParamList>;
 }
 
 const RECENT_CATEGORIES_KEY = 'recent_categories_ids';
-const RECENT_LIMIT = 3;
+const RECENT_LIMIT = 4;
 const DEFAULT_RECENT_IDS: string[] = ['money', 'trump', 'furniture']; // הנחה: "חפצים" = רהיטים
 
 // New modern categories with icons and descriptions (excluding quick actions)
@@ -338,16 +340,12 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
     }
   };
 
-  // Build sections: recent (max 3) and others
-  const recentCategoriesRaw = recentCategoryIds
+  // Build sections: recent (ensure 'money' is always first and include up to RECENT_LIMIT)
+  const recentIdsBase = (recentCategoryIds.length > 0 ? recentCategoryIds : DEFAULT_RECENT_IDS);
+  const recentIdsWithMoneyFirst = ['money', ...recentIdsBase.filter((id) => id !== 'money')].slice(0, RECENT_LIMIT);
+  const recentCategories = recentIdsWithMoneyFirst
     .map((id) => donationCategories.find((c) => c.id === id))
     .filter((c): c is typeof donationCategories[number] => Boolean(c));
-
-  const recentCategories = recentCategoriesRaw.length > 0
-    ? recentCategoriesRaw
-    : DEFAULT_RECENT_IDS
-        .map((id) => donationCategories.find((c) => c.id === id))
-        .filter((c): c is typeof donationCategories[number] => Boolean(c));
 
   const otherCategories = donationCategories.filter(
     (c) => !recentCategories.some((rc) => rc.id === c.id)
@@ -359,79 +357,88 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
       
 
 
-              <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Guest Mode Notice */}
                 {isGuestMode && <GuestModeNotice />}
                 
           {/* Active Screens Section - Recent (single row of 3) */}
           <View style={styles.categoriesSection}>
             <Text style={styles.sectionTitle}>במיוחד בשבילך</Text>
-            <View style={styles.categoriesGrid}>
+            <View style={[styles.categoriesGrid, { flexDirection: 'row' }]}>
             {recentCategories.map((category) => (
               <TouchableOpacity
                 key={category.id}
                 style={[
                   styles.categoryCard,
-                  { backgroundColor: category.bgColor },
+                  { backgroundColor: category.bgColor, width: '23%' },
                 ]}
                 onPress={() => handleCategoryPress(category)}
               >
-                <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
-                  <Ionicons name={category.icon as any} size={24} color="white" />
+                <View style={styles.categoryIconWrapper}>
+                  <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
+                    <Ionicons name={category.icon as any} size={26} color="white" />
+                  </View>
+                  {category.id === 'money' && (
+                    <Ionicons
+                      name="pin"
+                      size={16}
+                      color={colors.pink}
+                      style={styles.pinOverlay}
+                    />
+                  )}
                 </View>
-                <Text style={styles.categoryTitle}>{category.title}</Text>
-                <Text style={styles.categorySubtitle}>{category.subtitle}</Text>
-                <Text style={styles.categoryDescription}>{category.description}</Text>
+                <View style={styles.categoryTitleRow}>
+                  <Text style={styles.categoryTitle}>{category.title}</Text>
+                </View>
+                  <Text style={styles.categorySubtitle}>{category.subtitle}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
         {/* Inactive Categories Section - All other categories */}
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.categoriesSection}>
           <Text style={styles.sectionTitle}>כל הדרכים לפעול בקהילה</Text>
-          <View style={styles.categoriesGrid}>
+          <View style={[styles.categoriesGrid, { flexDirection: 'row' }]}>
             {otherCategories.map((category) => (
               <TouchableOpacity
                 key={category.id}
                 style={[
                   styles.categoryCard,
-                  { backgroundColor: category.bgColor },
+                  { backgroundColor: category.bgColor, width: '31.5%' },
                 ]}
                 onPress={() => handleCategoryPress(category)}
               >
                 <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
-                  <Ionicons name={category.icon as any} size={24} color="white" />
+                  <Ionicons name={category.icon as any} size={26} color="white" />
                 </View>
                 <Text style={styles.categoryTitle}>{category.title}</Text>
                 <Text style={styles.categorySubtitle}>{category.subtitle}</Text>
-                <Text style={styles.categoryDescription}>{category.description}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
         {/* Stats Section */}
-        <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>סטטיסטיקות קהילתיות</Text>
-          <View style={styles.statsContainer}>
-            <View style={styles.statCard}>
-              <Ionicons name="people" size={24} color={colors.pink} />
-              <Text style={styles.statNumber}>1,247</Text>
-              <Text style={styles.statLabel}>תורמים פעילים</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="heart" size={24} color={colors.pink} />
-              <Text style={styles.statNumber}>5,892</Text>
-              <Text style={styles.statLabel}>תרומות השבוע</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="star" size={24} color={colors.pink} />
-              <Text style={styles.statNumber}>98%</Text>
-              <Text style={styles.statLabel}>שביעות רצון</Text>
-            </View>
-          </View>
-        </View>
+          {(() => {
+            const now = Date.now();
+            const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+            const weeklyDonations = donations.filter((d: any) => {
+              const t = new Date(d.createdAt || Date.now()).getTime();
+              return t >= weekAgo;
+            }).length;
+            const activeDonors = new Set(donations.map((d: any) => d.createdBy).filter(Boolean)).size;
+            const activeCharities = charities.length;
+            return (
+              <DonationStatsFooter
+                stats={[
+                  { label: 'תורמים פעילים', value: activeDonors, icon: 'people-outline' },
+                  { label: 'תרומות השבוע', value: weeklyDonations, icon: 'heart-outline' },
+                  { label: 'עמותות פעילות', value: activeCharities, icon: 'business-outline' },
+                ]}
+              />
+            );
+          })()}
       </ScrollView>
     </SafeAreaView>
   );
@@ -489,7 +496,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 5,
     paddingTop: 20,
     marginBottom: 40,
     paddingBottom: 200,
@@ -528,13 +535,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   categoriesSection: {
-    marginBottom: 30,
-    alignItems: 'center',
-    backgroundColor: colors.backgroundSecondaryPink,
+
+    backgroundColor: colors.moneyFormBackground,
+    borderRadius: 12,
+    borderWidth: 1,
     borderColor: colors.moneyFormBorder,
-    borderRadius: 20,
-    padding: 20,
+    marginTop: 10,
+    marginBottom: 5,
     marginHorizontal: 10,
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+
     shadowColor: colors.shadowLight,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -545,17 +557,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 14,
+    gap: 6,
   },
   activeCategoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 20,
+    gap: 10,
   },
   categoryCard: {
-    width: '30%',
-    padding: 12,
+    width: '31.5%',
+    paddingVertical: 8,
+    paddingHorizontal: 6,
     borderRadius: 10,
     alignItems: 'center',
     shadowColor: colors.shadowLight,
@@ -563,7 +576,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 3,
     elevation: 2,
-    minHeight: 100,
+    // minHeight: 108,
     backgroundColor: colors.backgroundPrimary,
     borderWidth: 0.5,
     borderColor: colors.backgroundTertiary,
@@ -593,7 +606,15 @@ const styles = StyleSheet.create({
     borderRadius: 17.5,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
+  },
+  categoryIconWrapper: {
+    position: 'relative',
+  },
+  pinOverlay: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
   },
   activeCategoryIcon: {
     width: 45,
@@ -604,23 +625,27 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   categoryTitle: {
-    fontSize: FontSizes.small,
+    fontSize: FontSizes.medium,
     fontWeight: '600',
     color: colors.textPrimary,
-    marginBottom: 2,
     textAlign: 'center',
   },
+  categoryTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 0,
+  },
   categorySubtitle: {
-    fontSize: FontSizes.caption,
+    fontSize: 12,
     color: colors.textSecondary,
-    marginBottom: 3,
     textAlign: 'center',
   },
   categoryDescription: {
-    fontSize: FontSizes.extraSmall,
+    fontSize: FontSizes.small,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 12,
+    lineHeight: 10,
   },
   activeCategoryTitle: {
     fontSize: FontSizes.medium,

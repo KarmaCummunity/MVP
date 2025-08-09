@@ -49,6 +49,7 @@ import colors from '../globals/colors';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { Slider } from '@miblanchard/react-native-slider';
 import HeaderComp from '../components/HeaderComp';
+import DonationStatsFooter from '../components/DonationStatsFooter';
 
 // Slider component using @miblanchard/react-native-slider
 const DonationAmountSlider: React.FC<{
@@ -95,7 +96,7 @@ export default function MoneyScreen({
   // console.log('💰 MoneyScreen - Navigation state:', JSON.stringify(navigation.getState(), null, 2));
   const [selectedRecipient, setSelectedRecipient] = useState<string>('');
   const [amount, setAmount] = useState<string>('50');
-  const [mode, setMode] = useState(false); // false = seeker (needs help), true = offerer (wants to donate)
+  const [mode, setMode] = useState(true); // false = seeker (needs help), true = offerer (wants to donate)
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("");
   const [selectedSort, setSelectedSort] = useState("");
@@ -130,6 +131,85 @@ export default function MoneyScreen({
       setRefreshKey(prev => prev + 1);
     }, [])
   );
+  const PAYBOX_WEB_URL = 'https://payboxapp.com/transfer?phone=0528616878&amount={AMOUNT}&note=תרומה%20לקהילה';
+  // קישורים ישירים לקבוצות שפתחת:
+  // PayBox – הזמנה לקבוצה
+  const PAYBOX_GROUP_LINK: string | null = 'https://payboxapp.page.link/tfzsUhNpZzRqqe1g8';
+  // Bit – הזמנה לקבוצה
+  const BIT_GROUP_LINK: string | null = 'https://www.bitpay.co.il/app/share-info?i=192485429007_19klqS2v';
+
+  const openPaymentApp = async (amount: number) => {
+    const encodedReason = encodeURIComponent('תרומה לקהילה');
+    const payboxGroupLink: string = (PAYBOX_GROUP_LINK ?? '').trim();
+    const bitGroupLink: string = (BIT_GROUP_LINK ?? '').trim();
+    const bitUrl = `bit://pay?phone=0528616878&amount=${amount}&reason=${encodedReason}`;
+
+    try {
+      // 1) עדיפות: פתיחה ישירה של קבוצת PayBox "Karma Community" אם סופק קישור (ננסה לפתוח ישר)
+      if (payboxGroupLink.length > 0) {
+        try {
+          if (Platform.OS === 'web') {
+            // @ts-ignore window קיים בדפדפן
+            window.open(payboxGroupLink, '_blank');
+            return;
+          }
+          await Linking.openURL(payboxGroupLink);
+          return;
+        } catch {}
+      }
+
+      // 1b) עדיפות שנייה: פתיחה ישירה של קבוצת Bit אם יש קישור
+      if (bitGroupLink.length > 0) {
+        try {
+          if (Platform.OS === 'web') {
+            // @ts-ignore window קיים בדפדפן
+            window.open(bitGroupLink, '_blank');
+            return;
+          }
+          await Linking.openURL(bitGroupLink);
+          return;
+        } catch {}
+      }
+
+      // 2) אם לא נפתח קישור קבוצה: נוודא שיש סכום חיובי לפני מסלולי סכום ישירים
+      if (!amount || amount <= 0) {
+        Alert.alert('שגיאה', 'אנא בחר סכום חיובי לפני פתיחת התשלום.');
+        return;
+      }
+
+      // 3) ניסיון לפתוח PayBox עם סכום והערה (אפליקציה)
+      const payboxScheme = `paybox://transfer?phone=0528616878&amount=${amount}&note=${encodedReason}`;
+      const supportedPb = await Linking.canOpenURL(payboxScheme);
+      if (supportedPb) {
+        await Linking.openURL(payboxScheme);
+        return;
+      }
+
+      // 4) ניסיון דרך דפדפן: אם יש קישור קבוצה — נשתמש בו; אחרת קישור העברה רגיל
+      const webUrl = payboxGroupLink.length > 0
+        ? payboxGroupLink
+        : PAYBOX_WEB_URL.replace('{AMOUNT}', String(amount));
+      try {
+        if (Platform.OS === 'web') {
+          // @ts-ignore
+          window.open(webUrl, '_blank');
+          return;
+        }
+        await Linking.openURL(webUrl);
+        return;
+      } catch {}
+
+      // 5) Fallback אחרון: Bit
+      const bitSupported = await Linking.canOpenURL(bitUrl);
+      if (bitSupported) {
+        await Linking.openURL(bitUrl);
+        return;
+      }
+    } catch (error) {
+      console.error('Error opening payment link:', error);
+    }
+    Alert.alert('שגיאה', 'לא ניתן לפתוח את קישור התשלום במכשיר זה.');
+  };
 
   // Function to filter charities by search and filter
   const getFilteredCharities = () => {
@@ -494,11 +574,11 @@ export default function MoneyScreen({
                     <Text style={[localStyles.donateMainButtonText, isZeroAmount ? localStyles.donateMainButtonTextDisabled : localStyles.donateMainButtonTextActive]}>תרום</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-            style={localStyles.bitCornerButton}
-            onPress={() => openBitDonation('0528616878', Number(amount) || 0, 'תרומה לקהילה')}
-          >
-            <Text style={localStyles.bitCornerButtonText}>bit</Text>
-          </TouchableOpacity>
+                    style={localStyles.bitCornerButton}
+                    onPress={() => openPaymentApp(numericAmount)}
+                  >
+                    <Text style={localStyles.bitCornerButtonText}>bit</Text>
+                  </TouchableOpacity>
                 </View>
               </>
             );
@@ -539,23 +619,14 @@ export default function MoneyScreen({
             </View>
 
             {/* Bottom small stats */}
-            <View style={[localStyles.section, localStyles.sectionPanel]}>
-              <View style={localStyles.bottomStatsRow}>
-                <View style={localStyles.statChip}>
-                  <Text style={localStyles.statLabel}>תרמת עד עכשיו</Text>
-                  <Text style={localStyles.statValue}>₪{getFilteredRecentDonations().reduce((s, d) => s + (Number(d.amount) || 0), 0)}</Text>
-                </View>
-                <View style={localStyles.statChip}>
-                  <Text style={localStyles.statLabel}>נתרם באפליקציה</Text>
-                  <Text style={localStyles.statValue}>₪{dummyRecentDonations.reduce((s, d) => s + (Number(d.amount) || 0), 0)}</Text>
-                </View>
-                <View style={localStyles.statChip}>
-                  <Text style={localStyles.statLabel}>עמותות שנתמכו</Text>
-                  <Text style={localStyles.statValue}>{new Set(dummyRecentDonations.map(d => d.charityName)).size}</Text>
-                </View>
-              </View>
+              <DonationStatsFooter
+                stats={[
+                  { label: 'תרמת עד עכשיו', value: `₪${getFilteredRecentDonations().reduce((s, d) => s + (Number(d.amount) || 0), 0)}`, icon: 'cash-outline' },
+                  { label: 'נתרם באפליקציה', value: `₪${dummyRecentDonations.reduce((s, d) => s + (Number(d.amount) || 0), 0)}`, icon: 'trending-up-outline' },
+                  { label: 'עמותות שנתמכו', value: new Set(dummyRecentDonations.map(d => d.charityName)).size, icon: 'business-outline' },
+                ]}
+              />
             </View>
-          </View>
         ) : (
           // Beneficiary mode - show charities that can help
           <View style={localStyles.sectionsContainer}>
@@ -577,22 +648,13 @@ export default function MoneyScreen({
             </View>
 
             {/* Bottom small stats */}
-            <View style={[localStyles.section, localStyles.sectionPanel]}>
-              <View style={localStyles.bottomStatsRow}>
-                <View style={localStyles.statChip}>
-                  <Text style={localStyles.statLabel}>תרמת עד עכשיו</Text>
-                  <Text style={localStyles.statValue}>₪{getFilteredRecentDonations().reduce((s, d) => s + (Number(d.amount) || 0), 0)}</Text>
-                </View>
-                <View style={localStyles.statChip}>
-                  <Text style={localStyles.statLabel}>נתרם באפליקציה</Text>
-                  <Text style={localStyles.statValue}>₪{dummyRecentDonations.reduce((s, d) => s + (Number(d.amount) || 0), 0)}</Text>
-                </View>
-                <View style={localStyles.statChip}>
-                  <Text style={localStyles.statLabel}>עמותות שנתמכו</Text>
-                  <Text style={localStyles.statValue}>{new Set(dummyRecentDonations.map(d => d.charityName)).size}</Text>
-                </View>
-              </View>
-            </View>
+              <DonationStatsFooter
+                stats={[
+                  { label: 'תרמת עד עכשיו', value: `₪${getFilteredRecentDonations().reduce((s, d) => s + (Number(d.amount) || 0), 0)}`, icon: 'cash-outline' },
+                  { label: 'נתרם באפליקציה', value: `₪${dummyRecentDonations.reduce((s, d) => s + (Number(d.amount) || 0), 0)}`, icon: 'trending-up-outline' },
+                  { label: 'עמותות שנתמכו', value: new Set(dummyRecentDonations.map(d => d.charityName)).size, icon: 'business-outline' },
+                ]}
+              />
           </View>
         )}
       </ScrollView>
@@ -628,7 +690,10 @@ export default function MoneyScreen({
                       }}>
                         <Text style={localStyles.modalPrimaryButtonText}>תרום עכשיו</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={localStyles.bitButton} onPress={() => Alert.alert('Bit', 'העברה באמצעות Bit תיפתח כאן')}>
+                      <TouchableOpacity
+                        style={localStyles.bitButton}
+                        onPress={() => openPaymentApp(Number(charityModalAmount) || 0)}
+                      >
                         <Text style={localStyles.bitButtonText}>תרום עם Bit</Text>
                       </TouchableOpacity>
                     </View>
@@ -1090,9 +1155,10 @@ const localStyles = StyleSheet.create({
     // Quick Donate Panel
     quickDonatePanel: {
       backgroundColor: colors.moneyFormBackground,
-      borderWidth: 1,
-      borderColor: colors.headerBorder,
-      borderRadius: 14,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.moneyFormBorder,
+
       marginHorizontal: 0,
       paddingVertical: 10,
       paddingHorizontal: 12,
@@ -1272,13 +1338,13 @@ const localStyles = StyleSheet.create({
         fontWeight: 'bold',
         color: colors.textPrimary,
         marginBottom: 10,
-        textAlign: 'right',
+        writingDirection: 'rtl',
     },
     searchHelpTip: {
         fontSize: FontSizes.body,
         color: colors.textSecondary,
         marginBottom: 6,
-        textAlign: 'right',
+        writingDirection: 'rtl',
         lineHeight: 20,
     },
     // Bottom small stats

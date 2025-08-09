@@ -9,6 +9,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-na
 import colors from '../globals/colors';
 import { useUser } from '../context/UserContext';
 import logger from '../utils/logger';
+import { rowDirection } from '../globals/responsive';
 
 
 
@@ -87,6 +88,28 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
     TrumpScreen: 'טרמפים',
     KnowledgeScreen: 'תרומת ידע',
     TimeScreen: 'תרומת זמן',
+    CategoryScreen: 'קטגוריות תרומות',
+    ItemsScreen: 'פריטים',
+    FoodScreen: 'אוכל',
+    ClothesScreen: 'בגדים',
+    BooksScreen: 'ספרים',
+    FurnitureScreen: 'רהיטים',
+    MedicalScreen: 'רפואה',
+    AnimalsScreen: 'בעלי חיים',
+    HousingScreen: 'דיור',
+    SupportScreen: 'תמיכה',
+    EducationScreen: 'חינוך',
+    EnvironmentScreen: 'סביבה',
+    TechnologyScreen: 'טכנולוגיה',
+    MusicScreen: 'מוזיקה',
+    GamesScreen: 'משחקים',
+    RiddlesScreen: 'חידות',
+    RecipesScreen: 'מתכונים',
+    PlantsScreen: 'צמחים',
+    WasteScreen: 'פסולת',
+    ArtScreen: 'אמנות',
+    SportsScreen: 'ספורט',
+    
     
     // Top Bar Navigation Screens
     SettingsScreen: 'הגדרות',
@@ -140,7 +163,7 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
         onLayout={(e) => setMeasuredHeight(e.nativeEvent.layout.height)}
       >
 
-      <View style={{ flexDirection: 'row', gap: 5 }}>
+      <View style={{ flexDirection: rowDirection('row'), gap: 5 }}>
         <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={{ padding: 4 }}>
           <Icon name="settings-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
@@ -155,7 +178,7 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
       </View>
       {/* Left Icons Group: Notifications + Settings */}
             {/* Right Icons Group: Chat OR About (guest) */}
-            <View style={{ flexDirection: 'row', gap: 5 }}>
+            <View style={{ flexDirection: rowDirection('row'), gap: 5 }}>
         {isGuestMode ? (
           <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={{ padding: 4 }}>
             <Icon name="information-circle-outline" size={24} color={colors.topNavIcon} />
