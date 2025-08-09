@@ -2,36 +2,65 @@ import React from 'react';
 import styles from '../globals/styles'; // your styles file
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, useFocusEffect, useNavigationState } from '@react-navigation/native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import colors from '../globals/colors';
 import { useUser } from '../context/UserContext';
+import logger from '../utils/logger';
 
 
 
 interface TopBarNavigatorProps {
   navigation: NavigationProp<ParamListBase>;
   hideTopBar?: boolean;
+  showPosts?: boolean;
 }
 
-function TopBarNavigator({ navigation, hideTopBar = false }: TopBarNavigatorProps) {
+function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: TopBarNavigatorProps) {
   
   const route = useRoute();
   const { isGuestMode } = useUser();
   const translateY = useSharedValue(0);
+  const [measuredHeight, setMeasuredHeight] = React.useState(56);
   
-  console.log('🔝 TopBarNavigator - isGuestMode:', isGuestMode);
+  // Get the current active route name from navigation state
+  const activeRouteName = useNavigationState(state => {
+    if (!state) return 'HomeMain';
+    
+    const findActiveRoute = (routes: any[], index: number): string => {
+      const currentRoute = routes[index];
+      if (currentRoute?.state?.routes) {
+        // This route has nested navigation, go deeper
+        return findActiveRoute(currentRoute.state.routes, currentRoute.state.index || 0);
+      }
+      return currentRoute?.name || 'HomeMain';
+    };
+    
+    return findActiveRoute(state.routes, state.index || 0);
+  });
   
+  console.log('🔝 TopBarNavigator - Component rendered, route name:', route.name, 'isGuestMode:', isGuestMode);
+  
+  // Refresh data when navigator comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔝 TopBarNavigator - Navigator focused, checking state...');
+      console.log('🔝 TopBarNavigator - Current route on focus:', route.name);
+    }, [route.name])
+  );
+
   ////console.log('🔝 TopBarNavigator - hideTopBar prop:', hideTopBar);
 
-  // אנימציה להסתרת/הצגת הטופ בר
+  // מאפשר הסתרת טופ-בר דרך פרמטר מסך: route.params?.hideTopBar === true
+  const shouldHideTopBar = hideTopBar || (route?.params as any)?.hideTopBar === true;
+
   React.useEffect(() => {
-    //console.log('🔝 TopBarNavigator - hideTopBar changed:', hideTopBar);
-    translateY.value = withTiming(hideTopBar ? -60 : 0, {
-      duration: 200,
-    });
-  }, [hideTopBar]);
+    translateY.value = withTiming(shouldHideTopBar ? -measuredHeight : 0, { duration: 200 });
+  }, [shouldHideTopBar, measuredHeight]);
+
+
 
   const animatedStyle = useAnimatedStyle(() => {
     //console.log('🔝 TopBarNavigator - translateY value:', translateY.value);
@@ -48,72 +77,97 @@ function TopBarNavigator({ navigation, hideTopBar = false }: TopBarNavigatorProp
 
   // Map route names to titles
   const routeTitles: Record<string, string> = {
-    HomeScreen: 'חדשות',
+    // Bottom Tab Screens
     SearchScreen: 'חיפוש',
-    DonationsScreen: 'תרומות',
+    DonationsScreen: 'הקהילה במעשים',
     ProfileScreen: 'פרופיל',
+    
+    // Donation Stack Screens
     MoneyScreen: 'כסף',
     TrumpScreen: 'טרמפים',
     KnowledgeScreen: 'תרומת ידע',
     TimeScreen: 'תרומת זמן',
-    // Add HomeMain as חדשות (default)
-    HomeMain: 'חדשות',
+    
+    // Top Bar Navigation Screens
+    SettingsScreen: 'הגדרות',
+    ChatListScreen: 'צ\'אטים',
+    NotificationsScreen: 'התראות',
+    AboutKarmaCommunityScreen: 'אודות KC',
+    
+    // Other Screens
+    UserProfileScreen: 'פרופיל משתמש',
+    FollowersScreen: 'עוקבים',
+    DiscoverPeopleScreen: 'גלה אנשים',
+    NewChatScreen: 'צ\'אט חדש',
+    ChatDetailScreen: 'צ\'אט',
+    BookmarksScreen: 'מועדפים',
+    PostsReelsScreen: 'פוסטים',
+    InactiveScreen: 'לא פעיל',
+    WebViewScreen: 'דף אינטרנט',
+    LoginScreen: 'התחברות',
   };
 
-  // Get the current active route from the navigation state
-  const getActiveRouteName = (state: any): string => {
-    const route = state?.routes?.[state?.index];
-    if (route?.state) {
-      return getActiveRouteName(route.state);
-    }
-    return route?.name;
-  };
-
-  // Try to get the active route name from navigation state
-  const activeRouteName = getActiveRouteName(navigation.getState());
-  //console.log('🔍 TopBarNavigator - Active route name from navigation state:', activeRouteName);
-
-  const title = routeTitles[activeRouteName] ?? routeTitles[route.name] ?? 'KC';
+  // Get current route name
+  const currentRouteName = activeRouteName || route.name;
   
-  // Debug log for title selection
-  //console.log('🔍 TopBarNavigator - Selected title:', title);
-  //console.log('🔍 TopBarNavigator - Available route names:', Object.keys(routeTitles));
-  //console.log('🔍 TopBarNavigator - Navigation state:', JSON.stringify(navigation.getState(), null, 2));
+  // Determine title based on current route
+  let title = 'KC';
+  
+  if (currentRouteName === 'HomeScreen' || currentRouteName === 'HomeMain') {
+    title = showPosts ? 'חדשות' : 'הקהילה במספרים';
+  } else {
+    // Use the routeTitles mapping for all other screens
+    title = routeTitles[currentRouteName] ?? 'KC';
+  }
+  
+  // Log important state changes
+  React.useEffect(() => {
+    logger.logUserAction('state-change', 'TopBarNavigator', {
+      currentRouteName,
+      activeRouteName,
+      title,
+      isGuestMode,
+      hideTopBar,
+      showPosts
+    });
+  }, [title, currentRouteName, activeRouteName, showPosts, hideTopBar, isGuestMode]);
 
 
   return (
-    <Animated.View style={[styles.container_top_bar, animatedStyle]}>
-      {/* Right Icons Group */}
+    <SafeAreaView edges={['top']} style={{ backgroundColor: 'transparent' }}>
+      <Animated.View
+        style={[styles.container_top_bar, animatedStyle]}
+        onLayout={(e) => setMeasuredHeight(e.nativeEvent.layout.height)}
+      >
+
       <View style={{ flexDirection: 'row', gap: 5 }}>
         <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={{ padding: 4 }}>
           <Icon name="settings-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={{ padding: 4 }}>
-          <Icon name="information-circle-outline" size={24} color={colors.topNavIcon} />
+        <TouchableOpacity onPress={() => navigation.navigate('NotificationsScreen')} style={{ padding: 4 }}>
+          <Icon name="notifications-circle-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
       </View>
 
       {/* Title */}
       <View style={{ alignItems: 'center' }}>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.topBarTitle}>{title}</Text>
       </View>
-      {/* Left Icons Group */}
-      <View style={{ flexDirection: 'row', gap: 5 }}>
-        {!isGuestMode && (
+      {/* Left Icons Group: Notifications + Settings */}
+            {/* Right Icons Group: Chat OR About (guest) */}
+            <View style={{ flexDirection: 'row', gap: 5 }}>
+        {isGuestMode ? (
+          <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={{ padding: 4 }}>
+            <Icon name="information-circle-outline" size={24} color={colors.topNavIcon} />
+          </TouchableOpacity>
+        ) : (
           <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={{ padding: 4 }}>
             <Icon name="chatbubbles-outline" size={24} color={colors.topNavIcon} />
           </TouchableOpacity>
         )}
-{/* Debug log for guest mode */}
-        {isGuestMode && (() => {
-          console.log('🔝 TopBarNavigator - Chat hidden in guest mode');
-          return null;
-        })()}
-        <TouchableOpacity onPress={() => navigation.navigate('InactiveScreen')} style={{ padding: 4 }}>
-          <Icon name="notifications-circle-outline" size={24} color={colors.topNavIcon} />
-        </TouchableOpacity>
       </View>
-    </Animated.View>
+      </Animated.View>
+    </SafeAreaView>
   );
 }
 

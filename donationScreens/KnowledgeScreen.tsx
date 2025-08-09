@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,12 @@ import {
   Linking,
   Alert,
 } from 'react-native';
+import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { texts } from '../globals/texts';
+import { useUser } from '../context/UserContext';
 import HeaderComp from '../components/HeaderComp';
 
 // Mock data for educational content
@@ -122,7 +124,55 @@ const communityContent = [
   },
 ];
 
-const KnowledgeScreen: React.FC = () => {
+export default function KnowledgeScreen({
+  navigation,
+}: {
+  navigation: NavigationProp<ParamListBase>;
+}) {
+  const { selectedUser } = useUser();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState("");
+  const [selectedSort, setSelectedSort] = useState("");
+  const [filteredEducationalLinks, setFilteredEducationalLinks] = useState(educationalLinks);
+  const [filteredCommunityContent, setFilteredCommunityContent] = useState(communityContent);
+  const [selectedMentorship, setSelectedMentorship] = useState<any>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('📚 KnowledgeScreen - Screen focused, refreshing data...');
+      // Reset form when returning to screen
+      setSelectedMentorship(null);
+      // Force re-render by updating refresh key
+      setRefreshKey(prev => prev + 1);
+    }, [])
+  );
+
+  // Filter and sort options for knowledge screen
+  const knowledgeFilterOptions = [
+    "מתמטיקה",
+    "שפות",
+    "תכנות",
+    "מדעים",
+    "היסטוריה",
+    "אמנות",
+    "מוזיקה",
+    "ספורט",
+    "בישול",
+    "טכנולוגיה",
+    "פסיכולוגיה",
+    "כלכלה"
+  ];
+
+  const knowledgeSortOptions = [
+    "אלפביתי",
+    "לפי קטגוריה",
+    "לפי דירוג",
+    "לפי מספר תלמידים",
+    "לפי מחיר",
+    "לפי רלוונטיות",
+  ];
   const handleLinkPress = async (url: string, title: string) => {
     console.log('Opening educational link:', title);
     try {
@@ -150,6 +200,54 @@ const KnowledgeScreen: React.FC = () => {
     );
   };
 
+  // Function to handle search results from HeaderComp
+  const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
+    console.log('📚 KnowledgeScreen - Search received:', { 
+      query, 
+      filters: filters || [], 
+      sorts: sorts || [], 
+      resultsCount: results?.length || 0 
+    });
+    
+    // Update state with search results
+    setSearchQuery(query);
+    setSelectedFilter(filters?.[0] || "");
+    setSelectedSort(sorts?.[0] || "");
+    
+    // If results are provided from SearchBar, use them
+    if (results && results.length > 0) {
+      // Split results between educational links and community content
+      const educationalResults = results.filter(item => item.url);
+      const communityResults = results.filter(item => item.teacher);
+      
+      setFilteredEducationalLinks(educationalResults);
+      setFilteredCommunityContent(communityResults);
+    } else {
+      // Otherwise, perform local filtering
+      let filteredEducational = [...educationalLinks];
+      let filteredCommunity = [...communityContent];
+      
+      // Filter by search query
+      if (query.trim() !== "") {
+        filteredEducational = filteredEducational.filter(item => 
+          item.title.toLowerCase().includes(query.toLowerCase()) ||
+          item.description.toLowerCase().includes(query.toLowerCase()) ||
+          item.category.toLowerCase().includes(query.toLowerCase())
+        );
+        
+        filteredCommunity = filteredCommunity.filter(item => 
+          item.title.toLowerCase().includes(query.toLowerCase()) ||
+          item.subject.toLowerCase().includes(query.toLowerCase()) ||
+          item.description.toLowerCase().includes(query.toLowerCase()) ||
+          item.teacher.toLowerCase().includes(query.toLowerCase())
+        );
+      }
+      
+      setFilteredEducationalLinks(filteredEducational);
+      setFilteredCommunityContent(filteredCommunity);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundPrimary} />
@@ -159,8 +257,12 @@ const KnowledgeScreen: React.FC = () => {
         menuOptions={[]}
         onToggleMode={() => {}}
         onSelectMenuItem={() => {}}
-        title={texts.knowledgeDonationTitle}
-        placeholder={texts.searchCoursesAndLessons}
+        title=""
+        placeholder="חפש קורסים ושיעורים..."
+        filterOptions={knowledgeFilterOptions}
+        sortOptions={knowledgeSortOptions}
+        searchData={[...educationalLinks, ...communityContent]}
+        onSearch={handleSearch}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -172,7 +274,7 @@ const KnowledgeScreen: React.FC = () => {
           </Text>
           
           <View style={styles.linksGrid}>
-            {educationalLinks.map((link) => (
+            {filteredEducationalLinks.map((link) => (
               <TouchableOpacity
                 key={link.id}
                 style={styles.linkCard}
@@ -202,7 +304,7 @@ const KnowledgeScreen: React.FC = () => {
           </Text>
           
           <View style={styles.communityGrid}>
-            {communityContent.map((content) => (
+            {filteredCommunityContent.map((content) => (
               <TouchableOpacity
                 key={content.id}
                 style={styles.communityCard}
@@ -496,6 +598,4 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
-});
-
-export default KnowledgeScreen; 
+}); 

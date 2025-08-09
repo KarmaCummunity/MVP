@@ -20,6 +20,7 @@ import { ParamListBase } from '@react-navigation/native';
 import ChatMessageBubble from '../components/ChatMessageBubble';
 import { useUser } from '../context/UserContext';
 import { getMessages, sendMessage, markMessagesAsRead, Message, subscribeToMessages } from '../utils/chatService';
+import { pickImage, pickVideo, takePhoto, pickDocument, validateFile, FileData } from '../utils/fileService';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { Ionicons as Icon } from '@expo/vector-icons';
@@ -40,17 +41,18 @@ export default function ChatDetailScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [showMediaOptions, setShowMediaOptions] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   // טעינת הודעות
   const loadMessages = useCallback(async () => {
     try {
       setIsLoading(true);
-      const conversationMessages = await getMessages(conversationId);
-      setMessages(conversationMessages);
-      
-      // סימון הודעות כנקראו
       if (selectedUser) {
+        const conversationMessages = await getMessages(conversationId, selectedUser.id);
+        setMessages(conversationMessages);
+        
+        // סימון הודעות כנקראו
         await markMessagesAsRead(conversationId, selectedUser.id);
       }
     } catch (error) {
@@ -65,18 +67,22 @@ export default function ChatDetailScreen() {
   useEffect(() => {
     loadMessages();
 
+    let unsubscribe: (() => void) | undefined;
+
     // Subscribe to real-time updates
-    const unsubscribe = subscribeToMessages(conversationId, (newMessages) => {
-      setMessages(newMessages);
-      
-      // Mark messages as read when they arrive
-      if (selectedUser) {
+    if (selectedUser) {
+      unsubscribe = subscribeToMessages(conversationId, selectedUser.id, (newMessages) => {
+        setMessages(newMessages);
+        
+        // Mark messages as read when they arrive
         markMessagesAsRead(conversationId, selectedUser.id).catch(console.error);
-      }
-    });
+      });
+    }
 
     return () => {
-      unsubscribe();
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, [conversationId, selectedUser]);
 
@@ -98,6 +104,7 @@ export default function ChatDetailScreen() {
         timestamp: new Date().toISOString(),
         read: false,
         type: 'text',
+        status: 'sent',
       });
     } catch (error) {
       console.error('❌ Send fake response error:', error);
@@ -109,21 +116,119 @@ export default function ChatDetailScreen() {
 
     try {
       setIsSending(true);
-      await sendMessage({
+      const messageText = inputText.trim();
+      setInputText('');
+
+      // Add message to local state immediately with "sending" status
+      const tempMessage: Message = {
+        id: `temp_${Date.now()}`,
         conversationId,
         senderId: selectedUser.id,
-        text: inputText.trim(),
+        text: messageText,
         timestamp: new Date().toISOString(),
         read: false,
         type: 'text',
+        status: 'sending',
+      };
+
+      setMessages(prev => [...prev, tempMessage]);
+
+      // Send the message
+      await sendMessage({
+        conversationId,
+        senderId: selectedUser.id,
+        text: messageText,
+        timestamp: new Date().toISOString(),
+        read: false,
+        type: 'text',
+        status: 'sent',
       });
-      
-      setInputText('');
+
     } catch (error) {
       console.error('❌ Send message error:', error);
       Alert.alert('שגיאה', 'שגיאה בשליחת ההודעה');
+      // Restore the text if sending failed
+      setInputText(inputText);
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleSendFile = async (fileData: FileData) => {
+    if (!selectedUser) return;
+
+    try {
+      setIsSending(true);
+
+      // בדיקת תקינות הקובץ
+      const validation = validateFile(fileData);
+      if (!validation.isValid) {
+        Alert.alert('שגיאה', validation.error || 'הקובץ אינו תקין');
+        return;
+      }
+
+      await sendMessage({
+        conversationId,
+        senderId: selectedUser.id,
+        text: '', // טקסט ריק להודעות מדיה
+        timestamp: new Date().toISOString(),
+        read: false,
+        type: fileData.type,
+        status: 'sent',
+        fileData,
+      });
+
+      console.log('✅ File message sent');
+
+    } catch (error) {
+      console.error('❌ Send file error:', error);
+      Alert.alert('שגיאה', 'שגיאה בשליחת הקובץ');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handlePickImage = async () => {
+    setShowMediaOptions(false);
+    const result = await pickImage();
+    
+    if (result.success && result.fileData) {
+      await handleSendFile(result.fileData);
+    } else if (result.error) {
+      Alert.alert('שגיאה', result.error);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    setShowMediaOptions(false);
+    const result = await takePhoto();
+    
+    if (result.success && result.fileData) {
+      await handleSendFile(result.fileData);
+    } else if (result.error) {
+      Alert.alert('שגיאה', result.error);
+    }
+  };
+
+  const handlePickVideo = async () => {
+    setShowMediaOptions(false);
+    const result = await pickVideo();
+    
+    if (result.success && result.fileData) {
+      await handleSendFile(result.fileData);
+    } else if (result.error) {
+      Alert.alert('שגיאה', result.error);
+    }
+  };
+
+  const handlePickDocument = async () => {
+    setShowMediaOptions(false);
+    const result = await pickDocument();
+    
+    if (result.success && result.fileData) {
+      await handleSendFile(result.fileData);
+    } else if (result.error) {
+      Alert.alert('שגיאה', result.error);
     }
   };
 
@@ -179,11 +284,8 @@ export default function ChatDetailScreen() {
         )}
 
         <View style={styles.inputContainer}>
-          <TouchableOpacity onPress={() => Alert.alert('תמונה')}>
-            <Icon name="camera-outline" size={24} color={colors.pink} style={styles.icon} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => Alert.alert('מדיה')}>
-            <Icon name="image-outline" size={24} color={colors.pink} style={styles.icon} />
+          <TouchableOpacity onPress={() => setShowMediaOptions(!showMediaOptions)}>
+            <Icon name="add-circle-outline" size={24} color={colors.primary} style={styles.icon} />
           </TouchableOpacity>
           <TextInput
             style={styles.textInput}
@@ -207,6 +309,27 @@ export default function ChatDetailScreen() {
             )}
           </TouchableOpacity>
         </View>
+
+        {showMediaOptions && (
+          <View style={styles.mediaOptionsContainer}>
+            <TouchableOpacity style={styles.mediaOption} onPress={handleTakePhoto}>
+              <Icon name="camera" size={24} color={colors.primary} />
+              <Text style={styles.mediaOptionText}>צלם תמונה</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.mediaOption} onPress={handlePickImage}>
+              <Icon name="image" size={24} color={colors.primary} />
+              <Text style={styles.mediaOptionText}>בחר תמונה</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.mediaOption} onPress={handlePickVideo}>
+              <Icon name="videocam" size={24} color={colors.primary} />
+              <Text style={styles.mediaOptionText}>בחר סרטון</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.mediaOption} onPress={handlePickDocument}>
+              <Icon name="document" size={24} color={colors.primary} />
+              <Text style={styles.mediaOptionText}>בחר קובץ</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         {Platform.OS === 'android' && <View style={styles.androidBottomSpacer} />}
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -319,5 +442,24 @@ const styles = StyleSheet.create({
   androidBottomSpacer: {
     height: 20,
     backgroundColor: colors.backgroundPrimary,
+  },
+  mediaOptionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.backgroundPrimary,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  mediaOption: {
+    alignItems: 'center',
+    padding: 8,
+  },
+  mediaOptionText: {
+    fontSize: FontSizes.caption,
+    color: colors.textSecondary,
+    marginTop: 4,
+    textAlign: 'center',
   },
 });

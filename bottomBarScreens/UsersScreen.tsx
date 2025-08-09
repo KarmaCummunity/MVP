@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,14 @@ import {
   Image,
   StyleSheet,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { users } from '../globals/fakeData';
+import { allUsers } from '../globals/characterTypes';
 import { useUser, User } from '../context/UserContext';
 
 interface UsersScreenProps {
@@ -20,8 +23,35 @@ interface UsersScreenProps {
 }
 
 const UsersScreen: React.FC<UsersScreenProps> = ({ onUserSelect, selectedUserId }) => {
+  const navigation = useNavigation();
   const { selectedUser: contextSelectedUser, setSelectedUser } = useUser();
   const [localSelectedUser, setLocalSelectedUser] = useState<string | undefined>(selectedUserId || contextSelectedUser?.id);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('👥 UsersScreen - Screen focused, refreshing users...');
+      loadUsers();
+      // Force re-render by updating refresh key
+      setRefreshKey(prev => prev + 1);
+    }, [])
+  );
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      // Use the existing allUsers from characterTypes
+      setUsers(allUsers);
+    } catch (error) {
+      Alert.alert('שגיאה', 'לא ניתן לטעון את המשתמשים.');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleUserSelect = (user: User) => {
     setLocalSelectedUser(user.id);
@@ -125,10 +155,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 15,
     marginBottom: 15,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
     elevation: 3,
   },
   selectedUserItem: {

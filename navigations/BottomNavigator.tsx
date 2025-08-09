@@ -1,26 +1,34 @@
 // BottomNavigator.tsx
 'use strict';
 import React from "react";
-import { View, Platform, StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import { createBottomTabNavigator, BottomTabNavigationOptions } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
-import SearchScreen from "../bottomBarScreens/SearchScreen";
-import ProfileScreen from "../bottomBarScreens/ProfileScreen";
-import HomeScreen from "../bottomBarScreens/HomeScreen"; // This is your HomeScreen with the drag handle
-import DonationsStack from "./DonationsStack"; // Assuming this is another stack navigator
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import HomeTabStack from "./HomeTabStack";
+import SearchTabStack from "./SearchTabStack";
+import ProfileTabStack from "./ProfileTabStack";
+import DonationsStack from "./DonationsStack"; // donations נשאר כ-stack נפרד
 // import UsersScreen from "../bottomBarScreens/UsersScreen"; // הסתרה לבדיקות
 import BookmarksScreen from "../bottomBarScreens/BookmarksScreen";
-import styles from "../globals/styles"; // Adjust path if needed
+import SettingsScreen from "../topBarScreens/SettingsScreen";
+import ChatListScreen from "../topBarScreens/ChatListScreen";
+import AboutKarmaCommunityScreen from "../topBarScreens/AboutKarmaCommunityScreen";
+import NotificationsScreen from "../screens/NotificationsScreen";
 import colors from "../globals/colors"; // Adjust path if needed
 import { useUser } from "../context/UserContext";
 
 // Define the type for your bottom tab navigator's route names and their parameters.
 export type BottomTabNavigatorParamList = {
-  DonationsScreen: undefined; // Assuming DonationsStack is just a wrapper for its root screen here
+  DonationsScreen: undefined;
   HomeScreen: undefined;
   SearchScreen: undefined;
   ProfileScreen: undefined;
   // UsersScreen: undefined; // הסתרה לבדיקות
+  SettingsScreen: undefined;
+  ChatListScreen: undefined;
+  AboutKarmaCommunityScreen: undefined;
+  NotificationsScreen: undefined;
 };
 
 // Create an instance of the Bottom Tab Navigator with its parameter list type
@@ -38,8 +46,19 @@ const Tab = createBottomTabNavigator<BottomTabNavigatorParamList>();
  */
 export default function BottomNavigator(): React.ReactElement {
   console.log('📱 BottomNavigator - Component rendered');
-  const { isGuestMode } = useUser();
+  const { isGuestMode, resetHomeScreen } = useUser();
+  const navigation = useNavigation();
   
+  // Refresh data when navigator comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('📱 BottomNavigator - Navigator focused, checking state...');
+      // This will trigger re-renders of child screens when needed
+    }, [])
+  );
+
+
+
   /**
    * Helper function to determine the Ionicons name based on the route and focus state.
    * @param {string} routeName - The name of the current route.
@@ -66,38 +85,57 @@ export default function BottomNavigator(): React.ReactElement {
     }
   };
 
+  const getActiveNestedParams = (route: any): Record<string, any> | undefined => {
+    const state = route.state ?? route.params?.state;
+    if (!state) return route.params;
+    const nestedRoute = state.routes?.[state.index ?? 0];
+    if (nestedRoute) return getActiveNestedParams(nestedRoute);
+    return route.params;
+  };
+
   return (
-    <View style={styles.container_bottom_nav}>
       <Tab.Navigator
+        id={undefined}
         initialRouteName="HomeScreen"
-        screenOptions={({ route }): BottomTabNavigationOptions => ({
-          headerShown: false,
-          tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => {
-            const iconName = getTabBarIconName(route.name, focused);
-            return <Ionicons name={iconName} size={size} color={color} />;
-          },
-          tabBarActiveTintColor: colors.bottomNavActive,
-          tabBarInactiveTintColor: colors.bottomNavInactive,
-          tabBarShowLabel: false,
-          tabBarStyle: {
-            position: "absolute",
-            left: 20,
-            right: 20,
-            borderRadius: 25,
-            elevation: 8,
-            height: 40,
-            backgroundColor: colors.bottomNavBackground,
-            paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-            paddingTop: 6,
-          },
-        })}
+        screenOptions={({ route }): BottomTabNavigationOptions => {
+          const activeParams = getActiveNestedParams(route as any) || {};
+          const hideBottomBar = activeParams.hideBottomBar === true;
+          return ({
+            headerShown: false,
+            tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number; }) => {
+              const iconName = getTabBarIconName(route.name, focused);
+              return <Ionicons name={iconName} size={size} color={color} />;
+            },
+            tabBarActiveTintColor: colors.bottomNavActive,
+            tabBarInactiveTintColor: colors.bottomNavInactive,
+            tabBarShowLabel: false,
+            tabBarStyle: {
+              position: "absolute",
+              left: 20,
+              right: 20,
+              borderRadius: 25,
+              elevation: 8,
+              height: '5%',
+              backgroundColor: colors.bottomNavBackground,
+              display: hideBottomBar ? 'none' as const : 'flex' as const,
+            },
+          });
+        }}
       >
-        {!isGuestMode && <Tab.Screen name="ProfileScreen" component={ProfileScreen} />}
+        {!isGuestMode && <Tab.Screen name="ProfileScreen" component={ProfileTabStack} />}
         <Tab.Screen name="DonationsScreen" component={DonationsStack} />
-        <Tab.Screen name="SearchScreen" component={SearchScreen} />
-        {/* <Tab.Screen name="UsersScreen" component={UsersScreen} /> hidden for testing */}
-        <Tab.Screen name="HomeScreen" component={HomeScreen} />
+        <Tab.Screen name="SearchScreen" component={SearchTabStack} />
+        <Tab.Screen 
+          name="HomeScreen" 
+          component={HomeTabStack}
+          listeners={({ navigation, route }) => ({
+            tabPress: (e) => {
+              console.log('🏠 HomeScreen - Tab button pressed (even if already on home screen)');
+              resetHomeScreen();
+            },
+          })}
+        />
+      
       </Tab.Navigator>
-    </View>
   );
 }

@@ -1,14 +1,15 @@
 {
-  "expo": {
-    "name": "KC",
-    "slug": "kc",
-    "version": "1.1.0",
+      "expo": {
+      "name": "KarmaCommunity",
+      "slug": "karma-community",
+    "version": "1.4.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
+    "primaryColor": "#ffffff",
     "splash": {
-      "image": "./assets/images/splash.png",
+      "image": "./assets/images/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,23 +18,62 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.navesarussi1.KarmaCommunity"
+      "bundleIdentifier": "com.navesarussi1.KarmaCommunity",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSAllowsLocalNetworking": true
+        },
+        "NSCameraUsageDescription": "האפליקציה זקוקה לגישה למצלמה כדי לצלם תמונות וסרטונים",
+        "NSMicrophoneUsageDescription": "האפליקציה זקוקה לגישה למיקרופון לצורך הקלטת אודיו",
+        "NSPhotoLibraryUsageDescription": "האפליקציה זקוקה לגישה לספריית התמונות כדי לבחור ולהעלות קבצים"
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.navesarussi1.KarmaCommunity"
+      "package": "com.navesarussi1.KarmaCommunity",
+      "permissions": [
+        "android.permission.VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.WAKE_LOCK",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+      ]
     },
     "web": {
       "bundler": "metro",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon-32x32.png",
+      "build": {
+        "babel": {
+          "include": ["@expo/vector-icons"]
+        }
+      },
+      "meta": {
+        "viewport": "width=device-width, initial-scale=1, shrink-to-fit=no"
+      },
+      "themeColor": "#ffffff",
+      "backgroundColor": "#ffffff"
     },
-    "plugins": [],
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/logo.png",
+          "color": "#ffffff",
+          "mode": "production",
+          "androidMode": "default",
+          "androidCollapsedTitle": "התראה חדשה"
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": false
     },
+
     "extra": {
       "eas": {
         "projectId": "e9adde31-7801-4e3c-a709-2454fe511c24"

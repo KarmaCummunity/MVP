@@ -1,15 +1,24 @@
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { createStackNavigator } from "@react-navigation/stack";
-import HomeStack from "./HomeStack";
+import { useFocusEffect } from "@react-navigation/native";
+import BottomNavigator from "./BottomNavigator";
 import InactiveScreen from "../screens/InactiveScreen";
 import WebViewScreen from "../screens/WebViewScreen";
-import PostsReelsScreen from "../components/PostsReelsScreen";
+import PostsReelsScreenWrapper from "../components/PostsReelsScreenWrapper";
 import BookmarksScreen from "../bottomBarScreens/BookmarksScreen";
 import UserProfileScreen from "../screens/UserProfileScreen";
+import FollowersScreen from "../screens/FollowersScreen";
+import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
 import LoginScreen from "../screens/LoginScreen";
 import { useUser } from '../context/UserContext';
 import colors from '../globals/colors';
+import NewChatScreen from '../screens/NewChatScreen';
+import ChatDetailScreen from '../screens/ChatDetailScreen';
+import SettingsScreen from '../topBarScreens/SettingsScreen';
+import ChatListScreen from '../topBarScreens/ChatListScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
+import AboutKarmaCommunityScreen from '../topBarScreens/AboutKarmaCommunityScreen';
 
 import { RootStackParamList } from '../globals/types';
 
@@ -24,6 +33,14 @@ export default function MainNavigator() {
     isGuestMode,
     isAuthenticated
   });
+
+  // Refresh data when navigator comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🧭 MainNavigator - Navigator focused, checking state...');
+      // This will trigger re-renders of child screens when needed
+    }, [])
+  );
 
   // Automatic update when authentication state changes
   useEffect(() => {
@@ -57,25 +74,30 @@ export default function MainNavigator() {
     );
   }
 
+  console.log('🧭 MainNavigator - Loading completed, rendering navigator');
+
   // If not authenticated and not in guest mode - show login screen
   if (!isAuthenticated && !isGuestMode) {
     console.log('🧭 MainNavigator - User not authenticated, showing LoginScreen');
   } else {
-    console.log('🧭 MainNavigator - User authenticated or guest mode, showing Home');
+    console.log('🧭 MainNavigator - User authenticated or guest mode, showing BottomNavigator');
   }
   
   return (
     <Stack.Navigator 
+      id={undefined}
       screenOptions={{ headerShown: false }}
       initialRouteName={"LoginScreen"}
     >
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
-      <Stack.Screen name="Home" component={HomeStack} />
+      <Stack.Screen name="HomeStack" component={BottomNavigator} />
+      <Stack.Screen name="NewChatScreen" component={NewChatScreen} />
+      <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
       <Stack.Screen name="InactiveScreen" component={InactiveScreen} />
       <Stack.Screen name="WebViewScreen" component={WebViewScreen} />
       <Stack.Screen
         name="PostsReelsScreen"
-        component={PostsReelsScreen}
+        component={PostsReelsScreenWrapper}
         options={{
           cardStyle: { backgroundColor: 'transparent' },
           presentation: 'transparentModal',
@@ -92,6 +114,14 @@ export default function MainNavigator() {
       />
       {/* Screen we see that opens when user looks at another user */}
       <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} />
+      <Stack.Screen name="FollowersScreen" component={FollowersScreen} />
+      <Stack.Screen name="DiscoverPeopleScreen" component={DiscoverPeopleScreen} />
+      
+      {/* Top Bar Screens */}
+      <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
+      <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
+      <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
+      <Stack.Screen name="AboutKarmaCommunityScreen" component={AboutKarmaCommunityScreen} />
     </Stack.Navigator>
   );
 }

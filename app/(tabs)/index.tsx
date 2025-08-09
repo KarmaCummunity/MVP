@@ -7,7 +7,7 @@ import { FontSizes } from '../../globals/constants';
 export default function HomeScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>ברוך הבא ל-KC! 🎉</Text>
+      <Text style={styles.title}>ברוך הבא ל-KC_ID! 🎉</Text>
       <Text style={styles.subtitle}>
         הקיבוץ הקפיטליסטי של ישראל
       </Text>

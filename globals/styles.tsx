@@ -11,16 +11,13 @@ export const createShadowStyle = (shadowColor: string, shadowOffset: { width: nu
     };
   } else {
     return {
-      shadowColor,
-      shadowOffset,
-      shadowOpacity,
-      shadowRadius,
+      boxShadow: `${shadowOffset.width}px ${shadowOffset.height}px ${shadowRadius}px rgba(0, 0, 0, ${shadowOpacity})`,
     };
   }
 };
 
 
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
   /**
    * Container for the bottom navigation bar.
    * Flexes to take available space and aligns content to the bottom.
@@ -49,11 +46,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingVertical: 0,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-
-    // borderRadius: 1000,
   },
   /**
    * Generic content container that centers its children both vertically and horizontally.
@@ -503,6 +495,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.black,
     marginBottom: 8,
+    textAlign: 'center',
+  },
+  /**
+   * Top bar title style for navigation headers.
+   */
+  topBarTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.topNavTitle,
     textAlign: 'center',
   },
   /**

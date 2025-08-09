@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { 
   View, 
   StyleSheet, 
@@ -34,15 +34,14 @@ import { texts } from "../globals/texts";
 import CommunityStatsPanel from "../components/CommunityStatsPanel";
 import PostsReelsScreen from "../components/PostsReelsScreen";
 import { 
-  communityStats, 
-  tasks, 
+  charities, 
   donations, 
   communityEvents, 
-  currentUser ,
-  recentActivities
+  currentUser 
 } from "../globals/fakeData";
 import { useUser } from "../context/UserContext";
 import GuestModeNotice from "../components/GuestModeNotice";
+import FloatingBubblesOverlay from "../components/FloatingBubblesOverlay";
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -118,9 +117,10 @@ const FloatingBubble: React.FC<{
 export default function HomeScreen() {
   const isFocused = useIsFocused();
   const navigation = useNavigation();
-  const { selectedUser, setSelectedUser, isGuestMode } = useUser();
+  const { selectedUser, setSelectedUser, isGuestMode, resetHomeScreenTrigger } = useUser();
   const [showPosts, setShowPosts] = useState(false);
   const [isPersonalMode, setIsPersonalMode] = useState(true); // Personal mode as default
+  const [refreshKey, setRefreshKey] = useState(0);
   
   // In guest mode - always community mode
   useEffect(() => {
@@ -135,6 +135,15 @@ export default function HomeScreen() {
   const scrollY = useSharedValue(0);
   const postsTranslateY = useSharedValue(0);
 
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🏠 HomeScreen - Screen focused, refreshing data...');
+      // Force re-render by updating refresh key
+      setRefreshKey(prev => prev + 1);
+    }, [])
+  );
+
   // Reset state when screen loses focus
   useEffect(() => {
     if (!isFocused) {
@@ -142,11 +151,17 @@ export default function HomeScreen() {
     }
   }, [isFocused]);
 
-  // Update hideTopBar in route params
+  // Listen to resetHomeScreenTrigger from context
   useEffect(() => {
-    // console.log('🏠 HomeScreen - Updating route params with hideTopBar:', hideTopBar);
-    (navigation as any).setParams({ hideTopBar });
-  }, [hideTopBar, navigation]);
+    console.log('🏠 HomeScreen - resetHomeScreenTrigger changed, resetting showPosts');
+    setShowPosts(false);
+  }, [resetHomeScreenTrigger]);
+
+  // Update hideTopBar and showPosts in route params
+  useEffect(() => {
+    console.log('🏠 HomeScreen - Updating route params with hideTopBar:', hideTopBar, 'showPosts:', showPosts);
+    (navigation as any).setParams({ hideTopBar, showPosts });
+  }, [hideTopBar, showPosts, navigation]);
 
   useFocusEffect(
     useCallback(() => {
@@ -160,6 +175,7 @@ export default function HomeScreen() {
     }, [])
   );
 
+  
   /**
    * מטפל בגלילה למטה
    * כאשר הגלילה עוברת סף מסוים, נפתח מסך הפוסטים
@@ -173,6 +189,7 @@ export default function HomeScreen() {
     
     // If scrolling exceeds threshold, open posts screen
     if (offsetY > threshold && !showPosts) {
+      console.log('🏠 HomeScreen - Opening posts screen (scroll threshold reached)');
       setShowPosts(true);
       setHideTopBar(false); // Ensure top bar is shown when posts screen opens
       postsTranslateY.value = withSpring(0, {
@@ -240,7 +257,6 @@ export default function HomeScreen() {
                     />
                     <View style={styles.userDetails}>
                       <Text style={styles.welcomeText}>שלום, {selectedUser?.name || currentUser.name}!</Text>
-                      <Text style={styles.karmaText}>קארמה: {selectedUser?.karmaPoints || currentUser.karmaPoints} נקודות</Text>
                     </View>
                   </View>
                   <TouchableOpacity 
@@ -255,49 +271,8 @@ export default function HomeScreen() {
                 </View>
               </View>
 
-              {/* Stats Preview */}
-              <View style={styles.statsPreview}>
-                <View style={styles.statsGrid}>
-                  {communityStats.slice(0, 4).map((stat, index) => (
-                    <View key={index} style={styles.statCard}>
-                      <Text style={styles.statIcon}>{stat.icon}</Text>
-                      <Text style={styles.statValue}>{stat.value.toLocaleString()}</Text>
-                      <Text style={styles.statName}>{stat.name}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-
-              {/* Additional Personal Statistics */}
-              <View style={styles.personalStatsContainer}>
-                <Text style={styles.sectionTitle}>הסטטיסטיקות שלי</Text>
-                <View style={styles.personalStatsGrid}>
-                  <View style={styles.personalStatCard}>
-                    <Text style={styles.personalStatIcon}>🎯</Text>
-                    <Text style={styles.personalStatValue}>45</Text>
-                    <Text style={styles.personalStatName}>משימות הושלמו</Text>
-                  </View>
-                  <View style={styles.personalStatCard}>
-                    <Text style={styles.personalStatIcon}>💝</Text>
-                    <Text style={styles.personalStatValue}>12</Text>
-                    <Text style={styles.personalStatName}>תרומות</Text>
-                  </View>
-                  <View style={styles.personalStatCard}>
-                    <Text style={styles.personalStatIcon}>⏰</Text>
-                    <Text style={styles.personalStatValue}>156</Text>
-                    <Text style={styles.personalStatName}>שעות התנדבות</Text>
-                  </View>
-                  <View style={styles.personalStatCard}>
-                    <Text style={styles.personalStatIcon}>🏆</Text>
-                    <Text style={styles.personalStatValue}>8</Text>
-                    <Text style={styles.personalStatName}>הישגים</Text>
-                  </View>
-                </View>
-              </View>
-
               {/* Floating Statistics Bubbles */}
               <View style={styles.floatingStatsContainer}>
-                <Text style={styles.sectionTitle}>סטטיסטיקות קהילתיות</Text>
                 <View style={styles.bubblesContainer}>
                   {/* Money Donations */}
                   <FloatingBubble
@@ -492,37 +467,12 @@ export default function HomeScreen() {
             </View>
           ) : (
             // Community mode - statistics bubbles only
-            <View style={styles.communityModeContainer}>
-              <BubbleComp />
-            </View>
+              // <BubbleComp />
+              <FloatingBubblesOverlay />
           )}
           </ScrollView>
           
           {/* Toggle Button - Hidden in guest mode */}
-          {!isGuestMode && (
-            <View style={styles.toggleContainer}>
-            <TouchableOpacity 
-              style={[styles.toggleButton, isPersonalMode && styles.toggleButtonActive]}
-              onPress={() => setIsPersonalMode(!isPersonalMode)}
-            >
-              <Ionicons 
-                name="person" 
-                size={18} 
-                color={isPersonalMode ? colors.backgroundPrimary : colors.textSecondary} 
-              />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.toggleButton, !isPersonalMode && styles.toggleButtonActive]}
-              onPress={() => setIsPersonalMode(!isPersonalMode)}
-            >
-              <Ionicons 
-                name="people" 
-                size={18} 
-                color={!isPersonalMode ? colors.backgroundPrimary : colors.textSecondary} 
-              />
-            </TouchableOpacity>
-            </View>
-          )}
         </View>
       )}
     </SafeAreaView>
@@ -536,19 +486,10 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: colors.backgroundPrimary,
-    paddingTop: 50,
-    paddingBottom: 20,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-    } : {
-      shadowColor: colors.shadowLight,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-    }),
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 3,
   },
   headerContent: {
@@ -644,14 +585,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 12,
     width: 150,
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
-    } : {
-      shadowColor: colors.shadowLight,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
-    }),
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
     elevation: 2,
   },
   activityIcon: {
@@ -687,14 +621,7 @@ const styles = StyleSheet.create({
      alignItems: 'center',
      flex: 1,
      marginHorizontal: 5,
-     ...(Platform.OS === 'web' ? {
-       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)'
-     } : {
-       shadowColor: colors.shadowLight,
-       shadowOffset: { width: 0, height: 2 },
-       shadowOpacity: 0.15,
-       shadowRadius: 4,
-     }),
+         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
      elevation: 3,
      minWidth: 80,
      minHeight: 80,
@@ -724,14 +651,7 @@ const styles = StyleSheet.create({
     bottom: 10,
     borderTopLeftRadius: 250,
     borderTopRightRadius: 250,
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0 -3px 8px rgba(0, 0, 0, 0.15)'
-    } : {
-      shadowColor: colors.black,
-      shadowOffset: { width: 0, height: -3 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-    }),
+    boxShadow: '0 -3px 8px rgba(0, 0, 0, 0.15)',
     elevation: 8,
   },
   panelHandle: {
@@ -793,10 +713,7 @@ const styles = StyleSheet.create({
   },
   toggleButtonActive: {
     backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.4,
-    shadowRadius: 2,
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.4)',
     elevation: 3,
   },
   toggleText: {
@@ -885,10 +802,7 @@ const styles = StyleSheet.create({
      flex: 1,
      marginHorizontal: 5,
      marginBottom: 10,
-     shadowColor: colors.shadowLight,
-     shadowOffset: { width: 0, height: 2 },
-     shadowOpacity: 0.15,
-     shadowRadius: 4,
+     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
      elevation: 3,
      minWidth: 80,
      minHeight: 80,
@@ -927,10 +841,7 @@ const styles = StyleSheet.create({
      alignItems: 'center',
      marginHorizontal: 5,
      marginBottom: 10,
-     shadowColor: colors.shadowLight,
-     shadowOffset: { width: 0, height: 2 },
-     shadowOpacity: 0.15,
-     shadowRadius: 4,
+     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
      elevation: 3,
      minWidth: 80,
      minHeight: 80,

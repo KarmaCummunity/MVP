@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,9 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import { NavigationProp } from '@react-navigation/native';
+import { NavigationProp, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DonationsStackParamList } from '../globals/types';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
@@ -21,6 +22,10 @@ import GuestModeNotice from '../components/GuestModeNotice';
 interface DonationsScreenProps {
   navigation: NavigationProp<DonationsStackParamList>;
 }
+
+const RECENT_CATEGORIES_KEY = 'recent_categories_ids';
+const RECENT_LIMIT = 3;
+const DEFAULT_RECENT_IDS: string[] = ['money', 'trump', 'furniture']; // הנחה: "חפצים" = רהיטים
 
 // New modern categories with icons and descriptions (excluding quick actions)
 const donationCategories = [
@@ -71,7 +76,7 @@ const donationCategories = [
     icon: 'restaurant-outline',
     color: colors.textPrimary,
     bgColor: colors.backgroundSecondary,
-    screen: '',
+    screen: 'FoodScreen',
     description: 'תרומת מזון לנזקקים',
   },
   {
@@ -81,7 +86,7 @@ const donationCategories = [
     icon: 'shirt-outline',
     color: colors.info, // Was blue-gray
     bgColor: colors.infoLight, // Was light blue-gray
-    screen: '',
+    screen: 'ClothesScreen',
     description: 'תרומת בגדים לנזקקים',
   },
   {
@@ -91,7 +96,7 @@ const donationCategories = [
     icon: 'library-outline',
     color: colors.success,
     bgColor: colors.successLight,
-    screen: '',
+    screen: 'BooksScreen',
     description: 'תרומת ספרים לספרייה',
   },
   {
@@ -101,7 +106,7 @@ const donationCategories = [
     icon: 'bed-outline',
     color: colors.textPrimary, // Was brown
     bgColor: colors.backgroundSecondary, // Was light brown
-    screen: '',
+    screen: 'FurnitureScreen',
     description: 'תרומת רהיטים לבית',
   },
   {
@@ -111,7 +116,7 @@ const donationCategories = [
     icon: 'medical-outline',
     color: colors.error,
     bgColor: colors.errorLight,
-    screen: '',
+    screen: 'MedicalScreen',
     description: 'עזרה רפואית וטיפולים',
   },
   {
@@ -121,7 +126,7 @@ const donationCategories = [
     icon: 'paw-outline',
     color: colors.orangeDark,
     bgColor: colors.backgroundTertiary, // Was light orange
-    screen: '',
+    screen: 'AnimalsScreen',
     description: 'עזרה לחיות מחמד',
   },
   {
@@ -131,7 +136,7 @@ const donationCategories = [
     icon: 'home-outline',
     color: colors.info, // Was indigo
     bgColor: colors.infoLight, // Was light indigo
-    screen: '',
+    screen: 'HousingScreen',
     description: 'עזרה בדיור וקורת גג',
   },
   {
@@ -141,7 +146,7 @@ const donationCategories = [
     icon: 'heart-outline',
     color: colors.pinkDark,
     bgColor: colors.pinkLight,
-    screen: '',
+    screen: 'SupportScreen',
     description: 'תמיכה נפשית ורגשית',
   },
   {
@@ -151,7 +156,7 @@ const donationCategories = [
     icon: 'book-outline',
     color: colors.info, // Was purple
     bgColor: colors.infoLight, // Was light purple
-    screen: '',
+    screen: 'EducationScreen',
     description: 'עזרה בלימודים וקורסים',
   },
   {
@@ -161,7 +166,7 @@ const donationCategories = [
     icon: 'leaf-outline',
     color: colors.success,
     bgColor: colors.successLight,
-    screen: '',
+    screen: 'EnvironmentScreen',
     description: 'פרויקטים ירוקים וסביבתיים',
   },
   {
@@ -171,21 +176,138 @@ const donationCategories = [
     icon: 'laptop-outline',
     color: colors.info,
     bgColor: colors.infoLight,
-    screen: '',
+    screen: 'TechnologyScreen',
     description: 'עזרה טכנית ומחשבים',
+  },
+  {
+    id: 'music',
+    title: 'מוזיקה',
+    subtitle: 'נגינה ושיתוף מוזיקלי',
+    icon: 'musical-notes-outline',
+    color: colors.pink,
+    bgColor: colors.pinkLight,
+    screen: 'MusicScreen',
+    description: 'נגינה, שיתופי פעולה מוזיקליים והופעות קהילתיות',
+  },
+  {
+    id: 'games',
+    title: 'משחקים',
+    subtitle: 'פעילויות ומשחקי חברה',
+    icon: 'game-controller-outline',
+    color: colors.orange,
+    bgColor: colors.orangeLight,
+    screen: 'GamesScreen',
+    description: 'פעילויות קהילה ומשחקי חברה לכל הגילאים',
+  },
+  {
+    id: 'riddles',
+    title: 'חידות',
+    subtitle: 'חשיבה ואתגר',
+    icon: 'help-circle-outline',
+    color: colors.info,
+    bgColor: colors.infoLight,
+    screen: 'RiddlesScreen',
+    description: 'חידות, אתגרים ומשימות חשיבה לקהילה',
+  },
+  {
+    id: 'recipes',
+    title: 'מתכונים',
+    subtitle: 'בישול ושיתוף',
+    icon: 'fast-food-outline',
+    color: colors.success,
+    bgColor: colors.successLight,
+    screen: 'RecipesScreen',
+    description: 'שיתוף מתכונים, ארוחות קהילתיות ובישול יחד',
+  },
+  {
+    id: 'plants',
+    title: 'צמחים',
+    subtitle: 'גינון ושתילה',
+    icon: 'flower-outline',
+    color: colors.success,
+    bgColor: colors.successLight,
+    screen: 'PlantsScreen',
+    description: 'גינון קהילתי, שתילים והחלפת צמחים',
+  },
+  {
+    id: 'waste',
+    title: 'פסולת',
+    subtitle: 'מיחזור והפרדה',
+    icon: 'trash-outline',
+    color: colors.warning,
+    bgColor: colors.warningLight,
+    screen: 'WasteScreen',
+    description: 'פרויקטי ניקיון, מיחזור והפרדת פסולת',
+  },
+  {
+    id: 'art',
+    title: 'אמנות',
+    subtitle: 'יצירה ושיתוף',
+    icon: 'color-palette-outline',
+    color: colors.pink,
+    bgColor: colors.pinkLight,
+    screen: 'ArtScreen',
+    description: 'יצירה אומנותית, סדנאות ושיתופי קהילה',
+  },
+  {
+    id: 'sports',
+    title: 'ספורט',
+    subtitle: 'אורח חיים פעיל',
+    icon: 'football-outline',
+    color: colors.orange,
+    bgColor: colors.orangeLight,
+    screen: 'SportsScreen',
+    description: 'מפגשי ספורט, ריצות קהילתיות ופעילות גופנית',
   },
 ];
 
 const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
   const { isGuestMode } = useUser();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [recentCategoryIds, setRecentCategoryIds] = useState<string[]>([]);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('💰 DonationsScreen - Screen focused, refreshing data...');
+      // Reset selected category when returning to screen
+      setSelectedCategory(null);
+      // Load recent categories (up to RECENT_LIMIT)
+      (async () => {
+        try {
+          const stored = await AsyncStorage.getItem('recent_categories_ids');
+          if (stored) {
+            const parsed: string[] = JSON.parse(stored);
+            setRecentCategoryIds(Array.isArray(parsed) && parsed.length > 0
+              ? parsed.slice(0, RECENT_LIMIT)
+              : DEFAULT_RECENT_IDS);
+            if (!stored || (Array.isArray(JSON.parse(stored)) && JSON.parse(stored).length === 0)) {
+              await AsyncStorage.setItem(RECENT_CATEGORIES_KEY, JSON.stringify(DEFAULT_RECENT_IDS));
+            }
+          } else {
+            setRecentCategoryIds(DEFAULT_RECENT_IDS);
+            await AsyncStorage.setItem(RECENT_CATEGORIES_KEY, JSON.stringify(DEFAULT_RECENT_IDS));
+          }
+        } catch (e) {
+          console.warn('⚠️ Failed to load recent categories', e);
+          setRecentCategoryIds(DEFAULT_RECENT_IDS);
+        }
+      })();
+    }, [])
+  );
 
   const handleCategoryPress = (category: any) => {
     console.log('Category pressed:', category.title);
     setSelectedCategory(category.id);
+    // Update recent categories
+    setRecentCategoryIds((prev) => {
+      const next = [category.id, ...prev.filter((id) => id !== category.id)].slice(0, RECENT_LIMIT);
+      AsyncStorage.setItem('recent_categories_ids', JSON.stringify(next)).catch(() => {});
+      return next;
+    });
     
-    if (category.screen) {
-      navigation.navigate(category.screen as keyof DonationsStackParamList);
+  if (category.screen) {
+      (navigation as any).navigate(category.screen);
     } else {
       Alert.alert(
         'בקרוב',
@@ -216,6 +338,21 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
     }
   };
 
+  // Build sections: recent (max 3) and others
+  const recentCategoriesRaw = recentCategoryIds
+    .map((id) => donationCategories.find((c) => c.id === id))
+    .filter((c): c is typeof donationCategories[number] => Boolean(c));
+
+  const recentCategories = recentCategoriesRaw.length > 0
+    ? recentCategoriesRaw
+    : DEFAULT_RECENT_IDS
+        .map((id) => donationCategories.find((c) => c.id === id))
+        .filter((c): c is typeof donationCategories[number] => Boolean(c));
+
+  const otherCategories = donationCategories.filter(
+    (c) => !recentCategories.some((rc) => rc.id === c.id)
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundPrimary} />
@@ -226,35 +363,35 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                 {/* Guest Mode Notice */}
                 {isGuestMode && <GuestModeNotice />}
                 
-          {/* Active Screens Section */}
+          {/* Active Screens Section - Recent (single row of 3) */}
           <View style={styles.categoriesSection}>
-            <Text style={styles.sectionTitle}>פעולות אפשריות בקהילה</Text>
-            <View style={styles.activeCategoriesGrid}>
-            {donationCategories.filter(category => category.screen).map((category) => (
+            <Text style={styles.sectionTitle}>במיוחד בשבילך</Text>
+            <View style={styles.categoriesGrid}>
+            {recentCategories.map((category) => (
               <TouchableOpacity
                 key={category.id}
                 style={[
-                  styles.activeCategoryCard,
+                  styles.categoryCard,
                   { backgroundColor: category.bgColor },
                 ]}
                 onPress={() => handleCategoryPress(category)}
               >
-                <View style={[styles.activeCategoryIcon, { backgroundColor: category.color }]}>
-                  <Ionicons name={category.icon as any} size={28} color="white" />
+                <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
+                  <Ionicons name={category.icon as any} size={24} color="white" />
                 </View>
-                <Text style={styles.activeCategoryTitle}>{category.title}</Text>
-                <Text style={styles.activeCategorySubtitle}>{category.subtitle}</Text>
-                <Text style={styles.activeCategoryDescription}>{category.description}</Text>
+                <Text style={styles.categoryTitle}>{category.title}</Text>
+                <Text style={styles.categorySubtitle}>{category.subtitle}</Text>
+                <Text style={styles.categoryDescription}>{category.description}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* Inactive Categories Section */}
+        {/* Inactive Categories Section - All other categories */}
         <View style={styles.categoriesSection}>
-          <Text style={styles.sectionTitle}>עובדים על על אופציות חדשות </Text>
+          <Text style={styles.sectionTitle}>כל הדרכים לפעול בקהילה</Text>
           <View style={styles.categoriesGrid}>
-            {donationCategories.filter(category => !category.screen).map((category) => (
+            {otherCategories.map((category) => (
               <TouchableOpacity
                 key={category.id}
                 style={[

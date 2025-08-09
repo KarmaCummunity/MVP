@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,15 +11,18 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../context/UserContext';
 import { getBookmarks, removeBookmark, Bookmark } from '../utils/bookmarksService';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 
 export default function BookmarksScreen() {
+  const navigation = useNavigation();
   const { selectedUser } = useUser();
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const loadBookmarks = async () => {
     if (!selectedUser) {
@@ -39,6 +42,16 @@ export default function BookmarksScreen() {
   useEffect(() => {
     loadBookmarks();
   }, [selectedUser]);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('🔖 BookmarksScreen - Screen focused, refreshing bookmarks...');
+      loadBookmarks();
+      // Force re-render by updating refresh key
+      setRefreshKey(prev => prev + 1);
+    }, [selectedUser])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -235,10 +248,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     elevation: 2,
-    shadowColor: colors.shadowLight,
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 4,
+    boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
   },
   thumbnail: {
     width: 80,

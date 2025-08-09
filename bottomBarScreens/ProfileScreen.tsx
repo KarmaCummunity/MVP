@@ -1,5 +1,5 @@
 // screens/ProfileScreen.tsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,14 +15,17 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { TabView, TabBar, SceneMap } from 'react-native-tab-view';
 import type { SceneRendererProps, NavigationState } from 'react-native-tab-view';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { texts, replaceText } from '../globals/texts';
-import { currentUser, tasks, donations, communityEvents } from '../globals/fakeData';
+import { currentUser } from '../globals/fakeData';
 import { useUser } from '../context/UserContext';
 import { createShadowStyle } from '../globals/styles';
 import { users } from '../globals/fakeData';
+import { allUsers } from '../globals/characterTypes';
+import { getFollowStats, followUser, unfollowUser, createSampleFollowData } from '../utils/followService';
+import { createSampleChatData } from '../utils/chatService';
 
 // --- Type Definitions ---
 type TabRoute = {
@@ -80,22 +83,83 @@ export default function ProfileScreen() {
   const navigation = useNavigation();
   const [index, setIndex] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
+  const [userStats, setUserStats] = useState({
+    posts: 0,
+    followers: 0,
+    following: 0,
+    karmaPoints: 0,
+    completedTasks: 0,
+    totalDonations: 0,
+  });
+
+  // Function to update user statistics
+  const updateUserStats = async () => {
+    try {
+      const currentUserStats = await getFollowStats(selectedUser?.id || currentUser.id, selectedUser?.id || currentUser.id);
+      const character = selectedUser || allUsers.find(u => u.id === currentUser.id);
+      
+      setUserStats({
+        posts: character?.postsCount || 24,
+        followers: currentUserStats.followersCount,
+        following: currentUserStats.followingCount,
+        karmaPoints: character?.karmaPoints || currentUser.karmaPoints,
+        completedTasks: (character as any)?.completedTasks || 0,
+        totalDonations: (character as any)?.totalDonations || 0,
+      });
+    } catch (error) {
+      console.error('❌ Update user stats error:', error);
+    }
+  };
 
   // Function to select a random user
   const selectRandomUser = () => {
-    if (users.length > 0) {
-      const randomIndex = Math.floor(Math.random() * users.length);
-      const randomUser = users[randomIndex];
-      setSelectedUser(randomUser);
+    if (allUsers.length > 0) {
+      const randomIndex = Math.floor(Math.random() * allUsers.length);
+      const randomUser = allUsers[randomIndex];
+      setSelectedUser(randomUser as any);
       setShowMenu(false);
       Alert.alert(texts.newUser, replaceText(texts.selectedUser, { name: randomUser.name }));
     }
+  };
+
+  // Function to create sample follow data
+  const handleCreateSampleData = async () => {
+    await createSampleFollowData();
+    await createSampleChatData(selectedUser?.id || currentUser.id);
+    updateUserStats();
+    Alert.alert('נתונים לדוגמה', 'נוצרו נתוני עוקבים וצ\'אט לדוגמה!');
   };
   const [routes] = useState<TabRoute[]>([
     { key: 'posts', title: 'פוסטים' },
     { key: 'reels', title: 'רילס' },
     { key: 'tagged', title: 'תיוגים' },
   ]);
+
+  // Update stats when selectedUser changes
+  useEffect(() => {
+    const updateStats = async () => {
+      await updateUserStats();
+    };
+    updateStats();
+  }, [selectedUser]);
+
+  // Refresh stats when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const refreshStats = async () => {
+        console.log('👤 ProfileScreen - Screen focused, refreshing stats...');
+        await updateUserStats();
+        
+        // Force re-render by updating a timestamp
+        const refreshTimestamp = Date.now();
+        setUserStats(prevStats => ({
+          ...prevStats,
+          refreshTimestamp
+        }));
+      };
+      refreshStats();
+    }, [selectedUser])
+  );
 
   const renderScene = SceneMap({
     posts: PostsRoute,
@@ -142,15 +206,7 @@ export default function ProfileScreen() {
     />
   );
 
-  // User Statistics
-  const userStats = {
-    posts: 24,
-    followers: 156,
-    following: 89,
-    karmaPoints: currentUser.karmaPoints,
-    completedTasks: currentUser.completedTasks,
-    totalDonations: currentUser.totalDonations,
-  };
+  // User Statistics are now managed by state and updated via useFocusEffect
 
   // Recent Activities
   const recentActivities = [
@@ -204,17 +260,35 @@ export default function ProfileScreen() {
           
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{selectedUser?.postsCount || userStats.posts}</Text>
+              <Text style={styles.statNumber}>{userStats.posts}</Text>
               <Text style={styles.statLabel}>פוסטים</Text>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{selectedUser?.followersCount || userStats.followers}</Text>
+            <TouchableOpacity 
+              style={styles.statItem}
+              onPress={() => {
+                (navigation as any).navigate('FollowersScreen', {
+                  userId: selectedUser?.id || currentUser.id,
+                  type: 'followers',
+                  title: 'עוקבים'
+                });
+              }}
+            >
+              <Text style={styles.statNumber}>{userStats.followers}</Text>
               <Text style={styles.statLabel}>עוקבים</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{selectedUser?.followingCount || userStats.following}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.statItem}
+              onPress={() => {
+                (navigation as any).navigate('FollowersScreen', {
+                  userId: selectedUser?.id || currentUser.id,
+                  type: 'following',
+                  title: 'עוקב אחרי'
+                });
+              }}
+            >
+              <Text style={styles.statNumber}>{userStats.following}</Text>
               <Text style={styles.statLabel}>עוקב/ת</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -308,6 +382,14 @@ export default function ProfileScreen() {
                     <Ionicons name="shuffle-outline" size={20} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>שנה משתמש</Text>
                   </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={handleCreateSampleData}
+                  >
+                    <Ionicons name="add-circle-outline" size={20} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>צור נתונים לדוגמה</Text>
+                  </TouchableOpacity>
                 </View>
               </TouchableWithoutFeedback>
             </View>
@@ -357,14 +439,26 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Action Buttons - Only Discover People */}
+        {/* Action Buttons */}
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity 
             style={styles.discoverPeopleButton}
-            onPress={() => Alert.alert(texts.discoverPeople, texts.findNewPeople)}
+            onPress={() => {
+              navigation.navigate('DiscoverPeopleScreen' as never);
+            }}
           >
             <Ionicons name="person-add-outline" size={18} color={colors.white} />
             <Text style={styles.discoverPeopleText}>גלה אנשים</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.notificationsButton}
+            onPress={() => {
+              navigation.navigate('NotificationsScreen' as never);
+            }}
+          >
+            <Ionicons name="notifications-outline" size={18} color={colors.white} />
+            <Text style={styles.notificationsButtonText}>התראות</Text>
           </TouchableOpacity>
         </View>
 
@@ -556,6 +650,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   discoverPeopleText: {
+    color: colors.white,
+    fontSize: FontSizes.body,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  notificationsButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  notificationsButtonText: {
     color: colors.white,
     fontSize: FontSizes.body,
     fontWeight: '600',

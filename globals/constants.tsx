@@ -23,6 +23,9 @@ export const FontSizes = {
     heading2: 20,
     /** Tertiary heading size for subsections. */
     heading3: 18, // Can be same as 'large' if appropriate
+    // --- Legacy/Compatibility ---
+    /** Compatibility mapping for older screens expecting 'title' */
+    title: 24,
   
     // --- UI Specific Sizes (if distinct from general text) ---
     /** Size for button text. */

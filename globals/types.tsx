@@ -44,7 +44,31 @@ export type DonationsStackParamList = {
   TrumpScreen: undefined;
   KnowledgeScreen: undefined;
   TimeScreen: undefined;
-  // Add more screens here as needed
+  // Top bar accessible screens that are also used inside the Donations stack
+  ChatListScreen: undefined;
+  NotificationsScreen: undefined;
+  AboutKarmaCommunityScreen: undefined;
+  SettingsScreen: undefined;
+  // Category screens
+  FoodScreen: undefined;
+  ClothesScreen: undefined;
+  BooksScreen: undefined;
+  FurnitureScreen: undefined;
+  MedicalScreen: undefined;
+  AnimalsScreen: undefined;
+  HousingScreen: undefined;
+  SupportScreen: undefined;
+  EducationScreen: undefined;
+  EnvironmentScreen: undefined;
+  TechnologyScreen: undefined;
+  MusicScreen: undefined;
+  GamesScreen: undefined;
+  RiddlesScreen: undefined;
+  RecipesScreen: undefined;
+  PlantsScreen: undefined;
+  WasteScreen: undefined;
+  ArtScreen: undefined;
+  SportsScreen: undefined;
 };
 
 export type SettingItemType = "navigate" | "toggle" | "button" | "value";
@@ -104,14 +128,31 @@ export interface TrumpScreenProps {
 // --- Root Stack Navigator (MainNavigator) Parameter List ---
 // This lists all the screens directly in your MainNavigator.tsx
 export type RootStackParamList = {
-  Home: NavigatorScreenParams<BottomTabNavigatorParamList>;
+  HomeStack: NavigatorScreenParams<BottomTabNavigatorParamList>;
   FirstScreen: undefined;
   LoginScreen: undefined;
+  SettingsScreen: undefined;
+  ChatListScreen: undefined;
+  NewChatScreen: undefined;
+  ChatDetailScreen: {
+    conversationId: string;
+    userName: string;
+    userAvatar: string;
+    otherUserId: string;
+  };
+  NotificationsScreen: undefined;
+  AboutKarmaCommunityScreen: undefined;
   InactiveScreen: undefined;
   WebViewScreen: undefined;
   PostsReelsScreen: undefined; // ADD THIS LINE - this was probably missing
   BookmarksScreen: undefined;
   UserProfileScreen: undefined;
+  FollowersScreen: {
+    userId: string;
+    type: 'followers' | 'following';
+    title: string;
+  };
+  DiscoverPeopleScreen: undefined;
 };
 
 // --- Bottom Tab Navigator (BottomNavigator) Parameter List ---
@@ -121,6 +162,10 @@ export type BottomTabNavigatorParamList = {
   HomeScreen: undefined; // This is the HomeScreen with the drag handle
   SearchScreen: undefined;
   ProfileScreen: undefined;
+  SettingsScreen: undefined;
+  ChatListScreen: undefined;
+  AboutKarmaCommunityScreen: undefined;
+  NotificationsScreen: undefined;
 };
 
 // --- Donations Stack (Example - adjust if you have internal screens) ---

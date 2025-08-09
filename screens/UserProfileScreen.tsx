@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,11 +13,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { TabView, TabBar, SceneMap } from 'react-native-tab-view';
 import type { SceneRendererProps, NavigationState } from 'react-native-tab-view';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
-import { users } from '../globals/fakeData';
-import { characterTypes, CharacterType } from '../globals/characterTypes';
+import { allUsers, CharacterType } from '../globals/characterTypes';
+import { getFollowStats, followUser, unfollowUser, getUpdatedFollowCounts } from '../utils/followService';
+import { useUser } from '../context/UserContext';
 
 // --- Type Definitions ---
 type TabRoute = {
@@ -91,18 +92,87 @@ export default function UserProfileScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const { userId, userName, characterData } = route.params as UserProfileRouteParams;
+  const { selectedUser } = useUser();
+  
+  // Check if user is viewing their own profile
+  useEffect(() => {
+    if (selectedUser && selectedUser.id === userId) {
+      // Navigate to user's own profile screen
+      (navigation as any).navigate('Profile'); // Navigate to ProfileScreen instead
+    }
+  }, [selectedUser, userId, navigation]);
   
   const [index, setIndex] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followStats, setFollowStats] = useState({ followersCount: 0, followingCount: 0, isFollowing: false });
+  const [updatedCounts, setUpdatedCounts] = useState({ followersCount: 0, followingCount: 0 });
   const [routes] = useState<TabRoute[]>([
     { key: 'posts', title: 'פוסטים' },
     { key: 'reels', title: 'רילס' },
     { key: 'tagged', title: 'תיוגים' },
   ]);
 
-  // Find character data - use passed characterData or search in characterTypes
-  const character = characterData || characterTypes.find(char => char.id === userId);
-  // Fallback to old users array if character not found
-  const user = character || users.find(u => u.id === userId);
+  // Find character data - use passed characterData or search in allUsers
+  const character = characterData || allUsers.find(char => char.id === userId);
+  // Use character data only (no fallback to old users)
+  const user = character;
+
+  // Reset state when userId changes
+  useEffect(() => {
+    console.log('👤 UserProfileScreen - userId changed:', userId);
+    setIsFollowing(false);
+    setFollowStats({ followersCount: 0, followingCount: 0, isFollowing: false });
+    setUpdatedCounts({ followersCount: 0, followingCount: 0 });
+  }, [userId]);
+
+  // Load follow stats
+  useEffect(() => {
+    const loadFollowStats = async () => {
+      if (user && selectedUser) {
+        try {
+          console.log('👤 UserProfileScreen - Loading follow stats for user:', user.name);
+          const stats = await getFollowStats(user.id, selectedUser.id);
+          const counts = await getUpdatedFollowCounts(user.id);
+          setFollowStats(stats);
+          setUpdatedCounts(counts);
+          setIsFollowing(stats.isFollowing);
+        } catch (error) {
+          console.error('❌ Load follow stats error:', error);
+        }
+      }
+    };
+    
+    loadFollowStats();
+  }, [user, selectedUser]);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const refreshFollowStats = async () => {
+        console.log('👤 UserProfileScreen - Screen focused, refreshing follow stats...');
+        if (user && selectedUser) {
+          try {
+            const stats = await getFollowStats(user.id, selectedUser.id);
+            const counts = await getUpdatedFollowCounts(user.id);
+            setFollowStats(stats);
+            setUpdatedCounts(counts);
+            setIsFollowing(stats.isFollowing);
+            
+            // Force re-render by updating a timestamp
+            const refreshTimestamp = Date.now();
+            setFollowStats(prevStats => ({
+              ...prevStats,
+              refreshTimestamp
+            }));
+          } catch (error) {
+            console.error('❌ Refresh follow stats error:', error);
+          }
+        }
+      };
+      
+      refreshFollowStats();
+    }, [user, selectedUser])
+  );
 
   const renderScene = SceneMap({
     posts: PostsRoute,
@@ -153,10 +223,13 @@ export default function UserProfileScreen() {
         <View style={styles.errorContainer}>
           <Ionicons name="person-outline" size={60} color={colors.textSecondary} />
           <Text style={styles.errorText}>משתמש לא נמצא</Text>
+          <Text style={styles.errorSubtext}>userId: {userId}</Text>
         </View>
       </SafeAreaView>
     );
   }
+
+  console.log('👤 UserProfileScreen - Rendering profile for user:', user.name, 'userId:', userId);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -189,14 +262,32 @@ export default function UserProfileScreen() {
               <Text style={styles.statNumber}>{user.postsCount || 0}</Text>
               <Text style={styles.statLabel}>פוסטים</Text>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{user.followersCount || 0}</Text>
+            <TouchableOpacity 
+              style={styles.statItem}
+              onPress={() => {
+                (navigation as any).navigate('FollowersScreen', {
+                  userId: user.id,
+                  type: 'followers',
+                  title: 'עוקבים'
+                });
+              }}
+            >
+              <Text style={styles.statNumber}>{updatedCounts.followersCount}</Text>
               <Text style={styles.statLabel}>עוקבים</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{user.followingCount || 0}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.statItem}
+              onPress={() => {
+                (navigation as any).navigate('FollowersScreen', {
+                  userId: user.id,
+                  type: 'following',
+                  title: 'עוקב אחרי'
+                });
+              }}
+            >
+              <Text style={styles.statNumber}>{updatedCounts.followingCount}</Text>
               <Text style={styles.statLabel}>עוקב אחרי</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -265,12 +356,54 @@ export default function UserProfileScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity 
-            style={styles.followButton}
-            onPress={() => Alert.alert('עקיבה', 'התחלת לעקוב אחרי המשתמש')}
-          >
-            <Text style={styles.followButtonText}>עקוב</Text>
-          </TouchableOpacity>
+          {selectedUser && selectedUser.id !== user.id && (
+            <TouchableOpacity 
+              style={[
+                styles.followButton,
+                isFollowing && styles.followingButton
+              ]}
+              onPress={async () => {
+                if (!selectedUser) {
+                  Alert.alert('שגיאה', 'יש להתחבר תחילה');
+                  return;
+                }
+
+                try {
+                  if (isFollowing) {
+                    // ביטול עקיבה
+                    const success = await unfollowUser(selectedUser.id, user.id);
+                                      if (success) {
+                    setIsFollowing(false);
+                    const newCounts = await getUpdatedFollowCounts(user.id);
+                    setUpdatedCounts(newCounts);
+                    setFollowStats(prev => ({ ...prev, isFollowing: false }));
+                    Alert.alert('ביטול עקיבה', 'ביטלת את העקיבה בהצלחה');
+                  }
+                  } else {
+                    // התחלת עקיבה
+                    const success = await followUser(selectedUser.id, user.id);
+                                      if (success) {
+                    setIsFollowing(true);
+                    const newCounts = await getUpdatedFollowCounts(user.id);
+                    setUpdatedCounts(newCounts);
+                    setFollowStats(prev => ({ ...prev, isFollowing: true }));
+                    Alert.alert('עקיבה', 'התחלת לעקוב בהצלחה');
+                  }
+                  }
+                } catch (error) {
+                  console.error('❌ Follow/Unfollow error:', error);
+                  Alert.alert('שגיאה', 'אירעה שגיאה בביצוע הפעולה');
+                }
+              }}
+            >
+              <Text style={[
+                styles.followButtonText,
+                isFollowing && styles.followingButtonText
+              ]}>
+                {isFollowing ? 'עוקב' : 'עקוב'}
+              </Text>
+            </TouchableOpacity>
+          )}
           
                      <TouchableOpacity 
              style={styles.messageButton}
@@ -327,6 +460,11 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.medium,
     color: colors.textSecondary,
     marginTop: 16,
+  },
+  errorSubtext: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+    marginTop: 8,
   },
   header: {
     flexDirection: 'row',
@@ -414,10 +552,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
+  followingButton: {
+    backgroundColor: colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   followButtonText: {
     color: colors.white,
     fontSize: FontSizes.body,
     fontWeight: '600',
+  },
+  followingButtonText: {
+    color: colors.textPrimary,
   },
   messageButton: {
     flex: 1,

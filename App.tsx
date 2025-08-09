@@ -1,47 +1,93 @@
 // App.tsx
 'use strict';
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, ActivityIndicator, Platform, StyleSheet } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import * as Font from 'expo-font';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import MainNavigator from './navigations/MainNavigator';
 import colors from './globals/colors';
 import { UserProvider } from './context/UserContext';
 import { FontSizes } from "./globals/constants";
+import './utils/RTLConfig';
+
+// Initialize notifications only on supported platforms
+let notificationService: any = null;
+if (Platform.OS !== 'web') {
+  try {
+    notificationService = require('./utils/notificationService');
+  } catch (error) {
+    console.warn('Failed to load notification service:', error);
+  }
+}
 
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
   const [fontError, setFontError] = useState<Error | null>(null);
+  const navigationRef = useRef<NavigationContainerRef<any>>(null);
+
+  // Setup notification response listener (iOS + Android)
+  useEffect(() => {
+    if (!notificationService) return;
+
+    const subscription = notificationService.setupNotificationResponseListener((response: any) => {
+      try {
+        console.log('📱 Notification clicked:', response);
+        const data = response?.notification?.request?.content?.data || {};
+        const type = data?.type;
+        const conversationId = data?.conversationId;
+
+        if (navigationRef.current?.isReady()) {
+          if (type === 'message' && conversationId) {
+            navigationRef.current.navigate('ChatDetailScreen', { conversationId });
+          } else {
+            navigationRef.current.navigate('NotificationsScreen');
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to handle notification response:', err);
+      }
+    });
+
+    return () => {
+      if (subscription && typeof subscription.remove === 'function') {
+        subscription.remove();
+      }
+    };
+  }, []);
 
   const prepareApp = useCallback(async () => {
     try {
+      console.log('🚀 Starting app preparation...');
+      
       // Loading fonts with better error handling
       try {
         await Font.loadAsync({
           ...Ionicons.font,
           ...MaterialIcons.font,
         });
-              } catch (fontError) {
-          console.warn('Font loading failed, continuing without custom fonts');
-          // Don't stop the app if fonts fail to load
-        }
+        console.log('✅ Fonts loaded successfully');
+      } catch (fontError) {
+        console.warn('Font loading failed, continuing without custom fonts');
+        // Don't stop the app if fonts fail to load
+      }
 
-      // Removed demo data creation that could cause issues
-      // await createSampleData();
-
+      console.log('✅ App preparation completed');
       setAppIsReady(true);
     } catch (e: any) {
-      console.warn("App preparation failed:", e);
+      console.error("App preparation failed:", e);
       setFontError(e);
     } finally {
       try {
         await SplashScreen.hideAsync();
+        console.log('✅ Splash screen hidden');
       } catch (splashError) {
         console.warn('Failed to hide splash screen:', splashError);
       }
@@ -51,6 +97,8 @@ export default function App() {
   useEffect(() => {
     prepareApp();
   }, [prepareApp]);
+
+
 
   if (fontError) {
     return (
@@ -77,14 +125,18 @@ export default function App() {
   }
 
   return (
-    <UserProvider>
-      <NavigationContainer>
-        <View style={{ flex: 1 }}>
-          <MainNavigator />
-          <StatusBar style="auto" />
-        </View>
-      </NavigationContainer>
-    </UserProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+                 <UserProvider>
+                     <NavigationContainer ref={navigationRef}>
+            <View style={{ flex: 1 }}>
+              <MainNavigator />
+              <StatusBar style="auto" />
+            </View>
+          </NavigationContainer>
+         </UserProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

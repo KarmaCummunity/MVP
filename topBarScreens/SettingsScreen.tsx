@@ -12,7 +12,7 @@
  * @version 2.0.0
  */
 
-import React, { useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -24,12 +24,13 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
-import { FontSizes, UI_TEXT } from '../globals/constants';
+import { FontSizes } from '../globals/constants';
 import { useUser } from '../context/UserContext';
 import GuestModeNotice from '../components/GuestModeNotice';
+import ScreenWrapper from '../components/ScreenWrapper';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -37,6 +38,16 @@ export default function SettingsScreen() {
   const navigation = useNavigation();
   const { signOut, isGuestMode, selectedUser, isAuthenticated } = useUser();
   const scrollViewRef = useRef<ScrollView>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('⚙️ SettingsScreen - Screen focused, refreshing data...');
+      // Force re-render by updating refresh key
+      setRefreshKey(prev => prev + 1);
+    }, [])
+  );
 
   // Listen for authentication state changes
   useEffect(() => {
@@ -290,19 +301,7 @@ export default function SettingsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={handleBackPress}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>הגדרות</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+    <ScreenWrapper style={styles.container}>
 
       {/* User Info Section - Only for logged in users */}
       {!isGuestMode && selectedUser && (
@@ -416,9 +415,7 @@ export default function SettingsScreen() {
           keyboardShouldPersistTaps="handled"
           onScroll={(event) => {
             const offsetY = event.nativeEvent.contentOffset.y;
-            console.log('📜 SettingsScreen - NATIVE Scroll event triggered! OffsetY:', offsetY);
-            console.log('📜 SettingsScreen - Content size:', event.nativeEvent.contentSize);
-            console.log('📜 SettingsScreen - Layout measurement:', event.nativeEvent.layoutMeasurement);
+            // console.log('📜 SettingsScreen - Layout measurement:', event.nativeEvent.layoutMeasurement);
           }}
           onScrollBeginDrag={() => {
             console.log('📜 SettingsScreen - Scroll begin drag detected!');
@@ -519,7 +516,7 @@ export default function SettingsScreen() {
         </View>
         </ScrollView>
       )}
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 }
 
@@ -527,6 +524,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    marginTop: Platform.OS === 'android' ? 30 : 0,
   },
   header: {
     flexDirection: 'row',

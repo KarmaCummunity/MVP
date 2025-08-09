@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,11 @@ import {
   Linking,
   Alert,
 } from 'react-native';
+import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
+import { useUser } from '../context/UserContext';
 import HeaderComp from '../components/HeaderComp';
 
 // Mock data for volunteer opportunities
@@ -98,10 +100,58 @@ const volunteerOpportunities = [
   },
 ];
 
-const TimeScreen: React.FC = () => {
+export default function TimeScreen({
+  navigation,
+}: {
+  navigation: NavigationProp<ParamListBase>;
+}) {
+  const { selectedUser } = useUser();
   const [selectedCategory, setSelectedCategory] = useState<string>('כל הקטגוריות');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState("");
+  const [selectedSort, setSelectedSort] = useState("");
+  const [filteredOpportunities, setFilteredOpportunities] = useState(volunteerOpportunities);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('⏰ TimeScreen - Screen focused, refreshing data...');
+      // Reset form when returning to screen
+      setSelectedTask(null);
+      // Force re-render by updating refresh key
+      setRefreshKey(prev => prev + 1);
+    }, [])
+  );
 
   const categories = ['כל הקטגוריות', 'קשישים', 'חינוך', 'רווחה', 'חיות', 'סביבה', 'בריאות'];
+  
+  // Filter and sort options for time screen
+  const timeFilterOptions = [
+    "קשישים",
+    "חינוך", 
+    "רווחה",
+    "חיות",
+    "סביבה",
+    "בריאות",
+    "נוער",
+    "קהילה",
+    "ספורט",
+    "תרבות",
+    "מזון",
+    "ביגוד"
+  ];
+
+  const timeSortOptions = [
+    "אלפביתי",
+    "לפי מיקום",
+    "לפי תחום",
+    "לפי משך זמן",
+    "לפי תדירות",
+    "לפי מספר מתנדבים נדרש",
+    "לפי רלוונטיות",
+  ];
 
   const handleVolunteerPress = (opportunity: any) => {
     console.log('Volunteer opportunity pressed:', opportunity.title);
@@ -140,9 +190,46 @@ const TimeScreen: React.FC = () => {
     }
   };
 
-  const filteredOpportunities = selectedCategory === 'כל הקטגוריות' 
-    ? volunteerOpportunities 
-    : volunteerOpportunities.filter(opp => opp.category === selectedCategory);
+  // Function to handle search results from HeaderComp
+  const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
+    console.log('⏰ TimeScreen - Search received:', { 
+      query, 
+      filters: filters || [], 
+      sorts: sorts || [], 
+      resultsCount: results?.length || 0 
+    });
+    
+    // Update state with search results
+    setSearchQuery(query);
+    setSelectedFilter(filters?.[0] || "");
+    setSelectedSort(sorts?.[0] || "");
+    
+    // If results are provided from SearchBar, use them
+    if (results && results.length > 0) {
+      setFilteredOpportunities(results);
+    } else {
+      // Otherwise, perform local filtering
+      let filtered = [...volunteerOpportunities];
+      
+      // Filter by search query
+      if (query.trim() !== "") {
+        filtered = filtered.filter(opp => 
+          opp.title.toLowerCase().includes(query.toLowerCase()) ||
+          opp.organization.toLowerCase().includes(query.toLowerCase()) ||
+          opp.description.toLowerCase().includes(query.toLowerCase()) ||
+          opp.location.toLowerCase().includes(query.toLowerCase()) ||
+          opp.category.toLowerCase().includes(query.toLowerCase())
+        );
+      }
+      
+      // Filter by category
+      if (selectedCategory !== 'כל הקטגוריות') {
+        filtered = filtered.filter(opp => opp.category === selectedCategory);
+      }
+      
+      setFilteredOpportunities(filtered);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -153,7 +240,12 @@ const TimeScreen: React.FC = () => {
         menuOptions={['הגדרות', 'עזרה', 'צור קשר']}
         onToggleMode={() => console.log('Mode toggled')}
         onSelectMenuItem={(option: string) => console.log('Menu selected:', option)}
-        title="תרומת זמן"
+        title=""
+        placeholder="חפש הזדמנויות התנדבות..."
+        filterOptions={timeFilterOptions}
+        sortOptions={timeSortOptions}
+        searchData={volunteerOpportunities}
+        onSearch={handleSearch}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -383,10 +475,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundPrimary,
     borderRadius: 15,
     overflow: 'hidden',
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 3,
   },
   opportunityImage: {
@@ -493,10 +582,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 15,
     alignItems: 'center',
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 2,
   },
   statNumber: {
@@ -511,6 +597,4 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
-});
-
-export default TimeScreen; 
+}); 

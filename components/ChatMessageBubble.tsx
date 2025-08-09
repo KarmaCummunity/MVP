@@ -1,9 +1,11 @@
 // components/ChatMessageBubble.tsx
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
 import { Message } from '../utils/chatService'; // Use new Message type
 import colors from '../globals/colors'; // Assuming you have a Colors file
 import { FontSizes } from '../globals/constants';
+import { Ionicons as Icon } from '@expo/vector-icons';
+import { formatFileSize } from '../utils/fileService';
 
 interface ChatMessageBubbleProps {
   message: Message;
@@ -21,16 +23,97 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, isMyMess
     return date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const renderFileContent = () => {
+    if (!message.fileData) return null;
+
+    const { fileData } = message;
+
+    switch (fileData.type) {
+      case 'image':
+        return (
+          <TouchableOpacity 
+            style={styles.fileContainer}
+            onPress={() => Alert.alert('תמונה', 'פתיחת תמונה במסך מלא')}
+          >
+            <Image source={{ uri: fileData.uri }} style={styles.messageImage as any} />
+          </TouchableOpacity>
+        );
+      
+      case 'video':
+        return (
+          <TouchableOpacity 
+            style={styles.fileContainer}
+            onPress={() => Alert.alert('סרטון', 'נגינת סרטון')}
+          >
+            <View style={styles.videoContainer}>
+              <Image source={{ uri: fileData.thumbnail || fileData.uri }} style={styles.videoThumbnail as any} />
+              <View style={styles.playButton}>
+                <Icon name="play" size={24} color={colors.white} />
+              </View>
+              {fileData.size && (
+                <Text style={styles.fileSize}>{formatFileSize(fileData.size)}</Text>
+              )}
+            </View>
+          </TouchableOpacity>
+        );
+      
+      case 'file':
+        return (
+          <TouchableOpacity 
+            style={styles.fileContainer}
+            onPress={() => Alert.alert('קובץ', `פתיחת קובץ: ${fileData.name}`)}
+          >
+            <View style={styles.documentContainer}>
+              <Icon name="document-outline" size={40} color={colors.primary} />
+              <View style={styles.documentInfo}>
+                <Text style={[styles.documentName, textStyle]} numberOfLines={2}>
+                  {fileData.name}
+                </Text>
+                {fileData.size && (
+                  <Text style={styles.fileSize}>{formatFileSize(fileData.size)}</Text>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
   return (
     <View style={containerStyle}>
       {!isMyMessage && (
-        <Image source={{ uri: userAvatar }} style={styles.avatar} />
+        <Image source={{ uri: userAvatar }} style={styles.avatar as any} />
       )}
       <View style={[styles.bubble, bubbleStyle]}>
         {message.text && <Text style={[styles.messageText, textStyle]}>{message.text}</Text>}
-        <Text style={[styles.timestamp, isMyMessage ? styles.myTimestamp : styles.otherTimestamp]}>
-          {formatTimestamp(message.timestamp)}
-        </Text>
+        {renderFileContent()}
+        <View style={styles.messageFooter}>
+          <Text style={[styles.timestamp, isMyMessage ? styles.myTimestamp : styles.otherTimestamp]}>
+            {formatTimestamp(message.timestamp)}
+          </Text>
+          {isMyMessage && (
+            <View style={styles.statusContainer}>
+              {message.status === 'sending' && (
+                <Icon name="time-outline" size={12} color={colors.textSecondary} />
+              )}
+              {message.status === 'sent' && (
+                <Icon name="checkmark" size={12} color={colors.textSecondary} />
+              )}
+              {message.status === 'delivered' && (
+                <Icon name="checkmark-done" size={12} color={colors.textSecondary} />
+              )}
+              {message.status === 'read' && (
+                <Icon name="checkmark-done" size={12} color={colors.primary} />
+              )}
+              {message.status === 'failed' && (
+                <Icon name="close-circle" size={12} color={colors.error} />
+              )}
+            </View>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -91,10 +174,68 @@ const styles = StyleSheet.create({
     marginTop: 5,
     marginBottom: 5,
   },
+  fileContainer: {
+    marginTop: 5,
+    marginBottom: 5,
+  },
+  videoContainer: {
+    position: 'relative',
+    width: 200,
+    height: 150,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  videoThumbnail: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 10,
+  } as any,
+  playButton: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -20 }, { translateY: -20 }],
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  documentContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: colors.backgroundPrimary,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  documentInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  documentName: {
+    fontSize: FontSizes.body,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  fileSize: {
+    fontSize: FontSizes.caption,
+    color: colors.textSecondary,
+  },
+  messageFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 4,
+  },
   timestamp: {
     fontSize: FontSizes.caption,
-    marginTop: 4,
-    alignSelf: 'flex-end',
+    marginRight: 4,
+  },
+  statusContainer: {
+    marginLeft: 4,
   },
   myTimestamp: {
     color: colors.white,

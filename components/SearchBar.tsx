@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons"; // Ensure @expo/vector-icons is i
 import colors from "../globals/colors"; // Ensure this path is correct
 import { FontSizes, filterOptions as defaultFilterOptions, sortOptions as defaultSortOptions } from "../globals/constants";
 import { texts } from "../globals/texts";
+import { createShadowStyle } from "../globals/styles";
 
 interface SearchBarProps {
   onHasActiveConditionsChange?: (isActive: boolean) => void;
@@ -72,10 +73,11 @@ const SearchBar = ({
     handleHasActiveConditionsChange(hasActive);
   }, [selectedFilters, selectedSorts]); // Add onHasActiveConditionsChange to dependencies
 
-  const handleSearch = () => {
+  // Function to perform search with given parameters
+  const performSearch = (query: string, filters: string[], sorts: string[]) => {
     // For backward compatibility, if no searchData is provided, just call onSearch with basic parameters
     if (searchData.length === 0) {
-      onSearch?.(searchText, selectedFilters, selectedSorts, []);
+      onSearch?.(query, filters, sorts, []);
       return;
     }
     
@@ -83,70 +85,151 @@ const SearchBar = ({
     let results = [...searchData];
     
     // Filter by search text if provided
-    if (searchText.trim() !== "") {
+    if (query.trim() !== "") {
       results = results.filter(item => {
-        // Generic search - check if any property contains the search text
+        // Enhanced search for charities - check specific fields first
+        if (item.name && item.name.toLowerCase().includes(query.toLowerCase())) {
+          return true;
+        }
+        if (item.description && item.description.toLowerCase().includes(query.toLowerCase())) {
+          return true;
+        }
+        if (item.location && item.location.toLowerCase().includes(query.toLowerCase())) {
+          return true;
+        }
+        if (item.category && item.category.toLowerCase().includes(query.toLowerCase())) {
+          return true;
+        }
+        if (item.organization && item.organization.toLowerCase().includes(query.toLowerCase())) {
+          return true;
+        }
+        if (item.title && item.title.toLowerCase().includes(query.toLowerCase())) {
+          return true;
+        }
+        
+        // Fallback to generic search for other properties
         const itemStr = JSON.stringify(item).toLowerCase();
-        return itemStr.includes(searchText.toLowerCase());
+        return itemStr.includes(query.toLowerCase());
       });
     }
     
     // Apply filters if any are selected
-    if (selectedFilters.length > 0) {
+    if (filters.length > 0) {
       results = results.filter(item => {
-        // Generic filter logic - check if item matches any selected filter
-        const itemStr = JSON.stringify(item).toLowerCase();
-        return selectedFilters.some(filter => itemStr.includes(filter.toLowerCase()));
+        // Enhanced filter logic for charities
+        return filters.some(filter => {
+          // Check category field first
+          if (item.category && item.category.toLowerCase().includes(filter.toLowerCase())) {
+            return true;
+          }
+          // Check tags field if it exists
+          if (item.tags && Array.isArray(item.tags)) {
+            return item.tags.some(tag => tag.toLowerCase().includes(filter.toLowerCase()));
+          }
+          // Check organization field
+          if (item.organization && item.organization.toLowerCase().includes(filter.toLowerCase())) {
+            return true;
+          }
+          // Fallback to generic search
+          const itemStr = JSON.stringify(item).toLowerCase();
+          return itemStr.includes(filter.toLowerCase());
+        });
       });
     }
     
     // Apply sorting if any is selected
-    if (selectedSorts.length > 0) {
-      const sortOption = selectedSorts[0]; // Only one sort at a time
-      // Basic sorting logic - this can be enhanced based on specific needs
+    if (sorts.length > 0) {
+      const sortOption = sorts[0]; // Only one sort at a time
+      
+      // Enhanced sorting logic for charities
       if (sortOption === "אלפביתי") {
         results.sort((a, b) => {
-          const aStr = JSON.stringify(a).toLowerCase();
-          const bStr = JSON.stringify(b).toLowerCase();
-          return aStr.localeCompare(bStr, 'he');
+          const aName = (a.name || a.title || a.organization || '').toLowerCase();
+          const bName = (b.name || b.title || b.organization || '').toLowerCase();
+          return aName.localeCompare(bName, 'he');
+        });
+      } else if (sortOption === "לפי מיקום") {
+        results.sort((a, b) => {
+          const aLocation = (a.location || '').toLowerCase();
+          const bLocation = (b.location || '').toLowerCase();
+          return aLocation.localeCompare(bLocation, 'he');
+        });
+      } else if (sortOption === "לפי תחום") {
+        results.sort((a, b) => {
+          const aCategory = (a.category || '').toLowerCase();
+          const bCategory = (b.category || '').toLowerCase();
+          return aCategory.localeCompare(bCategory, 'he');
+        });
+      } else if (sortOption === "לפי מספר תורמים") {
+        results.sort((a, b) => {
+          const aDonors = a.donors || a.volunteers || 0;
+          const bDonors = b.donors || b.volunteers || 0;
+          return bDonors - aDonors; // Descending order
+        });
+      } else if (sortOption === "לפי דירוג") {
+        results.sort((a, b) => {
+          const aRating = a.rating || 0;
+          const bRating = b.rating || 0;
+          return bRating - aRating; // Descending order
+        });
+      } else if (sortOption === "לפי רלוונטיות") {
+        // Default - by rating
+        results.sort((a, b) => {
+          const aRating = a.rating || 0;
+          const bRating = b.rating || 0;
+          return bRating - aRating; // Descending order
         });
       }
-      // Add more sorting options as needed
     }
     
     // Call the parent's search handler with all the parameters
-    onSearch?.(searchText, selectedFilters, selectedSorts, results);
+    onSearch?.(query, filters, sorts, results);
+  };
+
+  const handleSearch = () => {
+    performSearch(searchText, selectedFilters, selectedSorts);
   };
 
   const handleFilterSelection = (option: string) => {
     setSelectedFilters((prevFilters) => {
-      if (prevFilters.includes(option)) {
-        return prevFilters.filter((item) => item !== option);
-      } else {
-        return [...prevFilters, option];
-      }
+      const newFilters = prevFilters.includes(option) 
+        ? prevFilters.filter((item) => item !== option)
+        : [...prevFilters, option];
+      
+      // Perform real-time search with new filters
+      performSearch(searchText, newFilters, selectedSorts);
+      
+      return newFilters;
     });
   };
 
   const handleSortSelection = (option: string) => {
     setSelectedSorts((prevSorts) => {
-      // For sort, assuming only one can be selected at a time, or none
-      if (prevSorts.includes(option)) {
-        return []; // Deselect if already selected
-      } else {
-        return [option]; // Select new option
-      }
+      const newSorts = prevSorts.includes(option) ? [] : [option];
+      
+      // Perform real-time search with new sorts
+      performSearch(searchText, selectedFilters, newSorts);
+      
+      return newSorts;
     });
   };
 
   const removeFilter = (filterToRemove: string) => {
-    setSelectedFilters((prevFilters) =>
-      prevFilters.filter((filter) => filter !== filterToRemove)
-    );
+    setSelectedFilters((prevFilters) => {
+      const newFilters = prevFilters.filter((filter) => filter !== filterToRemove);
+      
+      // Perform real-time search with updated filters
+      performSearch(searchText, newFilters, selectedSorts);
+      
+      return newFilters;
+    });
   };
 
   const removeSort = (sortToRemove: string) => {
     setSelectedSorts([]); // Remove all sorts, as typically only one can be active
+    
+    // Perform real-time search with updated sorts
+    performSearch(searchText, selectedFilters, []);
   };
 
   const isFilterSelected = (option: string) => selectedFilters.includes(option);
@@ -155,14 +238,9 @@ const SearchBar = ({
   // Handle text input changes
   const handleTextChange = (text: string) => {
     setSearchText(text);
-    // Call onSearch to clear results when input is empty
-    if (text.trim() === '') {
-      if (searchData.length > 0) {
-        onSearch?.('', selectedFilters, selectedSorts, searchData);
-      } else {
-        onSearch?.('', selectedFilters, selectedSorts, []);
-      }
-    }
+    
+    // Perform real-time search as user types
+    performSearch(text, selectedFilters, selectedSorts);
   };
 
   // Handle search on submit
@@ -320,7 +398,6 @@ const SearchBar = ({
       {/* --- Selected Filters Row --- */}
       {selectedFilters.length > 0 && (
         <View style={localStyles.selectedRowWrapper}>
-          <Text style={localStyles.rowLabel}>סינון:</Text>
           <ScrollView
             horizontal={true}
             showsHorizontalScrollIndicator={false}
@@ -339,13 +416,13 @@ const SearchBar = ({
               </TouchableOpacity>
             ))}
           </ScrollView>
+          <Text style={localStyles.rowLabel}>סינון:</Text>
         </View>
       )}
 
       {/* --- Selected Sorts Row --- */}
       {selectedSorts.length > 0 && (
         <View style={localStyles.selectedRowWrapper}>
-          <Text style={localStyles.rowLabel}>מיון:</Text>
           <ScrollView
             horizontal={true}
             showsHorizontalScrollIndicator={false}
@@ -364,6 +441,8 @@ const SearchBar = ({
               </TouchableOpacity>
             ))}
           </ScrollView>
+          <Text style={localStyles.rowLabel}>מיון:</Text>
+
         </View>
       )}
 
@@ -388,10 +467,7 @@ const localStyles = StyleSheet.create({
     borderRadius: 25,
     marginHorizontal: 20,
     marginTop: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...createShadowStyle("#000", { width: 0, height: 2 }, 0.1, 4),
     elevation: 3,
     paddingVertical: 2,
     borderWidth: 1,
@@ -434,10 +510,7 @@ const localStyles = StyleSheet.create({
     padding: 20,
     width: "80%",
     maxHeight: "70%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    ...createShadowStyle("#000", { width: 0, height: 2 }, 0.25, 4),
     elevation: 5,
   },
   modalTitle: {
@@ -512,23 +585,20 @@ const localStyles = StyleSheet.create({
     flexGrow: 1,
   },
   selectedFilterSortButton: {
-    backgroundColor: colors.orange,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    marginTop: 5,
+    backgroundColor: colors.pinkLight,
+    paddingVertical: 2,
+    paddingHorizontal: 5,
     borderRadius: 18,
     flexDirection: "row-reverse",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    ...createShadowStyle("#000", { width: 0, height: 1 }, 0.1, 2),
     elevation: 2,
   },
   selectedFilterSortButtonText: {
     fontSize: FontSizes.caption,
+    fontWeight: 'bold',
     color: colors.black,
-    marginLeft: 1,
+    marginLeft: 4,
   },
 
   // --- Static Filter Buttons Row Styles ---

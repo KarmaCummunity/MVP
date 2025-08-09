@@ -18,11 +18,10 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { FontSizes, BUBBLE_CONSTANTS } from "../globals/constants";
-import { motivationalQuotes } from "../globals/fakeData";
+import { charities } from "../globals/fakeData";
 import { texts } from "../globals/texts";
 import { TouchableOpacity } from "react-native";
 import colors from "../globals/colors";
-import { communityStats } from "../globals/fakeData";
 import { BubbleData } from "../globals/types";
 
 // Get the dimensions of the device window for responsive sizing
@@ -95,8 +94,9 @@ const generateBubbles = (): BubbleData[] => {
     const directionY = Math.random() > 0.5 ? 1 : -1;
     const delay = Math.random() * 1000;
 
-    // Use community statistics names
-    const name = communityStats[index++ % communityStats.length].name;
+    // Use KC charity statistics names
+    const kcStats = charities[0]?.statistics || [];
+    const name = kcStats.length > 0 ? kcStats[index++ % kcStats.length].name : `סטטיסטיקה ${index}`;
 
     if (!isOverlapping(x, y, size, mainBubbles)) {
       mainBubbles.push({
@@ -137,7 +137,8 @@ const BubbleComp: React.FC = () => {
       return newId;
     });
     setCurrentSentenceIndex((prevIndex) => {
-      const newIndex = (prevIndex + 1) % motivationalQuotes.length;
+      const kcQuotes = charities[0]?.motivationalQuotes || [];
+      const newIndex = kcQuotes.length > 0 ? (prevIndex + 1) % kcQuotes.length : 0;
       return newIndex;
     });
   }, []);
@@ -146,8 +147,9 @@ const BubbleComp: React.FC = () => {
    * מטפל בלחיצה על הודעה מוטיבציונית
    */
   const handleMessagePress = useCallback(() => {
+    const kcQuotes = charities[0]?.motivationalQuotes || [];
     setCurrentSentenceIndex(
-      (prevIndex) => (prevIndex + 1) % motivationalQuotes.length
+      (prevIndex) => kcQuotes.length > 0 ? (prevIndex + 1) % kcQuotes.length : 0
     );
   }, []);
 
@@ -171,7 +173,7 @@ const BubbleComp: React.FC = () => {
       <View style={localStyles.messageContainer}>
         <TouchableOpacity onPress={handleMessagePress}>
           <Text style={localStyles.messageText}>
-            {motivationalQuotes[currentSentenceIndex]}
+            {charities[0]?.motivationalQuotes?.[currentSentenceIndex] || 'אין ציטוטי מוטיבציה זמינים'}
           </Text>
         </TouchableOpacity>
       </View>
