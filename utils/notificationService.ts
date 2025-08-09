@@ -1,6 +1,7 @@
 // utils/notificationService.ts
 import { Platform, Alert } from 'react-native';
 import { db, DB_COLLECTIONS, DatabaseService } from './databaseService';
+import { updateUserProfile } from '../services/firestore';
 
 // Import notifications only on supported platforms
 let Notifications: any = null;
@@ -112,6 +113,15 @@ export const requestNotificationPermissions = async (): Promise<boolean> => {
     }
     
     console.log('✅ Notification permissions granted');
+    try {
+      const expoPushToken = await Notifications.getExpoPushTokenAsync();
+      const userId = (global as any).__currentUserId;
+      if (expoPushToken?.data && userId) {
+        await updateUserProfile(userId, { pushToken: expoPushToken.data });
+      }
+    } catch (e) {
+      console.warn('Failed to get/save Expo push token:', e);
+    }
     
     // הגדרת ערוץ התראות ל-Android
     if (Platform.OS === 'android') {

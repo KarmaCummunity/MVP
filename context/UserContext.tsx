@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getFirebase } from '../services/firebase';
 
 interface User {
   id: string;
@@ -34,6 +35,7 @@ interface UserContextType {
   setDemoUser: () => Promise<void>;
   resetHomeScreen: () => void;
   resetHomeScreenTrigger: number;
+  signInWithGoogle?: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -51,8 +53,57 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   // Check authentication status on app start
   useEffect(() => {
-    console.log('🔐 UserContext - useEffect - Starting auth check');
-    checkAuthStatus();
+    console.log('🔐 UserContext - useEffect - bind Firebase auth listener');
+    setIsLoading(true);
+    let unsubscribe: any = null;
+    (async () => {
+      const { auth } = await getFirebase();
+      if (!auth) {
+        // Firebase not available yet → fallback to local check
+        await checkAuthStatus();
+        setIsLoading(false);
+        return;
+      }
+      const firebaseAuth = await import('firebase/auth');
+      unsubscribe = firebaseAuth.onAuthStateChanged(auth, async (firebaseUser: any) => {
+      try {
+        if (firebaseUser) {
+          const user: User = {
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName || 'משתמש',
+            email: firebaseUser.email || '',
+            phone: firebaseUser.phoneNumber || '',
+            avatar: firebaseUser.photoURL || '',
+            bio: '',
+            karmaPoints: 0,
+            joinDate: new Date().toISOString(),
+            isActive: true,
+            lastActive: new Date().toISOString(),
+            location: { city: '', country: 'IL' },
+            interests: [],
+            roles: ['user'],
+            postsCount: 0,
+            followersCount: 0,
+            followingCount: 0,
+            notifications: [],
+            settings: { language: 'he', darkMode: false, notificationsEnabled: true },
+          };
+          await AsyncStorage.setItem('current_user', JSON.stringify(user));
+          setSelectedUserState(user);
+          setIsAuthenticated(true);
+          setIsGuestMode(false);
+        } else {
+          // fall back to local stored (guest or prev session)
+          await checkAuthStatus();
+        }
+      } finally {
+        setIsLoading(false);
+      }
+      });
+    })();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   const checkAuthStatus = async () => {
@@ -141,6 +192,15 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     try {
       console.log('🔐 UserContext - signOut - Starting sign out process');
       setIsLoading(true);
+      try {
+        const { auth } = await getFirebase();
+        if (auth) {
+          const firebaseAuth = await import('firebase/auth');
+          await firebaseAuth.signOut(auth);
+        }
+      } catch (e) {
+        // ignore if not signed in
+      }
       
       // מחיקת נתוני המשתמש מ-AsyncStorage
       console.log('🔐 UserContext - signOut - Removing current_user from AsyncStorage');

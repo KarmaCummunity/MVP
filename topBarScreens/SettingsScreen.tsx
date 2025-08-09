@@ -30,6 +30,7 @@ import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { useUser } from '../context/UserContext';
 import GuestModeNotice from '../components/GuestModeNotice';
+import { deleteUserAccountData } from '../services/firestore';
 import ScreenWrapper from '../components/ScreenWrapper';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -193,6 +194,37 @@ export default function SettingsScreen() {
       alert('בחירת ערכת נושא תתווסף בקרוב');
     } else {
       Alert.alert('ערכת נושא', 'בחירת ערכת נושא תתווסף בקרוב');
+    }
+  };
+
+  const handleDeleteAccountPress = async () => {
+    try {
+      const confirmed = Platform.OS === 'web'
+        ? window.confirm('מחיקת חשבון תמחק לצמיתות את כל הנתונים. להמשיך?')
+        : await new Promise<boolean>((resolve) => {
+            Alert.alert(
+              'מחיקת חשבון',
+              'מחיקת חשבון תמחק לצמיתות את כל הנתונים. להמשיך?',
+              [
+                { text: 'ביטול', style: 'cancel', onPress: () => resolve(false) },
+                { text: 'מחק', style: 'destructive', onPress: () => resolve(true) },
+              ]
+            );
+          });
+      if (!confirmed) return;
+
+      const uid = selectedUser?.id;
+      if (uid) {
+        try {
+          await deleteUserAccountData(uid);
+        } catch (e) {
+          console.warn('Failed deleting user data in Firestore', e);
+        }
+      }
+      await signOut();
+    } catch (e) {
+      console.error('Delete account failed', e);
+      Alert.alert('שגיאה', 'מחיקת החשבון נכשלה');
     }
   };
 
@@ -481,6 +513,14 @@ export default function SettingsScreen() {
             title="ניקוי מטמון"
             subtitle="פינוי זיכרון זמני"
             onPress={handleClearCachePress}
+          />
+
+          <SettingsItem
+            icon="person-remove-outline"
+            title="מחיקת חשבון"
+            subtitle="מוחק לצמיתות את נתוני החשבון"
+            onPress={handleDeleteAccountPress}
+            dangerous
           />
           
           <SettingsItem

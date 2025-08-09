@@ -12,6 +12,7 @@ import colors from "../globals/colors";
 import { FontSizes } from "../globals/constants";
 import { texts } from "../globals/texts";
 import logger from '../utils/logger';
+import Constants from 'expo-constants';
 
 interface PlacePrediction {
   description: string;
@@ -27,7 +28,7 @@ interface LocationSearchCompProps {
   placeholder?: string;
 }
 
-const GOOGLE_API_KEY = "AIzaSyAgkx8Jp2AfhhYL0wwgcOqONpaJ0-Mkcf8";
+const GOOGLE_API_KEY = (Constants.expoConfig?.extra as any)?.googlePlacesApiKey as string;
 
 const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
   onLocationSelected,
@@ -40,6 +41,11 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
   );
 
   const searchGooglePlaces = async (inputText: string) => {
+    if (!GOOGLE_API_KEY) {
+      logger.warn('Google Places API key is missing in extra.googlePlacesApiKey');
+      setResults([]);
+      return;
+    }
     const startTime = Date.now();
     const url =
       Platform.OS === "web"
