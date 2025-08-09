@@ -524,8 +524,8 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    right: 16,
-    bottom: 44,
+    left: 20,
+    bottom: 50,
     backgroundColor: colors.pink,
     borderRadius: 22,
     height: "auto",

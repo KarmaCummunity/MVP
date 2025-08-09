@@ -25,6 +25,8 @@ import PlantsScreen from "../donationScreens/PlantsScreen";
 import WasteScreen from "../donationScreens/WasteScreen";
 import ArtScreen from "../donationScreens/ArtScreen";
 import SportsScreen from "../donationScreens/SportsScreen";
+import ItemsScreen from "../donationScreens/ItemsScreen";
+import CategoryScreen from "../donationScreens/CategoryScreen";
 import ChatListScreen from "../topBarScreens/ChatListScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 import AboutKarmaCommunityScreen from "../topBarScreens/AboutKarmaCommunityScreen";
@@ -59,9 +61,11 @@ export default function DonationsStack() {
     >
       <Stack.Screen name="DonationsScreen" component={DonationsScreen} />
       <Stack.Screen name="MoneyScreen" component={MoneyScreen} />
+      <Stack.Screen name="ItemsScreen" component={ItemsScreen} />
       <Stack.Screen name="TimeScreen" component={TimeScreen} />
       <Stack.Screen name="KnowledgeScreen" component={KnowledgeScreen} />
       <Stack.Screen name="TrumpScreen" component={TrumpScreen} />
+      <Stack.Screen name="CategoryScreen" component={CategoryScreen} />
       {/* Category screens */}
       <Stack.Screen name="FoodScreen" component={FoodScreen} />
       <Stack.Screen name="ClothesScreen" component={ClothesScreen} />

@@ -79,5 +79,12 @@
     <string>Automatic</string>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
+    <key>LSApplicationQueriesSchemes</key>
+    <array>
+      <string>bit</string>
+      <string>com.poalim.bit</string>
+      <string>paybox</string>
+      <string>payboxapp</string>
+    </array>
   </dict>
 </plist>

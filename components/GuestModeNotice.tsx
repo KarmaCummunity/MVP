@@ -41,7 +41,6 @@ const GuestModeNotice: React.FC<GuestModeNoticeProps> = ({
       {showLoginButton && (
         <TouchableOpacity style={styles.loginButton} onPress={handleLoginPress}>
           <Text style={styles.loginButtonText}>אתה במצב אורח, מומלץ להתחבר</Text>
-          <Ionicons name="information-circle-outline" size={20} color={colors.warning} />
         </TouchableOpacity>
       )}
     </>
@@ -74,7 +73,7 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     margin: 10,
-    backgroundColor: colors.pinkDark,
+    backgroundColor: colors.pink,
     borderRadius: 8,
     paddingVertical: 5,
     paddingHorizontal: 10,

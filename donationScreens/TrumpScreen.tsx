@@ -47,6 +47,7 @@ import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';  
 import { Ionicons as Icon } from '@expo/vector-icons';
 import HeaderComp from '../components/HeaderComp';
+import DonationStatsFooter from '../components/DonationStatsFooter';
 import TimePicker from '../components/TimePicker';
 import { db } from '../utils/databaseService';
 import { useUser } from '../context/UserContext';
@@ -60,7 +61,7 @@ export default function TrumpScreen({
   console.log('🚗 TrumpScreen - Component rendered');
   console.log('🚗 TrumpScreen - Navigation object:', navigation);
   
-  const [mode, setMode] = useState(false); // false = seeker (needs ride), true = offerer (offers ride)
+  const [mode, setMode] = useState(true); // false = seeker (needs ride), true = offerer (offers ride)
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [selectedSorts, setSelectedSorts] = useState<string[]>([]);
@@ -117,7 +118,6 @@ export default function TrumpScreen({
     "לפי מיקום",
     "לפי תאריך",
     "לפי שעה",
-    "לפי מחיר",
     "לפי דירוג",
     "לפי רלוונטיות",
   ];
@@ -807,11 +807,27 @@ export default function TrumpScreen({
               ))}
             </View>
           </View>
+
+          {/* Footer stats */}
+          {(() => {
+            const totalRides = filteredRides.length || allRides.length;
+            const freeRides = (filteredRides.length ? filteredRides : allRides).filter((r: any) => (r.price ?? 0) === 0).length;
+            const totalGroupMembers = dummyGroups.reduce((s, g) => s + (g.members || 0), 0);
+            return (
+                <DonationStatsFooter
+                  stats={[
+                    { label: 'טרמפים זמינים', value: totalRides, icon: 'car-outline' },
+                    { label: 'ללא השתתפות', value: freeRides, icon: 'pricetag-outline' },
+                    { label: 'חברי קבוצות', value: totalGroupMembers, icon: 'people-outline' },
+                  ]}
+                />
+            );
+          })()}
         </ScrollView>
       ) : (
         // Beneficiary (seeker) mode - two independent vertical scroll sections
-        <View style={[localStyles.container, localStyles.noOuterScrollContainer]}> 
-          <View style={localStyles.sectionsContainer}>
+          <View style={[localStyles.container, localStyles.noOuterScrollContainer]}> 
+            <View style={localStyles.sectionsContainer}>
             {/* Rides section */}
             <View style={localStyles.sectionWithScroller}>
               <Text style={localStyles.sectionTitle}>
@@ -869,22 +885,27 @@ export default function TrumpScreen({
               </ScrollView>
             </View>
           </View>
+          {/* Footer stats */}
+          {(() => {
+          const totalRides = filteredRides.length || allRides.length;
+          const freeRides = (filteredRides.length ? filteredRides : allRides).filter((r: any) => (r.price ?? 0) === 0).length;
+          const totalGroupMembers = dummyGroups.reduce((s, g) => s + (g.members || 0), 0);
+          return (
+              <DonationStatsFooter
+                stats={[
+                  { label: 'טרמפים זמינים', value: totalRides, icon: 'car-outline' },
+                  { label: 'ללא השתתפות', value: freeRides, icon: 'pricetag-outline' },
+                  { label: 'חברי קבוצות', value: totalGroupMembers, icon: 'people-outline' },
+                ]}
+              />
+          );
+          })()}
         </View>
       )}
     </SafeAreaView>
   );
 }
 
-/**
- * סטיילים מקומיים למסך הטרמפים
- * 
- * הסטיילים מחולקים לקטגוריות:
- * - Layout: safeArea, container, sections
- * - Forms: inputs, buttons, checkboxes
- * - Cards: ride cards, recent rides, groups
- * - Typography: labels, text styles
- * - Interactive: buttons, touchable elements
- */
 const localStyles = StyleSheet.create({
     safeArea: {
       flex: 1,

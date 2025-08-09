@@ -132,7 +132,7 @@ export default function LoginScreen() {
         {/* Header Section */}
         <View style={styles.headerSection}>
           <Text style={styles.title}>ברוכים הבאים!</Text>
-          <Text style={styles.subtitle}>KC_ID - הקיבוץ הקפיטליסטי של ישראל</Text>
+          <Text style={styles.subtitle}>הקיבוץ הקפיטליסטי של ישראל</Text>
           
           <View style={styles.buttonsContainer}>
             <TouchableOpacity

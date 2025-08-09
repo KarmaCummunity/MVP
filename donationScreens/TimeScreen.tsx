@@ -17,6 +17,7 @@ import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { useUser } from '../context/UserContext';
 import HeaderComp from '../components/HeaderComp';
+import DonationStatsFooter from '../components/DonationStatsFooter';
 
 // Mock data for volunteer opportunities
 const volunteerOpportunities = [
@@ -236,7 +237,7 @@ export default function TimeScreen({
       <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundPrimary} />
       
       <HeaderComp
-        mode={false}
+        mode={true}
         menuOptions={['הגדרות', 'עזרה', 'צור קשר']}
         onToggleMode={() => console.log('Mode toggled')}
         onSelectMenuItem={(option: string) => console.log('Menu selected:', option)}
@@ -363,24 +364,13 @@ export default function TimeScreen({
 
         {/* Stats Section */}
         <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>סטטיסטיקות התנדבות</Text>
-          <View style={styles.statsContainer}>
-            <View style={styles.statCard}>
-              <Ionicons name="people" size={24} color={colors.orange} />
-              <Text style={styles.statNumber}>2,847</Text>
-              <Text style={styles.statLabel}>מתנדבים פעילים</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="time" size={24} color={colors.orange} />
-              <Text style={styles.statNumber}>15,234</Text>
-              <Text style={styles.statLabel}>שעות התנדבות</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="heart" size={24} color={colors.orange} />
-              <Text style={styles.statNumber}>156</Text>
-              <Text style={styles.statLabel}>ארגונים פעילים</Text>
-            </View>
-          </View>
+          <DonationStatsFooter
+            stats={[
+              { label: 'מתנדבים פעילים', value: 2847, icon: 'people-outline' },
+              { label: 'שעות התנדבות', value: 15234, icon: 'time-outline' },
+              { label: 'ארגונים פעילים', value: 156, icon: 'heart-outline' },
+            ]}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>

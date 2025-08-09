@@ -275,7 +275,6 @@ export const texts = {
   alphabetical: "אלפביתי",
   byLocation: "לפי מיקום",
   byCategory: "לפי תחום",
-  byPrice: "לפי מחיר",
   byTime: "לפי שעה",
   byRating: "לפי דירוג",
   byRelevance: "לפי רלוונטיות",

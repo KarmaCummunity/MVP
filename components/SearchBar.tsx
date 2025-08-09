@@ -15,6 +15,7 @@ import colors from "../globals/colors"; // Ensure this path is correct
 import { FontSizes, filterOptions as defaultFilterOptions, sortOptions as defaultSortOptions } from "../globals/constants";
 import { texts } from "../globals/texts";
 import { createShadowStyle } from "../globals/styles";
+import { biDiTextAlign, rowDirection } from "../globals/responsive";
 
 interface SearchBarProps {
   onHasActiveConditionsChange?: (isActive: boolean) => void;
@@ -251,7 +252,7 @@ const SearchBar = ({
   return (
     <View style={localStyles.container}>
       {/* --- Main Search Bar Row --- */}
-      <View style={localStyles.searchBarContainer}>
+      <View style={[localStyles.searchBarContainer, { flexDirection: rowDirection('row-reverse') }]}>
         {/* Sort Button (opens sort modal) */}
         <TouchableOpacity
           style={localStyles.buttonContainer}
@@ -270,7 +271,7 @@ const SearchBar = ({
 
         {/* Search Input Field */}
         <TextInput
-          style={localStyles.searchInput}
+          style={[localStyles.searchInput, { textAlign: biDiTextAlign('center') }]}
           placeholder={placeholder}
           placeholderTextColor="black"
           value={searchText}
@@ -527,7 +528,7 @@ const localStyles = StyleSheet.create({
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
-    flexDirection: "row-reverse",
+    flexDirection: rowDirection("row-reverse"),
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 10,

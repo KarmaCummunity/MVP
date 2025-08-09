@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import HeaderComp from '../components/HeaderComp';
+import DonationStatsFooter from '../components/DonationStatsFooter';
+import { biDiTextAlign, isLandscape } from '../globals/responsive';
 
 export interface CategoryConfig {
   id: string;
@@ -15,19 +17,37 @@ export interface CategoryConfig {
 }
 
 interface Props {
-  config: CategoryConfig;
+  route?: { params?: { config?: CategoryConfig } };
 }
 
-const CategoryScreen: React.FC<Props> = ({ config }) => {
-  const [mode, setMode] = useState(false);
+const CategoryScreen: React.FC<Props> = ({ route }) => {
+  const config: CategoryConfig = route?.params?.config || {
+    id: 'generic',
+    title: 'קטגוריה',
+    icon: 'help-circle-outline',
+    color: colors.info,
+    bgColor: colors.infoLight,
+    description: 'מסך קטגוריה כללי.'
+  };
+  const [mode, setMode] = useState(true);
 
   const handleToggleMode = () => setMode((prev) => !prev);
   const handleSelectMenuItem = (option: string) => {
     console.log('Category menu selected:', option);
   };
 
-  const handleSearch = (query: string, filters: string[], sorts: string[], results: any[]) => {
-    console.log('Category search:', { query, filters, sorts, results });
+  const handleSearch = (
+    query: string,
+    filters?: string[],
+    sorts?: string[],
+    results?: any[]
+  ) => {
+    console.log('Category search:', {
+      query,
+      filters: filters ?? [],
+      sorts: sorts ?? [],
+      results: results ?? [],
+    });
   };
 
   return (
@@ -44,7 +64,7 @@ const CategoryScreen: React.FC<Props> = ({ config }) => {
         onSearch={handleSearch}
       />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, isLandscape() && { paddingHorizontal: 24 }]} showsVerticalScrollIndicator={false}>
         <View style={[styles.hero, { backgroundColor: config.bgColor, borderColor: config.color }]}> 
           <Text style={[styles.title, { color: colors.textPrimary }]}>{config.title}</Text>
           {!!config.subtitle && (
@@ -61,6 +81,17 @@ const CategoryScreen: React.FC<Props> = ({ config }) => {
             אזור זה יכיל תוכן מותאם לקטגוריית "{config.title}". נוכל להציג כאן רשימות, טפסים, פרויקטים קהילתיים,
             ומידע רלוונטי. כרגע זה תוכן התחלתי שניתן להרחיב.
           </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>סטטיסטיקות קשורות</Text>
+          <DonationStatsFooter
+            stats={[
+              { label: 'פרסומים חדשים', value: 12, icon: 'megaphone-outline' },
+              { label: 'בקשות פעילות', value: 7, icon: 'help-circle-outline' },
+              { label: 'שותפים פעילים', value: 5, icon: 'people-outline' },
+            ]}
+          />
         </View>
       </ScrollView>
     </View>
@@ -86,16 +117,19 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.heading2,
     fontWeight: 'bold',
     marginBottom: 4,
+    textAlign: biDiTextAlign('right'),
   },
   subtitle: {
     fontSize: FontSizes.small,
     color: colors.textSecondary,
     marginBottom: 8,
+    textAlign: biDiTextAlign('right'),
   },
   description: {
     fontSize: FontSizes.body,
     color: colors.textPrimary,
     lineHeight: 20,
+    textAlign: biDiTextAlign('right'),
   },
   section: {
     backgroundColor: colors.backgroundSecondary,
@@ -110,11 +144,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 8,
+    textAlign: 'center',
   },
   sectionText: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
     lineHeight: 18,
+    textAlign: biDiTextAlign('right'),
   },
 });
 

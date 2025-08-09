@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import DonationStatsFooter from '../components/DonationStatsFooter';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { texts } from '../globals/texts';
@@ -170,7 +171,6 @@ export default function KnowledgeScreen({
     "לפי קטגוריה",
     "לפי דירוג",
     "לפי מספר תלמידים",
-    "לפי מחיר",
     "לפי רלוונטיות",
   ];
   const handleLinkPress = async (url: string, title: string) => {
@@ -253,7 +253,7 @@ export default function KnowledgeScreen({
       <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundPrimary} />
       
       <HeaderComp
-        mode={false}
+        mode={true}
         menuOptions={[]}
         onToggleMode={() => {}}
         onSelectMenuItem={() => {}}
@@ -342,26 +342,22 @@ export default function KnowledgeScreen({
         </View>
 
         {/* Stats Section */}
-        <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>סטטיסטיקות למידה</Text>
-          <View style={styles.statsContainer}>
-            <View style={styles.statCard}>
-              <Ionicons name="school" size={24} color={colors.pink} />
-              <Text style={styles.statNumber}>156</Text>
-              <Text style={styles.statLabel}>קורסים פעילים</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="people" size={24} color={colors.pink} />
-              <Text style={styles.statNumber}>892</Text>
-              <Text style={styles.statLabel}>תלמידים</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="star" size={24} color={colors.pink} />
-              <Text style={styles.statNumber}>4.8</Text>
-              <Text style={styles.statLabel}>דירוג ממוצע</Text>
-            </View>
-          </View>
-        </View>
+          {(() => {
+            const activeCourses = filteredEducationalLinks.length;
+            const totalStudents = filteredCommunityContent.reduce((s, c) => s + (c.students || 0), 0);
+            const avgRating = filteredCommunityContent.length > 0
+              ? (filteredCommunityContent.reduce((s, c) => s + (c.rating || 0), 0) / filteredCommunityContent.length).toFixed(1)
+              : '0.0';
+            return (
+              <DonationStatsFooter
+                stats={[
+                  { label: 'קורסים פעילים', value: activeCourses, icon: 'school-outline' },
+                  { label: 'תלמידים', value: totalStudents, icon: 'people-outline' },
+                  { label: 'דירוג ממוצע', value: avgRating, icon: 'star-outline' },
+                ]}
+              />
+            );
+          })()}
       </ScrollView>
     </SafeAreaView>
   );
