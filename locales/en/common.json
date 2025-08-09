@@ -1,0 +1,11 @@
+{
+  "welcome": "Welcome to Karma Community!",
+  "appSubtitle": "App Settings",
+  "restartRequired": "Restart required",
+  "restartDesc": "Please restart the app for language changes to take effect",
+  "cancel": "Cancel",
+  "save": "Save",
+  "delete": "Delete",
+  "clear": "Clear",
+  "error": "Error"
+}
