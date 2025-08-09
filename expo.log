@@ -6,3 +6,6 @@ Tunnel connected.
 Tunnel ready.
 Waiting on http://localhost:8082
 Logs for your project will appear below.
+Tunnel connection has been closed. This is often related to intermittent connection problems with the Ngrok servers. Restart the dev server to try connecting to Ngrok again.
+Check the Ngrok status page for outages: https://status.ngrok.com/
+Tunnel connected.
