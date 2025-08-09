@@ -1,20 +1,9 @@
 import React from 'react';
-import CategoryScreen from './CategoryScreen';
-import colors from '../globals/colors';
+import { NavigationProp, ParamListBase } from '@react-navigation/native';
+import ItemsScreen from './ItemsScreen';
 
-export default function FurnitureScreen() {
-  return (
-    <CategoryScreen
-      config={{
-        id: 'furniture',
-        title: 'רהיטים',
-        subtitle: 'תרומת רהיטים',
-        icon: 'bed-outline',
-        color: colors.textPrimary,
-        bgColor: colors.backgroundSecondary,
-        description: 'תרומת רהיטים ושיפור בתים למען הקהילה',
-      }}
-    />
-  );
+export default function FurnitureScreen({ navigation }: { navigation: NavigationProp<ParamListBase> }) {
+  // משמש כרגע כ"מסך חפצים" כללי בהתאם לבקשה
+  return <ItemsScreen navigation={navigation} itemType="general" />;
 }
 
