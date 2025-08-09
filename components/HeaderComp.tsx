@@ -3,8 +3,10 @@ import { View, Text, StyleSheet, Platform } from "react-native";
 import SearchBar from "../components/SearchBar";
 import MenuComp from "../components/MenuComp";
 import ModeToggleButton from "../components/ModeToggleButton";
+import GuestModeNotice from "../components/GuestModeNotice";
 import colors from "../globals/colors";
 import { FontSizes } from "../globals/constants";
+import { useUser } from "../context/UserContext";
 
 interface HeaderSectionProps {
   mode: boolean;  // false = search, true = offer
@@ -17,7 +19,7 @@ interface HeaderSectionProps {
   filterOptions: string[]; // Filter options specific to each screen
   sortOptions: string[]; // Sort options specific to each screen
   searchData: any[]; // Data array to search through (charities, rides, etc.)
-  onSearch: (query: string, filters: string[], sorts: string[], results: any[]) => void; // Search handler function
+  onSearch: (query: string, filters?: string[], sorts?: string[], results?: any[]) => void; // Search handler function
 }
 
 const HeaderComp: React.FC<HeaderSectionProps> = ({
@@ -31,9 +33,15 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
   searchData,
   onSearch,
 }) => {
+  const { isGuestMode } = useUser();
  
   return (
     <View style={headerStyles.headerContainer}>
+      {/* מציג את הבאנר במצב אורח אם המשתמש במצב אורח */}
+      {isGuestMode && (
+        <GuestModeNotice variant="compact" showLoginButton={true} />
+      )}
+
       <View style={headerStyles.topRow}>
         <MenuComp options={menuOptions} onSelectOption={onSelectMenuItem} />
         <ModeToggleButton mode={mode} onToggle={onToggleMode} />

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,9 @@ import {
   ScrollView,
   TextInput,
   Platform,
+  Modal,
+  Linking,
+  PanResponder,
 } from 'react-native';
 import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import { FontSizes } from '../globals/constants';
@@ -44,7 +47,42 @@ const dummyRecentDonations = donations.slice(0, 5).map((donation, index) => ({
 import { texts } from '../globals/texts';
 import colors from '../globals/colors';
 import { Ionicons as Icon } from '@expo/vector-icons';
+import { Slider } from '@miblanchard/react-native-slider';
 import HeaderComp from '../components/HeaderComp';
+
+// Slider component using @miblanchard/react-native-slider
+const DonationAmountSlider: React.FC<{
+  value: number;
+  onChange: (nextValue: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+}> = ({ value, onChange, min = 0, max = 1000, step = 5 }) => {
+  const toNumber = (v: number | number[]) => (Array.isArray(v) ? v[0] : v);
+  return (
+    <View style={localStyles.amountSliderContainer}>
+      <Slider
+        value={value}
+        onValueChange={(v: number | number[]) => onChange(toNumber(v))}
+        minimumValue={min}
+        maximumValue={max}
+        step={step}
+        trackClickable
+        containerStyle={{ paddingHorizontal: 0 }}
+        trackStyle={localStyles.sliderTrack}
+        minimumTrackTintColor={colors.pink}
+        maximumTrackTintColor="transparent"
+        thumbStyle={localStyles.sliderThumb}
+        renderThumbComponent={() => <View style={localStyles.sliderThumbInner} />}
+      />
+      <View style={localStyles.amountRangeRow}>
+        <Text style={localStyles.amountRangeText}>₪{min}</Text>
+        <Text style={localStyles.amountDisplayText}>₪{value}</Text>
+        <Text style={localStyles.amountRangeText}>₪{max}</Text>
+      </View>
+    </View>
+  );
+};
 
 export default function MoneyScreen({
   navigation,
@@ -64,6 +102,22 @@ export default function MoneyScreen({
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [filteredCharities, setFilteredCharities] = useState(dummyCharities); // Search results
+
+  // Menu modals state
+  const [isSavingsModalVisible, setIsSavingsModalVisible] = useState(false);
+  const [isRecurringModalVisible, setIsRecurringModalVisible] = useState(false);
+  const [isReceiptsModalVisible, setIsReceiptsModalVisible] = useState(false);
+
+  // Charity modal state
+  const [isCharityModalVisible, setIsCharityModalVisible] = useState(false);
+  const [selectedCharityForModal, setSelectedCharityForModal] = useState<any | null>(null);
+  const [charityModalIsOfferMode, setCharityModalIsOfferMode] = useState<boolean>(true);
+  const [charityModalAmount, setCharityModalAmount] = useState<string>('50');
+
+  // Quick donate preferred charity (fallback to top rated)
+  const preferredCharity = filteredCharities.length > 0
+    ? filteredCharities[0]
+    : dummyCharities[0];
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -190,6 +244,9 @@ export default function MoneyScreen({
 
  
   const menuOptions = [
+    'חיסכון לתרומה',
+    'הוראות קבע',
+    'קבלות ודוחות',
     'היסטוריית תרומות',
     'הגדרות תשלום',
     'עזרה',
@@ -257,29 +314,71 @@ export default function MoneyScreen({
     }
   };
 
+  // Open Bit app to donate to a specific phone with optional amount and note
+  const openBitDonation = async (phone: string, amountValue: number, note: string = 'תרומה לקהילה') => {
+    try {
+      // Deep link patterns used by Bit app; try multiple known schemes
+      const encodedNote = encodeURIComponent(note);
+      const attempts = [
+        // iOS modern
+        `bit://send?phone=${phone}&amount=${amountValue}&note=${encodedNote}`,
+        // Android possible
+        `com.poalim.bit://send?phone=${phone}&amount=${amountValue}&note=${encodedNote}`,
+        // Generic
+        `bitapp://send?phone=${phone}&amount=${amountValue}&note=${encodedNote}`,
+      ];
+
+      for (const url of attempts) {
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
+          return;
+        }
+      }
+
+      // Fallbacks: try to open Bit app page or provide instruction
+      const appStoreLink = Platform.OS === 'ios'
+        ? 'https://apps.apple.com/il/app/bit/id1148052748'
+        : 'https://play.google.com/store/apps/details?id=com.poalim.bit';
+      await Linking.openURL(appStoreLink);
+    } catch (e) {
+      Alert.alert('Bit', 'לא ניתן לפתוח את Bit במכשיר זה כרגע.');
+    }
+  };
+
   const handleToggleMode = useCallback(() => {
     setMode(!mode);
     console.log('Mode toggled:', !mode ? 'נזקק' : 'תורם');
   }, [mode]);
 
   const handleSelectMenuItem = useCallback((option: string) => {
-    console.log('Menu option selected:', option);
+    if (option === 'חיסכון לתרומה') {
+      setIsSavingsModalVisible(true);
+      return;
+    }
+    if (option === 'הוראות קבע') {
+      setIsRecurringModalVisible(true);
+      return;
+    }
+    if (option === 'קבלות ודוחות') {
+      setIsReceiptsModalVisible(true);
+      return;
+    }
+    // Default fallback
     Alert.alert('תפריט', `נבחר: ${option}`);
   }, []);
+
+  const openCharityModal = (charity: any, isOfferMode: boolean) => {
+    setSelectedCharityForModal(charity);
+    setCharityModalIsOfferMode(isOfferMode);
+    setCharityModalAmount(String(charity.minDonation || 50));
+    setIsCharityModalVisible(true);
+  };
 
   const renderCharityCard = ({ item }: { item: any }) => (
     <TouchableOpacity 
       style={localStyles.charityCard}
-      onPress={() => {
-        if (mode) {
-          // Donor mode - select charity for donation
-          setSelectedRecipient(item.name);
-          Alert.alert('עמותה נבחרה', `נבחרה: ${item.name}`);
-        } else {
-          // Beneficiary mode - show charity details with donation option
-          showCharityDetailsModal(item);
-        }
-      }}
+      onPress={() => openCharityModal(item, !!mode)}
     >
       <View style={localStyles.charityCardHeader}>
         <Text style={localStyles.charityEmoji}>{item.image}</Text>
@@ -288,7 +387,9 @@ export default function MoneyScreen({
         </View>
       </View>
       <Text style={localStyles.charityName}>{item.name}</Text>
-      <Text style={localStyles.charityDescription}>{item.description}</Text>
+      <Text style={[localStyles.charityDescription, mode && localStyles.charityDescriptionCompact]} numberOfLines={mode ? 2 : 3}>
+        {item.description}
+      </Text>
       <View style={localStyles.charityDetails}>
         <Text style={localStyles.charityLocation}>📍 {item.location}</Text>
         <Text style={localStyles.charityCategory}>🏷️ {item.category}</Text>
@@ -358,6 +459,8 @@ export default function MoneyScreen({
         onSearch={handleSearch}
       />
 
+      {/* Quick Donate Section */}
+     
       <ScrollView 
         style={localStyles.container} 
         contentContainerStyle={localStyles.scrollContent}
@@ -367,8 +470,43 @@ export default function MoneyScreen({
 
         {mode ? (
           // Donor mode - show charities for donation and donation history
-          <>
-            <View style={localStyles.section}>
+          <View style={localStyles.sectionsContainer}>
+        <View style={localStyles.quickDonatePanel}>
+          <Text style={localStyles.quickDonateTitle}>תרומה לקהילה</Text>
+          {(() => {
+            const numericAmount = Number(amount) || 0;
+            const isZeroAmount = numericAmount <= 0;
+            return (
+              <>
+                <DonationAmountSlider 
+                  value={numericAmount}
+                  min={0}
+                  max={1000}
+                  step={5}
+                  onChange={(v) => setAmount(String(v))}
+                />
+                <View style={localStyles.quickDonateActionsRow}>
+                  <TouchableOpacity
+                    disabled={isZeroAmount}
+                    style={[localStyles.donateMainButton, isZeroAmount ? localStyles.donateMainButtonDisabled : localStyles.donateMainButtonActive]}
+                    onPress={() => Alert.alert('תרומה בוצעה', `תרומה בסך ₪${numericAmount} למען הקהילה`)}
+                  >
+                    <Text style={[localStyles.donateMainButtonText, isZeroAmount ? localStyles.donateMainButtonTextDisabled : localStyles.donateMainButtonTextActive]}>תרום</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+            style={localStyles.bitCornerButton}
+            onPress={() => openBitDonation('0528616878', Number(amount) || 0, 'תרומה לקהילה')}
+          >
+            <Text style={localStyles.bitCornerButtonText}>bit</Text>
+          </TouchableOpacity>
+                </View>
+              </>
+            );
+          })()}
+        </View>
+
+
+            <View style={[localStyles.section, localStyles.sectionPanel]}>
               <Text style={localStyles.sectionTitle}>
                 {searchQuery || selectedFilter ? 'תוצאות חיפוש' : 'עמותות מומלצות לתרומה'}
               </Text>
@@ -378,14 +516,14 @@ export default function MoneyScreen({
                 contentContainerStyle={localStyles.charitiesScrollContainer}
               >
                 {filteredCharities.map((charity) => (
-                  <View key={charity.id} style={localStyles.charityCardWrapper}>
+                  <View key={charity.id} style={[localStyles.charityCardWrapper, mode && localStyles.charityCardWrapperCompact]}>
                     {renderCharityCard({ item: charity })}
                   </View>
                 ))}
               </ScrollView>
             </View>
 
-            <View style={localStyles.section}>
+            <View style={[localStyles.section, localStyles.sectionPanel]}>
               <Text style={localStyles.sectionTitle}>היסטוריית תרומות שלך</Text>
               <ScrollView 
                 horizontal 
@@ -399,27 +537,172 @@ export default function MoneyScreen({
                 ))}
               </ScrollView>
             </View>
-          </>
+
+            {/* Bottom small stats */}
+            <View style={[localStyles.section, localStyles.sectionPanel]}>
+              <View style={localStyles.bottomStatsRow}>
+                <View style={localStyles.statChip}>
+                  <Text style={localStyles.statLabel}>תרמת עד עכשיו</Text>
+                  <Text style={localStyles.statValue}>₪{getFilteredRecentDonations().reduce((s, d) => s + (Number(d.amount) || 0), 0)}</Text>
+                </View>
+                <View style={localStyles.statChip}>
+                  <Text style={localStyles.statLabel}>נתרם באפליקציה</Text>
+                  <Text style={localStyles.statValue}>₪{dummyRecentDonations.reduce((s, d) => s + (Number(d.amount) || 0), 0)}</Text>
+                </View>
+                <View style={localStyles.statChip}>
+                  <Text style={localStyles.statLabel}>עמותות שנתמכו</Text>
+                  <Text style={localStyles.statValue}>{new Set(dummyRecentDonations.map(d => d.charityName)).size}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
         ) : (
           // Beneficiary mode - show charities that can help
-          <View style={localStyles.section}>
-            <Text style={localStyles.sectionTitle}>
-              {searchQuery || selectedFilter ? 'עמותות שיכולות לעזור' : 'עמותות מומלצות לעזרה'}
-            </Text>
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={localStyles.charitiesScrollContainer}
-            >
-              {getFilteredCharities().map((charity) => (
-                <View key={charity.id} style={localStyles.charityCardWrapper}>
-                  {renderCharityCard({ item: charity })}
+          <View style={localStyles.sectionsContainer}>
+            <View style={[localStyles.section, localStyles.sectionPanel]}>
+              <Text style={localStyles.sectionTitle}>
+                {searchQuery || selectedFilter ? 'עמותות שיכולות לעזור' : 'עמותות מומלצות לעזרה'}
+              </Text>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={localStyles.charitiesScrollContainer}
+              >
+                {getFilteredCharities().map((charity) => (
+                  <View key={charity.id} style={localStyles.charityCardWrapper}>
+                    {renderCharityCard({ item: charity })}
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+
+            {/* Bottom small stats */}
+            <View style={[localStyles.section, localStyles.sectionPanel]}>
+              <View style={localStyles.bottomStatsRow}>
+                <View style={localStyles.statChip}>
+                  <Text style={localStyles.statLabel}>תרמת עד עכשיו</Text>
+                  <Text style={localStyles.statValue}>₪{getFilteredRecentDonations().reduce((s, d) => s + (Number(d.amount) || 0), 0)}</Text>
                 </View>
-              ))}
-            </ScrollView>
+                <View style={localStyles.statChip}>
+                  <Text style={localStyles.statLabel}>נתרם באפליקציה</Text>
+                  <Text style={localStyles.statValue}>₪{dummyRecentDonations.reduce((s, d) => s + (Number(d.amount) || 0), 0)}</Text>
+                </View>
+                <View style={localStyles.statChip}>
+                  <Text style={localStyles.statLabel}>עמותות שנתמכו</Text>
+                  <Text style={localStyles.statValue}>{new Set(dummyRecentDonations.map(d => d.charityName)).size}</Text>
+                </View>
+              </View>
+            </View>
           </View>
         )}
       </ScrollView>
+
+      {/* Charity Details Modal (centered, not full screen) */}
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isCharityModalVisible}
+        onRequestClose={() => setIsCharityModalVisible(false)}
+      >
+        <TouchableOpacity style={localStyles.modalOverlay} activeOpacity={1} onPressOut={() => setIsCharityModalVisible(false)}>
+          <View style={localStyles.centerModalContent}>
+            {selectedCharityForModal && (
+              <>
+                <Text style={localStyles.modalTitle}>{selectedCharityForModal.name}</Text>
+                <Text style={localStyles.modalSubtitle}>📍 {selectedCharityForModal.location}   ·   🏷️ {selectedCharityForModal.category}</Text>
+                <Text style={localStyles.modalDescription} numberOfLines={6}>{selectedCharityForModal.description}</Text>
+                {charityModalIsOfferMode ? (
+                  <>
+                    <Text style={localStyles.modalFieldLabel}>בחר סכום לתרומה</Text>
+                    <TextInput
+                      style={[localStyles.input, localStyles.modalAmountInput]}
+                      keyboardType="number-pad"
+                      value={charityModalAmount}
+                      onChangeText={(t) => setCharityModalAmount(t.replace(/[^0-9]/g, ''))}
+                      placeholder="50"
+                    />
+                    <View style={localStyles.modalActionsRow}>
+                      <TouchableOpacity style={localStyles.modalPrimaryButton} onPress={() => {
+                        setIsCharityModalVisible(false);
+                        Alert.alert('תרומה בוצעה', `תודה על תרומתך בסך ₪${charityModalAmount} ל-${selectedCharityForModal.name}!`);
+                      }}>
+                        <Text style={localStyles.modalPrimaryButtonText}>תרום עכשיו</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={localStyles.bitButton} onPress={() => Alert.alert('Bit', 'העברה באמצעות Bit תיפתח כאן')}>
+                        <Text style={localStyles.bitButtonText}>תרום עם Bit</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <TouchableOpacity style={localStyles.contactButton} onPress={() => Alert.alert('יצירת קשר', 'פרטי קשר: 03-1234567 · info@example.org')}>
+                      <Text style={localStyles.contactButtonText}>יצירת קשר</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <TouchableOpacity style={localStyles.contactButton} onPress={() => Alert.alert('יצירת קשר', 'פרטי קשר: 03-1234567 · info@example.org')}>
+                      <Text style={localStyles.contactButtonText}>יצירת קשר</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Savings Modal */}
+      <Modal animationType="fade" transparent visible={isSavingsModalVisible} onRequestClose={() => setIsSavingsModalVisible(false)}>
+        <TouchableOpacity style={localStyles.modalOverlay} activeOpacity={1} onPressOut={() => setIsSavingsModalVisible(false)}>
+          <View style={localStyles.centerModalContent}>
+            <Text style={localStyles.modalTitle}>חיסכון לתרומה</Text>
+            <Text style={localStyles.modalDescription}>קבע יעד חיסכון חודשי לתרומה עתידית. בכל חודש נוסיף את הסכום לקופת חיסכון ייעודית.</Text>
+            <Text style={localStyles.modalFieldLabel}>סכום חודשי (₪)</Text>
+            <TextInput style={[localStyles.input, localStyles.modalAmountInput]} keyboardType="number-pad" placeholder="50" />
+            <Text style={localStyles.modalFieldLabel}>יעד (עמותה/קטגוריה)</Text>
+            <TextInput style={[localStyles.input]} placeholder="לדוגמה: חינוך" />
+            <TouchableOpacity style={localStyles.modalPrimaryButton} onPress={() => { setIsSavingsModalVisible(false); Alert.alert('נשמר', 'תוכנית חיסכון לתרומה נשמרה'); }}>
+              <Text style={localStyles.modalPrimaryButtonText}>שמור חיסכון</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Recurring Donations Modal */}
+      <Modal animationType="fade" transparent visible={isRecurringModalVisible} onRequestClose={() => setIsRecurringModalVisible(false)}>
+        <TouchableOpacity style={localStyles.modalOverlay} activeOpacity={1} onPressOut={() => setIsRecurringModalVisible(false)}>
+          <View style={localStyles.centerModalContent}>
+            <Text style={localStyles.modalTitle}>הוראות קבע</Text>
+            <Text style={localStyles.modalDescription}>קבע תרומה קבועה (חודשית/שבועית) לעמותה שבחרת.</Text>
+            <Text style={localStyles.modalFieldLabel}>סכום קבוע (₪)</Text>
+            <TextInput style={[localStyles.input, localStyles.modalAmountInput]} keyboardType="number-pad" placeholder="36" />
+            <Text style={localStyles.modalFieldLabel}>תדירות</Text>
+            <View style={localStyles.modalActionsRow}>
+              <TouchableOpacity style={localStyles.quickAmountButton}><Text style={localStyles.quickAmountButtonText}>חודשי</Text></TouchableOpacity>
+              <TouchableOpacity style={localStyles.quickAmountButton}><Text style={localStyles.quickAmountButtonText}>שבועי</Text></TouchableOpacity>
+            </View>
+            <TouchableOpacity style={localStyles.modalPrimaryButton} onPress={() => { setIsRecurringModalVisible(false); Alert.alert('נשמר', 'הוראת הקבע נשמרה'); }}>
+              <Text style={localStyles.modalPrimaryButtonText}>שמור הוראה</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Receipts/Reports Modal */}
+      <Modal animationType="fade" transparent visible={isReceiptsModalVisible} onRequestClose={() => setIsReceiptsModalVisible(false)}>
+        <TouchableOpacity style={localStyles.modalOverlay} activeOpacity={1} onPressOut={() => setIsReceiptsModalVisible(false)}>
+          <View style={localStyles.centerModalContent}>
+            <Text style={localStyles.modalTitle}>קבלות ודוחות</Text>
+            <Text style={localStyles.modalDescription}>ייצוא קבלות שנתיות, צפייה בסיכום חודשי והשוואת תרומות.</Text>
+            <View style={localStyles.modalActionsRow}>
+              <TouchableOpacity style={localStyles.modalPrimaryButton} onPress={() => Alert.alert('קבלות', 'קובץ קבלות ירוכז כאן')}> 
+                <Text style={localStyles.modalPrimaryButtonText}>ייצא קבלות</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={localStyles.bitButton} onPress={() => Alert.alert('דוח חודשי', 'נסכם עבורך את החודש האחרון')}>
+                <Text style={localStyles.bitButtonText}>דוח חודשי</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -427,12 +710,12 @@ export default function MoneyScreen({
 const localStyles = StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: colors.backgroundPrimary,
+      backgroundColor: colors.backgroundSecondary_2,
     },
     container: {
         flex: 1,
         paddingHorizontal: 16,
-        paddingTop: 24,
+        paddingTop: 4,
     },
     scrollContent: {
         paddingBottom: 100, // Bottom margin for screen
@@ -497,7 +780,7 @@ const localStyles = StyleSheet.create({
         textAlign: 'center',
     },
     donateButton: {
-        backgroundColor: colors.moneyButtonBackground,
+        // backgroundColor: colors.moneyButtonBackground,
         padding: 16,
         borderRadius: 12,
         alignItems: 'center',
@@ -509,14 +792,26 @@ const localStyles = StyleSheet.create({
         fontWeight: 'bold',
     },
     section: {
-        marginBottom: 20,
+        marginBottom: 10,
     },
     sectionTitle: {
-        fontSize: FontSizes.heading2,
+        fontSize: FontSizes.body,
         fontWeight: 'bold',
         color: colors.textPrimary,
-        marginBottom: 10,
-        textAlign: 'right',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    sectionsContainer: {
+        flex: 1,
+        gap: 5,
+    },
+    sectionPanel: {
+        backgroundColor: colors.moneyFormBackground,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.moneyFormBorder,
+        paddingVertical: 8,
+        paddingHorizontal: 8,
     },
     recommendationCard: {
         backgroundColor: colors.moneyCardBackground,
@@ -659,6 +954,9 @@ const localStyles = StyleSheet.create({
         marginRight: 12,
         width: 280,
     },
+    charityCardWrapperCompact: {
+        width: 220,
+    },
     charityCard: {
         backgroundColor: colors.moneyCardBackground,
         borderRadius: 12,
@@ -700,6 +998,10 @@ const localStyles = StyleSheet.create({
         marginBottom: 8,
         textAlign: 'right',
         lineHeight: 18,
+    },
+    charityDescriptionCompact: {
+        fontSize: FontSizes.small,
+        lineHeight: 16,
     },
     charityDetails: {
         flexDirection: 'row',
@@ -785,6 +1087,159 @@ const localStyles = StyleSheet.create({
         color: colors.moneyStatusText,
         fontWeight: '600',
     },
+    // Quick Donate Panel
+    quickDonatePanel: {
+      backgroundColor: colors.moneyFormBackground,
+      borderWidth: 1,
+      borderColor: colors.headerBorder,
+      borderRadius: 14,
+      marginHorizontal: 0,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+    },
+    bitCornerButton: {
+      position: 'absolute',
+      top: 8,
+      left: 8,
+      padding: 8,
+      paddingHorizontal: 10,
+      borderRadius: 999,
+      backgroundColor: 'rgba(33, 150, 243, 0.12)',
+      borderWidth: 1,
+      borderColor: 'rgba(33, 150, 243, 0.35)',
+      zIndex: 2,
+    },
+    bitCornerButtonText: {
+      color: 'rgba(33, 150, 243, 0.9)',
+      fontSize: FontSizes.small,
+      fontWeight: '700',
+    },
+    quickDonateTitle: {
+      fontSize: FontSizes.body,
+      fontWeight: '700',
+      color: 'rgba(44,44,44,0.85)',
+      textAlign: 'center',
+    },
+    quickDonateSubtitle: {
+      fontSize: FontSizes.small,
+      color: 'rgba(102,102,102,0.75)',
+      textAlign: 'center',
+      marginTop: 2,
+      marginBottom: 6,
+    },
+    quickDonateAmountsRow: {
+      flexDirection: 'row-reverse',
+      justifyContent: 'center',
+      gap: 8,
+      marginBottom: 6,
+    },
+    quickAmountButton: {
+      backgroundColor: colors.moneyInputBackground,
+      borderWidth: 1,
+      borderColor: colors.moneyFormBorder,
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+    quickAmountButtonText: {
+      fontSize: FontSizes.small,
+      color: colors.textPrimary,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    quickDonateActionsRow: {
+      flexDirection: 'row-reverse',
+      justifyContent: 'center',
+      gap: 8,
+      marginTop: 4,
+    },
+    // Slider styles (modern, subtle)
+    amountSliderContainer: {
+      marginTop: 6,
+      marginBottom: 8,
+      paddingHorizontal: 6,
+    },
+    sliderTrack: {
+      height: "20%",
+      borderRadius: 999,
+      backgroundColor: 'rgba(255, 255, 255, 0.85)',
+      borderWidth: 1,
+      borderColor: colors.headerBorder,
+      overflow: 'hidden',
+    },
+    sliderFill: {
+      backgroundColor: colors.pink,
+    },
+    sliderThumb: {
+      // height: 30,
+      borderRadius: 14,
+      backgroundColor: colors.pink,
+      borderWidth: 2,
+      borderColor: '#9C1B5E',
+      shadowColor: '#000',
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+    },
+    sliderThumbInner: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: colors.pinkLight,
+      alignSelf: 'center',
+      // marginTop: 7,
+    },
+    amountDisplayRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginTop: 8,
+    },
+    amountDisplayText: {
+      fontSize: FontSizes.medium,
+      fontWeight: '700',
+      color: 'rgba(44,44,44,0.9)',
+    },
+    amountRangeRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 4,
+    },
+    amountRangeText: {
+      fontSize: FontSizes.caption,
+      color: 'rgba(102,102,102,0.7)',
+    },
+    // Donate CTA styles
+    donateMainButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 999,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: 88,
+    },
+    donateMainButtonActive: {
+      backgroundColor: 'rgba(255, 107, 157, 0.2)',
+      borderWidth: 1,
+      borderColor: 'rgba(255, 107, 157, 0.4)',
+    },
+    donateMainButtonDisabled: {
+      backgroundColor: 'rgba(0,0,0,0.05)',
+      borderWidth: 1,
+      borderColor: 'rgba(0,0,0,0.06)',
+    },
+    donateMainButtonText: {
+      fontSize: FontSizes.body,
+      fontWeight: '700',
+      textAlign: 'center',
+    },
+    donateMainButtonTextActive: {
+      color: 'rgba(44,44,44,0.9)',
+    },
+    donateMainButtonTextDisabled: {
+      color: 'rgba(0,0,0,0.3)',
+    },
+    // removed inline bitSmallButton in favor of corner button
     // Search Help Styles
     searchHelpContainer: {
         alignItems: 'center',
@@ -825,5 +1280,128 @@ const localStyles = StyleSheet.create({
         marginBottom: 6,
         textAlign: 'right',
         lineHeight: 20,
+    },
+    // Bottom small stats
+    bottomStatsRow: {
+      flexDirection: 'row-reverse',
+      justifyContent: 'space-between',
+      gap: 6,
+    },
+    statChip: {
+      flex: 1,
+      backgroundColor: colors.moneyInputBackground,
+      borderWidth: 1,
+      borderColor: colors.moneyFormBorder,
+      borderRadius: 10,
+      paddingVertical: 8,
+      paddingHorizontal: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    statLabel: {
+      fontSize: FontSizes.caption,
+      color: colors.textSecondary,
+      marginBottom: 4,
+    },
+    statValue: {
+      fontSize: FontSizes.body,
+      color: colors.textPrimary,
+      fontWeight: 'bold',
+    },
+
+    // Modal shared styles
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 16,
+    },
+    centerModalContent: {
+      width: '85%',
+      maxHeight: '75%',
+      backgroundColor: colors.cardBackground,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.moneyFormBorder,
+      padding: 14,
+    },
+    modalTitle: {
+      fontSize: FontSizes.heading3,
+      fontWeight: 'bold',
+      color: colors.textPrimary,
+      textAlign: 'center',
+    },
+    modalSubtitle: {
+      fontSize: FontSizes.small,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginTop: 4,
+      marginBottom: 8,
+    },
+    modalDescription: {
+      fontSize: FontSizes.body,
+      color: colors.textSecondary,
+      textAlign: 'right',
+      marginBottom: 10,
+      lineHeight: 20,
+    },
+    modalFieldLabel: {
+      fontSize: FontSizes.small,
+      color: colors.textPrimary,
+      fontWeight: '600',
+      textAlign: 'right',
+      marginBottom: 6,
+      marginTop: 4,
+    },
+    modalAmountInput: {
+      textAlign: 'center',
+      marginBottom: 10,
+    },
+    modalActionsRow: {
+      flexDirection: 'row-reverse',
+      justifyContent: 'space-between',
+      gap: 8,
+      marginBottom: 8,
+    },
+    // Dedicated modal primary button styles to avoid duplicate keys
+    modalPrimaryButton: {
+      backgroundColor: colors.moneyButtonBackground,
+      padding: 12,
+      borderRadius: 10,
+      alignItems: 'center',
+      flex: 1,
+    },
+    modalPrimaryButtonText: {
+      color: colors.backgroundPrimary,
+      fontSize: FontSizes.medium,
+      fontWeight: 'bold',
+    },
+    bitButton: {
+      backgroundColor: 'transparent',
+      padding: 12,
+      borderRadius: 10,
+      alignItems: 'center',
+      flex: 1,
+      borderWidth: 1,
+      borderColor: colors.headerBorder,
+    },
+    bitButtonText: {
+      color: 'rgba(44,44,44,0.85)',
+      fontSize: FontSizes.medium,
+      fontWeight: 'bold',
+    },
+    contactButton: {
+      backgroundColor: colors.moneyInputBackground,
+      borderWidth: 1,
+      borderColor: colors.moneyFormBorder,
+      padding: 12,
+      borderRadius: 10,
+      alignItems: 'center',
+    },
+    contactButtonText: {
+      color: colors.textPrimary,
+      fontSize: FontSizes.medium,
+      fontWeight: 'bold',
     },
 });
