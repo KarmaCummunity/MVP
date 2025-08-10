@@ -7,5 +7,9 @@
   "save": "שמור",
   "delete": "מחק",
   "clear": "נקה",
-  "error": "שגיאה"
+  "error": "שגיאה",
+  "search": "חיפוש",
+  "chats": "צ'אטים",
+  "favorites": "מועדפים",
+  "inactive": "לא פעיל"
 }

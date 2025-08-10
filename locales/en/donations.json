@@ -1,3 +1,9 @@
 {
-  "title": "Donations"
+  "title": "Donations",
+  "money": "Money",
+  "rides": "Rides",
+  "knowledge": "Knowledge donation",
+  "time": "Time donation",
+  "categories": "Donation categories",
+  "items": "Items"
 }

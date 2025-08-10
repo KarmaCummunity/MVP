@@ -6,7 +6,7 @@
   "theme": "Theme",
   "themeDesc": "Light, dark, or automatic",
   "language": "Language",
-  "selectLanguage": "Select Language",
+  "selectLanguage": "Choose language",
   "selectLanguageDesc": "Choose your preferred language",
   "restartRequired": "Restart required",
   "restartDesc": "Please restart the app for language changes to take effect",

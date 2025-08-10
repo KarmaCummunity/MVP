@@ -34,7 +34,8 @@ import GuestModeNotice from '../components/GuestModeNotice';
 import ScreenWrapper from '../components/ScreenWrapper';
 import { useTranslation } from 'react-i18next';
 import i18n from '../app/i18n';
-import { I18nManager } from 'react-native';
+import { I18nManager, Modal } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -45,6 +46,7 @@ export default function SettingsScreen() {
   const [refreshKey, setRefreshKey] = useState(0);
   const { t } = useTranslation(['settings','common']);
   const [currentLang, setCurrentLang] = useState(i18n.language || 'he');
+  const [showLangModal, setShowLangModal] = useState(false);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -202,19 +204,23 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleLanguagePress = () => {
-    const next = currentLang === 'he' ? 'en' : 'he';
-    i18n.changeLanguage(next).then(() => {
-      setCurrentLang(next);
-      const isRTL = next === 'he';
-      if (I18nManager.isRTL !== isRTL) {
-        I18nManager.allowRTL(isRTL);
-        I18nManager.forceRTL(isRTL);
-        if (Platform.OS !== 'web') {
-          Alert.alert(t('settings:restartRequired', 'נדרשת הפעלה מחדש'), t('settings:restartDesc', 'אנא הפעל מחדש את האפליקציה כדי שהשינויים בשפה ייכנסו לתוקף'));
-        }
+  const applyLanguage = async (lang: 'he' | 'en') => {
+    await AsyncStorage.setItem('app_language', lang);
+    await i18n.changeLanguage(lang);
+    setCurrentLang(lang);
+    const isRTL = lang === 'he';
+    if (I18nManager.isRTL !== isRTL) {
+      I18nManager.allowRTL(isRTL);
+      I18nManager.forceRTL(isRTL);
+      if (Platform.OS !== 'web') {
+        Alert.alert(t('settings:restartRequired', 'נדרשת הפעלה מחדש'), t('settings:restartDesc', 'אנא הפעל מחדש את האפליקציה כדי שהשינויים בשפה ייכנסו לתוקף'));
       }
-    });
+    }
+    setShowLangModal(false);
+  };
+
+  const handleLanguagePress = () => {
+    setShowLangModal(true);
   };
 
   const handleClearCachePress = () => {
@@ -314,6 +320,23 @@ export default function SettingsScreen() {
 
   return (
     <ScreenWrapper style={styles.container}>
+      {/* Language Modal */}
+      <Modal visible={showLangModal} transparent animationType="fade" onRequestClose={() => setShowLangModal(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>{t('settings:selectLanguage', 'בחירת שפה')}</Text>
+            <TouchableOpacity style={styles.modalOption} onPress={() => applyLanguage('he')}>
+              <Text style={styles.modalOptionText}>עברית {currentLang === 'he' ? '✓' : ''}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalOption} onPress={() => applyLanguage('en')}>
+              <Text style={styles.modalOptionText}>English {currentLang === 'en' ? '✓' : ''}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.modalOption, { marginTop: 8 }]} onPress={() => setShowLangModal(false)}>
+              <Text style={[styles.modalOptionText, { color: colors.textSecondary }]}>{t('common:cancel', 'ביטול')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* User Info Section - Only for logged in users */}
       {!isGuestMode && selectedUser && (
@@ -669,4 +692,9 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: biDiTextAlign('right'),
   },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
+  modalCard: { backgroundColor: '#fff', width: 300, borderRadius: 12, padding: 16, gap: 8 },
+  modalTitle: { fontSize: FontSizes.medium, color: colors.textPrimary, textAlign: 'center', marginBottom: 8 },
+  modalOption: { paddingVertical: 10 },
+  modalOptionText: { fontSize: FontSizes.body, color: colors.textPrimary, textAlign: 'center' },
 });

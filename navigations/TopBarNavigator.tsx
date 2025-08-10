@@ -10,7 +10,7 @@ import colors from '../globals/colors';
 import { useUser } from '../context/UserContext';
 import logger from '../utils/logger';
 import { rowDirection } from '../globals/responsive';
-
+import { useTranslation } from 'react-i18next';
 
 
 interface TopBarNavigatorProps {
@@ -20,6 +20,7 @@ interface TopBarNavigatorProps {
 }
 
 function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: TopBarNavigatorProps) {
+  const { t } = useTranslation(['home','common','settings','donations','notifications','profile']);
   
   const route = useRoute();
   const { isGuestMode } = useUser();
@@ -76,20 +77,18 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
   //console.log('🔍 TopBarNavigator - Route key:', route.key);
   //console.log('🔍 TopBarNavigator - Full route object:', JSON.stringify(route, null, 2));
 
-  // Map route names to titles
+  // Map route names to titles using translations
   const routeTitles: Record<string, string> = {
-    // Bottom Tab Screens
-    SearchScreen: 'חיפוש',
-    DonationsScreen: 'הקהילה במעשים',
-    ProfileScreen: 'פרופיל',
-    
+    SearchScreen: t('common:search', 'חיפוש'),
+    DonationsScreen: t('donations:title', 'הקהילה במעשים'),
+    ProfileScreen: t('profile:title', 'פרופיל'),
     // Donation Stack Screens
-    MoneyScreen: 'כסף',
-    TrumpScreen: 'טרמפים',
-    KnowledgeScreen: 'תרומת ידע',
-    TimeScreen: 'תרומת זמן',
-    CategoryScreen: 'קטגוריות תרומות',
-    ItemsScreen: 'פריטים',
+    MoneyScreen: t('donations:money', 'כסף'),
+    TrumpScreen: t('donations:rides', 'טרמפים'),
+    KnowledgeScreen: t('donations:knowledge', 'תרומת ידע'),
+    TimeScreen: t('donations:time', 'תרומת זמן'),
+    CategoryScreen: t('donations:categories', 'קטגוריות תרומות'),
+    ItemsScreen: t('donations:items', 'פריטים'),
     FoodScreen: 'אוכל',
     ClothesScreen: 'בגדים',
     BooksScreen: 'ספרים',
@@ -112,22 +111,22 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
     
     
     // Top Bar Navigation Screens
-    SettingsScreen: 'הגדרות',
-    ChatListScreen: 'צ\'אטים',
-    NotificationsScreen: 'התראות',
-    AboutKarmaCommunityScreen: 'אודות KC',
+    SettingsScreen: t('settings:title', 'הגדרות'),
+    ChatListScreen: t('common:chats', 'צ\'אטים'),
+    NotificationsScreen: t('notifications:title', 'התראות'),
+    AboutKarmaCommunityScreen: t('settings:about', 'אודות KC'),
     
     // Other Screens
-    UserProfileScreen: 'פרופיל משתמש',
+    UserProfileScreen: t('profile:title', 'פרופיל משתמש'),
     FollowersScreen: 'עוקבים',
     DiscoverPeopleScreen: 'גלה אנשים',
     NewChatScreen: 'צ\'אט חדש',
     ChatDetailScreen: 'צ\'אט',
-    BookmarksScreen: 'מועדפים',
+    BookmarksScreen: t('common:favorites', 'מועדפים'),
     PostsReelsScreen: 'פוסטים',
-    InactiveScreen: 'לא פעיל',
+    InactiveScreen: t('common:inactive', 'לא פעיל'),
     WebViewScreen: 'דף אינטרנט',
-    LoginScreen: 'התחברות',
+    LoginScreen: t('auth:login', 'התחברות'),
   };
 
   // Get current route name
@@ -137,7 +136,7 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
   let title = 'KC';
   
   if (currentRouteName === 'HomeScreen' || currentRouteName === 'HomeMain') {
-    title = showPosts ? 'חדשות' : 'הקהילה במספרים';
+    title = showPosts ? t('home:newsTitle', 'חדשות') : t('home:numbersTitle', 'הקהילה במספרים');
   } else {
     // Use the routeTitles mapping for all other screens
     title = routeTitles[currentRouteName] ?? 'KC';
