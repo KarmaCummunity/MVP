@@ -11,6 +11,7 @@ import {
   Dimensions,
   Alert,
   TouchableWithoutFeedback,
+  Platform,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { TabView, TabBar, SceneMap } from 'react-native-tab-view';
@@ -239,9 +240,10 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView 
-        style={styles.mainScrollView}
+        style={[styles.mainScrollView, Platform.OS === 'web' ? { overflowY: 'auto' as any } : null]
+        }
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.mainScrollContent}
+        contentContainerStyle={[styles.mainScrollContent, Platform.OS === 'web' ? { minHeight: '100vh' as any } : null]}
       >
         {/* Profile Info with Menu Icon */}
         <View style={styles.profileInfo}>

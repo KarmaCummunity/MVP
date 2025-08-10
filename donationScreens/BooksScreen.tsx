@@ -7,12 +7,9 @@ export default function BooksScreen() {
     <CategoryScreen
       config={{
         id: 'books',
-        title: 'ספרים',
-        subtitle: 'תרומת ספרים',
         icon: 'library-outline',
         color: colors.success,
         bgColor: colors.successLight,
-        description: 'תרומת ספרים, ספריות קהילתיות ומעגלי קריאה',
       }}
     />
   );

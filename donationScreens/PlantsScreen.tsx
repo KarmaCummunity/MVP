@@ -7,12 +7,9 @@ export default function PlantsScreen() {
     <CategoryScreen
       config={{
         id: 'plants',
-        title: 'צמחים',
-        subtitle: 'גינון ושתילה',
         icon: 'flower-outline',
         color: colors.success,
         bgColor: colors.successLight,
-        description: 'גינון קהילתי, שתילים והחלפת צמחים',
       }}
     />
   );

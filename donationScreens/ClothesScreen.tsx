@@ -1,8 +1,17 @@
 import React from 'react';
-import { NavigationProp, ParamListBase } from '@react-navigation/native';
-import ItemsScreen from './ItemsScreen';
+import CategoryScreen from './CategoryScreen';
+import colors from '../globals/colors';
 
-export default function ClothesScreen({ navigation }: { navigation: NavigationProp<ParamListBase> }) {
-  return <ItemsScreen navigation={navigation} itemType="clothes" />;
+export default function ClothesScreen() {
+  return (
+    <CategoryScreen
+      config={{
+        id: 'clothes',
+        icon: 'shirt-outline',
+        color: colors.info,
+        bgColor: colors.infoLight,
+      }}
+    />
+  );
 }
 

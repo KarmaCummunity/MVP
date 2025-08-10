@@ -7,12 +7,9 @@ export default function EnvironmentScreen() {
     <CategoryScreen
       config={{
         id: 'environment',
-        title: 'סביבה',
-        subtitle: 'פרויקטים ירוקים',
         icon: 'leaf-outline',
         color: colors.success,
         bgColor: colors.successLight,
-        description: 'פרויקטים סביבתיים, נטיעות, ניקיון חופים ושמירה על הטבע',
       }}
     />
   );

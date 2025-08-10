@@ -5,10 +5,11 @@ import { FontSizes } from '../globals/constants';
 import HeaderComp from '../components/HeaderComp';
 import DonationStatsFooter from '../components/DonationStatsFooter';
 import { biDiTextAlign, isLandscape } from '../globals/responsive';
+import { useTranslation } from 'react-i18next';
 
 export interface CategoryConfig {
   id: string;
-  title: string;
+  title?: string;
   subtitle?: string;
   icon: string;
   color: string;
@@ -21,15 +22,18 @@ interface Props {
 }
 
 const CategoryScreen: React.FC<Props> = ({ route }) => {
+  const { t } = useTranslation(['donations','common']);
   const config: CategoryConfig = route?.params?.config || {
     id: 'generic',
-    title: 'קטגוריה',
     icon: 'help-circle-outline',
     color: colors.info,
     bgColor: colors.infoLight,
-    description: 'מסך קטגוריה כללי.'
   };
   const [mode, setMode] = useState(true);
+
+  const title = config.title ?? t(`donations:categories.${config.id}.title`, t('donations:categories.items.title', 'פריטים'));
+  const subtitle = config.subtitle ?? t(`donations:categories.${config.id}.subtitle`, '');
+  const description = config.description ?? t(`donations:categories.${config.id}.description`, t('donations:genericDescription', 'מסך קטגוריה כללי.'));
 
   const handleToggleMode = () => setMode((prev) => !prev);
   const handleSelectMenuItem = (option: string) => {
@@ -54,42 +58,41 @@ const CategoryScreen: React.FC<Props> = ({ route }) => {
     <View style={styles.container}>
       <HeaderComp
         mode={mode}
-        menuOptions={[`שתף ${config.title}`, 'הגדרות', 'דווח']}
+        menuOptions={[`${t('donations:share', 'שתף')} ${title}`, t('common:settings', 'הגדרות'), t('common:report', 'דווח')]}
         onToggleMode={handleToggleMode}
         onSelectMenuItem={handleSelectMenuItem}
-        placeholder={`חיפוש בתוך ${config.title}`}
-        filterOptions={['קרוב אליי', 'פופולרי', 'חדש']}
-        sortOptions={['שם', 'תאריך', 'דירוג']}
+        placeholder={`${t('donations:searchWithin', 'חיפוש בתוך')} ${title}`}
+        filterOptions={[t('donations:filter.nearMe', 'קרוב אליי'), t('donations:filter.popular', 'פופולרי'), t('donations:filter.new', 'חדש')]}
+        sortOptions={[t('donations:sort.name', 'שם'), t('donations:sort.date', 'תאריך'), t('donations:sort.rating', 'דירוג')]}
         searchData={[]}
         onSearch={handleSearch}
       />
 
       <ScrollView contentContainerStyle={[styles.content, isLandscape() && { paddingHorizontal: 24 }]} showsVerticalScrollIndicator={false}>
         <View style={[styles.hero, { backgroundColor: config.bgColor, borderColor: config.color }]}> 
-          <Text style={[styles.title, { color: colors.textPrimary }]}>{config.title}</Text>
-          {!!config.subtitle && (
-            <Text style={styles.subtitle}>{config.subtitle}</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
+          {!!subtitle && (
+            <Text style={styles.subtitle}>{subtitle}</Text>
           )}
-          {!!config.description && (
-            <Text style={styles.description}>{config.description}</Text>
+          {!!description && (
+            <Text style={styles.description}>{description}</Text>
           )}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>תוכן</Text>
+          <Text style={styles.sectionTitle}>{t('donations:section.content', 'תוכן')}</Text>
           <Text style={styles.sectionText}>
-            אזור זה יכיל תוכן מותאם לקטגוריית "{config.title}". נוכל להציג כאן רשימות, טפסים, פרויקטים קהילתיים,
-            ומידע רלוונטי. כרגע זה תוכן התחלתי שניתן להרחיב.
+            {t('donations:section.contentBody', 'אזור זה יכיל תוכן מותאם לקטגוריית "{{title}}". נוכל להציג כאן רשימות, טפסים, פרויקטים קהילתיים, ומידע רלוונטי. כרגע זה תוכן התחלתי שניתן להרחיב.', { title })}
           </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>סטטיסטיקות קשורות</Text>
+          <Text style={styles.sectionTitle}>{t('donations:section.relatedStats', 'סטטיסטיקות קשורות')}</Text>
           <DonationStatsFooter
             stats={[
-              { label: 'פרסומים חדשים', value: 12, icon: 'megaphone-outline' },
-              { label: 'בקשות פעילות', value: 7, icon: 'help-circle-outline' },
-              { label: 'שותפים פעילים', value: 5, icon: 'people-outline' },
+              { label: t('donations:stats.newPosts', 'פרסומים חדשים'), value: 12, icon: 'megaphone-outline' },
+              { label: t('donations:stats.activeRequests', 'בקשות פעילות'), value: 7, icon: 'help-circle-outline' },
+              { label: t('donations:stats.activePartners', 'שותפים פעילים'), value: 5, icon: 'people-outline' },
             ]}
           />
         </View>

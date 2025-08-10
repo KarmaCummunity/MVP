@@ -234,11 +234,11 @@ export default function HomeScreen() {
         // Home screen with enhanced scrolling
         <View style={styles.homeContainer}>
           <ScrollView 
-            style={styles.scrollContainer}
+            style={[styles.scrollContainer, Platform.OS === 'web' ? { overflowY: 'auto' as any } : null]}
             onScroll={handleScroll}
             scrollEventThrottle={50}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[styles.scrollContent, Platform.OS === 'web' ? { minHeight: '100vh' as any } : null]}
           >
             {/* Header */}
             {isGuestMode ? (

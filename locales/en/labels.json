@@ -1,0 +1,12 @@
+{
+  "time": "Time",
+  "date": "Date",
+  "location": "Location",
+  "name": "Name",
+  "email": "Email",
+  "phone": "Phone",
+  "message": "Message",
+  "amount": "Amount",
+  "category": "Category",
+  "status": "Status"
+}
