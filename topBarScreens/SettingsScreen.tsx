@@ -34,7 +34,7 @@ import GuestModeNotice from '../components/GuestModeNotice';
 import ScreenWrapper from '../components/ScreenWrapper';
 import { useTranslation } from 'react-i18next';
 import i18n from '../app/i18n';
-import { I18nManager } from 'react-native-localization';
+import { I18nManager } from 'react-native';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
