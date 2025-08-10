@@ -4,3 +4,9 @@ Metro is running in CI mode, reloads are disabled. Remove CI=true to enable watc
 Starting Metro Bundler
 Waiting on http://localhost:19006
 Logs for your project will appear below.
+Web ./index.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 925ms index.js (1226 modules)
+Web ./index.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 34ms index.js (1 module)
+Web ./index.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 42ms index.js (1 module)
