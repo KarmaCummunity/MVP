@@ -7,12 +7,9 @@ export default function RecipesScreen() {
     <CategoryScreen
       config={{
         id: 'recipes',
-        title: 'מתכונים',
-        subtitle: 'בישול ושיתוף',
         icon: 'fast-food-outline',
         color: colors.success,
         bgColor: colors.successLight,
-        description: 'שיתוף מתכונים, ארוחות קהילתיות ובישול יחד',
       }}
     />
   );

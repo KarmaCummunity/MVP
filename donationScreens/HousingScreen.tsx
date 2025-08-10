@@ -7,12 +7,9 @@ export default function HousingScreen() {
     <CategoryScreen
       config={{
         id: 'housing',
-        title: 'דיור',
-        subtitle: 'עזרה בדיור',
         icon: 'home-outline',
         color: colors.info,
         bgColor: colors.infoLight,
-        description: 'עזרה בדיור זמני, ציוד לבית ותמיכה בקהילה',
       }}
     />
   );

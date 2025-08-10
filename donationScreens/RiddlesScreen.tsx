@@ -7,12 +7,9 @@ export default function RiddlesScreen() {
     <CategoryScreen
       config={{
         id: 'riddles',
-        title: 'חידות',
-        subtitle: 'חשיבה ואתגר',
         icon: 'help-circle-outline',
         color: colors.info,
         bgColor: colors.infoLight,
-        description: 'חידות, אתגרים ומשימות חשיבה לקהילה',
       }}
     />
   );
