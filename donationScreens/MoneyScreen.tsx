@@ -44,7 +44,7 @@ const dummyRecentDonations = donations.slice(0, 5).map((donation, index) => ({
   status: "הושלמה",
   category: donation.category || "כללי"
 }));
-import { texts } from '../globals/texts';
+import { useTranslation } from 'react-i18next';
 import colors from '../globals/colors';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { Slider } from '@miblanchard/react-native-slider';
@@ -90,6 +90,7 @@ export default function MoneyScreen({
 }: {
   navigation: NavigationProp<ParamListBase>;
 }) {
+  const { t } = useTranslation(['donations','common']);
   // Debug log for MoneyScreen
   // console.log('💰 MoneyScreen - Component rendered');
   // console.log('💰 MoneyScreen - Navigation object:', navigation);
@@ -132,10 +133,7 @@ export default function MoneyScreen({
     }, [])
   );
   const PAYBOX_WEB_URL = 'https://payboxapp.com/transfer?phone=0528616878&amount={AMOUNT}&note=תרומה%20לקהילה';
-  // קישורים ישירים לקבוצות שפתחת:
-  // PayBox – הזמנה לקבוצה
   const PAYBOX_GROUP_LINK: string | null = 'https://payboxapp.page.link/tfzsUhNpZzRqqe1g8';
-  // Bit – הזמנה לקבוצה
   const BIT_GROUP_LINK: string | null = 'https://www.bitpay.co.il/app/share-info?i=192485429007_19klqS2v';
 
   const openPaymentApp = async (amount: number) => {
@@ -532,7 +530,7 @@ export default function MoneyScreen({
         onToggleMode={handleToggleMode}
         onSelectMenuItem={handleSelectMenuItem}
         title=""
-        placeholder={mode ? texts.searchCharitiesForDonation : texts.searchCharitiesForHelp}
+        placeholder={mode ? (t('donations:searchCharitiesForDonation') as string) : (t('donations:searchCharitiesForHelp') as string)}
         filterOptions={moneyFilterOptions}
         sortOptions={moneySortOptions}
         searchData={dummyCharities}

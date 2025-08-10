@@ -9,8 +9,8 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import colors from "../globals/colors";
-import { texts } from "../globals/texts";
 import { FontSizes } from "../globals/constants";
+import { useTranslation } from 'react-i18next';
 
 // screen dimensions
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -98,6 +98,7 @@ const Bubble = ({ icon, value, label, top, left, size, delay }: any) => {
 };
 
 const FloatingBubblesOverlay = () => {
+  const { t } = useTranslation(['home']);
   const bubbles = [];
 
   for (let i = 0; i < NUM_BUBBLES; i++) {
@@ -111,7 +112,7 @@ const FloatingBubblesOverlay = () => {
         key={i}
         icon="💵"
         value="125K"
-        label={texts.moneyDonations}
+        label={t('home:stats.moneyDonations') as string}
         top={top}
         left={left}
         size={size}

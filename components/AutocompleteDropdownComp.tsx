@@ -1,7 +1,6 @@
 // components/AutocompleteDropdownComp.tsx
 import React, { useState } from "react";
 import { FontSizes } from '../globals/constants';
-import { texts } from '../globals/texts';
 import colors from '../globals/colors';
 import {
   View,
@@ -28,7 +27,7 @@ export default function AutocompleteDropdownComp({
   selectedValue,
   onValueChange,
   options,
-  placeholder = texts.selectPlaceholder,
+  placeholder,
 }: AutocompleteDropdownCompProps) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -55,7 +54,7 @@ export default function AutocompleteDropdownComp({
         <TextInput
           style={dropdownStyles.textInput}
           value={searchTerm || selectedValue} // Display search term or selected value
-          placeholder={placeholder}
+          placeholder={placeholder || 'Select'}
           placeholderTextColor={colors.dropdownPlaceholder}
           editable={false} // Make it not directly editable, only through the modal
         />
@@ -85,7 +84,7 @@ export default function AutocompleteDropdownComp({
               <Icon name="search" size={20} color={colors.dropdownSearchIcon} style={{ marginRight: 8 }} />
               <TextInput
                 style={dropdownStyles.searchInput}
-                placeholder={texts.searchPlaceholder}
+                placeholder={'Search'}
                 placeholderTextColor={colors.dropdownPlaceholder}
                 value={searchTerm}
                 onChangeText={setSearchTerm}
@@ -108,7 +107,7 @@ export default function AutocompleteDropdownComp({
                 </TouchableOpacity>
               )}
               ListEmptyComponent={
-                <Text style={dropdownStyles.noOptionsText}>{texts.noOptions}</Text>
+                <Text style={dropdownStyles.noOptionsText}>No options</Text>
               }
             />
           </View>

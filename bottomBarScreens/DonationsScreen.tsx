@@ -29,7 +29,7 @@ interface DonationsScreenProps {
 
 const RECENT_CATEGORIES_KEY = 'recent_categories_ids';
 const RECENT_LIMIT = 4;
-const DEFAULT_RECENT_IDS: string[] = ['money', 'trump', 'furniture'];
+const DEFAULT_RECENT_IDS: string[] = ['money', 'trump', 'clothes', 'furniture'];
 
 const BASE_CATEGORIES = [
   { id: 'money',      icon: 'card-outline',        color: colors.success, bgColor: colors.successLight, screen: 'MoneyScreen' },
@@ -55,6 +55,9 @@ const BASE_CATEGORIES = [
   { id: 'waste',      icon: 'trash-outline',       color: colors.warning, bgColor: colors.warningLight, screen: 'WasteScreen' },
   { id: 'art',        icon: 'color-palette-outline', color: colors.pink,  bgColor: colors.pinkLight,    screen: 'ArtScreen' },
   { id: 'sports',     icon: 'football-outline',    color: colors.orange,  bgColor: colors.orangeLight,  screen: 'SportsScreen' },
+  { id: 'dreams',     icon: 'star-outline',        color: colors.pink,    bgColor: colors.pinkLight,    screen: 'DreamsScreen' },
+  { id: 'fertility',  icon: 'medkit-outline',      color: colors.error,   bgColor: colors.errorLight,   screen: 'FertilityScreen' },
+  { id: 'jobs',       icon: 'briefcase-outline',   color: colors.info,    bgColor: colors.infoLight,    screen: 'JobsScreen' },
 ] as const;
 
 type CategoryId = typeof BASE_CATEGORIES[number]['id'];
@@ -106,9 +109,9 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
       (navigation as any).navigate(category.screen);
     } else {
       Alert.alert(
-        t('donations:comingSoonTitle', 'בקרוב'),
-        t('donations:comingSoonMessage', 'הקטגוריה תהיה זמינה בקרוב!'),
-        [{ text: t('common:confirm', 'אישור'), style: 'default' }]
+        t('donations:comingSoonTitle'),
+        t('donations:comingSoonMessage'),
+        [{ text: t('common:confirm'), style: 'default' }]
       );
     }
   };
@@ -117,20 +120,20 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
     console.log('Quick donation pressed:', type);
     
     switch (type) {
-      case 'כסף':
+      case t('donations:categories.money.title'):
         navigation.navigate('MoneyScreen');
         break;
-      case 'טרמפ':
+      case t('donations:categories.trump.title'):
         navigation.navigate('TrumpScreen');
         break;
-      case 'ידע':
+      case t('donations:categories.knowledge.title'):
         navigation.navigate('KnowledgeScreen');
         break;
-      case 'זמן':
+      case t('donations:categories.time.title'):
         navigation.navigate('TimeScreen');
         break;
       default:
-        Alert.alert('תרומה מהירה', `תרומת ${type} - בקרוב!`);
+        Alert.alert(t('donations:quickDonation'), t('donations:quickDonationComingSoon', { type }));
     }
   };
 
@@ -148,7 +151,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
       {isGuestMode && <GuestModeNotice />}
 
       <View style={styles.categoriesSection}>
-        <Text style={styles.sectionTitle}>{t('donations:forYou', 'במיוחד בשבילך')}</Text>
+        <Text style={styles.sectionTitle}>{t('donations:forYou')}</Text>
         <View style={[styles.categoriesGrid, { flexDirection: 'row' }]}>
           {recentCategories.map((category) => {
             const { title, subtitle } = getCategoryText(category.id);
@@ -176,9 +179,9 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
         </View>
       </View>
 
-      <ScrollView style={[styles.content, Platform.OS === 'web' ? { overflowY: 'auto' as any } : null]} showsVerticalScrollIndicator={false} contentContainerStyle={Platform.OS === 'web' ? { minHeight: '100vh' as any } : undefined}>
+      <ScrollView style={[styles.content, Platform.OS === 'web' ? ({ overflowY: 'auto' } as any) : null]} showsVerticalScrollIndicator={false} contentContainerStyle={Platform.OS === 'web' ? ({ minHeight: '100vh' } as any) : undefined}>
         <View style={styles.categoriesSection}>
-          <Text style={styles.sectionTitle}>{t('donations:allWays', 'כל הדרכים לפעול בקהילה')}</Text>
+          <Text style={styles.sectionTitle}>{t('donations:allWays')}</Text>
           <View style={[styles.categoriesGrid, { flexDirection: 'row' }]}>
             {otherCategories.map((category) => {
               const { title, subtitle } = getCategoryText(category.id);
@@ -212,9 +215,9 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
             return (
               <DonationStatsFooter
                 stats={[
-                  { label: t('donations:activeDonors', 'תורמים פעילים'), value: activeDonors, icon: 'people-outline' },
-                  { label: t('donations:weeklyDonations', 'תרומות השבוע'), value: weeklyDonations, icon: 'heart-outline' },
-                  { label: t('donations:activeCharities', 'עמותות פעילות'), value: activeCharities, icon: 'business-outline' },
+                  { label: t('donations:activeDonors'), value: activeDonors, icon: 'people-outline' },
+                  { label: t('donations:weeklyDonations'), value: weeklyDonations, icon: 'heart-outline' },
+                  { label: t('donations:activeCharities'), value: activeCharities, icon: 'business-outline' },
                 ]}
               />
             );

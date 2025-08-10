@@ -11,6 +11,7 @@ import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import ScreenWrapper from '../components/ScreenWrapper';
 import { Ionicons as Icon } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import * as Haptics from 'expo-haptics';
 
 // Demo users (kept in-file for MVP – remove when real users are plugged in)
@@ -31,11 +32,12 @@ export default function ChatListScreen() {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const { t } = useTranslation(['chat','common']);
 
   // Load conversations (real + demo)
   const loadConversations = useCallback(async () => {
     if (!selectedUser) {
-      Alert.alert('שגיאה', 'יש לבחור יוזר תחילה');
+      Alert.alert(t('common:errorTitle'), t('chat:selectUserFirst'));
       return;
     }
     setRefreshing(true);
@@ -45,7 +47,7 @@ export default function ChatListScreen() {
       setConversations([...demoForUser, ...realConversations]);
     } catch (error) {
       console.error('❌ Load conversations error:', error);
-      Alert.alert('שגיאה', 'שגיאה בטעינת השיחות');
+      Alert.alert(t('common:errorTitle'), t('chat:loadConversationsError'));
     } finally {
       setRefreshing(false);
     }
@@ -120,7 +122,7 @@ export default function ChatListScreen() {
         <TextInput
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="חפש צ'אט לפי שם"
+          placeholder={t('chat:searchChatsPlaceholder')}
           placeholderTextColor={colors.textSecondary}
           style={styles.searchInput}
         />
@@ -140,7 +142,7 @@ export default function ChatListScreen() {
             // Fallback user if not present in any static dataset
             chattingUser = {
               id: otherId || 'unknown',
-              name: `משתמש/ת`,
+              name: t('chat:unknownUser'),
               avatar: 'https://i.pravatar.cc/150?u=unknown',
               isOnline: false,
               lastSeen: new Date().toISOString(),
@@ -174,8 +176,8 @@ export default function ChatListScreen() {
         })}
         {filteredSortedConversations.length === 0 && (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateTitle}>אין שיחות</Text>
-            <Text style={styles.emptyStateSubtitle}>התחל שיחה חדשה או נקה את החיפוש</Text>
+            <Text style={styles.emptyStateTitle}>{t('chat:noChats')}</Text>
+            <Text style={styles.emptyStateSubtitle}>{t('chat:startNewOrClearSearch')}</Text>
           </View>
         )}
       </ScrollView>

@@ -11,6 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from './app/i18n';
+import { useTranslation } from 'react-i18next';
 import { I18nManager } from 'react-native';
 
 import MainNavigator from './navigations/MainNavigator';
@@ -32,10 +33,12 @@ if (Platform.OS !== 'web') {
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
+  const { t } = useTranslation(['common']);
   const [appIsReady, setAppIsReady] = useState(false);
   const [fontError, setFontError] = useState<Error | null>(null);
   const navigationRef = useRef<NavigationContainerRef<any>>(null);
 
+  console.log('🚀 App component mounted');
   // Setup notification response listener (iOS + Android)
   useEffect(() => {
     if (!notificationService) return;
@@ -136,8 +139,8 @@ export default function App() {
   if (!appIsReady) {
     return (
       <View style={loadingStyles.container}>
-        <ActivityIndicator size="large" color={colors.info}/>
-        <Text style={loadingStyles.loadingText}>טוען...</Text>
+          <ActivityIndicator size="large" color={colors.info}/>
+          <Text style={loadingStyles.loadingText}>{t('common:loading')}</Text>
       </View>
     );
   }

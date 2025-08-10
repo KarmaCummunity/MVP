@@ -76,12 +76,6 @@ const WebViewScreen: React.FC<WebViewScreenProps> = (
         domStorageEnabled={true}
         startInLoadingState={true}
         renderLoading={renderLoading}
-        // You can keep your error and loadEnd handlers here for native
-        // onError={(syntheticEvent) => {
-        //   const { nativeEvent } = syntheticEvent;
-        //   console.warn('WebView error: ', nativeEvent);
-        // }}
-        // onLoadEnd={() => console.log('WebView finished loading')}
       />
     </SafeAreaView>
   );

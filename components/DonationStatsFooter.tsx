@@ -27,7 +27,7 @@ const DonationStatsFooter: React.FC<DonationStatsFooterProps> = ({ stats, contai
 
     <View style={[styles.container, containerStyle]}
       accessibilityRole="summary"
-      accessibilityLabel={t('donations:statsSummary', 'סיכום סטטיסטיקות למסך זה')}
+      accessibilityLabel={t('donations:statsSummary')}
     >
       <View style={styles.row}>
         {topThree.map((s, idx) => (

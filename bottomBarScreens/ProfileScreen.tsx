@@ -19,7 +19,7 @@ import type { SceneRendererProps, NavigationState } from 'react-native-tab-view'
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
-import { texts, replaceText } from '../globals/texts';
+import { useTranslation } from 'react-i18next';
 import { currentUser } from '../globals/fakeData';
 import { useUser } from '../context/UserContext';
 import { createShadowStyle } from '../globals/styles';
@@ -35,51 +35,61 @@ type TabRoute = {
 };
 
 // --- Tab Components ---
-const PostsRoute = () => (
-  <View style={styles.postsGrid}>
-    {Array.from({ length: 18 }).map((_, i) => (
-      <TouchableOpacity
-        key={i}
-        style={styles.postContainer}
-        onPress={() => Alert.alert(texts.post, replaceText(texts.postNumber, { number: (i + 1).toString() }))}
-      >
-        <Image
-          source={{ uri: `https://picsum.photos/300/300?random=${i}` }}
-          style={styles.postImage}
-        />
-        <View style={styles.postOverlay}>
-          <View style={styles.postStats}>
-            <Ionicons name="heart" size={16} color={colors.white} />
-            <Text style={styles.postStatsText}>{Math.floor(Math.random() * 100) + 10}</Text>
+const PostsRoute = () => {
+  const { t } = useTranslation(['profile']);
+  return (
+    <View style={styles.postsGrid}>
+      {Array.from({ length: 18 }).map((_, i) => (
+        <TouchableOpacity
+          key={i}
+          style={styles.postContainer}
+          onPress={() => Alert.alert(t('profile:alerts.post'), t('profile:alerts.postNumber', { number: (i + 1).toString() }))}
+        >
+          <Image
+            source={{ uri: `https://picsum.photos/300/300?random=${i}` }}
+            style={styles.postImage}
+          />
+          <View style={styles.postOverlay}>
+            <View style={styles.postStats}>
+              <Ionicons name="heart" size={16} color={colors.white} />
+              <Text style={styles.postStatsText}>{Math.floor(Math.random() * 100) + 10}</Text>
+            </View>
           </View>
-        </View>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+};
+
+const ReelsRoute = () => {
+  const { t } = useTranslation(['profile']);
+  return (
+    <View style={styles.tabContentPlaceholder}>
+      <Ionicons name="videocam-outline" size={60} color={colors.textSecondary} />
+      <Text style={styles.placeholderText}>{t('profile:reels.noReelsYet')}</Text>
+      <Text style={styles.placeholderSubtext}>{t('profile:reels.createFirstReel')}</Text>
+      <TouchableOpacity style={styles.createButton}>
+        <Ionicons name="add" size={20} color={colors.white} />
+        <Text style={styles.createButtonText}>{t('profile:reels.createReel')}</Text>
       </TouchableOpacity>
-    ))}
-  </View>
-);
+    </View>
+  );
+};
 
-const ReelsRoute = () => (
-  <View style={styles.tabContentPlaceholder}>
-    <Ionicons name="videocam-outline" size={60} color={colors.textSecondary} />
-    <Text style={styles.placeholderText}>אין סרטוני רילס עדיין</Text>
-    <Text style={styles.placeholderSubtext}>צור רילס ראשון כדי לשתף עם הקהילה</Text>
-    <TouchableOpacity style={styles.createButton}>
-      <Ionicons name="add" size={20} color={colors.white} />
-      <Text style={styles.createButtonText}>צור רילס</Text>
-    </TouchableOpacity>
-  </View>
-);
-
-const TaggedRoute = () => (
-  <View style={styles.tabContentPlaceholder}>
-    <Ionicons name="person-outline" size={60} color={colors.textSecondary} />
-    <Text style={styles.placeholderText}>אין תיוגים עדיין</Text>
-    <Text style={styles.placeholderSubtext}>כאשר אנשים יתייגו אותך, זה יופיע כאן</Text>
-  </View>
-);
+const TaggedRoute = () => {
+  const { t } = useTranslation(['profile']);
+  return (
+    <View style={styles.tabContentPlaceholder}>
+      <Ionicons name="person-outline" size={60} color={colors.textSecondary} />
+      <Text style={styles.placeholderText}>{t('profile:tagged.noTagsYet')}</Text>
+      <Text style={styles.placeholderSubtext}>{t('profile:tagged.tagsAppearHere')}</Text>
+    </View>
+  );
+};
 
 // --- Main Component ---
 export default function ProfileScreen() {
+  const { t } = useTranslation(['profile', 'common']);
   const { selectedUser, setSelectedUser } = useUser();
   const navigation = useNavigation();
   const [index, setIndex] = useState(0);
@@ -119,7 +129,7 @@ export default function ProfileScreen() {
       const randomUser = allUsers[randomIndex];
       setSelectedUser(randomUser as any);
       setShowMenu(false);
-      Alert.alert(texts.newUser, replaceText(texts.selectedUser, { name: randomUser.name }));
+      Alert.alert(t('profile:alerts.newUser'), t('profile:alerts.selectedUser', { name: randomUser.name }));
     }
   };
 
@@ -128,12 +138,13 @@ export default function ProfileScreen() {
     await createSampleFollowData();
     await createSampleChatData(selectedUser?.id || currentUser.id);
     updateUserStats();
-    Alert.alert('נתונים לדוגמה', 'נוצרו נתוני עוקבים וצ\'אט לדוגמה!');
+    const { t } = require('i18next');
+    Alert.alert(t('profile:alerts.sampleDataTitle'), t('profile:alerts.sampleDataCreated'));
   };
   const [routes] = useState<TabRoute[]>([
-    { key: 'posts', title: 'פוסטים' },
-    { key: 'reels', title: 'רילס' },
-    { key: 'tagged', title: 'תיוגים' },
+    { key: 'posts', title: 'posts' },
+    { key: 'reels', title: 'reels' },
+    { key: 'tagged', title: 'tagged' },
   ]);
 
   // Update stats when selectedUser changes
@@ -199,7 +210,7 @@ export default function ProfileScreen() {
                 }
               ]}
             >
-              {route.title}
+              {t(`profile:tabs.${route.key}`, route.title)}
             </Text>
           </TouchableOpacity>
         );
@@ -240,10 +251,10 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView 
-        style={[styles.mainScrollView, Platform.OS === 'web' ? { overflowY: 'auto' as any } : null]
+        style={[styles.mainScrollView, Platform.OS === 'web' ? ({ overflowY: 'auto' } as any) : null]
         }
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.mainScrollContent, Platform.OS === 'web' ? { minHeight: '100vh' as any } : null]}
+        contentContainerStyle={[styles.mainScrollContent, Platform.OS === 'web' ? ({ minHeight: '100vh' } as any) : null]}
       >
         {/* Profile Info with Menu Icon */}
         <View style={styles.profileInfo}>
@@ -263,7 +274,7 @@ export default function ProfileScreen() {
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{userStats.posts}</Text>
-              <Text style={styles.statLabel}>פוסטים</Text>
+              <Text style={styles.statLabel}>{t('profile:stats.posts')}</Text>
             </View>
             <TouchableOpacity 
               style={styles.statItem}
@@ -271,12 +282,12 @@ export default function ProfileScreen() {
                 (navigation as any).navigate('FollowersScreen', {
                   userId: selectedUser?.id || currentUser.id,
                   type: 'followers',
-                  title: 'עוקבים'
+                  title: t('profile:followersTitle')
                 });
               }}
             >
               <Text style={styles.statNumber}>{userStats.followers}</Text>
-              <Text style={styles.statLabel}>עוקבים</Text>
+              <Text style={styles.statLabel}>{t('profile:stats.followers')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.statItem}
@@ -284,12 +295,12 @@ export default function ProfileScreen() {
                 (navigation as any).navigate('FollowersScreen', {
                   userId: selectedUser?.id || currentUser.id,
                   type: 'following',
-                  title: 'עוקב אחרי'
+                  title: t('profile:followingTitle')
                 });
               }}
             >
               <Text style={styles.statNumber}>{userStats.following}</Text>
-              <Text style={styles.statLabel}>עוקב/ת</Text>
+              <Text style={styles.statLabel}>{t('profile:stats.following')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -308,7 +319,7 @@ export default function ProfileScreen() {
                     }}
                   >
                     <Ionicons name="bookmark-outline" size={20} color={colors.textPrimary} />
-                    <Text style={styles.menuItemText}>מועדפים</Text>
+                    <Text style={styles.menuItemText}>{t('profile:menu.bookmarks')}</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
@@ -319,51 +330,51 @@ export default function ProfileScreen() {
                     }}
                   >
                     <Ionicons name="analytics-outline" size={20} color={colors.textPrimary} />
-                    <Text style={styles.menuItemText}>סטטיסטיקות קהילה</Text>
+                    <Text style={styles.menuItemText}>{t('profile:menu.communityStats')}</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
                     style={styles.menuItem}
                     onPress={() => {
                       setShowMenu(false);
-                      Alert.alert(texts.shareProfile, texts.shareProfileDesc);
+                      Alert.alert(t('profile:alerts.shareProfile'), t('profile:alerts.shareProfileDesc'));
                     }}
                   >
                     <Ionicons name="share-outline" size={20} color={colors.textPrimary} />
-                    <Text style={styles.menuItemText}>שתף פרופיל</Text>
+                    <Text style={styles.menuItemText}>{t('profile:menu.shareProfile')}</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
                     style={styles.menuItem}
                     onPress={() => {
                       setShowMenu(false);
-                      Alert.alert(texts.editProfile, texts.editProfileDesc);
+                      Alert.alert(t('profile:alerts.editProfile'), t('profile:alerts.editProfileDesc'));
                     }}
                   >
                     <Ionicons name="create-outline" size={20} color={colors.textPrimary} />
-                    <Text style={styles.menuItemText}>ערוך פרופיל</Text>
+                    <Text style={styles.menuItemText}>{t('profile:menu.editProfile')}</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
                     style={styles.menuItem}
                     onPress={() => {
                       setShowMenu(false);
-                      Alert.alert(texts.settings, texts.openSettings);
+                      Alert.alert(t('profile:alerts.settings'), t('profile:alerts.openSettings'));
                     }}
                   >
                     <Ionicons name="settings-outline" size={20} color={colors.textPrimary} />
-                    <Text style={styles.menuItemText}>הגדרות</Text>
+                    <Text style={styles.menuItemText}>{t('profile:menu.settings')}</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
                     style={styles.menuItem}
                     onPress={() => {
                       setShowMenu(false);
-                      Alert.alert(texts.help, texts.openHelp);
+                      Alert.alert(t('profile:alerts.help'), t('profile:alerts.openHelp'));
                     }}
                   >
                     <Ionicons name="help-circle-outline" size={20} color={colors.textPrimary} />
-                    <Text style={styles.menuItemText}>עזרה</Text>
+                    <Text style={styles.menuItemText}>{t('profile:menu.help')}</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
@@ -374,7 +385,7 @@ export default function ProfileScreen() {
                     }}
                   >
                     <Ionicons name="log-in-outline" size={20} color={colors.textPrimary} />
-                    <Text style={styles.menuItemText}>התחברות</Text>
+                    <Text style={styles.menuItemText}>{t('profile:menu.login')}</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
@@ -382,7 +393,7 @@ export default function ProfileScreen() {
                     onPress={selectRandomUser}
                   >
                     <Ionicons name="shuffle-outline" size={20} color={colors.textPrimary} />
-                    <Text style={styles.menuItemText}>שנה משתמש</Text>
+                    <Text style={styles.menuItemText}>{t('profile:menu.switchUser')}</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
@@ -390,7 +401,7 @@ export default function ProfileScreen() {
                     onPress={handleCreateSampleData}
                   >
                     <Ionicons name="add-circle-outline" size={20} color={colors.textPrimary} />
-                    <Text style={styles.menuItemText}>צור נתונים לדוגמה</Text>
+                    <Text style={styles.menuItemText}>{t('profile:menu.createSampleData')}</Text>
                   </TouchableOpacity>
                 </View>
               </TouchableWithoutFeedback>
@@ -411,7 +422,7 @@ export default function ProfileScreen() {
           <View style={styles.karmaSection}>
             <View style={styles.karmaCard}>
               <Ionicons name="star" size={20} color={colors.warning} />
-              <Text style={styles.karmaText}>{selectedUser?.karmaPoints || userStats.karmaPoints} נקודות קארמה</Text>
+              <Text style={styles.karmaText}>{selectedUser?.karmaPoints || userStats.karmaPoints} {t('profile:stats.karmaPointsSuffix')}</Text>
             </View>
           </View>
 
@@ -419,24 +430,24 @@ export default function ProfileScreen() {
           <View style={styles.activityIcons}>
             <TouchableOpacity 
               style={styles.activityIconItem}
-              onPress={() => Alert.alert(texts.activity, texts.viewActivity)}
+              onPress={() => Alert.alert(t('profile:alerts.activity'), t('profile:alerts.viewActivity'))}
             >
               <Ionicons name="star-outline" size={24} color={colors.pink} />
-              <Text style={styles.activityIconText}>פעילות</Text>
+              <Text style={styles.activityIconText}>{t('profile:activity')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.activityIconItem}
-              onPress={() => Alert.alert(texts.history, texts.activityHistory)}
+              onPress={() => Alert.alert(t('profile:alerts.history'), t('profile:alerts.activityHistory'))}
             >
               <MaterialCommunityIcons name="history" size={24} color={colors.pink} />
-              <Text style={styles.activityIconText}>היסטוריה</Text>
+              <Text style={styles.activityIconText}>{t('profile:history')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.activityIconItem}
-              onPress={() => Alert.alert(texts.favorites, texts.yourFavorites)}
+              onPress={() => Alert.alert(t('profile:alerts.favorites'), t('profile:alerts.yourFavorites'))}
             >
               <Ionicons name="heart-outline" size={24} color={colors.pink} />
-              <Text style={styles.activityIconText}>מועדפים</Text>
+              <Text style={styles.activityIconText}>{t('profile:favorites')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -450,7 +461,7 @@ export default function ProfileScreen() {
             }}
           >
             <Ionicons name="person-add-outline" size={18} color={colors.white} />
-            <Text style={styles.discoverPeopleText}>גלה אנשים</Text>
+            <Text style={styles.discoverPeopleText}>{t('profile:discoverPeople')}</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -460,13 +471,13 @@ export default function ProfileScreen() {
             }}
           >
             <Ionicons name="notifications-outline" size={18} color={colors.white} />
-            <Text style={styles.notificationsButtonText}>התראות</Text>
+            <Text style={styles.notificationsButtonText}>{t('profile:notifications')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Recent Activities */}
         <View style={styles.activitiesSection}>
-          <Text style={styles.sectionTitle}>פעילות אחרונה</Text>
+          <Text style={styles.sectionTitle}>{t('profile:sections.recentActivity')}</Text>
           {recentActivities.map((activity) => (
             <TouchableOpacity
               key={activity.id}
@@ -486,7 +497,7 @@ export default function ProfileScreen() {
 
         {/* Story Highlights */}
         <View style={styles.highlightsSection}>
-          <Text style={styles.sectionTitle}>היילייטים</Text>
+          <Text style={styles.sectionTitle}>{t('profile:sections.highlights')}</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -496,7 +507,7 @@ export default function ProfileScreen() {
               <TouchableOpacity 
                 key={i} 
                 style={styles.storyHighlightItem}
-                onPress={() => Alert.alert(texts.highlight, replaceText(texts.highlightNumber, { number: (i + 1).toString() }))}
+                onPress={() => Alert.alert(t('profile:alerts.highlight'), t('profile:highlights.highlightIndex', { index: (i + 1).toString() }))}
               >
                 <View style={styles.storyHighlightCircle}>
                   {i === 0 ? (
@@ -509,7 +520,7 @@ export default function ProfileScreen() {
                   )}
                 </View>
                 <Text style={styles.storyHighlightText}>
-                  {i === 0 ? 'חדש' : `היילייט ${i}`}
+                  {i === 0 ? t('profile:highlights.new') : t('profile:highlights.highlightIndex', { index: i })}
                 </Text>
               </TouchableOpacity>
             ))}

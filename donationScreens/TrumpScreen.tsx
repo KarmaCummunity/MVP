@@ -1,34 +1,3 @@
-/**
- * 🚗 TrumpScreen - מסך טרמפים
- * 
- * מסך זה מאפשר למשתמשים לפרסם ולחפש טרמפים בקהילה.
- * 
- * פיצ'רים עיקריים:
- * - מצב תורם: פרסום טרמפים עם הגדרות מיקום, זמן, מקומות ומחיר
- * - מצב נזקק: חיפוש טרמפים זמינים עם פילטרים ומיון
- * - היסטוריית טרמפים אישית
- * - קישורים לקבוצות וואטסאפ ופייסבוק רלוונטיות
- * - אינטגרציה עם וייז לניווט מיידי
- * 
- * מצבי פעולה:
- * - mode = false: מצב נזקק (מחפש טרמפ)
- * - mode = true: מצב תורם (מפרסם טרמפ)
- * 
- * נתונים:
- * - שילוב נתונים מה-DB של המשתמש עם נתוני דמה
- * - פילטרים ייעודיים לטרמפים (מגדר, גיל, עישון, חיות וכו')
- * - מיון לפי אלפביתי, מיקום, תאריך, שעה, מחיר ודירוג
- * 
- * אינטגרציות:
- * - מסד נתונים: שמירה וטעינה של טרמפים
- * - וייז: ניווט אוטומטי ליעד
- * - קישורים חיצוניים: קבוצות וואטסאפ ופייסבוק
- * 
- * @author Karma Community Team
- * @version 1.0.0
- * @since 2023
- */
-
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
@@ -43,6 +12,7 @@ import {
   Linking,
 } from 'react-native';
 import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';  
 import { Ionicons as Icon } from '@expo/vector-icons';
@@ -62,6 +32,7 @@ export default function TrumpScreen({
   console.log('🚗 TrumpScreen - Navigation object:', navigation);
   
   const [mode, setMode] = useState(true); // false = seeker (needs ride), true = offerer (offers ride)
+  const { t } = useTranslation(['donations','common','trump']);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [selectedSorts, setSelectedSorts] = useState<string[]>([]);
@@ -93,118 +64,93 @@ export default function TrumpScreen({
     }, [])
   );
 
-  // Filter options ייעודיים לטרמפים
-  const trumpFilterOptions = [
-    'בלי השתתפות בהוצאות',
-    'לפי מגדר: נשים בלבד',
-    'לפי מגדר: גברים בלבד',
-    'לפי גיל: 18-25',
-    'לפי גיל: 25-40',
-    'לפי גיל: 40+',
-    'בלי צמתים',
-    'בלי אוטובוסים',
-    'בלי עישון',
-    'עם ילדים',
-    'עם חיות',
-    'מקום לציוד',
-    'כביש 6',
-    'מזגן',
-    'מוסיקה',
-    'נגישות',
-  ];
+  // Filter options
+  const trumpFilterOptions = (t('trump:filters', { returnObjects: true }) as unknown as string[]) || [];
 
-  const trumpSortOptions = [
-    "אלפביתי",
-    "לפי מיקום",
-    "לפי תאריך",
-    "לפי שעה",
-    "לפי דירוג",
-    "לפי רלוונטיות",
-  ];
+  const trumpSortOptions = (t('trump:sorts', { returnObjects: true }) as unknown as string[]) || [];
 
   // Mock data for rides (moved before use)
   const dummyRides = [
     {
       id: 1,
-      driverName: "דוד כהן",
-      from: "תל אביב",
-      to: "ירושלים",
+      driverName: t('trump:mock.driver1') as string,
+      from: t('trump:mock.tlv') as string,
+      to: t('trump:mock.jerusalem') as string,
       date: "15.12.2023",
       time: "08:30",
       seats: 3,
       price: 25,
       rating: 4.8,
       image: "👨‍💼",
-      category: "עבודה",
+      category: t('trump:mock.category.work') as string,
     },
     {
       id: 2,
-      driverName: "שרה לוי",
-      from: "חיפה",
-      to: "תל אביב",
+      driverName: t('trump:mock.driver2') as string,
+      from: t('trump:mock.haifa') as string,
+      to: t('trump:mock.tlv') as string,
       date: "15.12.2023",
       time: "07:00",
       seats: 2,
       price: 30,
       rating: 4.9,
       image: "👩‍💼",
-      category: "עבודה",
+      category: t('trump:mock.category.work') as string,
     },
     {
       id: 3,
-      driverName: "משה גולדברג",
-      from: "באר שבע",
-      to: "תל אביב",
+      driverName: t('trump:mock.driver3') as string,
+      from: t('trump:mock.beerSheva') as string,
+      to: t('trump:mock.tlv') as string,
       date: "16.12.2023",
       time: "09:15",
       seats: 4,
       price: 35,
       rating: 4.7,
       image: "👨‍🎓",
-      category: "לימודים",
+      category: t('trump:mock.category.study') as string,
     },
     {
       id: 4,
-      driverName: "רחל אברהם",
-      from: "אשדוד",
-      to: "ירושלים",
+      driverName: t('trump:mock.driver4') as string,
+      from: t('trump:mock.ashdod') as string,
+      to: t('trump:mock.jerusalem') as string,
       date: "15.12.2023",
       time: "10:00",
       seats: 1,
       price: 20,
       rating: 4.6,
       image: "👩‍⚕️",
-      category: "בריאות",
+      category: t('trump:mock.category.health') as string,
     },
     {
       id: 5,
-      driverName: "יוסי שפירא",
-      from: "פתח תקווה",
-      to: "חיפה",
+      driverName: t('trump:mock.driver5') as string,
+      from: t('trump:mock.petahTikva') as string,
+      to: t('trump:mock.haifa') as string,
       date: "16.12.2023",
       time: "14:30",
       seats: 3,
       price: 40,
       rating: 4.8,
       image: "👨‍🔧",
-      category: "עבודה",
+      category: t('trump:mock.category.work') as string,
     },
     {
       id: 6,
-      driverName: "מיכל רוזן",
-      from: "רמת גן",
-      to: "באר שבע",
+      driverName: t('trump:mock.driver6') as string,
+      from: t('trump:mock.ramatGan') as string,
+      to: t('trump:mock.beerSheva') as string,
       date: "15.12.2023",
       time: "16:00",
       seats: 2,
       price: 45,
       rating: 4.9,
       image: "👩‍🎨",
-      category: "בילוי",
+      category: t('trump:mock.category.leisure') as string,
     },
   ];
 
-  // טען טרמפים - שילוב דמה + מה-DB של המשתמש
   useEffect(() => {
     const loadRides = async () => {
       try {
@@ -213,21 +159,19 @@ export default function TrumpScreen({
         const merged = [...userRides, ...dummyRides];
         setAllRides(merged);
         setFilteredRides(merged);
-        // בנה היסטוריה מהטרמפים של המשתמש
         const userRecent = (userRides || []).map((r: any) => ({
           id: r.id,
-          driverName: r.driverName || selectedUser?.name || 'משתמש',
+          driverName: r.driverName || selectedUser?.name || (t('common:unknownUser', { defaultValue: 'User' }) as string),
           from: r.from,
           to: r.to,
           date: r.date,
-          status: 'פורסם',
+          status: t('trump:status.published') as string,
           price: r.price || 0,
         }));
         setRecentRides(userRecent);
       } catch (e) {
         setAllRides(dummyRides);
         setFilteredRides(dummyRides);
-        // אם נכשל, נישאר עם דמה
         setRecentRides([]);
       }
     };
@@ -239,29 +183,29 @@ export default function TrumpScreen({
   const dummyRecentRides = [
     {
       id: 1,
-      driverName: "דוד כהן",
-      from: "תל אביב",
-      to: "ירושלים",
+      driverName: t('trump:mock.driver1') as string,
+      from: t('trump:mock.tlv') as string,
+      to: t('trump:mock.jerusalem') as string,
       date: "10.12.2023",
-      status: "הושלם",
+      status: t('trump:status.completed') as string,
       price: 0,
     },
     {
       id: 2,
-      driverName: "שרה לוי",
-      from: "חיפה",
-      to: "תל אביב",
+      driverName: t('trump:mock.driver2') as string,
+      from: t('trump:mock.haifa') as string,
+      to: t('trump:mock.tlv') as string,
       date: "08.12.2023",
-      status: "הושלם",
+      status: t('trump:status.completed') as string,
       price: 0,
     },
     {
       id: 3,
-      driverName: "משה גולדברג",
-      from: "באר שבע",
-      to: "תל אביב",
+      driverName: t('trump:mock.driver3') as string,
+      from: t('trump:mock.beerSheva') as string,
+      to: t('trump:mock.tlv') as string,
       date: "05.12.2023",
-      status: "הושלם",
+      status: t('trump:status.completed') as string,
       price: 3,
     },
   ];
@@ -270,7 +214,7 @@ export default function TrumpScreen({
   const dummyGroups = [
     {
       id: 1,
-      name: "טרמפים תל אביב - ירושלים",
+      name: t('trump:mock.group1') as string,
       members: 1250,
       image: "🚗",
       type: "whatsapp",
@@ -278,7 +222,7 @@ export default function TrumpScreen({
     },
     {
       id: 2,
-      name: "טרמפים חיפה - תל אביב",
+      name: t('trump:mock.group2') as string,
       members: 890,
       image: "🚙",
       type: "whatsapp",
@@ -286,7 +230,7 @@ export default function TrumpScreen({
     },
     {
       id: 3,
-      name: "טרמפים באר שבע - תל אביב",
+      name: t('trump:mock.group3') as string,
       members: 650,
       image: "🚐",
       type: "facebook",
@@ -294,17 +238,7 @@ export default function TrumpScreen({
     },
   ];
 
-  /**
-   * טיפול בתוצאות חיפוש מהרכיב HeaderComp
-   * 
-   * הפונקציה מקבלת תוצאות חיפוש, פילטרים ומיון
-   * ומעדכנת את המצב המקומי בהתאם.
-   * 
-   * @param {string} query - שאילתת החיפוש
-   * @param {string[]} filters - פילטרים נבחרים
-   * @param {string[]} sorts - אפשרויות מיון
-   * @param {any[]} results - תוצאות החיפוש
-   */
+
   const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
     console.log('🚗 TrumpScreen - Search received:', { 
       query, 
@@ -322,16 +256,7 @@ export default function TrumpScreen({
     setFilteredRides(filtered);
   };
 
-  /**
-   * סינון ומיון טרמפים לפי חיפוש, פילטרים ומיון
-   * 
-   * הפונקציה מסננת את כל הטרמפים לפי:
-   * - שאילתת חיפוש (שם נהג, מיקום, קטגוריה)
-   * - פילטרים נבחרים (מחיר, עישון, חיות וכו')
-   * - מיון (אלפביתי, מיקום, תאריך, שעה, מחיר, דירוג)
-   * 
-   * @returns {any[]} מערך טרמפים מסוננים וממוינים
-   */
+
   const getFilteredRides = () => {
     let filtered = [...allRides];
 
@@ -347,17 +272,21 @@ export default function TrumpScreen({
 
     // Apply selected filters (basic examples)
     if (selectedFilters.length > 0) {
+      const filterNoCost = t('trump:filters.noCostSharing') as string;
+      const filterNoSmoking = t('trump:filters.noSmoking') as string;
+      const filterWithPets = t('trump:filters.withPets') as string;
+      const filterWithKids = t('trump:filters.withKids') as string;
       selectedFilters.forEach(f => {
-        if (f.includes('בלי השתתפות')) {
+        if (f === filterNoCost) {
           filtered = filtered.filter((ride: any) => (ride.price ?? 0) === 0);
         }
-        if (f.includes('בלי עישון')) {
+        if (f === filterNoSmoking) {
           filtered = filtered.filter((ride: any) => ride.noSmoking);
         }
-        if (f.includes('עם חיות')) {
+        if (f === filterWithPets) {
           filtered = filtered.filter((ride: any) => ride.petsAllowed);
         }
-        if (f.includes('עם ילדים')) {
+        if (f === filterWithKids) {
           filtered = filtered.filter((ride: any) => ride.kidsFriendly);
         }
       });
@@ -366,28 +295,28 @@ export default function TrumpScreen({
     // Sorting
     const selectedSort = selectedSorts[0];
     switch (selectedSort) {
-      case "אלפביתי":
+      case (t('trump:sort.alphabetical') as string):
         filtered.sort((a, b) => a.driverName.localeCompare(b.driverName));
         break;
-      case "לפי מיקום":
+      case (t('trump:sort.byLocation') as string):
         filtered.sort((a, b) => a.from.localeCompare(b.from));
         break;
-      case "לפי תחום":
+      case (t('trump:sort.byCategory') as string):
         filtered.sort((a, b) => a.category.localeCompare(b.category));
         break;
-      case "לפי תאריך":
+      case (t('trump:sort.byDate') as string):
         filtered.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         break;
-      case "לפי שעה":
+      case (t('trump:sort.byTime') as string):
         filtered.sort((a, b) => a.time.localeCompare(b.time));
         break;
-      case "לפי מחיר":
+      case (t('trump:sort.byPrice') as string):
         filtered.sort((a, b) => a.price - b.price);
         break;
-      case "לפי דירוג":
+      case (t('trump:sort.byRating') as string):
         filtered.sort((a, b) => b.rating - a.rating);
         break;
-      case "לפי רלוונטיות":
+      case (t('trump:sort.byRelevance') as string):
         // Default - by rating
         filtered.sort((a, b) => b.rating - a.rating);
         break;
@@ -396,26 +325,14 @@ export default function TrumpScreen({
     return filtered;
   };
 
-  // ללא תלות בחבילת מיקום - וייז ישתמש במיקום הנוכחי של המכשיר בעת הניווט
-
-  /**
-   * יצירת טרמפ חדש ושמירה במסד הנתונים
-   * 
-   * הפונקציה בודקת תקינות הנתונים, יוצרת אובייקט טרמפ
-   * ושומרת אותו במסד הנתונים. אם נבחרה יציאה מיידית
-   * עם מיקום נוכחי, נפתח וייז לניווט אוטומטי.
-   * 
-   * @returns {Promise<void>}
-   */
   const handleCreateRide = async () => {
     try {
-      // יעד מגיע מתיבת החיפוש (searchQuery)
       if (!searchQuery) {
-        Alert.alert('שגיאה', 'נא למלא יעד בתיבת החיפוש למעלה');
+        Alert.alert(t('common:errorTitle') as string, t('trump:errors.fillDestination') as string);
         return;
       }
       if (!useCurrentLocation && !fromLocation) {
-        Alert.alert('שגיאה', 'נא למלא נקודת יציאה או לבחור יציאה מהמיקום הנוכחי');
+        Alert.alert(t('common:errorTitle') as string, t('trump:errors.fillFromOrCurrent') as string);
         return;
       }
       const uid = selectedUser?.id || 'guest';
@@ -426,8 +343,8 @@ export default function TrumpScreen({
       const ride = {
         id: rideId,
         driverId: uid,
-        driverName: selectedUser?.name || 'משתמש',
-        from: useCurrentLocation ? (fromLocation || 'מיקום נוכחי') : fromLocation,
+        driverName: selectedUser?.name || (t('common:unknownUser', { defaultValue: 'User' }) as string),
+        from: useCurrentLocation ? (fromLocation || (t('trump:currentLocation') as string)) : fromLocation,
         to: searchQuery,
         date: new Date().toISOString().split('T')[0],
         time: timeToSave,
@@ -435,16 +352,15 @@ export default function TrumpScreen({
         price: Number(price) || 0,
         rating: 5,
         image: '🚗',
-        category: 'אחר',
+        category: t('trump:category.other') as string,
         timestamp: new Date().toISOString(),
-        noSmoking: selectedFilters.includes('בלי עישון'),
-        petsAllowed: selectedFilters.includes('עם חיות'),
-        kidsFriendly: selectedFilters.includes('עם ילדים'),
+        noSmoking: selectedFilters.includes(t('trump:filters.noSmoking') as string),
+        petsAllowed: selectedFilters.includes(t('trump:filters.withPets') as string),
+        kidsFriendly: selectedFilters.includes(t('trump:filters.withKids') as string),
       } as any;
 
       await db.createRide(uid, rideId, ride);
       setFilteredRides(prev => [ride, ...prev]);
-      // עדכן היסטוריה מיידית
       setRecentRides(prev => [
         {
           id: rideId,
@@ -452,7 +368,7 @@ export default function TrumpScreen({
           from: ride.from,
           to: ride.to,
           date: ride.date,
-          status: 'פורסם',
+          status: t('trump:status.published') as string,
           price: ride.price,
         },
         ...prev,
@@ -464,9 +380,8 @@ export default function TrumpScreen({
       setSeats(3);
       setPrice('0');
 
-      Alert.alert('הצלחה', 'הטרמפ פורסם ונשמר במסד הנתונים');
+      Alert.alert(t('trump:success.title') as string, t('trump:success.ridePublished') as string);
 
-      // אם יציאה מיידית ומיקום נוכחי - פותחים וייז ליעד
       if (immediateDeparture && useCurrentLocation && searchQuery) {
         const encodedDest = encodeURIComponent(searchQuery);
         const wazeUrl = `waze://?q=${encodedDest}&navigate=yes`;
@@ -481,33 +396,30 @@ export default function TrumpScreen({
         } catch {}
       }
     } catch (e) {
-      Alert.alert('שגיאה', 'נכשל לשמור את הטרמפ');
+      Alert.alert(t('common:errorTitle') as string, t('trump:errors.saveFailed') as string);
     }
   };
 
   /**
-   * הצגת פרטי טרמפ בחלון דו-שיח
-   * 
-   * מציגה את כל פרטי הטרמפ ומאפשרת למשתמש
-   * להצטרף לטרמפ או לבטל.
-   * 
-   * @param {any} ride - אובייקט הטרמפ להצגה
+   * Show ride details in a dialog
+   * Displays full ride details and allows the user to join or cancel
+   * @param {any} ride - The ride object to display
    */
   const showRideDetailsModal = (ride: any) => {
     Alert.alert(
-      `טרמפ של ${ride.driverName}`,
-      `מ: ${ride.from}\nאל: ${ride.to}\nתאריך: ${ride.date}\nשעה: ${ride.time}\nמחיר: ₪${ride.price}\nמקומות פנויים: ${ride.seats}\n\nהאם תרצה להצטרף לטרמפ זה?`,
+      t('trump:rideOf', { name: ride.driverName }) as string,
+      `${t('trump:from')}: ${ride.from}\n${t('trump:to')}: ${ride.to}\n${t('trump:date')}: ${ride.date}\n${t('trump:time')}: ${ride.time}\n${t('trump:price')}: ₪${ride.price}\n${t('trump:seatsAvailable')}: ${ride.seats}\n\n${t('trump:joinQuestion')}`,
       [
         {
-          text: 'לא עכשיו',
+          text: t('common:cancel') as string,
           style: 'cancel',
         },
         {
-          text: 'הצטרף לטרמפ',
+          text: t('trump:joinRide') as string,
           onPress: () => {
             Alert.alert(
-              'בקשה נשלחה',
-              `בקשה להצטרף לטרמפ של ${ride.driverName} נשלחה בהצלחה!`
+              t('trump:requestSentTitle') as string,
+              t('trump:requestSentBody', { name: ride.driverName }) as string
             );
           },
         },
@@ -516,20 +428,20 @@ export default function TrumpScreen({
   };
 
   const menuOptions = [
-    'היסטוריית טרמפים',
-    'הגדרות',
-    'עזרה',
-    'צור קשר'
+    t('trump:menu.history') as string,
+    t('trump:menu.settings') as string,
+    t('trump:menu.help') as string,
+    t('trump:menu.contact') as string,
   ];
 
   const handleToggleMode = useCallback(() => {
     setMode(!mode);
-    console.log('Mode toggled:', !mode ? 'נזקק' : 'תורם');
+    console.log('Mode toggled:', !mode ? 'seeker' : 'offerer');
   }, [mode]);
 
   const handleSelectMenuItem = useCallback((option: string) => {
     console.log('Menu option selected:', option);
-    Alert.alert('תפריט', `נבחר: ${option}`);
+    Alert.alert(t('trump:menu.title') as string, t('trump:menu.selected', { option }) as string);
   }, []);
 
   const renderRideCard = ({ item }: { item: any }) => (
@@ -538,7 +450,7 @@ export default function TrumpScreen({
       onPress={() => {
         if (mode) {
           // Donor mode - select ride to join
-          Alert.alert('טרמפ נבחר', `נבחר: ${item.driverName}`);
+          Alert.alert(t('trump:alerts.rideSelectedTitle') as string, t('trump:alerts.rideSelectedBody', { name: item.driverName }) as string);
         } else {
           // Beneficiary mode - show ride details with join option
           showRideDetailsModal(item);
@@ -597,10 +509,10 @@ export default function TrumpScreen({
             onPress={() => {
               setFromLocation(item.from);
               setToLocation(item.to);
-              Alert.alert('שחזור הושלם', `יעד שוחזר: ${item.from} → ${item.to}`);
+              Alert.alert(t('trump:alerts.restoreDoneTitle') as string, t('trump:alerts.restoreDoneBody', { from: item.from, to: item.to }) as string);
             }}
           >
-            <Text style={localStyles.restoreChipText}>שחזר</Text>
+            <Text style={localStyles.restoreChipText}>{t('trump:restore')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -608,7 +520,7 @@ export default function TrumpScreen({
   );
 
   const renderGroupCard = ({ item }: { item: any }) => (
-    <TouchableOpacity onPress={() => item.link && typeof item.link === 'string' ? Linking.openURL(item.link) : Alert.alert('שגיאה', 'אין קישור לקבוצה')}>
+    <TouchableOpacity onPress={() => item.link && typeof item.link === 'string' ? Linking.openURL(item.link) : Alert.alert(t('common:errorTitle') as string, t('trump:errors.noGroupLink') as string)}>
       <Text style={localStyles.groupLinkText}>{item.name}</Text>
     </TouchableOpacity>
   );
@@ -624,7 +536,7 @@ export default function TrumpScreen({
                   <TimePicker
                     value={departureTime}
                     onTimeChange={setDepartureTime}
-                    placeholder="בחר שעת יציאה"
+                    placeholder={t('trump:ui.timePickerPlaceholder') as string}
                   />
                 </View>
                 <View>
@@ -645,7 +557,7 @@ export default function TrumpScreen({
                     size={22}
                     color={colors.pink}
                     />
-                  <Text style={localStyles.checkboxLabel}>יציאה מיידית</Text>
+                  <Text style={localStyles.checkboxLabel}>{t('trump:ui.immediateDeparture')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setUseCurrentLocation(!useCurrentLocation)}
@@ -656,7 +568,7 @@ export default function TrumpScreen({
                     size={22}
                     color={colors.pink}
                     />
-                  <Text style={localStyles.checkboxLabel}>יציאה מהמיקום</Text>
+                  <Text style={localStyles.checkboxLabel}>{t('trump:ui.useCurrentLocation')}</Text>
                 </TouchableOpacity>
                     </View>
               </View>
@@ -666,12 +578,12 @@ export default function TrumpScreen({
           {!useCurrentLocation && (
             <View style={localStyles.row}>
               <View style={localStyles.field}>
-                <Text style={localStyles.label}>נקודת יציאה</Text>
+                <Text style={localStyles.label}>{t('trump:ui.fromPointLabel')}</Text>
                 <TextInput
                   style={localStyles.input}
                   value={fromLocation}
                   onChangeText={setFromLocation}
-                  placeholder="כתוב מאיפה יוצאים"
+                  placeholder={t('trump:ui.fromPlaceholder') as string}
                 />
               </View>
             </View>
@@ -679,7 +591,7 @@ export default function TrumpScreen({
 
           <View style={localStyles.row}>
             <View style={localStyles.fieldSmall}>
-              <Text style={localStyles.label}>מקומות</Text>
+              <Text style={localStyles.label}>{t('trump:ui.seatsLabel')}</Text>
               <View style={localStyles.counterRow}>
                 <TouchableOpacity style={localStyles.counterBtn} onPress={() => setSeats(Math.max(1, seats - 1))}>
                   <Text style={localStyles.counterText}>-</Text>
@@ -698,7 +610,7 @@ export default function TrumpScreen({
                     { color: need_to_pay ? colors.textPrimary : colors.textSecondary },
                   ]}
                 >
-                  השתתפות בדלק (₪)
+                  {t('trump:ui.fuelContributionLabel')}
                 </Text>
               </TouchableOpacity>
               {need_to_pay && (
@@ -731,7 +643,7 @@ export default function TrumpScreen({
             onPress={handleCreateRide}
             disabled={!searchQuery}
           >
-            <Text style={localStyles.offerButtonText}>פרסם טרמפ</Text>
+            <Text style={localStyles.offerButtonText}>{t('trump:ui.publishRide')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -743,7 +655,7 @@ export default function TrumpScreen({
                   <TimePicker
                     value={departureTime}
                     onTimeChange={setDepartureTime}
-                    placeholder="בחר שעת יציאה"
+                    placeholder={t('trump:ui.timePickerPlaceholder') as string}
                   />
                 </View>
                 <TouchableOpacity
@@ -763,7 +675,7 @@ export default function TrumpScreen({
                     size={22}
                     color={colors.pink}
                   />
-                  <Text style={localStyles.checkboxLabel}>יציאה מיידית</Text>
+                  <Text style={localStyles.checkboxLabel}>{t('trump:ui.immediateDeparture')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -781,7 +693,7 @@ export default function TrumpScreen({
         onToggleMode={handleToggleMode}
         onSelectMenuItem={handleSelectMenuItem}
         title=""
-        placeholder={mode ? "הכנס יעד" : "חפש טרמפים זמינים"}
+        placeholder={mode ? (t('trump:ui.searchPlaceholder.offer') as string) : (t('trump:ui.searchPlaceholder.seek') as string)}
         filterOptions={trumpFilterOptions}
         sortOptions={trumpSortOptions}
         searchData={dummyRides}
@@ -798,7 +710,7 @@ export default function TrumpScreen({
           keyboardShouldPersistTaps="always"
         >
           <View style={localStyles.section}>
-            <Text style={localStyles.sectionTitle}>היסטוריית טרמפים שלך</Text>
+            <Text style={localStyles.sectionTitle}>{t('trump:ui.yourHistoryTitle')}</Text>
             <View style={localStyles.recentRidesContainer}>
               {(recentRides.length > 0 ? recentRides : dummyRecentRides).map((ride) => (
                 <View key={ride.id} style={localStyles.recentRideCardWrapper}>
@@ -816,9 +728,9 @@ export default function TrumpScreen({
             return (
                 <DonationStatsFooter
                   stats={[
-                    { label: 'טרמפים זמינים', value: totalRides, icon: 'car-outline' },
-                    { label: 'ללא השתתפות', value: freeRides, icon: 'pricetag-outline' },
-                    { label: 'חברי קבוצות', value: totalGroupMembers, icon: 'people-outline' },
+                    { label: t('trump:stats.availableRides'), value: totalRides, icon: 'car-outline' },
+                    { label: t('trump:stats.noCost'), value: freeRides, icon: 'pricetag-outline' },
+                    { label: t('trump:stats.groupMembers'), value: totalGroupMembers, icon: 'people-outline' },
                   ]}
                 />
             );
@@ -831,7 +743,7 @@ export default function TrumpScreen({
             {/* Rides section */}
             <View style={localStyles.sectionWithScroller}>
               <Text style={localStyles.sectionTitle}>
-                {searchQuery || selectedFilters.length > 0 ? 'טרמפים זמינים' : 'טרמפים מומלצים'}
+                {searchQuery || selectedFilters.length > 0 ? t('trump:ui.ridesAvailableTitle') : t('trump:ui.ridesRecommendedTitle')}
               </Text>
               <ScrollView
                 style={localStyles.innerScroll}
@@ -850,7 +762,7 @@ export default function TrumpScreen({
 
             {/* Groups section */}
             <View style={localStyles.sectionWithScroller}>
-              <Text style={localStyles.sectionTitle}>קבוצות רלוונטיות</Text>
+              <Text style={localStyles.sectionTitle}>{t('trump:ui.groupsTitle')}</Text>
               <ScrollView
                 style={localStyles.innerScroll}
                 contentContainerStyle={localStyles.groupsContainer}
@@ -860,7 +772,7 @@ export default function TrumpScreen({
               >
                 <View style={localStyles.groupsTwoCols}>
                   <View style={localStyles.groupColumn}>
-                    <Text style={localStyles.groupColumnTitle}>וואטסאפ</Text>
+                    <Text style={localStyles.groupColumnTitle}>{t('trump:groups.whatsapp')}</Text>
                     {dummyGroups
                       .filter(g => g.type === 'whatsapp')
                       .filter(g => !searchQuery || g.name.includes(searchQuery))
@@ -871,7 +783,7 @@ export default function TrumpScreen({
                       ))}
                   </View>
                   <View style={localStyles.groupColumn}>
-                    <Text style={localStyles.groupColumnTitle}>פייסבוק</Text>
+                    <Text style={localStyles.groupColumnTitle}>{t('trump:groups.facebook')}</Text>
                     {dummyGroups
                       .filter(g => g.type === 'facebook')
                       .filter(g => !searchQuery || g.name.includes(searchQuery))
@@ -893,9 +805,9 @@ export default function TrumpScreen({
           return (
               <DonationStatsFooter
                 stats={[
-                  { label: 'טרמפים זמינים', value: totalRides, icon: 'car-outline' },
-                  { label: 'ללא השתתפות', value: freeRides, icon: 'pricetag-outline' },
-                  { label: 'חברי קבוצות', value: totalGroupMembers, icon: 'people-outline' },
+                  { label: t('trump:stats.availableRides'), value: totalRides, icon: 'car-outline' },
+                  { label: t('trump:stats.noCost'), value: freeRides, icon: 'pricetag-outline' },
+                  { label: t('trump:stats.groupMembers'), value: totalGroupMembers, icon: 'people-outline' },
                 ]}
               />
           );

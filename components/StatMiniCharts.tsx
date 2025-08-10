@@ -17,7 +17,7 @@ const StatMiniCharts: React.FC<StatMiniChartsProps> = ({ breakdown, trend, accen
     <View style={styles.container}>
       {breakdown && breakdown.length > 0 && (
         <View style={styles.card}>
-          <Text style={styles.title}>פילוח לפי ערים</Text>
+          <Text style={styles.title}>{(require('i18next') as any).t('home:statsDetails.bullets.byCities')}</Text>
           <View style={styles.breakdownList}>
             {breakdown.slice(0, 5).map((b, idx) => (
               <View key={idx} style={styles.row}>
@@ -34,7 +34,7 @@ const StatMiniCharts: React.FC<StatMiniChartsProps> = ({ breakdown, trend, accen
 
       {trend && trend.length > 0 && (
         <View style={styles.card}>
-          <Text style={styles.title}>מגמת זמן</Text>
+          <Text style={styles.title}>{(require('i18next') as any).t('home:statsDetails.bullets.trends')}</Text>
           <View style={styles.trendRow}>
             {trend.map((v, idx) => (
               <View key={idx} style={styles.trendCol}>

@@ -43,7 +43,7 @@ const StatDetailsModal: React.FC<StatDetailsModalProps> = ({ visible, onClose, d
               ) : null}
               <Text style={styles.title}>{details.title}</Text>
             </View>
-            <TouchableOpacity onPress={onClose} accessibilityLabel="סגור">
+            <TouchableOpacity onPress={onClose} accessibilityLabel={(require('i18next') as any).t('common:close')}>
               <Ionicons name="close" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
@@ -73,7 +73,7 @@ const StatDetailsModal: React.FC<StatDetailsModalProps> = ({ visible, onClose, d
           </ScrollView>
 
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeText}>סגור</Text>
+            <Text style={styles.closeText}>{(require('i18next') as any).t('common:close')}</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -19,11 +19,12 @@ export interface CategoryConfig {
 
 interface Props {
   route?: { params?: { config?: CategoryConfig } };
+  config?: CategoryConfig;
 }
 
-const CategoryScreen: React.FC<Props> = ({ route }) => {
+const CategoryScreen: React.FC<Props> = ({ route, config: propConfig }) => {
   const { t } = useTranslation(['donations','common']);
-  const config: CategoryConfig = route?.params?.config || {
+  const config: CategoryConfig = propConfig || route?.params?.config || {
     id: 'generic',
     icon: 'help-circle-outline',
     color: colors.info,
@@ -31,9 +32,9 @@ const CategoryScreen: React.FC<Props> = ({ route }) => {
   };
   const [mode, setMode] = useState(true);
 
-  const title = config.title ?? t(`donations:categories.${config.id}.title`, t('donations:categories.items.title', 'פריטים'));
-  const subtitle = config.subtitle ?? t(`donations:categories.${config.id}.subtitle`, '');
-  const description = config.description ?? t(`donations:categories.${config.id}.description`, t('donations:genericDescription', 'מסך קטגוריה כללי.'));
+  const title = config.title ?? t(`donations:categories.${config.id}.title`);
+  const subtitle = config.subtitle ?? t(`donations:categories.${config.id}.subtitle`);
+  const description = config.description ?? t(`donations:categories.${config.id}.description`);
 
   const handleToggleMode = () => setMode((prev) => !prev);
   const handleSelectMenuItem = (option: string) => {
@@ -58,12 +59,12 @@ const CategoryScreen: React.FC<Props> = ({ route }) => {
     <View style={styles.container}>
       <HeaderComp
         mode={mode}
-        menuOptions={[`${t('donations:share', 'שתף')} ${title}`, t('common:settings', 'הגדרות'), t('common:report', 'דווח')]}
+        menuOptions={[`${t('donations:share')} ${title}`, t('common:settings'), t('common:report')]}
         onToggleMode={handleToggleMode}
         onSelectMenuItem={handleSelectMenuItem}
-        placeholder={`${t('donations:searchWithin', 'חיפוש בתוך')} ${title}`}
-        filterOptions={[t('donations:filter.nearMe', 'קרוב אליי'), t('donations:filter.popular', 'פופולרי'), t('donations:filter.new', 'חדש')]}
-        sortOptions={[t('donations:sort.name', 'שם'), t('donations:sort.date', 'תאריך'), t('donations:sort.rating', 'דירוג')]}
+        placeholder={`${t('donations:searchWithin')} ${title}`}
+        filterOptions={[t('donations:filter.nearMe'), t('donations:filter.popular'), t('donations:filter.new')]}
+        sortOptions={[t('donations:sort.name'), t('donations:sort.date'), t('donations:sort.rating')]}
         searchData={[]}
         onSearch={handleSearch}
       />
@@ -80,19 +81,19 @@ const CategoryScreen: React.FC<Props> = ({ route }) => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('donations:section.content', 'תוכן')}</Text>
+          <Text style={styles.sectionTitle}>{t('donations:section.content')}</Text>
           <Text style={styles.sectionText}>
-            {t('donations:section.contentBody', 'אזור זה יכיל תוכן מותאם לקטגוריית "{{title}}". נוכל להציג כאן רשימות, טפסים, פרויקטים קהילתיים, ומידע רלוונטי. כרגע זה תוכן התחלתי שניתן להרחיב.', { title })}
+            {t('donations:section.contentBody', { title })}
           </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('donations:section.relatedStats', 'סטטיסטיקות קשורות')}</Text>
+          <Text style={styles.sectionTitle}>{t('donations:section.relatedStats')}</Text>
           <DonationStatsFooter
             stats={[
-              { label: t('donations:stats.newPosts', 'פרסומים חדשים'), value: 12, icon: 'megaphone-outline' },
-              { label: t('donations:stats.activeRequests', 'בקשות פעילות'), value: 7, icon: 'help-circle-outline' },
-              { label: t('donations:stats.activePartners', 'שותפים פעילים'), value: 5, icon: 'people-outline' },
+              { label: t('donations:stats.newPosts'), value: 12, icon: 'megaphone-outline' },
+              { label: t('donations:stats.activeRequests'), value: 7, icon: 'help-circle-outline' },
+              { label: t('donations:stats.activePartners'), value: 5, icon: 'people-outline' },
             ]}
           />
         </View>

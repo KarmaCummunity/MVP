@@ -19,10 +19,10 @@ import Animated, {
 } from "react-native-reanimated";
 import { FontSizes, BUBBLE_CONSTANTS } from "../globals/constants";
 import { charities } from "../globals/fakeData";
-import { texts } from "../globals/texts";
 import { TouchableOpacity } from "react-native";
 import colors from "../globals/colors";
 import { BubbleData } from "../globals/types";
+import { useTranslation } from 'react-i18next';
 
 // Get the dimensions of the device window for responsive sizing
 const { width, height } = Dimensions.get("window");
@@ -123,6 +123,7 @@ const generateBubbles = (): BubbleData[] => {
  * כוללת בועות אינטראקטיביות והודעות מוטיבציוניות
  */
 const BubbleComp: React.FC = () => {
+  const { t } = useTranslation(['home','common']);
   const bubbles = useMemo(generateBubbles, []);
   const [selectedBubbleId, setSelectedBubbleId] = useState<string | null>(null);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
@@ -155,7 +156,7 @@ const BubbleComp: React.FC = () => {
 
   return (
     <View style={localStyles.container}>
-              <Text style={localStyles.title}>{texts.bubbleTitle}</Text>
+              <Text style={localStyles.title}>{t('home:stats.bubbleTitle')}</Text>
       
       {/* Bubbles container */}
       <View style={localStyles.bubblesContainer}>
@@ -173,7 +174,7 @@ const BubbleComp: React.FC = () => {
       <View style={localStyles.messageContainer}>
         <TouchableOpacity onPress={handleMessagePress}>
           <Text style={localStyles.messageText}>
-            {charities[0]?.motivationalQuotes?.[currentSentenceIndex] || 'אין ציטוטי מוטיבציה זמינים'}
+            {charities[0]?.motivationalQuotes?.[currentSentenceIndex] || (t('common:noQuotes') as string)}
           </Text>
         </TouchableOpacity>
       </View>

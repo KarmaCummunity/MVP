@@ -9,8 +9,7 @@ import HomeTabStack from "./HomeTabStack";
 import SearchTabStack from "./SearchTabStack";
 import ProfileTabStack from "./ProfileTabStack";
 import DonationsStack from "./DonationsStack"; // donations נשאר כ-stack נפרד
-// import UsersScreen from "../bottomBarScreens/UsersScreen"; // הסתרה לבדיקות
-import BookmarksScreen from "../bottomBarScreens/BookmarksScreen";
+import BookmarksScreen from "../screens/BookmarksScreen";
 import SettingsScreen from "../topBarScreens/SettingsScreen";
 import ChatListScreen from "../topBarScreens/ChatListScreen";
 import AboutKarmaCommunityScreen from "../topBarScreens/AboutKarmaCommunityScreen";
@@ -25,7 +24,6 @@ export type BottomTabNavigatorParamList = {
   HomeScreen: undefined;
   SearchScreen: undefined;
   ProfileScreen: undefined;
-  // UsersScreen: undefined; // הסתרה לבדיקות
   SettingsScreen: undefined;
   ChatListScreen: undefined;
   AboutKarmaCommunityScreen: undefined;
@@ -76,11 +74,6 @@ export default function BottomNavigator(): React.ReactElement {
         return focused ? "heart" : "heart-outline";
       case "ProfileScreen":
         return focused ? "person" : "person-outline";
-      // case "UsersScreen": // הסתרה לבדיקות
-      //   return focused ? "people" : "people-outline";
-
-      // case "LocationSearchScreen": // Uncomment if you add this screen to the navigator
-      //   return focused ? "globe" : "globe-outline";
       default:
         return "help-circle-outline";
     }

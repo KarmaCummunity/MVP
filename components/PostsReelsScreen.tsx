@@ -27,7 +27,7 @@ import ScreenWrapper from './ScreenWrapper';
 const { width } = Dimensions.get('window');
 
 // --- Constants ---
-const NUM_ITEMS = 100; // מספר הפריטים שיוצגו
+const NUM_ITEMS = 100;
 
 // --- Types ---
 type User = {
@@ -50,14 +50,9 @@ type Item = {
   timestamp: string;
 };
 
-/**
- * יוצר נתונים מדומים לפוסטים ורילס עם הדמיות האמיתיות שלנו
- * @returns מערך של פריטים עם נתונים מהדמיות
- */
 const generateFakeData = (): Item[] => {
   const data: Item[] = [];
   
-  // פוסטים אמיתיים מהדמיות שלנו
   const postTopics = [
     'תרומה לקהילה', 'התנדבות השבוע', 'שיתוף ידע', 'בקשת עזרה', 'הודיה לקהילה',
     'אירוע קהילתי', 'טיפ מועיל', 'חוויה אישית', 'פרויקט חדש', 'הישג אישי',
@@ -71,7 +66,6 @@ const generateFakeData = (): Item[] => {
     const randomLikes = Math.floor(Math.random() * (randomCharacter.followersCount * 0.1)) + 5;
     const randomComments = Math.floor(Math.random() * 30) + 1;
     
-    // יצירת תיאור ייחודי לכל דמות
     const getCharacterSpecificDescription = (character: CharacterType, topic: string) => {
       const descriptions = {
         'user001': `איש העסקים יוסי שותף: "${topic} - חשוב לי לתרום לקהילה שלנו כי ביחד נחזקים. השקעתי השבוע ב..."
@@ -132,7 +126,6 @@ const PostReelItem = ({ item }: { item: Item }) => {
     setIsLiked(!isLiked);
     setLikesCount(isLiked ? likesCount - 1 : likesCount + 1);
     
-    // כאן בעתיד נוסיף API call לשמירת הלייק
     logger.logUserAction('like-post', 'PostsReelsScreen', { postId: item.id, isLiked: !isLiked, userId: selectedUser?.id });
   };
 
@@ -147,7 +140,6 @@ const PostReelItem = ({ item }: { item: Item }) => {
   };
 
   const handleComment = () => {
-    // פתיחת מודל תגובות
     setShowComments(true);
   };
 
@@ -163,7 +155,6 @@ const PostReelItem = ({ item }: { item: Item }) => {
   };
 
   const handlePostPress = () => {
-    // פתיחת הפוסט במסך מלא
     Alert.alert(
       'פתיחת פוסט',
       'האם ברצונך לפתוח את הפוסט במסך מלא?',
@@ -197,7 +188,6 @@ const PostReelItem = ({ item }: { item: Item }) => {
     }
   };
 
-  // בדיקת מצב השמירה בטעינה
   React.useEffect(() => {
     const checkBookmarkStatus = async () => {
       if (selectedUser) {
@@ -278,19 +268,14 @@ const PostReelItem = ({ item }: { item: Item }) => {
 interface PostsReelsScreenProps {
   onScroll?: (hide: boolean) => void;
   hideTopBar?: boolean;
-  showTopBar?: boolean; // האם להציג את TopBarNavigator
+  showTopBar?: boolean; 
 }
 
-/**
- * מסך פוסטים ורילס קהילתיים
- * מציג רשימה של פוסטים ורילס עם תמונות ותיאורים
- */
 export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTopBar = false }: PostsReelsScreenProps) {
   const navigation = useNavigation();
   console.log('📱 PostsReelsScreen - hideTopBar prop:', hideTopBar);
   const insets = useSafeAreaInsets();
   
-  // אנימציה למסך הפוסטים
   const animatedStyle = useAnimatedStyle(() => {
     console.log('📱 PostsReelsScreen - animatedStyle - hideTopBar:', hideTopBar);
     return {
@@ -317,13 +302,10 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
     
     console.log('📱 PostsReelsScreen - Scroll offset:', offsetY, 'Last offset:', lastOffsetY, 'Scrolling up:', isScrollingUp);
     
-    // הטופ בר חוזר מיד כשגוללים למעלה (אפילו טיפה)
     if (isScrollingUp) {
-      // גלילה למעלה מחזירה את הטופ בר מיד
       console.log('📱 PostsReelsScreen - Showing top bar (scrolling up)');
       onScroll?.(false);
     } else if (offsetY > 20) {
-      // גלילה למטה מעל 20px מסתירה את הטופ בר
       console.log('📱 PostsReelsScreen - Hiding top bar');
       onScroll?.(true);
     }
@@ -380,7 +362,7 @@ const styles = StyleSheet.create({
     }),
   },
   reelItem: {
-    backgroundColor: '#e0f7fa', // צבע שונה לרילס
+    backgroundColor: '#e0f7fa', 
   },
   thumbnail: {
     width: width - 32,
@@ -401,7 +383,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: 8,
   },
-  // סטיילים חדשים למסך פוסטים משופר
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

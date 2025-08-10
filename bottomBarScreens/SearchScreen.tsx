@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import SearchBar from '../components/SearchBar';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
-import { texts } from '../globals/texts';
+import { useTranslation } from 'react-i18next';
 import { 
   donations, 
   communityEvents, 
@@ -39,6 +39,7 @@ interface SearchResult {
 
 const SearchScreen = () => {
   const { isGuestMode } = useUser();
+  const { t } = useTranslation(['search','common']);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -57,22 +58,18 @@ const SearchScreen = () => {
     }, [])
   );
 
-  // Popular searches
-  const popularSearches = [
-    'איסוף מזון', 'תרומת דם', 'עזרה לקשישים', 'ניקוי גינה', 'הוראה לילדים'
-  ];
+  // Popular searches (from i18n)
+  const popularSearches: string[] = t('search:popularSearches', { returnObjects: true }) as unknown as string[];
 
-  // Recent searches
-  const recentSearches = [
-    'מתנדבים', 'אירועים', 'תרומות', 'משימות דחופות'
-  ];
+  // Recent searches (from i18n)
+  const recentSearches: string[] = t('search:recentSearches', { returnObjects: true }) as unknown as string[];
 
-  // Filter options
+  // Filter tabs (from i18n)
   const filterOptions = [
-    { id: 'All', label: 'הכל', icon: 'grid-outline' },
-    { id: 'donations', label: 'תרומות', icon: 'heart-outline' },
-    { id: 'events', label: 'אירועים', icon: 'calendar-outline' },
-    { id: 'users', label: 'משתמשים', icon: 'people-outline' },
+    { id: 'All', label: t('search:tabs.all'), icon: 'grid-outline' },
+    { id: 'donations', label: t('search:tabs.donations'), icon: 'heart-outline' },
+    { id: 'events', label: t('search:tabs.events'), icon: 'calendar-outline' },
+    { id: 'users', label: t('search:tabs.users'), icon: 'people-outline' },
   ];
 
   // Mock search function
@@ -128,9 +125,9 @@ const SearchScreen = () => {
             id: user.id,
             type: 'user' as const,
             title: user.name,
-            description: user.bio || 'חבר בקהילה',
+            description: user.bio || t('search:userDefaultBio'),
             image: user.avatar,
-            category: 'משתמש',
+            category: t('search:typeLabels.user'),
           }))
         );
       }
@@ -161,10 +158,10 @@ const SearchScreen = () => {
   const handleResultPress = (result: SearchResult) => {
     Alert.alert(
       result.title,
-      `${result.description}\n\nקטגוריה: ${result.category}${result.location ? `\nמיקום: ${result.location}` : ''}${result.date ? `\nתאריך: ${new Date(result.date).toLocaleDateString('he-IL')}` : ''}`,
+      `${result.description}\n\n${t('search:labels.category')}: ${result.category}${result.location ? `\n${t('search:labels.location')}: ${result.location}` : ''}${result.date ? `\n${t('search:labels.date')}: ${new Date(result.date).toLocaleDateString()}` : ''}`,
       [
-        { text: 'ביטול', style: 'cancel' },
-        { text: 'פרטים נוספים', onPress: () => Alert.alert('פרטים', 'פתיחת דף פרטים מלא') }
+        { text: t('common:cancel'), style: 'cancel' },
+        { text: t('search:moreDetails'), onPress: () => Alert.alert(t('search:details'), t('search:openFullDetails')) }
       ]
     );
   };
@@ -284,7 +281,7 @@ const SearchScreen = () => {
           <View style={styles.defaultContent}>
             {/* Popular Searches */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>חיפושים פופולריים</Text>
+              <Text style={styles.sectionTitle}>{t('search:popularTitle')}</Text>
               <View style={styles.tagsContainer}>
                 {popularSearches.map((search, index) => (
                   <TouchableOpacity
@@ -300,7 +297,7 @@ const SearchScreen = () => {
 
             {/* Recent Searches */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>חיפושים אחרונים</Text>
+              <Text style={styles.sectionTitle}>{t('search:recentTitle')}</Text>
               <View style={styles.tagsContainer}>
                 {recentSearches.map((search, index) => (
                   <TouchableOpacity
@@ -316,35 +313,35 @@ const SearchScreen = () => {
 
             {/* Quick Actions */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{texts.quickActions}</Text>
+              <Text style={styles.sectionTitle}>{t('search:quickActions.title')}</Text>
               <View style={styles.quickActionsGrid}>
                 <TouchableOpacity
                   style={styles.quickAction}
-                  onPress={() => Alert.alert('משימות דחופות', 'מציג משימות דחופות')}
+                  onPress={() => Alert.alert(t('search:quickActions.urgentTasks'), t('search:quickActions.showUrgentTasks'))}
                 >
                   <Ionicons name="flash-outline" size={24} color={colors.warning} />
-                  <Text style={styles.quickActionText}>{texts.urgentTasks}</Text>
+                  <Text style={styles.quickActionText}>{t('search:quickActions.urgentTasks')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.quickAction}
-                  onPress={() => Alert.alert('אירועים קרובים', 'מציג אירועים קרובים')}
+                  onPress={() => Alert.alert(t('search:quickActions.upcomingEvents'), t('search:quickActions.showUpcomingEvents'))}
                 >
                   <Ionicons name="calendar-outline" size={24} color={colors.success} />
-                  <Text style={styles.quickActionText}>{texts.upcomingEvents}</Text>
+                  <Text style={styles.quickActionText}>{t('search:quickActions.upcomingEvents')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.quickAction}
-                  onPress={() => Alert.alert('תרומות חדשות', 'מציג תרומות חדשות')}
+                  onPress={() => Alert.alert(t('search:quickActions.newDonations'), t('search:quickActions.showNewDonations'))}
                 >
                   <Ionicons name="heart-outline" size={24} color={colors.error} />
-                  <Text style={styles.quickActionText}>{texts.newDonations}</Text>
+                  <Text style={styles.quickActionText}>{t('search:quickActions.newDonations')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.quickAction}
-                  onPress={() => Alert.alert('מתנדבים פעילים', 'מציג מתנדבים פעילים')}
+                  onPress={() => Alert.alert(t('search:quickActions.activeVolunteers'), t('search:quickActions.showActiveVolunteers'))}
                 >
                   <Ionicons name="people-outline" size={24} color={colors.pink} />
-                  <Text style={styles.quickActionText}>{texts.activeVolunteers}</Text>
+                  <Text style={styles.quickActionText}>{t('search:quickActions.activeVolunteers')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -355,13 +352,11 @@ const SearchScreen = () => {
             {isSearching ? (
               <View style={styles.loadingContainer}>
                 <Ionicons name="search" size={40} color={colors.textSecondary} />
-                <Text style={styles.loadingText}>{texts.searching}</Text>
+                <Text style={styles.loadingText}>{t('search:searching')}</Text>
               </View>
             ) : searchResults.length > 0 ? (
               <>
-                <Text style={styles.resultsTitle}>
-                  נמצאו {searchResults.length} תוצאות עבור "{searchQuery}"
-                </Text>
+                <Text style={styles.resultsTitle}>{t('search:resultsCount', { count: searchResults.length, query: searchQuery })}</Text>
                 <FlatList
                   data={searchResults}
                   renderItem={renderSearchResult}
@@ -372,10 +367,8 @@ const SearchScreen = () => {
             ) : (
               <View style={styles.noResultsContainer}>
                 <Ionicons name="search-outline" size={60} color={colors.textSecondary} />
-                <Text style={styles.noResultsTitle}>{texts.noResultsFound}</Text>
-                <Text style={styles.noResultsText}>
-                  {texts.tryChangingSearchTerms}
-                </Text>
+                <Text style={styles.noResultsTitle}>{t('search:noResultsFound')}</Text>
+                <Text style={styles.noResultsText}>{t('search:tryChangingSearchTerms')}</Text>
               </View>
             )}
           </View>
@@ -388,7 +381,7 @@ const SearchScreen = () => {
         style={styles.fab}
       >
         <Ionicons name="sparkles-outline" size={22} color={colors.white} />
-        <Text style={styles.fabText}>AI</Text>
+        <Text style={styles.fabText}>{t('search:ai.fabLabel')}</Text>
       </Pressable>
 
       {/* AI Assistant Modal (פשוט/בסיסי) */}
@@ -396,14 +389,14 @@ const SearchScreen = () => {
         <View style={styles.aiOverlay}>
           <View style={styles.aiContainer}>
             <View style={styles.aiHeader}>
-              <Text style={styles.aiTitle}>עוזר AI</Text>
+              <Text style={styles.aiTitle}>{t('search:ai.title')}</Text>
               <Pressable onPress={() => setAiVisible(false)}>
                 <Ionicons name="close" size={22} color={colors.textSecondary} />
               </Pressable>
             </View>
             <ScrollView style={styles.aiMessages} contentContainerStyle={{ paddingBottom: 10 }}>
               {aiHistory.length === 0 ? (
-                <Text style={styles.aiPlaceholder}>שאלו כל דבר: איפה למצוא תרומות, איך לפרסם, או ניווט באפליקציה.</Text>
+                <Text style={styles.aiPlaceholder}>{t('search:ai.placeholder')}</Text>
               ) : (
                 aiHistory.map((m, idx) => (
                   <View key={idx} style={[styles.aiBubble, m.role === 'user' ? styles.aiUser : styles.aiAssistant]}>
@@ -425,7 +418,7 @@ const SearchScreen = () => {
                 onPress={() => {
                   if (!aiText.trim()) return;
                   const userMsg = { role: 'user' as const, text: aiText.trim() };
-                  const assistantMsg = { role: 'assistant' as const, text: 'קיבלתי! אחזור עם תשובה בהקדם.' };
+                  const assistantMsg = { role: 'assistant' as const, text: t('search:ai.assistantReply') };
                   setAiHistory(prev => [...prev, userMsg, assistantMsg]);
                   setAiText('');
                 }}

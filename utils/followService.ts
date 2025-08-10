@@ -1,4 +1,3 @@
-// שירות לניהול מערכת העוקבים
 import { allUsers, CharacterType } from '../globals/characterTypes';
 import { sendFollowNotification } from './notificationService';
 import { db, DB_COLLECTIONS, DatabaseService } from './databaseService';
@@ -15,7 +14,6 @@ export interface FollowStats {
   isFollowing: boolean;
 }
 
-// פונקציה לקבלת מספרי העוקבים המעודכנים
 export const getUpdatedFollowCounts = async (userId: string): Promise<{ followersCount: number; followingCount: number }> => {
   try {
     const followers = await db.getFollowers(userId);
@@ -34,13 +32,11 @@ export const getUpdatedFollowCounts = async (userId: string): Promise<{ follower
   }
 };
 
-// פונקציה לקבלת סטטיסטיקות עוקבים למשתמש
 export const getFollowStats = async (userId: string, currentUserId: string): Promise<FollowStats> => {
   try {
     const followers = await db.getFollowers(userId);
     const following = await db.getFollowing(userId);
     
-    // בדיקה אם המשתמש הנוכחי עוקב אחרי המשתמש
     const isFollowing = following.some((rel: any) => rel.followerId === currentUserId);
 
     return {
@@ -58,36 +54,29 @@ export const getFollowStats = async (userId: string, currentUserId: string): Pro
   }
 };
 
-// פונקציה לעקוב אחרי משתמש
 export const followUser = async (followerId: string, followingId: string): Promise<boolean> => {
   try {
-    // בדיקה אם מנסים לעקוב אחרי עצמם
     if (followerId === followingId) {
-      return false; // לא ניתן לעקוב אחרי עצמך
+      return false; 
     }
 
-    // בדיקה אם כבר עוקבים
     const existingFollowers = await db.getFollowers(followingId);
     const isAlreadyFollowing = existingFollowers.some((rel: any) => rel.followerId === followerId);
 
     if (isAlreadyFollowing) {
-      return false; // כבר עוקבים
+      return false; 
     }
 
-    // הוספת יחס עקיבה חדש
     const newFollow: FollowRelationship = {
       followerId,
       followingId,
       followDate: new Date().toISOString()
     };
 
-    // שמירת העוקב אצל המשתמש שמעקבים אחריו
     await db.addFollower(followingId, followerId, newFollow);
     
-    // שמירת היחס אצל העוקב
     await db.addFollowing(followerId, followingId, newFollow);
     
-    // Send notification to the person being followed
     const follower = allUsers.find(user => user.id === followerId);
     if (follower) {
       sendFollowNotification(follower.name, followingId);
@@ -104,13 +93,10 @@ export const followUser = async (followerId: string, followingId: string): Promi
   }
 };
 
-// פונקציה לבטל עקיבה אחרי משתמש
 export const unfollowUser = async (followerId: string, followingId: string): Promise<boolean> => {
   try {
-    // מחיקת העוקב אצל המשתמש שמעקבים אחריו
     await db.removeFollower(followingId, followerId);
     
-    // מחיקת היחס אצל העוקב
     await db.removeFollowing(followerId, followingId);
     
     // Update follow counts for both users
@@ -124,7 +110,6 @@ export const unfollowUser = async (followerId: string, followingId: string): Pro
   }
 };
 
-// פונקציה לקבלת רשימת העוקבים של משתמש
 export const getFollowers = async (userId: string): Promise<CharacterType[]> => {
   try {
     const followers = await db.getFollowers(userId);
@@ -136,7 +121,6 @@ export const getFollowers = async (userId: string): Promise<CharacterType[]> => 
   }
 };
 
-// פונקציה לקבלת רשימת האנשים שמשתמש עוקב אחריהם
 export const getFollowing = async (userId: string): Promise<CharacterType[]> => {
   try {
     const following = await db.getFollowing(userId);
@@ -148,20 +132,16 @@ export const getFollowing = async (userId: string): Promise<CharacterType[]> => 
   }
 };
 
-// פונקציה לקבלת המלצות למשתמשים לעקוב אחריהם
 export const getFollowSuggestions = async (currentUserId: string, limit: number = 10): Promise<CharacterType[]> => {
   try {
-    // קבלת רשימת האנשים שכבר עוקבים אחריהם
     const following = await db.getFollowing(currentUserId);
     const alreadyFollowing = (following as any[]).map(rel => rel.followingId);
 
-    // סינון משתמשים שלא עוקבים אחריהם
     const suggestions = allUsers.filter(char => 
       char.id !== currentUserId && 
       !alreadyFollowing.includes(char.id)
     );
 
-    // מיון לפי נקודות קארמה (גבוה יותר = מומלץ יותר)
     suggestions.sort((a, b) => b.karmaPoints - a.karmaPoints);
 
     return suggestions.slice(0, limit);
@@ -171,10 +151,8 @@ export const getFollowSuggestions = async (currentUserId: string, limit: number 
   }
 };
 
-// פונקציה לאיפוס כל יחסי העוקבים (לצורך בדיקות)
 export const resetFollowRelationships = async (): Promise<void> => {
   try {
-    // Clear all follow relationships from database
     await DatabaseService.clearAllData();
     console.log('✅ All follow relationships reset');
   } catch (error) {
@@ -182,12 +160,10 @@ export const resetFollowRelationships = async (): Promise<void> => {
   }
 };
 
-// פונקציה ליצירת נתונים לדוגמה
 export const createSampleFollowData = async (): Promise<void> => {
   try {
     console.log('📊 Creating sample follow data...');
     
-    // יצירת יחסי עוקבים לדוגמה
     const sampleRelationships: FollowRelationship[] = [
       {
         followerId: 'char1',
@@ -221,7 +197,6 @@ export const createSampleFollowData = async (): Promise<void> => {
       },
     ];
     
-    // שמירת הנתונים למסד הנתונים
     for (const relationship of sampleRelationships) {
       await db.addFollower(relationship.followingId, relationship.followerId, relationship);
       await db.addFollowing(relationship.followerId, relationship.followingId, relationship);
@@ -233,7 +208,6 @@ export const createSampleFollowData = async (): Promise<void> => {
   }
 };
 
-// פונקציה לקבלת היסטוריית עקיבה
 export const getFollowHistory = async (userId: string): Promise<FollowRelationship[]> => {
   try {
     const followers = await db.getFollowers(userId);
@@ -251,7 +225,6 @@ export const getFollowHistory = async (userId: string): Promise<FollowRelationsh
   }
 };
 
-// פונקציה לקבלת משתמשים פופולריים (עם הכי הרבה עוקבים)
 export const getPopularUsers = async (limit: number = 10): Promise<CharacterType[]> => {
   try {
     const userStats = await Promise.all(
@@ -270,7 +243,7 @@ export const getPopularUsers = async (limit: number = 10): Promise<CharacterType
   }
 };
 
-// פונקציה לבדיקה ויזואלית של מצב העוקבים (לצורך דיבוג)
+
 export const debugFollowRelationships = async (): Promise<void> => {
   try {
     console.log('🔍 Debug Follow Relationships:');
@@ -286,25 +259,25 @@ export const debugFollowRelationships = async (): Promise<void> => {
   }
 };
 
-// פונקציה לבדיקה מקיפה של המערכת
+
 export const comprehensiveSystemCheck = async (): Promise<void> => {
   try {
     console.log('🔍 Comprehensive System Check:');
     console.log('================================');
     
-    // בדיקת כמות משתמשים
+
     console.log(`📊 Total Users: ${allUsers.length}`);
     console.log(`📊 Character Types: ${allUsers.filter(u => u.id.startsWith('char')).length}`);
     console.log(`📊 Additional Users: ${allUsers.filter(u => u.id.startsWith('u')).length}`);
     
-    // בדיקת משתמשים עם הכי הרבה עוקבים
+
     const popularUsers = await getPopularUsers(5);
     console.log('🏆 Top 5 Popular Users:');
     popularUsers.forEach((user, index) => {
       console.log(`${index + 1}. ${user.name}: ${user.followersCount} followers`);
     });
     
-    // בדיקת המלצות
+
     if (allUsers.length > 0) {
       const suggestions = await getFollowSuggestions(allUsers[0].id, 5);
       console.log(`💡 Follow Suggestions for ${allUsers[0].name}:`);
@@ -313,7 +286,7 @@ export const comprehensiveSystemCheck = async (): Promise<void> => {
       });
     }
     
-    // בדיקת מבנה נתונים
+
     console.log('📋 Data Structure Check:');
     const sampleUser = allUsers[0];
     if (sampleUser) {
@@ -338,19 +311,19 @@ export const comprehensiveSystemCheck = async (): Promise<void> => {
   }
 };
 
-// פונקציה לבדיקת תקינות המערכת
+
 export const validateSystemIntegrity = async (): Promise<{ isValid: boolean; errors: string[] }> => {
   try {
     const errors: string[] = [];
     
-    // בדיקת כפילות ID
+
     const ids = allUsers.map(user => user.id);
     const uniqueIds = new Set(ids);
     if (ids.length !== uniqueIds.size) {
       errors.push('Duplicate user IDs found');
     }
     
-    // בדיקת מבנה נתונים
+
     for (const user of allUsers) {
       if (!user.id || !user.name || !user.avatar) {
         errors.push(`User ${user.id} missing required fields`);
@@ -378,13 +351,13 @@ export const validateSystemIntegrity = async (): Promise<{ isValid: boolean; err
   }
 }; 
 
-// פונקציה לעדכון מספרי העוקבים במסד הנתונים
+
 export const updateFollowCounts = async (userId: string): Promise<void> => {
   try {
     const followers = await db.getFollowers(userId);
     const following = await db.getFollowing(userId);
     
-    // עדכון מספרי העוקבים במסד הנתונים
+
     const userData = {
       followersCount: followers.length,
       followingCount: following.length,

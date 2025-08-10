@@ -30,7 +30,7 @@ const { width, height } = Dimensions.get("window");
 // --- Constants ---
 const kcStats = charities[0]?.statistics || [];
 const STATS_BUBBLE_COUNT = kcStats.length;
-const BACKGROUND_BUBBLES_COUNT = 15; // בועות ריקות ברקע
+const BACKGROUND_BUBBLES_COUNT = 15; 
 const MIN_SIZE = 60;
 const MAX_SIZE = 160;
 const BACKGROUND_MIN_SIZE = 30;
@@ -73,16 +73,12 @@ const isOverlapping = (
   return false;
 };
 
-/**
- * יוצר מערך של בועות עם נתונים מהסטטיסטיקות + בועות ברקע
- */
 const generateStatsLayout = () => {
   console.log("Generating donation stats bubbles...");
   const bubbles: any[] = [];
   let attempts = 0;
   const maxAttempts = 3000;
   
-  // תחילה יוצרים בועות ברקע (ריקות)
   for (let i = 0; i < BACKGROUND_BUBBLES_COUNT && attempts < maxAttempts; i++) {
     const size = BACKGROUND_MIN_SIZE + Math.random() * (BACKGROUND_MAX_SIZE - BACKGROUND_MIN_SIZE);
     
@@ -93,7 +89,7 @@ const generateStatsLayout = () => {
     while (!placed && localAttempts < maxLocalAttempts) {
       const margin = 40;
       const x = margin + Math.random() * (width - size - margin * 2);
-      const y = 200 + Math.random() * (height - size - 350); // מעל לכותרת ומתחת להודעה
+      const y = 200 + Math.random() * (height - size - 350); 
       
       if (!isOverlapping(x, y, size, bubbles)) {
         bubbles.push({
@@ -105,7 +101,7 @@ const generateStatsLayout = () => {
           name: "",
           icon: "",
           category: "background",
-          color: "#E0E0E0", // צבע אפור בהיר לבועות ברקע
+          color: "#E0E0E0", 
           directionX: Math.random() > 0.5 ? 1 : -1,
           directionY: Math.random() > 0.5 ? 1 : -1,
           delay: Math.random() * 2000,
@@ -118,7 +114,6 @@ const generateStatsLayout = () => {
     }
   }
   
-  // כעת יוצרים את בועות הסטטיסטיקות הראשיות
   for (let i = 0; i < kcStats.length && attempts < maxAttempts; i++) {
     const stat = kcStats[i];
     const size = scaleNumberToSize(stat.value);
@@ -130,7 +125,7 @@ const generateStatsLayout = () => {
     while (!placed && localAttempts < maxLocalAttempts) {
       const margin = 20;
       const x = margin + Math.random() * (width - size - margin * 2);
-      const y = 200 + Math.random() * (height - size - 350); // מעל לכותרת ומתחת להודעה
+      const y = 200 + Math.random() * (height - size - 350); 
       
       if (!isOverlapping(x, y, size, bubbles)) {
         bubbles.push({
@@ -274,7 +269,6 @@ const AnimatedStatsBubble: React.FC<AnimatedStatsBubbleProps> = ({
   const animatedOpacity = useSharedValue(0.85);
   const animatedScale = useSharedValue(1);
 
-  // אנימציית ציפה עדינה
   useEffect(() => {
     floatOffset.value = withRepeat(
       withDelay(
@@ -289,7 +283,6 @@ const AnimatedStatsBubble: React.FC<AnimatedStatsBubbleProps> = ({
     );
   }, [delay, floatOffset]);
 
-  // אנימציית פולס עדינה
   useEffect(() => {
     pulseScale.value = withRepeat(
       withDelay(
@@ -304,7 +297,6 @@ const AnimatedStatsBubble: React.FC<AnimatedStatsBubbleProps> = ({
     );
   }, [delay, pulseScale]);
 
-  // אפקטי אנימציה לבחירה
   useEffect(() => {
     animatedOpacity.value = withTiming(isSelected ? 1 : 0.85, {
       duration: 300,
@@ -324,9 +316,7 @@ const AnimatedStatsBubble: React.FC<AnimatedStatsBubbleProps> = ({
     [id, onPress, isBackground]
   );
 
-  // סגנון מונפש לבועה
   const animatedStyle = useAnimatedStyle(() => {
-    // תנועת ציפה עדינה
     const floatX = interpolate(
       floatOffset.value,
       [0, 1],
@@ -338,15 +328,14 @@ const AnimatedStatsBubble: React.FC<AnimatedStatsBubbleProps> = ({
       [0, 8 * directionY]
     );
 
-    // קביעת צבע רקע בהתאם לקטגוריה
     let backgroundColor, borderColor, shadowColor;
     
     if (isBackground) {
-      backgroundColor = color + '15'; // בועות ברקע יותר שקופות
+      backgroundColor = color + '15'; 
       borderColor = color + '30';
       shadowColor = color + '20';
     } else {
-      backgroundColor = color + '20'; // הוספת שקיפות
+      backgroundColor = color + '20'; 
       borderColor = color;
       shadowColor = color + '40';
 
@@ -370,7 +359,6 @@ const AnimatedStatsBubble: React.FC<AnimatedStatsBubbleProps> = ({
     };
   });
 
-  // חישוב גדלי פונט דינמיים
   const iconSize = Math.max(size * 0.15, 16);
   const valueSize = Math.max(size * 0.18, 14);
   const nameSize = Math.max(size * 0.08, 10);
@@ -507,7 +495,7 @@ const localStyles = StyleSheet.create({
   },
   messageContainer: {
     position: 'absolute',
-    bottom: 100, // מעל הניווט התחתון
+    bottom: 100, 
     left: 20,
     right: 20,
     alignItems: "center",

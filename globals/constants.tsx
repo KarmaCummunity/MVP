@@ -1,6 +1,18 @@
 // Charities list moved to fakeData.ts file
 
 
+// icone size
+export const IconSizes = {
+  xxxsmall: 12,
+  xxsmall: 16,
+  xsmall: 20,
+  small: 24,
+  medium: 32,
+  large: 48,
+  xlarge: 56,
+  xxlarge: 64,
+}
+
 // Motivational quotes moved to fakeData.ts file
 
 export const FontSizes = {
@@ -45,29 +57,31 @@ export const FontSizes = {
   };
  
 // For searching 
+// i18n keys for search filters (displayed via t('search:filters.<key>'))
 export const filterOptions: string[] = [
-  "חינוך",
-  "בריאות",
-  "רווחה",
-  "סביבה",
-  "בעלי חיים",
-  "נוער בסיכון",
-  "קשישים",
-  "נכים",
-  "חולים",
-  "משפחות במצוקה",
-  "עולים חדשים",
-  "קהילה",
+  'education',
+  'health',
+  'welfare',
+  'environment',
+  'animals',
+  'atRiskYouth',
+  'elderly',
+  'disabled',
+  'patients',
+  'familiesInDistress',
+  'immigrants',
+  'community',
 ];
 
+// i18n keys for search sorts (displayed via t('search:sort.<key>'))
 export const sortOptions: string[] = [
-  "אלפביתי",
-  "לפי מיקום",
-  "לפי תחום",
-  "לפי תאריך הקמה",
-  "לפי מספר תורמים",
-  "לפי דירוג",
-  "לפי רלוונטיות",
+  'alphabetical',
+  'byLocation',
+  'byCategory',
+  'byEstablishedDate',
+  'byDonors',
+  'byRating',
+  'byRelevance',
 ];
 
 export const filter_for_trumps: string[] = [
@@ -87,7 +101,6 @@ export const menu_for_trumps: string[] = [
 ]
 
 // WhatsApp groups details moved to fakeData.ts file
-// All texts moved to texts.ts file
 
 // Bubble Component Constants
 export const BUBBLE_CONSTANTS = {

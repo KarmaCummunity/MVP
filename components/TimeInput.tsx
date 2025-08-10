@@ -1,6 +1,5 @@
 // components/TimeInput.tsx
 import React, { useEffect, useState } from "react";
-import { texts } from '../globals/texts';
 import {
   View,
   Text,
@@ -11,6 +10,7 @@ import {
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
+import { useTranslation } from 'react-i18next';
 
 // 1. Define Props Interface
 interface TimeInputProps {
@@ -20,9 +20,9 @@ interface TimeInputProps {
   placeholder?: string;
 }
 
-// Format time to HH:MM string
+// Format time to HH:MM string (locale-agnostic)
 const formatTime = (date: Date): string =>
-  date.toLocaleTimeString("he-IL", {
+  date.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
@@ -33,8 +33,9 @@ export default function TimeInput({
   value,
   onChange,
   label,
-  placeholder = texts.timePlaceholder,
+  placeholder,
 }: TimeInputProps) {
+  const { t } = useTranslation(['common']);
   const [time, setTime] = useState<Date | null>(value || null);
   const [showPicker, setShowPicker] = useState(false);
 
@@ -79,7 +80,7 @@ export default function TimeInput({
               }
             }
           }}
-          placeholder={placeholder}
+          placeholder={placeholder || (t('common:time.selectTime') as string)}
           style={{
             ...styles.input,
             fontSize: 12,
@@ -97,7 +98,7 @@ export default function TimeInput({
             style={styles.input}
           >
             <Text style={time ? styles.selectedTimeText : styles.placeholderText}>
-              {time ? formatTime(time) : placeholder}
+              {time ? formatTime(time) : (placeholder || (t('common:time.selectTime') as string))}
             </Text>
           </TouchableOpacity>
           {showPicker && (

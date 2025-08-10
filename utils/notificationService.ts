@@ -56,7 +56,6 @@ export interface NotificationSettings {
 // const NOTIFICATIONS_COLLECTION = 'notifications';
 // const NOTIFICATION_SETTINGS = 'notification_settings';
 
-// בדיקה אם הפלטפורמה תומכת בהתראות
 const isNotificationsSupported = () => {
   return Platform.OS === 'ios' || Platform.OS === 'android';
 };
@@ -78,10 +77,8 @@ if (isNotificationsSupported() && Notifications) {
   }
 }
 
-// פונקציה לבקשת הרשאות התראות
 export const requestNotificationPermissions = async (): Promise<boolean> => {
   try {
-    // אם זה ווב או אין מודול התראות, לא נבקש הרשאות התראות
     if (Platform.OS === 'web' || !Notifications) {
       console.log('🔔 Web platform or no notifications module - notifications not supported');
       return false;
@@ -92,7 +89,6 @@ export const requestNotificationPermissions = async (): Promise<boolean> => {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
     
-    // רק אם אין הרשאות, בקש אותן
     if (existingStatus !== 'granted') {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
@@ -113,7 +109,6 @@ export const requestNotificationPermissions = async (): Promise<boolean> => {
     
     console.log('✅ Notification permissions granted');
     
-    // הגדרת ערוץ התראות ל-Android
     if (Platform.OS === 'android') {
       console.log('🤖 Android platform - setting up notification channel');
       await Notifications.setNotificationChannelAsync('default', {
@@ -131,14 +126,12 @@ export const requestNotificationPermissions = async (): Promise<boolean> => {
   }
 };
 
-// פונקציה לבדיקת מצב הרשאות
 export const checkNotificationPermissions = async (): Promise<{
   granted: boolean;
   canAskAgain: boolean;
   status: string;
 }> => {
   try {
-    // אם זה ווב או אין מודול התראות, החזר false
     if (Platform.OS === 'web' || !Notifications) {
       console.log('🌐 Web platform or no notifications module - checking notification permissions (not supported)');
       return {
@@ -164,7 +157,6 @@ export const checkNotificationPermissions = async (): Promise<{
   }
 };
 
-// פונקציה לשליחת התראה מקומית
 export const sendLocalNotification = async (
   title: string,
   body: string,
@@ -172,7 +164,6 @@ export const sendLocalNotification = async (
   type: NotificationData['type'] = 'system'
 ): Promise<string> => {
   try {
-    // אם זה ווב או אין מודול התראות, לא נשלח התראות
     if (Platform.OS === 'web' || !Notifications) {
       console.log('🔔 Web platform or no notifications module - skipping local notification:', title);
       return '';
@@ -203,7 +194,6 @@ export const sendLocalNotification = async (
   }
 };
 
-// פונקציה לשליחת התראה על הודעה חדשה
 export const sendMessageNotification = async (
   senderName: string,
   messageText: string,
@@ -230,7 +220,6 @@ export const sendMessageNotification = async (
       type: 'message',
     }, 'message');
 
-    // שמירת ההתראה בהיסטוריה
     await saveNotification({
       id: `msg_${Date.now()}`,
       title,
@@ -247,7 +236,6 @@ export const sendMessageNotification = async (
   }
 };
 
-// פונקציה לשליחת התראה על עוקב חדש
 export const sendFollowNotification = async (
   followerName: string,
   userId: string
@@ -271,7 +259,6 @@ export const sendFollowNotification = async (
       type: 'follow',
     }, 'follow');
 
-    // שמירת ההתראה בהיסטוריה
     await saveNotification({
       id: `follow_${Date.now()}`,
       title,
@@ -288,7 +275,6 @@ export const sendFollowNotification = async (
   }
 };
 
-// פונקציה לשליחת התראה על לייק
 export const sendLikeNotification = async (
   likerName: string,
   postType: string,
@@ -314,7 +300,6 @@ export const sendLikeNotification = async (
       type: 'like',
     }, 'like');
 
-    // שמירת ההתראה בהיסטוריה
     await saveNotification({
       id: `like_${Date.now()}`,
       title,
@@ -331,7 +316,6 @@ export const sendLikeNotification = async (
   }
 };
 
-// פונקציה לשליחת התראה על תגובה
 export const sendCommentNotification = async (
   commenterName: string,
   postType: string,
@@ -359,7 +343,6 @@ export const sendCommentNotification = async (
       type: 'comment',
     }, 'comment');
 
-    // שמירת ההתראה בהיסטוריה
     await saveNotification({
       id: `comment_${Date.now()}`,
       title,
@@ -376,7 +359,6 @@ export const sendCommentNotification = async (
   }
 };
 
-// פונקציה לשליחת התראה על משימה חדשה
 export const sendTaskNotification = async (
   taskTitle: string,
   taskDescription: string,
@@ -402,7 +384,6 @@ export const sendTaskNotification = async (
       type: 'system',
     }, 'system');
 
-    // שמירת ההתראה בהיסטוריה
     await saveNotification({
       id: `task_${Date.now()}`,
       title,
@@ -419,7 +400,6 @@ export const sendTaskNotification = async (
   }
 };
 
-// פונקציה לשליחת התראה על תרומה חדשה
 export const sendDonationNotification = async (
   donorName: string,
   donationType: string,
@@ -449,7 +429,6 @@ export const sendDonationNotification = async (
       type: 'system',
     }, 'system');
 
-    // שמירת ההתראה בהיסטוריה
     await saveNotification({
       id: `donation_${Date.now()}`,
       title,
@@ -466,7 +445,6 @@ export const sendDonationNotification = async (
   }
 };
 
-// פונקציה לקבלת הגדרות התראות
 export const getNotificationSettings = async (userId?: string): Promise<NotificationSettings> => {
   try {
     if (Platform.OS === 'web') {
@@ -491,7 +469,6 @@ export const getNotificationSettings = async (userId?: string): Promise<Notifica
       return (settings as any).notifications;
     }
     
-    // הגדרות ברירת מחדל
     const defaultSettings: NotificationSettings = {
       messages: true,
       follows: true,
@@ -502,7 +479,6 @@ export const getNotificationSettings = async (userId?: string): Promise<Notifica
       vibration: true,
     };
     
-    // שמירת הגדרות ברירת מחדל
     const userSettings = { notifications: defaultSettings };
     await db.updateUserSettings(userId, userSettings);
     return defaultSettings;
@@ -520,7 +496,6 @@ export const getNotificationSettings = async (userId?: string): Promise<Notifica
   }
 };
 
-// פונקציה לעדכון הגדרות התראות
 export const updateNotificationSettings = async (settings: Partial<NotificationSettings>, userId?: string): Promise<void> => {
   try {
     if (Platform.OS === 'web') {
@@ -543,7 +518,6 @@ export const updateNotificationSettings = async (settings: Partial<NotificationS
   }
 };
 
-// פונקציה לשמירת התראה בהיסטוריה
 export const saveNotification = async (notification: NotificationData): Promise<void> => {
   try {
     if (Platform.OS === 'web') {
@@ -560,7 +534,6 @@ export const saveNotification = async (notification: NotificationData): Promise<
   }
 };
 
-// פונקציה לקבלת היסטוריית התראות
 export const getNotifications = async (userId: string): Promise<NotificationData[]> => {
   try {
     if (Platform.OS === 'web') {
@@ -575,7 +548,6 @@ export const getNotifications = async (userId: string): Promise<NotificationData
   }
 };
 
-// פונקציה לסימון התראה כנקראה
 export const markNotificationAsRead = async (notificationId: string, userId: string): Promise<void> => {
   try {
     if (Platform.OS === 'web') {
@@ -589,7 +561,6 @@ export const markNotificationAsRead = async (notificationId: string, userId: str
   }
 };
 
-// פונקציה לסימון כל ההתראות כנקראו
 export const markAllNotificationsAsRead = async (userId: string): Promise<void> => {
   try {
     if (Platform.OS === 'web') {
@@ -606,7 +577,6 @@ export const markAllNotificationsAsRead = async (userId: string): Promise<void> 
   }
 };
 
-// פונקציה למחיקת התראה
 export const deleteNotification = async (notificationId: string, userId: string): Promise<void> => {
   try {
     if (Platform.OS === 'web') {
@@ -620,7 +590,6 @@ export const deleteNotification = async (notificationId: string, userId: string)
   }
 };
 
-// פונקציה למחיקת כל ההתראות
 export const clearAllNotifications = async (userId: string): Promise<void> => {
   try {
     if (Platform.OS === 'web') {
@@ -636,7 +605,6 @@ export const clearAllNotifications = async (userId: string): Promise<void> => {
   }
 };
 
-// פונקציה לקבלת מספר ההתראות שלא נקראו
 export const getUnreadNotificationCount = async (userId: string): Promise<number> => {
   try {
     if (Platform.OS === 'web') {
@@ -653,7 +621,6 @@ export const getUnreadNotificationCount = async (userId: string): Promise<number
   }
 };
 
-// פונקציה להגדרת listener להתראות
 export const setupNotificationListener = (callback: (notification: any) => void) => {
   if (!isNotificationsSupported() || !Notifications) {
     console.log('🔔 Notifications not supported on this platform');
@@ -669,7 +636,6 @@ export const setupNotificationListener = (callback: (notification: any) => void)
   return subscription;
 };
 
-// פונקציה להגדרת listener ללחיצה על התראה
 export const setupNotificationResponseListener = (callback: (response: any) => void) => {
   if (!isNotificationsSupported()) {
     console.log('🔔 Notifications not supported on this platform');

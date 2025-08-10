@@ -55,7 +55,6 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
 
   ////console.log('🔝 TopBarNavigator - hideTopBar prop:', hideTopBar);
 
-  // מאפשר הסתרת טופ-בר דרך פרמטר מסך: route.params?.hideTopBar === true
   const shouldHideTopBar = hideTopBar || (route?.params as any)?.hideTopBar === true;
 
   React.useEffect(() => {
@@ -79,51 +78,54 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
 
   // Map route names to titles using translations
   const routeTitles: Record<string, string> = {
-    SearchScreen: t('common:search', 'חיפוש'),
-    DonationsScreen: t('donations:title', 'הקהילה במעשים'),
-    ProfileScreen: t('profile:title', 'פרופיל'),
+    SearchScreen: t('common:search'),
+    DonationsScreen: t('donations:title'),
+    ProfileScreen: t('profile:title'),
 
-    MoneyScreen: t('donations:categories.money.title', 'כסף'),
-    TrumpScreen: t('donations:categories.trump.title', 'טרמפים'),
-    KnowledgeScreen: t('donations:categories.knowledge.title', 'תרומת ידע'),
-    TimeScreen: t('donations:categories.time.title', 'תרומת זמן'),
-    CategoryScreen: t('donations:categoriesTitle', 'קטגוריות תרומות'),
-    ItemsScreen: t('donations:categories.items.title', 'פריטים'),
-    FoodScreen: t('donations:categories.food.title', 'אוכל'),
-    ClothesScreen: t('donations:categories.clothes.title', 'בגדים'),
-    BooksScreen: t('donations:categories.books.title', 'ספרים'),
-    FurnitureScreen: t('donations:categories.furniture.title', 'רהיטים'),
-    MedicalScreen: t('donations:categories.medical.title', 'רפואה'),
-    AnimalsScreen: t('donations:categories.animals.title', 'בעלי חיים'),
-    HousingScreen: t('donations:categories.housing.title', 'דיור'),
-    SupportScreen: t('donations:categories.support.title', 'תמיכה'),
-    EducationScreen: t('donations:categories.education.title', 'חינוך'),
-    EnvironmentScreen: t('donations:categories.environment.title', 'סביבה'),
-    TechnologyScreen: t('donations:categories.technology.title', 'טכנולוגיה'),
-    MusicScreen: t('donations:categories.music.title', 'מוזיקה'),
-    GamesScreen: t('donations:categories.games.title', 'משחקים'),
-    RiddlesScreen: t('donations:categories.riddles.title', 'חידות'),
-    RecipesScreen: t('donations:categories.recipes.title', 'מתכונים'),
-    PlantsScreen: t('donations:categories.plants.title', 'צמחים'),
-    WasteScreen: t('donations:categories.waste.title', 'פסולת'),
-    ArtScreen: t('donations:categories.art.title', 'אמנות'),
-    SportsScreen: t('donations:categories.sports.title', 'ספורט'),
+    MoneyScreen: t('donations:categories.money.title'),
+    TrumpScreen: t('donations:categories.trump.title'),
+    KnowledgeScreen: t('donations:categories.knowledge.title'),
+    TimeScreen: t('donations:categories.time.title'),
+    CategoryScreen: t('donations:categoriesTitle'),
+    ItemsScreen: t('donations:categories.items.title'),
+    FoodScreen: t('donations:categories.food.title'),
+    ClothesScreen: t('donations:categories.clothes.title'),
+    BooksScreen: t('donations:categories.books.title'),
+    FurnitureScreen: t('donations:categories.furniture.title'),
+    MedicalScreen: t('donations:categories.medical.title'),
+    AnimalsScreen: t('donations:categories.animals.title'),
+    HousingScreen: t('donations:categories.housing.title'),
+    SupportScreen: t('donations:categories.support.title'),
+    EducationScreen: t('donations:categories.education.title'),
+    EnvironmentScreen: t('donations:categories.environment.title'),
+    TechnologyScreen: t('donations:categories.technology.title'),
+    MusicScreen: t('donations:categories.music.title'),
+    GamesScreen: t('donations:categories.games.title'),
+    RiddlesScreen: t('donations:categories.riddles.title'),
+    RecipesScreen: t('donations:categories.recipes.title'),
+    PlantsScreen: t('donations:categories.plants.title'),
+    WasteScreen: t('donations:categories.waste.title'),
+    ArtScreen: t('donations:categories.art.title'),
+    SportsScreen: t('donations:categories.sports.title'),
+    DreamsScreen: t('donations:categories.dreams.title'),
+    FertilityScreen: t('donations:categories.fertility.title'),
+    JobsScreen: t('donations:categories.jobs.title'),
 
-    SettingsScreen: t('settings:title', 'הגדרות'),
-    ChatListScreen: t('common:chats', 'צ\'אטים'),
-    NotificationsScreen: t('notifications:title', 'התראות'),
-    AboutKarmaCommunityScreen: t('settings:about', 'אודות KC'),
+    SettingsScreen: t('settings:title'),
+    ChatListScreen: t('common:chats'),
+    NotificationsScreen: t('notifications:title'),
+    AboutKarmaCommunityScreen: t('settings:about'),
 
-    UserProfileScreen: t('profile:title', 'פרופיל משתמש'),
-    FollowersScreen: t('profile:followers', 'עוקבים'),
-    DiscoverPeopleScreen: t('profile:discover', 'גלה אנשים'),
-    NewChatScreen: t('common:newChat', 'צ\'אט חדש'),
-    ChatDetailScreen: t('common:chat', 'צ\'אט'),
-    BookmarksScreen: t('common:favorites', 'מועדפים'),
-    PostsReelsScreen: t('common:posts', 'פוסטים'),
-    InactiveScreen: t('common:inactive', 'לא פעיל'),
-    WebViewScreen: t('common:web', 'דף אינטרנט'),
-    LoginScreen: t('auth:login', 'התחברות'),
+    UserProfileScreen: t('profile:title'),
+    FollowersScreen: t('profile:followers'),
+    DiscoverPeopleScreen: t('profile:discover'),
+    NewChatScreen: t('common:newChat'),
+    ChatDetailScreen: t('common:chat'),
+    BookmarksScreen: t('common:favorites'),
+    PostsReelsScreen: t('common:posts'),
+    InactiveScreen: t('common:inactive'),
+    WebViewScreen: t('common:web'),
+    LoginScreen: t('auth:login'),
   };
 
   // Get current route name
@@ -133,7 +135,7 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
   let title = 'KC';
   
   if (currentRouteName === 'HomeScreen' || currentRouteName === 'HomeMain') {
-    title = showPosts ? t('home:newsTitle', 'חדשות') : t('home:numbersTitle', 'הקהילה במספרים');
+    title = showPosts ? t('home:newsTitle') : t('home:numbersTitle');
   } else {
     // Use the routeTitles mapping for all other screens
     title = routeTitles[currentRouteName] ?? 'KC';

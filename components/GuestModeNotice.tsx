@@ -38,7 +38,7 @@ const GuestModeNotice: React.FC<GuestModeNoticeProps> = ({
     <>
       {showLoginButton && (
         <TouchableOpacity style={styles.loginButton} onPress={handleLoginPress}>
-          <Text style={styles.loginButtonText}>{t('guestLoginHint', 'אתה במצב אורח, מומלץ להתחבר')}</Text>
+          <Text style={styles.loginButtonText}>{t('common:guestLoginHint')}</Text>
         </TouchableOpacity>
       )}
     </>

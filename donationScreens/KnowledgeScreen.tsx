@@ -16,7 +16,6 @@ import { Ionicons } from '@expo/vector-icons';
 import DonationStatsFooter from '../components/DonationStatsFooter';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
-import { texts } from '../globals/texts';
 import { useUser } from '../context/UserContext';
 import HeaderComp from '../components/HeaderComp';
 

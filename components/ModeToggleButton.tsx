@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
+import { useTranslation } from 'react-i18next';
 
 interface ModeToggleButtonProps {
   mode: boolean;
@@ -10,6 +11,7 @@ interface ModeToggleButtonProps {
 }
 
 const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({ mode, onToggle }) => {
+  const { t } = useTranslation(['common']);
   // console.log("Toggling mode" + mode);
   return (
     <TouchableOpacity style={localStyles.modeToggleWrapper} onPress={onToggle}>
@@ -20,7 +22,7 @@ const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({ mode, onToggle }) =
             !mode ? localStyles.selected: localStyles.unselected // Adjusted for 'מחפש' (left)
           ]}
         >
-          <Text style={localStyles.modeText}>מציע</Text>
+          <Text style={localStyles.modeText}>{t('common:offerer')}</Text>
         </View>
         <View
           style={[
@@ -28,7 +30,7 @@ const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({ mode, onToggle }) =
             mode ? localStyles.selected : localStyles.unselected // Adjusted for 'מציע' (right)
           ]}
         >
-          <Text style={localStyles.modeText}>מחפש</Text>
+          <Text style={localStyles.modeText}>{t('common:seeker')}</Text>
         </View>
       </View>
     </TouchableOpacity>

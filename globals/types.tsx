@@ -71,6 +71,9 @@ export type DonationsStackParamList = {
   WasteScreen: undefined;
   ArtScreen: undefined;
   SportsScreen: undefined;
+  DreamsScreen: undefined;
+  FertilityScreen: undefined;
+  JobsScreen: undefined;
 };
 
 export type SettingItemType = "navigate" | "toggle" | "button" | "value";

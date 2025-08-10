@@ -31,22 +31,18 @@ export default function LoginScreen() {
   const navigation = useNavigation<any>();
 
   const handleCharacterSelect = (characterId: string) => {
-    // אם הדמות כבר נבחרה, בטל את הבחירה
     if (selectedCharacter === characterId) {
       setSelectedCharacter(null);
       console.log('🔐 LoginScreen - Character deselected:', characterId);
       
-      // אנימציה לביטול בחירה
       Animated.spring(animationValues[characterId], {
         toValue: 1,
         useNativeDriver: true,
       }).start();
     } else {
-      // אחרת, בחר את הדמות החדשה
       setSelectedCharacter(characterId);
       console.log('🔐 LoginScreen - Character selected:', characterId);
       
-      // אנימציה לבחירה
       Animated.spring(animationValues[characterId], {
         toValue: 1.05,
         useNativeDriver: true,
@@ -63,7 +59,6 @@ export default function LoginScreen() {
     const character = characterTypes.find(c => c.id === selectedCharacter);
     console.log('🔐 LoginScreen - character:', character);
     if (character) {
-      // המר את הדמות לפורמט User
       const userData = {
         id: character.id,
         name: character.name,
@@ -100,7 +95,6 @@ export default function LoginScreen() {
     await setGuestMode();
   };
 
-  // useEffect לניווט אוטומטי - כמו באפליקציה הפשוטה
   useEffect(() => {
     if (selectedUser || isGuestMode) {
       console.log('🔐 LoginScreen - useEffect - מנווט ל-Home', { 

@@ -29,7 +29,7 @@ import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/n
 import { Ionicons } from "@expo/vector-icons";
 import colors from "../globals/colors";
 import { FontSizes } from "../globals/constants";
-import { texts } from "../globals/texts";
+import { useTranslation } from 'react-i18next';
 import CommunityStatsPanel from "../components/CommunityStatsPanel";
 import PostsReelsScreen from "../components/PostsReelsScreen";
 import { 
@@ -123,7 +123,7 @@ export default function HomeScreen() {
   const [selectedStat, setSelectedStat] = useState<StatDetails | null>(null);
   const [isStatModalVisible, setIsStatModalVisible] = useState(false);
   
-  // אין הבדל לוגי בין מצבי אורח/יוזר מלבד הכותרת
+  // No logical difference between guest/user modes other than the header banner
   useEffect(() => {
     if (isGuestMode) {
       console.log('🏠 HomeScreen - Guest mode active (header banner only)');
@@ -181,15 +181,15 @@ export default function HomeScreen() {
   };
 
   /**
-   * מטפל בגלילה למטה
-   * כאשר הגלילה עוברת סף מסוים, נפתח מסך הפוסטים
+   * Handles downward scrolling. When the user reaches near the bottom,
+   * the posts screen is opened.
    */
   const handleScroll = (event: any) => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
     const offsetY = contentOffset.y;
     scrollY.value = offsetY;
 
-    // פתיחת מסך הפוסטים כאשר סיימנו לגלול את כל התוכן (הכותרת + הסטטיסטיקות)
+    // Open posts screen when the user scrolls to the end of the content
     const nearBottomBuffer = 24;
     const reachedEnd = offsetY + layoutMeasurement.height >= contentSize.height - nearBottomBuffer;
 
@@ -205,15 +205,15 @@ export default function HomeScreen() {
     }
   };
 
-  /**
-   * סגנון מונפש למסך הפוסטים
-   */
+  /** Animated style for the posts screen */
   const postsAnimatedStyle = useAnimatedStyle(() => {
     return {
       transform: [{ translateY: postsTranslateY.value }] as any,
     };
   });
 
+
+  const { t } = useTranslation(['home','common']);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -234,11 +234,11 @@ export default function HomeScreen() {
         // Home screen with enhanced scrolling
         <View style={styles.homeContainer}>
           <ScrollView 
-            style={[styles.scrollContainer, Platform.OS === 'web' ? { overflowY: 'auto' as any } : null]}
+            style={[styles.scrollContainer, Platform.OS === 'web' ? ({ overflowY: 'auto' } as any) : null]}
             onScroll={handleScroll}
             scrollEventThrottle={50}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={[styles.scrollContent, Platform.OS === 'web' ? { minHeight: '100vh' as any } : null]}
+            contentContainerStyle={[styles.scrollContent, Platform.OS === 'web' ? ({ minHeight: '100vh' } as any) : null]}
           >
             {/* Header */}
             {isGuestMode ? (
@@ -252,12 +252,12 @@ export default function HomeScreen() {
                       style={styles.userAvatar}
                     />
                     <View style={styles.userDetails}>
-                      <Text style={styles.welcomeText}>שלום, {selectedUser?.name || currentUser.name}!</Text>
+                      <Text style={styles.welcomeText}>{`${t('home:welcome')}, ${selectedUser?.name || currentUser.name}!`}</Text>
                     </View>
                   </View>
                   <TouchableOpacity 
                     style={styles.notificationButton}
-                    onPress={() => Alert.alert('התראות', 'רשימת התראות')}
+                    onPress={() => Alert.alert(t('common:notifications'), t('common:notificationsList'))}
                   >
                     <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
                     <View style={styles.notificationBadge}>
@@ -420,9 +420,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
      statCard: {
-     backgroundColor: '#E3F2FD', // כחול בהיר מאוד
+     backgroundColor: '#E3F2FD',
      padding: 15,
-     borderRadius: 50, // עגול לחלוטין
+     borderRadius: 50,
      alignItems: 'center',
      flex: 1,
      marginHorizontal: 5,

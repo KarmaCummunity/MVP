@@ -20,7 +20,6 @@ export interface FileUploadResult {
   error?: string;
 }
 
-// פונקציה לבקשת הרשאות
 export const requestPermissions = async (): Promise<boolean> => {
   try {
     if (Platform.OS === 'ios') {
@@ -40,7 +39,6 @@ export const requestPermissions = async (): Promise<boolean> => {
   }
 };
 
-// פונקציה לבחירת תמונה מהגלריה
 export const pickImage = async (): Promise<FileUploadResult> => {
   try {
     const hasPermission = await requestPermissions();
@@ -77,7 +75,6 @@ export const pickImage = async (): Promise<FileUploadResult> => {
   }
 };
 
-// פונקציה לבחירת סרטון מהגלריה
 export const pickVideo = async (): Promise<FileUploadResult> => {
   try {
     const hasPermission = await requestPermissions();
@@ -91,13 +88,12 @@ export const pickVideo = async (): Promise<FileUploadResult> => {
       aspect: [16, 9],
       quality: 0.8,
       allowsMultipleSelection: false,
-      videoMaxDuration: 60, // מקסימום דקה
+      videoMaxDuration: 60, 
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const asset = result.assets[0];
       
-      // בדיקת גודל הקובץ (מקסימום 50MB)
       if (asset.fileSize && asset.fileSize > 50 * 1024 * 1024) {
         return { success: false, error: 'הקובץ גדול מדי. מקסימום 50MB' };
       }
@@ -121,7 +117,6 @@ export const pickVideo = async (): Promise<FileUploadResult> => {
   }
 };
 
-// פונקציה לצילום תמונה
 export const takePhoto = async (): Promise<FileUploadResult> => {
   try {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -160,7 +155,6 @@ export const takePhoto = async (): Promise<FileUploadResult> => {
   }
 };
 
-// פונקציה לבחירת קובץ
 export const pickDocument = async (): Promise<FileUploadResult> => {
   try {
     const result = await DocumentPicker.getDocumentAsync({
@@ -171,7 +165,6 @@ export const pickDocument = async (): Promise<FileUploadResult> => {
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const asset = result.assets[0];
       
-      // בדיקת גודל הקובץ (מקסימום 20MB)
       if (asset.size && asset.size > 20 * 1024 * 1024) {
         return { success: false, error: 'הקובץ גדול מדי. מקסימום 20MB' };
       }
@@ -195,15 +188,11 @@ export const pickDocument = async (): Promise<FileUploadResult> => {
   }
 };
 
-// פונקציה ליצירת תמונה ממוזערת
 export const generateThumbnail = async (fileUri: string, type: 'image' | 'video'): Promise<string | null> => {
   try {
     if (type === 'image') {
-      // לתמונות, נשתמש בקובץ המקורי כתמונה ממוזערת
       return fileUri;
     } else if (type === 'video') {
-      // לסרטונים, נצטרך להשתמש בספריה חיצונית ליצירת תמונה ממוזערת
-      // כרגע נחזיר null ונטפל בזה בהמשך
       return null;
     }
     return null;
@@ -213,7 +202,6 @@ export const generateThumbnail = async (fileUri: string, type: 'image' | 'video'
   }
 };
 
-// פונקציה לבדיקת סוג הקובץ
 export const getFileType = (fileName: string, mimeType?: string): 'image' | 'video' | 'file' => {
   const extension = fileName.toLowerCase().split('.').pop();
   
@@ -233,7 +221,6 @@ export const getFileType = (fileName: string, mimeType?: string): 'image' | 'vid
   return 'file';
 };
 
-// פונקציה לפורמט גודל קובץ
 export const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 B';
   
@@ -244,9 +231,7 @@ export const formatFileSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-// פונקציה לבדיקת תקינות קובץ
 export const validateFile = (fileData: FileData): { isValid: boolean; error?: string } => {
-  // בדיקת גודל קובץ
   if (fileData.size) {
     const maxSize = fileData.type === 'video' ? 50 * 1024 * 1024 : // 50MB לסרטונים
                    fileData.type === 'image' ? 10 * 1024 * 1024 : // 10MB לתמונות
@@ -260,7 +245,6 @@ export const validateFile = (fileData: FileData): { isValid: boolean; error?: st
     }
   }
   
-  // בדיקת סוג קובץ
   if (fileData.type === 'file') {
     const dangerousExtensions = ['exe', 'bat', 'cmd', 'com', 'pif', 'scr', 'vbs', 'js'];
     const extension = fileData.name.toLowerCase().split('.').pop();

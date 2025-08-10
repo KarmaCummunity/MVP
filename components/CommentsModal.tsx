@@ -17,6 +17,7 @@ import { useUser } from '../context/UserContext';
 import { sendMessage, getMessages, Message } from '../utils/chatService';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
+import { useTranslation } from 'react-i18next';
 
 interface Comment {
   id: string;
@@ -49,18 +50,16 @@ export default function CommentsModal({
   postUser 
 }: CommentsModalProps) {
   const { selectedUser } = useUser();
+  const { t } = useTranslation(['common','comments']);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // טעינת תגובות
   const loadComments = async () => {
     try {
       setIsLoading(true);
-      // התאמה לחתימה החדשה של getMessages(conversationId, userId)
       const messages = await getMessages(`post-${postId}`, selectedUser?.id || 'guest');
       
-      // המרת הודעות לתגובות
       const commentsData: Comment[] = messages.map(msg => ({
         id: msg.id,
         text: msg.text,
@@ -75,7 +74,7 @@ export default function CommentsModal({
       setComments(commentsData);
     } catch (error) {
       console.error('❌ Load comments error:', error);
-      Alert.alert('שגיאה', 'שגיאה בטעינת התגובות');
+      Alert.alert(t('common:errorTitle'), t('comments:loadError'));
     } finally {
       setIsLoading(false);
     }
@@ -102,10 +101,10 @@ export default function CommentsModal({
       });
 
       setNewComment('');
-      loadComments(); // טעינה מחדש
+      loadComments(); 
     } catch (error) {
       console.error('❌ Send comment error:', error);
-      Alert.alert('שגיאה', 'שגיאה בשליחת התגובה');
+      Alert.alert(t('common:errorTitle'), t('comments:sendError'));
     }
   };
 
@@ -126,8 +125,8 @@ export default function CommentsModal({
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
-    if (diffInHours < 1) return 'עכשיו';
-    if (diffInHours < 24) return `לפני ${diffInHours} שעות`;
+    if (diffInHours < 1) return t('common:time.now');
+    if (diffInHours < 24) return t('common:time.hoursAgo', { count: diffInHours });
     return date.toLocaleDateString('he-IL');
   };
 
@@ -156,7 +155,7 @@ export default function CommentsModal({
           </TouchableOpacity>
           <TouchableOpacity style={styles.commentAction}>
             <Ionicons name="chatbubble-outline" size={16} color={colors.textSecondary} />
-            <Text style={styles.commentActionText}>תגובה</Text>
+            <Text style={styles.commentActionText}>{t('comments:reply')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -179,7 +178,7 @@ export default function CommentsModal({
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>תגובות</Text>
+          <Text style={styles.headerTitle}>{t('comments:title')}</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -207,7 +206,7 @@ export default function CommentsModal({
             style={styles.input}
             value={newComment}
             onChangeText={setNewComment}
-            placeholder="הוסף תגובה..."
+            placeholder={t('comments:placeholder')}
             placeholderTextColor={colors.textSecondary}
             multiline
             maxLength={500}
