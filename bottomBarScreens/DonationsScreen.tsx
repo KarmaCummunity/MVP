@@ -9,6 +9,7 @@ import {
   StatusBar,
   Image,
   Alert,
+  Platform,
 } from 'react-native';
 import { NavigationProp, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -175,7 +176,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
         </View>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={[styles.content, Platform.OS === 'web' ? { overflowY: 'auto' as any } : null]} showsVerticalScrollIndicator={false} contentContainerStyle={Platform.OS === 'web' ? { minHeight: '100vh' as any } : undefined}>
         <View style={styles.categoriesSection}>
           <Text style={styles.sectionTitle}>{t('donations:allWays', 'כל הדרכים לפעול בקהילה')}</Text>
           <View style={[styles.categoriesGrid, { flexDirection: 'row' }]}>
