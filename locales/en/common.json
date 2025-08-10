@@ -11,5 +11,13 @@
   "search": "Search",
   "chats": "Chats",
   "favorites": "Favorites",
-  "inactive": "Inactive"
+  "inactive": "Inactive",
+  "guestLoginHint": "You're in guest mode, please sign in",
+  "settings": "Settings",
+  "report": "Report",
+  "confirm": "OK",
+  "newChat": "New chat",
+  "chat": "Chat",
+  "posts": "Posts",
+  "web": "Web page"
 }

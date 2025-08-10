@@ -11,5 +11,13 @@
   "search": "חיפוש",
   "chats": "צ'אטים",
   "favorites": "מועדפים",
-  "inactive": "לא פעיל"
+  "inactive": "לא פעיל",
+  "guestLoginHint": "אתה במצב אורח, מומלץ להתחבר",
+  "settings": "הגדרות",
+  "report": "דווח",
+  "confirm": "אישור",
+  "newChat": "צ'אט חדש",
+  "chat": "צ'אט",
+  "posts": "פוסטים",
+  "web": "דף אינטרנט"
 }

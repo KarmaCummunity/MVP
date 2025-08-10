@@ -14,6 +14,7 @@
   "sort": { "name": "Name", "date": "Date", "rating": "Rating" },
   "section": { "content": "Content", "relatedStats": "Related stats", "contentBody": "This area will contain content tailored to the \"{{title}}\" category. Lists, forms, community projects and relevant info can be shown here. Currently this is initial content you can expand." },
   "stats": { "newPosts": "New posts", "activeRequests": "Active requests", "activePartners": "Active partners" },
+  "statsSummary": "Statistics summary for this screen",
   "genericDescription": "Generic category screen.",
   "categories": {
     "money": { "title": "Money", "subtitle": "Financial donation", "description": "Donate money to organizations and projects" },

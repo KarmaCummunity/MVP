@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
+import { useTranslation } from 'react-i18next';
 
 export interface DonationStatItem {
   label: string;
@@ -16,6 +17,7 @@ interface DonationStatsFooterProps {
 }
 
 const DonationStatsFooter: React.FC<DonationStatsFooterProps> = ({ stats, containerStyle }) => {
+  const { t } = useTranslation(['donations','common']);
   if (!stats || stats.length === 0) return null;
 
   const topThree = stats.slice(0, 3);
@@ -25,7 +27,7 @@ const DonationStatsFooter: React.FC<DonationStatsFooterProps> = ({ stats, contai
 
     <View style={[styles.container, containerStyle]}
       accessibilityRole="summary"
-      accessibilityLabel="סיכום סטטיסטיקות למסך זה"
+      accessibilityLabel={t('donations:statsSummary', 'סיכום סטטיסטיקות למסך זה')}
     >
       <View style={styles.row}>
         {topThree.map((s, idx) => (

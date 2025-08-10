@@ -14,6 +14,7 @@
   "sort": { "name": "שם", "date": "תאריך", "rating": "דירוג" },
   "section": { "content": "תוכן", "relatedStats": "סטטיסטיקות קשורות", "contentBody": "אזור זה יכיל תוכן מותאם לקטגוריית \"{{title}}\". נוכל להציג כאן רשימות, טפסים, פרויקטים קהילתיים, ומידע רלוונטי. כרגע זה תוכן התחלתי שניתן להרחיב." },
   "stats": { "newPosts": "פרסומים חדשים", "activeRequests": "בקשות פעילות", "activePartners": "שותפים פעילים" },
+  "statsSummary": "סיכום סטטיסטיקות למסך זה",
   "genericDescription": "מסך קטגוריה כללי.",
   "categories": {
     "money": { "title": "כסף", "subtitle": "תרומה כספית", "description": "תרומה כספית לארגונים ופרויקטים" },
