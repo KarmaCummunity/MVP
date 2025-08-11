@@ -36,7 +36,7 @@ export default function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps)
   const onPress = async () => {
     try {
       if (isWeb) {
-        await promptAsync({ useProxy: false, windowName: '_self' } as any);
+        await promptAsync({ useProxy: false, windowName: '_self', redirectUri } as any);
       } else {
         await promptAsync();
       }
@@ -46,11 +46,8 @@ export default function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps)
   };
 
   useEffect(() => {
-    // השלם את הסשן רק ב־native כדי להימנע מבעיות בבניית web
-    if (Platform.OS !== 'web') {
-      // dynamic import to avoid bundling on web
-      import('expo-web-browser').then((m) => m.maybeCompleteAuthSession()).catch(() => {});
-    }
+    // השלם את סשן ה־OAuth בכל פלטפורמה (ייבוא דינמי כדי לא לשבור build)
+    import('expo-web-browser').then((m) => m.maybeCompleteAuthSession()).catch(() => {});
     const run = async () => {
       if (response?.type === 'success' && response.authentication?.accessToken) {
         try {
