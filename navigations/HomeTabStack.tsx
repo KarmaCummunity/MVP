@@ -17,7 +17,7 @@ import FollowersScreen from '../screens/FollowersScreen';
 import TopBarNavigator from './TopBarNavigator';
 
 type HomeTabStackParamList = {
-  HomeScreen: undefined;
+  HomeMain: undefined;
   ChatListScreen: undefined;
   ChatDetailScreen: { chatId?: string } | undefined;
   NotificationsScreen: undefined;
@@ -42,7 +42,7 @@ export default function HomeTabStack(): React.ReactElement {
   return (
     <Stack.Navigator
       id={undefined}
-      initialRouteName="HomeScreen"
+      initialRouteName="HomeMain"
       screenOptions={({ navigation, route }) => ({
         headerShown: true,
         header: () => (
@@ -54,7 +54,7 @@ export default function HomeTabStack(): React.ReactElement {
         ),
       })}
     >
-      <Stack.Screen name="HomeScreen" component={HomeScreen} />
+      <Stack.Screen name="HomeMain" component={HomeScreen} />
       <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
       <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
       <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />

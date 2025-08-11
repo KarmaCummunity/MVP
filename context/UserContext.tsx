@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { db } from '../utils/databaseService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface User {
@@ -20,6 +21,9 @@ interface User {
   followingCount: number;
   notifications: Array<{ type: string; text: string; date: string }>;
   settings: { language: string; darkMode: boolean; notificationsEnabled: boolean };
+  // Optional org enrichment
+  orgApplicationId?: string;
+  orgName?: string;
 }
 
 interface UserContextType {
@@ -77,8 +81,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           const user = JSON.parse(storedUserData);
           console.log('🔐 UserContext - checkAuthStatus - Parsed user:', user?.name || 'invalid');
           if (user && user.id && user.name) {
+            console.log('🔐 UserContext - checkAuthStatus - Enriching user with org roles');
+            const enriched = await enrichUserWithOrgRoles(user);
             console.log('🔐 UserContext - checkAuthStatus - Setting authenticated user');
-            setSelectedUserState(user);
+            setSelectedUserState(enriched);
             setIsAuthenticated(true);
             setIsGuestMode(false);
           } else {
@@ -112,9 +118,11 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     try {
       console.log('🔐 UserContext - setSelectedUser:', user?.name || 'null');
       if (user) {
-        await AsyncStorage.setItem('current_user', JSON.stringify(user));
+        // Enrich user with org roles if applicable
+        const enriched = await enrichUserWithOrgRoles(user);
+        await AsyncStorage.setItem('current_user', JSON.stringify(enriched));
         await AsyncStorage.removeItem('guest_mode');
-        setSelectedUserState(user);
+        setSelectedUserState(enriched);
         setIsAuthenticated(true);
         setIsGuestMode(false);
       } else {
@@ -128,6 +136,32 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       setSelectedUserState(user);
       setIsAuthenticated(user !== null);
       setIsGuestMode(false);
+    }
+  };
+
+  /**
+   * Enriches a user object with organization roles if there is an approved org application
+   * keyed by the user's email (partition key in DB for org applications).
+   */
+  const enrichUserWithOrgRoles = async (user: User): Promise<User> => {
+    try {
+      const emailKey = (user.email || '').toLowerCase();
+      if (!emailKey) return user;
+      // Grant admin role by env config (comma-separated emails)
+      const adminEmailsEnv = (process.env.EXPO_PUBLIC_ADMIN_EMAILS || '').toLowerCase();
+      const adminEmails = adminEmailsEnv.split(',').map((s) => s.trim()).filter(Boolean);
+      const withAdmin = adminEmails.includes(emailKey);
+      const applications = await db.listOrgApplications(emailKey);
+      const approved = (applications as any[]).find((a) => a.status === 'approved');
+      if (approved || withAdmin) {
+        const extraRoles = [approved ? 'org_admin' : null, withAdmin ? 'admin' : null].filter(Boolean) as string[];
+        const roles = Array.isArray(user.roles) ? Array.from(new Set([...user.roles, ...extraRoles])) : extraRoles;
+        return { ...user, roles, orgApplicationId: approved?.id, orgName: approved?.orgName };
+      }
+      return user;
+    } catch (err) {
+      console.log('🔐 UserContext - enrichUserWithOrgRoles - skipped (no backend or no data)', err);
+      return user;
     }
   };
 

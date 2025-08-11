@@ -19,5 +19,6 @@
   "newChat": "New chat",
   "chat": "Chat",
   "posts": "Posts",
-  "web": "Web page"
+  "web": "Web page",
+  "cannotOpenLink": "Cannot open the link"
 }

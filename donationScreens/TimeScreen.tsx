@@ -249,7 +249,7 @@ export default function TimeScreen({
         onSearch={handleSearch}
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} nestedScrollEnabled>
         {/* Emergency Volunteer Link */}
         <View style={styles.emergencySection}>
           <TouchableOpacity
@@ -322,6 +322,12 @@ export default function TimeScreen({
                   
                   <Text style={styles.opportunityOrganization}>{opportunity.organization}</Text>
                   <Text style={styles.opportunityDescription}>{opportunity.description}</Text>
+                  <TouchableOpacity
+                    style={styles.visitButton}
+                    onPress={() => Linking.openURL('https://www.ruachtova.org.il/').catch(() => Alert.alert('שגיאה','לא ניתן לפתוח את הקישור'))}
+                  >
+                    <Text style={styles.visitButtonText}>מצא התנדבויות דומות</Text>
+                  </TouchableOpacity>
                   
                   <View style={styles.opportunityDetails}>
                     <View style={styles.detailItem}>
@@ -474,6 +480,21 @@ const styles = StyleSheet.create({
   },
   opportunityContent: {
     padding: 15,
+  },
+  visitButton: {
+    marginTop: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.moneyInputBackground,
+    borderWidth: 1,
+    borderColor: colors.moneyFormBorder,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  visitButtonText: {
+    color: colors.textPrimary,
+    fontSize: FontSizes.caption,
+    fontWeight: '600',
   },
   opportunityHeader: {
     flexDirection: 'row',

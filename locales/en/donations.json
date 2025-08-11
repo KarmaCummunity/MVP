@@ -41,6 +41,9 @@
     "art": { "title": "Art", "subtitle": "Creation and sharing", "description": "Artistic creation, workshops and community sharing" },
     "sports": { "title": "Sports", "subtitle": "Active lifestyle", "description": "Sports meetups and activities" },
     "items": { "title": "Items", "subtitle": "Goods", "description": "Items donations" },
-    "matchmaking": { "title": "Matchmaking", "subtitle": "Connecting people", "description": "Helping connect people to find suitable relationships" }
+    "matchmaking": { "title": "Matchmaking", "subtitle": "Connecting people", "description": "Helping connect people to find suitable relationships" },
+    "mentalHealth": { "title": "Mental Health", "subtitle": "Psychological support", "description": "Mental health support, psychological counseling, therapy and crisis assistance" },
+    "goldenAge": { "title": "Golden Age", "subtitle": "Elderly care", "description": "Elderly care, social activities, daily assistance and support" },
+    "languages": { "title": "Languages", "subtitle": "Language learning", "description": "Language learning, conversations, translation and pronunciation assistance" }
   }
 }

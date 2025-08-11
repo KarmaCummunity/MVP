@@ -15,6 +15,8 @@ import { useTranslation } from 'react-i18next';
 import { I18nManager } from 'react-native';
 
 import MainNavigator from './navigations/MainNavigator';
+// Ensure tslib default interop for certain vendor bundles
+import './polyfills/tslib-default';
 import colors from './globals/colors';
 import { UserProvider } from './context/UserContext';
 import { FontSizes } from "./globals/constants";
@@ -148,14 +150,19 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-                 <UserProvider>
-                     <NavigationContainer ref={navigationRef}>
-            <View style={{ flex: 1 }}>
-              <MainNavigator />
-              <StatusBar style="auto" />
-            </View>
-          </NavigationContainer>
-         </UserProvider>
+        <UserProvider
+          children={
+            <NavigationContainer
+              ref={navigationRef}
+              children={
+                <View style={{ flex: 1 }}>
+                  <MainNavigator />
+                  <StatusBar style="auto" />
+                </View>
+              }
+            />
+          }
+        />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

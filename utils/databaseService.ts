@@ -25,6 +25,9 @@ export const DB_COLLECTIONS = {
   VOICE_MESSAGES: 'voice_messages',
   CONVERSATION_METADATA: 'conversation_metadata',
   RIDES: 'rides',
+  // Organizations / NGO onboarding
+  ORGANIZATIONS: 'organizations',
+  ORG_APPLICATIONS: 'org_applications',
 } as const;
 
 // Database Keys Generator
@@ -571,6 +574,32 @@ export const db = {
 
   deleteDonation: (userId: string, donationId: string) =>
     DatabaseService.delete(DB_COLLECTIONS.DONATIONS, userId, donationId),
+
+  // Organizations
+  createOrganization: (ownerUserId: string, orgId: string, orgData: any) =>
+    DatabaseService.create(DB_COLLECTIONS.ORGANIZATIONS, ownerUserId, orgId, orgData),
+
+  getOrganization: (ownerUserId: string, orgId: string) =>
+    DatabaseService.read(DB_COLLECTIONS.ORGANIZATIONS, ownerUserId, orgId),
+
+  updateOrganization: (ownerUserId: string, orgId: string, orgData: Partial<any>) =>
+    DatabaseService.update(DB_COLLECTIONS.ORGANIZATIONS, ownerUserId, orgId, orgData),
+
+  listOrganizations: (ownerUserId: string) =>
+    DatabaseService.list(DB_COLLECTIONS.ORGANIZATIONS, ownerUserId),
+
+  // Org Applications (onboarding requests)
+  createOrgApplication: (ownerUserId: string, applicationId: string, applicationData: any) =>
+    DatabaseService.create(DB_COLLECTIONS.ORG_APPLICATIONS, ownerUserId, applicationId, applicationData),
+
+  getOrgApplication: (ownerUserId: string, applicationId: string) =>
+    DatabaseService.read(DB_COLLECTIONS.ORG_APPLICATIONS, ownerUserId, applicationId),
+
+  updateOrgApplication: (ownerUserId: string, applicationId: string, applicationData: Partial<any>) =>
+    DatabaseService.update(DB_COLLECTIONS.ORG_APPLICATIONS, ownerUserId, applicationId, applicationData),
+
+  listOrgApplications: (ownerUserId: string) =>
+    DatabaseService.list(DB_COLLECTIONS.ORG_APPLICATIONS, ownerUserId),
 };
 
 export default DatabaseService; 

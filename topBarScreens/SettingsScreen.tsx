@@ -42,7 +42,7 @@ const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 export default function SettingsScreen() {
   const navigation = useNavigation();
   const { signOut, isGuestMode, selectedUser, isAuthenticated } = useUser();
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<ScrollView | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const { t } = useTranslation(['settings','common']);
   const [currentLang, setCurrentLang] = useState(i18n.language || 'he');
@@ -439,7 +439,6 @@ export default function SettingsScreen() {
       ) : (
         // Native: Standard ScrollView for iOS/Android
         <ScrollView 
-          ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={true}
@@ -477,6 +476,25 @@ export default function SettingsScreen() {
         {/* App Settings Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings:appSettings')}</Text>
+          {/* Org Dashboard (for org admins) */}
+          {selectedUser && selectedUser.roles?.includes('org_admin') && (
+            <SettingsItem
+              icon="briefcase-outline"
+              title={'לוח בקרה לארגון'}
+              subtitle={'ניהול ארגון מאושר'}
+              onPress={() => navigation.navigate('OrgDashboardScreen' as never)}
+            />
+          )}
+
+          {/* Admin approvals (for admins) */}
+          {selectedUser && selectedUser.roles?.includes('admin') && (
+            <SettingsItem
+              icon="checkmark-done-outline"
+              title={'אישורי ארגונים'}
+              subtitle={'ניהול בקשות ארגונים'}
+              onPress={() => navigation.navigate('AdminOrgApprovalsScreen' as never)}
+            />
+          )}
           
           <SettingsItem
             icon="notifications-outline"

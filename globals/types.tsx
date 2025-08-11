@@ -75,6 +75,9 @@ export type DonationsStackParamList = {
   FertilityScreen: undefined;
   JobsScreen: undefined;
   MatchmakingScreen: undefined;
+  MentalHealthScreen: undefined;
+  GoldenAgeScreen: undefined;
+  LanguagesScreen: undefined;
 };
 
 export type SettingItemType = "navigate" | "toggle" | "button" | "value";
@@ -159,6 +162,9 @@ export type RootStackParamList = {
     title: string;
   };
   DiscoverPeopleScreen: undefined;
+  OrgOnboardingScreen: undefined;
+  AdminOrgApprovalsScreen: undefined;
+  OrgDashboardScreen: undefined;
 };
 
 // --- Bottom Tab Navigator (BottomNavigator) Parameter List ---

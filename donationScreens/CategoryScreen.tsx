@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import HeaderComp from '../components/HeaderComp';
 import DonationStatsFooter from '../components/DonationStatsFooter';
 import { biDiTextAlign, isLandscape, scaleSize } from '../globals/responsive';
 import { useTranslation } from 'react-i18next';
+import { donationResources } from '../utils/donationResources';
 
 export interface CategoryConfig {
   id: string;
@@ -31,6 +32,7 @@ const CategoryScreen: React.FC<Props> = ({ route, config: propConfig }) => {
     bgColor: colors.infoLight,
   };
   const [mode, setMode] = useState(true);
+  const [linkHealth, setLinkHealth] = useState<Record<string, boolean>>({});
 
   const title = config.title ?? t(`donations:categories.${config.id}.title`);
   const subtitle = config.subtitle ?? t(`donations:categories.${config.id}.subtitle`);
@@ -54,6 +56,47 @@ const CategoryScreen: React.FC<Props> = ({ route, config: propConfig }) => {
       results: results ?? [],
     });
   };
+
+  // Check links health in background
+  React.useEffect(() => {
+    const resources = donationResources[config.id] || [];
+    if (resources.length === 0) return;
+
+    let isCancelled = false;
+    const controller = new AbortController();
+
+    const checkUrl = async (url: string): Promise<boolean> => {
+      try {
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        // Some servers block HEAD; try HEAD then GET fallback
+        const headResp = await fetch(url, { method: 'HEAD', signal: controller.signal } as any).catch(() => null);
+        if (headResp && (headResp.ok || (headResp.status >= 200 && headResp.status < 400))) {
+          clearTimeout(timeout);
+          return true;
+        }
+        const getResp = await fetch(url, { method: 'GET', signal: controller.signal } as any).catch(() => null);
+        clearTimeout(timeout);
+        return !!(getResp && (getResp.ok || (getResp.status >= 200 && getResp.status < 400)));
+      } catch {
+        return false;
+      }
+    };
+
+    (async () => {
+      const results: Record<string, boolean> = {};
+      for (const r of resources) {
+        const ok = await checkUrl(r.url);
+        results[r.url] = ok;
+        if (isCancelled) return;
+        setLinkHealth((prev) => ({ ...prev, [r.url]: ok }));
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+      controller.abort();
+    };
+  }, [config.id]);
 
   return (
     <View style={styles.container}>
@@ -88,6 +131,41 @@ const CategoryScreen: React.FC<Props> = ({ route, config: propConfig }) => {
           <Text style={styles.sectionText}>
             {t('donations:section.contentBody', { title })}
           </Text>
+
+          {!!donationResources[config.id] && donationResources[config.id].length > 0 && (
+            <View style={styles.linksContainer}>
+              {donationResources[config.id].map((res) => {
+                const isHealthy = linkHealth[res.url];
+                return (
+                  <TouchableOpacity
+                    key={`${config.id}-${res.url}`}
+                    style={[styles.linkButton, !isHealthy === true ? styles.linkButtonDisabled : null, { borderColor: config.color }]}
+                    activeOpacity={0.8}
+                    onPress={async () => {
+                      try {
+                        const supported = await Linking.canOpenURL(res.url);
+                        if (supported) await Linking.openURL(res.url);
+                        else Alert.alert(t('common:error'), t('common:cannotOpenLink'));
+                      } catch (e) {
+                        Alert.alert(t('common:error'), t('common:cannotOpenLink'));
+                      }
+                    }}
+                  >
+                    <View style={styles.linkButtonHeader}>
+                      <Text style={styles.linkButtonTitle}>{res.name}</Text>
+                      <Text style={[styles.linkPill, { borderColor: config.color, color: config.color }]}>{t('common:web')}</Text>
+                    </View>
+                    {!!res.description && (
+                      <Text style={styles.linkButtonDesc}>{res.description}</Text>
+                    )}
+                    {isHealthy === false && (
+                      <Text style={styles.linkWarningText}>{t('common:cannotOpenLink')}</Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -158,6 +236,48 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: Math.round(FontSizes.body * 1.3),
     textAlign: biDiTextAlign('right'),
+  },
+  linksContainer: {
+    marginTop: LAYOUT_CONSTANTS.SPACING.MD,
+    gap: LAYOUT_CONSTANTS.SPACING.SM,
+  },
+  linkButton: {
+    backgroundColor: colors.backgroundPrimary,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
+    padding: LAYOUT_CONSTANTS.SPACING.MD,
+  },
+  linkButtonDisabled: {
+    opacity: 0.7,
+  },
+  linkButtonHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  linkButtonTitle: {
+    fontSize: FontSizes.body,
+    color: colors.textPrimary,
+    fontWeight: '600',
+  },
+  linkButtonDesc: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  linkPill: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    fontSize: FontSizes.caption,
+  },
+  linkWarningText: {
+    marginTop: 6,
+    fontSize: FontSizes.caption,
+    color: colors.error,
   },
 });
 

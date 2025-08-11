@@ -22,6 +22,9 @@ import SettingsScreen from '../topBarScreens/SettingsScreen';
 import ChatListScreen from '../topBarScreens/ChatListScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AboutKarmaCommunityScreen from '../topBarScreens/AboutKarmaCommunityScreen';
+import OrgOnboardingScreen from '../screens/OrgOnboardingScreen';
+import AdminOrgApprovalsScreen from '../screens/AdminOrgApprovalsScreen';
+import OrgDashboardScreen from '../screens/OrgDashboardScreen';
 
 import { RootStackParamList } from '../globals/types';
 
@@ -116,6 +119,9 @@ export default function MainNavigator() {
       <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
       <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
       <Stack.Screen name="AboutKarmaCommunityScreen" component={AboutKarmaCommunityScreen} />
+      <Stack.Screen name="OrgOnboardingScreen" component={OrgOnboardingScreen} />
+      <Stack.Screen name="AdminOrgApprovalsScreen" component={AdminOrgApprovalsScreen} />
+      <Stack.Screen name="OrgDashboardScreen" component={OrgDashboardScreen} />
     </Stack.Navigator>
   );
 }

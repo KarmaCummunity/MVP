@@ -18,6 +18,8 @@ import {
 import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import { FontSizes } from '../globals/constants';
 import { charityNames, charities, donations } from '../globals/fakeData';
+import { charitiesStore } from '../utils/charitiesStore';
+import { donationResources } from '../utils/donationResources';
 
 // Convert new charity format to old dummy format for compatibility
 const dummyCharities = charities.map((charity, index) => ({
@@ -103,7 +105,67 @@ export default function MoneyScreen({
   const [selectedSort, setSelectedSort] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const [filteredCharities, setFilteredCharities] = useState(dummyCharities); // Search results
+  // Build external charities from donationResources to appear as donation cards
+  const externalCharities = React.useMemo(() => {
+    const categoryIds = Object.keys(donationResources || {}) as string[];
+    const toEmoji = (id: string): string => {
+      switch (id) {
+        case 'food': return '🍞';
+        case 'clothes': return '👕';
+        case 'books': return '📚';
+        case 'furniture': return '🛋️';
+        case 'medical': return '🏥';
+        case 'animals': return '🐾';
+        case 'housing': return '🏠';
+        case 'support': return '💟';
+        case 'education': return '🎓';
+        case 'environment': return '🌿';
+        case 'technology': return '💻';
+        case 'knowledge': return '🧠';
+        default: return '💝';
+      }
+    };
+    const list: any[] = [];
+    categoryIds.forEach((catId) => {
+      const resources = (donationResources as any)[catId] || [];
+      const categoryTitle = (t(`donations:categories.${catId}.title`) as string) || catId;
+      resources.forEach((res: any, index: number) => {
+        list.push({
+          id: `ext_${catId}_${index}`,
+          name: res.name,
+          category: categoryTitle,
+          location: 'כל הארץ',
+          rating: 4.7,
+          donors: 500 + (index * 7),
+          description: res.description || categoryTitle,
+          image: toEmoji(catId),
+          minDonation: 20,
+          _extUrl: res.url,
+        });
+      });
+    });
+    // Deduplicate by name
+    const seen = new Set<string>();
+    return list.filter((c) => (seen.has(c.name) ? false : (seen.add(c.name), true)));
+  }, [t]);
+
+  const combinedCharities = React.useMemo(() => {
+    const mapFromStore = charitiesStore.map((c, index) => ({
+      id: `store_${c.id}`,
+      name: c.name,
+      category: (c.categories && c.categories[0]) ? String(c.categories[0]) : 'כללי',
+      location: c.location?.city || 'כל הארץ',
+      rating: 4.8,
+      donors: 100 + index * 5,
+      description: c.description || '',
+      image: '💝',
+      minDonation: 20,
+      _extUrl: c.url,
+    }));
+    return [...mapFromStore, ...dummyCharities, ...externalCharities];
+  }, [externalCharities]);
+
+  const [filteredCharities, setFilteredCharities] = useState(combinedCharities); // Search results
 
   // Menu modals state
   const [isSavingsModalVisible, setIsSavingsModalVisible] = useState(false);
@@ -211,7 +273,7 @@ export default function MoneyScreen({
 
   // Function to filter charities by search and filter
   const getFilteredCharities = () => {
-    let filtered = [...dummyCharities];
+    let filtered = [...combinedCharities];
 
     // Filter by search
     if (searchQuery) {
@@ -242,7 +304,7 @@ export default function MoneyScreen({
         filtered.sort((a, b) => b.donors - a.donors);
         break;
       case "לפי דירוג":
-        filtered.sort((a, b) => b.rating - a.rating);
+         filtered.sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0));
         break;
       case "לפי רלוונטיות":
         // Default - by rating
@@ -456,7 +518,13 @@ export default function MoneyScreen({
   const renderCharityCard = ({ item }: { item: any }) => (
     <TouchableOpacity 
       style={localStyles.charityCard}
-      onPress={() => openCharityModal(item, !!mode)}
+      onPress={() => {
+        if (item._extUrl && typeof item._extUrl === 'string') {
+          Linking.openURL(item._extUrl).catch(() => Alert.alert('שגיאה', 'לא ניתן לפתוח את הקישור'));
+          return;
+        }
+        openCharityModal(item, !!mode);
+      }}
     >
       <View style={localStyles.charityCardHeader}>
         <Text style={localStyles.charityEmoji}>{item.image}</Text>
@@ -533,7 +601,7 @@ export default function MoneyScreen({
         placeholder={mode ? (t('donations:searchCharitiesForDonation') as string) : (t('donations:searchCharitiesForHelp') as string)}
         filterOptions={moneyFilterOptions}
         sortOptions={moneySortOptions}
-        searchData={dummyCharities}
+        searchData={combinedCharities}
         onSearch={handleSearch}
       />
 

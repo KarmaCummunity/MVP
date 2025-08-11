@@ -5,7 +5,7 @@ import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import styles from '../globals/styles';
 
 interface ScreenWrapperProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   navigation?: NavigationProp<ParamListBase>;
   hideTopBar?: boolean;
   showPosts?: boolean;

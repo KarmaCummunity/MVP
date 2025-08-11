@@ -12,16 +12,20 @@ import {
   Alert,
   Animated,
   Dimensions,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { characterTypes } from '../globals/characterTypes';
 import { useUser } from '../context/UserContext';
+import { db } from '../utils/databaseService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import GoogleLoginButton from '../components/GoogleLoginButton';
+import { useTranslation } from 'react-i18next';
 
 export default function LoginScreen() {
   const { setSelectedUser, setGuestMode, selectedUser, isGuestMode } = useUser();
+  const { t } = useTranslation(['auth']);
   const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
   const [animationValues] = useState(() => 
     characterTypes.reduce((acc, character) => {
@@ -30,6 +34,11 @@ export default function LoginScreen() {
     }, {} as Record<string, Animated.Value>)
   );
   const navigation = useNavigation<any>();
+  // Org login UI state
+  const [orgLoginOpen, setOrgLoginOpen] = useState(false);
+  const [orgQuery, setOrgQuery] = useState('');
+  const [isCheckingOrg, setIsCheckingOrg] = useState(false);
+  const orgOpenAnim = React.useRef(new Animated.Value(0)).current; // 0 closed, 1 open
 
   const handleCharacterSelect = (characterId: string) => {
     if (selectedCharacter === characterId) {
@@ -96,6 +105,84 @@ export default function LoginScreen() {
     await setGuestMode();
   };
 
+  const toggleOrgLogin = () => {
+    const next = !orgLoginOpen;
+    setOrgLoginOpen(next);
+    Animated.timing(orgOpenAnim, {
+      toValue: next ? 1 : 0,
+      duration: 260,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleOrgConfirm = async () => {
+    try {
+      const query = orgQuery.trim();
+      if (!query) {
+        Alert.alert('שגיאה', 'אנא הזן שם ארגון או אימייל');
+        return;
+      }
+      setIsCheckingOrg(true);
+
+      // 1) חיפוש לפי אימייל (מפתח ראשי), אחרת לפי שם מתוך תור אדמין
+      let applications: any[] = [];
+      const isEmail = query.includes('@');
+      if (isEmail) {
+        const emailKey = query.toLowerCase();
+        applications = await db.listOrgApplications(emailKey);
+      } else {
+        const all = await db.listOrgApplications('admin_org_queue');
+        applications = (all || []).filter((a: any) =>
+          String(a.orgName || '').toLowerCase().includes(query.toLowerCase())
+        );
+      }
+
+      const approved = applications.find((a: any) => a.status === 'approved');
+      const pending = applications.find((a: any) => a.status === 'pending');
+
+      if (approved) {
+        // 2) יצירת משתמש ארגוני מינימלי והתחברות
+        const email = String(approved.contactEmail || (isEmail ? query : '')).toLowerCase();
+        const orgUser = {
+          id: `org_${approved.id}`,
+          name: approved.orgName || 'ארגון',
+          email: email || `org_${approved.id}@example.org`,
+          phone: approved.contactPhone || '+9720000000',
+          avatar: 'https://i.pravatar.cc/150?img=12',
+          bio: 'חשבון ארגוני',
+          karmaPoints: 0,
+          joinDate: new Date().toISOString(),
+          isActive: true,
+          lastActive: new Date().toISOString(),
+          location: { city: approved.city || 'ישראל', country: 'IL' },
+          interests: [],
+          roles: ['org_admin'],
+          postsCount: 0,
+          followersCount: 0,
+          followingCount: 0,
+          notifications: [],
+          settings: { language: 'he', darkMode: false, notificationsEnabled: true },
+        } as any;
+
+        await setSelectedUser(orgUser);
+        return;
+      }
+
+      if (pending) {
+        Alert.alert('ממתין לאישור', 'הבקשה שלכם ממתינה לאישור מנהלי המערכת. תקבלו גישה לאחר האישור.');
+        return;
+      }
+
+      // 3) לא נמצא — ננווט למסך רישום ארגונים
+      navigation.navigate('OrgOnboardingScreen' as never);
+    } catch (err) {
+      console.error('Org login check failed:', err);
+      Alert.alert('שגיאה', 'אירעה שגיאה בבדיקת הארגון. נסו שוב.');
+    } finally {
+      setIsCheckingOrg(false);
+    }
+  };
+
   useEffect(() => {
     if (selectedUser || isGuestMode) {
       console.log('🔐 LoginScreen - useEffect - מנווט ל-Home', { 
@@ -155,6 +242,50 @@ export default function LoginScreen() {
             >
               <Text style={styles.guestButtonText}>המשך כאורח</Text>
             </TouchableOpacity>
+
+            {/* Enter Organization CTA - collapsible with input */}
+            <View style={styles.orgLoginContainer}>
+              {!orgLoginOpen && (
+                <TouchableOpacity
+                  style={[styles.guestButton, styles.orgButton]}
+                  onPress={toggleOrgLogin}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[styles.guestButtonText, { color: '#FF6B9D', fontWeight: '700' }]}>
+                    {t('auth:org.cta') || 'הכנס ארגון / עמותה'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {orgLoginOpen && (
+                <View style={styles.orgExpandedRow}>
+                  <Animated.View style={[styles.orgMiniButton, { opacity: orgOpenAnim }] }>
+                    <TouchableOpacity onPress={toggleOrgLogin} activeOpacity={0.8}>
+                      <Ionicons name="business-outline" size={20} color="#FF6B9D" />
+                    </TouchableOpacity>
+                  </Animated.View>
+                  <TextInput
+                    style={styles.orgInput}
+                    placeholder={'הכנס שם ארגון'}
+                    placeholderTextColor="#B0B0B0"
+                    value={orgQuery}
+                    onChangeText={setOrgQuery}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="done"
+                    onSubmitEditing={handleOrgConfirm}
+                  />
+                  <TouchableOpacity
+                    style={[styles.orgActionButton, isCheckingOrg && styles.disabledButton]}
+                    onPress={handleOrgConfirm}
+                    disabled={isCheckingOrg}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.orgActionButtonText}>{isCheckingOrg ? 'בודק...' : 'המשך'}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
           </View>
         </View>
 
@@ -492,5 +623,50 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  // Org login styles
+  orgLoginContainer: {
+    marginTop: 12,
+  },
+  orgButton: {
+    borderColor: '#FF6B9D',
+  },
+  orgExpandedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    borderRadius: 12,
+    padding: 6,
+    gap: 8,
+  },
+  orgMiniButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,107,157,0.08)',
+  },
+  orgInput: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  orgActionButton: {
+    backgroundColor: '#FF6B9D',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  orgActionButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
   },
 }); 

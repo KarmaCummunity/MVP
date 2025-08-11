@@ -149,6 +149,14 @@ export default function TrumpScreen({
       image: "👩‍🎨",
       category: t('trump:mock.category.leisure') as string,
     },
+    {
+      id: 5,
+      name: 'טרמפים בישראל (טלגרם) — קבוצה נוספת',
+      members: 0,
+      image: "🚗",
+      type: "telegram",
+      link: 'https://t.me/joinchat/Arw4c0AUY5IVdWf3MLqEHg'
+    },
   ];
 
   useEffect(() => {
@@ -214,28 +222,29 @@ export default function TrumpScreen({
   const dummyGroups = [
     {
       id: 1,
-      name: t('trump:mock.group1') as string,
-      members: 1250,
+      name: 'טרמפים בישראל (טלגרם)',
+      members: 0,
       image: "🚗",
-      type: "whatsapp",
-      link: 'https://chat.whatsapp.com/invite/te-aviv-jerusalem'
+      type: "telegram",
+      link: 'https://t.me/joinchat/SlQOMOekjOi2IWxo'
     },
     {
       id: 2,
-      name: t('trump:mock.group2') as string,
-      members: 890,
+      name: 'אתר הטרמפים הישראלי',
+      members: 0,
       image: "🚙",
-      type: "whatsapp",
-      link: 'https://chat.whatsapp.com/invite/haifa-telaviv'
+      type: "web",
+      link: 'https://www.tremp.co.il/'
     },
     {
       id: 3,
-      name: t('trump:mock.group3') as string,
-      members: 650,
+      name: 'Trempist',
+      members: 0,
       image: "🚐",
-      type: "facebook",
-      link: 'https://www.facebook.com/groups/beer-sheva-telaviv'
+      type: "web",
+      link: 'https://www.trempist.com/'
     },
+    
   ];
 
 
@@ -520,8 +529,28 @@ export default function TrumpScreen({
   );
 
   const renderGroupCard = ({ item }: { item: any }) => (
-    <TouchableOpacity onPress={() => item.link && typeof item.link === 'string' ? Linking.openURL(item.link) : Alert.alert(t('common:errorTitle') as string, t('trump:errors.noGroupLink') as string)}>
-      <Text style={localStyles.groupLinkText}>{item.name}</Text>
+    <TouchableOpacity 
+      style={localStyles.groupButton}
+      onPress={async () => {
+        if (item.link && typeof item.link === 'string') {
+          try {
+            const supported = await Linking.canOpenURL(item.link);
+            if (supported) {
+              await Linking.openURL(item.link);
+            } else {
+              Alert.alert(t('common:error') as string, t('common:cannotOpenLink') as string);
+            }
+          } catch {
+            Alert.alert(t('common:error') as string, t('common:cannotOpenLink') as string);
+          }
+        } else {
+          Alert.alert(t('common:errorTitle') as string, t('trump:errors.noGroupLink') as string);
+        }
+      }}>
+      <View style={localStyles.groupButtonHeader}>
+        <Text style={localStyles.groupButtonTitle}>{item.name}</Text>
+        <Text style={localStyles.groupButtonPill}>{item.type === 'telegram' ? 'Telegram' : item.type === 'whatsapp' ? 'WhatsApp' : 'Web'}</Text>
+      </View>
     </TouchableOpacity>
   );
 
@@ -616,7 +645,6 @@ export default function TrumpScreen({
               {need_to_pay && (
                 <View style={localStyles.inputWrapper}>
                   <TextInput
-                    ref={priceInputRef}
                     style={[localStyles.input, localStyles.inputWithAdornment]}
                     keyboardType="number-pad"
                     value={price}
@@ -712,8 +740,8 @@ export default function TrumpScreen({
           <View style={localStyles.section}>
             <Text style={localStyles.sectionTitle}>{t('trump:ui.yourHistoryTitle')}</Text>
             <View style={localStyles.recentRidesContainer}>
-              {(recentRides.length > 0 ? recentRides : dummyRecentRides).map((ride) => (
-                <View key={ride.id} style={localStyles.recentRideCardWrapper}>
+              {(recentRides.length > 0 ? recentRides : dummyRecentRides).map((ride, idx) => (
+                <View key={`recent-${ride.id ?? idx}`} style={localStyles.recentRideCardWrapper}>
                   {renderRecentRideCard({ item: ride })}
                 </View>
               ))}
@@ -752,8 +780,8 @@ export default function TrumpScreen({
                 nestedScrollEnabled
                 keyboardShouldPersistTaps="handled"
               >
-                {filteredRides.map((ride) => (
-                  <View key={ride.id} style={localStyles.rideCardWrapper}>
+                 {filteredRides.map((ride, idx) => (
+                  <View key={`ride-${ride.id ?? idx}`} style={localStyles.rideCardWrapper}>
                     {renderRideCard({ item: ride })}
                   </View>
                 ))}
@@ -773,22 +801,22 @@ export default function TrumpScreen({
                 <View style={localStyles.groupsTwoCols}>
                   <View style={localStyles.groupColumn}>
                     <Text style={localStyles.groupColumnTitle}>{t('trump:groups.whatsapp')}</Text>
-                    {dummyGroups
+                     {dummyGroups
                       .filter(g => g.type === 'whatsapp')
                       .filter(g => !searchQuery || g.name.includes(searchQuery))
                       .map((group) => (
-                        <View key={`wa-${group.id}`} style={localStyles.groupLinkWrapper}>
+                         <View style={localStyles.groupLinkWrapper}>
                           {renderGroupCard({ item: group })}
                         </View>
                       ))}
                   </View>
                   <View style={localStyles.groupColumn}>
                     <Text style={localStyles.groupColumnTitle}>{t('trump:groups.facebook')}</Text>
-                    {dummyGroups
+                     {dummyGroups
                       .filter(g => g.type === 'facebook')
                       .filter(g => !searchQuery || g.name.includes(searchQuery))
                       .map((group) => (
-                        <View key={`fb-${group.id}`} style={localStyles.groupLinkWrapper}>
+                         <View style={localStyles.groupLinkWrapper}>
                           {renderGroupCard({ item: group })}
                         </View>
                       ))}
@@ -1098,14 +1126,36 @@ const localStyles = StyleSheet.create({
     },
     groupLinkWrapper: {
       paddingVertical: 6,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      borderBottomWidth: 0,
     },
-    groupLinkText: {
-      fontSize: FontSizes.small,
-      color: colors.blue,
-      textDecorationLine: 'underline',
+    groupButton: {
+      backgroundColor: colors.moneyCardBackground,
+      borderWidth: 1,
+      borderColor: colors.moneyFormBorder,
+      borderRadius: 10,
+      padding: 10,
+    },
+    groupButtonHeader: {
+      flexDirection: 'row-reverse',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    groupButtonTitle: {
+      fontSize: FontSizes.body,
+      color: colors.textPrimary,
+      fontWeight: '600',
       textAlign: 'right',
+      flex: 1,
+      marginLeft: 8,
+    },
+    groupButtonPill: {
+      borderWidth: 1,
+      borderColor: colors.headerBorder,
+      borderRadius: 999,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      color: colors.textSecondary,
+      fontSize: FontSizes.caption,
     },
     // Search Help Styles
     searchHelpContainer: {

@@ -18,6 +18,7 @@ import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { useUser } from '../context/UserContext';
 import HeaderComp from '../components/HeaderComp';
+import { donationResources } from '../utils/donationResources';
 
 // Mock data for educational content
 const educationalLinks = [
@@ -294,6 +295,40 @@ export default function KnowledgeScreen({
             ))}
           </View>
         </View>
+
+        {/* Recommended Organizations Section */}
+        {!!donationResources.knowledge && donationResources.knowledge.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{'עמותות מומלצות'}</Text>
+            <Text style={styles.sectionDescription}>
+              ארגונים מובילים בישראל לחונכות, לימוד ותמיכה חינוכית
+            </Text>
+            <View style={styles.linksGrid}>
+              {donationResources.knowledge.map((org) => (
+                <TouchableOpacity
+                  key={`knowledge-${org.url}`}
+                  style={styles.linkCard}
+                  onPress={() => handleLinkPress(org.url, org.name)}
+                >
+                  <View style={styles.linkHeader}>
+                    <View style={[styles.linkIcon, { backgroundColor: colors.info }]}>
+                      <Ionicons name={'school-outline' as any} size={20} color="white" />
+                    </View>
+                    <Text style={styles.linkTitle}>{org.name}</Text>
+                    <View style={{ borderWidth: 1, borderColor: colors.info, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}>
+                      <Text style={{ color: colors.info, fontSize: FontSizes.caption }}>בקר באתר</Text>
+                    </View>
+                  </View>
+                  <View style={styles.linkContent}>
+                    {!!org.description && (
+                      <Text style={styles.linkDescription}>{org.description}</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Community Content Section */}
         <View style={styles.section}>

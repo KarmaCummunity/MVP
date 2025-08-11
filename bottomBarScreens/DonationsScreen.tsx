@@ -63,6 +63,9 @@ const BASE_CATEGORIES = [
   { id: 'fertility',  icon: 'medkit-outline',      color: colors.error,   bgColor: colors.errorLight,   screen: 'FertilityScreen' },
   { id: 'jobs',       icon: 'briefcase-outline',   color: colors.info,    bgColor: colors.infoLight,    screen: 'JobsScreen' },
   { id: 'matchmaking', icon: 'people-outline',     color: colors.pink,    bgColor: colors.pinkLight,    screen: 'MatchmakingScreen' },
+  { id: 'mentalHealth', icon: 'brain-outline',     color: colors.pinkDark,  bgColor: colors.pinkLight,  screen: 'MentalHealthScreen' },
+  { id: 'goldenAge',   icon: 'person-outline',     color: colors.warning, bgColor: colors.warningLight, screen: 'GoldenAgeScreen' },
+  { id: 'languages',   icon: 'language-outline',   color: colors.info,    bgColor: colors.infoLight,    screen: 'LanguagesScreen' },
 ] as const;
 
 type CategoryId = typeof BASE_CATEGORIES[number]['id'];
