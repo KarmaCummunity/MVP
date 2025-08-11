@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import * as Google from 'expo-auth-session/providers/google';
 import { useUser } from '../context/UserContext';
 import { USE_BACKEND } from '../utils/dbConfig';
@@ -7,22 +7,39 @@ import { db } from '../utils/databaseService';
 
 export default function GoogleLoginButton() {
   const { setSelectedUser } = useUser();
+  const isWeb = Platform.OS === 'web';
+  const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+
+  // מניעת קריסה בווב אם אין webClientId בזמן פיתוח/Build
+  if (isWeb && !webClientId) {
+    return (
+      <TouchableOpacity style={[styles.button, styles.disabled]} disabled>
+        <Text style={styles.text}>התחברות עם גוגל</Text>
+      </TouchableOpacity>
+    );
+  }
+
   const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    androidClientId: androidClientId || undefined,
+    webClientId: webClientId || undefined,
     scopes: ['openid', 'profile', 'email'],
   });
 
   const onPress = async () => {
     try {
-      const useProxy = true; // נוח לפיתוח
-      await promptAsync({ useProxy });
+      await promptAsync();
     } catch (e) {
       console.error('❌ Google OAuth error:', e);
     }
   };
 
   useEffect(() => {
+    // השלם את הסשן רק ב־native כדי להימנע מבעיות בבניית web
+    if (Platform.OS !== 'web') {
+      // dynamic import to avoid bundling on web
+      import('expo-web-browser').then((m) => m.maybeCompleteAuthSession()).catch(() => {});
+    }
     const run = async () => {
       if (response?.type === 'success' && response.authentication?.accessToken) {
         try {

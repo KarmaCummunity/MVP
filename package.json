@@ -44,7 +44,9 @@
     "react-native-tab-view": "^4.1.2",
     "react-native-web": "^0.20.0",
     "react-native-webview": "13.13.5",
-    "firebase": "^10.12.4"
+    "firebase": "^10.12.4",
+    "expo-auth-session": "~6.2.1",
+    "expo-web-browser": "~14.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
