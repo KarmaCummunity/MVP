@@ -18,11 +18,12 @@ import { TabView, TabBar, SceneMap } from 'react-native-tab-view';
 import type { SceneRendererProps, NavigationState } from 'react-native-tab-view';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { useTranslation } from 'react-i18next';
 import { currentUser } from '../globals/fakeData';
 import { useUser } from '../context/UserContext';
 import { createShadowStyle } from '../globals/styles';
+import { scaleSize } from '../globals/responsive';
 import { users } from '../globals/fakeData';
 import { allUsers } from '../globals/characterTypes';
 import { getFollowStats, followUser, unfollowUser, createSampleFollowData } from '../utils/followService';
@@ -262,7 +263,7 @@ export default function ProfileScreen() {
               style={styles.menuIcon}
               onPress={() => setShowMenu(!showMenu)}
             >
-              <Ionicons name="menu" size={24} color={colors.textPrimary} />
+              <Ionicons name="menu" size={scaleSize(24)} color={colors.textPrimary} />
             </TouchableOpacity>
           <View style={styles.profileSection}>
             <Image
@@ -318,7 +319,7 @@ export default function ProfileScreen() {
                       navigation.navigate('BookmarksScreen' as never);
                     }}
                   >
-                    <Ionicons name="bookmark-outline" size={20} color={colors.textPrimary} />
+              <Ionicons name="bookmark-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.bookmarks')}</Text>
                   </TouchableOpacity>
                   
@@ -329,7 +330,7 @@ export default function ProfileScreen() {
               
                     }}
                   >
-                    <Ionicons name="analytics-outline" size={20} color={colors.textPrimary} />
+                      <Ionicons name="analytics-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.communityStats')}</Text>
                   </TouchableOpacity>
                   
@@ -340,7 +341,7 @@ export default function ProfileScreen() {
                       Alert.alert(t('profile:alerts.shareProfile'), t('profile:alerts.shareProfileDesc'));
                     }}
                   >
-                    <Ionicons name="share-outline" size={20} color={colors.textPrimary} />
+                      <Ionicons name="share-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.shareProfile')}</Text>
                   </TouchableOpacity>
                   
@@ -351,7 +352,7 @@ export default function ProfileScreen() {
                       Alert.alert(t('profile:alerts.editProfile'), t('profile:alerts.editProfileDesc'));
                     }}
                   >
-                    <Ionicons name="create-outline" size={20} color={colors.textPrimary} />
+                      <Ionicons name="create-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.editProfile')}</Text>
                   </TouchableOpacity>
                   
@@ -362,7 +363,7 @@ export default function ProfileScreen() {
                       Alert.alert(t('profile:alerts.settings'), t('profile:alerts.openSettings'));
                     }}
                   >
-                    <Ionicons name="settings-outline" size={20} color={colors.textPrimary} />
+                      <Ionicons name="settings-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.settings')}</Text>
                   </TouchableOpacity>
                   
@@ -373,7 +374,7 @@ export default function ProfileScreen() {
                       Alert.alert(t('profile:alerts.help'), t('profile:alerts.openHelp'));
                     }}
                   >
-                    <Ionicons name="help-circle-outline" size={20} color={colors.textPrimary} />
+                      <Ionicons name="help-circle-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.help')}</Text>
                   </TouchableOpacity>
                   
@@ -384,7 +385,7 @@ export default function ProfileScreen() {
                       navigation.navigate('LoginScreen' as never);
                     }}
                   >
-                    <Ionicons name="log-in-outline" size={20} color={colors.textPrimary} />
+                      <Ionicons name="log-in-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.login')}</Text>
                   </TouchableOpacity>
                   
@@ -392,7 +393,7 @@ export default function ProfileScreen() {
                     style={styles.menuItem}
                     onPress={selectRandomUser}
                   >
-                    <Ionicons name="shuffle-outline" size={20} color={colors.textPrimary} />
+                      <Ionicons name="shuffle-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.switchUser')}</Text>
                   </TouchableOpacity>
                   
@@ -400,7 +401,7 @@ export default function ProfileScreen() {
                     style={styles.menuItem}
                     onPress={handleCreateSampleData}
                   >
-                    <Ionicons name="add-circle-outline" size={20} color={colors.textPrimary} />
+                      <Ionicons name="add-circle-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.createSampleData')}</Text>
                   </TouchableOpacity>
                 </View>
@@ -414,14 +415,14 @@ export default function ProfileScreen() {
           <Text style={styles.fullName}>{selectedUser?.name || currentUser.name}</Text>
           <Text style={styles.bioText}>{selectedUser?.bio || currentUser.bio}</Text>
           <Text style={styles.locationText}>
-            <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
+            <Ionicons name="location-outline" size={scaleSize(14)} color={colors.textSecondary} />
             {' '}{typeof selectedUser?.location === 'string' ? selectedUser.location : selectedUser?.location?.city || currentUser.location}
           </Text>
           
           {/* Karma Points */}
           <View style={styles.karmaSection}>
             <View style={styles.karmaCard}>
-              <Ionicons name="star" size={20} color={colors.warning} />
+              <Ionicons name="star" size={scaleSize(20)} color={colors.warning} />
               <Text style={styles.karmaText}>{selectedUser?.karmaPoints || userStats.karmaPoints} {t('profile:stats.karmaPointsSuffix')}</Text>
             </View>
           </View>
@@ -432,21 +433,21 @@ export default function ProfileScreen() {
               style={styles.activityIconItem}
               onPress={() => Alert.alert(t('profile:alerts.activity'), t('profile:alerts.viewActivity'))}
             >
-              <Ionicons name="star-outline" size={24} color={colors.pink} />
+              <Ionicons name="star-outline" size={scaleSize(24)} color={colors.pink} />
               <Text style={styles.activityIconText}>{t('profile:activity')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.activityIconItem}
               onPress={() => Alert.alert(t('profile:alerts.history'), t('profile:alerts.activityHistory'))}
             >
-              <MaterialCommunityIcons name="history" size={24} color={colors.pink} />
+              <MaterialCommunityIcons name="history" size={scaleSize(24)} color={colors.pink} />
               <Text style={styles.activityIconText}>{t('profile:history')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.activityIconItem}
               onPress={() => Alert.alert(t('profile:alerts.favorites'), t('profile:alerts.yourFavorites'))}
             >
-              <Ionicons name="heart-outline" size={24} color={colors.pink} />
+              <Ionicons name="heart-outline" size={scaleSize(24)} color={colors.pink} />
               <Text style={styles.activityIconText}>{t('profile:favorites')}</Text>
             </TouchableOpacity>
           </View>
@@ -460,7 +461,7 @@ export default function ProfileScreen() {
               navigation.navigate('DiscoverPeopleScreen' as never);
             }}
           >
-            <Ionicons name="person-add-outline" size={18} color={colors.white} />
+              <Ionicons name="person-add-outline" size={scaleSize(18)} color={colors.white} />
             <Text style={styles.discoverPeopleText}>{t('profile:discoverPeople')}</Text>
           </TouchableOpacity>
           
@@ -470,7 +471,7 @@ export default function ProfileScreen() {
               navigation.navigate('NotificationsScreen' as never);
             }}
           >
-            <Ionicons name="notifications-outline" size={18} color={colors.white} />
+              <Ionicons name="notifications-outline" size={scaleSize(18)} color={colors.white} />
             <Text style={styles.notificationsButtonText}>{t('profile:notifications')}</Text>
           </TouchableOpacity>
         </View>
@@ -511,7 +512,7 @@ export default function ProfileScreen() {
               >
                 <View style={styles.storyHighlightCircle}>
                   {i === 0 ? (
-                    <Ionicons name="add" size={24} color={colors.pink} />
+                     <Ionicons name="add" size={scaleSize(24)} color={colors.pink} />
                   ) : (
                     <Image
                       source={{ uri: `https://picsum.photos/60/60?random=${i + 10}` }}
@@ -556,25 +557,25 @@ const styles = StyleSheet.create({
   profileInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.LG,
   },
   profileSection: {
     position: 'relative',
   },
   profilePicture: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: scaleSize(80),
+    height: scaleSize(80),
+    borderRadius: scaleSize(80) / 2,
     borderWidth: 3,
     borderColor: colors.pink,
   },
   menuIcon: { 
     position: 'absolute',
-    top: 10,
-    right: 10,
-    padding: 8,
-    borderRadius: 20,
+    top: LAYOUT_CONSTANTS.SPACING.SM,
+    right: LAYOUT_CONSTANTS.SPACING.SM,
+    padding: LAYOUT_CONSTANTS.SPACING.SM,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
     backgroundColor: colors.backgroundSecondary,
     ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.1, 4),
   },
@@ -582,7 +583,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flex: 1,
     justifyContent: 'space-around',
-    marginLeft: 20,
+    marginLeft: LAYOUT_CONSTANTS.SPACING.LG,
   },
   statItem: { 
     alignItems: 'center' 
@@ -591,73 +592,73 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.medium, 
     fontWeight: 'bold', 
     color: colors.textPrimary,
-    marginBottom: 4,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
   statLabel: { 
     fontSize: FontSizes.small, 
     color: colors.textSecondary,
   },
   bioSection: { 
-    paddingHorizontal: 20, 
-    marginBottom: 20 
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG, 
+    marginBottom: LAYOUT_CONSTANTS.SPACING.LG 
   },
   fullName: {
     fontSize: FontSizes.medium,
     fontWeight: 'bold',
     color: colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
   },
   bioText: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 8,
+    lineHeight: Math.round(FontSizes.body * 1.4),
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
   },
   locationText: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
-    marginBottom: 15,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
   },
   karmaSection: {
-    marginBottom: 15,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
   },
   karmaCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.backgroundSecondary,
-    padding: 12,
-    borderRadius: 12,
+    padding: LAYOUT_CONSTANTS.SPACING.SM + LAYOUT_CONSTANTS.SPACING.XS,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
     alignSelf: 'flex-start',
   },
   karmaText: {
     fontSize: FontSizes.body,
     fontWeight: '600',
     color: colors.textPrimary,
-    marginLeft: 8,
+    marginLeft: LAYOUT_CONSTANTS.SPACING.SM,
   },
   activityIcons: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 10,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
   },
   activityIconItem: { 
     alignItems: 'center',
-    padding: 10,
+    padding: LAYOUT_CONSTANTS.SPACING.SM,
   },
   activityIconText: {
     fontSize: FontSizes.small,
     color: colors.textSecondary,
-    marginTop: 5,
+    marginTop: LAYOUT_CONSTANTS.SPACING.XS,
   },
   actionButtonsContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.LG,
   },
   discoverPeopleButton: {
     backgroundColor: colors.pink,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM + LAYOUT_CONSTANTS.SPACING.XS,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -666,51 +667,51 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: FontSizes.body,
     fontWeight: '600',
-    marginLeft: 8,
+    marginLeft: LAYOUT_CONSTANTS.SPACING.SM,
   },
   notificationsButton: {
     backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM + LAYOUT_CONSTANTS.SPACING.XS,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
   },
   notificationsButtonText: {
     color: colors.white,
     fontSize: FontSizes.body,
     fontWeight: '600',
-    marginLeft: 8,
+    marginLeft: LAYOUT_CONSTANTS.SPACING.SM,
   },
   activitiesSection: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.LG,
   },
   sectionTitle: {
     fontSize: FontSizes.heading3,
     fontWeight: 'bold',
     color: colors.textPrimary,
-    marginBottom: 15,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
   },
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.backgroundPrimary,
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 8,
+    padding: LAYOUT_CONSTANTS.SPACING.SM + LAYOUT_CONSTANTS.SPACING.XS,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
     ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.1, 2),
     elevation: 2,
   },
   activityIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: scaleSize(32),
+    height: scaleSize(32),
+    borderRadius: scaleSize(16),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: LAYOUT_CONSTANTS.SPACING.SM,
   },
   activityContent: {
     flex: 1,
@@ -729,28 +730,28 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   storyHighlightsContentContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
   },
   storyHighlightItem: { 
     alignItems: 'center', 
-    marginHorizontal: 8 
+    marginHorizontal: LAYOUT_CONSTANTS.SPACING.XS 
   },
   storyHighlightCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: scaleSize(60),
+    height: scaleSize(60),
+    borderRadius: scaleSize(30),
     borderWidth: 2,
     borderColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.backgroundSecondary,
-    marginBottom: 8,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
   },
   highlightImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: scaleSize(56),
+    height: scaleSize(56),
+    borderRadius: scaleSize(28),
   },
   storyHighlightText: {
     fontSize: FontSizes.small,
@@ -758,7 +759,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   tabViewContainer: {
-    height: 600, // Fixed height for TabView
+    height: scaleSize(600), // Fixed baseline, scaled per screen
   },
   tabBar: {
     backgroundColor: colors.backgroundPrimary,
@@ -769,7 +770,7 @@ const styles = StyleSheet.create({
   },
   tabBarIndicator: {
     backgroundColor: colors.pink,
-    height: 2,
+    height: scaleSize(2),
   },
   tabBarItem: {
     flex: 1,
@@ -779,7 +780,7 @@ const styles = StyleSheet.create({
   },
   tabBarText: {
     fontSize: FontSizes.body,
-    paddingVertical: 12,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM + LAYOUT_CONSTANTS.SPACING.XS,
   },
   postsGrid: {
     flexDirection: 'row',

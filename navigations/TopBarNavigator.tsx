@@ -161,28 +161,28 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
         onLayout={(e) => setMeasuredHeight(e.nativeEvent.layout.height)}
       >
 
-      <View style={{ flexDirection: rowDirection('row'), gap: 5 }}>
-        <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={{ padding: 4 }}>
+      <View style={styles.topBarIconsRow}>
+        <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={styles.topBarIconButton}>
           <Icon name="settings-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('NotificationsScreen')} style={{ padding: 4 }}>
+        <TouchableOpacity onPress={() => navigation.navigate('NotificationsScreen')} style={styles.topBarIconButton}>
           <Icon name="notifications-circle-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
       </View>
 
       {/* Title */}
-      <View style={{ alignItems: 'center' }}>
+      <View style={styles.topBarTitleContainer}>
         <Text style={styles.topBarTitle}>{title}</Text>
       </View>
       {/* Left Icons Group: Notifications + Settings */}
             {/* Right Icons Group: Chat OR About (guest) */}
-            <View style={{ flexDirection: rowDirection('row'), gap: 5 }}>
+            <View style={styles.topBarIconsRow}>
         {isGuestMode ? (
-          <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={{ padding: 4 }}>
+          <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={styles.topBarIconButton}>
             <Icon name="information-circle-outline" size={24} color={colors.topNavIcon} />
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={{ padding: 4 }}>
+          <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={styles.topBarIconButton}>
             <Icon name="chatbubbles-outline" size={24} color={colors.topNavIcon} />
           </TouchableOpacity>
         )}

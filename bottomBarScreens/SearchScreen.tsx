@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import SearchBar from '../components/SearchBar';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { useTranslation } from 'react-i18next';
 import { 
   donations, 
@@ -25,6 +25,8 @@ import { useUser } from '../context/UserContext';
 import GuestModeNotice from '../components/GuestModeNotice';
 import { Pressable, Modal, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { scaleSize } from '../globals/responsive';
+import { createShadowStyle } from '../globals/styles';
 
 interface SearchResult {
   id: string;
@@ -230,10 +232,10 @@ const SearchScreen = () => {
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case 'donation': return 'תרומה';
-      case 'event': return 'אירוע';
-      case 'user': return 'משתמש';
-      default: return 'תוצאה';
+      case 'donation': return t('search:typeLabels.donation');
+      case 'event': return t('search:typeLabels.event');
+      case 'user': return t('search:typeLabels.user');
+      default: return t('search:typeLabels.result');
     }
   };
 
@@ -351,7 +353,7 @@ const SearchScreen = () => {
           <View style={styles.resultsContainer}>
             {isSearching ? (
               <View style={styles.loadingContainer}>
-                <Ionicons name="search" size={40} color={colors.textSecondary} />
+                <Ionicons name="search" size={scaleSize(40)} color={colors.textSecondary} />
                 <Text style={styles.loadingText}>{t('search:searching')}</Text>
               </View>
             ) : searchResults.length > 0 ? (
@@ -366,7 +368,7 @@ const SearchScreen = () => {
               </>
             ) : (
               <View style={styles.noResultsContainer}>
-                <Ionicons name="search-outline" size={60} color={colors.textSecondary} />
+                <Ionicons name="search-outline" size={scaleSize(60)} color={colors.textSecondary} />
                 <Text style={styles.noResultsTitle}>{t('search:noResultsFound')}</Text>
                 <Text style={styles.noResultsText}>{t('search:tryChangingSearchTerms')}</Text>
               </View>
@@ -380,7 +382,7 @@ const SearchScreen = () => {
         onPress={() => setAiVisible(true)}
         style={styles.fab}
       >
-        <Ionicons name="sparkles-outline" size={22} color={colors.white} />
+        <Ionicons name="sparkles-outline" size={scaleSize(22)} color={colors.white} />
         <Text style={styles.fabText}>{t('search:ai.fabLabel')}</Text>
       </Pressable>
 
@@ -391,7 +393,7 @@ const SearchScreen = () => {
             <View style={styles.aiHeader}>
               <Text style={styles.aiTitle}>{t('search:ai.title')}</Text>
               <Pressable onPress={() => setAiVisible(false)}>
-                <Ionicons name="close" size={22} color={colors.textSecondary} />
+                <Ionicons name="close" size={scaleSize(22)} color={colors.textSecondary} />
               </Pressable>
             </View>
             <ScrollView style={styles.aiMessages} contentContainerStyle={{ paddingBottom: 10 }}>
@@ -423,7 +425,7 @@ const SearchScreen = () => {
                   setAiText('');
                 }}
               >
-                <Ionicons name="send" size={18} color={colors.white} />
+                <Ionicons name="send" size={scaleSize(18)} color={colors.white} />
               </Pressable>
             </View>
           </View>
@@ -445,11 +447,11 @@ const styles = StyleSheet.create({
   },
   aiContainer: {
     backgroundColor: colors.backgroundPrimary,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingTop: 10,
-    paddingHorizontal: 12,
-    paddingBottom: 10,
+    borderTopLeftRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    borderTopRightRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    paddingTop: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
+    paddingBottom: LAYOUT_CONSTANTS.SPACING.SM,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -457,7 +459,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: 8,
+    paddingBottom: LAYOUT_CONSTANTS.SPACING.SM,
     borderBottomWidth: 1,
     borderBottomColor: colors.backgroundTertiary,
   },
@@ -467,19 +469,19 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   aiMessages: {
-    maxHeight: 260,
-    marginTop: 8,
+    maxHeight: scaleSize(260),
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
   },
   aiPlaceholder: {
     color: colors.textSecondary,
     textAlign: 'center',
-    paddingVertical: 20,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.LG,
   },
   aiBubble: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    marginVertical: 4,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM + LAYOUT_CONSTANTS.SPACING.XS,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    marginVertical: LAYOUT_CONSTANTS.SPACING.XS,
     maxWidth: '85%',
   },
   aiUser: {
@@ -497,64 +499,64 @@ const styles = StyleSheet.create({
   aiInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
+    gap: LAYOUT_CONSTANTS.SPACING.SM,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
   },
   aiInput: {
     flex: 1,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
     color: colors.textPrimary,
     backgroundColor: colors.backgroundSecondary,
   },
   aiSend: {
     backgroundColor: colors.pink,
-    padding: 10,
-    borderRadius: 20,
+    padding: LAYOUT_CONSTANTS.SPACING.SM,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
   },
   fab: {
     position: 'absolute',
-    left: 20,
-    bottom: 50,
+    left: LAYOUT_CONSTANTS.SPACING.LG,
+    bottom: scaleSize(50),
     backgroundColor: colors.pink,
-    borderRadius: 22,
+    borderRadius: scaleSize(22),
     height: "auto",
-    paddingHorizontal: 14,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    elevation: 4,
+    gap: LAYOUT_CONSTANTS.SPACING.XS,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.15, 4),
   },
   fabText: {
-    marginVertical: 5,
+    marginVertical: LAYOUT_CONSTANTS.SPACING.XS,
     color: colors.white,
     fontSize: FontSizes.small,
     fontWeight: '700',
   },
   searchContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.MD,
     backgroundColor: colors.backgroundPrimary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   filterContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
     backgroundColor: colors.backgroundPrimary,
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
     backgroundColor: colors.backgroundSecondary,
-    marginRight: 10,
+    marginRight: LAYOUT_CONSTANTS.SPACING.SM,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -565,7 +567,7 @@ const styles = StyleSheet.create({
   filterButtonText: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
-    marginLeft: 6,
+    marginLeft: LAYOUT_CONSTANTS.SPACING.XS + 2,
   },
   filterButtonTextActive: {
     color: colors.white,
@@ -575,17 +577,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   defaultContent: {
-    padding: 20,
+    padding: LAYOUT_CONSTANTS.SPACING.LG,
   },
   section: {
-    marginBottom: 30,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XL,
   },
   sectionTitle: {
     fontSize: FontSizes.heading3,
     fontWeight: 'bold',
     textAlign: 'left',
     color: colors.textPrimary,
-    marginBottom: 15,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -593,11 +595,11 @@ const styles = StyleSheet.create({
   },
   tag: {
     backgroundColor: colors.backgroundSecondary,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 10,
-    marginBottom: 10,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    marginRight: LAYOUT_CONSTANTS.SPACING.SM,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -613,52 +615,48 @@ const styles = StyleSheet.create({
   quickAction: {
     width: '48%',
     backgroundColor: colors.backgroundSecondary,
-    padding: 20,
-    borderRadius: 12,
+    padding: LAYOUT_CONSTANTS.SPACING.LG,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
     borderWidth: 1,
     borderColor: colors.border,
   },
   quickActionText: {
     fontSize: FontSizes.body,
     color: colors.textPrimary,
-    marginTop: 8,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
     textAlign: 'center',
   },
   resultsContainer: {
-    padding: 20,
+    padding: LAYOUT_CONSTANTS.SPACING.LG,
   },
   resultsTitle: {
     fontSize: FontSizes.heading3,
     fontWeight: '600',
     color: colors.textPrimary,
-    marginBottom: 20,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.LG,
   },
   resultItem: {
     flexDirection: 'row',
     backgroundColor: colors.backgroundPrimary,
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    padding: LAYOUT_CONSTANTS.SPACING.MD,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.1, 2),
   },
   resultImageContainer: {
-    marginRight: 15,
+    marginRight: LAYOUT_CONSTANTS.SPACING.MD,
   },
   resultImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
+    width: scaleSize(50),
+    height: scaleSize(50),
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
   },
   resultImagePlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
+    width: scaleSize(50),
+    height: scaleSize(50),
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -669,19 +667,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 5,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
   resultTitle: {
     fontSize: FontSizes.body,
     fontWeight: '600',
     color: colors.textPrimary,
     flex: 1,
-    marginRight: 10,
+    marginRight: LAYOUT_CONSTANTS.SPACING.SM,
   },
   resultTypeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.XS,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
   },
   resultTypeText: {
     fontSize: FontSizes.small,
@@ -690,8 +688,8 @@ const styles = StyleSheet.create({
   resultDescription: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
-    marginBottom: 8,
-    lineHeight: 18,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
+    lineHeight: Math.round(FontSizes.body * 1.3),
   },
   resultMeta: {
     flexDirection: 'row',
@@ -700,7 +698,7 @@ const styles = StyleSheet.create({
   resultCategory: {
     fontSize: FontSizes.small,
     color: colors.textSecondary,
-    marginRight: 15,
+    marginRight: LAYOUT_CONSTANTS.SPACING.MD,
   },
   resultLocation: {
     fontSize: FontSizes.small,
@@ -708,29 +706,29 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     alignItems: 'center',
-    paddingVertical: 50,
+    paddingVertical: scaleSize(50),
   },
   loadingText: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
-    marginTop: 10,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
   },
   noResultsContainer: {
     alignItems: 'center',
-    paddingVertical: 50,
+    paddingVertical: scaleSize(50),
   },
   noResultsTitle: {
     fontSize: FontSizes.heading3,
     fontWeight: 'bold',
     color: colors.textPrimary,
-    marginTop: 15,
-    marginBottom: 8,
+    marginTop: LAYOUT_CONSTANTS.SPACING.MD,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
   noResultsText: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: Math.round(FontSizes.body * 1.4),
   },
 
 });

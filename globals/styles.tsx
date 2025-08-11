@@ -1,6 +1,7 @@
 import { StyleSheet, Dimensions, Platform } from "react-native";
 import colors from "./colors";
 import { biDiTextAlign, rowDirection, scaleSize } from "./responsive";
+import { FontSizes, LAYOUT_CONSTANTS } from "./constants";
 
 const { width } = Dimensions.get('window');
 
@@ -637,14 +638,43 @@ export const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: "#666",
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
+    fontSize: FontSizes.medium,
+    color: colors.textPrimary,
   },
   errorText: {
     color: "red",
     fontSize: 18,
     textAlign: "center",
+  },
+  /**
+   * Generic centered full-screen container for loading/empty states.
+   */
+  centeredScreen: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundPrimary,
+  },
+  /**
+   * Row container for top-bar icon groups with platform/orientation-aware direction.
+   */
+  topBarIconsRow: {
+    flexDirection: rowDirection('row'),
+    // Use margin between children instead of gap for broader RN compatibility
+    // Consumers should add marginHorizontal on child buttons if needed
+  },
+  /**
+   * Touchable area for top-bar icons.
+   */
+  topBarIconButton: {
+    padding: LAYOUT_CONSTANTS.SPACING.XS,
+  },
+  /**
+   * Title container within top bar.
+   */
+  topBarTitleContainer: {
+    alignItems: 'center',
   },
 });
 

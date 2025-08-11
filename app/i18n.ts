@@ -1,6 +1,13 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import * as Localization from 'expo-localization';
+// Safe import for expo-localization to avoid native module crash on platforms/builds where it's not linked
+let Localization: any;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  Localization = require('expo-localization');
+} catch (error) {
+  Localization = null;
+}
 import { I18nManager } from 'react-native';
 
 // Load unified resources per language
@@ -12,8 +19,8 @@ const resources = {
   en: en_all as any,
 };
 
-const deviceLocales = Localization.getLocales();
-const deviceLang = deviceLocales && deviceLocales.length > 0 ? deviceLocales[0].languageCode : 'he';
+const deviceLocales = Localization?.getLocales ? Localization.getLocales() : [{ languageCode: 'he' }];
+const deviceLang = deviceLocales && deviceLocales.length > 0 && deviceLocales[0].languageCode ? deviceLocales[0].languageCode : 'he';
 const initialLang = deviceLang === 'he' ? 'he' : 'en';
 
 if (I18nManager.isRTL !== (initialLang === 'he')) {

@@ -10,7 +10,10 @@ import {
   Alert,
   SafeAreaView,
   StatusBar,
-  Platform
+  Platform,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+  ViewStyle,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -28,7 +31,7 @@ import Animated, {
 import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import colors from "../globals/colors";
-import { FontSizes } from "../globals/constants";
+import { FontSizes, LAYOUT_CONSTANTS } from "../globals/constants";
 import { useTranslation } from 'react-i18next';
 import CommunityStatsPanel from "../components/CommunityStatsPanel";
 import PostsReelsScreen from "../components/PostsReelsScreen";
@@ -42,23 +45,30 @@ import { useUser } from "../context/UserContext";
 import GuestModeNotice from "../components/GuestModeNotice";
 import CommunityStatsGrid from "../components/CommunityStatsGrid";
 import StatDetailsModal, { StatDetails } from "../components/StatDetailsModal";
+import { createShadowStyle } from "../globals/styles";
+import { scaleSize } from "../globals/responsive";
 
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-
-const PANEL_HEIGHT = SCREEN_HEIGHT - 50;
-const CLOSED_POSITION = PANEL_HEIGHT - 60;
+// Panel layout dimensions derived responsively
+const PANEL_HEIGHT = SCREEN_HEIGHT - scaleSize(50);
+const CLOSED_POSITION = PANEL_HEIGHT - scaleSize(60);
 const OPEN_POSITION = 0;
 const MID_POSITION = PANEL_HEIGHT / 2;
 
-// Animated floating bubble component
-const FloatingBubble: React.FC<{
+/**
+ * Small animated bubble that gently floats to display a stat item.
+ * Styles use global scaling and shadow helpers for cross-platform consistency.
+ */
+interface FloatingBubbleProps {
   icon: string;
   value: string;
   label: string;
-  bubbleStyle: any;
+  bubbleStyle: ViewStyle | ViewStyle[];
   delay: number;
-}> = ({ icon, value, label, bubbleStyle, delay }) => {
+}
+
+const FloatingBubble: React.FC<FloatingBubbleProps> = ({ icon, value, label, bubbleStyle, delay }) => {
   const translateY = useSharedValue(0);
   const scale = useSharedValue(1);
   const opacity = useSharedValue(0.8);
@@ -181,16 +191,15 @@ export default function HomeScreen() {
   };
 
   /**
-   * Handles downward scrolling. When the user reaches near the bottom,
-   * the posts screen is opened.
+   * Handle vertical scrolling; when reaching near the end, open the posts view.
    */
-  const handleScroll = (event: any) => {
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
     const offsetY = contentOffset.y;
     scrollY.value = offsetY;
 
     // Open posts screen when the user scrolls to the end of the content
-    const nearBottomBuffer = 24;
+    const nearBottomBuffer = LAYOUT_CONSTANTS.SPACING.MD;
     const reachedEnd = offsetY + layoutMeasurement.height >= contentSize.height - nearBottomBuffer;
 
     if (reachedEnd && !showPosts) {
@@ -216,12 +225,11 @@ export default function HomeScreen() {
   const { t } = useTranslation(['home','common']);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, Platform.OS === 'web' ? ({ height: '100vh' } as any) : null]}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundPrimary} />
       
        {showPosts ? (
         // Posts screen
-        <View style={styles.postsContainer}>
           <PostsReelsScreen 
             onScroll={(hide) => {
               console.log('🏠 HomeScreen - Setting hideTopBar:', hide);
@@ -229,16 +237,16 @@ export default function HomeScreen() {
             }}
             hideTopBar={hideTopBar}
           />
-        </View>
       ) : (
         // Home screen with enhanced scrolling
-        <View style={styles.homeContainer}>
+        <View style={[styles.homeContainer, Platform.OS === 'web' ? ({ height: '100%' } as any) : null]}>
           <ScrollView 
-            style={[styles.scrollContainer, Platform.OS === 'web' ? ({ overflowY: 'auto' } as any) : null]}
+            style={[styles.scrollContainer, Platform.OS === 'web' ? ({ overflowY: 'auto', height: '100%' } as any) : null]}
             onScroll={handleScroll}
             scrollEventThrottle={50}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={[styles.scrollContent, Platform.OS === 'web' ? ({ minHeight: '100vh' } as any) : null]}
+            nestedScrollEnabled
+            showsVerticalScrollIndicator
+            contentContainerStyle={[styles.scrollContent, Platform.OS === 'web' ? ({ flexGrow: 1 } as any) : null]}
           >
             {/* Header */}
             {isGuestMode ? (
@@ -259,7 +267,7 @@ export default function HomeScreen() {
                     style={styles.notificationButton}
                     onPress={() => Alert.alert(t('common:notifications'), t('common:notificationsList'))}
                   >
-                    <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
+                    <Ionicons name="notifications-outline" size={scaleSize(24)} color={colors.textPrimary} />
                     <View style={styles.notificationBadge}>
                       <Text style={styles.notificationText}>3</Text>
                     </View>
@@ -291,11 +299,10 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: colors.backgroundPrimary,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-    elevation: 3,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    borderBottomLeftRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
+    borderBottomRightRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.1, 4),
   },
   headerContent: {
     flexDirection: 'row',
@@ -308,10 +315,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   userAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 12,
+    width: scaleSize(50),
+    height: scaleSize(50),
+    borderRadius: scaleSize(50) / 2,
+    marginRight: LAYOUT_CONSTANTS.SPACING.SM,
   },
   userDetails: {
     flex: 1,
@@ -320,7 +327,7 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.medium,
     fontWeight: 'bold',
     color: colors.textPrimary,
-    marginBottom: 2,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
   karmaText: {
     fontSize: FontSizes.body,
@@ -328,16 +335,16 @@ const styles = StyleSheet.create({
   },
   notificationButton: {
     position: 'relative',
-    padding: 8,
+    padding: LAYOUT_CONSTANTS.SPACING.SM,
   },
   notificationBadge: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: LAYOUT_CONSTANTS.SPACING.XS,
+    right: LAYOUT_CONSTANTS.SPACING.XS,
     backgroundColor: colors.error,
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
+    borderRadius: scaleSize(10),
+    minWidth: scaleSize(20),
+    height: scaleSize(20),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -347,13 +354,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   quickActionsContainer: {
-    padding: 20,
+    padding: LAYOUT_CONSTANTS.SPACING.LG,
   },
   sectionTitle: {
     fontSize: FontSizes.heading3,
     fontWeight: 'bold',
     color: colors.textPrimary,
-    marginBottom: 15,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
   },
   quickActionsGrid: {
     flexDirection: 'row',
@@ -362,15 +369,15 @@ const styles = StyleSheet.create({
   quickActionButton: {
     alignItems: 'center',
     flex: 1,
-    marginHorizontal: 5,
+    marginHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
   },
   quickActionIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: scaleSize(50),
+    height: scaleSize(50),
+    borderRadius: scaleSize(50) / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
   },
   quickActionText: {
     fontSize: FontSizes.small,
@@ -378,42 +385,41 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   activitiesContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.LG,
   },
   activitiesScroll: {
-    paddingRight: 20,
+    paddingRight: LAYOUT_CONSTANTS.SPACING.LG,
   },
   activityCard: {
     backgroundColor: colors.backgroundPrimary,
-    padding: 15,
-    borderRadius: 12,
-    marginRight: 12,
-    width: 150,
-    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-    elevation: 2,
+    padding: LAYOUT_CONSTANTS.SPACING.MD,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    marginRight: LAYOUT_CONSTANTS.SPACING.SM,
+    width: scaleSize(150),
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.1, 2),
   },
   activityIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: scaleSize(30),
+    height: scaleSize(30),
+    borderRadius: scaleSize(30) / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
   },
   activityTitle: {
     fontSize: FontSizes.body,
     fontWeight: '600',
     color: colors.textPrimary,
-    marginBottom: 4,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
   activityTime: {
     fontSize: FontSizes.small,
     color: colors.textSecondary,
   },
   statsPreview: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.LG,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -421,26 +427,25 @@ const styles = StyleSheet.create({
   },
      statCard: {
      backgroundColor: '#E3F2FD',
-     padding: 15,
-     borderRadius: 50,
+     padding: LAYOUT_CONSTANTS.SPACING.MD,
+     borderRadius: scaleSize(50),
      alignItems: 'center',
      flex: 1,
-     marginHorizontal: 5,
-         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
-     elevation: 3,
-     minWidth: 80,
-     minHeight: 80,
+     marginHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
+     ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.15, 4),
+     minWidth: scaleSize(80),
+     minHeight: scaleSize(80),
      justifyContent: 'center',
    },
   statIcon: {
     fontSize: FontSizes.heading1,
-    marginBottom: 5,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
      statValue: {
      fontSize: FontSizes.medium,
      fontWeight: 'bold',
      color: '#1976D2', // Darker blue for better readability
-     marginBottom: 2,
+     marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
    },
    statName: {
      fontSize: FontSizes.caption,
@@ -453,17 +458,16 @@ const styles = StyleSheet.create({
     width: "100%",
     backgroundColor: colors.white,
     position: "absolute",
-    bottom: 10,
-    borderTopLeftRadius: 250,
-    borderTopRightRadius: 250,
-    boxShadow: '0 -3px 8px rgba(0, 0, 0, 0.15)',
-    elevation: 8,
+    bottom: LAYOUT_CONSTANTS.SPACING.SM,
+    borderTopLeftRadius: scaleSize(250),
+    borderTopRightRadius: scaleSize(250),
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: -3 }, 0.15, 8),
   },
   panelHandle: {
-    height: 6,
-    borderRadius: 3,
+    height: scaleSize(6),
+    borderRadius: scaleSize(3),
     alignSelf: "center",
-    marginBottom: 20,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.LG,
   },
   // New styles for posts screen and scrolling
   postsContainer: {
@@ -474,8 +478,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.MD,
     borderBottomWidth: 1,
     borderBottomColor: colors.backgroundTertiary,
   },
@@ -489,37 +493,36 @@ const styles = StyleSheet.create({
   },
   pullIndicator: {
     alignItems: 'center',
-    paddingVertical: 30,
-    marginBottom: 50,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.XL,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XL,
   },
   pullText: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
-    marginTop: 8,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
   },
   // Toggle button styles
   toggleContainer: {
     position: 'absolute',
-    bottom: 50,
-    right: 30,
+    bottom: scaleSize(50),
+    right: scaleSize(30),
     zIndex: 1000,
     flexDirection: 'row',
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: 20,
-    padding: 3,
-    gap: 2,
+    borderRadius: scaleSize(20),
+    padding: scaleSize(3),
+    gap: LAYOUT_CONSTANTS.SPACING.XS,
   },
   toggleButton: {
-    width: 32,
-    height: 32,
+    width: scaleSize(32),
+    height: scaleSize(32),
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 16,
+    borderRadius: scaleSize(16),
   },
   toggleButtonActive: {
     backgroundColor: colors.primary,
-    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.4)',
-    elevation: 3,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.4, 2),
   },
   toggleText: {
     fontSize: FontSizes.body,
@@ -544,11 +547,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.offWhite,
-    marginHorizontal: 20,
-    marginTop: 15,
-    marginBottom: 10,
-    padding: 12,
-    borderRadius: 12,
+    marginHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    marginTop: LAYOUT_CONSTANTS.SPACING.MD,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
+    padding: LAYOUT_CONSTANTS.SPACING.SM + LAYOUT_CONSTANTS.SPACING.XS,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
     borderWidth: 1,
     borderColor: colors.primary + '30',
   },
@@ -558,23 +561,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   selectedUserAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 10,
+    width: scaleSize(32),
+    height: scaleSize(32),
+    borderRadius: scaleSize(16),
+    marginRight: LAYOUT_CONSTANTS.SPACING.SM,
   },
   selectedUserName: {
     fontSize: FontSizes.small,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 2,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
   selectedUserLocation: {
     fontSize: FontSizes.caption,
     color: colors.textSecondary,
   },
   clearUserButton: {
-    padding: 4,
+    padding: LAYOUT_CONSTANTS.SPACING.XS,
   },
   // Home container style
   homeContainer: {
@@ -587,7 +590,7 @@ const styles = StyleSheet.create({
   },
   // Scroll content style
   scrollContent: {
-    paddingBottom: 100, // Bottom margin to enable scrolling
+    paddingBottom: scaleSize(100), // Bottom margin to enable scrolling
   },
   // Personal statistics styles
   personalStatsContainer: {
@@ -601,27 +604,26 @@ const styles = StyleSheet.create({
   },
      personalStatCard: {
      backgroundColor: '#E3F2FD', // Very light blue
-     padding: 15,
-     borderRadius: 50, // Fully rounded
+     padding: LAYOUT_CONSTANTS.SPACING.MD,
+     borderRadius: scaleSize(50), // Fully rounded
      alignItems: 'center',
      flex: 1,
-     marginHorizontal: 5,
-     marginBottom: 10,
-     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
-     elevation: 3,
-     minWidth: 80,
-     minHeight: 80,
+     marginHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
+     marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
+     ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.15, 4),
+     minWidth: scaleSize(80),
+     minHeight: scaleSize(80),
      justifyContent: 'center',
    },
   personalStatIcon: {
     fontSize: FontSizes.heading2,
-    marginBottom: 5,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
      personalStatValue: {
      fontSize: FontSizes.large,
      fontWeight: 'bold',
      color: '#1976D2', // Darker blue for better readability
-     marginBottom: 2,
+     marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
    },
    personalStatName: {
      fontSize: FontSizes.caption,
@@ -631,8 +633,8 @@ const styles = StyleSheet.create({
    },
   // Floating community statistics styles
   floatingStatsContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.LG,
   },
   bubblesContainer: {
     flexDirection: 'row',
@@ -641,26 +643,25 @@ const styles = StyleSheet.create({
   },
      floatingBubble: {
      backgroundColor: '#E3F2FD', // Very light blue
-     padding: 15,
-     borderRadius: 50, // Fully rounded
+     padding: LAYOUT_CONSTANTS.SPACING.MD,
+     borderRadius: scaleSize(50), // Fully rounded
      alignItems: 'center',
-     marginHorizontal: 5,
-     marginBottom: 10,
-     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
-     elevation: 3,
-     minWidth: 80,
-     minHeight: 80,
+     marginHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
+     marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
+     ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.15, 4),
+     minWidth: scaleSize(80),
+     minHeight: scaleSize(80),
      justifyContent: 'center',
    },
   bubbleIcon: {
     fontSize: FontSizes.heading2,
-    marginBottom: 5,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
      bubbleValue: {
      fontSize: FontSizes.large,
      fontWeight: 'bold',
      color: '#1976D2', // Darker blue for better readability
-     marginBottom: 2,
+     marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
    },
    bubbleLabel: {
      fontSize: FontSizes.caption,

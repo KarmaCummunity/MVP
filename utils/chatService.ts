@@ -1,4 +1,7 @@
 import { Platform } from 'react-native';
+import { USE_FIRESTORE } from './dbConfig';
+import { getFirebase } from './firebaseClient';
+import { collection as fsCollection, query as fsQuery, where as fsWhere, onSnapshot } from 'firebase/firestore';
 import { sendMessageNotification } from './notificationService';
 import { db, DB_COLLECTIONS, DatabaseService } from './databaseService';
 
@@ -245,61 +248,92 @@ export const subscribeToMessages = (conversationId: string, userId: string, call
     messageListeners.set(key, new Set());
   }
   messageListeners.get(key)!.add(callback);
-  
-  // Initial call
-  getMessages(conversationId, userId).then(callback);
-  
-  // Set up polling every 2 seconds
-  const interval = setInterval(async () => {
-    const messages = await getMessages(conversationId, userId);
-    callback(messages);
-  }, 2000);
-  
-  // Return cleanup function
-  return () => {
-    clearInterval(interval);
-    const listeners = messageListeners.get(key);
-    if (listeners) {
-      listeners.delete(callback);
-      if (listeners.size === 0) {
-        messageListeners.delete(key);
+
+  if (USE_FIRESTORE) {
+    const { db } = getFirebase();
+    const col = fsCollection(db, DB_COLLECTIONS.MESSAGES);
+    const q = fsQuery(col, fsWhere('_userId', '==', userId), fsWhere('conversationId', '==', conversationId));
+    const unsub = onSnapshot(q, async (snap) => {
+      const items = snap.docs.map((d) => d.data() as Message).sort((a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+      callback(items);
+    });
+    return () => {
+      unsub();
+      const listeners = messageListeners.get(key);
+      if (listeners) {
+        listeners.delete(callback);
+        if (listeners.size === 0) {
+          messageListeners.delete(key);
+        }
       }
-    }
-  };
+    };
+  } else {
+    getMessages(conversationId, userId).then(callback);
+    const interval = setInterval(async () => {
+      const messages = await getMessages(conversationId, userId);
+      callback(messages);
+    }, 2000);
+    return () => {
+      clearInterval(interval);
+      const listeners = messageListeners.get(key);
+      if (listeners) {
+        listeners.delete(callback);
+        if (listeners.size === 0) {
+          messageListeners.delete(key);
+        }
+      }
+    };
+  }
 };
 
 // Real-time listener for conversations
 export const subscribeToConversations = (userId: string, callback: (conversations: Conversation[]) => void) => {
-  // Add listener to the map
   if (!conversationListeners.has(userId)) {
     conversationListeners.set(userId, new Set());
   }
   conversationListeners.get(userId)!.add(callback);
-  
-  // Initial call
-  getConversations(userId).then((conversations) => {
-    // Conversations are already sorted by getConversations
-    callback(conversations);
-  });
-  
-  // Set up polling every 5 seconds
-  const interval = setInterval(async () => {
-    const conversations = await getConversations(userId);
-    // Conversations are already sorted by getConversations
-    callback(conversations);
-  }, 5000);
-  
-  // Return cleanup function
-  return () => {
-    clearInterval(interval);
-    const listeners = conversationListeners.get(userId);
-    if (listeners) {
-      listeners.delete(callback);
-      if (listeners.size === 0) {
-        conversationListeners.delete(userId);
+
+  if (USE_FIRESTORE) {
+    const { db } = getFirebase();
+    const col = fsCollection(db, DB_COLLECTIONS.CHATS);
+    const q = fsQuery(col, fsWhere('_userId', '==', userId));
+    const unsub = onSnapshot(q, (snap) => {
+      const items = snap.docs
+        .map((d) => d.data() as Conversation)
+        .sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
+      callback(items);
+    });
+    return () => {
+      unsub();
+      const listeners = conversationListeners.get(userId);
+      if (listeners) {
+        listeners.delete(callback);
+        if (listeners.size === 0) {
+          conversationListeners.delete(userId);
+        }
       }
-    }
-  };
+    };
+  } else {
+    getConversations(userId).then((conversations) => {
+      callback(conversations);
+    });
+    const interval = setInterval(async () => {
+      const conversations = await getConversations(userId);
+      callback(conversations);
+    }, 5000);
+    return () => {
+      clearInterval(interval);
+      const listeners = conversationListeners.get(userId);
+      if (listeners) {
+        listeners.delete(callback);
+        if (listeners.size === 0) {
+          conversationListeners.delete(userId);
+        }
+      }
+    };
+  }
 };
 
 // Notify listeners when data changes

@@ -15,6 +15,7 @@ import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
 import LoginScreen from "../screens/LoginScreen";
 import { useUser } from '../context/UserContext';
 import colors from '../globals/colors';
+import styles from '../globals/styles';
 import NewChatScreen from '../screens/NewChatScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
 import SettingsScreen from '../topBarScreens/SettingsScreen';
@@ -59,20 +60,9 @@ export default function MainNavigator() {
   if (isLoading) {
     console.log('🧭 MainNavigator - Showing loading screen');
     return (
-      <View style={{
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: colors.backgroundPrimary,
-      }}>
+      <View style={styles.centeredScreen}>
         <ActivityIndicator size="large" color={colors.info} />
-        <Text style={{
-          marginTop: 10,
-          fontSize: 16,
-          color: colors.textPrimary,
-        }}>
-          {t('common:loading')}
-        </Text>
+        <Text style={styles.loadingText}>{t('common:loading')}</Text>
       </View>
     );
   }

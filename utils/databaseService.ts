@@ -1,5 +1,8 @@
 // utils/databaseService.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { USE_FIRESTORE, USE_BACKEND } from './dbConfig';
+import { firestoreAdapter, DatabaseAdapter } from './firestoreAdapter';
+import { restAdapter } from './restAdapter';
 
 // Database Collections
 export const DB_COLLECTIONS = {
@@ -58,9 +61,15 @@ export class DatabaseService {
     data: T
   ): Promise<void> {
     try {
-      await this.ensureVersion();
-      const key = getDBKey(collection, userId, itemId);
-      await AsyncStorage.setItem(key, JSON.stringify(data));
+      if (USE_BACKEND) {
+        await restAdapter.create(collection, userId, itemId, data);
+      } else if (USE_FIRESTORE) {
+        await firestoreAdapter.create(collection, userId, itemId, data);
+      } else {
+        await this.ensureVersion();
+        const key = getDBKey(collection, userId, itemId);
+        await AsyncStorage.setItem(key, JSON.stringify(data));
+      }
       console.log(`✅ DatabaseService - Created ${collection} item:`, itemId);
     } catch (error) {
       console.error(`❌ DatabaseService - Create ${collection} error:`, error);
@@ -74,10 +83,16 @@ export class DatabaseService {
     itemId: string
   ): Promise<T | null> {
     try {
-      await this.ensureVersion();
-      const key = getDBKey(collection, userId, itemId);
-      const item = await AsyncStorage.getItem(key);
-      return item ? JSON.parse(item) : null;
+      if (USE_BACKEND) {
+        return await restAdapter.read<T>(collection, userId, itemId);
+      } else if (USE_FIRESTORE) {
+        return await firestoreAdapter.read<T>(collection, userId, itemId);
+      } else {
+        await this.ensureVersion();
+        const key = getDBKey(collection, userId, itemId);
+        const item = await AsyncStorage.getItem(key);
+        return item ? JSON.parse(item) : null;
+      }
     } catch (error) {
       console.error(`❌ DatabaseService - Read ${collection} error:`, error);
       return null;
@@ -91,11 +106,19 @@ export class DatabaseService {
     data: Partial<T>
   ): Promise<void> {
     try {
-      const existing = await this.read<T>(collection, userId, itemId);
-      if (existing) {
-        const updated = { ...existing, ...data };
-        await this.create(collection, userId, itemId, updated);
+      if (USE_BACKEND) {
+        await restAdapter.update(collection, userId, itemId, data);
         console.log(`✅ DatabaseService - Updated ${collection} item:`, itemId);
+      } else if (USE_FIRESTORE) {
+        await firestoreAdapter.update(collection, userId, itemId, data);
+        console.log(`✅ DatabaseService - Updated ${collection} item:`, itemId);
+      } else {
+        const existing = await this.read<T>(collection, userId, itemId);
+        if (existing) {
+          const updated = { ...existing, ...data };
+          await this.create(collection, userId, itemId, updated);
+          console.log(`✅ DatabaseService - Updated ${collection} item:`, itemId);
+        }
       }
     } catch (error) {
       console.error(`❌ DatabaseService - Update ${collection} error:`, error);
@@ -109,8 +132,14 @@ export class DatabaseService {
     itemId: string
   ): Promise<void> {
     try {
-      const key = getDBKey(collection, userId, itemId);
-      await AsyncStorage.removeItem(key);
+      if (USE_BACKEND) {
+        await restAdapter.delete(collection, userId, itemId);
+      } else if (USE_FIRESTORE) {
+        await firestoreAdapter.delete(collection, userId, itemId);
+      } else {
+        const key = getDBKey(collection, userId, itemId);
+        await AsyncStorage.removeItem(key);
+      }
       console.log(`✅ DatabaseService - Deleted ${collection} item:`, itemId);
     } catch (error) {
       console.error(`❌ DatabaseService - Delete ${collection} error:`, error);
@@ -124,25 +153,30 @@ export class DatabaseService {
     userId: string
   ): Promise<T[]> {
     try {
-      await this.ensureVersion();
-      const keys = await AsyncStorage.getAllKeys();
-      const userKeys = keys.filter(key => 
-        key.startsWith(`${collection}_${userId}_`)
-      );
-      
-      if (userKeys.length === 0) return [];
+      if (USE_BACKEND) {
+        return await restAdapter.list<T>(collection, userId);
+      } else if (USE_FIRESTORE) {
+        return await firestoreAdapter.list<T>(collection, userId);
+      } else {
+        await this.ensureVersion();
+        const keys = await AsyncStorage.getAllKeys();
+        const userKeys = keys.filter(key => 
+          key.startsWith(`${collection}_${userId}_`)
+        );
+        
+        if (userKeys.length === 0) return [];
 
-      const items = await AsyncStorage.multiGet(userKeys);
-      return items
-        .map(([key, value]) => value ? JSON.parse(value) : null)
-        .filter((item): item is T => item !== null)
-        .sort((a, b) => {
-          // Sort by timestamp if available
-          if ((a as any).timestamp && (b as any).timestamp) {
-            return new Date((b as any).timestamp).getTime() - new Date((a as any).timestamp).getTime();
-          }
-          return 0;
-        });
+        const items = await AsyncStorage.multiGet(userKeys);
+        return items
+          .map(([key, value]) => value ? JSON.parse(value) : null)
+          .filter((item): item is T => item !== null)
+          .sort((a, b) => {
+            if ((a as any).timestamp && (b as any).timestamp) {
+              return new Date((b as any).timestamp).getTime() - new Date((a as any).timestamp).getTime();
+            }
+            return 0;
+          });
+      }
     } catch (error) {
       console.error(`❌ DatabaseService - List ${collection} error:`, error);
       return [];
@@ -152,11 +186,19 @@ export class DatabaseService {
   // Count operations
   static async count(collection: string, userId: string): Promise<number> {
     try {
-      const keys = await AsyncStorage.getAllKeys();
-      const userKeys = keys.filter(key => 
-        key.startsWith(`${collection}_${userId}_`)
-      );
-      return userKeys.length;
+      if (USE_BACKEND) {
+        const items = await restAdapter.list(collection, userId);
+        return items.length;
+      } else if (USE_FIRESTORE) {
+        const items = await firestoreAdapter.list(collection, userId);
+        return items.length;
+      } else {
+        const keys = await AsyncStorage.getAllKeys();
+        const userKeys = keys.filter(key => 
+          key.startsWith(`${collection}_${userId}_`)
+        );
+        return userKeys.length;
+      }
     } catch (error) {
       console.error(`❌ DatabaseService - Count ${collection} error:`, error);
       return 0;
@@ -185,12 +227,23 @@ export class DatabaseService {
     items: Array<{ id: string; data: T }>
   ): Promise<void> {
     try {
-      const keyValuePairs: [string, string][] = items.map(({ id, data }) => [
-        getDBKey(collection, userId, id),
-        JSON.stringify(data)
-      ]);
-      await AsyncStorage.multiSet(keyValuePairs);
-      console.log(`✅ DatabaseService - Batch created ${items.length} ${collection} items`);
+      if (USE_BACKEND) {
+        for (const { id, data } of items) {
+          // eslint-disable-next-line no-await-in-loop
+          await restAdapter.create(collection, userId, id, data);
+        }
+        console.log(`✅ DatabaseService - Batch created ${items.length} ${collection} items (Backend)`);
+      } else if (USE_FIRESTORE) {
+        await firestoreAdapter.batchCreate(collection, userId, items);
+        console.log(`✅ DatabaseService - Batch created ${items.length} ${collection} items (Firestore)`);
+      } else {
+        const keyValuePairs: [string, string][] = items.map(({ id, data }) => [
+          getDBKey(collection, userId, id),
+          JSON.stringify(data)
+        ]);
+        await AsyncStorage.multiSet(keyValuePairs);
+        console.log(`✅ DatabaseService - Batch created ${items.length} ${collection} items`);
+      }
     } catch (error) {
       console.error(`❌ DatabaseService - Batch create ${collection} error:`, error);
       throw error;
@@ -203,9 +256,20 @@ export class DatabaseService {
     itemIds: string[]
   ): Promise<void> {
     try {
-      const keys = itemIds.map(id => getDBKey(collection, userId, id));
-      await AsyncStorage.multiRemove(keys);
-      console.log(`✅ DatabaseService - Batch deleted ${itemIds.length} ${collection} items`);
+      if (USE_BACKEND) {
+        for (const id of itemIds) {
+          // eslint-disable-next-line no-await-in-loop
+          await restAdapter.delete(collection, userId, id);
+        }
+        console.log(`✅ DatabaseService - Batch deleted ${itemIds.length} ${collection} items (Backend)`);
+      } else if (USE_FIRESTORE) {
+        await firestoreAdapter.batchDelete(collection, userId, itemIds);
+        console.log(`✅ DatabaseService - Batch deleted ${itemIds.length} ${collection} items (Firestore)`);
+      } else {
+        const keys = itemIds.map(id => getDBKey(collection, userId, id));
+        await AsyncStorage.multiRemove(keys);
+        console.log(`✅ DatabaseService - Batch deleted ${itemIds.length} ${collection} items`);
+      }
     } catch (error) {
       console.error(`❌ DatabaseService - Batch delete ${collection} error:`, error);
       throw error;

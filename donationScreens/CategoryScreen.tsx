@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import HeaderComp from '../components/HeaderComp';
 import DonationStatsFooter from '../components/DonationStatsFooter';
-import { biDiTextAlign, isLandscape } from '../globals/responsive';
+import { biDiTextAlign, isLandscape, scaleSize } from '../globals/responsive';
 import { useTranslation } from 'react-i18next';
 
 export interface CategoryConfig {
@@ -69,7 +69,10 @@ const CategoryScreen: React.FC<Props> = ({ route, config: propConfig }) => {
         onSearch={handleSearch}
       />
 
-      <ScrollView contentContainerStyle={[styles.content, isLandscape() && { paddingHorizontal: 24 }]} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[
+        styles.content,
+        isLandscape() && { paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XL },
+      ]} showsVerticalScrollIndicator={false}>
         <View style={[styles.hero, { backgroundColor: config.bgColor, borderColor: config.color }]}> 
           <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
           {!!subtitle && (
@@ -108,52 +111,52 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundPrimary,
   },
   content: {
-    padding: 16,
-    paddingBottom: 120,
+    padding: LAYOUT_CONSTANTS.SPACING.MD,
+    paddingBottom: LAYOUT_CONSTANTS.SPACING.XL * 3 + LAYOUT_CONSTANTS.SPACING.SM,
   },
   hero: {
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
+    padding: LAYOUT_CONSTANTS.SPACING.MD,
     borderWidth: 1,
-    marginBottom: 16,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
   },
   title: {
     fontSize: FontSizes.heading2,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
     textAlign: biDiTextAlign('right'),
   },
   subtitle: {
     fontSize: FontSizes.small,
     color: colors.textSecondary,
-    marginBottom: 8,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
     textAlign: biDiTextAlign('right'),
   },
   description: {
     fontSize: FontSizes.body,
     color: colors.textPrimary,
-    lineHeight: 20,
+    lineHeight: Math.round(FontSizes.body * 1.4),
     textAlign: biDiTextAlign('right'),
   },
   section: {
     backgroundColor: colors.backgroundSecondary,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    padding: LAYOUT_CONSTANTS.SPACING.MD,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: 16,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
   },
   sectionTitle: {
     fontSize: FontSizes.medium,
-    fontWeight: '600',
+    fontWeight: 'semibold',
     color: colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
     textAlign: 'center',
   },
   sectionText: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: Math.round(FontSizes.body * 1.3),
     textAlign: biDiTextAlign('right'),
   },
 });

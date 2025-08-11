@@ -1,7 +1,7 @@
 // BottomNavigator.tsx
 'use strict';
 import React from "react";
-import { Platform, StyleSheet, Dimensions } from "react-native";
+import { Platform } from "react-native";
 import { createBottomTabNavigator, BottomTabNavigationOptions } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -16,6 +16,7 @@ import AboutKarmaCommunityScreen from "../topBarScreens/AboutKarmaCommunityScree
 import NotificationsScreen from "../screens/NotificationsScreen";
 import colors from "../globals/colors"; // Adjust path if needed
 import { vw, getScreenInfo, isLandscape } from "../globals/responsive";
+import { LAYOUT_CONSTANTS } from "../globals/constants";
 import { useUser } from "../context/UserContext";
 
 // Define the type for your bottom tab navigator's route names and their parameters.
@@ -96,8 +97,8 @@ export default function BottomNavigator(): React.ReactElement {
           const hideBottomBar = activeParams.hideBottomBar === true;
           const { isTablet, isDesktop } = getScreenInfo();
           const landscape = isLandscape();
-          const horizontalInset = isDesktop ? vw(20) : isTablet ? vw(10) : 20;
-          const barHeight = landscape ? 40 : (isDesktop ? 56 : isTablet ? 54 : 40);
+          const horizontalInset = isDesktop ? vw(20) : isTablet ? vw(10) : LAYOUT_CONSTANTS.SPACING.MD;
+          const barHeight = landscape ? 40 : (isDesktop ? 56 : isTablet ? 54 : 46);
           return ({
             headerShown: false,
             tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number; }) => {
@@ -111,8 +112,8 @@ export default function BottomNavigator(): React.ReactElement {
               position: "absolute",
               left: horizontalInset,
               right: horizontalInset,
-              borderRadius: 25,
-              elevation: 8,
+              borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.XLARGE,
+              elevation: LAYOUT_CONSTANTS.SHADOW.MEDIUM.elevation,
               height: barHeight,
               backgroundColor: colors.bottomNavBackground,
               display: hideBottomBar ? 'none' as const : 'flex' as const,

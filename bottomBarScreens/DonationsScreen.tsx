@@ -16,12 +16,14 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DonationsStackParamList } from '../globals/types';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { FontSizes, LAYOUT_CONSTANTS, IconSizes } from '../globals/constants';
 import { useUser } from '../context/UserContext';
 import GuestModeNotice from '../components/GuestModeNotice';
 import DonationStatsFooter from '../components/DonationStatsFooter';
 import { donations, charities } from '../globals/fakeData';
 import { useTranslation } from 'react-i18next';
+import { getScreenInfo, isLandscape, scaleSize } from '../globals/responsive';
+import stylesGlobal, { createShadowStyle } from '../globals/styles';
 
 interface DonationsScreenProps {
   navigation: NavigationProp<DonationsStackParamList>;
@@ -67,6 +69,15 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
   const { t } = useTranslation(['donations','common']);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [recentCategoryIds, setRecentCategoryIds] = useState<string[]>([]);
+
+  const { isTablet, isDesktop } = getScreenInfo();
+  const landscape = isLandscape();
+  const recentColumns = isDesktop ? 6 : isTablet || landscape ? 5 : 4;
+  const allColumns = isDesktop ? 5 : isTablet || landscape ? 4 : 3;
+  const recentCardWidth = `${(100 / recentColumns) - 2}%` as const;
+  const allCardWidth = `${(100 / allColumns) - 2}%` as const;
+  const categoryIconSize = scaleSize(26);
+  const categoryIconOuter = scaleSize(35);
 
   useFocusEffect(
     useCallback(() => {
@@ -158,15 +169,18 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
             return (
               <TouchableOpacity
                 key={category.id}
-                style={[styles.categoryCard, { backgroundColor: category.bgColor, width: '23%' }]}
+                style={[
+                  styles.categoryCard,
+                  { backgroundColor: category.bgColor, width: recentCardWidth },
+                ]}
                 onPress={() => handleCategoryPress(category)}
               >
                 <View style={styles.categoryIconWrapper}>
-                  <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
-                    <Ionicons name={category.icon as any} size={26} color="white" />
+                  <View style={[styles.categoryIcon, { backgroundColor: category.color, width: categoryIconOuter, height: categoryIconOuter, borderRadius: categoryIconOuter / 2 }]}>
+                    <Ionicons name={category.icon as any} size={categoryIconSize} color="white" />
                   </View>
                   {category.id === 'money' && (
-                    <Ionicons name="pin" size={16} color={colors.pink} style={styles.pinOverlay} />
+                    <Ionicons name="pin" size={scaleSize(16)} color={colors.pink} style={styles.pinOverlay} />
                   )}
                 </View>
                 <View style={styles.categoryTitleRow}>
@@ -188,11 +202,14 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
               return (
                 <TouchableOpacity
                   key={category.id}
-                  style={[styles.categoryCard, { backgroundColor: category.bgColor, width: '31.5%' }]}
+                  style={[
+                    styles.categoryCard,
+                    { backgroundColor: category.bgColor, width: allCardWidth },
+                  ]}
                   onPress={() => handleCategoryPress(category)}
                 >
-                  <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
-                    <Ionicons name={category.icon as any} size={26} color="white" />
+                  <View style={[styles.categoryIcon, { backgroundColor: category.color, width: categoryIconOuter, height: categoryIconOuter, borderRadius: categoryIconOuter / 2 }]}>
+                    <Ionicons name={category.icon as any} size={categoryIconSize} color="white" />
                   </View>
                   <Text style={styles.categoryTitle}>{title}</Text>
                   <Text style={styles.categorySubtitle}>{subtitle}</Text>
@@ -234,16 +251,12 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: colors.backgroundPrimary,
-    paddingTop: 20,
-    paddingBottom: 15,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingTop: LAYOUT_CONSTANTS.SPACING.LG,
+    paddingBottom: LAYOUT_CONSTANTS.SPACING.MD,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    borderBottomLeftRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
+    borderBottomRightRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.1, 4),
   },
   headerContent: {
     flexDirection: 'row',
@@ -256,10 +269,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   userAvatar: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
-    marginRight: 12,
+    width: scaleSize(45),
+    height: scaleSize(45),
+    borderRadius: scaleSize(45) / 2,
+    marginRight: LAYOUT_CONSTANTS.SPACING.SM,
   },
   userDetails: {
     flex: 1,
@@ -267,7 +280,7 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
-    marginBottom: 2,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
   userName: {
     fontSize: FontSizes.medium,
@@ -275,17 +288,17 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   settingsButton: {
-    padding: 8,
+    padding: LAYOUT_CONSTANTS.SPACING.SM,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 5,
-    paddingTop: 20,
-    marginBottom: 40,
-    paddingBottom: 200,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
+    paddingTop: LAYOUT_CONSTANTS.SPACING.LG,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XL + LAYOUT_CONSTANTS.SPACING.MD,
+    paddingBottom: LAYOUT_CONSTANTS.SPACING.XL * 6,
   },
   quickActionsSection: {
-    marginBottom: 30,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XL,
     alignItems: 'center',
 
   },
@@ -293,72 +306,60 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.heading2,
     fontWeight: 'bold',
     color: colors.textPrimary,
-    marginBottom: 15,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
   },
   quickActionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: LAYOUT_CONSTANTS.SPACING.SM,
   },
   quickActionButton: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 20,
-    borderRadius: 15,
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.LG,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.1, 4),
   },
   quickActionText: {
     color: colors.white,
     fontSize: FontSizes.button,
     fontWeight: '600',
-    marginTop: 8,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
   },
   categoriesSection: {
 
     backgroundColor: colors.moneyFormBackground,
-    borderRadius: 12,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
     borderWidth: 1,
     borderColor: colors.moneyFormBorder,
-    marginTop: 10,
-    marginBottom: 5,
-    marginHorizontal: 10,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
+    marginHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
 
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 4 }, 0.1, 8),
   },
   categoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 6,
+    gap: LAYOUT_CONSTANTS.SPACING.XS,
   },
   activeCategoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: LAYOUT_CONSTANTS.SPACING.SM,
   },
   categoryCard: {
     width: '31.5%',
-    paddingVertical: 8,
-    paddingHorizontal: 6,
-    borderRadius: 10,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
     alignItems: 'center',
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.08, 3),
     // minHeight: 108,
     backgroundColor: colors.backgroundPrimary,
     borderWidth: 0.5,
@@ -366,15 +367,11 @@ const styles = StyleSheet.create({
   },
   activeCategoryCard: {
     width: '45%',
-    padding: 16,
-    borderRadius: 15,
+    padding: LAYOUT_CONSTANTS.SPACING.MD,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
     alignItems: 'center',
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
-    minHeight: 140,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 3 }, 0.15, 6),
+    minHeight: scaleSize(140),
     backgroundColor: colors.backgroundPrimary,
     borderWidth: 1,
     borderColor: colors.backgroundTertiary,
@@ -384,28 +381,28 @@ const styles = StyleSheet.create({
     borderColor: colors.pink,
   },
   categoryIcon: {
-    width: 35,
-    height: 35,
-    borderRadius: 17.5,
+    width: scaleSize(35),
+    height: scaleSize(35),
+    borderRadius: scaleSize(35) / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
   categoryIconWrapper: {
     position: 'relative',
   },
   pinOverlay: {
     position: 'absolute',
-    top: -6,
-    right: -6,
+    top: -scaleSize(6),
+    right: -scaleSize(6),
   },
   activeCategoryIcon: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
+    width: scaleSize(45),
+    height: scaleSize(45),
+    borderRadius: scaleSize(45) / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
   },
   categoryTitle: {
     fontSize: FontSizes.medium,
@@ -420,7 +417,7 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   categorySubtitle: {
-    fontSize: 12,
+    fontSize: FontSizes.small,
     color: colors.textSecondary,
     textAlign: 'center',
   },
@@ -428,55 +425,47 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.small,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 10,
+    lineHeight: Math.round(FontSizes.small * 1.2),
   },
   activeCategoryTitle: {
     fontSize: FontSizes.medium,
     fontWeight: 'bold',
     color: colors.textPrimary,
-    marginBottom: 4,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
     textAlign: 'center',
   },
   activeCategorySubtitle: {
     fontSize: FontSizes.small,
     color: colors.textSecondary,
-    marginBottom: 6,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
     textAlign: 'center',
   },
   activeCategoryDescription: {
     fontSize: FontSizes.caption,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: Math.round(FontSizes.caption * 1.4),
   },
   statsSection: {
-    marginBottom: 30,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XL,
     backgroundColor: colors.backgroundSecondary,
-    borderRadius: 20,
-    padding: 20,
-    marginHorizontal: 10,
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
+    padding: LAYOUT_CONSTANTS.SPACING.LG,
+    marginHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 4 }, 0.1, 8),
   },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: LAYOUT_CONSTANTS.SPACING.SM,
   },
   statCard: {
     flex: 1,
     backgroundColor: colors.backgroundPrimary,
-    padding: 20,
-    borderRadius: 15,
+    padding: LAYOUT_CONSTANTS.SPACING.LG,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
     alignItems: 'center',
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.1, 4),
     borderWidth: 1,
     borderColor: colors.backgroundTertiary,
   },
@@ -484,8 +473,8 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.heading1,
     fontWeight: 'bold',
     color: colors.pink,
-    marginTop: 8,
-    marginBottom: 4,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
   statLabel: {
     fontSize: FontSizes.small,
