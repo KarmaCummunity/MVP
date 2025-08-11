@@ -5,11 +5,16 @@ import { useUser } from '../context/UserContext';
 import { USE_BACKEND } from '../utils/dbConfig';
 import { db } from '../utils/databaseService';
 
-export default function GoogleLoginButton() {
+type GoogleLoginButtonProps = {
+  onSuccess?: (user: any) => void;
+};
+
+export default function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps) {
   const { setSelectedUser } = useUser();
   const isWeb = Platform.OS === 'web';
   const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
   const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  const redirectUri = isWeb && typeof window !== 'undefined' ? window.location.origin : undefined;
 
   // מניעת קריסה בווב אם אין webClientId בזמן פיתוח/Build
   if (isWeb && !webClientId) {
@@ -24,11 +29,17 @@ export default function GoogleLoginButton() {
     androidClientId: androidClientId || undefined,
     webClientId: webClientId || undefined,
     scopes: ['openid', 'profile', 'email'],
-  });
+    // ברשת (web) נשתמש בדומיין עצמו כ־redirectUri כדי להתאים להגדרות Google
+    ...(redirectUri ? { redirectUri } : {}),
+  } as any);
 
   const onPress = async () => {
     try {
-      await promptAsync();
+      if (isWeb) {
+        await promptAsync({ useProxy: false, windowName: '_self' } as any);
+      } else {
+        await promptAsync();
+      }
     } catch (e) {
       console.error('❌ Google OAuth error:', e);
     }
@@ -60,6 +71,9 @@ export default function GoogleLoginButton() {
           await setSelectedUser(userData);
           if (USE_BACKEND) {
             try { await db.createUser(userData.id, userData); } catch {}
+          }
+          if (onSuccess) {
+            onSuccess(userData);
           }
         } catch (e) {
           console.error('❌ Failed to fetch Google profile:', e);
