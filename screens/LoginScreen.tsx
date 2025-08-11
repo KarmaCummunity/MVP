@@ -18,6 +18,7 @@ import { characterTypes } from '../globals/characterTypes';
 import { useUser } from '../context/UserContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 
 export default function LoginScreen() {
   const { setSelectedUser, setGuestMode, selectedUser, isGuestMode } = useUser();
@@ -129,6 +130,7 @@ export default function LoginScreen() {
           <Text style={styles.subtitle}>הקיבוץ הקפיטליסטי של ישראל</Text>
           
           <View style={styles.buttonsContainer}>
+            <GoogleLoginButton />
             <TouchableOpacity
               style={[
                 styles.googleButton,
