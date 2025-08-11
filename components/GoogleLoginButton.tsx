@@ -36,6 +36,9 @@ export default function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps)
 
   const onPress = async () => {
     try {
+      // High-signal log for button press
+      // eslint-disable-next-line no-console
+      console.log('🔑 GoogleLoginButton - onPress - starting auth', { isWeb, redirectUri, hasRequest: !!request });
       if (isWeb) {
         await promptAsync({ useProxy: false, windowName: '_self', redirectUri } as any);
       } else {
@@ -50,6 +53,8 @@ export default function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps)
     // השלם את סשן ה־OAuth בכל פלטפורמה (ייבוא דינמי כדי לא לשבור build)
     import('expo-web-browser').then((m) => m.maybeCompleteAuthSession()).catch(() => {});
     const run = async () => {
+      // eslint-disable-next-line no-console
+      console.log('🔑 GoogleLoginButton - useEffect response', response);
       if (response?.type === 'success') {
         try {
           let userData: any | null = null;
@@ -89,6 +94,8 @@ export default function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps)
           }
 
           if (userData) {
+            // eslint-disable-next-line no-console
+            console.log('🔑 GoogleLoginButton - resolved userData', userData);
             await setSelectedUser(userData);
             if (USE_BACKEND) {
               try { await db.createUser(userData.id, userData); } catch {}
