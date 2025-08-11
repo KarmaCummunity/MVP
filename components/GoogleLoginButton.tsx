@@ -29,6 +29,7 @@ export default function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps)
     androidClientId: androidClientId || undefined,
     webClientId: webClientId || undefined,
     scopes: ['openid', 'profile', 'email'],
+    responseType: isWeb ? 'id_token' : 'token',
     // ברשת (web) נשתמש בדומיין עצמו כ־redirectUri כדי להתאים להגדרות Google
     ...(redirectUri ? { redirectUri } : {}),
   } as any);
@@ -49,31 +50,57 @@ export default function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps)
     // השלם את סשן ה־OAuth בכל פלטפורמה (ייבוא דינמי כדי לא לשבור build)
     import('expo-web-browser').then((m) => m.maybeCompleteAuthSession()).catch(() => {});
     const run = async () => {
-      if (response?.type === 'success' && response.authentication?.accessToken) {
+      if (response?.type === 'success') {
         try {
-          const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { Authorization: `Bearer ${response.authentication.accessToken}` },
-          });
-          const profile = await res.json();
-          const userData = {
-            id: profile.sub,
-            name: profile.name || profile.given_name || 'Google User',
-            email: profile.email,
-            avatar: profile.picture,
-            isActive: true,
-            lastActive: new Date().toISOString(),
-            roles: ['user'],
-            settings: { language: 'he', darkMode: false, notificationsEnabled: true },
-          } as any;
-          await setSelectedUser(userData);
-          if (USE_BACKEND) {
-            try { await db.createUser(userData.id, userData); } catch {}
+          let userData: any | null = null;
+
+          // 1) Native/Android path with access token
+          const accessToken = response.authentication?.accessToken || (response as any)?.params?.access_token;
+          if (accessToken) {
+            const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            const profile = await res.json();
+            userData = {
+              id: profile.sub,
+              name: profile.name || profile.given_name || 'Google User',
+              email: profile.email,
+              avatar: profile.picture,
+              isActive: true,
+              lastActive: new Date().toISOString(),
+              roles: ['user'],
+              settings: { language: 'he', darkMode: false, notificationsEnabled: true },
+            };
+          } else if ((response as any)?.params?.id_token) {
+            // 2) Web path with id_token (no extra request needed)
+            const idToken = (response as any).params.id_token as string;
+            const [, payloadBase64] = idToken.split('.');
+            const payloadJson = JSON.parse(decodeURIComponent(escape(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')))));
+            userData = {
+              id: payloadJson.sub,
+              name: payloadJson.name || payloadJson.given_name || 'Google User',
+              email: payloadJson.email,
+              avatar: payloadJson.picture,
+              isActive: true,
+              lastActive: new Date().toISOString(),
+              roles: ['user'],
+              settings: { language: 'he', darkMode: false, notificationsEnabled: true },
+            };
           }
-          if (onSuccess) {
-            onSuccess(userData);
+
+          if (userData) {
+            await setSelectedUser(userData);
+            if (USE_BACKEND) {
+              try { await db.createUser(userData.id, userData); } catch {}
+            }
+            if (onSuccess) {
+              onSuccess(userData);
+            }
+          } else {
+            console.warn('⚠️ Google OAuth returned success without token/id_token');
           }
         } catch (e) {
-          console.error('❌ Failed to fetch Google profile:', e);
+          console.error('❌ Failed to process Google response:', e);
         }
       }
     };
