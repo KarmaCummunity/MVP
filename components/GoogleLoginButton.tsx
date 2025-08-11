@@ -1,12 +1,9 @@
 import React, { useEffect } from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { useUser } from '../context/UserContext';
 import { USE_BACKEND } from '../utils/dbConfig';
 import { db } from '../utils/databaseService';
-
-WebBrowser.maybeCompleteAuthSession();
 
 export default function GoogleLoginButton() {
   const { setSelectedUser } = useUser();
