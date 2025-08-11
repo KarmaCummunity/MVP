@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import * as Google from 'expo-auth-session/providers/google';
+import { makeRedirectUri } from 'expo-auth-session';
 import { useUser } from '../context/UserContext';
 import { USE_BACKEND } from '../utils/dbConfig';
 import { db } from '../utils/databaseService';
@@ -14,7 +15,9 @@ export default function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps)
   const isWeb = Platform.OS === 'web';
   const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
   const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-  const redirectUri = isWeb && typeof window !== 'undefined' ? window.location.origin : undefined;
+  // Expo web expects a specific redirect pattern: origin + /?authSessionRedirect=true
+  // makeRedirectUri() מייצר אוטומטית את ה‑URI הנכון ל‑Web Static
+  const redirectUri = isWeb ? makeRedirectUri() : undefined;
 
   // מניעת קריסה בווב אם אין webClientId בזמן פיתוח/Build
   if (isWeb && !webClientId) {
