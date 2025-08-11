@@ -68,6 +68,9 @@
           "androidMode": "default",
           "androidCollapsedTitle": "התראה חדשה"
         }
+      ],
+      [
+        "expo-auth-session"
       ]
     ],
     "experiments": {

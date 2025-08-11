@@ -142,7 +142,7 @@ export default function LoginScreen() {
                 styles.googleButtonText,
                 !selectedCharacter && styles.disabledButtonText
               ]}>
-                {selectedCharacter ? 'התחבר עם Google' : 'בחר דמות תחילה'}
+                {selectedCharacter ? 'התחבר' : 'בחר דמות תחילה'}
               </Text>
             </TouchableOpacity>
 
