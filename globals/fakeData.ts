@@ -300,18 +300,17 @@ export const users = [
 
 // Enhanced Conversations
 export const conversations: ChatConversation[] = users.map((user) => {
-//const messages = generateMessages(user.id);
-const messages = [];
-const lastMessage = messages[messages.length - 1];
-  const unreadCount = messages.filter(m => !m.read && m.senderId !== 'me').length;
-  
+  const messages: Message[] = [];
+  const lastMessage: Message | undefined = messages[messages.length - 1];
+  const unreadCount = messages.filter((m: Message) => !m.read && m.senderId !== 'me').length;
+
   return {
     id: user.id,
     userId: user.id,
-    messages: messages,
-    lastMessageText: lastMessage?.text || 'תמונה',
+    messages,
+    lastMessageText: lastMessage?.text || 'image',
     lastMessageTimestamp: lastMessage?.timestamp || new Date().toISOString(),
-    unreadCount
+    unreadCount,
   };
 });
 
@@ -366,7 +365,7 @@ export const communityEvents: CommunityEvent[] = [
     date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     time: '18:00',
     location: 'פארק הירקון, תל אביב',
-    organizer: 'charity_000', // קהילת קארמה
+    organizer: 'charity_000', 
     attendees: 85,
     maxAttendees: 200,
     category: 'אירועים קהילתיים',
@@ -380,7 +379,7 @@ export const communityEvents: CommunityEvent[] = [
     date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
     time: '16:00',
     location: 'מרכז לב זהב, תל אביב',
-    organizer: 'charity_001', // לב זהב
+    organizer: 'charity_001', 
     attendees: 25,
     maxAttendees: 30,
     category: 'בריאות ותזונה',
@@ -394,7 +393,7 @@ export const communityEvents: CommunityEvent[] = [
     date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
     time: '10:00',
     location: 'מוזיאון המדע, ירושלים',
-    organizer: 'charity_002', // אור לילדים
+    organizer: 'charity_002', 
     attendees: 120,
     maxAttendees: 150,
     category: 'חינוך ומדע',
@@ -408,7 +407,7 @@ export const communityEvents: CommunityEvent[] = [
     date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
     time: '09:00',
     location: 'מקלט חמלה, ראשון לציון',
-    organizer: 'charity_004', // חמלה לבעלי חיים
+    organizer: 'charity_004', 
     attendees: 45,
     maxAttendees: 80,
     category: 'בעלי חיים',
@@ -422,7 +421,7 @@ export const communityEvents: CommunityEvent[] = [
     date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
     time: '19:00',
     location: 'מרכז זרעים של שלום, נצרת',
-    organizer: 'charity_006', // זרעים של שלום
+    organizer: 'charity_006', 
     attendees: 35,
     maxAttendees: 50,
     category: 'דו-קיום ושלום',
@@ -460,7 +459,6 @@ export const categories = [
 
 // Donation Statistics are now part of KC charity statistics - can be accessed via charities[0].statistics
 
-// ממשקים נוספים לעמותות
 export interface CharityActivity {
   id: string;
   title: string;
@@ -514,7 +512,6 @@ export interface CharityOperatingHours {
   isClosed?: boolean;
 }
 
-// ממשק מורחב לעמותה
 export interface Charity {
   id: string;
   name: string;
@@ -556,7 +553,6 @@ export interface Charity {
     visuallyImpaired: boolean;
   };
   
-  // נתונים חדשים
   recentActivities?: CharityActivity[];
   motivationalQuotes?: string[];
   statistics?: CharityStatistic[];
@@ -599,7 +595,6 @@ export interface Charity {
   };
 }
 
-// רשימת עמותות מפורטת
 export const charities: Charity[] = [
   {
     id: "charity_000",
@@ -1878,8 +1873,7 @@ export const charities: Charity[] = [
     ],
     
     volunteers: ["u9", "u5"],
-    beneficiaries: [], // בעלי חיים הם המוטבים, לא משתמשים ספציפיים
-    
+    beneficiaries: [],     
     projects: [
       {
         id: "project_004_1",
@@ -3884,12 +3878,8 @@ export const charities: Charity[] = [
   }
 ];
 
-// רשימת שמות עמותות (לשמירה על תאימות לאחור)
 export const charityNames: string[] = charities.map(charity => charity.name);
 
-// Motivational quotes are now part of each charity's motivationalQuotes array
-
-// פרטי קבוצות וואטסאפ - ניקוי כפילויות
 export const WHATSAPP_GROUP_DETAILS = [
   {
     name: "טרמפים מרכז",

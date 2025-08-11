@@ -18,6 +18,7 @@ import { characterTypes } from '../globals/characterTypes';
 import { useUser } from '../context/UserContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 
 export default function LoginScreen() {
   const { setSelectedUser, setGuestMode, selectedUser, isGuestMode } = useUser();
@@ -31,22 +32,18 @@ export default function LoginScreen() {
   const navigation = useNavigation<any>();
 
   const handleCharacterSelect = (characterId: string) => {
-    // אם הדמות כבר נבחרה, בטל את הבחירה
     if (selectedCharacter === characterId) {
       setSelectedCharacter(null);
       console.log('🔐 LoginScreen - Character deselected:', characterId);
       
-      // אנימציה לביטול בחירה
       Animated.spring(animationValues[characterId], {
         toValue: 1,
         useNativeDriver: true,
       }).start();
     } else {
-      // אחרת, בחר את הדמות החדשה
       setSelectedCharacter(characterId);
       console.log('🔐 LoginScreen - Character selected:', characterId);
       
-      // אנימציה לבחירה
       Animated.spring(animationValues[characterId], {
         toValue: 1.05,
         useNativeDriver: true,
@@ -63,7 +60,6 @@ export default function LoginScreen() {
     const character = characterTypes.find(c => c.id === selectedCharacter);
     console.log('🔐 LoginScreen - character:', character);
     if (character) {
-      // המר את הדמות לפורמט User
       const userData = {
         id: character.id,
         name: character.name,
@@ -100,7 +96,6 @@ export default function LoginScreen() {
     await setGuestMode();
   };
 
-  // useEffect לניווט אוטומטי - כמו באפליקציה הפשוטה
   useEffect(() => {
     if (selectedUser || isGuestMode) {
       console.log('🔐 LoginScreen - useEffect - מנווט ל-Home', { 
@@ -132,9 +127,10 @@ export default function LoginScreen() {
         {/* Header Section */}
         <View style={styles.headerSection}>
           <Text style={styles.title}>ברוכים הבאים!</Text>
-          <Text style={styles.subtitle}>KC_ID - הקיבוץ הקפיטליסטי של ישראל</Text>
+          <Text style={styles.subtitle}>הקיבוץ הקפיטליסטי של ישראל</Text>
           
           <View style={styles.buttonsContainer}>
+            <GoogleLoginButton />
             <TouchableOpacity
               style={[
                 styles.googleButton,
@@ -148,7 +144,7 @@ export default function LoginScreen() {
                 styles.googleButtonText,
                 !selectedCharacter && styles.disabledButtonText
               ]}>
-                {selectedCharacter ? 'התחבר עם Google' : 'בחר דמות תחילה'}
+                {selectedCharacter ? 'התחבר' : 'בחר דמות תחילה'}
               </Text>
             </TouchableOpacity>
 

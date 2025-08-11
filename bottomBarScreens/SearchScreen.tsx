@@ -10,11 +10,12 @@ import {
   Alert,
   SafeAreaView
 } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import SearchBar from '../components/SearchBar';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
-import { texts } from '../globals/texts';
+import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
+import { useTranslation } from 'react-i18next';
 import { 
   donations, 
   communityEvents, 
@@ -25,6 +26,8 @@ import { useUser } from '../context/UserContext';
 import GuestModeNotice from '../components/GuestModeNotice';
 import { Pressable, Modal, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { scaleSize } from '../globals/responsive';
+import { createShadowStyle } from '../globals/styles';
 
 interface SearchResult {
   id: string;
@@ -38,7 +41,9 @@ interface SearchResult {
 }
 
 const SearchScreen = () => {
+  const tabBarHeight = useBottomTabBarHeight();
   const { isGuestMode } = useUser();
+  const { t } = useTranslation(['search','common']);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -57,22 +62,18 @@ const SearchScreen = () => {
     }, [])
   );
 
-  // Popular searches
-  const popularSearches = [
-    'איסוף מזון', 'תרומת דם', 'עזרה לקשישים', 'ניקוי גינה', 'הוראה לילדים'
-  ];
+  // Popular searches (from i18n)
+  const popularSearches: string[] = t('search:popularSearches', { returnObjects: true }) as unknown as string[];
 
-  // Recent searches
-  const recentSearches = [
-    'מתנדבים', 'אירועים', 'תרומות', 'משימות דחופות'
-  ];
+  // Recent searches (from i18n)
+  const recentSearches: string[] = t('search:recentSearches', { returnObjects: true }) as unknown as string[];
 
-  // Filter options
+  // Filter tabs (from i18n)
   const filterOptions = [
-    { id: 'All', label: 'הכל', icon: 'grid-outline' },
-    { id: 'donations', label: 'תרומות', icon: 'heart-outline' },
-    { id: 'events', label: 'אירועים', icon: 'calendar-outline' },
-    { id: 'users', label: 'משתמשים', icon: 'people-outline' },
+    { id: 'All', label: t('search:tabs.all'), icon: 'grid-outline' },
+    { id: 'donations', label: t('search:tabs.donations'), icon: 'heart-outline' },
+    { id: 'events', label: t('search:tabs.events'), icon: 'calendar-outline' },
+    { id: 'users', label: t('search:tabs.users'), icon: 'people-outline' },
   ];
 
   // Mock search function
@@ -128,9 +129,9 @@ const SearchScreen = () => {
             id: user.id,
             type: 'user' as const,
             title: user.name,
-            description: user.bio || 'חבר בקהילה',
+            description: user.bio || t('search:userDefaultBio'),
             image: user.avatar,
-            category: 'משתמש',
+            category: t('search:typeLabels.user'),
           }))
         );
       }
@@ -161,10 +162,10 @@ const SearchScreen = () => {
   const handleResultPress = (result: SearchResult) => {
     Alert.alert(
       result.title,
-      `${result.description}\n\nקטגוריה: ${result.category}${result.location ? `\nמיקום: ${result.location}` : ''}${result.date ? `\nתאריך: ${new Date(result.date).toLocaleDateString('he-IL')}` : ''}`,
+      `${result.description}\n\n${t('search:labels.category')}: ${result.category}${result.location ? `\n${t('search:labels.location')}: ${result.location}` : ''}${result.date ? `\n${t('search:labels.date')}: ${new Date(result.date).toLocaleDateString()}` : ''}`,
       [
-        { text: 'ביטול', style: 'cancel' },
-        { text: 'פרטים נוספים', onPress: () => Alert.alert('פרטים', 'פתיחת דף פרטים מלא') }
+        { text: t('common:cancel'), style: 'cancel' },
+        { text: t('search:moreDetails'), onPress: () => Alert.alert(t('search:details'), t('search:openFullDetails')) }
       ]
     );
   };
@@ -233,10 +234,10 @@ const SearchScreen = () => {
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case 'donation': return 'תרומה';
-      case 'event': return 'אירוע';
-      case 'user': return 'משתמש';
-      default: return 'תוצאה';
+      case 'donation': return t('search:typeLabels.donation');
+      case 'event': return t('search:typeLabels.event');
+      case 'user': return t('search:typeLabels.user');
+      default: return t('search:typeLabels.result');
     }
   };
 
@@ -275,7 +276,12 @@ const SearchScreen = () => {
         </ScrollView>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: tabBarHeight + LAYOUT_CONSTANTS.SPACING.XL }}
+      >
         {/* Guest Mode Notice */}
         {/* הוסר באנר אורח המקומי – מופיע כעת גלובלית בכל האפליקציה */}
         
@@ -284,7 +290,7 @@ const SearchScreen = () => {
           <View style={styles.defaultContent}>
             {/* Popular Searches */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>חיפושים פופולריים</Text>
+              <Text style={styles.sectionTitle}>{t('search:popularTitle')}</Text>
               <View style={styles.tagsContainer}>
                 {popularSearches.map((search, index) => (
                   <TouchableOpacity
@@ -300,7 +306,7 @@ const SearchScreen = () => {
 
             {/* Recent Searches */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>חיפושים אחרונים</Text>
+              <Text style={styles.sectionTitle}>{t('search:recentTitle')}</Text>
               <View style={styles.tagsContainer}>
                 {recentSearches.map((search, index) => (
                   <TouchableOpacity
@@ -316,35 +322,35 @@ const SearchScreen = () => {
 
             {/* Quick Actions */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{texts.quickActions}</Text>
+              <Text style={styles.sectionTitle}>{t('search:quickActions.title')}</Text>
               <View style={styles.quickActionsGrid}>
                 <TouchableOpacity
                   style={styles.quickAction}
-                  onPress={() => Alert.alert('משימות דחופות', 'מציג משימות דחופות')}
+                  onPress={() => Alert.alert(t('search:quickActions.urgentTasks'), t('search:quickActions.showUrgentTasks'))}
                 >
                   <Ionicons name="flash-outline" size={24} color={colors.warning} />
-                  <Text style={styles.quickActionText}>{texts.urgentTasks}</Text>
+                  <Text style={styles.quickActionText}>{t('search:quickActions.urgentTasks')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.quickAction}
-                  onPress={() => Alert.alert('אירועים קרובים', 'מציג אירועים קרובים')}
+                  onPress={() => Alert.alert(t('search:quickActions.upcomingEvents'), t('search:quickActions.showUpcomingEvents'))}
                 >
                   <Ionicons name="calendar-outline" size={24} color={colors.success} />
-                  <Text style={styles.quickActionText}>{texts.upcomingEvents}</Text>
+                  <Text style={styles.quickActionText}>{t('search:quickActions.upcomingEvents')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.quickAction}
-                  onPress={() => Alert.alert('תרומות חדשות', 'מציג תרומות חדשות')}
+                  onPress={() => Alert.alert(t('search:quickActions.newDonations'), t('search:quickActions.showNewDonations'))}
                 >
                   <Ionicons name="heart-outline" size={24} color={colors.error} />
-                  <Text style={styles.quickActionText}>{texts.newDonations}</Text>
+                  <Text style={styles.quickActionText}>{t('search:quickActions.newDonations')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.quickAction}
-                  onPress={() => Alert.alert('מתנדבים פעילים', 'מציג מתנדבים פעילים')}
+                  onPress={() => Alert.alert(t('search:quickActions.activeVolunteers'), t('search:quickActions.showActiveVolunteers'))}
                 >
                   <Ionicons name="people-outline" size={24} color={colors.pink} />
-                  <Text style={styles.quickActionText}>{texts.activeVolunteers}</Text>
+                  <Text style={styles.quickActionText}>{t('search:quickActions.activeVolunteers')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -354,14 +360,12 @@ const SearchScreen = () => {
           <View style={styles.resultsContainer}>
             {isSearching ? (
               <View style={styles.loadingContainer}>
-                <Ionicons name="search" size={40} color={colors.textSecondary} />
-                <Text style={styles.loadingText}>{texts.searching}</Text>
+                <Ionicons name="search" size={scaleSize(40)} color={colors.textSecondary} />
+                <Text style={styles.loadingText}>{t('search:searching')}</Text>
               </View>
             ) : searchResults.length > 0 ? (
               <>
-                <Text style={styles.resultsTitle}>
-                  נמצאו {searchResults.length} תוצאות עבור "{searchQuery}"
-                </Text>
+                <Text style={styles.resultsTitle}>{t('search:resultsCount', { count: searchResults.length, query: searchQuery })}</Text>
                 <FlatList
                   data={searchResults}
                   renderItem={renderSearchResult}
@@ -371,11 +375,9 @@ const SearchScreen = () => {
               </>
             ) : (
               <View style={styles.noResultsContainer}>
-                <Ionicons name="search-outline" size={60} color={colors.textSecondary} />
-                <Text style={styles.noResultsTitle}>{texts.noResultsFound}</Text>
-                <Text style={styles.noResultsText}>
-                  {texts.tryChangingSearchTerms}
-                </Text>
+                <Ionicons name="search-outline" size={scaleSize(60)} color={colors.textSecondary} />
+                <Text style={styles.noResultsTitle}>{t('search:noResultsFound')}</Text>
+                <Text style={styles.noResultsText}>{t('search:tryChangingSearchTerms')}</Text>
               </View>
             )}
           </View>
@@ -387,8 +389,8 @@ const SearchScreen = () => {
         onPress={() => setAiVisible(true)}
         style={styles.fab}
       >
-        <Ionicons name="sparkles-outline" size={22} color={colors.white} />
-        <Text style={styles.fabText}>AI</Text>
+        <Ionicons name="sparkles-outline" size={scaleSize(22)} color={colors.white} />
+        <Text style={styles.fabText}>{t('search:ai.fabLabel')}</Text>
       </Pressable>
 
       {/* AI Assistant Modal (פשוט/בסיסי) */}
@@ -396,14 +398,14 @@ const SearchScreen = () => {
         <View style={styles.aiOverlay}>
           <View style={styles.aiContainer}>
             <View style={styles.aiHeader}>
-              <Text style={styles.aiTitle}>עוזר AI</Text>
+              <Text style={styles.aiTitle}>{t('search:ai.title')}</Text>
               <Pressable onPress={() => setAiVisible(false)}>
-                <Ionicons name="close" size={22} color={colors.textSecondary} />
+                <Ionicons name="close" size={scaleSize(22)} color={colors.textSecondary} />
               </Pressable>
             </View>
             <ScrollView style={styles.aiMessages} contentContainerStyle={{ paddingBottom: 10 }}>
               {aiHistory.length === 0 ? (
-                <Text style={styles.aiPlaceholder}>שאלו כל דבר: איפה למצוא תרומות, איך לפרסם, או ניווט באפליקציה.</Text>
+                <Text style={styles.aiPlaceholder}>{t('search:ai.placeholder')}</Text>
               ) : (
                 aiHistory.map((m, idx) => (
                   <View key={idx} style={[styles.aiBubble, m.role === 'user' ? styles.aiUser : styles.aiAssistant]}>
@@ -425,12 +427,12 @@ const SearchScreen = () => {
                 onPress={() => {
                   if (!aiText.trim()) return;
                   const userMsg = { role: 'user' as const, text: aiText.trim() };
-                  const assistantMsg = { role: 'assistant' as const, text: 'קיבלתי! אחזור עם תשובה בהקדם.' };
+                  const assistantMsg = { role: 'assistant' as const, text: t('search:ai.assistantReply') };
                   setAiHistory(prev => [...prev, userMsg, assistantMsg]);
                   setAiText('');
                 }}
               >
-                <Ionicons name="send" size={18} color={colors.white} />
+                <Ionicons name="send" size={scaleSize(18)} color={colors.white} />
               </Pressable>
             </View>
           </View>
@@ -452,11 +454,11 @@ const styles = StyleSheet.create({
   },
   aiContainer: {
     backgroundColor: colors.backgroundPrimary,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingTop: 10,
-    paddingHorizontal: 12,
-    paddingBottom: 10,
+    borderTopLeftRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    borderTopRightRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    paddingTop: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
+    paddingBottom: LAYOUT_CONSTANTS.SPACING.SM,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -464,7 +466,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: 8,
+    paddingBottom: LAYOUT_CONSTANTS.SPACING.SM,
     borderBottomWidth: 1,
     borderBottomColor: colors.backgroundTertiary,
   },
@@ -474,19 +476,19 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   aiMessages: {
-    maxHeight: 260,
-    marginTop: 8,
+    maxHeight: scaleSize(260),
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
   },
   aiPlaceholder: {
     color: colors.textSecondary,
     textAlign: 'center',
-    paddingVertical: 20,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.LG,
   },
   aiBubble: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    marginVertical: 4,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM + LAYOUT_CONSTANTS.SPACING.XS,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    marginVertical: LAYOUT_CONSTANTS.SPACING.XS,
     maxWidth: '85%',
   },
   aiUser: {
@@ -504,64 +506,64 @@ const styles = StyleSheet.create({
   aiInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
+    gap: LAYOUT_CONSTANTS.SPACING.SM,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
   },
   aiInput: {
     flex: 1,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
     color: colors.textPrimary,
     backgroundColor: colors.backgroundSecondary,
   },
   aiSend: {
     backgroundColor: colors.pink,
-    padding: 10,
-    borderRadius: 20,
+    padding: LAYOUT_CONSTANTS.SPACING.SM,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
   },
   fab: {
     position: 'absolute',
-    right: 16,
-    bottom: 44,
+    left: LAYOUT_CONSTANTS.SPACING.LG,
+    bottom: scaleSize(50),
     backgroundColor: colors.pink,
-    borderRadius: 22,
+    borderRadius: scaleSize(22),
     height: "auto",
-    paddingHorizontal: 14,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    elevation: 4,
+    gap: LAYOUT_CONSTANTS.SPACING.XS,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.15, 4),
   },
   fabText: {
-    marginVertical: 5,
+    marginVertical: LAYOUT_CONSTANTS.SPACING.XS,
     color: colors.white,
     fontSize: FontSizes.small,
     fontWeight: '700',
   },
   searchContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.MD,
     backgroundColor: colors.backgroundPrimary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   filterContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
     backgroundColor: colors.backgroundPrimary,
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
     backgroundColor: colors.backgroundSecondary,
-    marginRight: 10,
+    marginRight: LAYOUT_CONSTANTS.SPACING.SM,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -572,7 +574,7 @@ const styles = StyleSheet.create({
   filterButtonText: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
-    marginLeft: 6,
+    marginLeft: LAYOUT_CONSTANTS.SPACING.XS + 2,
   },
   filterButtonTextActive: {
     color: colors.white,
@@ -582,17 +584,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   defaultContent: {
-    padding: 20,
+    padding: LAYOUT_CONSTANTS.SPACING.LG,
   },
   section: {
-    marginBottom: 30,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XL,
   },
   sectionTitle: {
     fontSize: FontSizes.heading3,
     fontWeight: 'bold',
     textAlign: 'left',
     color: colors.textPrimary,
-    marginBottom: 15,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -600,11 +602,11 @@ const styles = StyleSheet.create({
   },
   tag: {
     backgroundColor: colors.backgroundSecondary,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 10,
-    marginBottom: 10,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    marginRight: LAYOUT_CONSTANTS.SPACING.SM,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -620,52 +622,48 @@ const styles = StyleSheet.create({
   quickAction: {
     width: '48%',
     backgroundColor: colors.backgroundSecondary,
-    padding: 20,
-    borderRadius: 12,
+    padding: LAYOUT_CONSTANTS.SPACING.LG,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
     borderWidth: 1,
     borderColor: colors.border,
   },
   quickActionText: {
     fontSize: FontSizes.body,
     color: colors.textPrimary,
-    marginTop: 8,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
     textAlign: 'center',
   },
   resultsContainer: {
-    padding: 20,
+    padding: LAYOUT_CONSTANTS.SPACING.LG,
   },
   resultsTitle: {
     fontSize: FontSizes.heading3,
     fontWeight: '600',
     color: colors.textPrimary,
-    marginBottom: 20,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.LG,
   },
   resultItem: {
     flexDirection: 'row',
     backgroundColor: colors.backgroundPrimary,
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    padding: LAYOUT_CONSTANTS.SPACING.MD,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.1, 2),
   },
   resultImageContainer: {
-    marginRight: 15,
+    marginRight: LAYOUT_CONSTANTS.SPACING.MD,
   },
   resultImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
+    width: scaleSize(50),
+    height: scaleSize(50),
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
   },
   resultImagePlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
+    width: scaleSize(50),
+    height: scaleSize(50),
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -676,19 +674,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 5,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
   resultTitle: {
     fontSize: FontSizes.body,
     fontWeight: '600',
     color: colors.textPrimary,
     flex: 1,
-    marginRight: 10,
+    marginRight: LAYOUT_CONSTANTS.SPACING.SM,
   },
   resultTypeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.XS,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
   },
   resultTypeText: {
     fontSize: FontSizes.small,
@@ -697,8 +695,8 @@ const styles = StyleSheet.create({
   resultDescription: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
-    marginBottom: 8,
-    lineHeight: 18,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
+    lineHeight: Math.round(FontSizes.body * 1.3),
   },
   resultMeta: {
     flexDirection: 'row',
@@ -707,7 +705,7 @@ const styles = StyleSheet.create({
   resultCategory: {
     fontSize: FontSizes.small,
     color: colors.textSecondary,
-    marginRight: 15,
+    marginRight: LAYOUT_CONSTANTS.SPACING.MD,
   },
   resultLocation: {
     fontSize: FontSizes.small,
@@ -715,29 +713,29 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     alignItems: 'center',
-    paddingVertical: 50,
+    paddingVertical: scaleSize(50),
   },
   loadingText: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
-    marginTop: 10,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
   },
   noResultsContainer: {
     alignItems: 'center',
-    paddingVertical: 50,
+    paddingVertical: scaleSize(50),
   },
   noResultsTitle: {
     fontSize: FontSizes.heading3,
     fontWeight: 'bold',
     color: colors.textPrimary,
-    marginTop: 15,
-    marginBottom: 8,
+    marginTop: LAYOUT_CONSTANTS.SPACING.MD,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
   noResultsText: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: Math.round(FontSizes.body * 1.4),
   },
 
 });

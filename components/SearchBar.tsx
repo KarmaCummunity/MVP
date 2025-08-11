@@ -13,8 +13,9 @@ import {
 import { Ionicons } from "@expo/vector-icons"; // Ensure @expo/vector-icons is installed
 import colors from "../globals/colors"; // Ensure this path is correct
 import { FontSizes, filterOptions as defaultFilterOptions, sortOptions as defaultSortOptions } from "../globals/constants";
-import { texts } from "../globals/texts";
+import { useTranslation } from 'react-i18next';
 import { createShadowStyle } from "../globals/styles";
+import { biDiTextAlign, rowDirection } from "../globals/responsive";
 
 interface SearchBarProps {
   onHasActiveConditionsChange?: (isActive: boolean) => void;
@@ -35,6 +36,7 @@ const SearchBar = ({
   searchData = []
 }: SearchBarProps) => {
   const [searchText, setSearchText] = useState("");
+  const { t } = useTranslation(['search','common']);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [isSortModalVisible, setIsSortModalVisible] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
@@ -124,7 +126,7 @@ const SearchBar = ({
           }
           // Check tags field if it exists
           if (item.tags && Array.isArray(item.tags)) {
-            return item.tags.some(tag => tag.toLowerCase().includes(filter.toLowerCase()));
+            return item.tags.some((tag: string) => tag.toLowerCase().includes(filter.toLowerCase()));
           }
           // Check organization field
           if (item.organization && item.organization.toLowerCase().includes(filter.toLowerCase())) {
@@ -142,37 +144,37 @@ const SearchBar = ({
       const sortOption = sorts[0]; // Only one sort at a time
       
       // Enhanced sorting logic for charities
-      if (sortOption === "אלפביתי") {
+      if (sortOption === 'alphabetical') {
         results.sort((a, b) => {
           const aName = (a.name || a.title || a.organization || '').toLowerCase();
           const bName = (b.name || b.title || b.organization || '').toLowerCase();
           return aName.localeCompare(bName, 'he');
         });
-      } else if (sortOption === "לפי מיקום") {
+      } else if (sortOption === 'byLocation') {
         results.sort((a, b) => {
           const aLocation = (a.location || '').toLowerCase();
           const bLocation = (b.location || '').toLowerCase();
           return aLocation.localeCompare(bLocation, 'he');
         });
-      } else if (sortOption === "לפי תחום") {
+      } else if (sortOption === 'byCategory') {
         results.sort((a, b) => {
           const aCategory = (a.category || '').toLowerCase();
           const bCategory = (b.category || '').toLowerCase();
           return aCategory.localeCompare(bCategory, 'he');
         });
-      } else if (sortOption === "לפי מספר תורמים") {
+      } else if (sortOption === 'byDonors') {
         results.sort((a, b) => {
           const aDonors = a.donors || a.volunteers || 0;
           const bDonors = b.donors || b.volunteers || 0;
           return bDonors - aDonors; // Descending order
         });
-      } else if (sortOption === "לפי דירוג") {
+      } else if (sortOption === 'byRating') {
         results.sort((a, b) => {
           const aRating = a.rating || 0;
           const bRating = b.rating || 0;
           return bRating - aRating; // Descending order
         });
-      } else if (sortOption === "לפי רלוונטיות") {
+      } else if (sortOption === 'byRelevance') {
         // Default - by rating
         results.sort((a, b) => {
           const aRating = a.rating || 0;
@@ -251,13 +253,13 @@ const SearchBar = ({
   return (
     <View style={localStyles.container}>
       {/* --- Main Search Bar Row --- */}
-      <View style={localStyles.searchBarContainer}>
+      <View style={[localStyles.searchBarContainer, { flexDirection: rowDirection('row-reverse') }]}>
         {/* Sort Button (opens sort modal) */}
         <TouchableOpacity
           style={localStyles.buttonContainer}
           onPress={() => setIsSortModalVisible(true)}
         >
-                      <Text style={localStyles.buttonText}>{texts.sort}</Text>
+                      <Text style={localStyles.buttonText}>{t('search:sortTitle')}</Text>
         </TouchableOpacity>
 
         {/* Filter Button (opens filter modal) */}
@@ -265,12 +267,12 @@ const SearchBar = ({
           style={localStyles.buttonContainer}
           onPress={() => setIsFilterModalVisible(true)}
         >
-                      <Text style={localStyles.buttonText}>{texts.filter}</Text>
+                      <Text style={localStyles.buttonText}>{t('search:filterTitle')}</Text>
         </TouchableOpacity>
 
         {/* Search Input Field */}
         <TextInput
-          style={localStyles.searchInput}
+          style={[localStyles.searchInput, { textAlign: biDiTextAlign('center') }]}
           placeholder={placeholder}
           placeholderTextColor="black"
           value={searchText}
@@ -301,7 +303,7 @@ const SearchBar = ({
             onPress={() => setIsFilterModalVisible(false)}
           >
             <View style={localStyles.modalContent}>
-              <Text style={localStyles.modalTitle}>בחר אפשרויות סינון</Text>
+              <Text style={localStyles.modalTitle}>{t('search:chooseFiltersTitle')}</Text>
               <ScrollView style={localStyles.modalScrollView}>
                 {filterOptions.map((option, index) => (
                   <TouchableOpacity
@@ -318,7 +320,7 @@ const SearchBar = ({
                         isFilterSelected(option) && localStyles.modalOptionTextSelected,
                       ]}
                     >
-                      {option}
+                       {t(`search:filters.${option}`)}
                     </Text>
                     {isFilterSelected(option) && (
                       <Ionicons
@@ -335,7 +337,7 @@ const SearchBar = ({
                 style={localStyles.modalCloseButton}
                 onPress={() => setIsFilterModalVisible(false)}
               >
-                <Text style={localStyles.modalCloseButtonText}>סגור</Text>
+                <Text style={localStyles.modalCloseButtonText}>{t('common:close')}</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -354,7 +356,7 @@ const SearchBar = ({
             onPress={() => setIsSortModalVisible(false)}
           >
             <View style={localStyles.modalContent}>
-              <Text style={localStyles.modalTitle}>בחר אפשרויות מיון</Text>
+              <Text style={localStyles.modalTitle}>{t('search:chooseSortsTitle')}</Text>
               <ScrollView style={localStyles.modalScrollView}>
                 {sortOptions.map((option, index) => (
                   <TouchableOpacity
@@ -371,7 +373,7 @@ const SearchBar = ({
                         isSortSelected(option) && localStyles.modalOptionTextSelected,
                       ]}
                     >
-                      {option}
+                       {t(`search:sort.${option}`)}
                     </Text>
                     {isSortSelected(option) && (
                       <Ionicons
@@ -388,7 +390,7 @@ const SearchBar = ({
                 style={localStyles.modalCloseButton}
                 onPress={() => setIsSortModalVisible(false)}
               >
-                <Text style={localStyles.modalCloseButtonText}>סגור</Text>
+                <Text style={localStyles.modalCloseButtonText}>{t('common:close')}</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -416,7 +418,7 @@ const SearchBar = ({
               </TouchableOpacity>
             ))}
           </ScrollView>
-          <Text style={localStyles.rowLabel}>סינון:</Text>
+          <Text style={localStyles.rowLabel}>{t('search:filterLabel')}</Text>
         </View>
       )}
 
@@ -441,7 +443,7 @@ const SearchBar = ({
               </TouchableOpacity>
             ))}
           </ScrollView>
-          <Text style={localStyles.rowLabel}>מיון:</Text>
+          <Text style={localStyles.rowLabel}>{t('search:sortLabel')}</Text>
 
         </View>
       )}
@@ -527,7 +529,7 @@ const localStyles = StyleSheet.create({
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
-    flexDirection: "row-reverse",
+    flexDirection: rowDirection("row-reverse"),
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 10,

@@ -2,12 +2,12 @@
 
 const colors = {
   // Primary Theme
-  pink: '#FF6B9D',           // ורוד ראשי
-  pinkLight: '#FFB3D1',      // ורוד בהיר
-  pinkDark: '#E91E63',       // ורוד כהה
-  orange: '#FF8A65',         // כתום ראשי
-  orangeLight: '#FFCCBC',    // כתום בהיר
-  orangeDark: '#FF5722',     // כתום כהה
+  pink: '#FF6B9D',         
+  pinkLight: '#FFB3D1',    
+  pinkDark: '#E91E63',     
+  orange: '#FF8A65',       
+  orangeLight: '#FFCCBC',  
+  orangeDark: '#FF5722',   
 
   // Backgrounds
   backgroundPrimary: '#FFFFFF',      // רקע ראשי
@@ -20,28 +20,28 @@ const colors = {
   modalBackground: '#FFFFFF',        // רקע מודאלים
 
   // Text
-  textPrimary: '#2C2C2C',     // טקסט ראשי
-  textSecondary: '#666666',   // טקסט משני
-  textTertiary: '#999999',    // טקסט שלישי
-  textDisabled: '#CCCCCC',    // טקסט מושבת
-  textPlaceholder: '#BBBBBB', // טקסט placeholder
-  textInverse: '#FFFFFF',     // טקסט על רקע כהה
+  textPrimary: '#2C2C2C',     
+  textSecondary: '#666666',   
+  textTertiary: '#999999',    
+  textDisabled: '#CCCCCC',    
+  textPlaceholder: '#BBBBBB', 
+  textInverse: '#FFFFFF',     
 
   // Status
-  success: '#4CAF50',         // הצלחה
-  successLight: '#E8F5E8',    // הצלחה בהיר
-  error: '#F44336',           // שגיאה
-  errorLight: '#FFEBEE',      // שגיאה בהיר
-  warning: '#FF9800',         // אזהרה
-  warningLight: '#FFF3E0',    // אזהרה בהיר
-  info: '#2196F3',            // מידע
-  infoLight: '#E3F2FD',       // מידע בהיר
+  success: '#4CAF50',         
+  successLight: '#E8F5E8',     
+  error: '#F44336',           
+  errorLight: '#FFEBEE',       
+  warning: '#FF9800',         
+  warningLight: '#FFF3E0',     
+  info: '#2196F3',         
+  infoLight: '#E3F2FD',    
 
   // Border
-  border: '#E8E8E8',          // גבול ראשי
-  borderSecondary: '#F0F0F0', // גבול משני
-  borderAccent: '#FFB3D1',    // גבול ורוד
-  borderFocus: '#FF8A65',     // גבול כתום
+  border: '#E8E8E8',          
+  borderSecondary: '#F0F0F0', 
+  borderAccent: '#FFB3D1',    
+  borderFocus: '#FF8A65',    
 
   // Shadow
   shadowLight: 'rgba(0, 0, 0, 0.1)',

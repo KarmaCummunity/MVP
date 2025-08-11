@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
-import { texts } from '../globals/texts';
+import { useTranslation } from 'react-i18next';
 import { Ionicons as Icon } from '@expo/vector-icons';
 
 interface TimePickerProps {
@@ -22,14 +22,14 @@ interface TimePickerProps {
 export default function TimePicker({ 
   value, 
   onTimeChange, 
-  placeholder = texts.timePlaceholder,
-  label = texts.timeLabel
+  placeholder,
+  label,
 }: TimePickerProps) {
+  const { t } = useTranslation(['common']);
   const [isVisible, setIsVisible] = useState(false);
   const [selectedHour, setSelectedHour] = useState('00');
   const [selectedMinute, setSelectedMinute] = useState('00');
 
-  // יצירת מערכי שעות ודקות
   const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
   const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
 
@@ -57,7 +57,7 @@ export default function TimePicker({
       
       <TouchableOpacity style={styles.timeButton} onPress={handleOpen}>
         <Text style={[styles.timeText, !value && styles.placeholderText]}>
-          {value || placeholder}
+          {value || placeholder || t('common:time.selectTime')}
         </Text>
         <Icon name="time-outline" size={16} color={colors.textSecondary} />
       </TouchableOpacity>
@@ -71,7 +71,7 @@ export default function TimePicker({
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{texts.timePlaceholder}</Text>
+              <Text style={styles.modalTitle}>{placeholder || t('common:time.selectTime')}</Text>
               <TouchableOpacity onPress={handleCancel} style={styles.closeButton}>
                 <Icon name="close" size={24} color={colors.textPrimary} />
               </TouchableOpacity>
@@ -79,7 +79,7 @@ export default function TimePicker({
 
             <View style={styles.pickerContainer}>
               <View style={styles.pickerColumn}>
-                <Text style={styles.pickerLabel}>שעות</Text>
+                <Text style={styles.pickerLabel}>{t('common:time.hours')}</Text>
                 <ScrollView 
                   style={styles.pickerScroll}
                   showsVerticalScrollIndicator={false}
@@ -110,7 +110,7 @@ export default function TimePicker({
               </View>
 
               <View style={styles.pickerColumn}>
-                <Text style={styles.pickerLabel}>דקות</Text>
+                <Text style={styles.pickerLabel}>{t('common:time.minutes')}</Text>
                 <ScrollView 
                   style={styles.pickerScroll}
                   showsVerticalScrollIndicator={false}
@@ -139,10 +139,10 @@ export default function TimePicker({
 
             <View style={styles.modalFooter}>
               <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-                <Text style={styles.cancelButtonText}>ביטול</Text>
+                <Text style={styles.cancelButtonText}>{t('common:cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
-                <Text style={styles.confirmButtonText}>אישור</Text>
+                <Text style={styles.confirmButtonText}>{t('common:confirm')}</Text>
               </TouchableOpacity>
             </View>
           </View>

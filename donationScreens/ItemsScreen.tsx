@@ -4,15 +4,17 @@ import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import HeaderComp from '../components/HeaderComp';
+import DonationStatsFooter from '../components/DonationStatsFooter';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { db } from '../utils/databaseService';
 import { useUser } from '../context/UserContext';
+import { biDiTextAlign, rowDirection, isLandscape, marginStartEnd } from '../globals/responsive';
 
 type ItemType = 'furniture' | 'clothes' | 'general';
 
 export interface ItemsScreenProps {
   navigation: NavigationProp<ParamListBase>;
-  itemType: ItemType; // which flavor of items screen
+  route?: any;
 }
 
 interface DonationItem {
@@ -45,13 +47,13 @@ const itemsSortOptions = [
   'אלפביתי',
   'לפי מיקום',
   'לפי תאריך',
-  'לפי מחיר',
   'לפי דירוג',
   'לפי רלוונטיות',
 ];
 
-export default function ItemsScreen({ navigation, itemType }: ItemsScreenProps) {
-  const [mode, setMode] = useState(false); // false = מחפש, true = מציע
+export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
+  const itemType: ItemType = (route?.params?.itemType as ItemType) || 'general';
+  const [mode, setMode] = useState(true); // false = מחפש, true = מציע
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [selectedSorts, setSelectedSorts] = useState<string[]>([]);
@@ -146,9 +148,6 @@ export default function ItemsScreen({ navigation, itemType }: ItemsScreenProps) 
         break;
       case 'לפי תאריך':
         filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-        break;
-      case 'לפי מחיר':
-        filtered.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
         break;
       case 'לפי דירוג':
         filtered.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
@@ -270,12 +269,9 @@ export default function ItemsScreen({ navigation, itemType }: ItemsScreenProps) 
             </View>
 
             <View style={localStyles.row}>
-              <View style={localStyles.fieldSmall}>
-                <Text style={localStyles.label}>מחיר</Text>
-                <View style={localStyles.inputWrapper}>
-                  <TextInput style={[localStyles.input, localStyles.inputWithAdornment]} keyboardType="number-pad" value={price} onChangeText={(t) => setPrice(t.replace(/[^0-9]/g, ''))} placeholder="0" />
-                  <Text pointerEvents="none" style={localStyles.inputAdornment}>₪</Text>
-                </View>
+            <View style={localStyles.fieldSmall}>
+                <Text style={localStyles.label}>מיקום</Text>
+                <TextInput style={localStyles.input} value={location} onChangeText={setLocation} placeholder="לדוגמה: תל אביב" />
               </View>
               <View style={localStyles.fieldSmall}>
                 <Text style={localStyles.label}>כמות</Text>
@@ -287,9 +283,9 @@ export default function ItemsScreen({ navigation, itemType }: ItemsScreenProps) 
               </View>
             </View>
 
+            <Text style={localStyles.labelInline}>מצב</Text>
             <View style={localStyles.row}>
-              <View style={localStyles.fieldSmall}>
-                <Text style={localStyles.label}>מצב</Text>
+              <View style={localStyles.field}>
                 <View style={localStyles.tagsRow}>
                   {[
                     { key: 'new', label: 'חדש' },
@@ -297,15 +293,27 @@ export default function ItemsScreen({ navigation, itemType }: ItemsScreenProps) 
                     { key: 'used', label: 'משומש' },
                     { key: 'for_parts', label: 'לחלפים' },
                   ].map(opt => (
-                    <TouchableOpacity key={opt.key} style={[localStyles.tag, condition === (opt.key as any) && localStyles.tagSelected]} onPress={() => setCondition(opt.key as any)}>
-                      <Text style={[localStyles.tagText, condition === (opt.key as any) && localStyles.tagTextSelected]}>{opt.label}</Text>
+                    <TouchableOpacity
+                    key={opt.key}
+                    style={[
+                      localStyles.tag,
+                      localStyles.tagSmall,
+                      condition === (opt.key as any) && localStyles.tagSelected,
+                    ]}
+                    onPress={() => setCondition(opt.key as any)}
+                    >
+                      <Text
+                        style={[
+                          localStyles.tagText,
+                          localStyles.tagTextSm,
+                          condition === (opt.key as any) && localStyles.tagTextSelected,
+                        ]}
+                      >
+                        {opt.label}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
-              </View>
-              <View style={localStyles.fieldSmall}>
-                <Text style={localStyles.label}>מיקום</Text>
-                <TextInput style={localStyles.input} value={location} onChangeText={setLocation} placeholder="לדוגמה: תל אביב" />
               </View>
             </View>
 
@@ -324,16 +332,28 @@ export default function ItemsScreen({ navigation, itemType }: ItemsScreenProps) 
           </View>
         </ScrollView>
       ) : (
-        <View style={[localStyles.container, localStyles.noOuterScrollContainer]}>
-          <View style={localStyles.sectionWithScroller}>
-            <Text style={localStyles.sectionTitle}>{searchQuery || selectedFilters.length > 0 ? 'פריטים זמינים' : 'פריטים מומלצים'}</Text>
-            <ScrollView style={localStyles.innerScroll} contentContainerStyle={localStyles.itemsGridContainer} showsVerticalScrollIndicator nestedScrollEnabled>
-              {filteredItems.map((it) => (
-                <View key={it.id} style={localStyles.itemCardWrapper}>{renderItemCard({ item: it })}</View>
-              ))}
-            </ScrollView>
+        <>
+          <View style={[localStyles.container, localStyles.noOuterScrollContainer]}>
+            <View style={localStyles.sectionWithScroller}>
+              <Text style={localStyles.sectionTitle}>{searchQuery || selectedFilters.length > 0 ? 'פריטים זמינים' : 'פריטים מומלצים'}</Text>
+              <ScrollView style={localStyles.innerScroll} contentContainerStyle={[localStyles.itemsGridContainer, isLandscape() && { paddingHorizontal: 16 }]} showsVerticalScrollIndicator nestedScrollEnabled>
+                {filteredItems.map((it) => (
+                  <View key={it.id} style={localStyles.itemCardWrapper}>{renderItemCard({ item: it })}</View>
+                ))}
+              </ScrollView>
+            </View>
           </View>
-        </View>
+
+          <View style={localStyles.section}>
+            <DonationStatsFooter
+              stats={[
+                { label: 'פריטים שפורסמו', value: getFilteredItems().length, icon: 'cube-outline' },
+                { label: 'פריטים בחינם', value: getFilteredItems().filter(i => (i.price ?? 0) === 0).length, icon: 'pricetag-outline' },
+                { label: 'מיקומים ייחודיים', value: new Set(getFilteredItems().map(i => i.location || 'לא צויין')).size, icon: 'pin-outline' },
+              ]}
+            />
+          </View>
+        </>
       )}
     </SafeAreaView>
   );
@@ -344,35 +364,38 @@ const localStyles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 16, paddingTop: 4 },
   scrollContent: { paddingBottom: 100 },
   formContainer: { padding: 5, alignItems: 'center', borderRadius: 15, marginBottom: 15 },
-  row: { flexDirection: 'row-reverse', gap: 10, width: '100%', paddingHorizontal: 8 },
+  row: { flexDirection: rowDirection('row-reverse'), gap: 10, width: '100%', paddingHorizontal: 8 },
   field: { flex: 1 },
   fieldSmall: { flex: 0.5 },
   label: { fontSize: FontSizes.medium, fontWeight: '600', color: colors.textPrimary, marginBottom: 10, textAlign: 'center' },
-  input: { backgroundColor: colors.moneyInputBackground, borderRadius: 10, padding: 12, fontSize: FontSizes.body, textAlign: 'right', color: colors.textPrimary, borderWidth: 1, borderColor: colors.moneyFormBorder },
+  labelInline: { marginTop: 3, flex: 1, fontSize: FontSizes.medium, fontWeight: '600', color: colors.textPrimary, ...marginStartEnd(6, 0) },
+  input: { backgroundColor: colors.moneyInputBackground, borderRadius: 10, padding: 12, fontSize: FontSizes.body, textAlign: biDiTextAlign('right'), color: colors.textPrimary, borderWidth: 1, borderColor: colors.moneyFormBorder },
   inputWrapper: { position: 'relative', justifyContent: 'center' },
   inputWithAdornment: { paddingRight: 30 },
   inputAdornment: { position: 'absolute', right: 10, color: colors.textSecondary, fontSize: FontSizes.body },
-  counterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.moneyInputBackground, borderRadius: 10, borderWidth: 1, borderColor: colors.moneyFormBorder, paddingHorizontal: 8, paddingVertical: 6 },
+  counterRow: { flexDirection: rowDirection('row'), alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.moneyInputBackground, borderRadius: 10, borderWidth: 1, borderColor: colors.moneyFormBorder, paddingHorizontal: 8, paddingVertical: 6 },
   counterBtn: { backgroundColor: colors.moneyFormBackground, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
   counterText: { fontSize: FontSizes.medium, fontWeight: 'bold', color: colors.textPrimary },
   counterValue: { fontSize: FontSizes.medium, fontWeight: 'bold', color: colors.textPrimary, minWidth: 30, textAlign: 'center' },
-  tagsRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 6 },
+  tagsRow: {marginTop: 10, alignItems: 'stretch', flexDirection: rowDirection('row-reverse'), flexWrap: 'wrap', gap: 3 },
   tag: { backgroundColor: colors.moneyFormBackground, borderWidth: 1, borderColor: colors.moneyFormBorder, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
+  tagSmall: { paddingHorizontal: 8, marginHorizontal: "4%", paddingVertical: 4 },
   tagSelected: { backgroundColor: colors.moneyStatusBackground, borderColor: colors.moneyStatusBackground },
   tagText: { fontSize: FontSizes.small, color: colors.textPrimary },
+  tagTextSm: { fontSize: FontSizes.caption },
   tagTextSelected: { color: colors.moneyStatusText, fontWeight: '600' },
   offerButton: { backgroundColor: colors.moneyButtonBackground, padding: 14, borderRadius: 12, alignItems: 'center', marginTop: 10 },
   offerButtonText: { color: colors.backgroundPrimary, fontSize: FontSizes.medium, fontWeight: 'bold' },
   section: { marginBottom: 10 },
-  sectionTitle: { fontSize: FontSizes.body, fontWeight: 'bold', alignSelf: 'center', color: colors.textPrimary, textAlign: 'right' },
+  sectionTitle: { fontSize: FontSizes.body, fontWeight: 'bold', alignSelf: 'center', color: colors.textPrimary, textAlign: 'center' },
   noOuterScrollContainer: { flex: 1 },
   sectionWithScroller: { flex: 1, backgroundColor: colors.moneyFormBackground, borderRadius: 12, borderWidth: 1, borderColor: colors.moneyFormBorder, paddingVertical: 8, paddingHorizontal: 8 },
   innerScroll: { flex: 1 },
   itemsGridContainer: {},
   itemCardWrapper: { marginBottom: 8, width: '100%' },
   itemCard: { backgroundColor: colors.moneyCardBackground, borderRadius: 10, padding: 8, borderWidth: 1, borderColor: colors.moneyFormBorder },
-  itemRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  itemTitle: { fontSize: FontSizes.small, fontWeight: 'bold', color: colors.textPrimary, textAlign: 'right', flex: 1, marginLeft: 6 },
+  itemRow: { flexDirection: rowDirection('row-reverse'), justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  itemTitle: { fontSize: FontSizes.small, fontWeight: 'bold', color: colors.textPrimary, textAlign: biDiTextAlign('right'), flex: 1, marginLeft: 6 },
   itemMeta: { fontSize: FontSizes.small, color: colors.textSecondary },
   itemPrice: { fontSize: FontSizes.small, color: colors.moneyHistoryAmount, fontWeight: '600' },
   itemBadge: { backgroundColor: colors.moneyStatusBackground, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 6 },

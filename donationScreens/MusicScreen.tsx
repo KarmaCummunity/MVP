@@ -7,12 +7,9 @@ export default function MusicScreen() {
     <CategoryScreen
       config={{
         id: 'music',
-        title: 'מוזיקה',
-        subtitle: 'נגינה ושיתוף מוזיקלי',
         icon: 'musical-notes-outline',
         color: colors.pink,
         bgColor: colors.pinkLight,
-        description: 'נגינה, שיתופי פעולה מוזיקליים והופעות קהילתיות',
       }}
     />
   );

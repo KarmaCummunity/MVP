@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { useUser } from '../context/UserContext';
+import { useTranslation } from 'react-i18next';
 
 interface GuestModeNoticeProps {
   variant?: 'default' | 'compact';
@@ -16,22 +17,19 @@ const GuestModeNotice: React.FC<GuestModeNoticeProps> = ({
 }) => {
   const navigation = useNavigation<any>();
   const { signOut } = useUser();
+  const { t } = useTranslation(['common']);
 
   const handleLoginPress = async () => {
     console.log('🔐 GuestModeNotice - Login button pressed, performing sign out');
     try {
-      // ביצוע התנתקות כמו כפתור היציאה במסך ההגדרות
       await signOut();
       console.log('🔐 GuestModeNotice - Sign out completed');
-      
-      // השהייה קצרה לוודא שהמצב התעדכן לפני הניווט
       setTimeout(() => {
         console.log('🔐 GuestModeNotice - Navigating to LoginScreen');
         navigation.navigate('LoginScreen');
       }, 100);
     } catch (error) {
       console.error('🔐 GuestModeNotice - Error during sign out:', error);
-      // גם במקרה של שגיאה - נווט למסך לוגין
       navigation.navigate('LoginScreen');
     }
   };
@@ -40,8 +38,7 @@ const GuestModeNotice: React.FC<GuestModeNoticeProps> = ({
     <>
       {showLoginButton && (
         <TouchableOpacity style={styles.loginButton} onPress={handleLoginPress}>
-          <Text style={styles.loginButtonText}>אתה במצב אורח, מומלץ להתחבר</Text>
-          <Ionicons name="information-circle-outline" size={20} color={colors.warning} />
+          <Text style={styles.loginButtonText}>{t('common:guestLoginHint')}</Text>
         </TouchableOpacity>
       )}
     </>
@@ -74,7 +71,7 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     margin: 10,
-    backgroundColor: colors.pinkDark,
+    backgroundColor: colors.pink,
     borderRadius: 8,
     paddingVertical: 5,
     paddingHorizontal: 10,

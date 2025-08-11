@@ -370,7 +370,6 @@ export default function UserProfileScreen() {
 
                 try {
                   if (isFollowing) {
-                    // ביטול עקיבה
                     const success = await unfollowUser(selectedUser.id, user.id);
                                       if (success) {
                     setIsFollowing(false);
@@ -380,9 +379,8 @@ export default function UserProfileScreen() {
                     Alert.alert('ביטול עקיבה', 'ביטלת את העקיבה בהצלחה');
                   }
                   } else {
-                    // התחלת עקיבה
                     const success = await followUser(selectedUser.id, user.id);
-                                      if (success) {
+                    if (success) {
                     setIsFollowing(true);
                     const newCounts = await getUpdatedFollowCounts(user.id);
                     setUpdatedCounts(newCounts);
@@ -408,7 +406,6 @@ export default function UserProfileScreen() {
                      <TouchableOpacity 
              style={styles.messageButton}
              onPress={() => {
-               // ניווט לצ'אט עם המשתמש
                (navigation as any).navigate('ChatDetailScreen', {
                  conversationId: `conv_${userId}`,
                  otherUserId: userId,

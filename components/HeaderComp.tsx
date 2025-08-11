@@ -3,8 +3,11 @@ import { View, Text, StyleSheet, Platform } from "react-native";
 import SearchBar from "../components/SearchBar";
 import MenuComp from "../components/MenuComp";
 import ModeToggleButton from "../components/ModeToggleButton";
+import GuestModeNotice from "../components/GuestModeNotice";
 import colors from "../globals/colors";
+import { getScreenInfo, scaleSize, rowDirection } from "../globals/responsive";
 import { FontSizes } from "../globals/constants";
+import { useUser } from "../context/UserContext";
 
 interface HeaderSectionProps {
   mode: boolean;  // false = search, true = offer
@@ -17,7 +20,7 @@ interface HeaderSectionProps {
   filterOptions: string[]; // Filter options specific to each screen
   sortOptions: string[]; // Sort options specific to each screen
   searchData: any[]; // Data array to search through (charities, rides, etc.)
-  onSearch: (query: string, filters: string[], sorts: string[], results: any[]) => void; // Search handler function
+  onSearch: (query: string, filters?: string[], sorts?: string[], results?: any[]) => void; // Search handler function
 }
 
 const HeaderComp: React.FC<HeaderSectionProps> = ({
@@ -31,10 +34,19 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
   searchData,
   onSearch,
 }) => {
+  const { isGuestMode } = useUser();
  
+  const { isTablet, isDesktop } = getScreenInfo();
+  const horizontalPadding = isDesktop ? 24 : isTablet ? 20 : 16;
+  const containerRadius = isDesktop ? 24 : 30;
   return (
     <View style={headerStyles.headerContainer}>
-      <View style={headerStyles.topRow}>
+      {/* מציג את הבאנר במצב אורח אם המשתמש במצב אורח */}
+      {isGuestMode && (
+        <GuestModeNotice variant="compact" showLoginButton={true} />
+      )}
+
+      <View style={[headerStyles.topRow, { flexDirection: rowDirection('row') }]}>
         <MenuComp options={menuOptions} onSelectOption={onSelectMenuItem} />
         <ModeToggleButton mode={mode} onToggle={onToggleMode} />
       </View>
@@ -62,7 +74,6 @@ const headerStyles = StyleSheet.create({
     marginTop: 10,
   },
   topRow: {
-    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 6,

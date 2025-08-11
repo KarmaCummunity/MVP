@@ -10,8 +10,8 @@ import {
 } from "react-native";
 import colors from "../globals/colors";
 import { FontSizes } from "../globals/constants";
-import { texts } from "../globals/texts";
 import logger from '../utils/logger';
+import { useTranslation } from 'react-i18next';
 
 interface PlacePrediction {
   description: string;
@@ -33,6 +33,7 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
   onLocationSelected,
   placeholder,
 }) => {
+  const { t } = useTranslation(['search','common']);
   const [query, setQuery] = useState<string>("");
   const [results, setResults] = useState<PlacePrediction[]>([]);
   const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(
@@ -144,7 +145,7 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
       <TextInput
         value={query}
         onChangeText={handleChangeText}
-        placeholder={placeholder || texts.locationPlaceholder}
+        placeholder={placeholder || (t('search:locationPlaceholder') as string)}
         placeholderTextColor={colors.black}
         style={local_styles.input}
       />

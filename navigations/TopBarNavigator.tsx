@@ -9,7 +9,8 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-na
 import colors from '../globals/colors';
 import { useUser } from '../context/UserContext';
 import logger from '../utils/logger';
-
+import { rowDirection } from '../globals/responsive';
+import { useTranslation } from 'react-i18next';
 
 
 interface TopBarNavigatorProps {
@@ -19,6 +20,7 @@ interface TopBarNavigatorProps {
 }
 
 function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: TopBarNavigatorProps) {
+  const { t } = useTranslation(['home','common','settings','donations','notifications','profile']);
   
   const route = useRoute();
   const { isGuestMode } = useUser();
@@ -53,7 +55,6 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
 
   ////console.log('🔝 TopBarNavigator - hideTopBar prop:', hideTopBar);
 
-  // מאפשר הסתרת טופ-בר דרך פרמטר מסך: route.params?.hideTopBar === true
   const shouldHideTopBar = hideTopBar || (route?.params as any)?.hideTopBar === true;
 
   React.useEffect(() => {
@@ -75,36 +76,56 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
   //console.log('🔍 TopBarNavigator - Route key:', route.key);
   //console.log('🔍 TopBarNavigator - Full route object:', JSON.stringify(route, null, 2));
 
-  // Map route names to titles
+  // Map route names to titles using translations
   const routeTitles: Record<string, string> = {
-    // Bottom Tab Screens
-    SearchScreen: 'חיפוש',
-    DonationsScreen: 'הקהילה במעשים',
-    ProfileScreen: 'פרופיל',
-    
-    // Donation Stack Screens
-    MoneyScreen: 'כסף',
-    TrumpScreen: 'טרמפים',
-    KnowledgeScreen: 'תרומת ידע',
-    TimeScreen: 'תרומת זמן',
-    
-    // Top Bar Navigation Screens
-    SettingsScreen: 'הגדרות',
-    ChatListScreen: 'צ\'אטים',
-    NotificationsScreen: 'התראות',
-    AboutKarmaCommunityScreen: 'אודות KC',
-    
-    // Other Screens
-    UserProfileScreen: 'פרופיל משתמש',
-    FollowersScreen: 'עוקבים',
-    DiscoverPeopleScreen: 'גלה אנשים',
-    NewChatScreen: 'צ\'אט חדש',
-    ChatDetailScreen: 'צ\'אט',
-    BookmarksScreen: 'מועדפים',
-    PostsReelsScreen: 'פוסטים',
-    InactiveScreen: 'לא פעיל',
-    WebViewScreen: 'דף אינטרנט',
-    LoginScreen: 'התחברות',
+    SearchScreen: t('common:search'),
+    DonationsScreen: t('donations:title'),
+    ProfileScreen: t('profile:title'),
+
+    MoneyScreen: t('donations:categories.money.title'),
+    TrumpScreen: t('donations:categories.trump.title'),
+    KnowledgeScreen: t('donations:categories.knowledge.title'),
+    TimeScreen: t('donations:categories.time.title'),
+    CategoryScreen: t('donations:categoriesTitle'),
+    ItemsScreen: t('donations:categories.items.title'),
+    FoodScreen: t('donations:categories.food.title'),
+    ClothesScreen: t('donations:categories.clothes.title'),
+    BooksScreen: t('donations:categories.books.title'),
+    FurnitureScreen: t('donations:categories.furniture.title'),
+    MedicalScreen: t('donations:categories.medical.title'),
+    AnimalsScreen: t('donations:categories.animals.title'),
+    HousingScreen: t('donations:categories.housing.title'),
+    SupportScreen: t('donations:categories.support.title'),
+    EducationScreen: t('donations:categories.education.title'),
+    EnvironmentScreen: t('donations:categories.environment.title'),
+    TechnologyScreen: t('donations:categories.technology.title'),
+    MusicScreen: t('donations:categories.music.title'),
+    GamesScreen: t('donations:categories.games.title'),
+    RiddlesScreen: t('donations:categories.riddles.title'),
+    RecipesScreen: t('donations:categories.recipes.title'),
+    PlantsScreen: t('donations:categories.plants.title'),
+    WasteScreen: t('donations:categories.waste.title'),
+    ArtScreen: t('donations:categories.art.title'),
+    SportsScreen: t('donations:categories.sports.title'),
+    DreamsScreen: t('donations:categories.dreams.title'),
+    FertilityScreen: t('donations:categories.fertility.title'),
+    JobsScreen: t('donations:categories.jobs.title'),
+
+    SettingsScreen: t('settings:title'),
+    ChatListScreen: t('common:chats'),
+    NotificationsScreen: t('notifications:title'),
+    AboutKarmaCommunityScreen: t('settings:about'),
+
+    UserProfileScreen: t('profile:title'),
+    FollowersScreen: t('profile:followers'),
+    DiscoverPeopleScreen: t('profile:discover'),
+    NewChatScreen: t('common:newChat'),
+    ChatDetailScreen: t('common:chat'),
+    BookmarksScreen: t('common:favorites'),
+    PostsReelsScreen: t('common:posts'),
+    InactiveScreen: t('common:inactive'),
+    WebViewScreen: t('common:web'),
+    LoginScreen: t('auth:login'),
   };
 
   // Get current route name
@@ -114,7 +135,7 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
   let title = 'KC';
   
   if (currentRouteName === 'HomeScreen' || currentRouteName === 'HomeMain') {
-    title = showPosts ? 'חדשות' : 'הקהילה במספרים';
+    title = showPosts ? t('home:newsTitle') : t('home:numbersTitle');
   } else {
     // Use the routeTitles mapping for all other screens
     title = routeTitles[currentRouteName] ?? 'KC';
@@ -140,28 +161,28 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
         onLayout={(e) => setMeasuredHeight(e.nativeEvent.layout.height)}
       >
 
-      <View style={{ flexDirection: 'row', gap: 5 }}>
-        <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={{ padding: 4 }}>
+      <View style={styles.topBarIconsRow}>
+        <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={styles.topBarIconButton}>
           <Icon name="settings-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('NotificationsScreen')} style={{ padding: 4 }}>
+        <TouchableOpacity onPress={() => navigation.navigate('NotificationsScreen')} style={styles.topBarIconButton}>
           <Icon name="notifications-circle-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
       </View>
 
       {/* Title */}
-      <View style={{ alignItems: 'center' }}>
+      <View style={styles.topBarTitleContainer}>
         <Text style={styles.topBarTitle}>{title}</Text>
       </View>
       {/* Left Icons Group: Notifications + Settings */}
             {/* Right Icons Group: Chat OR About (guest) */}
-            <View style={{ flexDirection: 'row', gap: 5 }}>
+            <View style={styles.topBarIconsRow}>
         {isGuestMode ? (
-          <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={{ padding: 4 }}>
+          <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={styles.topBarIconButton}>
             <Icon name="information-circle-outline" size={24} color={colors.topNavIcon} />
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={{ padding: 4 }}>
+          <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={styles.topBarIconButton}>
             <Icon name="chatbubbles-outline" size={24} color={colors.topNavIcon} />
           </TouchableOpacity>
         )}

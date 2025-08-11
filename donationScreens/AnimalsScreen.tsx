@@ -7,12 +7,9 @@ export default function AnimalsScreen() {
     <CategoryScreen
       config={{
         id: 'animals',
-        title: 'חיות',
-        subtitle: 'עזרה לחיות',
         icon: 'paw-outline',
         color: colors.orangeDark,
         bgColor: colors.backgroundTertiary,
-        description: 'אימוץ, עזרה לחיות משוטטות ותמיכה בעמותות',
       }}
     />
   );

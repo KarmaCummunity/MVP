@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
 import { Message } from '../utils/chatService'; // Use new Message type
+import { useTranslation } from 'react-i18next';
 import colors from '../globals/colors'; // Assuming you have a Colors file
 import { FontSizes } from '../globals/constants';
 import { Ionicons as Icon } from '@expo/vector-icons';
@@ -14,13 +15,14 @@ interface ChatMessageBubbleProps {
 }
 
 const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, isMyMessage, userAvatar }) => {
+  const { t } = useTranslation(['chat','common']);
   const bubbleStyle = isMyMessage ? styles.myBubble : styles.otherBubble;
   const textStyle = isMyMessage ? styles.myText : styles.otherText;
   const containerStyle = isMyMessage ? styles.myMessageContainer : styles.otherMessageContainer;
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
   };
 
   const renderFileContent = () => {
@@ -33,7 +35,7 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, isMyMess
         return (
           <TouchableOpacity 
             style={styles.fileContainer}
-            onPress={() => Alert.alert('תמונה', 'פתיחת תמונה במסך מלא')}
+            onPress={() => Alert.alert(t('chat:image'), t('chat:openImage'))}
           >
             <Image source={{ uri: fileData.uri }} style={styles.messageImage as any} />
           </TouchableOpacity>
@@ -43,7 +45,7 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, isMyMess
         return (
           <TouchableOpacity 
             style={styles.fileContainer}
-            onPress={() => Alert.alert('סרטון', 'נגינת סרטון')}
+            onPress={() => Alert.alert(t('chat:video'), t('chat:playVideo'))}
           >
             <View style={styles.videoContainer}>
               <Image source={{ uri: fileData.thumbnail || fileData.uri }} style={styles.videoThumbnail as any} />
@@ -61,7 +63,7 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, isMyMess
         return (
           <TouchableOpacity 
             style={styles.fileContainer}
-            onPress={() => Alert.alert('קובץ', `פתיחת קובץ: ${fileData.name}`)}
+            onPress={() => Alert.alert(t('chat:file'), t('chat:openFile', { name: fileData.name }))}
           >
             <View style={styles.documentContainer}>
               <Icon name="document-outline" size={40} color={colors.primary} />

@@ -1,0 +1,23 @@
+{
+  "welcome": "Welcome to Karma Community!",
+  "appSubtitle": "App Settings",
+  "restartRequired": "Restart required",
+  "restartDesc": "Please restart the app for language changes to take effect",
+  "cancel": "Cancel",
+  "save": "Save",
+  "delete": "Delete",
+  "clear": "Clear",
+  "error": "Error",
+  "search": "Search",
+  "chats": "Chats",
+  "favorites": "Favorites",
+  "inactive": "Inactive",
+  "guestLoginHint": "You're in guest mode, please sign in",
+  "settings": "Settings",
+  "report": "Report",
+  "confirm": "OK",
+  "newChat": "New chat",
+  "chat": "Chat",
+  "posts": "Posts",
+  "web": "Web page"
+}

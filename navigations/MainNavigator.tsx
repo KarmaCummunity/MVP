@@ -1,18 +1,21 @@
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { createStackNavigator } from "@react-navigation/stack";
 import { useFocusEffect } from "@react-navigation/native";
 import BottomNavigator from "./BottomNavigator";
-import InactiveScreen from "../screens/InactiveScreen";
+// InactiveScreen was removed; replace with LoginScreen to avoid missing module
+// import InactiveScreen from "../screens/InactiveScreen";
 import WebViewScreen from "../screens/WebViewScreen";
 import PostsReelsScreenWrapper from "../components/PostsReelsScreenWrapper";
-import BookmarksScreen from "../bottomBarScreens/BookmarksScreen";
+import BookmarksScreen from "../screens/BookmarksScreen";
 import UserProfileScreen from "../screens/UserProfileScreen";
 import FollowersScreen from "../screens/FollowersScreen";
 import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
 import LoginScreen from "../screens/LoginScreen";
 import { useUser } from '../context/UserContext';
 import colors from '../globals/colors';
+import styles from '../globals/styles';
 import NewChatScreen from '../screens/NewChatScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
 import SettingsScreen from '../topBarScreens/SettingsScreen';
@@ -26,6 +29,7 @@ const Stack = createStackNavigator<RootStackParamList>();
 
 export default function MainNavigator() {
   const { selectedUser, isLoading, isGuestMode, isAuthenticated } = useUser();
+  const { t } = useTranslation(['common','profile']);
 
   console.log('🧭 MainNavigator - Render state:', {
     selectedUser: selectedUser?.name || 'null',
@@ -52,24 +56,13 @@ export default function MainNavigator() {
     });
   }, [selectedUser, isLoading, isGuestMode, isAuthenticated]);
 
-  // אם טוען – מציג מסך טעינה
+  // Loading screen
   if (isLoading) {
     console.log('🧭 MainNavigator - Showing loading screen');
     return (
-      <View style={{
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: colors.backgroundPrimary,
-      }}>
+      <View style={styles.centeredScreen}>
         <ActivityIndicator size="large" color={colors.info} />
-        <Text style={{
-          marginTop: 10,
-          fontSize: 16,
-          color: colors.textPrimary,
-        }}>
-          טוען...
-        </Text>
+        <Text style={styles.loadingText}>{t('common:loading')}</Text>
       </View>
     );
   }
@@ -93,7 +86,8 @@ export default function MainNavigator() {
       <Stack.Screen name="HomeStack" component={BottomNavigator} />
       <Stack.Screen name="NewChatScreen" component={NewChatScreen} />
       <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
-      <Stack.Screen name="InactiveScreen" component={InactiveScreen} />
+      {/* InactiveScreen removed - redirect to LoginScreen */}
+      <Stack.Screen name="InactiveScreen" component={LoginScreen} />
       <Stack.Screen name="WebViewScreen" component={WebViewScreen} />
       <Stack.Screen
         name="PostsReelsScreen"
@@ -107,7 +101,7 @@ export default function MainNavigator() {
         name="BookmarksScreen"
         component={BookmarksScreen}
         options={{
-          title: 'מועדפים',
+          title: t('profile:menu.bookmarks'),
           headerTitleAlign: 'center',
           headerShown: true,
         }}

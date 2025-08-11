@@ -46,7 +46,6 @@ export default function NewChatScreen() {
   const [showFilters, setShowFilters] = useState(false);
   const [existingConversations, setExistingConversations] = useState<string[]>([]);
 
-  // טעינת רשימת החברים ושיחות קיימות
   const loadFriends = useCallback(async () => {
     if (!selectedUser) {
       Alert.alert('שגיאה', 'יש לבחור יוזר תחילה');
@@ -56,28 +55,22 @@ export default function NewChatScreen() {
     try {
       setIsLoading(true);
       
-      // קבלת רשימת האנשים שמשתמש עוקב אחריהם
       const following = await getFollowing(selectedUser.id);
       
-      // קבלת רשימת העוקבים של המשתמש
       const followers = await getFollowers(selectedUser.id);
       
-      // איחוד הרשימות (חברים = עוקבים + עוקבים אחריהם)
       const allFriends = [...following, ...followers];
       
-      // הסרת כפילויות
       const uniqueFriends = allFriends.filter((friend, index, self) => 
         index === self.findIndex(f => f.id === friend.id)
       );
       
-      // קבלת שיחות קיימות (כולל ריקות)
       const conversations = await getAllConversations(selectedUser.id);
       const existingUserIds = conversations.flatMap(conv => 
         conv.participants.filter(id => id !== selectedUser.id)
       );
       setExistingConversations(existingUserIds);
       
-      // אם אין חברים, הצג המלצות
       if (uniqueFriends.length === 0) {
         const suggestions = await getFollowSuggestions(selectedUser.id, 10);
         setFriends(suggestions);
@@ -94,11 +87,9 @@ export default function NewChatScreen() {
     }
   }, [selectedUser]);
 
-  // פונקציית סינון
   const applyFilters = useCallback((friendsList: CharacterType[]) => {
     let filtered = [...friendsList];
     
-    // סינון לפי סוג
     switch (activeFilter) {
       case 'online':
         filtered = filtered.filter(friend => friend.isActive);
@@ -107,12 +98,10 @@ export default function NewChatScreen() {
         filtered = filtered.filter(friend => friend.karmaPoints >= 100);
         break;
       case 'recentFollowers':
-        // הצגת רק עוקבים חדשים (נניח שיש תאריך בעתיד)
         filtered = filtered.filter(friend => friend.followersCount > 0);
         break;
     }
     
-    // סינון לפי חיפוש
     if (searchQuery.trim() !== '') {
       filtered = filtered.filter(friend =>
         friend.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -120,7 +109,6 @@ export default function NewChatScreen() {
       );
     }
     
-    // מיון
     switch (sortBy) {
       case 'name':
         filtered.sort((a, b) => a.name.localeCompare(b.name, 'he'));
@@ -132,7 +120,6 @@ export default function NewChatScreen() {
         filtered.sort((a, b) => (b.followersCount || 0) - (a.followersCount || 0));
         break;
       case 'recent':
-        // מיון לפי פעילות אחרונה (נשתמש בשדה isActive כדוגמה)
         filtered.sort((a, b) => {
           if (a.isActive && !b.isActive) return -1;
           if (!a.isActive && b.isActive) return 1;
@@ -144,7 +131,6 @@ export default function NewChatScreen() {
     return filtered;
   }, [activeFilter, sortBy, searchQuery]);
 
-  // עדכון רשימה מסוננת
   useEffect(() => {
     const filtered = applyFilters(friends);
     setFilteredFriends(filtered);
@@ -159,7 +145,6 @@ export default function NewChatScreen() {
     loadFriends();
   }, [loadFriends]);
 
-  // יצירת שיחה חדשה או ניווט לשיחה קיימת
   const handleCreateChat = async (friend: CharacterType) => {
     if (!selectedUser) {
       Alert.alert('שגיאה', 'יש לבחור יוזר תחילה');
@@ -167,7 +152,6 @@ export default function NewChatScreen() {
     }
 
     try {
-      // בדיקה אם קיימת שיחה
       const existingConvId = await conversationExists(selectedUser.id, friend.id);
       let conversationId: string;
       
@@ -178,7 +162,6 @@ export default function NewChatScreen() {
         console.log('💬 Creating new conversation...');
         conversationId = await createConversation([selectedUser.id, friend.id]);
         
-        // שליחת הודעת ברוך הבא אוטומטית
         const welcomeMessage = {
           conversationId,
           senderId: selectedUser.id,
@@ -193,7 +176,6 @@ export default function NewChatScreen() {
         console.log('💬 Sent welcome message');
       }
       
-      // ניווט למסך הצ'אט
       (navigation as any).navigate('ChatDetailScreen', {
         conversationId,
         userName: friend.name,

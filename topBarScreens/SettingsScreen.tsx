@@ -27,10 +27,15 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
+import { biDiTextAlign, rowDirection, getScreenInfo, scaleSize } from '../globals/responsive';
 import { FontSizes } from '../globals/constants';
 import { useUser } from '../context/UserContext';
 import GuestModeNotice from '../components/GuestModeNotice';
 import ScreenWrapper from '../components/ScreenWrapper';
+import { useTranslation } from 'react-i18next';
+import i18n from '../app/i18n';
+import { I18nManager, Modal } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -39,6 +44,9 @@ export default function SettingsScreen() {
   const { signOut, isGuestMode, selectedUser, isAuthenticated } = useUser();
   const scrollViewRef = useRef<ScrollView>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const { t } = useTranslation(['settings','common']);
+  const [currentLang, setCurrentLang] = useState(i18n.language || 'he');
+  const [showLangModal, setShowLangModal] = useState(false);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -107,7 +115,7 @@ export default function SettingsScreen() {
     if (Platform.OS === 'web') {
       // Use browser confirmation dialog for web
       console.log('⚙️ SettingsScreen - Using browser confirm for web');
-      const confirmed = window.confirm('האם אתה בטוח שברצונך לצאת?');
+      const confirmed = window.confirm(t('settings:logoutMessage'));
       console.log('⚙️ SettingsScreen - Browser confirm result:', confirmed);
       
       if (confirmed) {
@@ -131,18 +139,18 @@ export default function SettingsScreen() {
       console.log('⚙️ SettingsScreen - Using React Native Alert for mobile');
       try {
         Alert.alert(
-          'יציאה מהמערכת',
-          'האם אתה בטוח שברצונך לצאת?',
+          t('settings:logoutTitle'),
+          t('settings:logoutMessage'),
           [
             {
-              text: 'ביטול',
+              text: t('common:cancel'),
               style: 'cancel',
               onPress: () => {
                 console.log('⚙️ SettingsScreen - Cancel pressed');
               },
             },
             {
-              text: 'יציאה',
+              text: t('settings:logoutConfirm'),
               style: 'destructive',
               onPress: async () => {
                 console.log('⚙️ SettingsScreen - Logout confirmed');
@@ -172,63 +180,73 @@ export default function SettingsScreen() {
   const handleNotificationsPress = () => {
     console.log('⚙️ SettingsScreen - Notifications pressed');
     if (Platform.OS === 'web') {
-      alert('הגדרות התראות יתווספו בקרוב');
+      alert(t('settings:notificationsComingSoon'));
     } else {
-      Alert.alert('התראות', 'הגדרות התראות יתווספו בקרוב');
+      Alert.alert(t('settings:notificationsTitle'), t('settings:notificationsComingSoon'));
     }
   };
 
   const handlePrivacyPress = () => {
     console.log('⚙️ SettingsScreen - Privacy pressed');
     if (Platform.OS === 'web') {
-      alert('הגדרות פרטיות יתווספו בקרוב');
+      alert(t('settings:privacyComingSoon'));
     } else {
-      Alert.alert('פרטיות', 'הגדרות פרטיות יתווספו בקרוב');
+      Alert.alert(t('settings:privacyTitle'), t('settings:privacyComingSoon'));
     }
   };
 
   const handleThemePress = () => {
     console.log('⚙️ SettingsScreen - Theme pressed');
     if (Platform.OS === 'web') {
-      alert('בחירת ערכת נושא תתווסף בקרוב');
+      alert(t('settings:themeComingSoon'));
     } else {
-      Alert.alert('ערכת נושא', 'בחירת ערכת נושא תתווסף בקרוב');
+      Alert.alert(t('settings:themeTitle'), t('settings:themeComingSoon'));
     }
   };
 
-  const handleLanguagePress = () => {
-    console.log('⚙️ SettingsScreen - Language pressed');
-    if (Platform.OS === 'web') {
-      alert('בחירת שפה תתווסף בקרוב');
-    } else {
-      Alert.alert('שפה', 'בחירת שפה תתווסף בקרוב');
+  const applyLanguage = async (lang: 'he' | 'en') => {
+    await AsyncStorage.setItem('app_language', lang);
+    await i18n.changeLanguage(lang);
+    setCurrentLang(lang);
+    const isRTL = lang === 'he';
+    if (I18nManager.isRTL !== isRTL) {
+      I18nManager.allowRTL(isRTL);
+      I18nManager.forceRTL(isRTL);
+      if (Platform.OS !== 'web') {
+        Alert.alert(t('settings:restartRequired'), t('settings:restartDesc'));
+      }
     }
+    setShowLangModal(false);
+  };
+
+  const handleLanguagePress = () => {
+    setShowLangModal(true);
   };
 
   const handleClearCachePress = () => {
     console.log('⚙️ SettingsScreen - Clear cache pressed');
     
     if (Platform.OS === 'web') {
-      const confirmed = window.confirm('האם אתה בטוח שברצונך לנקות את המטמון?');
+      const confirmed = window.confirm(t('settings:clearCacheConfirm'));
       if (confirmed) {
         console.log('⚙️ SettingsScreen - Cache cleared');
-        alert('המטמון נוקה בהצלחה');
+        alert(t('settings:cacheCleared'));
       }
     } else {
       Alert.alert(
-        'ניקוי מטמון',
-        'האם אתה בטוח שברצונך לנקות את המטמון?',
+        t('settings:clearCache'),
+        t('settings:clearCacheConfirm'),
         [
           {
-            text: 'ביטול',
+            text: t('common:cancel'),
             style: 'cancel',
           },
           {
-            text: 'נקה',
+            text: t('settings:clear'),
             style: 'destructive',
             onPress: () => {
               console.log('⚙️ SettingsScreen - Cache cleared');
-              Alert.alert('הושלם', 'המטמון נוקה בהצלחה');
+              Alert.alert(t('common:done'), t('settings:cacheCleared'));
             },
           },
         ]
@@ -302,6 +320,23 @@ export default function SettingsScreen() {
 
   return (
     <ScreenWrapper style={styles.container}>
+      {/* Language Modal */}
+      <Modal visible={showLangModal} transparent animationType="fade" onRequestClose={() => setShowLangModal(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>{t('settings:selectLanguage')}</Text>
+            <TouchableOpacity style={styles.modalOption} onPress={() => applyLanguage('he')}>
+              <Text style={styles.modalOptionText}>{`${t('settings:lang.he')} ${currentLang === 'he' ? '✓' : ''}`}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalOption} onPress={() => applyLanguage('en')}>
+              <Text style={styles.modalOptionText}>{`${t('settings:lang.en')} ${currentLang === 'en' ? '✓' : ''}`}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.modalOption, { marginTop: 8 }]} onPress={() => setShowLangModal(false)}>
+              <Text style={[styles.modalOptionText, { color: colors.textSecondary }]}>{t('common:cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* User Info Section - Only for logged in users */}
       {!isGuestMode && selectedUser && (
@@ -310,7 +345,7 @@ export default function SettingsScreen() {
             <Text style={styles.userName}>{selectedUser.name}</Text>
             <Text style={styles.userEmail}>{selectedUser.email}</Text>
             <Text style={styles.karmaPoints}>
-              {selectedUser.karmaPoints.toLocaleString()} נקודות קארמה
+              {selectedUser.karmaPoints.toLocaleString()} {t('profile:stats.karmaPointsSuffix')}
             </Text>
           </View>
         </View>
@@ -326,64 +361,64 @@ export default function SettingsScreen() {
           <View style={styles.webScrollContent}>
             {/* App Settings Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>הגדרות אפליקציה</Text>
+              <Text style={styles.sectionTitle}>{t('settings:appSettings')}</Text>
               
               <SettingsItem
                 icon="notifications-outline"
-                title="התראות"
-                subtitle="ניהול התראות ועדכונים"
+                title={t('settings:notifications')}
+                subtitle={t('settings:notificationsDesc')}
                 onPress={handleNotificationsPress}
               />
               
               <SettingsItem
                 icon="color-palette-outline"
-                title="ערכת נושא"
-                subtitle="בהיר, כהה או אוטומטי"
+                title={t('settings:theme')}
+                subtitle={t('settings:themeDesc')}
                 onPress={handleThemePress}
               />
               
               <SettingsItem
                 icon="language-outline"
-                title="שפה"
-                subtitle="עברית (ברירת מחדל)"
+                title={t('settings:language')}
+                subtitle={currentLang === 'he' ? t('settings:lang.he') : t('settings:lang.en')}
                 onPress={handleLanguagePress}
               />
             </View>
 
             {/* Privacy & Security Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>פרטיות ואבטחה</Text>
+              <Text style={styles.sectionTitle}>{t('settings:privacySection')}</Text>
               
               <SettingsItem
                 icon="shield-outline"
-                title="הגדרות פרטיות"
-                subtitle="ניהול נתונים אישיים"
+                title={t('settings:privacy')}
+                subtitle={t('settings:privacyDesc')}
                 onPress={handlePrivacyPress}
               />
               
               <SettingsItem
                 icon="trash-outline"
-                title="ניקוי מטמון"
-                subtitle="פינוי זיכרון זמני"
+                title={t('settings:clearCache')}
+                subtitle={t('settings:clearCacheDesc')}
                 onPress={handleClearCachePress}
               />
               
               <SettingsItem
                 icon="flask-outline"
-                title="בדיקת גלילה"
-                subtitle="בדיקה שהגלילה עובדת (למפתחים)"
+                title={t('settings:scrollTestTitle')}
+                subtitle={t('settings:scrollTestSubtitle')}
                 onPress={handleScrollTest}
               />
             </View>
 
             {/* About Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>מידע</Text>
+              <Text style={styles.sectionTitle}>{t('settings:aboutSection')}</Text>
               
               <SettingsItem
                 icon="information-circle-outline"
-                title="אודות קארמה קהילה"
-                subtitle="גרסה, תנאי שימוש ועוד"
+                title={t('settings:about')}
+                subtitle={t('settings:aboutDesc')}
                 onPress={handleAboutPress}
               />
             </View>
@@ -392,8 +427,8 @@ export default function SettingsScreen() {
             <View style={styles.section}>
               <SettingsItem
                 icon={isGuestMode ? "arrow-back-outline" : "log-out-outline"}
-                title={isGuestMode ? "חזרה למסך הכניסה" : "יציאה מהמערכת"}
-                subtitle={isGuestMode ? "יציאה ממצב אורח" : "יציאה מהחשבון"}
+                title={isGuestMode ? t('settings:guestBack') : t('settings:logout')}
+                subtitle={isGuestMode ? t('settings:guestBackDesc') : t('settings:logoutDesc')}
                 onPress={handleLogoutPress}
                 showArrow={false}
                 dangerous={!isGuestMode} // Red only for authenticated user (dangerous action)
@@ -441,64 +476,64 @@ export default function SettingsScreen() {
         >
         {/* App Settings Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>הגדרות אפליקציה</Text>
+          <Text style={styles.sectionTitle}>{t('settings:appSettings')}</Text>
           
           <SettingsItem
             icon="notifications-outline"
-            title="התראות"
-            subtitle="ניהול התראות ועדכונים"
+            title={t('settings:notifications')}
+            subtitle={t('settings:notificationsDesc')}
             onPress={handleNotificationsPress}
           />
           
           <SettingsItem
             icon="color-palette-outline"
-            title="ערכת נושא"
-            subtitle="בהיר, כהה או אוטומטי"
+            title={t('settings:theme')}
+            subtitle={t('settings:themeDesc')}
             onPress={handleThemePress}
           />
           
           <SettingsItem
             icon="language-outline"
-            title="שפה"
-            subtitle="עברית (ברירת מחדל)"
+            title={t('settings:language')}
+            subtitle={currentLang === 'he' ? t('settings:lang.he') : t('settings:lang.en')}
             onPress={handleLanguagePress}
           />
         </View>
 
         {/* Privacy & Security Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>פרטיות ואבטחה</Text>
+          <Text style={styles.sectionTitle}>{t('settings:privacySection')}</Text>
           
           <SettingsItem
             icon="shield-outline"
-            title="הגדרות פרטיות"
-            subtitle="ניהול נתונים אישיים"
+            title={t('settings:privacy')}
+            subtitle={t('settings:privacyDesc')}
             onPress={handlePrivacyPress}
           />
           
           <SettingsItem
             icon="trash-outline"
-            title="ניקוי מטמון"
-            subtitle="פינוי זיכרון זמני"
+            title={t('settings:clearCache')}
+            subtitle={t('settings:clearCacheDesc')}
             onPress={handleClearCachePress}
           />
           
           <SettingsItem
             icon="flask-outline"
-            title="בדיקת גלילה"
-            subtitle="בדיקה שהגלילה עובדת (למפתחים)"
+            title={t('settings:scrollTestTitle')}
+            subtitle={t('settings:scrollTestSubtitle')}
             onPress={handleScrollTest}
           />
         </View>
 
         {/* About Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>מידע</Text>
+          <Text style={styles.sectionTitle}>{t('settings:aboutSection')}</Text>
           
           <SettingsItem
             icon="information-circle-outline"
-            title="אודות קארמה קהילה"
-            subtitle="גרסה, תנאי שימוש ועוד"
+            title={t('settings:about')}
+            subtitle={t('settings:aboutDesc')}
             onPress={handleAboutPress}
           />
         </View>
@@ -507,8 +542,8 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <SettingsItem
             icon={isGuestMode ? "arrow-back-outline" : "log-out-outline"}
-            title={isGuestMode ? "חזרה למסך הכניסה" : "יציאה מהמערכת"}
-            subtitle={isGuestMode ? "יציאה ממצב אורח" : "יציאה מהחשבון"}
+            title={isGuestMode ? t('settings:guestBack') : t('settings:logout')}
+            subtitle={isGuestMode ? t('settings:guestBackDesc') : t('settings:logoutDesc')}
             onPress={handleLogoutPress}
             showArrow={false}
             dangerous={!isGuestMode} // Red only for authenticated user (dangerous action)
@@ -527,7 +562,7 @@ const styles = StyleSheet.create({
     marginTop: Platform.OS === 'android' ? 30 : 0,
   },
   header: {
-    flexDirection: 'row',
+    flexDirection: rowDirection('row'),
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
@@ -564,16 +599,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 4,
+    textAlign: biDiTextAlign('right'),
   },
   userEmail: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
     marginBottom: 8,
+    textAlign: biDiTextAlign('right'),
   },
   karmaPoints: {
     fontSize: FontSizes.body,
     color: colors.primary,
     fontWeight: '500',
+    textAlign: 'center',
   },
 
   // Web: Custom scrollable container with CSS overflow
@@ -608,9 +646,10 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: 16,
     marginRight: 4,
+    textAlign: biDiTextAlign('right'),
   },
   settingsItem: {
-    flexDirection: 'row',
+    flexDirection: rowDirection('row'),
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.backgroundSecondary,
@@ -622,7 +661,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.errorLight,
   },
   settingsItemLeft: {
-    flexDirection: 'row',
+    flexDirection: rowDirection('row'),
     alignItems: 'center',
     flex: 1,
   },
@@ -646,9 +685,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 2,
+    textAlign: biDiTextAlign('right'),
   },
   settingsSubtitle: {
     fontSize: FontSizes.small,
     color: colors.textSecondary,
+    textAlign: biDiTextAlign('right'),
   },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
+  modalCard: { backgroundColor: '#fff', width: 300, borderRadius: 12, padding: 16, gap: 8 },
+  modalTitle: { fontSize: FontSizes.medium, color: colors.textPrimary, textAlign: 'center', marginBottom: 8 },
+  modalOption: { paddingVertical: 10 },
+  modalOptionText: { fontSize: FontSizes.body, color: colors.textPrimary, textAlign: 'center' },
 });

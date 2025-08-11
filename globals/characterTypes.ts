@@ -1,5 +1,3 @@
-// רשימת משתמשים מאוחדת לאפליקציה KC - הקיבוץ הקפיטליסטי של ישראל
-// כולל תורמים ומשתמשים בקהילה
 
 export interface CharacterType {
   id: string;
@@ -2187,7 +2185,6 @@ export const allUsers: CharacterType[] = [
   }
 ];
 
-// ייצוא נפרד לשמירה על תאימות - עכשיו כולם user
 export const characterTypes = allUsers.filter(user => parseInt(user.id.replace('user', '')) <= 15);
 export const additionalUsers = allUsers.filter(user => parseInt(user.id.replace('user', '')) > 15);
 

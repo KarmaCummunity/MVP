@@ -9,278 +9,91 @@ import {
   StatusBar,
   Image,
   Alert,
+  Platform,
+  Dimensions,
 } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { NavigationProp, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DonationsStackParamList } from '../globals/types';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { FontSizes, LAYOUT_CONSTANTS, IconSizes } from '../globals/constants';
 import { useUser } from '../context/UserContext';
 import GuestModeNotice from '../components/GuestModeNotice';
+import DonationStatsFooter from '../components/DonationStatsFooter';
+import { donations, charities } from '../globals/fakeData';
+import { useTranslation } from 'react-i18next';
+import { getScreenInfo, isLandscape, scaleSize } from '../globals/responsive';
+import stylesGlobal, { createShadowStyle } from '../globals/styles';
 
 interface DonationsScreenProps {
   navigation: NavigationProp<DonationsStackParamList>;
 }
 
 const RECENT_CATEGORIES_KEY = 'recent_categories_ids';
-const RECENT_LIMIT = 3;
-const DEFAULT_RECENT_IDS: string[] = ['money', 'trump', 'furniture']; // הנחה: "חפצים" = רהיטים
+const RECENT_LIMIT = 4;
+const DEFAULT_RECENT_IDS: string[] = ['money', 'trump', 'clothes', 'furniture'];
 
-// New modern categories with icons and descriptions (excluding quick actions)
-const donationCategories = [
-  {
-    id: 'money',
-    title: 'כסף',
-    subtitle: 'תרומה כספית',
-    icon: 'card-outline',
-    color: colors.success,
-    bgColor: colors.successLight,
-    screen: 'MoneyScreen',
-    description: 'תרומה כספית לארגונים ופרויקטים',
-  },
-  {
-    id: 'trump',
-    title: 'טרמפים',
-    subtitle: 'הסעות וטרמפים',
-    icon: 'car-outline',
-    color: colors.info,
-    bgColor: colors.infoLight,
-    screen: 'TrumpScreen',
-    description: 'הסעת אנשים וטרמפים לקהילה',
-  },
-  {
-    id: 'knowledge',
-    title: 'ידע',
-    subtitle: 'חונכות ולימוד',
-    icon: 'school-outline',
-    color: colors.legacyMediumPurple,
-    bgColor: colors.backgroundTertiary,
-    screen: 'KnowledgeScreen',
-    description: 'חונכות, הדרכה ושיתוף ידע',
-  },
-  {
-    id: 'time',
-    title: 'זמן',
-    subtitle: 'התנדבות',
-    icon: 'time-outline',
-    color: colors.orange,
-    bgColor: colors.backgroundTertiary,
-    screen: 'TimeScreen',
-    description: 'התנדבות ועזרה בזמן',
-  },
-  {
-    id: 'food',
-    title: 'אוכל',
-    subtitle: 'תרומת מזון',
-    icon: 'restaurant-outline',
-    color: colors.textPrimary,
-    bgColor: colors.backgroundSecondary,
-    screen: 'FoodScreen',
-    description: 'תרומת מזון לנזקקים',
-  },
-  {
-    id: 'clothes',
-    title: 'בגדים',
-    subtitle: 'תרומת בגדים',
-    icon: 'shirt-outline',
-    color: colors.info, // Was blue-gray
-    bgColor: colors.infoLight, // Was light blue-gray
-    screen: 'ClothesScreen',
-    description: 'תרומת בגדים לנזקקים',
-  },
-  {
-    id: 'books',
-    title: 'ספרים',
-    subtitle: 'תרומת ספרים',
-    icon: 'library-outline',
-    color: colors.success,
-    bgColor: colors.successLight,
-    screen: 'BooksScreen',
-    description: 'תרומת ספרים לספרייה',
-  },
-  {
-    id: 'furniture',
-    title: 'רהיטים',
-    subtitle: 'תרומת רהיטים',
-    icon: 'bed-outline',
-    color: colors.textPrimary, // Was brown
-    bgColor: colors.backgroundSecondary, // Was light brown
-    screen: 'FurnitureScreen',
-    description: 'תרומת רהיטים לבית',
-  },
-  {
-    id: 'medical',
-    title: 'רפואה',
-    subtitle: 'עזרה רפואית',
-    icon: 'medical-outline',
-    color: colors.error,
-    bgColor: colors.errorLight,
-    screen: 'MedicalScreen',
-    description: 'עזרה רפואית וטיפולים',
-  },
-  {
-    id: 'animals',
-    title: 'חיות',
-    subtitle: 'עזרה לחיות',
-    icon: 'paw-outline',
-    color: colors.orangeDark,
-    bgColor: colors.backgroundTertiary, // Was light orange
-    screen: 'AnimalsScreen',
-    description: 'עזרה לחיות מחמד',
-  },
-  {
-    id: 'housing',
-    title: 'דיור',
-    subtitle: 'עזרה בדיור',
-    icon: 'home-outline',
-    color: colors.info, // Was indigo
-    bgColor: colors.infoLight, // Was light indigo
-    screen: 'HousingScreen',
-    description: 'עזרה בדיור וקורת גג',
-  },
-  {
-    id: 'support',
-    title: 'תמיכה',
-    subtitle: 'תמיכה נפשית',
-    icon: 'heart-outline',
-    color: colors.pinkDark,
-    bgColor: colors.pinkLight,
-    screen: 'SupportScreen',
-    description: 'תמיכה נפשית ורגשית',
-  },
-  {
-    id: 'education',
-    title: 'חינוך',
-    subtitle: 'עזרה בלימודים',
-    icon: 'book-outline',
-    color: colors.info, // Was purple
-    bgColor: colors.infoLight, // Was light purple
-    screen: 'EducationScreen',
-    description: 'עזרה בלימודים וקורסים',
-  },
-  {
-    id: 'environment',
-    title: 'סביבה',
-    subtitle: 'פרויקטים ירוקים',
-    icon: 'leaf-outline',
-    color: colors.success,
-    bgColor: colors.successLight,
-    screen: 'EnvironmentScreen',
-    description: 'פרויקטים ירוקים וסביבתיים',
-  },
-  {
-    id: 'technology',
-    title: 'טכנולוגיה',
-    subtitle: 'עזרה טכנית',
-    icon: 'laptop-outline',
-    color: colors.info,
-    bgColor: colors.infoLight,
-    screen: 'TechnologyScreen',
-    description: 'עזרה טכנית ומחשבים',
-  },
-  {
-    id: 'music',
-    title: 'מוזיקה',
-    subtitle: 'נגינה ושיתוף מוזיקלי',
-    icon: 'musical-notes-outline',
-    color: colors.pink,
-    bgColor: colors.pinkLight,
-    screen: 'MusicScreen',
-    description: 'נגינה, שיתופי פעולה מוזיקליים והופעות קהילתיות',
-  },
-  {
-    id: 'games',
-    title: 'משחקים',
-    subtitle: 'פעילויות ומשחקי חברה',
-    icon: 'game-controller-outline',
-    color: colors.orange,
-    bgColor: colors.orangeLight,
-    screen: 'GamesScreen',
-    description: 'פעילויות קהילה ומשחקי חברה לכל הגילאים',
-  },
-  {
-    id: 'riddles',
-    title: 'חידות',
-    subtitle: 'חשיבה ואתגר',
-    icon: 'help-circle-outline',
-    color: colors.info,
-    bgColor: colors.infoLight,
-    screen: 'RiddlesScreen',
-    description: 'חידות, אתגרים ומשימות חשיבה לקהילה',
-  },
-  {
-    id: 'recipes',
-    title: 'מתכונים',
-    subtitle: 'בישול ושיתוף',
-    icon: 'fast-food-outline',
-    color: colors.success,
-    bgColor: colors.successLight,
-    screen: 'RecipesScreen',
-    description: 'שיתוף מתכונים, ארוחות קהילתיות ובישול יחד',
-  },
-  {
-    id: 'plants',
-    title: 'צמחים',
-    subtitle: 'גינון ושתילה',
-    icon: 'flower-outline',
-    color: colors.success,
-    bgColor: colors.successLight,
-    screen: 'PlantsScreen',
-    description: 'גינון קהילתי, שתילים והחלפת צמחים',
-  },
-  {
-    id: 'waste',
-    title: 'פסולת',
-    subtitle: 'מיחזור והפרדה',
-    icon: 'trash-outline',
-    color: colors.warning,
-    bgColor: colors.warningLight,
-    screen: 'WasteScreen',
-    description: 'פרויקטי ניקיון, מיחזור והפרדת פסולת',
-  },
-  {
-    id: 'art',
-    title: 'אמנות',
-    subtitle: 'יצירה ושיתוף',
-    icon: 'color-palette-outline',
-    color: colors.pink,
-    bgColor: colors.pinkLight,
-    screen: 'ArtScreen',
-    description: 'יצירה אומנותית, סדנאות ושיתופי קהילה',
-  },
-  {
-    id: 'sports',
-    title: 'ספורט',
-    subtitle: 'אורח חיים פעיל',
-    icon: 'football-outline',
-    color: colors.orange,
-    bgColor: colors.orangeLight,
-    screen: 'SportsScreen',
-    description: 'מפגשי ספורט, ריצות קהילתיות ופעילות גופנית',
-  },
-];
+const BASE_CATEGORIES = [
+  { id: 'money',      icon: 'card-outline',        color: colors.success, bgColor: colors.successLight, screen: 'MoneyScreen' },
+  { id: 'trump',      icon: 'car-outline',         color: colors.info,    bgColor: colors.infoLight,    screen: 'TrumpScreen' },
+  { id: 'knowledge',  icon: 'school-outline',      color: colors.legacyMediumPurple, bgColor: colors.backgroundTertiary, screen: 'KnowledgeScreen' },
+  { id: 'time',       icon: 'time-outline',        color: colors.orange,  bgColor: colors.backgroundTertiary, screen: 'TimeScreen' },
+  { id: 'food',       icon: 'restaurant-outline',  color: colors.textPrimary, bgColor: colors.backgroundSecondary, screen: 'FoodScreen' },
+  { id: 'clothes',    icon: 'shirt-outline',       color: colors.info,    bgColor: colors.infoLight,    screen: 'ClothesScreen' },
+  { id: 'books',      icon: 'library-outline',     color: colors.success, bgColor: colors.successLight, screen: 'BooksScreen' },
+  { id: 'furniture',  icon: 'bed-outline',         color: colors.textPrimary, bgColor: colors.backgroundSecondary, screen: 'FurnitureScreen' },
+  { id: 'medical',    icon: 'medical-outline',     color: colors.error,   bgColor: colors.errorLight,   screen: 'MedicalScreen' },
+  { id: 'animals',    icon: 'paw-outline',         color: colors.orangeDark, bgColor: colors.backgroundTertiary, screen: 'AnimalsScreen' },
+  { id: 'housing',    icon: 'home-outline',        color: colors.info,    bgColor: colors.infoLight,    screen: 'HousingScreen' },
+  { id: 'support',    icon: 'heart-outline',       color: colors.pinkDark, bgColor: colors.pinkLight,   screen: 'SupportScreen' },
+  { id: 'education',  icon: 'book-outline',        color: colors.info,    bgColor: colors.infoLight,    screen: 'EducationScreen' },
+  { id: 'environment',icon: 'leaf-outline',        color: colors.success, bgColor: colors.successLight, screen: 'EnvironmentScreen' },
+  { id: 'technology', icon: 'laptop-outline',      color: colors.info,    bgColor: colors.infoLight,    screen: 'TechnologyScreen' },
+  { id: 'music',      icon: 'musical-notes-outline', color: colors.pink,  bgColor: colors.pinkLight,    screen: 'MusicScreen' },
+  { id: 'games',      icon: 'game-controller-outline', color: colors.orange, bgColor: colors.orangeLight, screen: 'GamesScreen' },
+  { id: 'riddles',    icon: 'help-circle-outline', color: colors.info,    bgColor: colors.infoLight,    screen: 'RiddlesScreen' },
+  { id: 'recipes',    icon: 'fast-food-outline',   color: colors.success, bgColor: colors.successLight, screen: 'RecipesScreen' },
+  { id: 'plants',     icon: 'flower-outline',      color: colors.success, bgColor: colors.successLight, screen: 'PlantsScreen' },
+  { id: 'waste',      icon: 'trash-outline',       color: colors.warning, bgColor: colors.warningLight, screen: 'WasteScreen' },
+  { id: 'art',        icon: 'color-palette-outline', color: colors.pink,  bgColor: colors.pinkLight,    screen: 'ArtScreen' },
+  { id: 'sports',     icon: 'football-outline',    color: colors.orange,  bgColor: colors.orangeLight,  screen: 'SportsScreen' },
+  { id: 'dreams',     icon: 'star-outline',        color: colors.pink,    bgColor: colors.pinkLight,    screen: 'DreamsScreen' },
+  { id: 'fertility',  icon: 'medkit-outline',      color: colors.error,   bgColor: colors.errorLight,   screen: 'FertilityScreen' },
+  { id: 'jobs',       icon: 'briefcase-outline',   color: colors.info,    bgColor: colors.infoLight,    screen: 'JobsScreen' },
+  { id: 'matchmaking', icon: 'people-outline',     color: colors.pink,    bgColor: colors.pinkLight,    screen: 'MatchmakingScreen' },
+] as const;
+
+type CategoryId = typeof BASE_CATEGORIES[number]['id'];
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
+  const tabBarHeight = useBottomTabBarHeight();
   const { isGuestMode } = useUser();
+  const { t } = useTranslation(['donations','common']);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [recentCategoryIds, setRecentCategoryIds] = useState<string[]>([]);
 
-  // Refresh data when screen comes into focus
+  const { isTablet, isDesktop } = getScreenInfo();
+  const landscape = isLandscape();
+  const recentColumns = isDesktop ? 6 : isTablet || landscape ? 5 : 4;
+  const allColumns = isDesktop ? 5 : isTablet || landscape ? 4 : 3;
+  const recentCardWidth = `${(100 / recentColumns) - 2}%` as const;
+  const allCardWidth = `${(100 / allColumns) - 2}%` as const;
+  const categoryIconSize = scaleSize(26);
+  const categoryIconOuter = scaleSize(35);
+
   useFocusEffect(
     useCallback(() => {
-      console.log('💰 DonationsScreen - Screen focused, refreshing data...');
-      // Reset selected category when returning to screen
       setSelectedCategory(null);
-      // Load recent categories (up to RECENT_LIMIT)
       (async () => {
         try {
-          const stored = await AsyncStorage.getItem('recent_categories_ids');
+          const stored = await AsyncStorage.getItem(RECENT_CATEGORIES_KEY);
           if (stored) {
             const parsed: string[] = JSON.parse(stored);
-            setRecentCategoryIds(Array.isArray(parsed) && parsed.length > 0
-              ? parsed.slice(0, RECENT_LIMIT)
-              : DEFAULT_RECENT_IDS);
+            setRecentCategoryIds(Array.isArray(parsed) && parsed.length > 0 ? parsed.slice(0, RECENT_LIMIT) : DEFAULT_RECENT_IDS);
             if (!stored || (Array.isArray(JSON.parse(stored)) && JSON.parse(stored).length === 0)) {
               await AsyncStorage.setItem(RECENT_CATEGORIES_KEY, JSON.stringify(DEFAULT_RECENT_IDS));
             }
@@ -288,31 +101,34 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
             setRecentCategoryIds(DEFAULT_RECENT_IDS);
             await AsyncStorage.setItem(RECENT_CATEGORIES_KEY, JSON.stringify(DEFAULT_RECENT_IDS));
           }
-        } catch (e) {
-          console.warn('⚠️ Failed to load recent categories', e);
+        } catch {
           setRecentCategoryIds(DEFAULT_RECENT_IDS);
         }
       })();
     }, [])
   );
 
-  const handleCategoryPress = (category: any) => {
-    console.log('Category pressed:', category.title);
+  const getCategoryText = (id: CategoryId) => ({
+    title: t(`donations:categories.${id}.title`),
+    subtitle: t(`donations:categories.${id}.subtitle`),
+    description: t(`donations:categories.${id}.description`),
+  });
+
+  const handleCategoryPress = (category: { id: CategoryId; screen?: string }) => {
     setSelectedCategory(category.id);
-    // Update recent categories
     setRecentCategoryIds((prev) => {
       const next = [category.id, ...prev.filter((id) => id !== category.id)].slice(0, RECENT_LIMIT);
-      AsyncStorage.setItem('recent_categories_ids', JSON.stringify(next)).catch(() => {});
+      AsyncStorage.setItem(RECENT_CATEGORIES_KEY, JSON.stringify(next)).catch(() => {});
       return next;
     });
-    
-  if (category.screen) {
+
+    if (category.screen) {
       (navigation as any).navigate(category.screen);
     } else {
       Alert.alert(
-        'בקרוב',
-        `הקטגוריה "${category.title}" תהיה זמינה בקרוב!`,
-        [{ text: 'אישור', style: 'default' }]
+        t('donations:comingSoonTitle'),
+        t('donations:comingSoonMessage'),
+        [{ text: t('common:confirm'), style: 'default' }]
       );
     }
   };
@@ -321,118 +137,178 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
     console.log('Quick donation pressed:', type);
     
     switch (type) {
-      case 'כסף':
+      case t('donations:categories.money.title'):
         navigation.navigate('MoneyScreen');
         break;
-      case 'טרמפ':
+      case t('donations:categories.trump.title'):
         navigation.navigate('TrumpScreen');
         break;
-      case 'ידע':
+      case t('donations:categories.knowledge.title'):
         navigation.navigate('KnowledgeScreen');
         break;
-      case 'זמן':
+      case t('donations:categories.time.title'):
         navigation.navigate('TimeScreen');
         break;
       default:
-        Alert.alert('תרומה מהירה', `תרומת ${type} - בקרוב!`);
+        Alert.alert(t('donations:quickDonation'), t('donations:quickDonationComingSoon', { type }));
     }
   };
 
-  // Build sections: recent (max 3) and others
-  const recentCategoriesRaw = recentCategoryIds
-    .map((id) => donationCategories.find((c) => c.id === id))
-    .filter((c): c is typeof donationCategories[number] => Boolean(c));
+  const recentIdsBase = (recentCategoryIds.length > 0 ? recentCategoryIds : DEFAULT_RECENT_IDS);
+  const recentIdsWithMoneyFirst = ['money', ...recentIdsBase.filter((id) => id !== 'money')].slice(0, RECENT_LIMIT) as CategoryId[];
+  const recentCategories = recentIdsWithMoneyFirst
+    .map((id) => BASE_CATEGORIES.find((c) => c.id === id))
+    .filter((c): c is typeof BASE_CATEGORIES[number] => Boolean(c));
 
-  const recentCategories = recentCategoriesRaw.length > 0
-    ? recentCategoriesRaw
-    : DEFAULT_RECENT_IDS
-        .map((id) => donationCategories.find((c) => c.id === id))
-        .filter((c): c is typeof donationCategories[number] => Boolean(c));
-
-  const otherCategories = donationCategories.filter(
-    (c) => !recentCategories.some((rc) => rc.id === c.id)
-  );
+  const otherCategories = BASE_CATEGORIES.filter((c) => !recentCategories.some((rc) => rc.id === c.id));
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundPrimary} />
-      
+      {isGuestMode && <GuestModeNotice />}
 
+      <View style={styles.categoriesSection}>
+        <Text style={styles.sectionTitle}>{t('donations:forYou')}</Text>
+        <View style={[styles.categoriesGrid, { flexDirection: 'row' }]}>
+          {recentCategories.map((category) => {
+            const { title, subtitle } = getCategoryText(category.id);
+            return (
+              <TouchableOpacity
+                key={category.id}
+                style={[
+                  styles.categoryCard,
+                  { backgroundColor: category.bgColor, width: recentCardWidth },
+                ]}
+                onPress={() => handleCategoryPress(category)}
+              >
+                <View style={styles.categoryIconWrapper}>
+                  <View style={[styles.categoryIcon, { backgroundColor: category.color, width: categoryIconOuter, height: categoryIconOuter, borderRadius: categoryIconOuter / 2 }]}>
+                    <Ionicons name={category.icon as any} size={categoryIconSize} color="white" />
+                  </View>
+                  {category.id === 'money' && (
+                    <Ionicons name="pin" size={scaleSize(16)} color={colors.pink} style={styles.pinOverlay} />
+                  )}
+                </View>
+                <View style={styles.categoryTitleRow}>
+                  <Text style={styles.categoryTitle}>{title}</Text>
+                </View>
+                <Text style={styles.categorySubtitle}>{subtitle}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
 
-              <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                {/* Guest Mode Notice */}
-                {isGuestMode && <GuestModeNotice />}
-                
-          {/* Active Screens Section - Recent (single row of 3) */}
+      {Platform.OS === 'web' ? (
+        <View style={styles.webScrollContainer}>
+          <View 
+            style={[styles.webScrollContent, { paddingBottom: tabBarHeight + LAYOUT_CONSTANTS.SPACING.XL * 2 }] }
+            onLayout={(e) => {
+              const h = e.nativeEvent.layout.height;
+              console.log('🧭 DonationsScreen[WEB] content layout height:', h, 'window:', SCREEN_HEIGHT);
+            }}
+          >
+            <View style={styles.categoriesSection}>
+              <Text style={styles.sectionTitle}>{t('donations:allWays')}</Text>
+              <View style={[styles.categoriesGrid, { flexDirection: 'row' }]}>
+                {otherCategories.map((category) => {
+                  const { title, subtitle } = getCategoryText(category.id);
+                  return (
+                    <TouchableOpacity
+                      key={category.id}
+                      style={[
+                        styles.categoryCard,
+                        { backgroundColor: category.bgColor, width: allCardWidth },
+                      ]}
+                      onPress={() => handleCategoryPress(category)}
+                    >
+                      <View style={[styles.categoryIcon, { backgroundColor: category.color, width: categoryIconOuter, height: categoryIconOuter, borderRadius: categoryIconOuter / 2 }] }>
+                        <Ionicons name={category.icon as any} size={categoryIconSize} color="white" />
+                      </View>
+                      <Text style={styles.categoryTitle}>{title}</Text>
+                      <Text style={styles.categorySubtitle}>{subtitle}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Stats Section */}
+            {(() => {
+              const now = Date.now();
+              const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+              const weeklyDonations = donations.filter((d: any) => {
+                const t = new Date(d.createdAt || Date.now()).getTime();
+                return t >= weekAgo;
+              }).length;
+              const activeDonors = new Set(donations.map((d: any) => d.createdBy).filter(Boolean)).size;
+              const activeCharities = charities.length;
+              return (
+                <DonationStatsFooter
+                  stats={[
+                    { label: t('donations:activeDonors'), value: activeDonors, icon: 'people-outline' },
+                    { label: t('donations:weeklyDonations'), value: weeklyDonations, icon: 'heart-outline' },
+                    { label: t('donations:activeCharities'), value: activeCharities, icon: 'business-outline' },
+                  ]}
+                />
+              );
+            })()}
+          </View>
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: tabBarHeight + LAYOUT_CONSTANTS.SPACING.XL * 2 }}
+        >
           <View style={styles.categoriesSection}>
-            <Text style={styles.sectionTitle}>במיוחד בשבילך</Text>
-            <View style={styles.categoriesGrid}>
-            {recentCategories.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryCard,
-                  { backgroundColor: category.bgColor },
-                ]}
-                onPress={() => handleCategoryPress(category)}
-              >
-                <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
-                  <Ionicons name={category.icon as any} size={24} color="white" />
-                </View>
-                <Text style={styles.categoryTitle}>{category.title}</Text>
-                <Text style={styles.categorySubtitle}>{category.subtitle}</Text>
-                <Text style={styles.categoryDescription}>{category.description}</Text>
-              </TouchableOpacity>
-            ))}
+            <Text style={styles.sectionTitle}>{t('donations:allWays')}</Text>
+            <View style={[styles.categoriesGrid, { flexDirection: 'row' }]}>
+              {otherCategories.map((category) => {
+                const { title, subtitle } = getCategoryText(category.id);
+                return (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={[
+                      styles.categoryCard,
+                      { backgroundColor: category.bgColor, width: allCardWidth },
+                    ]}
+                    onPress={() => handleCategoryPress(category)}
+                  >
+                    <View style={[styles.categoryIcon, { backgroundColor: category.color, width: categoryIconOuter, height: categoryIconOuter, borderRadius: categoryIconOuter / 2 }] }>
+                      <Ionicons name={category.icon as any} size={categoryIconSize} color="white" />
+                    </View>
+                    <Text style={styles.categoryTitle}>{title}</Text>
+                    <Text style={styles.categorySubtitle}>{subtitle}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
-        </View>
 
-        {/* Inactive Categories Section - All other categories */}
-        <View style={styles.categoriesSection}>
-          <Text style={styles.sectionTitle}>כל הדרכים לפעול בקהילה</Text>
-          <View style={styles.categoriesGrid}>
-            {otherCategories.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryCard,
-                  { backgroundColor: category.bgColor },
+          {/* Stats Section */}
+          {(() => {
+            const now = Date.now();
+            const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+            const weeklyDonations = donations.filter((d: any) => {
+              const t = new Date(d.createdAt || Date.now()).getTime();
+              return t >= weekAgo;
+            }).length;
+            const activeDonors = new Set(donations.map((d: any) => d.createdBy).filter(Boolean)).size;
+            const activeCharities = charities.length;
+            return (
+              <DonationStatsFooter
+                stats={[
+                  { label: t('donations:activeDonors'), value: activeDonors, icon: 'people-outline' },
+                  { label: t('donations:weeklyDonations'), value: weeklyDonations, icon: 'heart-outline' },
+                  { label: t('donations:activeCharities'), value: activeCharities, icon: 'business-outline' },
                 ]}
-                onPress={() => handleCategoryPress(category)}
-              >
-                <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
-                  <Ionicons name={category.icon as any} size={24} color="white" />
-                </View>
-                <Text style={styles.categoryTitle}>{category.title}</Text>
-                <Text style={styles.categorySubtitle}>{category.subtitle}</Text>
-                <Text style={styles.categoryDescription}>{category.description}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Stats Section */}
-        <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>סטטיסטיקות קהילתיות</Text>
-          <View style={styles.statsContainer}>
-            <View style={styles.statCard}>
-              <Ionicons name="people" size={24} color={colors.pink} />
-              <Text style={styles.statNumber}>1,247</Text>
-              <Text style={styles.statLabel}>תורמים פעילים</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="heart" size={24} color={colors.pink} />
-              <Text style={styles.statNumber}>5,892</Text>
-              <Text style={styles.statLabel}>תרומות השבוע</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="star" size={24} color={colors.pink} />
-              <Text style={styles.statNumber}>98%</Text>
-              <Text style={styles.statLabel}>שביעות רצון</Text>
-            </View>
-          </View>
-        </View>
-      </ScrollView>
+              />
+            );
+          })()}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 };
@@ -442,18 +318,32 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.backgroundPrimary,
   },
+  // Web-specific scroll wrappers
+  webScrollContainer: {
+    flex: 1,
+    ...(Platform.OS === 'web' && { 
+      overflow: 'auto' as any,
+      WebkitOverflowScrolling: 'touch' as any,
+      overscrollBehavior: 'contain' as any,
+      height: SCREEN_HEIGHT as any,
+      maxHeight: SCREEN_HEIGHT as any,
+      width: '100%' as any,
+      touchAction: 'auto' as any,
+    }),
+  } as any,
+  webScrollContent: {
+    minHeight: SCREEN_HEIGHT * 1.2,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
+    paddingTop: LAYOUT_CONSTANTS.SPACING.LG,
+  },
   header: {
     backgroundColor: colors.backgroundPrimary,
-    paddingTop: 20,
-    paddingBottom: 15,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingTop: LAYOUT_CONSTANTS.SPACING.LG,
+    paddingBottom: LAYOUT_CONSTANTS.SPACING.MD,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    borderBottomLeftRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
+    borderBottomRightRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.1, 4),
   },
   headerContent: {
     flexDirection: 'row',
@@ -466,10 +356,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   userAvatar: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
-    marginRight: 12,
+    width: scaleSize(45),
+    height: scaleSize(45),
+    borderRadius: scaleSize(45) / 2,
+    marginRight: LAYOUT_CONSTANTS.SPACING.SM,
   },
   userDetails: {
     flex: 1,
@@ -477,7 +367,7 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
-    marginBottom: 2,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
   userName: {
     fontSize: FontSizes.medium,
@@ -485,17 +375,17 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   settingsButton: {
-    padding: 8,
+    padding: LAYOUT_CONSTANTS.SPACING.SM,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    marginBottom: 40,
-    paddingBottom: 200,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
+    paddingTop: LAYOUT_CONSTANTS.SPACING.LG,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XL + LAYOUT_CONSTANTS.SPACING.MD,
+    paddingBottom: LAYOUT_CONSTANTS.SPACING.XL * 6,
   },
   quickActionsSection: {
-    marginBottom: 30,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XL,
     alignItems: 'center',
 
   },
@@ -503,82 +393,72 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.heading2,
     fontWeight: 'bold',
     color: colors.textPrimary,
-    marginBottom: 15,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
   },
   quickActionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: LAYOUT_CONSTANTS.SPACING.SM,
   },
   quickActionButton: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 20,
-    borderRadius: 15,
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.LG,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.1, 4),
   },
   quickActionText: {
     color: colors.white,
     fontSize: FontSizes.button,
     fontWeight: '600',
-    marginTop: 8,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
   },
   categoriesSection: {
-    marginBottom: 30,
-    alignItems: 'center',
-    backgroundColor: colors.backgroundSecondaryPink,
+
+    backgroundColor: colors.moneyFormBackground,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    borderWidth: 1,
     borderColor: colors.moneyFormBorder,
-    borderRadius: 20,
-    padding: 20,
-    marginHorizontal: 10,
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
+    marginHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
+    alignItems: 'center',
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
+
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 4 }, 0.1, 8),
   },
   categoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 14,
+    gap: LAYOUT_CONSTANTS.SPACING.XS,
   },
   activeCategoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 20,
+    gap: LAYOUT_CONSTANTS.SPACING.SM,
   },
   categoryCard: {
-    width: '30%',
-    padding: 12,
-    borderRadius: 10,
+    width: '31.5%',
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
     alignItems: 'center',
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
-    minHeight: 100,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.08, 3),
+    // minHeight: 108,
     backgroundColor: colors.backgroundPrimary,
     borderWidth: 0.5,
     borderColor: colors.backgroundTertiary,
   },
   activeCategoryCard: {
     width: '45%',
-    padding: 16,
-    borderRadius: 15,
+    padding: LAYOUT_CONSTANTS.SPACING.MD,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
     alignItems: 'center',
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
-    minHeight: 140,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 3 }, 0.15, 6),
+    minHeight: scaleSize(140),
     backgroundColor: colors.backgroundPrimary,
     borderWidth: 1,
     borderColor: colors.backgroundTertiary,
@@ -588,87 +468,91 @@ const styles = StyleSheet.create({
     borderColor: colors.pink,
   },
   categoryIcon: {
-    width: 35,
-    height: 35,
-    borderRadius: 17.5,
+    width: scaleSize(35),
+    height: scaleSize(35),
+    borderRadius: scaleSize(35) / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
+  },
+  categoryIconWrapper: {
+    position: 'relative',
+  },
+  pinOverlay: {
+    position: 'absolute',
+    top: -scaleSize(6),
+    right: -scaleSize(6),
   },
   activeCategoryIcon: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
+    width: scaleSize(45),
+    height: scaleSize(45),
+    borderRadius: scaleSize(45) / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
   },
   categoryTitle: {
-    fontSize: FontSizes.small,
+    fontSize: FontSizes.medium,
     fontWeight: '600',
     color: colors.textPrimary,
-    marginBottom: 2,
     textAlign: 'center',
   },
+  categoryTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 0,
+  },
   categorySubtitle: {
-    fontSize: FontSizes.caption,
+    fontSize: FontSizes.small,
     color: colors.textSecondary,
-    marginBottom: 3,
     textAlign: 'center',
   },
   categoryDescription: {
-    fontSize: FontSizes.extraSmall,
+    fontSize: FontSizes.small,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 12,
+    lineHeight: Math.round(FontSizes.small * 1.2),
   },
   activeCategoryTitle: {
     fontSize: FontSizes.medium,
     fontWeight: 'bold',
     color: colors.textPrimary,
-    marginBottom: 4,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
     textAlign: 'center',
   },
   activeCategorySubtitle: {
     fontSize: FontSizes.small,
     color: colors.textSecondary,
-    marginBottom: 6,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
     textAlign: 'center',
   },
   activeCategoryDescription: {
     fontSize: FontSizes.caption,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: Math.round(FontSizes.caption * 1.4),
   },
   statsSection: {
-    marginBottom: 30,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XL,
     backgroundColor: colors.backgroundSecondary,
-    borderRadius: 20,
-    padding: 20,
-    marginHorizontal: 10,
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
+    padding: LAYOUT_CONSTANTS.SPACING.LG,
+    marginHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 4 }, 0.1, 8),
   },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: LAYOUT_CONSTANTS.SPACING.SM,
   },
   statCard: {
     flex: 1,
     backgroundColor: colors.backgroundPrimary,
-    padding: 20,
-    borderRadius: 15,
+    padding: LAYOUT_CONSTANTS.SPACING.LG,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
     alignItems: 'center',
-    shadowColor: colors.shadowLight,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.1, 4),
     borderWidth: 1,
     borderColor: colors.backgroundTertiary,
   },
@@ -676,8 +560,8 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.heading1,
     fontWeight: 'bold',
     color: colors.pink,
-    marginTop: 8,
-    marginBottom: 4,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
   statLabel: {
     fontSize: FontSizes.small,

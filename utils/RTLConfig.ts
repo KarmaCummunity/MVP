@@ -77,5 +77,4 @@ export interface RTLStyleObject {
   paddingRight?: number;
 }
 
-// Setup RTL on import
-setupRTL();
+// Do not auto-force RTL on import; language selection controls RTL now.

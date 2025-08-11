@@ -7,12 +7,9 @@ export default function WasteScreen() {
     <CategoryScreen
       config={{
         id: 'waste',
-        title: 'פסולת',
-        subtitle: 'מיחזור והפרדה',
         icon: 'trash-outline',
         color: colors.warning,
         bgColor: colors.warningLight,
-        description: 'פרויקטי ניקיון, מיחזור והפרדת פסולת',
       }}
     />
   );

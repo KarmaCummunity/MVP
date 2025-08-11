@@ -11,7 +11,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
-import { texts } from '../globals/texts';
+import { useTranslation } from 'react-i18next';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PANEL_HEIGHT = SCREEN_HEIGHT * 0.7;
@@ -33,6 +33,7 @@ const StatItem: React.FC<StatItemProps> = ({ icon, value, label, color = colors.
 );
 
 export default function CommunityStatsPanel() {
+  const { t } = useTranslation(['home']);
   const translateY = useSharedValue(PANEL_HEIGHT - MIN_HEIGHT);
   const isExpanded = useSharedValue(false);
 
@@ -87,7 +88,7 @@ export default function CommunityStatsPanel() {
         <View style={styles.header}>
           <View style={styles.handle} />
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>סטטיסטיקות קהילת קארמה</Text>
+            <Text style={styles.title}>{t('home:stats.title')}</Text>
             <Animated.View style={handleStyle}>
               <Ionicons name="chevron-up" size={24} color={colors.textSecondary} />
             </Animated.View>
@@ -98,43 +99,43 @@ export default function CommunityStatsPanel() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Real-time stats */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{texts.realTimeData}</Text>
+          <Text style={styles.sectionTitle}>{t('home:statsDetails.realTimeData')}</Text>
           <View style={styles.statsGrid}>
-            <StatItem icon="people" value="3,847" label={texts.activeMembers} />
-            <StatItem icon="heart" value="12,456" label={texts.monthlyDonations} color={colors.pink} />
-            <StatItem icon="trending-up" value="+23%" label={texts.monthlyGrowth} color={colors.success} />
-            <StatItem icon="globe" value="42" label={texts.activeCities} color={colors.info} />
+            <StatItem icon="people" value="3,847" label={t('home:stats.activeMembers') as string} />
+            <StatItem icon="heart" value="12,456" label={t('home:stats.monthlyDonations') as string} color={colors.pink} />
+            <StatItem icon="trending-up" value="+23%" label={t('home:stats.monthlyGrowth') as string} color={colors.success} />
+            <StatItem icon="globe" value="42" label={t('home:stats.activeCities') as string} color={colors.info} />
           </View>
         </View>
 
         {/* Impact stats */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{texts.communityImpact}</Text>
+          <Text style={styles.sectionTitle}>{t('home:stats.communityImpact')}</Text>
           <View style={styles.impactCard}>
             <View style={styles.impactRow}>
               <Ionicons name="car" size={24} color={colors.info} />
-              <Text style={styles.impactText}>2,341 {texts.sharedRides}</Text>
+              <Text style={styles.impactText}>2,341 {t('home:stats.sharedRides')}</Text>
             </View>
             <View style={styles.impactRow}>
               <Ionicons name="restaurant" size={24} color={colors.pink} />
-              <Text style={styles.impactText}>5,678 {texts.donatedMeals}</Text>
+              <Text style={styles.impactText}>5,678 {t('home:stats.donatedMeals')}</Text>
             </View>
             <View style={styles.impactRow}>
               <Ionicons name="school" size={24} color={colors.warning} />
-              <Text style={styles.impactText}>892 {texts.mentoringHours}</Text>
+              <Text style={styles.impactText}>892 {t('home:stats.mentoringHours')}</Text>
             </View>
             <View style={styles.impactRow}>
               <Ionicons name="home" size={24} color={colors.legacyMediumPurple} />
-              <Text style={styles.impactText}>156 {texts.supportedFamilies}</Text>
+              <Text style={styles.impactText}>156 {t('home:stats.supportedFamilies')}</Text>
             </View>
           </View>
         </View>
 
         {/* Top contributors */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{texts.topContributors}</Text>
+          <Text style={styles.sectionTitle}>{t('home:stats.topContributors')}</Text>
           <View style={styles.leaderboard}>
-            {['דוד כהן', 'שרה לוי', 'משה ישראלי', 'רחל אברהם', 'יוסף מזרחי'].map((name, index) => (
+            {[t('home:names.david'), t('home:names.sarah'), t('home:names.moshe'), t('home:names.rachel'), t('home:names.yosef')].map((name, index) => (
               <View key={index} style={styles.leaderItem}>
                 <View style={styles.leaderRank}>
                   <Text style={styles.rankText}>{index + 1}</Text>
@@ -142,7 +143,7 @@ export default function CommunityStatsPanel() {
                 <Text style={styles.leaderName}>{name}</Text>
                 <View style={styles.leaderStats}>
                   <Ionicons name="star" size={16} color={colors.legacyMediumYellow} />
-                  <Text style={styles.pointsText}>{1500 - index * 200} נק'</Text>
+                  <Text style={styles.pointsText}>{1500 - index * 200} {t('home:stats.pointsSuffix')}</Text>
                 </View>
               </View>
             ))}
@@ -151,9 +152,9 @@ export default function CommunityStatsPanel() {
 
         {/* Activity graph placeholder */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{texts.weeklyActivity}</Text>
+          <Text style={styles.sectionTitle}>{t('home:stats.weeklyActivity')}</Text>
           <View style={styles.graphPlaceholder}>
-            <Text style={styles.graphText}>{texts.activityGraphPlaceholder}</Text>
+            <Text style={styles.graphText}>{t('home:stats.activityGraphPlaceholder')}</Text>
           </View>
         </View>
       </ScrollView>

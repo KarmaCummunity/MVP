@@ -24,6 +24,7 @@ import { pickImage, pickVideo, takePhoto, pickDocument, validateFile, FileData }
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { Ionicons as Icon } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 type ChatDetailRouteParams = {
   conversationId: string;
@@ -37,6 +38,7 @@ export default function ChatDetailScreen() {
   const route = useRoute<RouteProp<Record<string, ChatDetailRouteParams>, string>>();
   const { conversationId, userName, userAvatar, otherUserId } = route.params;
   const { selectedUser } = useUser();
+  const { t } = useTranslation(['chat']);
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +46,6 @@ export default function ChatDetailScreen() {
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
-  // טעינת הודעות
   const loadMessages = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -52,7 +53,6 @@ export default function ChatDetailScreen() {
         const conversationMessages = await getMessages(conversationId, selectedUser.id);
         setMessages(conversationMessages);
         
-        // סימון הודעות כנקראו
         await markMessagesAsRead(conversationId, selectedUser.id);
       }
     } catch (error) {
@@ -160,7 +160,6 @@ export default function ChatDetailScreen() {
     try {
       setIsSending(true);
 
-      // בדיקת תקינות הקובץ
       const validation = validateFile(fileData);
       if (!validation.isValid) {
         Alert.alert('שגיאה', validation.error || 'הקובץ אינו תקין');
@@ -170,7 +169,7 @@ export default function ChatDetailScreen() {
       await sendMessage({
         conversationId,
         senderId: selectedUser.id,
-        text: '', // טקסט ריק להודעות מדיה
+        text: '',
         timestamp: new Date().toISOString(),
         read: false,
         type: fileData.type,
@@ -291,7 +290,7 @@ export default function ChatDetailScreen() {
             style={styles.textInput}
             value={inputText}
             onChangeText={setInputText}
-            placeholder="שלח הודעה..."
+            placeholder={t('chat:placeholder')}
             placeholderTextColor={colors.textSecondary}
             multiline
             textAlignVertical="center"
@@ -401,7 +400,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: 15,
     paddingVertical: 10,
-    paddingBottom: Platform.OS === 'android' ? 20 : 10, // מרווח נוסף לאנדרואיד
+    paddingBottom: Platform.OS === 'android' ? 20 : 10, 
     backgroundColor: colors.backgroundPrimary,
     borderTopWidth: 1,
     borderTopColor: colors.border,

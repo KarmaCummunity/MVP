@@ -7,12 +7,9 @@ export default function EducationScreen() {
     <CategoryScreen
       config={{
         id: 'education',
-        title: 'חינוך',
-        subtitle: 'עזרה בלימודים',
         icon: 'book-outline',
         color: colors.info,
         bgColor: colors.infoLight,
-        description: 'תגבור בלימודים, חונכות, קורסים ופעילויות למידה',
       }}
     />
   );

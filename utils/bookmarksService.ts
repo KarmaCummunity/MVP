@@ -1,9 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// מפתח לאחסון
 const BOOKMARKS_KEY = 'user_bookmarks';
 
-// טיפוסים
 export interface Bookmark {
   id: string;
   postId: string;
@@ -21,7 +19,6 @@ export interface Bookmark {
   };
 }
 
-// פונקציות עזר
 const getStoredBookmarks = async (): Promise<Bookmark[]> => {
   try {
     const data = await AsyncStorage.getItem(BOOKMARKS_KEY);
@@ -40,12 +37,10 @@ const setStoredBookmarks = async (bookmarks: Bookmark[]): Promise<void> => {
   }
 };
 
-// פונקציות עיקריות
 export const addBookmark = async (userId: string, postData: any): Promise<boolean> => {
   try {
     const bookmarks = await getStoredBookmarks();
     
-    // בדיקה אם הפוסט כבר שמור
     const existingBookmark = bookmarks.find(
       bookmark => bookmark.userId === userId && bookmark.postId === postData.id
     );

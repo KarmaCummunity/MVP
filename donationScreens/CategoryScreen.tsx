@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import HeaderComp from '../components/HeaderComp';
+import DonationStatsFooter from '../components/DonationStatsFooter';
+import { biDiTextAlign, isLandscape, scaleSize } from '../globals/responsive';
+import { useTranslation } from 'react-i18next';
 
 export interface CategoryConfig {
   id: string;
-  title: string;
+  title?: string;
   subtitle?: string;
   icon: string;
   color: string;
@@ -15,52 +18,87 @@ export interface CategoryConfig {
 }
 
 interface Props {
-  config: CategoryConfig;
+  route?: { params?: { config?: CategoryConfig } };
+  config?: CategoryConfig;
 }
 
-const CategoryScreen: React.FC<Props> = ({ config }) => {
-  const [mode, setMode] = useState(false);
+const CategoryScreen: React.FC<Props> = ({ route, config: propConfig }) => {
+  const { t } = useTranslation(['donations','common']);
+  const config: CategoryConfig = propConfig || route?.params?.config || {
+    id: 'generic',
+    icon: 'help-circle-outline',
+    color: colors.info,
+    bgColor: colors.infoLight,
+  };
+  const [mode, setMode] = useState(true);
+
+  const title = config.title ?? t(`donations:categories.${config.id}.title`);
+  const subtitle = config.subtitle ?? t(`donations:categories.${config.id}.subtitle`);
+  const description = config.description ?? t(`donations:categories.${config.id}.description`);
 
   const handleToggleMode = () => setMode((prev) => !prev);
   const handleSelectMenuItem = (option: string) => {
     console.log('Category menu selected:', option);
   };
 
-  const handleSearch = (query: string, filters: string[], sorts: string[], results: any[]) => {
-    console.log('Category search:', { query, filters, sorts, results });
+  const handleSearch = (
+    query: string,
+    filters?: string[],
+    sorts?: string[],
+    results?: any[]
+  ) => {
+    console.log('Category search:', {
+      query,
+      filters: filters ?? [],
+      sorts: sorts ?? [],
+      results: results ?? [],
+    });
   };
 
   return (
     <View style={styles.container}>
       <HeaderComp
         mode={mode}
-        menuOptions={[`שתף ${config.title}`, 'הגדרות', 'דווח']}
+        menuOptions={[`${t('donations:share')} ${title}`, t('common:settings'), t('common:report')]}
         onToggleMode={handleToggleMode}
         onSelectMenuItem={handleSelectMenuItem}
-        placeholder={`חיפוש בתוך ${config.title}`}
-        filterOptions={['קרוב אליי', 'פופולרי', 'חדש']}
-        sortOptions={['שם', 'תאריך', 'דירוג']}
+        placeholder={`${t('donations:searchWithin')} ${title}`}
+        filterOptions={[t('donations:filter.nearMe'), t('donations:filter.popular'), t('donations:filter.new')]}
+        sortOptions={[t('donations:sort.name'), t('donations:sort.date'), t('donations:sort.rating')]}
         searchData={[]}
         onSearch={handleSearch}
       />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[
+        styles.content,
+        isLandscape() && { paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XL },
+      ]} showsVerticalScrollIndicator={false}>
         <View style={[styles.hero, { backgroundColor: config.bgColor, borderColor: config.color }]}> 
-          <Text style={[styles.title, { color: colors.textPrimary }]}>{config.title}</Text>
-          {!!config.subtitle && (
-            <Text style={styles.subtitle}>{config.subtitle}</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
+          {!!subtitle && (
+            <Text style={styles.subtitle}>{subtitle}</Text>
           )}
-          {!!config.description && (
-            <Text style={styles.description}>{config.description}</Text>
+          {!!description && (
+            <Text style={styles.description}>{description}</Text>
           )}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>תוכן</Text>
+          <Text style={styles.sectionTitle}>{t('donations:section.content')}</Text>
           <Text style={styles.sectionText}>
-            אזור זה יכיל תוכן מותאם לקטגוריית "{config.title}". נוכל להציג כאן רשימות, טפסים, פרויקטים קהילתיים,
-            ומידע רלוונטי. כרגע זה תוכן התחלתי שניתן להרחיב.
+            {t('donations:section.contentBody', { title })}
           </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('donations:section.relatedStats')}</Text>
+          <DonationStatsFooter
+            stats={[
+              { label: t('donations:stats.newPosts'), value: 12, icon: 'megaphone-outline' },
+              { label: t('donations:stats.activeRequests'), value: 7, icon: 'help-circle-outline' },
+              { label: t('donations:stats.activePartners'), value: 5, icon: 'people-outline' },
+            ]}
+          />
         </View>
       </ScrollView>
     </View>
@@ -73,48 +111,53 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundPrimary,
   },
   content: {
-    padding: 16,
-    paddingBottom: 120,
+    padding: LAYOUT_CONSTANTS.SPACING.MD,
+    paddingBottom: LAYOUT_CONSTANTS.SPACING.XL * 3 + LAYOUT_CONSTANTS.SPACING.SM,
   },
   hero: {
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
+    padding: LAYOUT_CONSTANTS.SPACING.MD,
     borderWidth: 1,
-    marginBottom: 16,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
   },
   title: {
     fontSize: FontSizes.heading2,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
+    textAlign: biDiTextAlign('right'),
   },
   subtitle: {
     fontSize: FontSizes.small,
     color: colors.textSecondary,
-    marginBottom: 8,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
+    textAlign: biDiTextAlign('right'),
   },
   description: {
     fontSize: FontSizes.body,
     color: colors.textPrimary,
-    lineHeight: 20,
+    lineHeight: Math.round(FontSizes.body * 1.4),
+    textAlign: biDiTextAlign('right'),
   },
   section: {
     backgroundColor: colors.backgroundSecondary,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    padding: LAYOUT_CONSTANTS.SPACING.MD,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: 16,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
   },
   sectionTitle: {
     fontSize: FontSizes.medium,
-    fontWeight: '600',
+    fontWeight: 'semibold',
     color: colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
+    textAlign: 'center',
   },
   sectionText: {
     fontSize: FontSizes.body,
     color: colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: Math.round(FontSizes.body * 1.3),
+    textAlign: biDiTextAlign('right'),
   },
 });
 

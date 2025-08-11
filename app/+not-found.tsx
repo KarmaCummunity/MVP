@@ -1,21 +1,23 @@
 import { Link, Stack } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 
 export default function NotFoundScreen() {
+  const { t } = useTranslation(['common']);
   return (
     <>
-      <Stack.Screen options={{ title: 'אופס! לא נמצא' }} />
+      <Stack.Screen options={{ title: t('common:notFound.title') }} />
       <View style={styles.container}>
-        <Text style={styles.title}>הדף לא נמצא</Text>
+        <Text style={styles.title}>{t('common:notFound.header')}</Text>
         <Text style={styles.description}>
-          הדף שאתה מחפש לא קיים
+          {t('common:notFound.description')}
         </Text>
         <Link href="/" style={styles.link}>
-          <Text style={styles.linkText}>חזור לעמוד הבית</Text>
+          <Text style={styles.linkText}>{t('common:notFound.backHome')}</Text>
         </Link>
       </View>
     </>

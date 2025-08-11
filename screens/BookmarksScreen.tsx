@@ -15,7 +15,8 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../context/UserContext';
 import { getBookmarks, removeBookmark, Bookmark } from '../utils/bookmarksService';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { FontSizes, IconSizes } from '../globals/constants';
+import { useTranslation } from 'react-i18next';
 
 export default function BookmarksScreen() {
   const navigation = useNavigation();
@@ -23,10 +24,11 @@ export default function BookmarksScreen() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const { t } = useTranslation(['bookmarks','common']);
 
   const loadBookmarks = async () => {
     if (!selectedUser) {
-      Alert.alert('שגיאה', 'יש לבחור יוזר תחילה');
+      Alert.alert(t('common:errorTitle'), t('bookmarks:selectUserFirst'));
       return;
     }
 
@@ -35,7 +37,7 @@ export default function BookmarksScreen() {
       setBookmarks(userBookmarks);
     } catch (error) {
       console.error('❌ Load bookmarks error:', error);
-      Alert.alert('שגיאה', 'שגיאה בטעינת המועדפים');
+      Alert.alert(t('common:errorTitle'), t('bookmarks:loadError'));
     }
   };
 
@@ -63,12 +65,12 @@ export default function BookmarksScreen() {
     if (!selectedUser) return;
 
     Alert.alert(
-      'הסרת מועדף',
-      'האם ברצונך להסיר את הפוסט מהמועדפים?',
+      t('bookmarks:removeTitle'),
+      t('bookmarks:removeMessage'),
       [
-        { text: 'ביטול', style: 'cancel' },
+        { text: t('common:cancel'), style: 'cancel' },
         {
-          text: 'הסר',
+          text: t('bookmarks:removeConfirm'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -77,7 +79,7 @@ export default function BookmarksScreen() {
               console.log('✅ Bookmark removed');
             } catch (error) {
               console.error('❌ Remove bookmark error:', error);
-              Alert.alert('שגיאה', 'שגיאה בהסרת המועדף');
+              Alert.alert(t('common:errorTitle'), t('bookmarks:removeError'));
             }
           }
         }
@@ -89,12 +91,12 @@ export default function BookmarksScreen() {
     if (!selectedUser) return;
 
     Alert.alert(
-      'ניקוי מועדפים',
-      'האם ברצונך לנקות את כל המועדפים?',
+      t('bookmarks:clearTitle'),
+      t('bookmarks:clearMessage'),
       [
-        { text: 'ביטול', style: 'cancel' },
+        { text: t('common:cancel'), style: 'cancel' },
         {
-          text: 'נקה הכל',
+          text: t('bookmarks:clearConfirm'),
           style: 'destructive',
           onPress: () => {
             setBookmarks([]);
@@ -110,9 +112,9 @@ export default function BookmarksScreen() {
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
-    if (diffInHours < 1) return 'עכשיו';
-    if (diffInHours < 24) return `לפני ${diffInHours} שעות`;
-    return date.toLocaleDateString('he-IL');
+    if (diffInHours < 1) return t('common:time.now');
+    if (diffInHours < 24) return t('common:time.hoursAgo', { count: diffInHours });
+    return date.toLocaleDateString();
   };
 
   const renderBookmark = ({ item }: { item: Bookmark }) => (
@@ -133,7 +135,7 @@ export default function BookmarksScreen() {
             style={styles.removeButton}
             onPress={() => handleRemoveBookmark(item)}
           >
-            <Ionicons name="close-circle" size={24} color={colors.error} />
+            <Ionicons name="close-circle" size={IconSizes.small} color={colors.error} />
           </TouchableOpacity>
         </View>
         
@@ -149,9 +151,9 @@ export default function BookmarksScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyContainer}>
-          <Ionicons name="person-outline" size={64} color={colors.textSecondary} />
-          <Text style={styles.emptyTitle}>יש לבחור יוזר</Text>
-          <Text style={styles.emptySubtitle}>בחר יוזר כדי לראות את המועדפים שלו</Text>
+          <Ionicons name="person-outline" size={IconSizes.xxlarge} color={colors.textSecondary} />
+          <Text style={styles.emptyTitle}>{t('bookmarks:selectUserTitle')}</Text>
+          <Text style={styles.emptySubtitle}>{t('bookmarks:selectUserSubtitle')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -160,20 +162,20 @@ export default function BookmarksScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>מועדפים</Text>
+        <Text style={styles.headerTitle}>{t('bookmarks:title')}</Text>
         {bookmarks.length > 0 && (
           <TouchableOpacity onPress={handleClearAll} style={styles.clearButton}>
-            <Ionicons name="trash-outline" size={20} color={colors.error} />
-            <Text style={styles.clearButtonText}>נקה הכל</Text>
+            <Ionicons name="trash-outline" size={IconSizes.xsmall} color={colors.error} />
+            <Text style={styles.clearButtonText}>{t('bookmarks:clearConfirm')}</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {bookmarks.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="bookmark-outline" size={64} color={colors.textSecondary} />
-          <Text style={styles.emptyTitle}>אין מועדפים</Text>
-          <Text style={styles.emptySubtitle}>הפוסטים שתשמור יופיעו כאן</Text>
+          <Ionicons name="bookmark-outline" size={IconSizes.xxlarge} color={colors.textSecondary} />
+          <Text style={styles.emptyTitle}>{t('bookmarks:emptyTitle')}</Text>
+          <Text style={styles.emptySubtitle}>{t('bookmarks:emptySubtitle')}</Text>
         </View>
       ) : (
         <FlatList
@@ -200,6 +202,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    //TODO: change padding to be relative to the screen size
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -207,29 +210,35 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: FontSizes.large,
+    //TODO: change font size to be relative to the screen size
+    //TODO: move font to globals
     fontWeight: 'bold',
     color: colors.textPrimary,
   },
   clearButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    //TODO: change padding to be relative to the screen size
     padding: 8,
   },
   clearButtonText: {
     fontSize: FontSizes.small,
     color: colors.error,
+    //TODO: change margin to be relative to the screen size
     marginLeft: 4,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    //TODO: change padding to be relative to the screen size
     padding: 32,
   },
   emptyTitle: {
     fontSize: FontSizes.large,
     fontWeight: 'bold',
     color: colors.textPrimary,
+    //TODO: change margin to be relative to the screen size
     marginTop: 16,
     marginBottom: 8,
   },
@@ -239,6 +248,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   listContainer: {
+    //TODO: change padding to be relative to the screen size
     padding: 16,
   },
   bookmarkContainer: {

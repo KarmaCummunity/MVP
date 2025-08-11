@@ -1,6 +1,7 @@
 // components/ChatListItem.tsx
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ChatConversation, ChatUser } from '../globals/fakeData'; // Adjust path
 import colors from '../globals/colors'; // Assuming you have a Colors file
 import { FontSizes } from '../globals/constants';
@@ -12,9 +13,10 @@ interface ChatListItemProps {
 }
 
 const ChatListItem: React.FC<ChatListItemProps> = ({ conversation, user, onPress }) => {
+  const { t } = useTranslation(['common','chat']);
   // Use unreadCount directly instead of checking the messages array
   // This is because the messages array is not loaded in the ChatListScreen
-  const isUnread = conversation.unreadCount > 0;
+  const isUnread = (conversation.unreadCount ?? 0) > 0;
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -23,14 +25,13 @@ const ChatListItem: React.FC<ChatListItemProps> = ({ conversation, user, onPress
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays === 1 && date.getDate() === now.getDate()) {
-      return date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }); // Same day
-    } else if (diffDays === 1) { // yesterday
-      return 'אתמול';
+      return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    } else if (diffDays === 1) {
+      return t('common:time.daysAgo', { count: 1 });
     } else if (diffDays <= 7) {
-      const days = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
-      return days[date.getDay()]; // Day of week
+      return date.toLocaleDateString(undefined, { weekday: 'short' });
     } else {
-      return date.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' }); // DD/MM
+      return date.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' });
     }
   };
 
@@ -47,7 +48,7 @@ const ChatListItem: React.FC<ChatListItemProps> = ({ conversation, user, onPress
           <Text style={styles.timestamp}>{formatTimestamp(conversation.lastMessageTimestamp)}</Text>
         </View>
         <Text style={[styles.lastMessage, isUnread && styles.unreadMessage]} numberOfLines={1}>
-          {conversation.lastMessageText || 'התחל שיחה חדשה...'}
+          {conversation.lastMessageText || t('chat:startNewConversation')}
         </Text>
       </View>
     </TouchableOpacity>

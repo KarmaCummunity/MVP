@@ -8,7 +8,7 @@ import ChatDetailScreen from '../screens/ChatDetailScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AboutKarmaCommunityScreen from '../topBarScreens/AboutKarmaCommunityScreen';
 import SettingsScreen from '../topBarScreens/SettingsScreen';
-import BookmarksScreen from '../bottomBarScreens/BookmarksScreen';
+import BookmarksScreen from '../screens/BookmarksScreen';
 import PostsReelsScreenWrapper from '../components/PostsReelsScreenWrapper';
 import WebViewScreen from '../screens/WebViewScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';

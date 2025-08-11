@@ -1,7 +1,7 @@
 // BottomNavigator.tsx
 'use strict';
 import React from "react";
-import { Platform, StyleSheet } from "react-native";
+import { Platform } from "react-native";
 import { createBottomTabNavigator, BottomTabNavigationOptions } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -9,13 +9,14 @@ import HomeTabStack from "./HomeTabStack";
 import SearchTabStack from "./SearchTabStack";
 import ProfileTabStack from "./ProfileTabStack";
 import DonationsStack from "./DonationsStack"; // donations נשאר כ-stack נפרד
-// import UsersScreen from "../bottomBarScreens/UsersScreen"; // הסתרה לבדיקות
-import BookmarksScreen from "../bottomBarScreens/BookmarksScreen";
+import BookmarksScreen from "../screens/BookmarksScreen";
 import SettingsScreen from "../topBarScreens/SettingsScreen";
 import ChatListScreen from "../topBarScreens/ChatListScreen";
 import AboutKarmaCommunityScreen from "../topBarScreens/AboutKarmaCommunityScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 import colors from "../globals/colors"; // Adjust path if needed
+import { vw, getScreenInfo, isLandscape } from "../globals/responsive";
+import { LAYOUT_CONSTANTS } from "../globals/constants";
 import { useUser } from "../context/UserContext";
 
 // Define the type for your bottom tab navigator's route names and their parameters.
@@ -24,7 +25,6 @@ export type BottomTabNavigatorParamList = {
   HomeScreen: undefined;
   SearchScreen: undefined;
   ProfileScreen: undefined;
-  // UsersScreen: undefined; // הסתרה לבדיקות
   SettingsScreen: undefined;
   ChatListScreen: undefined;
   AboutKarmaCommunityScreen: undefined;
@@ -75,11 +75,6 @@ export default function BottomNavigator(): React.ReactElement {
         return focused ? "heart" : "heart-outline";
       case "ProfileScreen":
         return focused ? "person" : "person-outline";
-      // case "UsersScreen": // הסתרה לבדיקות
-      //   return focused ? "people" : "people-outline";
-
-      // case "LocationSearchScreen": // Uncomment if you add this screen to the navigator
-      //   return focused ? "globe" : "globe-outline";
       default:
         return "help-circle-outline";
     }
@@ -100,6 +95,10 @@ export default function BottomNavigator(): React.ReactElement {
         screenOptions={({ route }): BottomTabNavigationOptions => {
           const activeParams = getActiveNestedParams(route as any) || {};
           const hideBottomBar = activeParams.hideBottomBar === true;
+          const { isTablet, isDesktop } = getScreenInfo();
+          const landscape = isLandscape();
+          const horizontalInset = isDesktop ? vw(20) : isTablet ? vw(10) : LAYOUT_CONSTANTS.SPACING.MD;
+          const barHeight = landscape ? 40 : (isDesktop ? 56 : isTablet ? 54 : 46);
           return ({
             headerShown: false,
             tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number; }) => {
@@ -111,11 +110,11 @@ export default function BottomNavigator(): React.ReactElement {
             tabBarShowLabel: false,
             tabBarStyle: {
               position: "absolute",
-              left: 20,
-              right: 20,
-              borderRadius: 25,
-              elevation: 8,
-              height: '5%',
+              left: horizontalInset,
+              right: horizontalInset,
+              borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.XLARGE,
+              elevation: LAYOUT_CONSTANTS.SHADOW.MEDIUM.elevation,
+              height: barHeight,
               backgroundColor: colors.bottomNavBackground,
               display: hideBottomBar ? 'none' as const : 'flex' as const,
             },

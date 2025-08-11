@@ -101,7 +101,6 @@ export default function FollowersScreen() {
       const currentStats = followStats[targetUserId] || { isFollowing: false };
       
       if (currentStats.isFollowing) {
-        // ביטול עקיבה
         const success = await unfollowUser(selectedUser.id, targetUserId);
         if (success) {
           setFollowStats(prev => ({
@@ -111,7 +110,6 @@ export default function FollowersScreen() {
           Alert.alert('ביטול עקיבה', 'ביטלת את העקיבה בהצלחה');
         }
       } else {
-        // התחלת עקיבה
         const success = await followUser(selectedUser.id, targetUserId);
         if (success) {
           setFollowStats(prev => ({

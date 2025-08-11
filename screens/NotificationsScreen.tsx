@@ -11,7 +11,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, NavigationProp, ParamListBase } from '@react-navigation/native';
 import { useUser } from '../context/UserContext';
 import {
   getNotifications,
@@ -28,11 +28,13 @@ import {
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { Ionicons as Icon } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import ScreenWrapper from '../components/ScreenWrapper';
 
 export default function NotificationsScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { selectedUser } = useUser();
+  const { t } = useTranslation(['notifications','common']);
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -40,7 +42,6 @@ export default function NotificationsScreen() {
 
   console.log('🔔 NotificationsScreen - Component rendered, selectedUser:', selectedUser?.name || 'null');
 
-  // טעינת התראות
   const loadNotifications = useCallback(async () => {
     console.log('🔔 NotificationsScreen - loadNotifications - selectedUser:', selectedUser?.name || 'null');
     
@@ -57,12 +58,11 @@ export default function NotificationsScreen() {
       setUnreadCount(count);
     } catch (error) {
       console.error('❌ Load notifications error:', error);
-      Alert.alert('שגיאה', 'שגיאה בטעינת ההתראות');
+      Alert.alert(t('common:errorTitle'), t('notifications:loadError'));
     }
   }, [selectedUser]);
 
-  // רענון נתונים כשהמסך מתמקד
-  useFocusEffect(
+    useFocusEffect(
     useCallback(() => {
       console.log('🔔 NotificationsScreen - Screen focused, loading notifications...');
       console.log('🔔 NotificationsScreen - selectedUser in useFocusEffect:', selectedUser?.name || 'null');
@@ -103,64 +103,60 @@ export default function NotificationsScreen() {
     loadNotifications().finally(() => setRefreshing(false));
   }, [loadNotifications]);
 
-  // סימון התראה כנקראה
   const handleMarkAsRead = async (notificationId: string) => {
     if (!selectedUser) return;
 
     try {
       await markNotificationAsRead(notificationId, selectedUser.id);
-      await loadNotifications(); // רענון הנתונים
+      await loadNotifications();
     } catch (error) {
       console.error('❌ Mark as read error:', error);
     }
   };
 
-  // סימון כל ההתראות כנקראו
   const handleMarkAllAsRead = async () => {
     if (!selectedUser) return;
 
     try {
       await markAllNotificationsAsRead(selectedUser.id);
-      await loadNotifications(); // רענון הנתונים
-      Alert.alert('הושלם', 'כל ההתראות סומנו כנקראו');
+      await loadNotifications();
+      Alert.alert(t('notifications:markAllDoneTitle'), t('notifications:markAllDoneBody'));
     } catch (error) {
       console.error('❌ Mark all as read error:', error);
-      Alert.alert('שגיאה', 'שגיאה בסימון ההתראות');
+      Alert.alert(t('common:errorTitle'), t('notifications:markAllError'));
     }
   };
 
-  // מחיקת התראה
   const handleDeleteNotification = async (notificationId: string) => {
     if (!selectedUser) return;
 
     try {
       await deleteNotification(notificationId, selectedUser.id);
-      await loadNotifications(); // רענון הנתונים
+      await loadNotifications();
     } catch (error) {
       console.error('❌ Delete notification error:', error);
     }
   };
 
-  // מחיקת כל ההתראות
   const handleClearAllNotifications = async () => {
     if (!selectedUser) return;
 
     Alert.alert(
-      'מחיקת כל ההתראות',
-      'האם אתה בטוח שברצונך למחוק את כל ההתראות?',
+      t('notifications:clearAllTitle'),
+      t('notifications:clearAllMessage'),
       [
-        { text: 'ביטול', style: 'cancel' },
+        { text: t('common:cancel'), style: 'cancel' },
         {
-          text: 'מחק',
+          text: t('common:delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await clearAllNotifications(selectedUser.id);
-              await loadNotifications(); // רענון הנתונים
-              Alert.alert('הושלם', 'כל ההתראות נמחקו');
+              await loadNotifications();
+              Alert.alert(t('notifications:clearAllDoneTitle'), t('notifications:clearAllDoneBody'));
             } catch (error) {
               console.error('❌ Clear all notifications error:', error);
-              Alert.alert('שגיאה', 'שגיאה במחיקת ההתראות');
+              Alert.alert(t('common:errorTitle'), t('notifications:clearAllError'));
             }
           },
         },
@@ -168,7 +164,6 @@ export default function NotificationsScreen() {
     );
   };
 
-  // קבלת אייקון לפי סוג התראה
   const getNotificationIcon = (type: NotificationData['type']) => {
     switch (type) {
       case 'message':
@@ -186,7 +181,6 @@ export default function NotificationsScreen() {
     }
   };
 
-  // קבלת צבע לפי סוג התראה
   const getNotificationColor = (type: NotificationData['type']) => {
     switch (type) {
       case 'message':
@@ -204,7 +198,6 @@ export default function NotificationsScreen() {
     }
   };
 
-  // פורמט זמן
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -214,15 +207,15 @@ export default function NotificationsScreen() {
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffMinutes < 1) {
-      return 'עכשיו';
+      return t('common:time.now');
     } else if (diffMinutes < 60) {
-      return `לפני ${diffMinutes} דקות`;
+      return t('common:time.minutesAgo', { count: diffMinutes });
     } else if (diffHours < 24) {
-      return `לפני ${diffHours} שעות`;
+      return t('common:time.hoursAgo', { count: diffHours });
     } else if (diffDays < 7) {
-      return `לפני ${diffDays} ימים`;
+      return t('common:time.daysAgo', { count: diffDays });
     } else {
-      return date.toLocaleDateString('he-IL');
+      return date.toLocaleDateString();
     }
   };
 
@@ -273,9 +266,9 @@ export default function NotificationsScreen() {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Icon name="notifications-off-outline" size={80} color={colors.textSecondary} />
-      <Text style={styles.emptyStateTitle}>אין התראות</Text>
+      <Text style={styles.emptyStateTitle}>{t('notifications:empty.title')}</Text>
       <Text style={styles.emptyStateSubtitle}>
-        כאשר תקבל התראות חדשות, הן יופיעו כאן
+        {t('notifications:empty.subtitle')}
       </Text>
     </View>
   );
@@ -299,7 +292,7 @@ export default function NotificationsScreen() {
 
       {unreadCount > 0 && (
         <View style={styles.unreadBadge}>
-          <Text style={styles.unreadBadgeText}>{unreadCount} התראות חדשות</Text>
+          <Text style={styles.unreadBadgeText}>{t('notifications:unreadBadge', { count: unreadCount })}</Text>
         </View>
       )}
 

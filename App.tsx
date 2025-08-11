@@ -9,12 +9,16 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import i18n from './app/i18n';
+import { useTranslation } from 'react-i18next';
+import { I18nManager } from 'react-native';
 
 import MainNavigator from './navigations/MainNavigator';
 import colors from './globals/colors';
 import { UserProvider } from './context/UserContext';
 import { FontSizes } from "./globals/constants";
-import './utils/RTLConfig';
+// RTL is controlled via selected language in i18n and Settings
 
 // Initialize notifications only on supported platforms
 let notificationService: any = null;
@@ -29,10 +33,12 @@ if (Platform.OS !== 'web') {
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
+  const { t } = useTranslation(['common']);
   const [appIsReady, setAppIsReady] = useState(false);
   const [fontError, setFontError] = useState<Error | null>(null);
   const navigationRef = useRef<NavigationContainerRef<any>>(null);
 
+  console.log('🚀 App component mounted');
   // Setup notification response listener (iOS + Android)
   useEffect(() => {
     if (!notificationService) return;
@@ -66,6 +72,22 @@ export default function App() {
   const prepareApp = useCallback(async () => {
     try {
       console.log('🚀 Starting app preparation...');
+
+      // Apply stored language before UI mounts
+      try {
+        const storedLang = await AsyncStorage.getItem('app_language');
+        const lang = storedLang === 'he' || storedLang === 'en' ? storedLang : null;
+        if (lang) {
+          await i18n.changeLanguage(lang);
+          const isRTL = lang === 'he';
+          if (I18nManager.isRTL !== isRTL) {
+            I18nManager.allowRTL(isRTL);
+            I18nManager.forceRTL(isRTL);
+          }
+        }
+      } catch (e) {
+        console.warn('Language load failed, using defaults');
+      }
       
       // Loading fonts with better error handling
       try {
@@ -76,7 +98,6 @@ export default function App() {
         console.log('✅ Fonts loaded successfully');
       } catch (fontError) {
         console.warn('Font loading failed, continuing without custom fonts');
-        // Don't stop the app if fonts fail to load
       }
 
       console.log('✅ App preparation completed');
@@ -118,8 +139,8 @@ export default function App() {
   if (!appIsReady) {
     return (
       <View style={loadingStyles.container}>
-        <ActivityIndicator size="large" color={colors.info}/>
-        <Text style={loadingStyles.loadingText}>טוען...</Text>
+          <ActivityIndicator size="large" color={colors.info}/>
+          <Text style={loadingStyles.loadingText}>{t('common:loading')}</Text>
       </View>
     );
   }

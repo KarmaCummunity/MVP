@@ -7,12 +7,9 @@ export default function MedicalScreen() {
     <CategoryScreen
       config={{
         id: 'medical',
-        title: 'רפואה',
-        subtitle: 'עזרה רפואית',
         icon: 'medical-outline',
         color: colors.error,
         bgColor: colors.errorLight,
-        description: 'סיוע רפואי, ציוד תרופתי ותרומת דם',
       }}
     />
   );

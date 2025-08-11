@@ -1,8 +1,10 @@
 import { Platform } from 'react-native';
+import { USE_FIRESTORE } from './dbConfig';
+import { getFirebase } from './firebaseClient';
+import { collection as fsCollection, query as fsQuery, where as fsWhere, onSnapshot } from 'firebase/firestore';
 import { sendMessageNotification } from './notificationService';
 import { db, DB_COLLECTIONS, DatabaseService } from './databaseService';
 
-// טיפוסים
 export interface Conversation {
   id: string;
   participants: string[];
@@ -55,12 +57,10 @@ const messageListeners: Map<string, Set<(messages: Message[]) => void>> = new Ma
 // Conversations: key is `userId`
 const conversationListeners: Map<string, Set<(conversations: Conversation[]) => void>> = new Map();
 
-// פונקציות עזר
 const generateId = (prefix: string): string => {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
-// פונקציות לשיחות
 export const createConversation = async (participants: string[]): Promise<string> => {
   try {
     const conversationId = generateId('conv');
@@ -74,7 +74,6 @@ export const createConversation = async (participants: string[]): Promise<string
       createdAt: new Date().toISOString(),
     };
 
-    // שמירת השיחה לכל משתתף (עותק ראשוני עם מונה 0 לכל אחד)
     for (const participantId of participants) {
       await db.createChat(participantId, conversationId, { ...newConversation, unreadCount: 0 });
     }
@@ -122,7 +121,6 @@ export const getConversationById = async (conversationId: string, userId: string
   }
 };
 
-// פונקציות להודעות
 export const sendMessage = async (message: Omit<Message, 'id'>): Promise<string> => {
   try {
     const messageId = generateId('msg');
@@ -133,19 +131,16 @@ export const sendMessage = async (message: Omit<Message, 'id'>): Promise<string>
       status: 'sent', // Default status for sent messages
     };
 
-    // ודא שקיימת שיחה עבור כל משתתף, ושמור את ההודעה לכל משתתף
     const senderView = await getConversationById(message.conversationId, message.senderId);
     const participants = senderView?.participants || [];
     if (participants.length === 0) {
       throw new Error('Conversation not found or has no participants');
     }
 
-    // שמירת ההודעה לכל משתתף
     for (const participantId of participants) {
       await db.createMessage(participantId, messageId, newMessage);
     }
 
-    // עדכון נתוני השיחה לכל משתתף עם מונה נקראים נכון
     let displayText = message.text;
     if (message.type === 'image') displayText = '📷 תמונה';
     else if (message.type === 'video') displayText = '🎥 סרטון';
@@ -220,7 +215,6 @@ export const markMessagesAsRead = async (conversationId: string, userId: string)
   try {
     console.log('🔍 Marking messages as read for conversation:', conversationId, 'user:', userId);
     
-    // סימון הודעות כנקראו
     const messages = await getMessages(conversationId, userId);
     console.log('📝 Found', messages.length, 'total messages');
     
@@ -231,7 +225,6 @@ export const markMessagesAsRead = async (conversationId: string, userId: string)
       }
     }
 
-    // איפוס מונה ההודעות שלא נקראו
     const conversation = await getConversationById(conversationId, userId);
     if (conversation) {
       const updatedConversation = { ...conversation, unreadCount: 0 };
@@ -255,61 +248,92 @@ export const subscribeToMessages = (conversationId: string, userId: string, call
     messageListeners.set(key, new Set());
   }
   messageListeners.get(key)!.add(callback);
-  
-  // Initial call
-  getMessages(conversationId, userId).then(callback);
-  
-  // Set up polling every 2 seconds
-  const interval = setInterval(async () => {
-    const messages = await getMessages(conversationId, userId);
-    callback(messages);
-  }, 2000);
-  
-  // Return cleanup function
-  return () => {
-    clearInterval(interval);
-    const listeners = messageListeners.get(key);
-    if (listeners) {
-      listeners.delete(callback);
-      if (listeners.size === 0) {
-        messageListeners.delete(key);
+
+  if (USE_FIRESTORE) {
+    const { db } = getFirebase();
+    const col = fsCollection(db, DB_COLLECTIONS.MESSAGES);
+    const q = fsQuery(col, fsWhere('_userId', '==', userId), fsWhere('conversationId', '==', conversationId));
+    const unsub = onSnapshot(q, async (snap) => {
+      const items = snap.docs.map((d) => d.data() as Message).sort((a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+      callback(items);
+    });
+    return () => {
+      unsub();
+      const listeners = messageListeners.get(key);
+      if (listeners) {
+        listeners.delete(callback);
+        if (listeners.size === 0) {
+          messageListeners.delete(key);
+        }
       }
-    }
-  };
+    };
+  } else {
+    getMessages(conversationId, userId).then(callback);
+    const interval = setInterval(async () => {
+      const messages = await getMessages(conversationId, userId);
+      callback(messages);
+    }, 2000);
+    return () => {
+      clearInterval(interval);
+      const listeners = messageListeners.get(key);
+      if (listeners) {
+        listeners.delete(callback);
+        if (listeners.size === 0) {
+          messageListeners.delete(key);
+        }
+      }
+    };
+  }
 };
 
 // Real-time listener for conversations
 export const subscribeToConversations = (userId: string, callback: (conversations: Conversation[]) => void) => {
-  // Add listener to the map
   if (!conversationListeners.has(userId)) {
     conversationListeners.set(userId, new Set());
   }
   conversationListeners.get(userId)!.add(callback);
-  
-  // Initial call
-  getConversations(userId).then((conversations) => {
-    // Conversations are already sorted by getConversations
-    callback(conversations);
-  });
-  
-  // Set up polling every 5 seconds
-  const interval = setInterval(async () => {
-    const conversations = await getConversations(userId);
-    // Conversations are already sorted by getConversations
-    callback(conversations);
-  }, 5000);
-  
-  // Return cleanup function
-  return () => {
-    clearInterval(interval);
-    const listeners = conversationListeners.get(userId);
-    if (listeners) {
-      listeners.delete(callback);
-      if (listeners.size === 0) {
-        conversationListeners.delete(userId);
+
+  if (USE_FIRESTORE) {
+    const { db } = getFirebase();
+    const col = fsCollection(db, DB_COLLECTIONS.CHATS);
+    const q = fsQuery(col, fsWhere('_userId', '==', userId));
+    const unsub = onSnapshot(q, (snap) => {
+      const items = snap.docs
+        .map((d) => d.data() as Conversation)
+        .sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
+      callback(items);
+    });
+    return () => {
+      unsub();
+      const listeners = conversationListeners.get(userId);
+      if (listeners) {
+        listeners.delete(callback);
+        if (listeners.size === 0) {
+          conversationListeners.delete(userId);
+        }
       }
-    }
-  };
+    };
+  } else {
+    getConversations(userId).then((conversations) => {
+      callback(conversations);
+    });
+    const interval = setInterval(async () => {
+      const conversations = await getConversations(userId);
+      callback(conversations);
+    }, 5000);
+    return () => {
+      clearInterval(interval);
+      const listeners = conversationListeners.get(userId);
+      if (listeners) {
+        listeners.delete(callback);
+        if (listeners.size === 0) {
+          conversationListeners.delete(userId);
+        }
+      }
+    };
+  }
 };
 
 // Notify listeners when data changes
@@ -338,13 +362,10 @@ const notifyConversationListeners = async (userId: string) => {
   }
 };
 
-// פונקציות נוספות
 export const deleteConversation = async (conversationId: string, userId: string): Promise<void> => {
   try {
-    // מחיקת השיחה מהמשתמש
     await DatabaseService.delete(DB_COLLECTIONS.CHATS, userId, conversationId);
 
-    // מחיקת כל ההודעות של השיחה מהמשתמש
     const messages = await getMessages(conversationId, userId);
     const messageIds = messages.map(msg => msg.id);
     await DatabaseService.batchDelete(DB_COLLECTIONS.MESSAGES, userId, messageIds);
@@ -359,11 +380,9 @@ export const deleteConversation = async (conversationId: string, userId: string)
 export const clearAllData = async (userId?: string): Promise<void> => {
   try {
     if (userId) {
-      // מחיקת כל הנתונים של משתמש ספציפי
       await DatabaseService.deleteUserData(userId);
       console.log('✅ All chat data cleared for user (Database):', userId);
     } else {
-      // מחיקת כל הנתונים
       await DatabaseService.clearAllData();
       console.log('✅ All chat data cleared (Database)');
     }
@@ -373,26 +392,18 @@ export const clearAllData = async (userId?: string): Promise<void> => {
   }
 };
 
-// יצירת נתונים לדוגמה - כרגע ריק
 export const createSampleData = async (): Promise<void> => {
   try {
     console.log('📊 Sample data creation disabled to prevent overwriting real conversations');
-    
-    // Disabled to prevent overwriting real conversations
-    // await createSampleChatData('char1');
-    
-    // console.log('✅ Sample chat data created successfully');
   } catch (error) {
     console.error('❌ Create sample data error:', error);
   }
 };
 
-// פונקציה ליצירת נתוני צ'אט לדוגמה
 export const createSampleChatData = async (userId: string): Promise<void> => {
   try {
     console.log('📊 Creating sample chat data for user:', userId);
     
-    // יצירת שיחות לדוגמה
     const sampleConversations: Conversation[] = [
       {
         id: 'conv_sample_1',
@@ -412,7 +423,6 @@ export const createSampleChatData = async (userId: string): Promise<void> => {
       },
     ];
 
-    // יצירת הודעות לדוגמה
     const sampleMessages: Message[] = [
       {
         id: 'msg_sample_1',
@@ -446,7 +456,6 @@ export const createSampleChatData = async (userId: string): Promise<void> => {
       },
     ];
 
-    // שמירת הנתונים למסד הנתונים
     for (const conversation of sampleConversations) {
       await db.createChat(userId, conversation.id, conversation);
     }

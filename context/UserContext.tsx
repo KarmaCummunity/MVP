@@ -68,7 +68,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       console.log('🔐 UserContext - checkAuthStatus - guestModeData:', guestModeData);
       
       if (guestModeData === 'true') {
-        // מצב אורח פעיל
         console.log('🔐 UserContext - checkAuthStatus - Setting guest mode');
         setIsGuestMode(true);
         setIsAuthenticated(true);
@@ -142,20 +141,17 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       console.log('🔐 UserContext - signOut - Starting sign out process');
       setIsLoading(true);
       
-      // מחיקת נתוני המשתמש מ-AsyncStorage
       console.log('🔐 UserContext - signOut - Removing current_user from AsyncStorage');
       await AsyncStorage.removeItem('current_user');
       
       console.log('🔐 UserContext - signOut - Removing guest_mode from AsyncStorage');
       await AsyncStorage.removeItem('guest_mode');
       
-      // בדיקה שהנתונים נמחקו בהצלחה
       const checkUser = await AsyncStorage.getItem('current_user');
       const checkGuest = await AsyncStorage.getItem('guest_mode');
       console.log('🔐 UserContext - signOut - After removal check - current_user:', checkUser ? 'still exists' : 'removed');
       console.log('🔐 UserContext - signOut - After removal check - guest_mode:', checkGuest ? 'still exists' : 'removed');
       
-      // איפוס מצב המשתמש
       console.log('🔐 UserContext - signOut - Setting user state to null');
       setSelectedUserState(null);
       
@@ -168,7 +164,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       console.log('🔐 UserContext - signOut - Sign out completed successfully');
     } catch (error) {
       console.error('🔐 UserContext - signOut - Error during sign out:', error);
-      // גם במקרה של שגיאה - מאפס את המצב
       setSelectedUserState(null);
       setIsAuthenticated(false);
       setIsGuestMode(false);
