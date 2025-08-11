@@ -40,6 +40,7 @@
     "waste": { "title": "פסולת", "subtitle": "מיחזור והפרדה", "description": "פרויקטי ניקיון, מיחזור והפרדת פסולת" },
     "art": { "title": "אמנות", "subtitle": "יצירה ושיתוף", "description": "יצירה אומנותית, סדנאות ושיתופי קהילה" },
     "sports": { "title": "ספורט", "subtitle": "אורח חיים פעיל", "description": "מפגשי ספורט ופעילות" },
-    "items": { "title": "פריטים", "subtitle": "חפצים", "description": "תרומות של פריטים" }
+    "items": { "title": "פריטים", "subtitle": "חפצים", "description": "תרומות של פריטים" },
+    "matchmaking": { "title": "שידוכים", "subtitle": "חיבור בין אנשים", "description": "סיוע וחיבור בין אנשים למציאת קשרים מתאימים" }
   }
 }

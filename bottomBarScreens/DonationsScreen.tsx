@@ -10,7 +10,9 @@ import {
   Image,
   Alert,
   Platform,
+  Dimensions,
 } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { NavigationProp, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -60,11 +62,15 @@ const BASE_CATEGORIES = [
   { id: 'dreams',     icon: 'star-outline',        color: colors.pink,    bgColor: colors.pinkLight,    screen: 'DreamsScreen' },
   { id: 'fertility',  icon: 'medkit-outline',      color: colors.error,   bgColor: colors.errorLight,   screen: 'FertilityScreen' },
   { id: 'jobs',       icon: 'briefcase-outline',   color: colors.info,    bgColor: colors.infoLight,    screen: 'JobsScreen' },
+  { id: 'matchmaking', icon: 'people-outline',     color: colors.pink,    bgColor: colors.pinkLight,    screen: 'MatchmakingScreen' },
 ] as const;
 
 type CategoryId = typeof BASE_CATEGORIES[number]['id'];
 
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
+  const tabBarHeight = useBottomTabBarHeight();
   const { isGuestMode } = useUser();
   const { t } = useTranslation(['donations','common']);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -193,33 +199,95 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
         </View>
       </View>
 
-      <ScrollView style={[styles.content, Platform.OS === 'web' ? ({ overflowY: 'auto' } as any) : null]} showsVerticalScrollIndicator={false} contentContainerStyle={Platform.OS === 'web' ? ({ minHeight: '100vh' } as any) : undefined}>
-        <View style={styles.categoriesSection}>
-          <Text style={styles.sectionTitle}>{t('donations:allWays')}</Text>
-          <View style={[styles.categoriesGrid, { flexDirection: 'row' }]}>
-            {otherCategories.map((category) => {
-              const { title, subtitle } = getCategoryText(category.id);
+      {Platform.OS === 'web' ? (
+        <View style={styles.webScrollContainer}>
+          <View 
+            style={[styles.webScrollContent, { paddingBottom: tabBarHeight + LAYOUT_CONSTANTS.SPACING.XL * 2 }] }
+            onLayout={(e) => {
+              const h = e.nativeEvent.layout.height;
+              console.log('🧭 DonationsScreen[WEB] content layout height:', h, 'window:', SCREEN_HEIGHT);
+            }}
+          >
+            <View style={styles.categoriesSection}>
+              <Text style={styles.sectionTitle}>{t('donations:allWays')}</Text>
+              <View style={[styles.categoriesGrid, { flexDirection: 'row' }]}>
+                {otherCategories.map((category) => {
+                  const { title, subtitle } = getCategoryText(category.id);
+                  return (
+                    <TouchableOpacity
+                      key={category.id}
+                      style={[
+                        styles.categoryCard,
+                        { backgroundColor: category.bgColor, width: allCardWidth },
+                      ]}
+                      onPress={() => handleCategoryPress(category)}
+                    >
+                      <View style={[styles.categoryIcon, { backgroundColor: category.color, width: categoryIconOuter, height: categoryIconOuter, borderRadius: categoryIconOuter / 2 }] }>
+                        <Ionicons name={category.icon as any} size={categoryIconSize} color="white" />
+                      </View>
+                      <Text style={styles.categoryTitle}>{title}</Text>
+                      <Text style={styles.categorySubtitle}>{subtitle}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Stats Section */}
+            {(() => {
+              const now = Date.now();
+              const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+              const weeklyDonations = donations.filter((d: any) => {
+                const t = new Date(d.createdAt || Date.now()).getTime();
+                return t >= weekAgo;
+              }).length;
+              const activeDonors = new Set(donations.map((d: any) => d.createdBy).filter(Boolean)).size;
+              const activeCharities = charities.length;
               return (
-                <TouchableOpacity
-                  key={category.id}
-                  style={[
-                    styles.categoryCard,
-                    { backgroundColor: category.bgColor, width: allCardWidth },
+                <DonationStatsFooter
+                  stats={[
+                    { label: t('donations:activeDonors'), value: activeDonors, icon: 'people-outline' },
+                    { label: t('donations:weeklyDonations'), value: weeklyDonations, icon: 'heart-outline' },
+                    { label: t('donations:activeCharities'), value: activeCharities, icon: 'business-outline' },
                   ]}
-                  onPress={() => handleCategoryPress(category)}
-                >
-                  <View style={[styles.categoryIcon, { backgroundColor: category.color, width: categoryIconOuter, height: categoryIconOuter, borderRadius: categoryIconOuter / 2 }]}>
-                    <Ionicons name={category.icon as any} size={categoryIconSize} color="white" />
-                  </View>
-                  <Text style={styles.categoryTitle}>{title}</Text>
-                  <Text style={styles.categorySubtitle}>{subtitle}</Text>
-                </TouchableOpacity>
+                />
               );
-            })}
+            })()}
           </View>
         </View>
+      ) : (
+        <ScrollView
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: tabBarHeight + LAYOUT_CONSTANTS.SPACING.XL * 2 }}
+        >
+          <View style={styles.categoriesSection}>
+            <Text style={styles.sectionTitle}>{t('donations:allWays')}</Text>
+            <View style={[styles.categoriesGrid, { flexDirection: 'row' }]}>
+              {otherCategories.map((category) => {
+                const { title, subtitle } = getCategoryText(category.id);
+                return (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={[
+                      styles.categoryCard,
+                      { backgroundColor: category.bgColor, width: allCardWidth },
+                    ]}
+                    onPress={() => handleCategoryPress(category)}
+                  >
+                    <View style={[styles.categoryIcon, { backgroundColor: category.color, width: categoryIconOuter, height: categoryIconOuter, borderRadius: categoryIconOuter / 2 }] }>
+                      <Ionicons name={category.icon as any} size={categoryIconSize} color="white" />
+                    </View>
+                    <Text style={styles.categoryTitle}>{title}</Text>
+                    <Text style={styles.categorySubtitle}>{subtitle}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
 
-        {/* Stats Section */}
+          {/* Stats Section */}
           {(() => {
             const now = Date.now();
             const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
@@ -239,7 +307,8 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
               />
             );
           })()}
-      </ScrollView>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 };
@@ -248,6 +317,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundPrimary,
+  },
+  // Web-specific scroll wrappers
+  webScrollContainer: {
+    flex: 1,
+    ...(Platform.OS === 'web' && { 
+      overflow: 'auto' as any,
+      WebkitOverflowScrolling: 'touch' as any,
+      overscrollBehavior: 'contain' as any,
+      height: SCREEN_HEIGHT as any,
+      maxHeight: SCREEN_HEIGHT as any,
+      width: '100%' as any,
+      touchAction: 'auto' as any,
+    }),
+  } as any,
+  webScrollContent: {
+    minHeight: SCREEN_HEIGHT * 1.2,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
+    paddingTop: LAYOUT_CONSTANTS.SPACING.LG,
   },
   header: {
     backgroundColor: colors.backgroundPrimary,

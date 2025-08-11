@@ -13,6 +13,7 @@ import {
   TouchableWithoutFeedback,
   Platform,
 } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { TabView, TabBar, SceneMap } from 'react-native-tab-view';
 import type { SceneRendererProps, NavigationState } from 'react-native-tab-view';
@@ -89,7 +90,10 @@ const TaggedRoute = () => {
 };
 
 // --- Main Component ---
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 export default function ProfileScreen() {
+  const tabBarHeight = useBottomTabBarHeight();
   const { t } = useTranslation(['profile', 'common']);
   const { selectedUser, setSelectedUser } = useUser();
   const navigation = useNavigation();
@@ -251,11 +255,304 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {Platform.OS === 'web' ? (
+        <View style={styles.webScrollContainer}>
+          <View 
+            style={[styles.webScrollContent, { paddingBottom: tabBarHeight + scaleSize(24) }]}
+            onLayout={(e) => {
+              const h = e.nativeEvent.layout.height;
+              console.log('🧭 ProfileScreen[WEB] content layout height:', h, 'window:', SCREEN_HEIGHT);
+            }}
+          >
+        {/* Profile Info with Menu Icon */}
+        <View style={styles.profileInfo}>
+            <TouchableOpacity 
+              style={styles.menuIcon}
+              onPress={() => setShowMenu(!showMenu)}
+            >
+              <Ionicons name="menu" size={scaleSize(24)} color={colors.textPrimary} />
+            </TouchableOpacity>
+          <View style={styles.profileSection}>
+            <Image
+              source={{ uri: selectedUser?.avatar || currentUser.avatar }}
+              style={styles.profilePicture}
+            />
+          </View>
+          
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{userStats.posts}</Text>
+              <Text style={styles.statLabel}>{t('profile:stats.posts')}</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.statItem}
+              onPress={() => {
+                (navigation as any).navigate('FollowersScreen', {
+                  userId: selectedUser?.id || currentUser.id,
+                  type: 'followers',
+                  title: t('profile:followersTitle')
+                });
+              }}
+            >
+              <Text style={styles.statNumber}>{userStats.followers}</Text>
+              <Text style={styles.statLabel}>{t('profile:stats.followers')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.statItem}
+              onPress={() => {
+                (navigation as any).navigate('FollowersScreen', {
+                  userId: selectedUser?.id || currentUser.id,
+                  type: 'following',
+                  title: t('profile:followingTitle')
+                });
+              }}
+            >
+              <Text style={styles.statNumber}>{userStats.following}</Text>
+              <Text style={styles.statLabel}>{t('profile:stats.following')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Menu Modal with Backdrop */}
+        {showMenu && (
+          <TouchableWithoutFeedback onPress={() => setShowMenu(false)}>
+            <View style={styles.menuBackdrop}>
+              <TouchableWithoutFeedback onPress={() => {}}>
+                <View style={styles.menuOverlay}>
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setShowMenu(false);
+                      navigation.navigate('BookmarksScreen' as never);
+                    }}
+                  >
+              <Ionicons name="bookmark-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>{t('profile:menu.bookmarks')}</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setShowMenu(false);
+              
+                    }}
+                  >
+                      <Ionicons name="analytics-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>{t('profile:menu.communityStats')}</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setShowMenu(false);
+                      Alert.alert(t('profile:alerts.shareProfile'), t('profile:alerts.shareProfileDesc'));
+                    }}
+                  >
+                      <Ionicons name="share-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>{t('profile:menu.shareProfile')}</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setShowMenu(false);
+                      Alert.alert(t('profile:alerts.editProfile'), t('profile:alerts.editProfileDesc'));
+                    }}
+                  >
+                      <Ionicons name="create-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>{t('profile:menu.editProfile')}</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setShowMenu(false);
+                      Alert.alert(t('profile:alerts.settings'), t('profile:alerts.openSettings'));
+                    }}
+                  >
+                      <Ionicons name="settings-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>{t('profile:menu.settings')}</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setShowMenu(false);
+                      Alert.alert(t('profile:alerts.help'), t('profile:alerts.openHelp'));
+                    }}
+                  >
+                      <Ionicons name="help-circle-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>{t('profile:menu.help')}</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setShowMenu(false);
+                      navigation.navigate('LoginScreen' as never);
+                    }}
+                  >
+                      <Ionicons name="log-in-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>{t('profile:menu.login')}</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={selectRandomUser}
+                  >
+                      <Ionicons name="shuffle-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>{t('profile:menu.switchUser')}</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={handleCreateSampleData}
+                  >
+                      <Ionicons name="add-circle-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Text style={styles.menuItemText}>{t('profile:menu.createSampleData')}</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        )}
+
+        {/* Bio Section */}
+        <View style={styles.bioSection}>
+          <Text style={styles.fullName}>{selectedUser?.name || currentUser.name}</Text>
+          <Text style={styles.bioText}>{selectedUser?.bio || currentUser.bio}</Text>
+          <Text style={styles.locationText}>
+            <Ionicons name="location-outline" size={scaleSize(14)} color={colors.textSecondary} />
+            {' '}{typeof selectedUser?.location === 'string' ? selectedUser.location : selectedUser?.location?.city || currentUser.location}
+          </Text>
+          
+          {/* Karma Points */}
+          <View style={styles.karmaSection}>
+            <View style={styles.karmaCard}>
+              <Ionicons name="star" size={scaleSize(20)} color={colors.warning} />
+              <Text style={styles.karmaText}>{selectedUser?.karmaPoints || userStats.karmaPoints} {t('profile:stats.karmaPointsSuffix')}</Text>
+            </View>
+          </View>
+
+          {/* Activity Icons */}
+          <View style={styles.activityIcons}>
+            <TouchableOpacity 
+              style={styles.activityIconItem}
+              onPress={() => Alert.alert(t('profile:alerts.activity'), t('profile:alerts.viewActivity'))}
+            >
+              <Ionicons name="star-outline" size={scaleSize(24)} color={colors.pink} />
+              <Text style={styles.activityIconText}>{t('profile:activity')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.activityIconItem}
+              onPress={() => Alert.alert(t('profile:alerts.history'), t('profile:alerts.activityHistory'))}
+            >
+              <MaterialCommunityIcons name="history" size={scaleSize(24)} color={colors.pink} />
+              <Text style={styles.activityIconText}>{t('profile:history')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.activityIconItem}
+              onPress={() => Alert.alert(t('profile:alerts.favorites'), t('profile:alerts.yourFavorites'))}
+            >
+              <Ionicons name="heart-outline" size={scaleSize(24)} color={colors.pink} />
+              <Text style={styles.activityIconText}>{t('profile:favorites')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionButtonsContainer}>
+          <TouchableOpacity 
+            style={styles.discoverPeopleButton}
+            onPress={() => {
+              navigation.navigate('DiscoverPeopleScreen' as never);
+            }}
+          >
+              <Ionicons name="person-add-outline" size={scaleSize(18)} color={colors.white} />
+            <Text style={styles.discoverPeopleText}>{t('profile:discoverPeople')}</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.notificationsButton}
+            onPress={() => {
+              navigation.navigate('NotificationsScreen' as never);
+            }}
+          >
+              <Ionicons name="notifications-outline" size={scaleSize(18)} color={colors.white} />
+            <Text style={styles.notificationsButtonText}>{t('profile:notifications')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Recent Activities */}
+        <View style={styles.activitiesSection}>
+          <Text style={styles.sectionTitle}>{t('profile:sections.recentActivity')}</Text>
+          {recentActivities.map((activity) => (
+            <TouchableOpacity
+              key={activity.id}
+              style={styles.activityItem}
+              onPress={() => Alert.alert(activity.title, activity.time)}
+            >
+              <View style={[styles.activityIcon, { backgroundColor: activity.color + '20' }]}>
+                <Ionicons name={activity.icon as any} size={16} color={activity.color} />
+              </View>
+              <View style={styles.activityContent}>
+                <Text style={styles.activityTitle}>{activity.title}</Text>
+                <Text style={styles.activityTime}>{activity.time}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Story Highlights */}
+        <View style={styles.highlightsSection}>
+          <Text style={styles.sectionTitle}>{t('profile:sections.highlights')}</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.storyHighlightsContentContainer}
+          >
+            {Array.from({ length: 8 }).map((_, i) => (
+              <TouchableOpacity 
+                key={i} 
+                style={styles.storyHighlightItem}
+                onPress={() => Alert.alert(t('profile:alerts.highlight'), t('profile:highlights.highlightIndex', { index: (i + 1).toString() }))}
+              >
+                <View style={styles.storyHighlightCircle}>
+                  {i === 0 ? (
+                     <Ionicons name="add" size={scaleSize(24)} color={colors.pink} />
+                  ) : (
+                    <Image
+                      source={{ uri: `https://picsum.photos/60/60?random=${i + 10}` }}
+                      style={styles.highlightImage}
+                    />
+                  )}
+                </View>
+                <Text style={styles.storyHighlightText}>
+                  {i === 0 ? t('profile:highlights.new') : t('profile:highlights.highlightIndex', { index: i })}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Tab View Container */}
+        <View style={styles.tabViewContainer}>
+          <TabView
+            navigationState={{ index, routes }}
+            renderScene={renderScene}
+            onIndexChange={setIndex}
+            initialLayout={{ width: Dimensions.get('window').width }}
+            renderTabBar={renderTabBar}
+          />
+        </View>
+          </View>
+        </View>
+      ) : (
       <ScrollView 
-        style={[styles.mainScrollView, Platform.OS === 'web' ? ({ overflowY: 'auto' } as any) : null]
-        }
+        style={styles.mainScrollView}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.mainScrollContent, Platform.OS === 'web' ? ({ minHeight: '100vh' } as any) : null]}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[styles.mainScrollContent, { paddingBottom: tabBarHeight + scaleSize(24) }]}
       >
         {/* Profile Info with Menu Icon */}
         <View style={styles.profileInfo}>
@@ -539,6 +836,7 @@ export default function ProfileScreen() {
           />
         </View>
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -550,6 +848,22 @@ const styles = StyleSheet.create({
   },
   mainScrollView: {
     flex: 1,
+  },
+  // Web-specific scroll wrappers
+  webScrollContainer: {
+    flex: 1,
+    ...(Platform.OS === 'web' && {
+      overflow: 'auto' as any,
+      WebkitOverflowScrolling: 'touch' as any,
+      overscrollBehavior: 'contain' as any,
+      height: SCREEN_HEIGHT as any,
+      maxHeight: SCREEN_HEIGHT as any,
+      width: '100%' as any,
+      touchAction: 'auto' as any,
+    }),
+  } as any,
+  webScrollContent: {
+    minHeight: SCREEN_HEIGHT * 1.2,
   },
   mainScrollContent: {
     paddingBottom: 20,

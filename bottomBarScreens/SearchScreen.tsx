@@ -10,6 +10,7 @@ import {
   Alert,
   SafeAreaView
 } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import SearchBar from '../components/SearchBar';
 import colors from '../globals/colors';
@@ -40,6 +41,7 @@ interface SearchResult {
 }
 
 const SearchScreen = () => {
+  const tabBarHeight = useBottomTabBarHeight();
   const { isGuestMode } = useUser();
   const { t } = useTranslation(['search','common']);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -274,7 +276,12 @@ const SearchScreen = () => {
         </ScrollView>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: tabBarHeight + LAYOUT_CONSTANTS.SPACING.XL }}
+      >
         {/* Guest Mode Notice */}
         {/* הוסר באנר אורח המקומי – מופיע כעת גלובלית בכל האפליקציה */}
         

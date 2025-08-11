@@ -74,6 +74,7 @@ export type DonationsStackParamList = {
   DreamsScreen: undefined;
   FertilityScreen: undefined;
   JobsScreen: undefined;
+  MatchmakingScreen: undefined;
 };
 
 export type SettingItemType = "navigate" | "toggle" | "button" | "value";

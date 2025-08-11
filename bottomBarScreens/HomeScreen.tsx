@@ -29,6 +29,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/native";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import colors from "../globals/colors";
 import { FontSizes, LAYOUT_CONSTANTS } from "../globals/constants";
@@ -125,6 +126,7 @@ const FloatingBubble: React.FC<FloatingBubbleProps> = ({ icon, value, label, bub
 };
 
 export default function HomeScreen() {
+  const tabBarHeight = useBottomTabBarHeight();
   const isFocused = useIsFocused();
   const navigation = useNavigation();
   const { selectedUser, setSelectedUser, isGuestMode, resetHomeScreenTrigger } = useUser();
@@ -225,7 +227,7 @@ export default function HomeScreen() {
   const { t } = useTranslation(['home','common']);
 
   return (
-    <SafeAreaView style={[styles.container, Platform.OS === 'web' ? ({ height: '100vh' } as any) : null]}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundPrimary} />
       
        {showPosts ? (
@@ -239,46 +241,90 @@ export default function HomeScreen() {
           />
       ) : (
         // Home screen with enhanced scrolling
-        <View style={[styles.homeContainer, Platform.OS === 'web' ? ({ height: '100%' } as any) : null]}>
-          <ScrollView 
-            style={[styles.scrollContainer, Platform.OS === 'web' ? ({ overflowY: 'auto', height: '100%' } as any) : null]}
-            onScroll={handleScroll}
-            scrollEventThrottle={50}
-            nestedScrollEnabled
-            showsVerticalScrollIndicator
-            contentContainerStyle={[styles.scrollContent, Platform.OS === 'web' ? ({ flexGrow: 1 } as any) : null]}
-          >
-            {/* Header */}
-            {isGuestMode ? (
+        <View style={styles.homeContainer}>
+          {Platform.OS === 'web' ? (
+            <View style={styles.webScrollContainer}>
+              <View 
+                style={[styles.webScrollContent, { paddingBottom: tabBarHeight + scaleSize(24) }]}
+                onLayout={(e) => {
+                  const h = e.nativeEvent.layout.height;
+                  console.log('🧭 HomeScreen[WEB] content layout height:', h, 'window:', SCREEN_HEIGHT);
+                }}
+              > 
+                {/* Header */}
+                {isGuestMode ? (
                   <GuestModeNotice />
-            ) : (
-              <View style={styles.header}>
-                <View style={styles.headerContent}>
-                  <View style={styles.userInfo}>
-                    <Image 
-                      source={{ uri: selectedUser?.avatar || currentUser.avatar }} 
-                      style={styles.userAvatar}
-                    />
-                    <View style={styles.userDetails}>
-                      <Text style={styles.welcomeText}>{`${t('home:welcome')}, ${selectedUser?.name || currentUser.name}!`}</Text>
+                ) : (
+                  <View style={styles.header}>
+                    <View style={styles.headerContent}>
+                      <View style={styles.userInfo}>
+                        <Image 
+                          source={{ uri: selectedUser?.avatar || currentUser.avatar }} 
+                          style={styles.userAvatar}
+                        />
+                        <View style={styles.userDetails}>
+                          <Text style={styles.welcomeText}>{`${t('home:welcome')}, ${selectedUser?.name || currentUser.name}!`}</Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity 
+                        style={styles.notificationButton}
+                        onPress={() => Alert.alert(t('common:notifications'), t('common:notificationsList'))}
+                      >
+                        <Ionicons name="notifications-outline" size={scaleSize(24)} color={colors.textPrimary} />
+                        <View style={styles.notificationBadge}>
+                          <Text style={styles.notificationText}>3</Text>
+                        </View>
+                      </TouchableOpacity>
                     </View>
                   </View>
-                  <TouchableOpacity 
-                    style={styles.notificationButton}
-                    onPress={() => Alert.alert(t('common:notifications'), t('common:notificationsList'))}
-                  >
-                    <Ionicons name="notifications-outline" size={scaleSize(24)} color={colors.textPrimary} />
-                    <View style={styles.notificationBadge}>
-                      <Text style={styles.notificationText}>3</Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
+                )}
 
-            {/* Community Stats Grid - press to open details */}
-            <CommunityStatsGrid onSelect={handleSelectStat} />
-          </ScrollView>
+                {/* Community Stats Grid - press to open details */}
+                <CommunityStatsGrid onSelect={handleSelectStat} />
+              </View>
+            </View>
+          ) : (
+            <ScrollView 
+              style={styles.scrollContainer}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight + scaleSize(24) }]}
+            >
+              {/* Header */}
+              {isGuestMode ? (
+                    <GuestModeNotice />
+              ) : (
+                <View style={styles.header}>
+                  <View style={styles.headerContent}>
+                    <View style={styles.userInfo}>
+                      <Image 
+                        source={{ uri: selectedUser?.avatar || currentUser.avatar }} 
+                        style={styles.userAvatar}
+                      />
+                      <View style={styles.userDetails}>
+                        <Text style={styles.welcomeText}>{`${t('home:welcome')}, ${selectedUser?.name || currentUser.name}!`}</Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity 
+                      style={styles.notificationButton}
+                      onPress={() => Alert.alert(t('common:notifications'), t('common:notificationsList'))}
+                    >
+                      <Ionicons name="notifications-outline" size={scaleSize(24)} color={colors.textPrimary} />
+                      <View style={styles.notificationBadge}>
+                        <Text style={styles.notificationText}>3</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+
+              {/* Community Stats Grid - press to open details */}
+              <CommunityStatsGrid onSelect={handleSelectStat} />
+            </ScrollView>
+          )}
           {/* Details modal */}
           <StatDetailsModal 
             visible={isStatModalVisible} 
@@ -590,7 +636,23 @@ const styles = StyleSheet.create({
   },
   // Scroll content style
   scrollContent: {
-    paddingBottom: scaleSize(100), // Bottom margin to enable scrolling
+    paddingBottom: scaleSize(100),
+  },
+  // Web-specific scroll wrappers
+  webScrollContainer: {
+    flex: 1,
+    ...(Platform.OS === 'web' && { 
+      overflow: 'auto' as any,
+      WebkitOverflowScrolling: 'touch' as any,
+      overscrollBehavior: 'contain' as any,
+      height: SCREEN_HEIGHT as any,
+      maxHeight: SCREEN_HEIGHT as any,
+      width: '100%' as any,
+      touchAction: 'auto' as any,
+    }),
+  } as any,
+  webScrollContent: {
+    minHeight: SCREEN_HEIGHT * 1.2,
   },
   // Personal statistics styles
   personalStatsContainer: {

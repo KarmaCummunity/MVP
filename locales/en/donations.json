@@ -40,6 +40,7 @@
     "waste": { "title": "Waste", "subtitle": "Recycle and separation", "description": "Cleanup, recycling and separation projects" },
     "art": { "title": "Art", "subtitle": "Creation and sharing", "description": "Artistic creation, workshops and community sharing" },
     "sports": { "title": "Sports", "subtitle": "Active lifestyle", "description": "Sports meetups and activities" },
-    "items": { "title": "Items", "subtitle": "Goods", "description": "Items donations" }
+    "items": { "title": "Items", "subtitle": "Goods", "description": "Items donations" },
+    "matchmaking": { "title": "Matchmaking", "subtitle": "Connecting people", "description": "Helping connect people to find suitable relationships" }
   }
 }

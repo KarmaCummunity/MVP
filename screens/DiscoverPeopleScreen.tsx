@@ -8,6 +8,8 @@ import {
   Image,
   TouchableOpacity,
   Alert,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect, NavigationProp, ParamListBase } from '@react-navigation/native';
@@ -23,8 +25,17 @@ import {
 } from '../utils/followService';
 import { useUser } from '../context/UserContext';
 
+// לא בכל ניווט המסך הזה בתוך Bottom Tab, לכן לא נשתמש ב-useBottomTabBarHeight כאן
+import { getScreenInfo, isLandscape } from '../globals/responsive';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 export default function DiscoverPeopleScreen() {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const { isTablet, isDesktop } = getScreenInfo();
+  const landscape = isLandscape();
+  const estimatedTabBarHeight = landscape ? 40 : (isDesktop ? 56 : isTablet ? 54 : 46);
+  const bottomPadding = (Platform.OS === 'web' ? estimatedTabBarHeight : 0) + 24;
   const { selectedUser } = useUser();
   const [suggestions, setSuggestions] = useState<CharacterType[]>([]);
   const [popularUsers, setPopularUsers] = useState<CharacterType[]>([]);
@@ -241,17 +252,39 @@ export default function DiscoverPeopleScreen() {
       {/* Tab Bar */}
       {renderTabBar()}
 
-      {/* Users List */}
-      <FlatList
-        data={currentData}
-        renderItem={renderUserItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={renderEmptyState}
-        refreshing={loading}
-        onRefresh={loadUsers}
-      />
+      {Platform.OS === 'web' ? (
+        <View style={styles.webScrollContainer}>
+          <View style={[styles.webScrollContent, { paddingBottom: bottomPadding }]}
+            onLayout={(e) => {
+              const h = e.nativeEvent.layout.height;
+              console.log('🧭 DiscoverPeopleScreen[WEB] content layout height:', h, 'window:', SCREEN_HEIGHT);
+            }}
+          >
+            <FlatList
+              data={currentData}
+              renderItem={renderUserItem}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={[styles.listContainer, { paddingBottom: bottomPadding }]}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={renderEmptyState}
+              refreshing={loading}
+              onRefresh={loadUsers}
+              scrollEnabled={false}
+            />
+          </View>
+        </View>
+      ) : (
+        <FlatList
+          data={currentData}
+          renderItem={renderUserItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[styles.listContainer, { paddingBottom: bottomPadding }]}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={renderEmptyState}
+          refreshing={loading}
+          onRefresh={loadUsers}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -260,6 +293,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundPrimary,
+  },
+  // Web-specific scroll wrappers
+  webScrollContainer: {
+    flex: 1,
+    ...(Platform.OS === 'web' && {
+      overflow: 'auto' as any,
+      WebkitOverflowScrolling: 'touch' as any,
+      overscrollBehavior: 'contain' as any,
+      height: SCREEN_HEIGHT as any,
+      maxHeight: SCREEN_HEIGHT as any,
+      width: '100%' as any,
+      touchAction: 'auto' as any,
+    }),
+  } as any,
+  webScrollContent: {
+    minHeight: SCREEN_HEIGHT * 1.2,
   },
   header: {
     flexDirection: 'row',
