@@ -25,9 +25,10 @@ FROM nginx:1.25-alpine as web
 
 # Copy nginx config template and entrypoint to inject runtime BACKEND_BASE_URL
 ENV BACKEND_BASE_URL="http://localhost:3001"
+ENV NGINX_PORT=8080
 COPY ./web/nginx.conf /etc/nginx/templates/default.conf.template
-RUN printf '#!/bin/sh\nset -e\n: "${BACKEND_BASE_URL:=http://localhost:3001}"\n\
-  envsubst '\''$BACKEND_BASE_URL'\'' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf\n\
+RUN printf '#!/bin/sh\nset -e\n: "${BACKEND_BASE_URL:=http://localhost:3001}"\n: "${PORT:=8080}"\nexport NGINX_PORT="$PORT"\n\
+  envsubst '\''$BACKEND_BASE_URL $NGINX_PORT'\'' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf\n\
   exec nginx -g "daemon off;"\n' > /docker-entrypoint.sh \
   && chmod +x /docker-entrypoint.sh
 
@@ -35,7 +36,7 @@ RUN printf '#!/bin/sh\nset -e\n: "${BACKEND_BASE_URL:=http://localhost:3001}"\n\
 COPY --from=webbuild /app/dist /usr/share/nginx/html
 
 LABEL Name="kc-web" Version="1.4.0"
-EXPOSE 80
+EXPOSE 8080
 CMD ["/docker-entrypoint.sh"]
 
 
