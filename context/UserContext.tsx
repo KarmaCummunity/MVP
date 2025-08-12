@@ -2,6 +2,9 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import { db } from '../utils/databaseService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Auth mode of the current session
+export type AuthMode = 'guest' | 'demo' | 'real';
+
 interface User {
   id: string;
   name: string;
@@ -29,11 +32,13 @@ interface User {
 interface UserContextType {
   selectedUser: User | null;
   setSelectedUser: (user: User | null) => Promise<void>;
+  setSelectedUserWithMode: (user: User | null, mode: AuthMode) => Promise<void>;
   isUserSelected: boolean;
   isLoading: boolean;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
   isGuestMode: boolean;
+  isRealAuth: boolean;
   setGuestMode: () => Promise<void>;
   setDemoUser: () => Promise<void>;
   resetHomeScreen: () => void;
@@ -51,6 +56,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isGuestMode, setIsGuestMode] = useState(false);
+  const [authMode, setAuthMode] = useState<AuthMode>('guest');
   const [resetHomeScreenTrigger, setResetHomeScreenTrigger] = useState(0);
 
   // Check authentication status on app start
@@ -67,6 +73,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       // Check AsyncStorage for stored user and guest mode
       const storedUserData = await AsyncStorage.getItem('current_user');
       const guestModeData = await AsyncStorage.getItem('guest_mode');
+      const storedAuthMode = (await AsyncStorage.getItem('auth_mode')) as AuthMode | null;
       
       console.log('🔐 UserContext - checkAuthStatus - storedUserData:', storedUserData ? 'exists' : 'null');
       console.log('🔐 UserContext - checkAuthStatus - guestModeData:', guestModeData);
@@ -76,6 +83,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         setIsGuestMode(true);
         setIsAuthenticated(true);
         setSelectedUserState(null);
+        setAuthMode('guest');
       } else if (storedUserData) {
         try {
           const user = JSON.parse(storedUserData);
@@ -87,57 +95,79 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
             setSelectedUserState(enriched);
             setIsAuthenticated(true);
             setIsGuestMode(false);
+            setAuthMode(storedAuthMode || 'real');
           } else {
             console.log('🔐 UserContext - checkAuthStatus - Invalid user data, removing');
             await AsyncStorage.removeItem('current_user');
             setIsAuthenticated(false);
             setIsGuestMode(false);
+            setAuthMode('guest');
           }
         } catch (parseError) {
           console.log('🔐 UserContext - checkAuthStatus - Parse error, removing user data');
           await AsyncStorage.removeItem('current_user');
           setIsAuthenticated(false);
           setIsGuestMode(false);
+          setAuthMode('guest');
         }
       } else {
         console.log('🔐 UserContext - checkAuthStatus - No stored data, setting unauthenticated');
         setIsAuthenticated(false);
         setIsGuestMode(false);
+        setAuthMode('guest');
       }
     } catch (error) {
       console.error('🔐 UserContext - checkAuthStatus - Error:', error);
       setIsAuthenticated(false);
       setIsGuestMode(false);
+      setAuthMode('guest');
     } finally {
       console.log('🔐 UserContext - checkAuthStatus - Auth check completed');
       setIsLoading(false);
     }
   };
 
-  const setSelectedUser = async (user: User | null) => {
+  const setSelectedUserWithMode = async (user: User | null, mode: AuthMode) => {
     try {
-      console.log('🔐 UserContext - setSelectedUser:', user?.name || 'null');
+      console.log('🔐 UserContext - setSelectedUserWithMode:', { user: user?.name || 'null', mode });
       if (user) {
         // Enrich user with org roles if applicable
         const enriched = await enrichUserWithOrgRoles(user);
+        if (mode === 'real') {
+          // On real auth, clear only local collections to preserve app prefs
+          try {
+            const { DatabaseService } = await import('../utils/databaseService');
+            await DatabaseService.clearLocalCollections();
+          } catch (e) {
+            console.log('⚠️ Failed to clear local collections on real auth (non-fatal):', e);
+          }
+        }
         await AsyncStorage.setItem('current_user', JSON.stringify(enriched));
+        await AsyncStorage.setItem('auth_mode', mode);
         await AsyncStorage.removeItem('guest_mode');
         setSelectedUserState(enriched);
         setIsAuthenticated(true);
-        setIsGuestMode(false);
+        setIsGuestMode(mode === 'guest');
+        setAuthMode(mode);
       } else {
         await AsyncStorage.removeItem('current_user');
+        await AsyncStorage.removeItem('auth_mode');
         setSelectedUserState(null);
         setIsAuthenticated(false);
         setIsGuestMode(false);
+        setAuthMode('guest');
       }
     } catch (error) {
       console.error('Error saving user to storage:', error);
       setSelectedUserState(user);
       setIsAuthenticated(user !== null);
       setIsGuestMode(false);
+      setAuthMode(user ? 'real' : 'guest');
     }
   };
+
+  // Backward compatible API
+  const setSelectedUser = async (user: User | null) => setSelectedUserWithMode(user, user ? 'real' as const : 'guest');
 
   /**
    * Enriches a user object with organization roles if there is an approved org application
@@ -210,14 +240,17 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       console.log('🔐 UserContext - setGuestMode');
       await AsyncStorage.removeItem('current_user');
       await AsyncStorage.setItem('guest_mode', 'true');
+      await AsyncStorage.setItem('auth_mode', 'guest');
       setSelectedUserState(null);
       setIsAuthenticated(true);
       setIsGuestMode(true);
+      setAuthMode('guest');
     } catch (error) {
       console.error('Error setting guest mode:', error);
       setSelectedUserState(null);
       setIsAuthenticated(true);
       setIsGuestMode(true);
+      setAuthMode('guest');
     }
   };
 
@@ -250,7 +283,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         settings: demoCharacter.preferences,
       };
       
-      await setSelectedUser(demoUser);
+      await setSelectedUserWithMode(demoUser, 'demo');
       console.log('Demo user set successfully', { userId: demoUser.id });
     }
   };
@@ -263,11 +296,13 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const value: UserContextType = {
     selectedUser,
     setSelectedUser,
+    setSelectedUserWithMode,
     isUserSelected: selectedUser !== null,
     isLoading,
     signOut,
     isAuthenticated,
     isGuestMode,
+    isRealAuth: authMode === 'real',
     setGuestMode,
     setDemoUser,
     resetHomeScreen,

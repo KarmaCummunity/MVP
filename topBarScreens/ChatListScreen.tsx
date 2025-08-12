@@ -28,7 +28,7 @@ const DEMO_CONVERSATIONS: ChatConversation[] = [
 
 export default function ChatListScreen() {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const { selectedUser } = useUser();
+  const { selectedUser, isRealAuth } = useUser();
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,8 +43,8 @@ export default function ChatListScreen() {
     setRefreshing(true);
     try {
       const realConversations = await getConversations(selectedUser.id);
-      const demoForUser = DEMO_CONVERSATIONS.map(c => ({ ...c, participants: [selectedUser.id, c.participants[1]] }));
-      setConversations([...demoForUser, ...realConversations]);
+      const demoForUser = isRealAuth ? [] : DEMO_CONVERSATIONS.map(c => ({ ...c, participants: [selectedUser.id, c.participants[1]] }));
+      setConversations([...(demoForUser as any), ...realConversations]);
     } catch (error) {
       console.error('❌ Load conversations error:', error);
       Alert.alert(t('common:errorTitle'), t('chat:loadConversationsError'));
@@ -58,20 +58,20 @@ export default function ChatListScreen() {
     useCallback(() => {
       loadConversations();
       if (!selectedUser) return;
-      const unsubscribe = subscribeToConversations(selectedUser.id, updated => {
+       const unsubscribe = subscribeToConversations(selectedUser.id, updated => {
         setConversations(prev => {
-          const prevReal = prev.filter(c => !c.id.startsWith('dummy_'));
-          const demoForUser = DEMO_CONVERSATIONS.map(c => ({ ...c, participants: [selectedUser.id, c.participants[1]] }));
+           const prevReal = prev.filter(c => !c.id.startsWith('dummy_'));
+           const demoForUser = isRealAuth ? [] : DEMO_CONVERSATIONS.map(c => ({ ...c, participants: [selectedUser.id, c.participants[1]] }));
           const updatedIds = new Set(updated.map(c => c.id));
           const merged = [
-            ...demoForUser,
+            ...(demoForUser as any),
             ...prevReal.filter(c => !updatedIds.has(c.id)),
             ...updated,
           ];
           return merged;
         });
       });
-      return () => unsubscribe();
+       return () => unsubscribe();
     }, [selectedUser, loadConversations])
   );
 
@@ -88,7 +88,7 @@ export default function ChatListScreen() {
       lastSeen: u.lastActive || new Date().toISOString(),
       status: u.bio || '',
     }));
-    return [...allUsers, ...DEMO_USERS, ...mappedCharacterUsers];
+    return isRealAuth ? mappedCharacterUsers : [...allUsers, ...DEMO_USERS, ...mappedCharacterUsers];
   }, []);
 
   const filteredSortedConversations = useMemo(() => {
@@ -140,10 +140,10 @@ export default function ChatListScreen() {
           let chattingUser = combinedUsers.find(u => u.id === otherId);
           if (!chattingUser) {
             // Fallback user if not present in any static dataset
-            chattingUser = {
+           chattingUser = {
               id: otherId || 'unknown',
               name: t('chat:unknownUser'),
-              avatar: 'https://i.pravatar.cc/150?u=unknown',
+             avatar: '',
               isOnline: false,
               lastSeen: new Date().toISOString(),
               status: '',

@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { useTranslation } from 'react-i18next';
+import { useUser } from '../context/UserContext';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PANEL_HEIGHT = SCREEN_HEIGHT * 0.7;
@@ -34,6 +35,8 @@ const StatItem: React.FC<StatItemProps> = ({ icon, value, label, color = colors.
 
 export default function CommunityStatsPanel() {
   const { t } = useTranslation(['home']);
+  const { isRealAuth } = useUser();
+  if (isRealAuth) return null;
   const translateY = useSharedValue(PANEL_HEIGHT - MIN_HEIGHT);
   const isExpanded = useSharedValue(false);
 

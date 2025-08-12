@@ -35,7 +35,7 @@ export default function DiscoverPeopleScreen() {
   const landscape = isLandscape();
   const estimatedTabBarHeight = landscape ? 40 : (isDesktop ? 56 : isTablet ? 54 : 46);
   const bottomPadding = (Platform.OS === 'web' ? estimatedTabBarHeight : 0) + 24;
-  const { selectedUser } = useUser();
+  const { selectedUser, isRealAuth } = useUser();
   const [suggestions, setSuggestions] = useState<CharacterType[]>([]);
   const [popularUsers, setPopularUsers] = useState<CharacterType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,11 +64,12 @@ export default function DiscoverPeopleScreen() {
         const userSuggestions = await getFollowSuggestions(selectedUser.id, 20);
         setSuggestions(userSuggestions);
       } else {
-        setSuggestions(allUsers.slice(0, 20));
+        // במצב התחברות אמיתי – אין הצעות דמו
+        setSuggestions(isRealAuth ? [] : allUsers.slice(0, 20));
       }
       
       const popular = await getPopularUsers(20);
-      setPopularUsers(popular);
+      setPopularUsers(isRealAuth ? popular.filter(u => !String(u.id).startsWith('user')) : popular);
       
       // Load follow stats for all users
       const allUsersToCheck = [...suggestions, ...popular];

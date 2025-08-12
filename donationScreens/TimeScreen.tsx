@@ -106,7 +106,7 @@ export default function TimeScreen({
 }: {
   navigation: NavigationProp<ParamListBase>;
 }) {
-  const { selectedUser } = useUser();
+  const { selectedUser, isRealAuth } = useUser();
   const [selectedCategory, setSelectedCategory] = useState<string>('כל הקטגוריות');
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("");
@@ -245,7 +245,7 @@ export default function TimeScreen({
         placeholder="חפש הזדמנויות התנדבות..."
         filterOptions={timeFilterOptions}
         sortOptions={timeSortOptions}
-        searchData={volunteerOpportunities}
+         searchData={isRealAuth ? [] : volunteerOpportunities}
         onSearch={handleSearch}
       />
 
@@ -305,7 +305,7 @@ export default function TimeScreen({
           </Text>
           
           <View style={styles.opportunitiesGrid}>
-            {filteredOpportunities.map((opportunity) => (
+             {(isRealAuth ? [] : filteredOpportunities).map((opportunity) => (
               <TouchableOpacity
                 key={opportunity.id}
                 style={styles.opportunityCard}

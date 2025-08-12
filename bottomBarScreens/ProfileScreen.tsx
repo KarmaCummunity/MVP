@@ -40,6 +40,16 @@ type TabRoute = {
 // --- Tab Components ---
 const PostsRoute = () => {
   const { t } = useTranslation(['profile']);
+  const { isRealAuth } = useUser();
+  if (isRealAuth) {
+    return (
+      <View style={styles.tabContentPlaceholder}>
+        <Ionicons name="images-outline" size={60} color={colors.textSecondary} />
+        <Text style={styles.placeholderText}>{t('profile:posts.noPostsYet', 'אין פוסטים עדיין')}</Text>
+        <Text style={styles.placeholderSubtext}>{t('profile:posts.createFirstPost', 'הפוסטים שלך יופיעו כאן')}</Text>
+      </View>
+    );
+  }
   return (
     <View style={styles.postsGrid}>
       {Array.from({ length: 18 }).map((_, i) => (
@@ -96,8 +106,9 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 export default function ProfileScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const { t } = useTranslation(['profile', 'common']);
-  const { selectedUser, setSelectedUser } = useUser();
+  const { selectedUser, setSelectedUserWithMode, isRealAuth } = useUser();
   const navigation = useNavigation();
+  const defaultLogo = require('../assets/images/android-chrome-192x192.png');
   const [index, setIndex] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
   const [userStats, setUserStats] = useState({
@@ -130,10 +141,14 @@ export default function ProfileScreen() {
 
   // Function to select a random user
   const selectRandomUser = () => {
+    if (isRealAuth) {
+      Alert.alert(t('common:errorTitle'), t('profile:alerts.disabledOnRealAuth'));
+      return;
+    }
     if (allUsers.length > 0) {
       const randomIndex = Math.floor(Math.random() * allUsers.length);
       const randomUser = allUsers[randomIndex];
-      setSelectedUser(randomUser as any);
+      setSelectedUserWithMode(randomUser as any, 'demo');
       setShowMenu(false);
       Alert.alert(t('profile:alerts.newUser'), t('profile:alerts.selectedUser', { name: randomUser.name }));
     }
@@ -141,10 +156,13 @@ export default function ProfileScreen() {
 
   // Function to create sample follow data
   const handleCreateSampleData = async () => {
+    if (isRealAuth) {
+      Alert.alert(t('common:errorTitle'), t('profile:alerts.disabledOnRealAuth'));
+      return;
+    }
     await createSampleFollowData();
     await createSampleChatData(selectedUser?.id || currentUser.id);
     updateUserStats();
-    const { t } = require('i18next');
     Alert.alert(t('profile:alerts.sampleDataTitle'), t('profile:alerts.sampleDataCreated'));
   };
   const [routes] = useState<TabRoute[]>([
@@ -254,6 +272,11 @@ export default function ProfileScreen() {
     }
   ];
 
+  // Derived display values to avoid דמה במצב התחברות אמיתי
+  const avatarSource = isRealAuth
+    ? (selectedUser?.avatar ? { uri: selectedUser.avatar } : defaultLogo)
+    : ({ uri: selectedUser?.avatar || currentUser.avatar } as any);
+
   return (
     <SafeAreaView style={styles.container}>
       {Platform.OS === 'web' ? (
@@ -276,15 +299,12 @@ export default function ProfileScreen() {
               <Ionicons name="menu" size={scaleSize(24)} color={colors.textPrimary} />
             </TouchableOpacity>
           <View style={styles.profileSection}>
-            <Image
-              source={{ uri: selectedUser?.avatar || currentUser.avatar }}
-              style={styles.profilePicture}
-            />
+            <Image source={avatarSource} style={styles.profilePicture} />
           </View>
           
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{userStats.posts}</Text>
+              <Text style={styles.statNumber}>{isRealAuth ? 0 : userStats.posts}</Text>
               <Text style={styles.statLabel}>{t('profile:stats.posts')}</Text>
             </View>
             <TouchableOpacity 
@@ -399,21 +419,25 @@ export default function ProfileScreen() {
                     <Text style={styles.menuItemText}>{t('profile:menu.login')}</Text>
                   </TouchableOpacity>
                   
-                  <TouchableOpacity 
-                    style={styles.menuItem}
-                    onPress={selectRandomUser}
-                  >
-                      <Ionicons name="shuffle-outline" size={scaleSize(20)} color={colors.textPrimary} />
-                    <Text style={styles.menuItemText}>{t('profile:menu.switchUser')}</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={styles.menuItem}
-                    onPress={handleCreateSampleData}
-                  >
-                      <Ionicons name="add-circle-outline" size={scaleSize(20)} color={colors.textPrimary} />
-                    <Text style={styles.menuItemText}>{t('profile:menu.createSampleData')}</Text>
-                  </TouchableOpacity>
+                  {!isRealAuth && (
+                    <>
+                      <TouchableOpacity 
+                        style={styles.menuItem}
+                        onPress={selectRandomUser}
+                      >
+                          <Ionicons name="shuffle-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                        <Text style={styles.menuItemText}>{t('profile:menu.switchUser')}</Text>
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity 
+                        style={styles.menuItem}
+                        onPress={handleCreateSampleData}
+                      >
+                          <Ionicons name="add-circle-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                        <Text style={styles.menuItemText}>{t('profile:menu.createSampleData')}</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
               </TouchableWithoutFeedback>
             </View>
@@ -422,22 +446,27 @@ export default function ProfileScreen() {
 
         {/* Bio Section */}
         <View style={styles.bioSection}>
-          <Text style={styles.fullName}>{selectedUser?.name || currentUser.name}</Text>
-          <Text style={styles.bioText}>{selectedUser?.bio || currentUser.bio}</Text>
-          <Text style={styles.locationText}>
-            <Ionicons name="location-outline" size={scaleSize(14)} color={colors.textSecondary} />
-            {' '}{typeof selectedUser?.location === 'string' ? selectedUser.location : selectedUser?.location?.city || currentUser.location}
-          </Text>
+          <Text style={styles.fullName}>{(isRealAuth ? (selectedUser?.name || '') : (selectedUser?.name || currentUser.name))}</Text>
+          {!!(isRealAuth ? selectedUser?.bio : (selectedUser?.bio || currentUser.bio)) && (
+            <Text style={styles.bioText}>{isRealAuth ? selectedUser?.bio : (selectedUser?.bio || currentUser.bio)}</Text>
+          )}
+          {!!(isRealAuth ? (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city) : (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || currentUser.location)) && (
+            <Text style={styles.locationText}>
+              <Ionicons name="location-outline" size={scaleSize(14)} color={colors.textSecondary} />{' '}
+              {isRealAuth ? (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || '') : (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || currentUser.location)}
+            </Text>
+          )}
           
           {/* Karma Points */}
           <View style={styles.karmaSection}>
             <View style={styles.karmaCard}>
               <Ionicons name="star" size={scaleSize(20)} color={colors.warning} />
-              <Text style={styles.karmaText}>{selectedUser?.karmaPoints || userStats.karmaPoints} {t('profile:stats.karmaPointsSuffix')}</Text>
+              <Text style={styles.karmaText}>{(isRealAuth ? (selectedUser?.karmaPoints ?? userStats.karmaPoints) : (selectedUser?.karmaPoints || userStats.karmaPoints))} {t('profile:stats.karmaPointsSuffix')}</Text>
             </View>
           </View>
 
           {/* Activity Icons */}
+          {!isRealAuth && (
           <View style={styles.activityIcons}>
             <TouchableOpacity 
               style={styles.activityIconItem}
@@ -461,6 +490,7 @@ export default function ProfileScreen() {
               <Text style={styles.activityIconText}>{t('profile:favorites')}</Text>
             </TouchableOpacity>
           </View>
+          )}
         </View>
 
         {/* Action Buttons */}
@@ -489,21 +519,25 @@ export default function ProfileScreen() {
         {/* Recent Activities */}
         <View style={styles.activitiesSection}>
           <Text style={styles.sectionTitle}>{t('profile:sections.recentActivity')}</Text>
-          {recentActivities.map((activity) => (
-            <TouchableOpacity
-              key={activity.id}
-              style={styles.activityItem}
-              onPress={() => Alert.alert(activity.title, activity.time)}
-            >
-              <View style={[styles.activityIcon, { backgroundColor: activity.color + '20' }]}>
-                <Ionicons name={activity.icon as any} size={16} color={activity.color} />
-              </View>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityTitle}>{activity.title}</Text>
-                <Text style={styles.activityTime}>{activity.time}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+          {isRealAuth ? (
+            <Text style={styles.placeholderText}>{t('profile:recent.noActivityYet', 'אין פעילויות עדיין')}</Text>
+          ) : (
+            recentActivities.map((activity) => (
+              <TouchableOpacity
+                key={activity.id}
+                style={styles.activityItem}
+                onPress={() => Alert.alert(activity.title, activity.time)}
+              >
+                <View style={[styles.activityIcon, { backgroundColor: activity.color + '20' }]}>
+                  <Ionicons name={activity.icon as any} size={16} color={activity.color} />
+                </View>
+                <View style={styles.activityContent}>
+                  <Text style={styles.activityTitle}>{activity.title}</Text>
+                  <Text style={styles.activityTime}>{activity.time}</Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
 
         {/* Story Highlights */}
@@ -514,15 +548,21 @@ export default function ProfileScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.storyHighlightsContentContainer}
           >
-            {Array.from({ length: 8 }).map((_, i) => (
+            {(isRealAuth ? [0] : Array.from({ length: 8 }).map((_, i) => i)).map((i) => (
               <TouchableOpacity 
                 key={i} 
                 style={styles.storyHighlightItem}
-                onPress={() => Alert.alert(t('profile:alerts.highlight'), t('profile:highlights.highlightIndex', { index: (i + 1).toString() }))}
+                onPress={() => {
+                  if (i === 0) {
+                    Alert.alert(t('profile:alerts.highlight'), t('profile:highlights.new'));
+                  } else {
+                    Alert.alert(t('profile:alerts.highlight'), t('profile:highlights.highlightIndex', { index: (i + 1).toString() }));
+                  }
+                }}
               >
                 <View style={styles.storyHighlightCircle}>
                   {i === 0 ? (
-                     <Ionicons name="add" size={scaleSize(24)} color={colors.pink} />
+                    <Ionicons name="add" size={scaleSize(24)} color={colors.pink} />
                   ) : (
                     <Image
                       source={{ uri: `https://picsum.photos/60/60?random=${i + 10}` }}
@@ -568,17 +608,16 @@ export default function ProfileScreen() {
               <Ionicons name="menu" size={scaleSize(24)} color={colors.textPrimary} />
             </TouchableOpacity>
           <View style={styles.profileSection}>
-            <Image
-              source={{ uri: selectedUser?.avatar || currentUser.avatar }}
-              style={styles.profilePicture}
-            />
+            <Image source={avatarSource} style={styles.profilePicture} />
           </View>
           
           <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{userStats.posts}</Text>
-              <Text style={styles.statLabel}>{t('profile:stats.posts')}</Text>
-            </View>
+            {!isRealAuth && (
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{userStats.posts}</Text>
+                <Text style={styles.statLabel}>{t('profile:stats.posts')}</Text>
+              </View>
+            )}
             <TouchableOpacity 
               style={styles.statItem}
               onPress={() => {
@@ -714,22 +753,27 @@ export default function ProfileScreen() {
 
         {/* Bio Section */}
         <View style={styles.bioSection}>
-          <Text style={styles.fullName}>{selectedUser?.name || currentUser.name}</Text>
-          <Text style={styles.bioText}>{selectedUser?.bio || currentUser.bio}</Text>
-          <Text style={styles.locationText}>
-            <Ionicons name="location-outline" size={scaleSize(14)} color={colors.textSecondary} />
-            {' '}{typeof selectedUser?.location === 'string' ? selectedUser.location : selectedUser?.location?.city || currentUser.location}
-          </Text>
+          <Text style={styles.fullName}>{(isRealAuth ? (selectedUser?.name || '') : (selectedUser?.name || currentUser.name))}</Text>
+          {!!(isRealAuth ? selectedUser?.bio : (selectedUser?.bio || currentUser.bio)) && (
+            <Text style={styles.bioText}>{isRealAuth ? selectedUser?.bio : (selectedUser?.bio || currentUser.bio)}</Text>
+          )}
+          {!!(isRealAuth ? (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city) : (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || currentUser.location)) && (
+            <Text style={styles.locationText}>
+              <Ionicons name="location-outline" size={scaleSize(14)} color={colors.textSecondary} />{' '}
+              {isRealAuth ? (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || '') : (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || currentUser.location)}
+            </Text>
+          )}
           
           {/* Karma Points */}
           <View style={styles.karmaSection}>
             <View style={styles.karmaCard}>
               <Ionicons name="star" size={scaleSize(20)} color={colors.warning} />
-              <Text style={styles.karmaText}>{selectedUser?.karmaPoints || userStats.karmaPoints} {t('profile:stats.karmaPointsSuffix')}</Text>
+              <Text style={styles.karmaText}>{(isRealAuth ? (selectedUser?.karmaPoints ?? userStats.karmaPoints) : (selectedUser?.karmaPoints || userStats.karmaPoints))} {t('profile:stats.karmaPointsSuffix')}</Text>
             </View>
           </View>
 
           {/* Activity Icons */}
+          {!isRealAuth && (
           <View style={styles.activityIcons}>
             <TouchableOpacity 
               style={styles.activityIconItem}
@@ -753,6 +797,7 @@ export default function ProfileScreen() {
               <Text style={styles.activityIconText}>{t('profile:favorites')}</Text>
             </TouchableOpacity>
           </View>
+          )}
         </View>
 
         {/* Action Buttons */}

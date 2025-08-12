@@ -23,6 +23,7 @@ import {
   categories 
 } from '../globals/fakeData';
 import { useUser } from '../context/UserContext';
+import { db } from '../utils/databaseService';
 import GuestModeNotice from '../components/GuestModeNotice';
 import { Pressable, Modal, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -42,9 +43,24 @@ interface SearchResult {
 
 const SearchScreen = () => {
   const tabBarHeight = useBottomTabBarHeight();
-  const { isGuestMode } = useUser();
+  const { isGuestMode, isRealAuth, selectedUser } = useUser();
   const { t } = useTranslation(['search','common']);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [realDonations, setRealDonations] = useState<any[]>([]);
+  // Load real data (donations) for the current user
+  useEffect(() => {
+    const loadReal = async () => {
+      try {
+        if (!selectedUser) { setRealDonations([]); return; }
+        const items = await db.listDonations(selectedUser.id);
+        setRealDonations(Array.isArray(items) ? items : []);
+      } catch (e) {
+        setRealDonations([]);
+      }
+    };
+    loadReal();
+  }, [selectedUser]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [isSearching, setIsSearching] = useState(false);
@@ -76,7 +92,7 @@ const SearchScreen = () => {
     { id: 'users', label: t('search:tabs.users'), icon: 'people-outline' },
   ];
 
-  // Mock search function
+  // Search over real data and fake data depending on auth mode
   const performSearch = (query: string, category: string = 'All') => {
     setIsSearching(true);
     
@@ -84,7 +100,27 @@ const SearchScreen = () => {
     setTimeout(() => {
       let results: SearchResult[] = [];
       
+      // Real: donations from backend
       if (category === 'All' || category === 'donations') {
+        const real = realDonations
+          .filter((d: any) => {
+            const t = String(d?.title || d?.name || '').toLowerCase();
+            const desc = String(d?.description || '').toLowerCase();
+            return t.includes(query.toLowerCase()) || desc.includes(query.toLowerCase());
+          })
+          .map((d: any) => ({
+            id: String(d.id || d.itemId || d._id || Math.random()),
+            type: 'donation' as const,
+            title: String(d.title || d.name || 'תרומה'),
+            description: String(d.description || ''),
+            image: d.image,
+            category: String(d.category || t('search:typeLabels.donation')),
+            location: d.location?.city || d.location || undefined,
+          }));
+        results.push(...real);
+      }
+      // Fake donations only for guest/demo
+      if (!isRealAuth && (category === 'All' || category === 'donations')) {
         results.push(...donations
           .filter(donation => 
             donation.title.toLowerCase().includes(query.toLowerCase()) ||
@@ -102,7 +138,7 @@ const SearchScreen = () => {
         );
       }
       
-      if (category === 'All' || category === 'events') {
+      if (!isRealAuth && (category === 'All' || category === 'events')) {
         results.push(...communityEvents
           .filter(event => 
             event.title.toLowerCase().includes(query.toLowerCase()) ||
@@ -120,7 +156,7 @@ const SearchScreen = () => {
         );
       }
       
-      if (category === 'All' || category === 'users') {
+      if (!isRealAuth && (category === 'All' || category === 'users')) {
         results.push(...users
           .filter(user => 
             user.name.toLowerCase().includes(query.toLowerCase())

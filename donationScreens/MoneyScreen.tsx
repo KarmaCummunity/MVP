@@ -20,9 +20,10 @@ import { FontSizes } from '../globals/constants';
 import { charityNames, charities, donations } from '../globals/fakeData';
 import { charitiesStore } from '../utils/charitiesStore';
 import { donationResources } from '../utils/donationResources';
+import { useUser } from '../context/UserContext';
 
 // Convert new charity format to old dummy format for compatibility
-const dummyCharities = charities.map((charity, index) => ({
+const dummyCharitiesBase = charities.map((charity, index) => ({
   id: index + 1,
   name: charity.name,
   category: charity.tags[0] || "כללי",
@@ -38,7 +39,7 @@ const dummyCharities = charities.map((charity, index) => ({
 }));
 
 // Convert donations to old format for recent donations
-const dummyRecentDonations = donations.slice(0, 5).map((donation, index) => ({
+const dummyRecentDonationsBase = donations.slice(0, 5).map((donation, index) => ({
   id: index + 1,
   charityName: charities[index % charities.length]?.name || "עמותה לא ידועה",
   amount: donation.amount || 100,
@@ -92,6 +93,7 @@ export default function MoneyScreen({
 }: {
   navigation: NavigationProp<ParamListBase>;
 }) {
+  const { isRealAuth } = useUser();
   const { t } = useTranslation(['donations','common']);
   // Debug log for MoneyScreen
   // console.log('💰 MoneyScreen - Component rendered');
@@ -162,7 +164,8 @@ export default function MoneyScreen({
       minDonation: 20,
       _extUrl: c.url,
     }));
-    return [...mapFromStore, ...dummyCharities, ...externalCharities];
+    const dummies = isRealAuth ? [] : dummyCharitiesBase;
+    return [...mapFromStore, ...dummies, ...externalCharities];
   }, [externalCharities]);
 
   const [filteredCharities, setFilteredCharities] = useState(combinedCharities); // Search results
@@ -181,7 +184,18 @@ export default function MoneyScreen({
   // Quick donate preferred charity (fallback to top rated)
   const preferredCharity = filteredCharities.length > 0
     ? filteredCharities[0]
-    : dummyCharities[0];
+    : (isRealAuth ? (charitiesStore[0] ? {
+        id: `store_${charitiesStore[0].id}`,
+        name: charitiesStore[0].name,
+        category: (charitiesStore[0].categories && charitiesStore[0].categories[0]) ? String(charitiesStore[0].categories[0]) : 'כללי',
+        location: charitiesStore[0].location?.city || 'כל הארץ',
+        rating: 4.8,
+        donors: 100,
+        description: charitiesStore[0].description || '',
+        image: '💝',
+        minDonation: 20,
+        _extUrl: charitiesStore[0].url,
+      } : null) : (dummyCharitiesBase[0] || null));
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -317,7 +331,8 @@ export default function MoneyScreen({
 
   // Function to filter recent donations
   const getFilteredRecentDonations = () => {
-    let filtered = [...dummyRecentDonations];
+    const base = isRealAuth ? [] : dummyRecentDonationsBase;
+    let filtered = [...base];
 
     // Filter by search
     if (searchQuery) {
@@ -688,8 +703,8 @@ export default function MoneyScreen({
               <DonationStatsFooter
                 stats={[
                   { label: 'תרמת עד עכשיו', value: `₪${getFilteredRecentDonations().reduce((s, d) => s + (Number(d.amount) || 0), 0)}`, icon: 'cash-outline' },
-                  { label: 'נתרם באפליקציה', value: `₪${dummyRecentDonations.reduce((s, d) => s + (Number(d.amount) || 0), 0)}`, icon: 'trending-up-outline' },
-                  { label: 'עמותות שנתמכו', value: new Set(dummyRecentDonations.map(d => d.charityName)).size, icon: 'business-outline' },
+                  { label: 'נתרם באפליקציה', value: `₪${getFilteredRecentDonations().reduce((s, d) => s + (Number(d.amount) || 0), 0)}`, icon: 'trending-up-outline' },
+                  { label: 'עמותות שנתמכו', value: new Set(getFilteredRecentDonations().map(d => d.charityName)).size, icon: 'business-outline' },
                 ]}
               />
             </View>
@@ -717,8 +732,8 @@ export default function MoneyScreen({
               <DonationStatsFooter
                 stats={[
                   { label: 'תרמת עד עכשיו', value: `₪${getFilteredRecentDonations().reduce((s, d) => s + (Number(d.amount) || 0), 0)}`, icon: 'cash-outline' },
-                  { label: 'נתרם באפליקציה', value: `₪${dummyRecentDonations.reduce((s, d) => s + (Number(d.amount) || 0), 0)}`, icon: 'trending-up-outline' },
-                  { label: 'עמותות שנתמכו', value: new Set(dummyRecentDonations.map(d => d.charityName)).size, icon: 'business-outline' },
+                  { label: 'נתרם באפליקציה', value: `₪${getFilteredRecentDonations().reduce((s, d) => s + (Number(d.amount) || 0), 0)}` , icon: 'trending-up-outline' },
+                  { label: 'עמותות שנתמכו', value: new Set(getFilteredRecentDonations().map(d => d.charityName)).size, icon: 'business-outline' },
                 ]}
               />
           </View>

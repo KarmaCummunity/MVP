@@ -130,7 +130,7 @@ export default function KnowledgeScreen({
 }: {
   navigation: NavigationProp<ParamListBase>;
 }) {
-  const { selectedUser } = useUser();
+  const { selectedUser, isRealAuth } = useUser();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("");
   const [selectedSort, setSelectedSort] = useState("");
@@ -261,7 +261,7 @@ export default function KnowledgeScreen({
         placeholder="חפש קורסים ושיעורים..."
         filterOptions={knowledgeFilterOptions}
         sortOptions={knowledgeSortOptions}
-        searchData={[...educationalLinks, ...communityContent]}
+        searchData={isRealAuth ? [] : [...educationalLinks, ...communityContent]}
         onSearch={handleSearch}
       />
 
@@ -274,7 +274,7 @@ export default function KnowledgeScreen({
           </Text>
           
           <View style={styles.linksGrid}>
-            {filteredEducationalLinks.map((link) => (
+            {(isRealAuth ? [] : filteredEducationalLinks).map((link) => (
               <TouchableOpacity
                 key={link.id}
                 style={styles.linkCard}
@@ -338,7 +338,7 @@ export default function KnowledgeScreen({
           </Text>
           
           <View style={styles.communityGrid}>
-            {filteredCommunityContent.map((content) => (
+            {(isRealAuth ? [] : filteredCommunityContent).map((content) => (
               <TouchableOpacity
                 key={content.id}
                 style={styles.communityCard}

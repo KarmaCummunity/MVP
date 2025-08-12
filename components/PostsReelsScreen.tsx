@@ -23,6 +23,7 @@ import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { characterTypes, CharacterType } from '../globals/characterTypes';
 import ScreenWrapper from './ScreenWrapper';
+import { db } from '../utils/databaseService';
 
 const { width } = Dimensions.get('window');
 
@@ -275,6 +276,88 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
   const navigation = useNavigation();
   console.log('📱 PostsReelsScreen - hideTopBar prop:', hideTopBar);
   const insets = useSafeAreaInsets();
+  const { selectedUser, isRealAuth } = useUser();
+  const [realFeed, setRealFeed] = useState<Item[]>([]);
+  const [isLoadingReal, setIsLoadingReal] = useState(false);
+
+  const mapPostToItem = (
+    post: any,
+    user: { id: string; name?: string; avatar?: string; karmaPoints?: number }
+  ): Item => {
+    const id = String(post.id || post.itemId || `${user.id}_${Math.random().toString(36).slice(2)}`);
+    const title = String(post.title || post.text || 'פוסט');
+    const description = String(post.description || post.text || '');
+    const thumbnail = String(post.thumbnail || post.image || `https://picsum.photos/seed/${id}/300/200`);
+    const likes = Number(post.likes || 0);
+    const comments = Number(post.comments || 0);
+    const timestamp = String(post.timestamp || post.createdAt || new Date().toISOString());
+    return {
+      id,
+      type: (post.type === 'reel' ? 'reel' : 'post') as Item['type'],
+      title,
+      description,
+      thumbnail,
+      user: {
+        id: user.id,
+        name: user.name || user.id,
+        avatar: user.avatar || 'https://i.pravatar.cc/150?u=' + user.id,
+        karmaPoints: Number(user.karmaPoints || 0),
+      },
+      likes,
+      comments,
+      isLiked: Boolean(post.isLiked || false),
+      timestamp,
+    };
+  };
+
+  const loadRealFeed = React.useCallback(async () => {
+    if (!selectedUser) { setRealFeed([]); return; }
+    setIsLoadingReal(true);
+    try {
+      const followingRels = await db.getFollowing(selectedUser.id);
+      const followingIds: string[] = Array.isArray(followingRels)
+        ? (followingRels as any[]).map((r) => String(r.followingId)).filter(Boolean)
+        : [];
+      const userIds = Array.from(new Set([selectedUser.id, ...followingIds]));
+
+      const userIdToUser: Record<string, any> = {};
+      await Promise.all(
+        userIds.map(async (uid) => {
+          try { userIdToUser[uid] = (await db.getUser(uid)) || { id: uid }; } catch { userIdToUser[uid] = { id: uid }; }
+        })
+      );
+
+      const postsLists = await Promise.all(
+        userIds.map(async (uid) => {
+          try { return await db.getUserPosts(uid); } catch { return []; }
+        })
+      );
+
+      const merged: Item[] = [];
+      postsLists.forEach((posts, idx) => {
+        const uid = userIds[idx];
+        const user = userIdToUser[uid] || { id: uid };
+        (posts as any[]).forEach((p) => merged.push(mapPostToItem(p, user)));
+      });
+
+      merged.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setRealFeed(merged);
+    } catch (e) {
+      setRealFeed([]);
+    } finally {
+      setIsLoadingReal(false);
+    }
+  }, [selectedUser]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (isRealAuth) {
+        loadRealFeed();
+      } else {
+        setRealFeed([]);
+      }
+    }, [isRealAuth, loadRealFeed])
+  );
   
   const animatedStyle = useAnimatedStyle(() => {
     console.log('📱 PostsReelsScreen - animatedStyle - hideTopBar:', hideTopBar);
@@ -315,7 +398,7 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
 
   const content = (
     <FlatList
-      data={data}
+      data={isRealAuth ? realFeed : data}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => <PostReelItem item={item} />}
       contentContainerStyle={{ paddingBottom: 20 }}

@@ -10,7 +10,7 @@ import { pickImage, takePhoto } from '../utils/fileService';
 
 export default function EditProfileScreen() {
   const navigation = useNavigation<any>();
-  const { selectedUser, setSelectedUser } = useUser();
+  const { selectedUser, setSelectedUserWithMode } = useUser();
   const { t } = useTranslation(['profile', 'common']);
 
   // Core fields
@@ -50,7 +50,7 @@ export default function EditProfileScreen() {
       location: { city: city.trim(), country: country.trim() },
       settings: { ...(selectedUser?.settings || {}), language: language || (selectedUser?.settings?.language as any) },
     };
-    await setSelectedUser(updated as any);
+    await setSelectedUserWithMode(updated as any, 'real');
     navigation.goBack();
   };
 

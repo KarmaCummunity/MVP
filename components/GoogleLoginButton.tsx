@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import * as Google from 'expo-auth-session/providers/google';
 import { makeRedirectUri } from 'expo-auth-session';
+import Constants from 'expo-constants';
 import { useUser } from '../context/UserContext';
 import { USE_BACKEND } from '../utils/dbConfig';
 import { db } from '../utils/databaseService';
@@ -12,11 +13,13 @@ type GoogleLoginButtonProps = {
 };
 
 export default function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps) {
-  const { setSelectedUser } = useUser();
+  const { setSelectedUserWithMode } = useUser();
   const { t } = useTranslation(['auth']);
   const isWeb = Platform.OS === 'web';
-  const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
-  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  const extra = (Constants?.expoConfig as any)?.extra ?? {};
+  const androidClientId =
+    extra.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+  const webClientId = extra.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
   // Expo web expects a specific redirect pattern: origin + /?authSessionRedirect=true
   // makeRedirectUri() מייצר אוטומטית את ה‑URI הנכון ל‑Web Static
   const redirectUri = isWeb ? makeRedirectUri() : undefined;
@@ -98,7 +101,7 @@ export default function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps)
           if (userData) {
             // eslint-disable-next-line no-console
             console.log('🔑 GoogleLoginButton - resolved userData', userData);
-            await setSelectedUser(userData);
+            await setSelectedUserWithMode(userData, 'real');
             if (USE_BACKEND) {
               try { await db.createUser(userData.id, userData); } catch {}
             }
@@ -114,7 +117,7 @@ export default function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps)
       }
     };
     void run();
-  }, [response, setSelectedUser]);
+  }, [response, setSelectedUserWithMode]);
 
   return (
     <TouchableOpacity style={[styles.button, !request && styles.disabled]} disabled={!request} onPress={onPress}>

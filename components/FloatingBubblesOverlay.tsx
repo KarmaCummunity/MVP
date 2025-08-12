@@ -11,6 +11,7 @@ import Animated, {
 import colors from "../globals/colors";
 import { FontSizes } from "../globals/constants";
 import { useTranslation } from 'react-i18next';
+import { useUser } from '../context/UserContext';
 
 // screen dimensions
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -99,6 +100,8 @@ const Bubble = ({ icon, value, label, top, left, size, delay }: any) => {
 
 const FloatingBubblesOverlay = () => {
   const { t } = useTranslation(['home']);
+  const { isRealAuth } = useUser();
+  if (isRealAuth) return null;
   const bubbles = [];
 
   for (let i = 0; i < NUM_BUBBLES; i++) {

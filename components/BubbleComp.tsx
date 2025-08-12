@@ -19,6 +19,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { FontSizes, BUBBLE_CONSTANTS } from "../globals/constants";
 import { charities } from "../globals/fakeData";
+import { useUser } from '../context/UserContext';
 import { TouchableOpacity } from "react-native";
 import colors from "../globals/colors";
 import { BubbleData } from "../globals/types";
@@ -124,6 +125,8 @@ const generateBubbles = (): BubbleData[] => {
  */
 const BubbleComp: React.FC = () => {
   const { t } = useTranslation(['home','common']);
+  const { isRealAuth } = useUser();
+  if (isRealAuth) return null;
   const bubbles = useMemo(generateBubbles, []);
   const [selectedBubbleId, setSelectedBubbleId] = useState<string | null>(null);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);

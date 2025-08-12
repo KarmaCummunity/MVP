@@ -129,7 +129,7 @@ export default function HomeScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const isFocused = useIsFocused();
   const navigation = useNavigation();
-  const { selectedUser, setSelectedUser, isGuestMode, resetHomeScreenTrigger } = useUser();
+  const { selectedUser, setSelectedUser, isGuestMode, resetHomeScreenTrigger, isRealAuth } = useUser();
   const [showPosts, setShowPosts] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedStat, setSelectedStat] = useState<StatDetails | null>(null);
@@ -270,10 +270,6 @@ export default function HomeScreen() {
                         style={styles.notificationButton}
                         onPress={() => Alert.alert(t('common:notifications'), t('common:notificationsList'))}
                       >
-                        <Ionicons name="notifications-outline" size={scaleSize(24)} color={colors.textPrimary} />
-                        <View style={styles.notificationBadge}>
-                          <Text style={styles.notificationText}>3</Text>
-                        </View>
                       </TouchableOpacity>
                     </View>
                   </View>

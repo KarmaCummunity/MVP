@@ -49,7 +49,7 @@ export default function TrumpScreen({
   const [filteredRides, setFilteredRides] = useState<any[]>([]);
   const [recentRides, setRecentRides] = useState<any[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
-  const { selectedUser } = useUser();
+  const { selectedUser, isRealAuth } = useUser();
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -164,7 +164,7 @@ export default function TrumpScreen({
       try {
         const uid = selectedUser?.id || 'guest';
         const userRides = await db.listRides(uid);
-        const merged = [...userRides, ...dummyRides];
+        const merged = isRealAuth ? userRides : [...userRides, ...dummyRides];
         setAllRides(merged);
         setFilteredRides(merged);
         const userRecent = (userRides || []).map((r: any) => ({
@@ -178,8 +178,13 @@ export default function TrumpScreen({
         }));
         setRecentRides(userRecent);
       } catch (e) {
-        setAllRides(dummyRides);
-        setFilteredRides(dummyRides);
+         if (!isRealAuth) {
+           setAllRides(dummyRides);
+           setFilteredRides(dummyRides);
+         } else {
+           setAllRides([]);
+           setFilteredRides([]);
+         }
         setRecentRides([]);
       }
     };

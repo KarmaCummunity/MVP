@@ -23,6 +23,7 @@ import { FontSizes } from "../globals/constants";
 import { charities } from "../globals/fakeData";
 import { TouchableOpacity } from "react-native";
 import colors from "../globals/colors";
+import { useTranslation } from "react-i18next";
 
 // Get the dimensions of the device window for responsive sizing
 const { width, height } = Dimensions.get("window");
@@ -158,6 +159,7 @@ const generateStatsLayout = () => {
  * קומפוננטה ראשית להצגת סטטיסטיקות תרומות כבועות צפות
  */
 const DonationStatsScreen: React.FC = () => {
+  const { t } = useTranslation(["donations","common"]);
   const bubbles = useMemo(generateStatsLayout, []);
   const [selectedBubbleId, setSelectedBubbleId] = useState<string | null>(null);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
@@ -193,8 +195,8 @@ const DonationStatsScreen: React.FC = () => {
       
       {/* Screen header */}
       <View style={localStyles.headerContainer}>
-        <Text style={localStyles.title}>סטטיסטיקות תרומות</Text>
-        <Text style={localStyles.subtitle}>הקהילה במספרים השבוע</Text>
+        <Text style={localStyles.title}>{t('donations:statsScreen.title')}</Text>
+        <Text style={localStyles.subtitle}>{t('donations:statsScreen.subtitle')}</Text>
       </View>
       
       {/* Bubbles container */}
@@ -216,7 +218,7 @@ const DonationStatsScreen: React.FC = () => {
           style={localStyles.messageButton}
         >
           <Text style={localStyles.messageText}>
-            {charities[0]?.motivationalQuotes?.[currentSentenceIndex] || 'אין ציטוטי מוטיבציה זמינים'}
+            {charities[0]?.motivationalQuotes?.[currentSentenceIndex] || t('donations:statsScreen.noQuotes')}
           </Text>
         </TouchableOpacity>
       </View>

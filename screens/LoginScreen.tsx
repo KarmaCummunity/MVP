@@ -29,7 +29,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../app/i18n';
 
 export default function LoginScreen() {
-  const { setSelectedUser, setGuestMode, selectedUser, isGuestMode } = useUser();
+  const { setSelectedUserWithMode, setGuestMode, selectedUser, isGuestMode } = useUser();
   const { t } = useTranslation(['auth', 'common', 'settings']);
   const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
   const [animationValues] = useState(() => 
@@ -137,7 +137,7 @@ export default function LoginScreen() {
         },
       };
       
-      await setSelectedUser(userData);
+      await setSelectedUserWithMode(userData as any, 'real');
     }
   };
 
@@ -337,7 +337,7 @@ export default function LoginScreen() {
         } catch (e) {
           console.log('שמירת משתמש בשרת נכשלה (לא קריטי):', e);
         }
-        await setSelectedUser(userData);
+          await setSelectedUserWithMode(userData as any, 'real');
       } else {
         try {
           const fbUser = await fbSignUpWithEmail(email, passwordValue);
@@ -369,7 +369,7 @@ export default function LoginScreen() {
               } as any;
               try { await restAdapter.create('users', userData.id, userData.id, userData); } catch (_) {}
               await saveRecentEmail(email);
-              await setSelectedUser(userData);
+              await setSelectedUserWithMode(userData as any, 'real');
             } catch (signinErr) {
               setEmailStatusMessage(t('auth:email.invalidPassword', { defaultValue: 'סיסמה לא נכונה' }) as string);
               setEmailStatusColor('#C62828');
@@ -437,7 +437,7 @@ export default function LoginScreen() {
           settings: { language: 'he', darkMode: false, notificationsEnabled: true },
         } as any;
 
-        await setSelectedUser(orgUser);
+        await setSelectedUserWithMode(orgUser as any, 'real');
         return;
       }
 

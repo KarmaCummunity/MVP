@@ -319,6 +319,27 @@ export class DatabaseService {
     }
   }
 
+  /**
+   * Clear only local collection keys created by DatabaseService
+   * Preserves app preferences like language, recent emails, etc.
+   */
+  static async clearLocalCollections(): Promise<void> {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const collectionPrefixes = Object.values(DB_COLLECTIONS).map((c) => `${c}_`);
+      const keysToRemove = keys.filter((k) =>
+        collectionPrefixes.some((prefix) => k.startsWith(prefix)) || k === DatabaseService.VERSION_KEY
+      );
+      if (keysToRemove.length > 0) {
+        await AsyncStorage.multiRemove(keysToRemove);
+      }
+      console.log('✅ DatabaseService - Cleared local collection keys:', keysToRemove.length);
+    } catch (error) {
+      console.error('❌ DatabaseService - Clear local collections error:', error);
+      throw error;
+    }
+  }
+
   static async getDatabaseSize(): Promise<number> {
     try {
       const keys = await AsyncStorage.getAllKeys();

@@ -456,6 +456,20 @@ export const createSampleChatData = async (userId: string): Promise<void> => {
       },
     ];
 
+    // Guard: do not create sample data for real-auth sessions
+    const mode = await (async () => {
+      try {
+        const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+        return await AsyncStorage.getItem('auth_mode');
+      } catch (e) {
+        return null;
+      }
+    })();
+    if (mode === 'real') {
+      console.log('🛑 Skipping sample chat data creation in real auth mode');
+      return;
+    }
+
     for (const conversation of sampleConversations) {
       await db.createChat(userId, conversation.id, conversation);
     }
