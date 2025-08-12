@@ -103,7 +103,6 @@ export const donationResources: Record<string, DonationResource[]> = {
     { name: 'צלול', url: 'https://www.zalul.org.il/', description: 'איכות הסביבה הימית' },
   ],
 
-  // 15. טכנולוגיה - עזרה טכנית
   technology: [
     { name: 'BeGifted', url: 'https://www.begifted.org/', description: 'התנדבות טכנולוגית' },
     { name: 'שלום דיגיטלי', url: 'https://www.digitalpeace.org.il/', description: 'חוסן דיגיטלי' },
@@ -112,7 +111,6 @@ export const donationResources: Record<string, DonationResource[]> = {
     { name: 'Tech Career', url: 'https://www.tech-career.org/', description: 'הכשרה טכנולוגית' },
   ],
 
-  // זמן - התנדבות כללית
   time: [
     { name: 'רוח טובה', url: 'https://www.ruachtova.org.il/', description: 'מאגר הזדמנויות התנדבות' },
     { name: 'המועצה הישראלית להתנדבות', url: 'https://ivolunteer.org.il/', description: 'פרויקטים ויוזמות התנדבות' },

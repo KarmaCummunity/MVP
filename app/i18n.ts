@@ -19,9 +19,7 @@ const resources = {
   en: en_all as any,
 };
 
-const deviceLocales = Localization?.getLocales ? Localization.getLocales() : [{ languageCode: 'he' }];
-const deviceLang = deviceLocales && deviceLocales.length > 0 && deviceLocales[0].languageCode ? deviceLocales[0].languageCode : 'he';
-const initialLang = deviceLang === 'he' ? 'he' : 'en';
+const initialLang = 'he';
 
 if (I18nManager.isRTL !== (initialLang === 'he')) {
   I18nManager.allowRTL(initialLang === 'he');

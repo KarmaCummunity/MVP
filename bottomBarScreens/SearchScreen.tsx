@@ -283,7 +283,6 @@ const SearchScreen = () => {
         contentContainerStyle={{ paddingBottom: tabBarHeight + LAYOUT_CONSTANTS.SPACING.XL }}
       >
         {/* Guest Mode Notice */}
-        {/* הוסר באנר אורח המקומי – מופיע כעת גלובלית בכל האפליקציה */}
         
         {searchQuery.trim().length === 0 ? (
           // Default content when no search
@@ -393,7 +392,7 @@ const SearchScreen = () => {
         <Text style={styles.fabText}>{t('search:ai.fabLabel')}</Text>
       </Pressable>
 
-      {/* AI Assistant Modal (פשוט/בסיסי) */}
+      {/* AI Assistant Modal*/}
       <Modal animationType="slide" transparent visible={aiVisible} onRequestClose={() => setAiVisible(false)}>
         <View style={styles.aiOverlay}>
           <View style={styles.aiContainer}>

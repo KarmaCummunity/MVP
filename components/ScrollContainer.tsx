@@ -37,7 +37,7 @@ export default function ScrollContainer({
             maxHeight: SCREEN_HEIGHT as any,
             width: '100%' as any,
             touchAction: 'auto' as any,
-          },
+          } as any,
           style,
         ]}
       >

@@ -13,13 +13,26 @@
       "description": "The page you are looking for does not exist",
       "backHome": "Back to home"
     },
+    "error": "Error",
     "errorTitle": "Error",
     "time": { "now": "Now", "minutesAgo": "{{count}} minutes ago", "hoursAgo": "{{count}} hours ago", "daysAgo": "{{count}} days ago" },
     "offerer": "Offerer",
     "seeker": "Seeker",
     "close": "Close",
     "guestLoginHint": "You're in guest mode, please log in",
-    "unknownUser": "User"
+    "unknownUser": "User",
+    "languageSwitch": "Switch language (עברית/English)",
+    "languages": {
+      "he": "עברית",
+      "en": "English"
+    },
+    "back": "Back",
+    "web": "Web page",
+    "report": "Report",
+    "cannotOpenLink": "Cannot open the link",
+    "welcomeShort": "Welcome!",
+    "freeAppNotice": "The app is completely free and non-profit",
+    "genericTryAgain": "An error occurred. Please try again."
   },
   "search": {
     "sortTitle": "Sort",
@@ -34,6 +47,9 @@
     "userDefaultBio": "Community member",
     "typeLabels": { "user": "User" },
     "labels": { "category": "Category", "location": "Location", "date": "Date" },
+    "moreDetails": "More details",
+    "details": "Details",
+    "openFullDetails": "Open full details page",
     "filters": {
       "education": "Education",
       "health": "Health",
@@ -453,6 +469,66 @@
       "selected": "Selected",
       "selectUserTitle": "Select a user",
       "selectUserSubtitle": "Choose a user to view the app from their perspective"
+    },
+    "banner": {
+      "title": "Complete your profile for the full experience",
+      "cta": "Edit profile",
+      "editTitle": "Edit profile",
+      "missing": {
+        "avatar": "Profile picture",
+        "fullName": "Full name",
+        "address": "Address"
+      },
+      "fields": {
+        "fullName": "Full name",
+        "avatar": "Profile picture URL",
+        "city": "City",
+        "country": "Country",
+        "bio": "Bio"
+      }
+    },
+    "banner": {
+      "title": "Complete your profile for the full experience",
+      "cta": "Edit profile",
+      "editTitle": "Edit profile",
+      "missing": { "avatar": "Profile picture", "fullName": "Full name", "address": "Address" },
+      "fields": {
+        "fullName": "Full name",
+        "avatar": "Profile picture URL",
+        "city": "City",
+        "country": "Country",
+        "bio": "Bio"
+      }
+    },
+    "edit": {
+      "gallery": "Gallery",
+      "camera": "Camera",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "phone": "Phone",
+      "city": "City",
+      "country": "Country",
+      "street": "Street",
+      "houseNumber": "House No.",
+      "zipcode": "Zip code",
+      "gender": "Gender",
+      "genderPlaceholder": "male / female / other",
+      "birthDate": "Birth date",
+      "birthDatePlaceholder": "YYYY-MM-DD",
+      "website": "Website",
+      "linkedin": "LinkedIn",
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "preferredLanguage": "Preferred language",
+      "preferredLanguagePlaceholder": "he / en",
+      "interests": "Interests",
+      "interestsPlaceholder": "Comma separated"
+    },
+    "recent": {
+      "taskCompleted": "Task completed: {{task}}",
+      "donated": "Donated {{amount}} for {{purpose}}",
+      "joinedEvent": "Joined event: {{event}}"
     }
   },
   "notifications": {
@@ -469,8 +545,36 @@
     "unreadBadge": "{{count}} new notifications"
   },
   "auth": {
+    "title": "Welcome!",
+    "subtitle": "The Capitalist Kibbutz of Israel",
+    "continueAsGuest": "Continue as guest",
+    "email": {
+      "cta": "Sign up with email",
+      "placeholder": "Enter email",
+      "passwordPlaceholder": "Enter password",
+      "continue": "Continue",
+      "submit": "Sign up / Login",
+      "checking": "Checking...",
+      "submitting": "Submitting...",
+      "knownUser": "Known email. Enter password",
+      "unknownEmail": "Unknown email, please sign up",
+      "invalidPassword": "Incorrect password",
+      "resetPassword": "Reset password",
+      "resetSent": "Password reset link sent",
+      "resetError": "Password reset failed",
+      "invalidFormat": "Please enter a valid email",
+      "passwordTooShort": "Password must be at least 6 characters",
+      "verifyTitle": "Email verification",
+      "verifySent": "We've sent you a verification link. After confirming, return and sign in to complete registration.",
+      "signupFailed": "Sign up failed. Please try again."
+    },
+    "googleCta": "Sign in / Sign up with Google",
+    "loginCta": "Login",
     "org": {
       "cta": "Enter organization / NGO",
+      "placeholder": "Enter organization name",
+      "continue": "Continue",
+      "checking": "Checking...",
       "title": "Organization / NGO registration",
       "subtitle": "Fill in the details. We'll review and approve. After approval you'll get admin permissions and a dedicated operations view.",
       "fields": {
@@ -509,6 +613,12 @@
       "errorFill": "Please fill all required fields",
       "errorSend": "Failed to submit application",
       "hint": "After approval you'll get access with admin permissions and a dedicated operations view."
+    },
+    "characters": {
+      "selectTitle": "Choose a character to login:",
+      "selectSubtitle": "Tap selected character again to deselect",
+      "loadError": "Failed to load characters",
+      "selectUserFirst": "Select a character first"
     }
   },
   "errors": {},

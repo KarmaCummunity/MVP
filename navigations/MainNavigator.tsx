@@ -25,6 +25,7 @@ import AboutKarmaCommunityScreen from '../topBarScreens/AboutKarmaCommunityScree
 import OrgOnboardingScreen from '../screens/OrgOnboardingScreen';
 import AdminOrgApprovalsScreen from '../screens/AdminOrgApprovalsScreen';
 import OrgDashboardScreen from '../screens/OrgDashboardScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
 
 import { RootStackParamList } from '../globals/types';
 
@@ -122,6 +123,7 @@ export default function MainNavigator() {
       <Stack.Screen name="OrgOnboardingScreen" component={OrgOnboardingScreen} />
       <Stack.Screen name="AdminOrgApprovalsScreen" component={AdminOrgApprovalsScreen} />
       <Stack.Screen name="OrgDashboardScreen" component={OrgDashboardScreen} />
+      <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} />
     </Stack.Navigator>
   );
 }

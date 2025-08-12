@@ -149,7 +149,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       if (!emailKey) return user;
       // Grant admin role by env config (comma-separated emails)
       const adminEmailsEnv = (process.env.EXPO_PUBLIC_ADMIN_EMAILS || '').toLowerCase();
-      const adminEmails = adminEmailsEnv.split(',').map((s) => s.trim()).filter(Boolean);
+      const adminEmails = adminEmailsEnv
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean);
       const withAdmin = adminEmails.includes(emailKey);
       const applications = await db.listOrgApplications(emailKey);
       const approved = (applications as any[]).find((a) => a.status === 'approved');
@@ -165,11 +168,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
   };
 
-  /**
-   * פונקציית יציאה מהמערכת
-   * מוחקת את כל הנתונים המאוחסנים ומאפסת את מצב המשתמש
-   * עובדת גם למצב אורח וגם למשתמש מחובר
-   */
   const signOut = async () => {
     try {
       console.log('🔐 UserContext - signOut - Starting sign out process');
@@ -247,7 +245,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         followersCount: demoCharacter.followersCount,
         followingCount: demoCharacter.followingCount,
         notifications: [
-          { type: 'system', text: 'ברוך הבא!', date: new Date().toISOString() },
+          { type: 'system', text: require('i18next').t('home:welcome', { defaultValue: 'שלום' }) as string, date: new Date().toISOString() },
         ],
         settings: demoCharacter.preferences,
       };

@@ -25,7 +25,6 @@ import {
 } from '../utils/followService';
 import { useUser } from '../context/UserContext';
 
-// לא בכל ניווט המסך הזה בתוך Bottom Tab, לכן לא נשתמש ב-useBottomTabBarHeight כאן
 import { getScreenInfo, isLandscape } from '../globals/responsive';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');

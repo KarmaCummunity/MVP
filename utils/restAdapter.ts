@@ -60,6 +60,25 @@ export class RestAdapter {
   async list<T>(collection: string, userId: string): Promise<T[]> {
     return this.http<T[]>(`/api/${collection}?userId=${encodeURIComponent(userId)}`);
   }
+
+  // Auth endpoints
+  async checkEmail(email: string): Promise<{ exists: boolean }> {
+    return this.http(`/auth/check-email?email=${encodeURIComponent(email)}`);
+  }
+
+  async register(email: string, password: string, name?: string): Promise<{ ok?: boolean; user?: any; error?: string }> {
+    return this.http(`/auth/register`, {
+      method: 'POST',
+      body: JSON.stringify({ email, password, name }),
+    });
+  }
+
+  async login(email: string, password: string): Promise<{ ok?: boolean; user?: any; error?: string }> {
+    return this.http(`/auth/login`, {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  }
 }
 
 export const restAdapter = new RestAdapter();

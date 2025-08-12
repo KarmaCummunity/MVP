@@ -12,15 +12,15 @@ type OrgApplication = {
   id: string;
   orgName: string;
   orgType: 'עמותה' | 'מלכ"ר' | 'חברה לתועלת הציבור' | 'יוזמה קהילתית' | 'אחר';
-  registrationNumber?: string; // מספר עמותה / ח.פ.
+  registrationNumber?: string; 
   contactName: string;
   contactEmail: string;
   contactPhone: string;
   website?: string;
   city?: string;
-  activityAreas: string[]; // תחומי פעילות
-  needs: string; // מה צריך מאיתנו
-  offering: string; // מה הארגון מציע לקהילה
+  activityAreas: string[];
+  needs: string; 
+  offering: string; 
   description: string;
   files?: Array<{ name: string; uri: string; type?: string }>;
   status: 'pending' | 'approved' | 'rejected';

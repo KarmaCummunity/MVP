@@ -8,7 +8,7 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import HomeTabStack from "./HomeTabStack";
 import SearchTabStack from "./SearchTabStack";
 import ProfileTabStack from "./ProfileTabStack";
-import DonationsStack from "./DonationsStack"; // donations נשאר כ-stack נפרד
+import DonationsStack from "./DonationsStack"; 
 import BookmarksScreen from "../screens/BookmarksScreen";
 import SettingsScreen from "../topBarScreens/SettingsScreen";
 import ChatListScreen from "../topBarScreens/ChatListScreen";

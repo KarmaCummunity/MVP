@@ -13,13 +13,26 @@
       "description": "הדף שאתה מחפש לא קיים",
       "backHome": "חזור לעמוד הבית"
     },
+    "error": "שגיאה",
     "errorTitle": "שגיאה",
     "time": { "now": "עכשיו", "minutesAgo": "לפני {{count}} דקות", "hoursAgo": "לפני {{count}} שעות", "daysAgo": "לפני {{count}} ימים" },
     "offerer": "מציע",
     "seeker": "מחפש",
     "close": "סגור",
     "guestLoginHint": "אתה במצב אורח, מומלץ להתחבר",
-    "unknownUser": "משתמש"
+    "unknownUser": "משתמש",
+    "languageSwitch": "החלף שפה (עברית/English)",
+    "languages": {
+      "he": "עברית",
+      "en": "English"
+    },
+    "back": "חזרה",
+    "web": "דף אינטרנט",
+    "report": "דווח",
+    "cannotOpenLink": "לא ניתן לפתוח את הקישור",
+    "welcomeShort": "ברוכים הבאים!",
+    "freeAppNotice": "האפליקציה חינמית לחלוטין ללא מטרות רווח",
+    "genericTryAgain": "אירעה שגיאה. נסו שוב."
   },
   "search": {
     "sortTitle": "מיון",
@@ -455,6 +468,66 @@
       "selected": "נבחר",
       "selectUserTitle": "בחר יוזר",
       "selectUserSubtitle": "בחר יוזר כדי לראות את האפליקציה מנקודת המבט שלו"
+    },
+    "banner": {
+      "title": "השלם פרטים לחוויה מלאה",
+      "cta": "עריכת פרופיל",
+      "editTitle": "עריכת פרופיל",
+      "missing": {
+        "avatar": "תמונת פרופיל",
+        "fullName": "שם מלא",
+        "address": "כתובת"
+      },
+      "fields": {
+        "fullName": "שם מלא",
+        "avatar": "קישור לתמונת פרופיל",
+        "city": "עיר",
+        "country": "מדינה",
+        "bio": "ביוגרפיה"
+      }
+    },
+    "banner": {
+      "title": "השלם פרטים לחוויה מלאה",
+      "cta": "עריכת פרופיל",
+      "editTitle": "עריכת פרופיל",
+      "missing": { "avatar": "תמונת פרופיל", "fullName": "שם מלא", "address": "כתובת" },
+      "fields": {
+        "fullName": "שם מלא",
+        "avatar": "קישור לתמונת פרופיל",
+        "city": "עיר",
+        "country": "מדינה",
+        "bio": "ביוגרפיה"
+      }
+    },
+    "edit": {
+      "gallery": "גלריה",
+      "camera": "מצלמה",
+      "firstName": "שם פרטי",
+      "lastName": "שם משפחה",
+      "email": "אימייל",
+      "phone": "טלפון",
+      "city": "עיר",
+      "country": "מדינה",
+      "street": "רחוב",
+      "houseNumber": "מס׳",
+      "zipcode": "מיקוד",
+      "gender": "מגדר",
+      "genderPlaceholder": "זכר / נקבה / אחר",
+      "birthDate": "תאריך לידה",
+      "birthDatePlaceholder": "YYYY-MM-DD",
+      "website": "אתר",
+      "linkedin": "LinkedIn",
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "preferredLanguage": "שפה מועדפת",
+      "preferredLanguagePlaceholder": "he / en",
+      "interests": "תחומי עניין",
+      "interestsPlaceholder": "מופרד בפסיקים"
+    },
+    "recent": {
+      "taskCompleted": "השלמת משימה: {{task}}",
+      "donated": "תרמת {{amount}} ל{{purpose}}",
+      "joinedEvent": "הצטרפת לאירוע: {{event}}"
     }
   },
   "notifications": {
@@ -471,8 +544,36 @@
     "unreadBadge": "{{count}} התראות חדשות"
   },
   "auth": {
+    "title": "ברוכים הבאים!",
+    "subtitle": "קהילת קארמה רוצה להכיר לכם את \n הקיבוץ הקפטליסטי של ישראל",
+    "continueAsGuest": "המשך כאורח",
+    "email": {
+      "cta": "הירשם/התחבר עם מייל",
+      "placeholder": "הכנס מייל",
+      "passwordPlaceholder": "הכנס סיסמה",
+      "continue": "המשך",
+      "submit": "הרשם/היכנס",
+      "checking": "בודק...",
+      "submitting": "שולח...",
+      "knownUser": "מייל מוכר. הכנס סיסמה",
+      "unknownEmail": "מייל לא מוכר, יש להירשם",
+      "invalidPassword": "סיסמה לא נכונה",
+      "resetPassword": "איפוס סיסמה",
+      "resetSent": "קישור לאיפוס סיסמה נשלח למייל",
+      "resetError": "שליחת איפוס נכשלה",
+      "invalidFormat": "אנא הזן מייל תקין",
+      "passwordTooShort": "הסיסמה חייבת להכיל לפחות 6 תווים",
+      "verifyTitle": "אימות מייל",
+      "verifySent": "שלחנו קישור אימות למייל. לאחר אישור, חזרו למסך והתחברו כדי להשלים רישום.",
+      "signupFailed": "הרישום נכשל. נסו שוב."
+    },
+    "googleCta": "התחבר/הרשם עם גוגל",
+    "loginCta": "התחבר",
     "org": {
-      "cta": "הכנס ארגון / עמותה",
+      "cta": "הכנס מייל ארגון",
+      "placeholder": "הכנס מייל ארגון",
+      "continue": "המשך",
+      "checking": "בודק...",
       "title": "רישום ארגון / עמותה",
       "subtitle": "מלאו את הפרטים, נבדוק ונאשר. לאחר אישור תקבלו הרשאות ותצוגת תפעול ייעודית.",
       "fields": {
@@ -511,6 +612,12 @@
       "errorFill": "אנא מלאו את כל השדות החיוניים המסומנים",
       "errorSend": "שליחת הבקשה נכשלה",
       "hint": "לאחר האישור תקבלו גישה לאפליקציה עם הרשאות ניהול ותצוגת תפעול ייעודית."
+    },
+    "characters": {
+      "selectTitle": "בחר דמות להתחברות:",
+      "selectSubtitle": "לחץ שוב על דמות נבחרת כדי לבטל",
+      "loadError": "שגיאה בטעינת הדמויות",
+      "selectUserFirst": "בחר דמות תחילה"
     }
   },
   "errors": {},

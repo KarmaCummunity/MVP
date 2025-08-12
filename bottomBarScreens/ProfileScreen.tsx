@@ -23,6 +23,7 @@ import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { useTranslation } from 'react-i18next';
 import { currentUser } from '../globals/fakeData';
 import { useUser } from '../context/UserContext';
+import ProfileCompletionBanner from '../components/ProfileCompletionBanner';
 import { createShadowStyle } from '../globals/styles';
 import { scaleSize } from '../globals/responsive';
 import { users } from '../globals/fakeData';
@@ -264,6 +265,8 @@ export default function ProfileScreen() {
               console.log('🧭 ProfileScreen[WEB] content layout height:', h, 'window:', SCREEN_HEIGHT);
             }}
           >
+        {/* Completion Banner */}
+        <ProfileCompletionBanner />
         {/* Profile Info with Menu Icon */}
         <View style={styles.profileInfo}>
             <TouchableOpacity 
@@ -356,7 +359,7 @@ export default function ProfileScreen() {
                     style={styles.menuItem}
                     onPress={() => {
                       setShowMenu(false);
-                      Alert.alert(t('profile:alerts.editProfile'), t('profile:alerts.editProfileDesc'));
+                      (navigation as any).navigate('EditProfileScreen');
                     }}
                   >
                       <Ionicons name="create-outline" size={scaleSize(20)} color={colors.textPrimary} />
@@ -554,6 +557,8 @@ export default function ProfileScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.mainScrollContent, { paddingBottom: tabBarHeight + scaleSize(24) }]}
       >
+        {/* Completion Banner */}
+        <ProfileCompletionBanner />
         {/* Profile Info with Menu Icon */}
         <View style={styles.profileInfo}>
             <TouchableOpacity 
@@ -646,7 +651,7 @@ export default function ProfileScreen() {
                     style={styles.menuItem}
                     onPress={() => {
                       setShowMenu(false);
-                      Alert.alert(t('profile:alerts.editProfile'), t('profile:alerts.editProfileDesc'));
+                      (navigation as any).navigate('EditProfileScreen');
                     }}
                   >
                       <Ionicons name="create-outline" size={scaleSize(20)} color={colors.textPrimary} />

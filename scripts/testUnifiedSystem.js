@@ -1,22 +1,22 @@
-// סקריפט בדיקה מקיף למערכת העוקבים המאוחדת
-// הרץ עם: node scripts/testUnifiedSystem.js
+// Comprehensive test script for the unified followers system
+// Run with: node scripts/testUnifiedSystem.js
 
 console.log('🧪 Comprehensive Follow System Test with Unified IDs...');
 
-// קריאת הקובץ המאוחד
+// Read the unified file
 const fs = require('fs');
 const path = require('path');
 
 const characterTypesPath = path.join(__dirname, '../globals/characterTypes.ts');
 const content = fs.readFileSync(characterTypesPath, 'utf8');
 
-// חילוץ הנתונים
+// Extract data
 const allUsersMatch = content.match(/export const allUsers: CharacterType\[\] = (\[[\s\S]*?\]);/);
 const allUsers = allUsersMatch ? eval(allUsersMatch[1]) : [];
 
 console.log(`📊 Total Users: ${allUsers.length}`);
 
-// בדיקת מבנה ה-IDs
+// Validate IDs structure
 console.log('\n🔍 ID Structure Check:');
 const userIds = allUsers.map(user => user.id);
 const charIds = userIds.filter(id => id.startsWith('char'));
@@ -32,10 +32,10 @@ if (charIds.length > 0) {
   console.log('✅ All IDs are properly unified with "user" prefix');
 }
 
-// סימולציה של מערכת העוקבים
+// Followers system simulation
 let followRelationships = [];
 
-// פונקציות מערכת העוקבים
+// Followers system functions
 function getFollowStats(userId, currentUserId) {
   const followers = followRelationships.filter(rel => rel.followingId === userId);
   const following = followRelationships.filter(rel => rel.followerId === userId);
@@ -51,9 +51,9 @@ function getFollowStats(userId, currentUserId) {
 }
 
 function followUser(followerId, followingId) {
-  // בדיקה אם מנסים לעקוב אחרי עצמם
+  // Prevent self-follow
   if (followerId === followingId) {
-    return false; // לא ניתן לעקוב אחרי עצמך
+    return false; // Not allowed to follow yourself
   }
 
   const existingFollow = followRelationships.find(rel => 
@@ -128,10 +128,10 @@ function getPopularUsers(limit = 10) {
     .slice(0, limit);
 }
 
-// בדיקות מקיפות
+// Comprehensive tests
 console.log('\n🔍 Comprehensive System Tests...');
 
-// בדיקה 1: עקיבה בסיסית
+// Test 1: Basic follow operations
 console.log('\n📝 Test 1: Basic Follow Operations');
 const user1 = allUsers[0]; // user001
 const user2 = allUsers[15]; // user016
@@ -139,14 +139,14 @@ const user3 = allUsers[10]; // user011
 
 console.log(`Testing with: ${user1.name} (${user1.id}), ${user2.name} (${user2.id}), ${user3.name} (${user3.id})`);
 
-// עקיבה
+// Follow
 const follow1 = followUser(user1.id, user2.id);
 const follow2 = followUser(user1.id, user3.id);
 const follow3 = followUser(user2.id, user3.id);
 
 console.log(`Follow operations: ${follow1 ? 'SUCCESS' : 'FAILED'}, ${follow2 ? 'SUCCESS' : 'FAILED'}, ${follow3 ? 'SUCCESS' : 'FAILED'}`);
 
-// בדיקת סטטיסטיקות
+// Check stats
 const stats1 = getFollowStats(user1.id, user1.id);
 const stats2 = getFollowStats(user2.id, user1.id);
 const stats3 = getFollowStats(user3.id, user1.id);
@@ -155,7 +155,7 @@ console.log(`Stats - ${user1.name}: ${stats1.followersCount} followers, ${stats1
 console.log(`Stats - ${user2.name}: ${stats2.followersCount} followers, ${stats2.followingCount} following`);
 console.log(`Stats - ${user3.name}: ${stats3.followersCount} followers, ${stats3.followingCount} following`);
 
-// בדיקה 2: רשימות עוקבים
+// Test 2: Lists
 console.log('\n📝 Test 2: Follow Lists');
 const user1Following = getFollowing(user1.id);
 const user3Followers = getFollowers(user3.id);
@@ -163,7 +163,7 @@ const user3Followers = getFollowers(user3.id);
 console.log(`${user1.name} following: ${user1Following.map(u => u.name).join(', ')}`);
 console.log(`${user3.name} followers: ${user3Followers.map(u => u.name).join(', ')}`);
 
-// בדיקה 3: המלצות
+// Test 3: Suggestions
 console.log('\n📝 Test 3: Follow Suggestions');
 const suggestions = getFollowSuggestions(user1.id, 5);
 console.log(`Suggestions for ${user1.name}:`);
@@ -171,7 +171,7 @@ suggestions.forEach((user, index) => {
   console.log(`${index + 1}. ${user.name} (${user.karmaPoints} karma points)`);
 });
 
-// בדיקה 4: משתמשים פופולריים
+// Test 4: Popular users
 console.log('\n📝 Test 4: Popular Users');
 const popularUsers = getPopularUsers(5);
 console.log('Top 5 Popular Users:');
@@ -179,7 +179,7 @@ popularUsers.forEach((user, index) => {
   console.log(`${index + 1}. ${user.name}: ${user.followersCount} followers`);
 });
 
-// בדיקה 5: ביטול עקיבה
+// Test 5: Unfollow
 console.log('\n📝 Test 5: Unfollow Operations');
 const unfollow1 = unfollowUser(user1.id, user2.id);
 const statsAfterUnfollow = getFollowStats(user2.id, user1.id);
@@ -187,17 +187,17 @@ const statsAfterUnfollow = getFollowStats(user2.id, user1.id);
 console.log(`Unfollow result: ${unfollow1 ? 'SUCCESS' : 'FAILED'}`);
 console.log(`${user2.name} followers after unfollow: ${statsAfterUnfollow.followersCount}`);
 
-// בדיקה 6: עקיבה כפולה
+// Test 6: Duplicate follow
 console.log('\n📝 Test 6: Duplicate Follow Prevention');
 const duplicateFollow = followUser(user1.id, user3.id);
 console.log(`Duplicate follow attempt: ${duplicateFollow ? 'ALLOWED (ERROR)' : 'BLOCKED (CORRECT)'}`);
 
-// בדיקה 7: עקיבה עצמית
+// Test 7: Self-follow
 console.log('\n📝 Test 7: Self-Follow Prevention');
 const selfFollow = followUser(user1.id, user1.id);
 console.log(`Self-follow attempt: ${selfFollow ? 'ALLOWED (ERROR)' : 'BLOCKED (CORRECT)'}`);
 
-// בדיקה 8: ביצועים
+// Test 8: Performance
 console.log('\n📝 Test 8: Performance Test');
 const startTime = Date.now();
 for (let i = 0; i < 1000; i++) {
@@ -210,7 +210,7 @@ for (let i = 0; i < 1000; i++) {
 const endTime = Date.now();
 console.log(`1000 operations took: ${endTime - startTime}ms`);
 
-// בדיקה 9: תקינות נתונים
+// Test 9: Data integrity
 console.log('\n📝 Test 9: Data Integrity');
 const totalRelationships = followRelationships.length;
 const uniqueFollowers = new Set(followRelationships.map(r => r.followerId));
@@ -220,11 +220,11 @@ console.log(`Total relationships: ${totalRelationships}`);
 console.log(`Unique followers: ${uniqueFollowers.size}`);
 console.log(`Unique following: ${uniqueFollowing.size}`);
 
-// בדיקה 10: סימולציה של שימוש אמיתי
+// Test 10: Real-world simulation
 console.log('\n📝 Test 10: Real-World Simulation');
 console.log('Simulating user interactions...');
 
-// משתמש חדש מתחיל לעקוב
+// New user starts following
 const newUser = allUsers[20]; // user021
 const usersToFollow = allUsers.slice(0, 5).filter(u => u.id !== newUser.id);
 usersToFollow.forEach(user => {
@@ -234,14 +234,14 @@ usersToFollow.forEach(user => {
 const newUserStats = getFollowStats(newUser.id, newUser.id);
 console.log(`${newUser.name} started following ${newUserStats.followingCount} users`);
 
-// בדיקת המלצות למשתמש החדש
+// Check suggestions for new user
 const newUserSuggestions = getFollowSuggestions(newUser.id, 3);
 console.log(`Suggestions for ${newUser.name}:`);
 newUserSuggestions.forEach((user, index) => {
   console.log(`${index + 1}. ${user.name} (${user.karmaPoints} karma points)`);
 });
 
-// סיכום
+// Summary
 console.log('\n✅ Comprehensive Follow System Test Completed!');
 console.log('📊 Final Statistics:');
 console.log(`- Total Users: ${allUsers.length}`);

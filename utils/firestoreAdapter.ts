@@ -25,7 +25,6 @@ export interface DatabaseAdapter {
   batchDelete(collectionName: string, userId: string, itemIds: string[]): Promise<void>;
 }
 
-// מיפוי לוגי: מסמכים תחת קולקציה גלובלית עם מזהה מורכב userId_itemId
 export class FirestoreAdapter implements DatabaseAdapter {
   async create<T>(collectionName: string, userId: string, itemId: string, data: T): Promise<void> {
     const { db } = getFirebase();

@@ -5,6 +5,7 @@ import { makeRedirectUri } from 'expo-auth-session';
 import { useUser } from '../context/UserContext';
 import { USE_BACKEND } from '../utils/dbConfig';
 import { db } from '../utils/databaseService';
+import { useTranslation } from 'react-i18next';
 
 type GoogleLoginButtonProps = {
   onSuccess?: (user: any) => void;
@@ -12,6 +13,7 @@ type GoogleLoginButtonProps = {
 
 export default function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps) {
   const { setSelectedUser } = useUser();
+  const { t } = useTranslation(['auth']);
   const isWeb = Platform.OS === 'web';
   const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
   const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
@@ -19,11 +21,10 @@ export default function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps)
   // makeRedirectUri() מייצר אוטומטית את ה‑URI הנכון ל‑Web Static
   const redirectUri = isWeb ? makeRedirectUri() : undefined;
 
-  // מניעת קריסה בווב אם אין webClientId בזמן פיתוח/Build
   if (isWeb && !webClientId) {
     return (
       <TouchableOpacity style={[styles.button, styles.disabled]} disabled>
-        <Text style={styles.text}>התחברות עם גוגל</Text>
+        <Text style={styles.text}>{t('auth:googleCta')}</Text>
       </TouchableOpacity>
     );
   }
@@ -33,7 +34,6 @@ export default function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps)
     webClientId: webClientId || undefined,
     scopes: ['openid', 'profile', 'email'],
     responseType: isWeb ? 'id_token' : 'token',
-    // ברשת (web) נשתמש בדומיין עצמו כ־redirectUri כדי להתאים להגדרות Google
     ...(redirectUri ? { redirectUri } : {}),
   } as any);
 
@@ -53,7 +53,6 @@ export default function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps)
   };
 
   useEffect(() => {
-    // השלם את סשן ה־OAuth בכל פלטפורמה (ייבוא דינמי כדי לא לשבור build)
     import('expo-web-browser').then((m) => m.maybeCompleteAuthSession()).catch(() => {});
     const run = async () => {
       // eslint-disable-next-line no-console
@@ -119,7 +118,7 @@ export default function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps)
 
   return (
     <TouchableOpacity style={[styles.button, !request && styles.disabled]} disabled={!request} onPress={onPress}>
-      <Text style={styles.text}>התחברות עם גוגל</Text>
+      <Text style={styles.text}>{t('auth:googleCta')}</Text>
     </TouchableOpacity>
   );
 }
@@ -129,7 +128,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#EA4335',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 12,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

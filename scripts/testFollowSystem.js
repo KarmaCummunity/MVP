@@ -1,25 +1,25 @@
-// סקריפט בדיקה למערכת העוקבים עם הנתונים המאוחדים
-// הרץ עם: node scripts/testFollowSystem.js
+// Test script for the followers system with unified data
+// Run with: node scripts/testFollowSystem.js
 
 console.log('🧪 Testing Follow System with Unified Data...');
 
-// קריאת הקובץ המאוחד
+// Read the unified file
 const fs = require('fs');
 const path = require('path');
 
 const characterTypesPath = path.join(__dirname, '../globals/characterTypes.ts');
 const content = fs.readFileSync(characterTypesPath, 'utf8');
 
-// חילוץ הנתונים
+// Extract data
 const allUsersMatch = content.match(/export const allUsers: CharacterType\[\] = (\[[\s\S]*?\]);/);
 const allUsers = allUsersMatch ? eval(allUsersMatch[1]) : [];
 
 console.log(`📊 Total Users: ${allUsers.length}`);
 
-// סימולציה של מערכת העוקבים
+// Followers system simulation
 let followRelationships = [];
 
-// פונקציות מערכת העוקבים
+// Followers system functions
 function getFollowStats(userId, currentUserId) {
   const followers = followRelationships.filter(rel => rel.followingId === userId);
   const following = followRelationships.filter(rel => rel.followerId === userId);
@@ -96,10 +96,10 @@ function getFollowSuggestions(currentUserId, limit = 10) {
   return suggestions.slice(0, limit);
 }
 
-// בדיקות המערכת
+// System tests
 console.log('\n🔍 Testing Follow System...');
 
-// בדיקה 1: התחלת עקיבה
+// Test 1: Start following
 const user1 = allUsers[0]; // user001
 const user2 = allUsers[15]; // user016
 
@@ -110,7 +110,7 @@ console.log(`User 2: ${user2.name} (${user2.id})`);
 const followResult = followUser(user1.id, user2.id);
 console.log(`Follow result: ${followResult ? 'SUCCESS' : 'FAILED'}`);
 
-// בדיקה 2: סטטיסטיקות עוקבים
+// Test 2: Follow stats
 const stats1 = getFollowStats(user1.id, user1.id);
 const stats2 = getFollowStats(user2.id, user1.id);
 
@@ -119,7 +119,7 @@ console.log(`${user1.name}: ${stats1.followersCount} followers, ${stats1.followi
 console.log(`${user2.name}: ${stats2.followersCount} followers, ${stats2.followingCount} following`);
 console.log(`${user1.name} is following ${user2.name}: ${stats2.isFollowing}`);
 
-// בדיקה 3: רשימת עוקבים
+// Test 3: Followers/following lists
 const user2Followers = getFollowers(user2.id);
 const user1Following = getFollowing(user1.id);
 
@@ -127,14 +127,14 @@ console.log(`\n👥 Follow Lists:`);
 console.log(`${user2.name} followers: ${user2Followers.map(u => u.name).join(', ')}`);
 console.log(`${user1.name} following: ${user1Following.map(u => u.name).join(', ')}`);
 
-// בדיקה 4: המלצות
+// Test 4: Suggestions
 const suggestions = getFollowSuggestions(user1.id, 5);
 console.log(`\n💡 Follow Suggestions for ${user1.name}:`);
 suggestions.forEach((user, index) => {
   console.log(`${index + 1}. ${user.name} (${user.karmaPoints} karma points)`);
 });
 
-// בדיקה 5: ביטול עקיבה
+// Test 5: Unfollow
 console.log(`\n📝 Test 2: Unfollow Operation`);
 const unfollowResult = unfollowUser(user1.id, user2.id);
 console.log(`Unfollow result: ${unfollowResult ? 'SUCCESS' : 'FAILED'}`);
@@ -142,9 +142,9 @@ console.log(`Unfollow result: ${unfollowResult ? 'SUCCESS' : 'FAILED'}`);
 const statsAfterUnfollow = getFollowStats(user2.id, user1.id);
 console.log(`${user2.name} followers after unfollow: ${statsAfterUnfollow.followersCount}`);
 
-// בדיקה 6: עקיבה מרובה
+// Test 6: Multiple follows
 console.log(`\n📝 Test 3: Multiple Follow Operations`);
-const usersToFollow = allUsers.slice(1, 6); // 5 משתמשים נוספים
+const usersToFollow = allUsers.slice(1, 6); // 5 additional users
 usersToFollow.forEach(user => {
   followUser(user1.id, user.id);
 });
@@ -152,7 +152,7 @@ usersToFollow.forEach(user => {
 const finalStats = getFollowStats(user1.id, user1.id);
 console.log(`${user1.name} final following count: ${finalStats.followingCount}`);
 
-// בדיקה 7: משתמשים פופולריים
+// Test 7: Popular users
 console.log(`\n🏆 Popular Users Test:`);
 const allUserStats = allUsers.map(char => {
   const stats = getFollowStats(char.id, '');
@@ -168,7 +168,7 @@ popularUsers.forEach((user, index) => {
   console.log(`${index + 1}. ${user.name}: ${user.followersCount} followers`);
 });
 
-// בדיקה 8: תקינות נתונים
+// Test 8: Data integrity
 console.log(`\n🔍 Data Integrity Check:`);
 const totalRelationships = followRelationships.length;
 const uniqueFollowers = new Set(followRelationships.map(r => r.followerId));
@@ -178,7 +178,7 @@ console.log(`Total relationships: ${totalRelationships}`);
 console.log(`Unique followers: ${uniqueFollowers.size}`);
 console.log(`Unique following: ${uniqueFollowing.size}`);
 
-// בדיקה 9: ביצועים
+// Test 9: Performance
 console.log(`\n⚡ Performance Test:`);
 const startTime = Date.now();
 for (let i = 0; i < 100; i++) {

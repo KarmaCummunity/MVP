@@ -637,7 +637,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
     ...(Platform.OS === 'web' && {
-      overflow: 'auto' as any, // Enable native web scrolling
+      overflowY: 'auto' as any,
+      overflowX: 'hidden' as any,
     }),
     height: '100%',
     maxHeight: SCREEN_HEIGHT - 200, // Reserve space for header
