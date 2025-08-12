@@ -4,7 +4,8 @@
 FROM node:20-alpine AS webbuild
 WORKDIR /app
 
-COPY package*.json ./
+# Copy lockfile explicitly to ensure npm ci finds it
+COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 
