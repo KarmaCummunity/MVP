@@ -26,6 +26,8 @@ FROM nginx:1.25-alpine as web
 # Copy nginx config template and entrypoint to inject runtime BACKEND_BASE_URL
 ENV BACKEND_BASE_URL="http://localhost:3001"
 ENV NGINX_PORT=8080
+ENV EXPO_PUBLIC_USE_BACKEND=1
+ENV EXPO_PUBLIC_USE_FIRESTORE=0
 COPY ./web/nginx.conf /etc/nginx/templates/default.conf.template
 RUN printf '#!/bin/sh\nset -e\n: "${BACKEND_BASE_URL:=http://localhost:3001}"\n: "${PORT:=8080}"\nexport NGINX_PORT="$PORT"\n\
   envsubst '\''$BACKEND_BASE_URL $NGINX_PORT'\'' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf\n\
