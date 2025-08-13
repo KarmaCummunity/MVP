@@ -84,12 +84,8 @@ export default function MainNavigator() {
 
   console.log('🧭 MainNavigator - Loading completed, rendering navigator');
 
-  // If not authenticated and not in guest mode - show login screen
-  if (!isAuthenticated && !isGuestMode) {
-    console.log('🧭 MainNavigator - User not authenticated, showing LoginScreen');
-  } else {
-    console.log('🧭 MainNavigator - User authenticated or guest mode, showing BottomNavigator');
-  }
+  // Always start with LoginScreen - no automatic authentication
+  console.log('🧭 MainNavigator - Always showing LoginScreen as initial route');
   
   return (
     <Stack.Navigator 

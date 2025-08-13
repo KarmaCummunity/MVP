@@ -594,29 +594,75 @@ export const db = {
     try {
       if (USE_BACKEND) {
         const departureIso = (() => {
-          const dateStr = typeof rideData?.date === 'string' ? rideData.date : new Date().toISOString().split('T')[0];
-          const timeStr = typeof rideData?.time === 'string' ? rideData.time : new Date().toTimeString().slice(0, 5);
-          return new Date(`${dateStr}T${timeStr}:00Z`).toISOString();
+          try {
+            const dateStr = typeof rideData?.date === 'string' ? rideData.date : new Date().toISOString().split('T')[0];
+            const timeStr = typeof rideData?.time === 'string' ? rideData.time : new Date().toTimeString().slice(0, 5);
+            
+            // Validate date format (YYYY-MM-DD)
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+              throw new Error('Invalid date format');
+            }
+            
+            // Validate time format (HH:MM)
+            if (!/^\d{2}:\d{2}$/.test(timeStr)) {
+              throw new Error('Invalid time format');
+            }
+            
+            // Create date without Z suffix to avoid timezone issues
+            const dateTimeStr = `${dateStr}T${timeStr}:00`;
+            const date = new Date(dateTimeStr);
+            
+            // Check if date is valid
+            if (isNaN(date.getTime())) {
+              throw new Error('Invalid datetime');
+            }
+            
+            return date.toISOString();
+          } catch (error) {
+            console.error('Date parsing error:', error);
+            // Fallback to current time if date parsing fails
+            return new Date().toISOString();
+          }
         })();
+        // Validate required fields before sending to server
+        if (!rideData.from || !rideData.to) {
+          throw new Error('From and to locations are required');
+        }
+        
+        const driverId = rideData.driverId || userId;
+        if (!driverId) {
+          throw new Error('Driver ID is required');
+        }
+        
         const payload = {
-          driver_id: rideData.driverId || userId,
-          title: rideData.title || `${rideData.from || 'ממקור'} → ${rideData.to || 'יעד'}`,
-          from_location: { name: rideData.from || '', city: rideData.from || '', address: rideData.from || '' },
-          to_location: { name: rideData.to || '', city: rideData.to || '', address: rideData.to || '' },
+          driver_id: driverId,
+          title: rideData.title || `${rideData.from} → ${rideData.to}`,
+          from_location: { 
+            name: rideData.from, 
+            city: rideData.from, 
+            address: rideData.from 
+          },
+          to_location: { 
+            name: rideData.to, 
+            city: rideData.to, 
+            address: rideData.to 
+          },
           departure_time: departureIso,
           arrival_time: null,
-          available_seats: typeof rideData.seats === 'number' ? rideData.seats : 1,
-          price_per_seat: Number(rideData.price || 0),
+          available_seats: Math.max(1, Math.min(8, typeof rideData.seats === 'number' ? rideData.seats : 1)),
+          price_per_seat: Math.max(0, Number(rideData.price || 0)),
           description: rideData.description || null,
           requirements: (() => {
             const reqs: string[] = [];
             if (rideData.noSmoking) reqs.push('no-smoking');
             if (rideData.petsAllowed) reqs.push('pets-allowed');
             if (rideData.kidsFriendly) reqs.push('kids-friendly');
-            return reqs.join(', ');
+            return reqs.length > 0 ? reqs.join(', ') : null;
           })(),
           metadata: { source: 'legacy-app', legacy_id: rideId },
         };
+        
+        console.log('🚗 Creating ride with payload:', JSON.stringify(payload, null, 2));
         const res = await apiService.createRide(payload);
         if (!res.success) throw new Error(res.error || 'Failed to create ride');
         return;

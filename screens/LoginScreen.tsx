@@ -152,8 +152,23 @@ export default function LoginScreen() {
   };
 
   const handleGuestMode = async () => {
-    console.log('🔐 LoginScreen - handleGuestMode');
-    await setGuestMode();
+    console.log('🔐 LoginScreen - handleGuestMode - Starting');
+    try {
+      await setGuestMode();
+      console.log('🔐 LoginScreen - handleGuestMode - Guest mode set, navigating...');
+      // Force immediate navigation to home
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'HomeStack' }],
+      });
+    } catch (error) {
+      console.error('🔐 LoginScreen - handleGuestMode - Error:', error);
+      // Even if there's an error, try to navigate (fallback)
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'HomeStack' }],
+      });
+    }
   };
 
   const resetEmailState = () => {
@@ -466,19 +481,7 @@ export default function LoginScreen() {
     }
   };
 
-  useEffect(() => {
-    if (selectedUser || isGuestMode) {
-      console.log('🔐 LoginScreen - useEffect - navigating to Home', { 
-        selectedUser: !!selectedUser, 
-        isGuestMode,
-        userName: selectedUser?.name 
-      });
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'HomeStack' }],
-      });
-    }
-  }, [selectedUser, isGuestMode, navigation]);
+  // REMOVED: No automatic navigation - user must manually navigate after login/guest selection
 
   return (
     <SafeAreaView style={styles.safeArea}>

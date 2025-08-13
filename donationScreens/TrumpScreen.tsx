@@ -277,10 +277,10 @@ export default function TrumpScreen({
     // Filter by search
     if (searchQuery) {
       filtered = filtered.filter(ride =>
-        ride.driverName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        ride.from.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        ride.to.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        ride.category.toLowerCase().includes(searchQuery.toLowerCase())
+        (ride.driverName?.toLowerCase()?.includes(searchQuery.toLowerCase()) ?? false) ||
+        (ride.from?.toLowerCase()?.includes(searchQuery.toLowerCase()) ?? false) ||
+        (ride.to?.toLowerCase()?.includes(searchQuery.toLowerCase()) ?? false) ||
+        (ride.category?.toLowerCase()?.includes(searchQuery.toLowerCase()) ?? false)
       );
     }
 
@@ -310,29 +310,33 @@ export default function TrumpScreen({
     const selectedSort = selectedSorts[0];
     switch (selectedSort) {
       case (t('trump:sort.alphabetical') as string):
-        filtered.sort((a, b) => a.driverName.localeCompare(b.driverName));
+        filtered.sort((a, b) => (a.driverName || '').localeCompare(b.driverName || ''));
         break;
       case (t('trump:sort.byLocation') as string):
-        filtered.sort((a, b) => a.from.localeCompare(b.from));
+        filtered.sort((a, b) => (a.from || '').localeCompare(b.from || ''));
         break;
       case (t('trump:sort.byCategory') as string):
-        filtered.sort((a, b) => a.category.localeCompare(b.category));
+        filtered.sort((a, b) => (a.category || '').localeCompare(b.category || ''));
         break;
       case (t('trump:sort.byDate') as string):
-        filtered.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        filtered.sort((a, b) => {
+          const dateA = a.date ? new Date(a.date).getTime() : 0;
+          const dateB = b.date ? new Date(b.date).getTime() : 0;
+          return dateA - dateB;
+        });
         break;
       case (t('trump:sort.byTime') as string):
-        filtered.sort((a, b) => a.time.localeCompare(b.time));
+        filtered.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
         break;
       case (t('trump:sort.byPrice') as string):
-        filtered.sort((a, b) => a.price - b.price);
+        filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
         break;
       case (t('trump:sort.byRating') as string):
-        filtered.sort((a, b) => b.rating - a.rating);
+        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         break;
       case (t('trump:sort.byRelevance') as string):
         // Default - by rating
-        filtered.sort((a, b) => b.rating - a.rating);
+        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         break;
     }
 
@@ -808,7 +812,7 @@ export default function TrumpScreen({
                     <Text style={localStyles.groupColumnTitle}>{t('trump:groups.whatsapp')}</Text>
                      {dummyGroups
                       .filter(g => g.type === 'whatsapp')
-                      .filter(g => !searchQuery || g.name.includes(searchQuery))
+                      .filter(g => !searchQuery || (g.name?.includes(searchQuery) ?? false))
                       .map((group) => (
                          <View style={localStyles.groupLinkWrapper}>
                           {renderGroupCard({ item: group })}
@@ -819,7 +823,7 @@ export default function TrumpScreen({
                     <Text style={localStyles.groupColumnTitle}>{t('trump:groups.facebook')}</Text>
                      {dummyGroups
                       .filter(g => g.type === 'facebook')
-                      .filter(g => !searchQuery || g.name.includes(searchQuery))
+                      .filter(g => !searchQuery || (g.name?.includes(searchQuery) ?? false))
                       .map((group) => (
                          <View style={localStyles.groupLinkWrapper}>
                           {renderGroupCard({ item: group })}

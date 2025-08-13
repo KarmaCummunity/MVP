@@ -41,7 +41,28 @@ export class RestAdapter {
       throw new Error(`HTTP ${res.status}: ${text}`);
     }
     if (res.status === 204) return undefined as unknown as T;
-    return (await res.json()) as T;
+    
+    // Check if response has content before parsing JSON
+    const contentLength = res.headers.get('content-length');
+    const contentType = res.headers.get('content-type');
+    
+    if (contentLength === '0' || (!contentType?.includes('application/json') && !contentType?.includes('text/json'))) {
+      // Return empty object for non-JSON or empty responses
+      return {} as unknown as T;
+    }
+    
+    const text = await res.text();
+    if (!text.trim()) {
+      // Return empty object for empty responses
+      return {} as unknown as T;
+    }
+    
+    try {
+      return JSON.parse(text) as T;
+    } catch (error) {
+      console.error(`❌ JSON Parse Error for ${method} ${url}:`, error, 'Response text:', text);
+      return {} as unknown as T;
+    }
   }
 
   async create<T>(collection: string, userId: string, itemId: string, data: T): Promise<void> {

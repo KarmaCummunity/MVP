@@ -57,6 +57,7 @@ import { createShadowStyle } from "../globals/styles";
 import { scaleSize } from "../globals/responsive";
 import { EnhancedStatsService, formatShortNumber } from "../utils/statsService";
 import FloatingBubblesOverlay from "../components/FloatingBubblesOverlay";
+import FloatingBubblesSkia from "../components/FloatingBubblesSkia";
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 // Panel layout dimensions derived responsively
@@ -298,7 +299,7 @@ export default function HomeScreen() {
         // Home screen with enhanced scrolling
         <>
         <Animated.View style={[styles.homeContainer, homeAnimatedStyle]}>
-          <FloatingBubblesOverlay />
+          {Platform.OS === 'web' ? <FloatingBubblesOverlay /> : <FloatingBubblesSkia />}
         </Animated.View>
         {/* Drag Handle Button - the ONLY way to open PostsReelsScreen */}
         {!showPosts && (

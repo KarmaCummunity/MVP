@@ -72,82 +72,30 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      console.log('🔐 UserContext - checkAuthStatus - Starting auth check');
+      console.log('🔐 UserContext - checkAuthStatus - Starting auth check (ALWAYS RESET TO LOGIN)');
       setIsLoading(true);
       
-      // Check AsyncStorage for stored user and guest mode
-      const storedUserData = await AsyncStorage.getItem('current_user');
-      const guestModeData = await AsyncStorage.getItem('guest_mode');
-      const storedAuthMode = (await AsyncStorage.getItem('auth_mode')) as AuthMode | null;
-      const oauthInProgress = await AsyncStorage.getItem('oauth_in_progress');
+      // Always clear any stored authentication data
+      console.log('🔐 UserContext - checkAuthStatus - Clearing all stored auth data');
+      await AsyncStorage.removeItem('current_user');
+      await AsyncStorage.removeItem('guest_mode');
+      await AsyncStorage.removeItem('auth_mode');
+      await AsyncStorage.removeItem('oauth_in_progress');
       
-      console.log('🔐 UserContext - checkAuthStatus - storedUserData:', storedUserData ? 'exists' : 'null');
-      console.log('🔐 UserContext - checkAuthStatus - guestModeData:', guestModeData);
-      
-      if (oauthInProgress === 'true') {
-        // Clear stuck OAuth state and check normally
-        console.log('🔐 UserContext - checkAuthStatus - Clearing stuck OAuth state');
-        await AsyncStorage.removeItem('oauth_in_progress');
-        
-        // Continue with normal auth check after clearing OAuth state
-        if (guestModeData === 'true') {
-          console.log('🔐 UserContext - checkAuthStatus - Setting guest mode after clearing OAuth');
-          setIsGuestMode(true);
-          setIsAuthenticated(true);
-          setSelectedUserState(null);
-          setAuthMode('guest');
-        } else {
-          console.log('🔐 UserContext - checkAuthStatus - No auth after clearing OAuth');
-          setIsAuthenticated(false);
-          setIsGuestMode(false);
-          setAuthMode('guest');
-        }
-      } else if (guestModeData === 'true') {
-        console.log('🔐 UserContext - checkAuthStatus - Setting guest mode');
-        setIsGuestMode(true);
-        setIsAuthenticated(true);
-        setSelectedUserState(null);
-        setAuthMode('guest');
-      } else if (storedUserData) {
-        try {
-          const user = JSON.parse(storedUserData);
-          console.log('🔐 UserContext - checkAuthStatus - Parsed user:', user?.name || 'invalid');
-          if (user && user.id && user.name) {
-            console.log('🔐 UserContext - checkAuthStatus - Enriching user with org roles');
-            const enriched = await enrichUserWithOrgRoles(user);
-            console.log('🔐 UserContext - checkAuthStatus - Setting authenticated user');
-            setSelectedUserState(enriched);
-            setIsAuthenticated(true);
-            setIsGuestMode(false);
-            setAuthMode(storedAuthMode || 'real');
-            console.log('🔐 UserContext - checkAuthStatus - Authenticated set TRUE');
-          } else {
-            console.log('🔐 UserContext - checkAuthStatus - Invalid user data, removing');
-            await AsyncStorage.removeItem('current_user');
-            setIsAuthenticated(false);
-            setIsGuestMode(false);
-            setAuthMode('guest');
-          }
-        } catch (parseError) {
-          console.log('🔐 UserContext - checkAuthStatus - Parse error, removing user data');
-          await AsyncStorage.removeItem('current_user');
-          setIsAuthenticated(false);
-          setIsGuestMode(false);
-          setAuthMode('guest');
-        }
-      } else {
-        console.log('🔐 UserContext - checkAuthStatus - No stored data, setting unauthenticated');
-        setIsAuthenticated(false);
-        setIsGuestMode(false);
-        setAuthMode('guest');
-      }
+      // Always start fresh - no authentication
+      console.log('🔐 UserContext - checkAuthStatus - Setting fresh unauthenticated state');
+      setIsAuthenticated(false);
+      setIsGuestMode(false);
+      setSelectedUserState(null);
+      setAuthMode('guest');
     } catch (error) {
       console.error('🔐 UserContext - checkAuthStatus - Error:', error);
       setIsAuthenticated(false);
       setIsGuestMode(false);
+      setSelectedUserState(null);
       setAuthMode('guest');
     } finally {
-      console.log('🔐 UserContext - checkAuthStatus - Auth check completed');
+      console.log('🔐 UserContext - checkAuthStatus - Auth check completed (fresh start)');
       setIsLoading(false);
     }
   };
@@ -167,17 +115,15 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
             console.log('⚠️ Failed to clear local collections on real auth (non-fatal):', e);
           }
         }
-        await AsyncStorage.setItem('current_user', JSON.stringify(enriched));
-        await AsyncStorage.setItem('auth_mode', mode);
-        await AsyncStorage.removeItem('guest_mode');
+        // DO NOT SAVE TO AsyncStorage - session only
+        console.log('🔐 UserContext - setSelectedUserWithMode - NOT saving to storage (session only)');
         setSelectedUserState(enriched);
         setIsAuthenticated(true);
         setIsGuestMode(mode === 'guest');
         setAuthMode(mode);
-        console.log('🔐 UserContext - setSelectedUserWithMode - saved & isAuthenticated TRUE');
+        console.log('🔐 UserContext - setSelectedUserWithMode - session set & isAuthenticated TRUE');
       } else {
-        await AsyncStorage.removeItem('current_user');
-        await AsyncStorage.removeItem('auth_mode');
+        // No need to remove from AsyncStorage since we're not saving
         setSelectedUserState(null);
         setIsAuthenticated(false);
         setIsGuestMode(false);
@@ -185,7 +131,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         console.log('🔐 UserContext - setSelectedUserWithMode - cleared & isAuthenticated FALSE');
       }
     } catch (error) {
-      console.error('Error saving user to storage:', error);
+      console.error('Error setting user:', error);
       setSelectedUserState(user);
       setIsAuthenticated(user !== null);
       setIsGuestMode(false);
@@ -264,20 +210,28 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   const setGuestMode = async () => {
     try {
-      console.log('🔐 UserContext - setGuestMode');
-      await AsyncStorage.removeItem('current_user');
-      await AsyncStorage.setItem('guest_mode', 'true');
-      await AsyncStorage.setItem('auth_mode', 'guest');
+      console.log('🔐 UserContext - setGuestMode - Starting (session only)');
+      setIsLoading(true);
+      
+      // DO NOT SAVE TO AsyncStorage - session only
+      console.log('🔐 UserContext - setGuestMode - Setting guest mode for session only');
+      
+      // Update state for current session only
       setSelectedUserState(null);
-      setIsAuthenticated(true);
-      setIsGuestMode(true);
       setAuthMode('guest');
+      setIsGuestMode(true);
+      setIsAuthenticated(true);
+      
+      console.log('🔐 UserContext - setGuestMode - Guest mode set successfully (session only)');
     } catch (error) {
-      console.error('Error setting guest mode:', error);
+      console.error('🔐 UserContext - setGuestMode - Error:', error);
       setSelectedUserState(null);
-      setIsAuthenticated(true);
-      setIsGuestMode(true);
       setAuthMode('guest');
+      setIsGuestMode(true);
+      setIsAuthenticated(true);
+    } finally {
+      setIsLoading(false);
+      console.log('🔐 UserContext - setGuestMode - Completed');
     }
   };
 
