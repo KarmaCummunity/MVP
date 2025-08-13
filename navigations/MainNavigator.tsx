@@ -120,9 +120,12 @@ export default function MainNavigator() {
       <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
       <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
       <Stack.Screen name="AboutKarmaCommunityScreen" component={AboutKarmaCommunityScreen} />
+     
+{/* Org Screens */}     
       <Stack.Screen name="OrgOnboardingScreen" component={OrgOnboardingScreen} />
       <Stack.Screen name="AdminOrgApprovalsScreen" component={AdminOrgApprovalsScreen} />
       <Stack.Screen name="OrgDashboardScreen" component={OrgDashboardScreen} />
+      {/* User Profile Screens */}
       <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} />
     </Stack.Navigator>
   );

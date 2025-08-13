@@ -24,7 +24,7 @@ import { restAdapter } from '../utils/restAdapter';
 import { getSignInMethods, signInWithEmail as fbSignInWithEmail, signUpWithEmail as fbSignUpWithEmail, sendVerification as fbSendVerification, isEmailVerified as fbIsEmailVerified, sendPasswordReset } from '../utils/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import GoogleLoginButton from '../components/GoogleLoginButton';
+import ModernGoogleLoginButton from '../components/ModernGoogleLoginButton';
 import { useTranslation } from 'react-i18next';
 import i18n from '../app/i18n';
 
@@ -101,7 +101,7 @@ export default function LoginScreen() {
     }
   };
 
-  const handleLoginWithGoogle = async () => {
+  const handleLoginWithCharacter = async () => {
     if (!selectedCharacter) {
       Alert.alert(t('auth:characters.selectTitle'), t('auth:characters.selectSubtitle'));
       return;
@@ -490,7 +490,7 @@ export default function LoginScreen() {
           <Text style={styles.subtitle}>{t('auth:subtitle') || ''}</Text>
           
           <View style={styles.buttonsContainer}>
-            <GoogleLoginButton />
+            <ModernGoogleLoginButton />
 
 
 
@@ -682,18 +682,18 @@ export default function LoginScreen() {
 
             <TouchableOpacity
               style={[
-                styles.googleButton,
+                styles.characterButton,
                 !selectedCharacter && styles.disabledButton
               ]}
-              onPress={handleLoginWithGoogle}
+              onPress={handleLoginWithCharacter}
               disabled={!selectedCharacter}
               activeOpacity={selectedCharacter ? 0.8 : 1}
             >
               <Text style={[
-                styles.googleButtonText,
+                styles.characterButtonText,
                 !selectedCharacter && styles.disabledButtonText
               ]}>
-               {selectedCharacter ? t('auth:loginCta') : t('auth:characters.selectUserFirst')}
+               {selectedCharacter ? t('auth:characters.loginAsSelected') : t('auth:characters.selectUserFirst')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -1035,18 +1035,11 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'stretch',
   },
-  googleButton: {
-    backgroundColor: '#FF6B9D',
+  characterButton: {
+    backgroundColor: '#9C27B0',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    width: '100%',
   },
   disabledButton: {
     backgroundColor: '#CCCCCC',
@@ -1055,12 +1048,11 @@ const styles = StyleSheet.create({
   disabledButtonText: {
     color: '#999999',
   },
-  googleButtonText: {
+  characterButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
-    width: '100%',
   },
   guestButton: {
     backgroundColor: '#FFFFFF',

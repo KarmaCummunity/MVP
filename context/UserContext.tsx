@@ -96,6 +96,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
             setIsAuthenticated(true);
             setIsGuestMode(false);
             setAuthMode(storedAuthMode || 'real');
+            console.log('🔐 UserContext - checkAuthStatus - Authenticated set TRUE');
           } else {
             console.log('🔐 UserContext - checkAuthStatus - Invalid user data, removing');
             await AsyncStorage.removeItem('current_user');
@@ -149,6 +150,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         setIsAuthenticated(true);
         setIsGuestMode(mode === 'guest');
         setAuthMode(mode);
+        console.log('🔐 UserContext - setSelectedUserWithMode - saved & isAuthenticated TRUE');
       } else {
         await AsyncStorage.removeItem('current_user');
         await AsyncStorage.removeItem('auth_mode');
@@ -156,6 +158,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         setIsAuthenticated(false);
         setIsGuestMode(false);
         setAuthMode('guest');
+        console.log('🔐 UserContext - setSelectedUserWithMode - cleared & isAuthenticated FALSE');
       }
     } catch (error) {
       console.error('Error saving user to storage:', error);

@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 import type { StatDetails } from './StatDetailsModal';
 import { useUser } from '../context/UserContext';
 import { useEffect, useState } from 'react';
-import { getGlobalStats, formatShortNumber, parseShortNumber, CommunityStats } from '../utils/statsService';
+import { getGlobalStats, formatShortNumber, parseShortNumber, CommunityStats, EnhancedStatsService } from '../utils/statsService';
+import { USE_BACKEND } from '../utils/dbConfig';
 
 export type CommunityStat = {
   key: string;
@@ -52,13 +53,33 @@ const CommunityStatsGrid: React.FC<CommunityStatsGridProps> = ({ onSelect }) => 
     let mounted = true;
     const run = async () => {
       setLoading(true);
-      const s = await getGlobalStats();
-      if (mounted) setStatsState(s);
+      
+      try {
+        let stats: CommunityStats;
+        
+        if (USE_BACKEND && isRealAuth) {
+          // Use enhanced backend service for real users
+          stats = await EnhancedStatsService.getCommunityStats();
+        } else {
+          // Use legacy local stats for guests or if backend unavailable
+          stats = await getGlobalStats();
+        }
+        
+        if (mounted) setStatsState(stats);
+      } catch (error) {
+        console.error('Failed to load community stats:', error);
+        
+        // Fallback to legacy stats
+        const fallbackStats = await getGlobalStats();
+        if (mounted) setStatsState(fallbackStats);
+      }
+      
       setLoading(false);
     };
+    
     run();
     return () => { mounted = false; };
-  }, []);
+  }, [isRealAuth]);
   const realStats: CommunityStat[] = statsState
     ? (() => {
         const cfg: Array<{ key: keyof CommunityStats | 'activeMembers'; icon: string; color: string; labelKey?: string }> = [

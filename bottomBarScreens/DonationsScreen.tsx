@@ -28,6 +28,9 @@ import { useTranslation } from 'react-i18next';
 import { getScreenInfo, isLandscape, scaleSize } from '../globals/responsive';
 import stylesGlobal, { createShadowStyle } from '../globals/styles';
 import { restAdapter } from '../utils/restAdapter';
+import { enhancedDB, EnhancedDatabaseService } from '../utils/enhancedDatabaseService';
+import { EnhancedStatsService } from '../utils/statsService';
+import { USE_BACKEND } from '../utils/dbConfig';
 
 interface DonationsScreenProps {
   navigation: NavigationProp<DonationsStackParamList>;
@@ -81,7 +84,7 @@ const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
   const tabBarHeight = useBottomTabBarHeight();
-  const { isGuestMode, isRealAuth } = useUser();
+  const { isGuestMode, isRealAuth } = useUser(); // הסרנו את user כי אינו קיים ב-Type
   const { t } = useTranslation(['donations','common']);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [recentCategoryIds, setRecentCategoryIds] = useState<string[]>([]);
@@ -142,23 +145,35 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
 
         // Fetch popular categories analytics (top 3 globally)
         try {
-          const analytics = await restAdapter.list<any>(ANALYTICS_COLLECTION, ANALYTICS_USER_ID).catch(() => [] as any[]);
-          const counts: { id: string; count: number }[] = (analytics || [])
-            .map((d: any) => {
+          let analytics: any[] = [];
+          
+          if (USE_BACKEND && isRealAuth) {
+            // Use enhanced backend analytics
+            const categoryAnalytics = await EnhancedStatsService.getCategoryAnalytics();
+            analytics = categoryAnalytics.map((cat: any) => ({
+              id: cat.slug,
+              categoryId: cat.slug,
+              count: cat.donation_count + (cat.clicks || 0),
+            }));
+          } else {
+            // Fallback to legacy analytics
+            analytics = await restAdapter.list<any>(ANALYTICS_COLLECTION, ANALYTICS_USER_ID).catch(() => [] as any[]);
+            analytics = analytics.map((d: any) => {
               const id: string | undefined = d?.categoryId || (typeof d?.id === 'string' ? d.id.replace(ANALYTICS_ITEM_PREFIX, '') : undefined);
               const count: number = Number(d?.count ?? 0);
               return id ? { id, count } : null;
-            })
-            .filter(Boolean) as any;
+            }).filter(Boolean);
+          }
 
           const baseIds = new Set((BASE_CATEGORIES as readonly any[]).map((c) => c.id));
-          const topSorted = counts
+          const topSorted = analytics
             .filter((c) => baseIds.has(c.id))
             .sort((a, b) => b.count - a.count)
             .map((c) => c.id);
           const resolved = (topSorted.length > 0 ? topSorted : POPULAR_FALLBACK).filter((id) => baseIds.has(id));
           setPopularCategoryIds(resolved.slice(0, 3));
         } catch (e) {
+          console.error('Failed to load category analytics:', e);
           const baseIds = new Set((BASE_CATEGORIES as readonly any[]).map((c) => c.id));
           setPopularCategoryIds(POPULAR_FALLBACK.filter((id) => baseIds.has(id)).slice(0, 3));
         }
@@ -174,16 +189,22 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
 
   const incrementCategoryCounter = async (categoryId: string) => {
     try {
-      const itemId = `${ANALYTICS_ITEM_PREFIX}${categoryId}`;
-      const existing = await restAdapter.read<any>(ANALYTICS_COLLECTION, ANALYTICS_USER_ID, itemId).catch(() => null);
-      const next = { id: itemId, categoryId, count: Number(existing?.count ?? 0) + 1, updatedAt: new Date().toISOString() };
-      if (!existing) {
-        await restAdapter.create(ANALYTICS_COLLECTION, ANALYTICS_USER_ID, itemId, next);
+      if (USE_BACKEND && isRealAuth) {
+        // Use enhanced stats service with user tracking
+        await EnhancedStatsService.trackCategoryView(categoryId);
       } else {
-        await restAdapter.update(ANALYTICS_COLLECTION, ANALYTICS_USER_ID, itemId, next);
+        // Fallback to legacy analytics
+        const itemId = `${ANALYTICS_ITEM_PREFIX}${categoryId}`;
+        const existing = await restAdapter.read<any>(ANALYTICS_COLLECTION, ANALYTICS_USER_ID, itemId).catch(() => null);
+        const next = { id: itemId, categoryId, count: Number(existing?.count ?? 0) + 1, updatedAt: new Date().toISOString() };
+        if (!existing) {
+          await restAdapter.create(ANALYTICS_COLLECTION, ANALYTICS_USER_ID, itemId, next);
+        } else {
+          await restAdapter.update(ANALYTICS_COLLECTION, ANALYTICS_USER_ID, itemId, next);
+        }
       }
     } catch (e) {
-      // no-op
+      console.warn('Failed to track category view:', e);
     }
   };
 

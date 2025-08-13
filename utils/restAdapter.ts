@@ -8,6 +8,13 @@ export class RestAdapter {
     this.baseUrl = baseUrl.replace(/\/$/, '');
   }
 
+  async post<T>(path: string, body?: any): Promise<T> {
+    return this.http<T>(path, {
+      method: 'POST',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  }
+
   private async http<T>(path: string, init?: RequestInit): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     const method = (init?.method || 'GET').toUpperCase();

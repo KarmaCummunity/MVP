@@ -165,6 +165,7 @@ export type RootStackParamList = {
   OrgOnboardingScreen: undefined;
   AdminOrgApprovalsScreen: undefined;
   OrgDashboardScreen: undefined;
+  EditProfileScreen: undefined;
 };
 
 // --- Bottom Tab Navigator (BottomNavigator) Parameter List ---

@@ -568,7 +568,20 @@
       "signupFailed": "הרישום נכשל. נסו שוב."
     },
     "googleCta": "התחבר/הרשם עם גוגל",
+    "google": {
+      "chooseAccount": "בחר חשבון Google",
+      "authenticating": "מתחבר...",
+      "selectAccount": "בחר חשבון",
+      "signInDescription": "התחבר עם חשבון Google שלך כדי להמשיך",
+      "connecting": "מתחבר...",
+      "signIn": "התחבר עם Google",
+      "pleaseWait": "אנא המתן..."
+    },
     "loginCta": "התחבר",
+    "characters": {
+      "loginAsSelected": "התחבר כדמות שנבחרה",
+      "selectUserFirst": "בחר דמות תחילה"
+    },
     "org": {
       "cta": "הכנס מייל ארגון",
       "placeholder": "הכנס מייל ארגון",

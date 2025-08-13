@@ -564,7 +564,20 @@
       "signupFailed": "Sign up failed. Please try again."
     },
     "googleCta": "Sign in / Sign up with Google",
+    "google": {
+      "chooseAccount": "Choose Google Account",
+      "authenticating": "Authenticating...",
+      "selectAccount": "Select Account",
+      "signInDescription": "Sign in with your Google account to continue",
+      "connecting": "Connecting...",
+      "signIn": "Sign in with Google",
+      "pleaseWait": "Please wait..."
+    },
     "loginCta": "Login",
+    "characters": {
+      "loginAsSelected": "Login as selected character",
+      "selectUserFirst": "Select a character first"
+    },
     "org": {
       "cta": "Enter organization / NGO",
       "placeholder": "Enter organization name",

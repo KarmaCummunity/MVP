@@ -90,16 +90,16 @@ export POSTGRES_DB=${POSTGRES_DB:-kc_db}
 export PORT="$SERVER_PORT"
 
 echo "\n🗄️  Ensuring DB tables (init script)..."
-NODE_OPTIONS= npx ts-node -r tsconfig-paths/register src/scripts/init-db.ts || true
+SKIP_FULL_SCHEMA=1 NODE_OPTIONS= npx ts-node -r tsconfig-paths/register src/scripts/init-db.ts || true
 
 echo "\n🚀 Starting server on http://localhost:$SERVER_PORT ..."
 if [[ -n "${FALLBACK_SERVER_JS:-}" ]]; then
   echo "(fallback) running TS directly via ts-node"
   # ensure dev deps
   if [[ ! -d node_modules ]]; then npm ci || npm install; fi
-  node -r ts-node/register -r tsconfig-paths/register src/main.ts &
+  SKIP_FULL_SCHEMA=1 node -r ts-node/register -r tsconfig-paths/register src/main.ts &
 else
-  node dist/main.js &
+  SKIP_FULL_SCHEMA=1 node dist/main.js &
 fi
 SERVER_PID=$!
 

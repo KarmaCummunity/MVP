@@ -1,8 +1,9 @@
 // utils/databaseService.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { USE_FIRESTORE, USE_BACKEND } from './dbConfig';
-import { firestoreAdapter, DatabaseAdapter } from './firestoreAdapter';
+import { USE_BACKEND, USE_FIRESTORE, CACHE_CONFIG, OFFLINE_CONFIG, STORAGE_KEYS } from './dbConfig';
+import { apiService, ApiResponse } from './apiService';
 import { restAdapter } from './restAdapter';
+import { firestoreAdapter } from './firestoreAdapter';
 
 // Database Collections
 export const DB_COLLECTIONS = {
@@ -28,6 +29,8 @@ export const DB_COLLECTIONS = {
   // Organizations / NGO onboarding
   ORGANIZATIONS: 'organizations',
   ORG_APPLICATIONS: 'org_applications',
+  // Analytics
+  ANALYTICS: 'analytics',
 } as const;
 
 // Database Keys Generator
@@ -56,6 +59,22 @@ export class DatabaseService {
       await AsyncStorage.setItem(DatabaseService.VERSION_KEY, String(DatabaseService.DB_VERSION));
     }
   }
+
+  // Aliases for backward compatibility
+  static async getItem<T>(collection: string, userId: string, itemId: string): Promise<T | null> {
+    return this.read<T>(collection, userId, itemId);
+  }
+
+  static async setItem<T>(collection: string, userId: string, itemId: string, data: T): Promise<void> {
+    try {
+      // Try to update first, if it fails then create
+      await this.update<T>(collection, userId, itemId, data);
+    } catch (error) {
+      // If update fails, create new item
+      await this.create<T>(collection, userId, itemId, data);
+    }
+  }
+
   // Generic CRUD operations
   static async create<T>(
     collection: string,
