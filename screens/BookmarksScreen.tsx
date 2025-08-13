@@ -1,3 +1,9 @@
+// File overview:
+// - Purpose: Shows user's bookmarked posts with remove and clear-all actions.
+// - Reached from: Home/Profile menus and routes as 'BookmarksScreen'.
+// - Provides: Loads bookmarks by user, pull-to-refresh, remove single bookmark, clear all (client-side for now).
+// - Reads from context: `useUser()` -> `selectedUser`.
+// - External deps/services: `bookmarksService` (get/remove), i18n translations.
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,

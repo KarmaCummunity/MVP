@@ -1,3 +1,10 @@
+// File overview:
+// - Purpose: Main Home screen showing animated bubbles and a draggable panel that reveals the posts feed (`PostsReelsScreen`).
+// - Reached from: `HomeTabStack` -> route 'HomeMain' (initial route of the Home tab).
+// - Provides: State and gestures to toggle between Home content and Posts feed; updates route params `{ hideTopBar, showPosts }` to control top bar in `TopBarNavigator`.
+// - Reads from context: `useUser()` -> selectedUser, isGuestMode, isRealAuth, resetHomeScreenTrigger.
+// - Input params: None required; uses navigation params set locally.
+// - External deps/services: `EnhancedStatsService` for stats, `FloatingBubblesOverlay`, `PostsReelsScreen`.
 import React, { useState, useEffect, useCallback } from "react";
 import { 
   View, 
@@ -48,7 +55,8 @@ import CommunityStatsGrid from "../components/CommunityStatsGrid";
 import StatDetailsModal, { StatDetails } from "../components/StatDetailsModal";
 import { createShadowStyle } from "../globals/styles";
 import { scaleSize } from "../globals/responsive";
-
+import { EnhancedStatsService, formatShortNumber } from "../utils/statsService";
+import FloatingBubblesOverlay from "../components/FloatingBubblesOverlay";
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 // Panel layout dimensions derived responsively
@@ -146,6 +154,9 @@ export default function HomeScreen() {
   // Animated values for scrolling
   const scrollY = useSharedValue(0);
   const postsTranslateY = useSharedValue(0);
+  const panelHeight = useSharedValue(0);
+  const panelStartHeight = useSharedValue(0);
+  const HALF_THRESHOLD = SCREEN_HEIGHT * 0.5;
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -184,6 +195,7 @@ export default function HomeScreen() {
         stiffness: 150,
         mass: 0.8,
       });
+      panelHeight.value = withTiming(0, { duration: 0 });
     }, [])
   );
 
@@ -199,21 +211,7 @@ export default function HomeScreen() {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
     const offsetY = contentOffset.y;
     scrollY.value = offsetY;
-
-    // Open posts screen when the user scrolls to the end of the content
-    const nearBottomBuffer = LAYOUT_CONSTANTS.SPACING.MD;
-    const reachedEnd = offsetY + layoutMeasurement.height >= contentSize.height - nearBottomBuffer;
-
-    if (reachedEnd && !showPosts) {
-      console.log('🏠 HomeScreen - Opening posts screen (scrolled past categories to bottom)');
-      setShowPosts(true);
-      setHideTopBar(false);
-      postsTranslateY.value = withSpring(0, {
-        damping: 25,
-        stiffness: 200,
-        mass: 0.6,
-      });
-    }
+    // Disabled opening posts by scrolling to bottom; opening is only via the drag handle
   };
 
   /** Animated style for the posts screen */
@@ -223,8 +221,65 @@ export default function HomeScreen() {
     };
   });
 
+  // Fade/scale home content as the drag panel grows
+  const homeAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: interpolate(panelHeight.value, [0, HALF_THRESHOLD], [1, 0.2], Extrapolation.CLAMP),
+      transform: [
+        { scale: interpolate(panelHeight.value, [0, HALF_THRESHOLD], [1, 0.98], Extrapolation.CLAMP) }
+      ] as any,
+    };
+  });
+
+  // Animated style for the draggable panel overlay
+  const panelAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      height: panelHeight.value,
+    } as any;
+  });
+
+  // Drag gesture for opening the posts panel
+  const panGesture = Gesture.Pan()
+    .onBegin(() => {
+      panelStartHeight.value = panelHeight.value;
+    })
+    .onUpdate((event) => {
+      // Upward drag has negative translationY; increase height accordingly
+      const newHeight = Math.max(0, Math.min(SCREEN_HEIGHT, panelStartHeight.value - event.translationY));
+      panelHeight.value = newHeight;
+    })
+    .onEnd(() => {
+      const shouldOpen = panelHeight.value > HALF_THRESHOLD;
+      if (shouldOpen) {
+        panelHeight.value = withTiming(SCREEN_HEIGHT, { duration: 200 });
+        // Replace Home with Posts screen
+        runOnJS(setShowPosts)(true);
+        runOnJS(setHideTopBar)(false);
+      } else {
+        panelHeight.value = withTiming(0, { duration: 200 });
+      }
+    });
+
 
   const { t } = useTranslation(['home','common']);
+
+  // Fetch stats from DB
+  const [stats, setStats] = useState<StatCardProps[]>([]);
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const communityStats = await EnhancedStatsService.getCommunityStats();
+        // Map to stat cards format
+        setStats([
+          { title: t('home:stats.activeMembers'), value: formatShortNumber(communityStats.activeMembers || 0), change: '+12.5%', changeType: 'up', iconName: 'people-outline', color: colors.primary },
+          // Add more mapped stats...
+        ]);
+      } catch (error) {
+        console.error('Failed to fetch stats', error);
+      }
+    };
+    fetchStats();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -241,191 +296,59 @@ export default function HomeScreen() {
           />
       ) : (
         // Home screen with enhanced scrolling
-        <View style={styles.homeContainer}>
-          {Platform.OS === 'web' ? (
-            <View style={styles.webScrollContainer}>
-              <View 
-                style={[styles.webScrollContent, { paddingBottom: tabBarHeight + scaleSize(24) }]}
-                onLayout={(e) => {
-                  const h = e.nativeEvent.layout.height;
-                  console.log('🧭 HomeScreen[WEB] content layout height:', h, 'window:', SCREEN_HEIGHT);
-                }}
-              > 
-                {/* Header */}
-                {isGuestMode ? (
-                  <GuestModeNotice />
-                ) : (
-                  <View style={styles.header}>
-                    <View style={styles.headerContent}>
-                      <View style={styles.userInfo}>
-                        <Image 
-                          source={{ uri: selectedUser?.avatar || currentUser.avatar }} 
-                          style={styles.userAvatar}
-                        />
-                        <View style={styles.userDetails}>
-                          <Text style={styles.welcomeText}>{`${t('home:welcome')}, ${selectedUser?.name || currentUser.name}!`}</Text>
-                        </View>
-                      </View>
-                      <TouchableOpacity 
-                        style={styles.notificationButton}
-                        onPress={() => Alert.alert(t('common:notifications'), t('common:notificationsList'))}
-                      >
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-
-                {/* Community Stats Grid - press to open details */}
-                <CommunityStatsGrid onSelect={handleSelectStat} />
-              </View>
-            </View>
-          ) : (
-            <ScrollView 
-              style={styles.scrollContainer}
-              onScroll={handleScroll}
-              scrollEventThrottle={16}
-              nestedScrollEnabled
-              showsVerticalScrollIndicator
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight + scaleSize(24) }]}
-            >
-              {/* Header */}
-              {isGuestMode ? (
-                    <GuestModeNotice />
-              ) : (
-                <View style={styles.header}>
-                  <View style={styles.headerContent}>
-                    <View style={styles.userInfo}>
-                      <Image 
-                        source={{ uri: selectedUser?.avatar || currentUser.avatar }} 
-                        style={styles.userAvatar}
-                      />
-                      <View style={styles.userDetails}>
-                        <Text style={styles.welcomeText}>{`${t('home:welcome')}, ${selectedUser?.name || currentUser.name}!`}</Text>
-                      </View>
-                    </View>
-                    <TouchableOpacity 
-                      style={styles.notificationButton}
-                      onPress={() => Alert.alert(t('common:notifications'), t('common:notificationsList'))}
-                    >
-                      <Ionicons name="notifications-outline" size={scaleSize(24)} color={colors.textPrimary} />
-                      <View style={styles.notificationBadge}>
-                        <Text style={styles.notificationText}>3</Text>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
-
-              {/* Community Stats Grid - press to open details */}
-              <CommunityStatsGrid onSelect={handleSelectStat} />
-            </ScrollView>
-          )}
-          {/* Details modal */}
-          <StatDetailsModal 
-            visible={isStatModalVisible} 
-            onClose={() => setIsStatModalVisible(false)} 
-            details={selectedStat}
-          />
-          {/* Toggle Button - Hidden in guest mode */}
-        </View>
+        <>
+        <Animated.View style={[styles.homeContainer, homeAnimatedStyle]}>
+          <FloatingBubblesOverlay />
+        </Animated.View>
+        {/* Drag Handle Button - the ONLY way to open PostsReelsScreen */}
+        {!showPosts && (
+          <GestureDetector gesture={panGesture}>
+            <Animated.View style={[styles.dragHandleButton, { zIndex: 1100 }]}>
+              <View style={styles.handleBar} />
+            </Animated.View>
+          </GestureDetector>
+        )}
+        {/* Draggable Panel Overlay (visual only, replaced by PostsReelsScreen on threshold) */}
+        {!showPosts && (
+          <Animated.View style={[styles.dragPanel, panelAnimatedStyle]} />
+        )}
+        </>
       )}
     </SafeAreaView>
   );
 }
+
+// New StatCard component
+type StatCardProps = {
+  title: string;
+  value: string;
+  change: string;
+  changeType: 'up' | 'down';
+  iconName: React.ComponentProps<typeof Ionicons>['name'];
+  color: string;
+};
+const StatCard = ({ title, value, change, changeType, iconName, color }: StatCardProps) => (
+  <View style={styles.statCard}>
+    <View style={styles.statContent}>
+      <Text style={styles.statTitle}>{title}</Text>
+      <Text style={styles.statValue}>{value}</Text>
+      <View style={styles.statChange}>
+        <Ionicons name={changeType === 'up' ? "trending-up" : "trending-down"} size={16} color={changeType === 'up' ? colors.success : colors.error} />
+        <Text style={[styles.statChangeText, { color: changeType === 'up' ? colors.success : colors.error }]}>{change}</Text>
+      </View>
+    </View>
+    <View style={[styles.statIconContainer, { backgroundColor: color }]}>
+      <Ionicons name={iconName} size={24} color="white" />
+    </View>
+  </View>
+);
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundPrimary,
   },
-  header: {
-    backgroundColor: colors.backgroundPrimary,
-    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
-    borderBottomLeftRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
-    borderBottomRightRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.1, 4),
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  userAvatar: {
-    width: scaleSize(50),
-    height: scaleSize(50),
-    borderRadius: scaleSize(50) / 2,
-    marginRight: LAYOUT_CONSTANTS.SPACING.SM,
-  },
-  userDetails: {
-    flex: 1,
-  },
-  welcomeText: {
-    fontSize: FontSizes.medium,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
-  },
-  karmaText: {
-    fontSize: FontSizes.body,
-    color: colors.textSecondary,
-  },
-  notificationButton: {
-    position: 'relative',
-    padding: LAYOUT_CONSTANTS.SPACING.SM,
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: LAYOUT_CONSTANTS.SPACING.XS,
-    right: LAYOUT_CONSTANTS.SPACING.XS,
-    backgroundColor: colors.error,
-    borderRadius: scaleSize(10),
-    minWidth: scaleSize(20),
-    height: scaleSize(20),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  notificationText: {
-    color: colors.white,
-    fontSize: FontSizes.small,
-    fontWeight: 'bold',
-  },
-  quickActionsContainer: {
-    padding: LAYOUT_CONSTANTS.SPACING.LG,
-  },
-  sectionTitle: {
-    fontSize: FontSizes.heading3,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
-  },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  quickActionButton: {
-    alignItems: 'center',
-    flex: 1,
-    marginHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
-  },
-  quickActionIcon: {
-    width: scaleSize(50),
-    height: scaleSize(50),
-    borderRadius: scaleSize(50) / 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
-  },
-  quickActionText: {
-    fontSize: FontSizes.small,
-    color: colors.textPrimary,
-    textAlign: 'center',
-  },
+  
   activitiesContainer: {
     paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
     marginBottom: LAYOUT_CONSTANTS.SPACING.LG,
@@ -463,22 +386,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
     marginBottom: LAYOUT_CONSTANTS.SPACING.LG,
   },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+
+     statCard: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'white', borderRadius: 12, padding: 16, margin: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4 },
+  statContent: {
+    flex: 1,
+    marginRight: LAYOUT_CONSTANTS.SPACING.MD,
   },
-     statCard: {
-     backgroundColor: '#E3F2FD',
-     padding: LAYOUT_CONSTANTS.SPACING.MD,
-     borderRadius: scaleSize(50),
-     alignItems: 'center',
-     flex: 1,
-     marginHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
-     ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.15, 4),
-     minWidth: scaleSize(80),
-     minHeight: scaleSize(80),
-     justifyContent: 'center',
-   },
   statIcon: {
     fontSize: FontSizes.heading1,
     marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
@@ -488,6 +401,28 @@ const styles = StyleSheet.create({
      fontWeight: 'bold',
      color: '#1976D2', // Darker blue for better readability
      marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
+   },
+   statTitle: {
+     fontSize: FontSizes.body,
+     fontWeight: 'bold',
+     color: colors.textPrimary,
+     marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
+   },
+   statChange: {
+     flexDirection: 'row',
+     alignItems: 'center',
+     marginTop: LAYOUT_CONSTANTS.SPACING.XS,
+   },
+   statChangeText: {
+     fontSize: FontSizes.small,
+     marginLeft: LAYOUT_CONSTANTS.SPACING.XS,
+   },
+   statIconContainer: {
+     width: scaleSize(50),
+     height: scaleSize(50),
+     borderRadius: scaleSize(25),
+     justifyContent: 'center',
+     alignItems: 'center',
    },
    statName: {
      fontSize: FontSizes.caption,
@@ -554,6 +489,39 @@ const styles = StyleSheet.create({
     borderRadius: scaleSize(20),
     padding: scaleSize(3),
     gap: LAYOUT_CONSTANTS.SPACING.XS,
+  },
+  // Drag handle button (small pill) centered at bottom
+  dragHandleButton: {
+    position: 'absolute',
+    bottom: 60,
+    backgroundColor: colors.pink,
+    alignSelf: 'center',
+    width: scaleSize(96),
+    height: scaleSize(24),
+    borderRadius: scaleSize(12),
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.15, 4),
+  },
+  handleBar: {
+    alignSelf: 'center',
+    width: scaleSize(64),
+    height: scaleSize(6),
+    borderRadius: scaleSize(3),
+    backgroundColor: colors.backgroundTertiary,
+  },
+  // Draggable white panel overlay that grows with the gesture
+  dragPanel: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.white,
+    borderTopLeftRadius: scaleSize(24),
+    borderTopRightRadius: scaleSize(24),
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: -3 }, 0.15, 8),
+    zIndex: 900,
   },
   toggleButton: {
     width: scaleSize(32),
@@ -833,5 +801,92 @@ const styles = StyleSheet.create({
      borderColor: colors.warning + '30',
      borderWidth: 1,
    },
+  // New styles for dashboard elements
+  welcomeSection: {
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    marginTop: LAYOUT_CONSTANTS.SPACING.MD,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
+  },
+  welcomeTitle: {
+    fontSize: FontSizes.heading1,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
+  },
+  welcomeSubtitle: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
+  },
+  // statCard styles are already defined earlier in this StyleSheet.
+  chartCard: {
+    flex: 1,
+    backgroundColor: colors.backgroundPrimary,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    padding: LAYOUT_CONSTANTS.SPACING.MD,
+    marginHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.1, 2),
+  },
+  chartTitle: {
+    fontSize: FontSizes.heading3,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
+  },
+  progressContainer: {
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
+  },
+  progressBar: {
+    height: scaleSize(8),
+    backgroundColor: colors.backgroundTertiary,
+    borderRadius: scaleSize(4),
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: scaleSize(4),
+  },
+  updatesSection: {
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
+  },
+  updatesTitle: {
+    fontSize: FontSizes.heading3,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
+  },
+  updatesList: {
+    // List of updates will go here
+  },
+  updateItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.backgroundTertiary,
+  },
+  updateText: {
+    fontSize: FontSizes.small,
+    color: colors.textPrimary,
+  },
+  updateTime: {
+    fontSize: FontSizes.caption,
+    color: colors.textSecondary,
+  },
+  chartsSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
+  },
 
  });

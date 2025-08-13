@@ -32,7 +32,10 @@
     "cannotOpenLink": "לא ניתן לפתוח את הקישור",
     "welcomeShort": "ברוכים הבאים!",
     "freeAppNotice": "האפליקציה חינמית לחלוטין ללא מטרות רווח",
-    "genericTryAgain": "אירעה שגיאה. נסו שוב."
+    "genericTryAgain": "אירעה שגיאה. נסו שוב.",
+    "labels": {
+      "countryIsrael": "ישראל"
+    }
   },
   "search": {
     "sortTitle": "מיון",
@@ -548,7 +551,7 @@
     "subtitle": "קהילת קארמה רוצה להכיר לכם את \n הקיבוץ הקפטליסטי של ישראל",
     "continueAsGuest": "המשך כאורח",
     "email": {
-      "cta": "הירשם/התחבר עם מייל",
+      "cta": "התחבר/הרשם עם מייל הארגון",
       "placeholder": "הכנס מייל",
       "passwordPlaceholder": "הכנס סיסמה",
       "continue": "המשך",
@@ -557,6 +560,7 @@
       "submitting": "שולח...",
       "knownUser": "מייל מוכר. הכנס סיסמה",
       "unknownEmail": "מייל לא מוכר, יש להירשם",
+      "checkFailed": "נכשלה בדיקת המייל. נסו שוב.",
       "invalidPassword": "סיסמה לא נכונה",
       "resetPassword": "איפוס סיסמה",
       "resetSent": "קישור לאיפוס סיסמה נשלח למייל",
@@ -578,15 +582,17 @@
       "pleaseWait": "אנא המתן..."
     },
     "loginCta": "התחבר",
-    "characters": {
-      "loginAsSelected": "התחבר כדמות שנבחרה",
-      "selectUserFirst": "בחר דמות תחילה"
-    },
     "org": {
-      "cta": "הכנס מייל ארגון",
+      "cta": "התחבר/הרשם עם מייל הארגון",
       "placeholder": "הכנס מייל ארגון",
       "continue": "המשך",
       "checking": "בודק...",
+      "enterNameOrEmail": "אנא הזן שם ארגון או אימייל",
+      "pendingTitle": "ממתין לאישור",
+      "pendingMessage": "הבקשה שלכם ממתינה לאישור מנהלי המערכת. תקבלו גישה לאחר האישור.",
+      "checkFailed": "אירעה שגיאה בבדיקת הארגון. נסו שוב.",
+      "defaultName": "ארגון",
+      "defaultBio": "חשבון ארגוני",
       "title": "רישום ארגון / עמותה",
       "subtitle": "מלאו את הפרטים, נבדוק ונאשר. לאחר אישור תקבלו הרשאות ותצוגת תפעול ייעודית.",
       "fields": {
@@ -630,7 +636,7 @@
       "selectTitle": "בחר דמות להתחברות:",
       "selectSubtitle": "לחץ שוב על דמות נבחרת כדי לבטל",
       "loadError": "שגיאה בטעינת הדמויות",
-      "selectUserFirst": "בחר דמות תחילה"
+      "loginAsSelected": "התחבר כדמות נבחרת"
     }
   },
   "errors": {},

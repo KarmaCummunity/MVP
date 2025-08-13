@@ -1,7 +1,10 @@
+// File overview:
+// - Purpose: Typed API client for the new backend (users, donations, rides, stats, chat).
+// - Reached from: Higher-level services/components when `USE_BACKEND` is enabled.
+// - Provides: request helpers and endpoint-specific methods returning ApiResponse<T>.
+// - Env: Base URL derived from `dbConfig` (EXPO_PUBLIC_API_BASE_URL).
 // Enhanced API service for connecting to the new backend
-import { USE_BACKEND } from './dbConfig';
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+import { USE_BACKEND, API_BASE_URL as CONFIG_API_BASE_URL } from './dbConfig';
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -14,7 +17,7 @@ class ApiService {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = API_BASE_URL;
+    this.baseURL = CONFIG_API_BASE_URL;
   }
 
   private async request<T>(
@@ -341,8 +344,8 @@ class ApiService {
 
   async healthCheck(): Promise<boolean> {
     try {
-      const response = await this.request('/health');
-      return response.success;
+      const res = await fetch(`${this.baseURL}/health/redis`);
+      return res.ok;
     } catch {
       return false;
     }

@@ -1,7 +1,15 @@
+// File overview:
+// - Purpose: Bottom tab navigator hosting main tabs: Home, Search, Donations, Profile (hidden in guest mode).
+// - Reached from: `MainNavigator` route 'HomeStack'.
+// - Provides: Tab bar with custom styling, responsive insets, icons per route; hides tab bar when nested route sets `hideBottomBar` param.
+// - Reads from context: `useUser()` -> `isGuestMode`, `resetHomeScreen()` used on Home tab press.
+// - Child stacks: `HomeTabStack`, `SearchTabStack`, `DonationsStack`, `ProfileTabStack`.
+// - Navigation params pattern: nested screens can pass `{ hideBottomBar: true }` to hide tab bar; Home tab press triggers reset via context.
+// - External deps: react-navigation/bottom-tabs, Ionicons, responsive helpers, colors/constants.
 // BottomNavigator.tsx
 'use strict';
 import React from "react";
-import { Platform } from "react-native";
+import { Platform, Animated, Easing, View, StyleSheet } from "react-native";
 import { createBottomTabNavigator, BottomTabNavigationOptions } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -21,7 +29,7 @@ import { useUser } from "../context/UserContext";
 
 // Define the type for your bottom tab navigator's route names and their parameters.
 export type BottomTabNavigatorParamList = {
-  DonationsScreen: undefined;
+  DonationsTab: undefined;
   HomeScreen: undefined;
   SearchScreen: undefined;
   ProfileScreen: undefined;
@@ -33,6 +41,85 @@ export type BottomTabNavigatorParamList = {
 
 // Create an instance of the Bottom Tab Navigator with its parameter list type
 const Tab = createBottomTabNavigator<BottomTabNavigatorParamList>();
+
+// Animated icon for Donations tab when not focused
+const DonationsPulseIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => {
+  const ring1 = React.useRef(new Animated.Value(0)).current;
+  const ring2 = React.useRef(new Animated.Value(0)).current;
+  const ring3 = React.useRef(new Animated.Value(0)).current;
+
+  const runPulse = React.useCallback((anim: Animated.Value, delayMs: number) => {
+    return Animated.loop(
+      Animated.sequence([
+        Animated.delay(delayMs),
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+  }, []);
+
+  React.useEffect(() => {
+    const a1 = runPulse(ring1, 0);
+    const a2 = runPulse(ring2, 500);
+    const a3 = runPulse(ring3, 1000);
+    a1.start();
+    a2.start();
+    a3.start();
+    return () => {
+      a1.stop();
+      a2.stop();
+      a3.stop();
+    };
+  }, [ring1, ring2, ring3, runPulse]);
+
+  const containerSize = size * 1.6;
+  const ringBaseStyle = {
+    width: containerSize,
+    height: containerSize,
+    borderRadius: containerSize / 2,
+    borderColor: color,
+  } as const;
+
+  const ringStyleFrom = (anim: Animated.Value) => ({
+    opacity: anim.interpolate({ inputRange: [0, 1], outputRange: [0.22, 0] }),
+    transform: [
+      {
+        scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1.35] }),
+      },
+    ],
+  });
+
+  return (
+    <View style={[styles.pulseContainer, { width: containerSize, height: containerSize }]}
+      pointerEvents="none"
+      accessibilityElementsHidden>
+      <Animated.View style={[styles.ring, ringBaseStyle, ringStyleFrom(ring1)]} />
+      <Animated.View style={[styles.ring, ringBaseStyle, ringStyleFrom(ring2)]} />
+      <Animated.View style={[styles.ring, ringBaseStyle, ringStyleFrom(ring3)]} />
+      <Ionicons name="heart-outline" size={size} color={color} />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  pulseContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ring: {
+    position: "absolute",
+    borderWidth: 1,
+  },
+});
 
 /**
  * BottomNavigator Component.
@@ -71,7 +158,7 @@ export default function BottomNavigator(): React.ReactElement {
         return focused ? "home" : "home-outline";
       case "SearchScreen":
         return focused ? "search" : "search-outline";
-      case "DonationsScreen":
+      case "DonationsTab":
         return focused ? "heart" : "heart-outline";
       case "ProfileScreen":
         return focused ? "person" : "person-outline";
@@ -102,6 +189,13 @@ export default function BottomNavigator(): React.ReactElement {
           return ({
             headerShown: false,
             tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number; }) => {
+              if (route.name === "DonationsTab") {
+                return focused ? (
+                  <Ionicons name="heart" size={size} color={color} />
+                ) : (
+                  <DonationsPulseIcon size={size} color={color} />
+                );
+              }
               const iconName = getTabBarIconName(route.name, focused);
               return <Ionicons name={iconName} size={size} color={color} />;
             },
@@ -122,7 +216,7 @@ export default function BottomNavigator(): React.ReactElement {
         }}
       >
         {!isGuestMode && <Tab.Screen name="ProfileScreen" component={ProfileTabStack} />}
-        <Tab.Screen name="DonationsScreen" component={DonationsStack} />
+        <Tab.Screen name="DonationsTab" component={DonationsStack} />
         <Tab.Screen name="SearchScreen" component={SearchTabStack} />
         <Tab.Screen 
           name="HomeScreen" 

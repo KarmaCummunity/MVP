@@ -171,7 +171,7 @@ export type RootStackParamList = {
 // --- Bottom Tab Navigator (BottomNavigator) Parameter List ---
 // This lists all the screens within your BottomNavigator.tsx
 export type BottomTabNavigatorParamList = {
-  DonationsScreen: undefined; // Assuming DonationsStack is just a wrapper for its root screen here
+  DonationsTab: undefined; // Renamed to avoid nested name collision with DonationsStack's DonationsScreen
   HomeScreen: undefined; // This is the HomeScreen with the drag handle
   SearchScreen: undefined;
   ProfileScreen: undefined;

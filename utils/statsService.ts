@@ -1,3 +1,7 @@
+// File overview:
+// - Purpose: Community statistics helpers, formatting, and a backend-integrated EnhancedStatsService.
+// - Reached from: `FloatingBubblesOverlay`, `HomeScreen`, analytics components.
+// - Provides: Default stats, getters/savers, number format/parse, and backend-coordinated methods.
 // utils/statsService.ts
 import { DatabaseService, DB_COLLECTIONS } from './databaseService';
 import { enhancedDB } from './enhancedDatabaseService';
@@ -16,7 +20,65 @@ export const DEFAULT_STATS: CommunityStats = {
   monthlyDonations: 0,
   monthlyGrowthPct: 0,
   activeCities: 0,
-  // Extended baseline (15 more types)
+  
+  // User engagement stats
+  totalUsers: 0,
+  dailyActiveUsers: 0,
+  weeklyActiveUsers: 0,
+  newUsersThisWeek: 0,
+  newUsersThisMonth: 0,
+  totalOrganizations: 0,
+  citiesWithUsers: 0,
+  userEngagementRate: 0,
+  
+  // Donation stats
+  totalDonations: 0,
+  donationsThisWeek: 0,
+  donationsThisMonth: 0,
+  activeDonations: 0,
+  completedDonations: 0,
+  itemDonations: 0,
+  serviceDonations: 0,
+  totalMoneyDonated: 0,
+  uniqueDonors: 0,
+  avgDonationAmount: 0,
+  
+  // Ride stats
+  totalRides: 0,
+  ridesThisWeek: 0,
+  ridesThisMonth: 0,
+  activeRides: 0,
+  completedRides: 0,
+  totalSeatsOffered: 0,
+  uniqueDrivers: 0,
+  avgSeatsPerRide: 0,
+  
+  // Event stats
+  totalEvents: 0,
+  eventsThisWeek: 0,
+  eventsThisMonth: 0,
+  activeEvents: 0,
+  completedEvents: 0,
+  totalEventAttendees: 0,
+  virtualEvents: 0,
+  
+  // Activity stats
+  totalActivities: 0,
+  activitiesToday: 0,
+  activitiesThisWeek: 0,
+  totalLogins: 0,
+  donationActivities: 0,
+  chatActivities: 0,
+  activeUsersTracked: 0,
+  
+  // Communication stats
+  totalMessages: 0,
+  totalConversations: 0,
+  messagesThisWeek: 0,
+  groupConversations: 0,
+  directConversations: 0,
+  
+  // Extended legacy stats
   foodKg: 0,
   clothingKg: 0,
   bloodLiters: 0,
@@ -273,23 +335,101 @@ export class EnhancedStatsService {
   private static mapBackendStats(backendStats: any): CommunityStats {
     const mapped: CommunityStats = { ...DEFAULT_STATS };
 
-    if (backendStats.money_donations) {
-      mapped.moneyDonations = backendStats.money_donations.value || 0;
-    }
-    if (backendStats.volunteer_hours) {
-      mapped.volunteerHours = backendStats.volunteer_hours.value || 0;
-    }
-    if (backendStats.rides_completed) {
-      mapped.rides = backendStats.rides_completed.value || 0;
-    }
-    if (backendStats.active_members) {
-      mapped.activeMembers = backendStats.active_members.value || 0;
-    }
-    if (backendStats.food_kg) {
-      mapped.foodKg = backendStats.food_kg.value || 0;
-    }
-    if (backendStats.clothing_kg) {
-      mapped.clothingKg = backendStats.clothing_kg.value || 0;
+    // Direct mapping for stats with matching names
+    const mappings = {
+      // Core stats
+      'money_donations': 'moneyDonations',
+      'volunteer_hours': 'volunteerHours',
+      'events': 'events',
+      'active_members': 'activeMembers',
+      
+      // User engagement stats
+      'total_users': 'totalUsers',
+      'daily_active_users': 'dailyActiveUsers',
+      'weekly_active_users': 'weeklyActiveUsers',
+      'new_users_this_week': 'newUsersThisWeek',
+      'new_users_this_month': 'newUsersThisMonth',
+      'total_organizations': 'totalOrganizations',
+      'cities_with_users': 'citiesWithUsers',
+      'user_engagement_rate': 'userEngagementRate',
+      
+      // Donation stats
+      'total_donations': 'totalDonations',
+      'donations_this_week': 'donationsThisWeek',
+      'donations_this_month': 'donationsThisMonth',
+      'active_donations': 'activeDonations',
+      'completed_donations': 'completedDonations',
+      'item_donations': 'itemDonations',
+      'service_donations': 'serviceDonations',
+      'total_money_donated': 'totalMoneyDonated',
+      'unique_donors': 'uniqueDonors',
+      'avg_donation_amount': 'avgDonationAmount',
+      
+      // Ride stats
+      'total_rides': 'totalRides',
+      'rides_this_week': 'ridesThisWeek',
+      'rides_this_month': 'ridesThisMonth',
+      'active_rides': 'activeRides',
+      'completed_rides': 'completedRides',
+      'total_seats_offered': 'totalSeatsOffered',
+      'unique_drivers': 'uniqueDrivers',
+      'avg_seats_per_ride': 'avgSeatsPerRide',
+      
+      // Event stats
+      'total_events': 'totalEvents',
+      'events_this_week': 'eventsThisWeek',
+      'events_this_month': 'eventsThisMonth',
+      'active_events': 'activeEvents',
+      'completed_events': 'completedEvents',
+      'total_event_attendees': 'totalEventAttendees',
+      'virtual_events': 'virtualEvents',
+      
+      // Activity stats
+      'total_activities': 'totalActivities',
+      'activities_today': 'activitiesToday',
+      'activities_this_week': 'activitiesThisWeek',
+      'total_logins': 'totalLogins',
+      'donation_activities': 'donationActivities',
+      'chat_activities': 'chatActivities',
+      'active_users_tracked': 'activeUsersTracked',
+      
+      // Communication stats
+      'total_messages': 'totalMessages',
+      'total_conversations': 'totalConversations',
+      'messages_this_week': 'messagesThisWeek',
+      'group_conversations': 'groupConversations',
+      'direct_conversations': 'directConversations',
+      
+      // Extended legacy stats
+      'food_kg': 'foodKg',
+      'clothing_kg': 'clothingKg',
+      'blood_liters': 'bloodLiters',
+      'courses': 'courses',
+      'trees_planted': 'treesPlanted',
+      'animals_adopted': 'animalsAdopted',
+      'recycling_bags': 'recyclingBags',
+      'cultural_events': 'culturalEvents',
+      'app_active_users': 'appActiveUsers',
+      'app_downloads': 'appDownloads',
+      'active_volunteers': 'activeVolunteers',
+      'km_carpooled': 'kmCarpooled',
+      'funds_raised': 'fundsRaised',
+      'meals_served': 'mealsServed',
+      'books_donated': 'booksDonated',
+    };
+
+    // Map all stats
+    Object.entries(mappings).forEach(([backendKey, frontendKey]) => {
+      if (backendStats[backendKey]?.value !== undefined) {
+        mapped[frontendKey] = backendStats[backendKey].value || 0;
+      }
+    });
+
+    // Special handling for rides (prefer total_rides, fallback to completed_rides)
+    if (backendStats.total_rides?.value !== undefined) {
+      mapped.rides = backendStats.total_rides.value || 0;
+    } else if (backendStats.completed_rides?.value !== undefined) {
+      mapped.rides = backendStats.completed_rides.value || 0;
     }
 
     return mapped;

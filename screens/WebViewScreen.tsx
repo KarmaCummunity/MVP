@@ -1,3 +1,8 @@
+// File overview:
+// - Purpose: Open external JGive site; on web opens a new tab, on native renders inside WebView.
+// - Reached from: Various CTA routes as 'WebViewScreen'.
+// - Params: None used; URL is constant within file.
+// - External deps: `react-native-webview`, react-navigation for back navigation on web.
 // screens/WebViewScreen.tsx
 import React, { useEffect } from 'react';
 import {

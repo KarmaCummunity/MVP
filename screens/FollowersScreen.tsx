@@ -1,3 +1,10 @@
+// File overview:
+// - Purpose: List of followers or following for a given user, with ability to follow/unfollow from the list.
+// - Reached from: Profile/UserProfile screens via 'FollowersScreen'.
+// - Expects route params: `{ userId: string, type: 'followers' | 'following', title: string }`.
+// - Provides: Fetches users list and per-user follow state; navigates to 'UserProfileScreen' on item press.
+// - Reads from context: `useUser()` -> `selectedUser` to perform follow toggles.
+// - External deps/services: `followService` (get lists, follow/unfollow, stats).
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,

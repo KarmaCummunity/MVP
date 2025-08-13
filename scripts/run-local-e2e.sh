@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# File overview:
+# - Purpose: One-command local spin-up for backend (DB+Redis via Docker) and Expo client with API pointing to localhost.
+# - Steps: Free ports, docker compose up, build server, ensure DB schema via ts-node, start server, smoke-test APIs, start Expo.
+# - Inputs: PORT (server), EXPO_PORT (Expo dev server). Exports EXPO_PUBLIC_API_BASE_URL and flags.
+#!/usr/bin/env bash
 set -euo pipefail
 
 THIS_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -90,7 +95,10 @@ export POSTGRES_DB=${POSTGRES_DB:-kc_db}
 export PORT="$SERVER_PORT"
 
 echo "\n🗄️  Ensuring DB tables (init script)..."
-SKIP_FULL_SCHEMA=1 NODE_OPTIONS= npx ts-node -r tsconfig-paths/register src/scripts/init-db.ts || true
+if ! SKIP_FULL_SCHEMA=1 NODE_OPTIONS= npx ts-node -r tsconfig-paths/register src/scripts/init-db.ts; then
+  echo "❌ DB init failed. Aborting."
+  exit 1
+fi
 
 echo "\n🚀 Starting server on http://localhost:$SERVER_PORT ..."
 if [[ -n "${FALLBACK_SERVER_JS:-}" ]]; then
@@ -115,6 +123,44 @@ until curl -s http://localhost:"$SERVER_PORT"/ >/dev/null 2>&1; do
 done
 
 echo "✅ Server is up."
+
+# Quick smoke-test critical endpoints before starting Expo
+echo "\n🔎 Running API smoke tests..."
+set +e
+curl -sf http://localhost:"$SERVER_PORT"/api/donations/categories >/dev/null
+DONATIONS_OK=$?
+curl -sf http://localhost:"$SERVER_PORT"/api/stats/analytics/categories >/dev/null
+STATS_OK=$?
+set -e
+if [[ $DONATIONS_OK -ne 0 || $STATS_OK -ne 0 ]]; then
+  echo "❌ API smoke tests failed (donations=$DONATIONS_OK, stats=$STATS_OK). Not starting Expo."
+  exit 1
+fi
+echo "✅ API smoke tests passed."
+
+# Extended API tests (non-flaky, no external keys required)
+echo "\n🧪 Running extended API tests..."
+set +e
+curl -sf http://localhost:"$SERVER_PORT"/health/redis >/dev/null
+HEALTH_REDIS_OK=$?
+curl -sf http://localhost:"$SERVER_PORT"/api/stats/community >/dev/null
+COMMUNITY_STATS_OK=$?
+curl -sf http://localhost:"$SERVER_PORT"/api/donations/stats/summary >/dev/null
+DONATION_STATS_OK=$?
+curl -sf http://localhost:"$SERVER_PORT"/api/chat/conversations/user/550e8400-e29b-41d4-a716-446655440000 >/dev/null
+CHAT_LIST_OK=$?
+
+# Redis comprehensive test expects JSON with allTestsPassed=true
+REDIS_COMP=$(curl -s -X POST http://localhost:"$SERVER_PORT"/redis-test/comprehensive -H 'Content-Type: application/json')
+echo "$REDIS_COMP" | grep -q '"allTestsPassed":true'
+REDIS_COMP_OK=$?
+
+set -e
+if [[ $HEALTH_REDIS_OK -ne 0 || $COMMUNITY_STATS_OK -ne 0 || $DONATION_STATS_OK -ne 0 || $CHAT_LIST_OK -ne 0 || $REDIS_COMP_OK -ne 0 ]]; then
+  echo "❌ Extended API tests failed: health=$HEALTH_REDIS_OK community=$COMMUNITY_STATS_OK donationStats=$DONATION_STATS_OK chatList=$CHAT_LIST_OK redisComp=$REDIS_COMP_OK"
+  exit 1
+fi
+echo "✅ Extended API tests passed."
 
 # 3) Start client (Expo) pointing to local API (with deps ensure)
 cd "$CLIENT_DIR"

@@ -1,3 +1,12 @@
+// File overview:
+// - Purpose: Entry authentication screen with multiple login modes (Google, email/password, organization, guest, character personas).
+// - Reached from: `MainNavigator` as initial route 'LoginScreen'.
+// - On success: Resets navigation to `{ name: 'HomeStack' }` (BottomNavigator tabs).
+// - Provides: UI states for email flow (2 steps), org lookup, language switcher (he/en with RTL toggle), character selection for demo/real augmented data, guest mode.
+// - Reads/writes: AsyncStorage for recent emails and language; queries org applications via `db`, users via `authService` + `restAdapter`.
+// - Context: `useUser()` -> `setSelectedUserWithMode`, `setGuestMode`, `selectedUser`, `isGuestMode` to proceed to home upon auth or guest.
+// - Navigation side-effects: `navigation.reset()` to 'HomeStack'; can navigate to 'OrgOnboardingScreen'.
+// - External deps/services: i18n, firebase-like authService wrappers, restAdapter, databaseService.
 import React, { useState, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -14,6 +23,7 @@ import {
   Dimensions,
   TextInput,
   Linking,
+  KeyboardAvoidingView,
   I18nManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,7 +34,7 @@ import { restAdapter } from '../utils/restAdapter';
 import { getSignInMethods, signInWithEmail as fbSignInWithEmail, signUpWithEmail as fbSignUpWithEmail, sendVerification as fbSendVerification, isEmailVerified as fbIsEmailVerified, sendPasswordReset } from '../utils/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import ModernGoogleLoginButton from '../components/ModernGoogleLoginButton';
+import SimpleGoogleLoginButton from '../components/SimpleGoogleLoginButton';
 import { useTranslation } from 'react-i18next';
 import i18n from '../app/i18n';
 
@@ -73,7 +83,7 @@ export default function LoginScreen() {
         I18nManager.allowRTL(isRTL);
         I18nManager.forceRTL(isRTL);
         if (Platform.OS !== 'web') {
-          Alert.alert(t('settings:restartRequired', { defaultValue: 'נדרש אתחול' }) as string, t('settings:restartDesc', { defaultValue: 'שינוי כיוון הטקסט דורש אתחול האפליקציה.' }) as string);
+          Alert.alert(t('settings:restartRequired') as string, t('settings:restartDesc') as string);
         }
       }
     } finally {
@@ -128,7 +138,7 @@ export default function LoginScreen() {
         followersCount: character.followersCount,
         followingCount: character.followingCount,
           notifications: [
-            { type: 'system', text: t('home:welcome') || 'שלום', date: new Date().toISOString() },
+            { type: 'system', text: t('home:welcome'), date: new Date().toISOString() },
           ],
         settings: {
           language: character.preferences.language,
@@ -260,43 +270,43 @@ export default function LoginScreen() {
   }, [orgQuery, orgLoginOpen, recentEmails]);
 
   const handleEmailContinue = async () => {
-    try {
-      const email = emailValue.trim().toLowerCase();
-      if (!email || !validateEmailFormat(email)) {
-        Alert.alert('שגיאה', 'אנא הזן מייל תקין');
-        return;
-      }
+      try {
+        const email = emailValue.trim().toLowerCase();
+        if (!email || !validateEmailFormat(email)) {
+          Alert.alert(t('common:error') as string, t('auth:email.invalidFormat') as string);
+          return;
+        }
       setIsEmailBusy(true);
       const exists = await isKnownEmail(email);
       setEmailExists(exists);
       if (exists) {
-        setEmailStatusMessage(`${email} • ${t('auth:email.knownUser', { defaultValue: 'מייל מוכר. הכנס סיסמה' })}`);
+        setEmailStatusMessage(`${email} • ${t('auth:email.knownUser')}`);
         setEmailStatusColor('#2E7D32');
       } else {
-        setEmailStatusMessage(`${email} • ${t('auth:email.unknownEmail', { defaultValue: 'מייל לא מוכר, יש להירשם' })}`);
+        setEmailStatusMessage(`${email} • ${t('auth:email.unknownEmail')}`);
         setEmailStatusColor('#C62828');
       }
       setEmailStep('password');
       setPasswordValue('');
     } catch (err) {
       console.error('Email check failed:', err);
-      Alert.alert('שגיאה', 'נכשלה בדיקת המייל. נסו שוב.');
+        Alert.alert(t('common:error') as string, t('common:genericTryAgain') as string);
     } finally {
       setIsEmailBusy(false);
     }
   };
 
   const handleEmailSubmit = async () => {
-    try {
-      const email = emailValue.trim().toLowerCase();
-      if (!email || !validateEmailFormat(email)) {
-        Alert.alert('שגיאה', 'אנא הזן מייל תקין');
-        return;
-      }
-      if (!passwordValue || passwordValue.length < 6) {
-        Alert.alert('שגיאה', 'הסיסמה חייבת להכיל לפחות 6 תווים');
-        return;
-      }
+      try {
+        const email = emailValue.trim().toLowerCase();
+        if (!email || !validateEmailFormat(email)) {
+          Alert.alert(t('common:error') as string, t('auth:email.invalidFormat') as string);
+          return;
+        }
+        if (!passwordValue || passwordValue.length < 6) {
+          Alert.alert(t('common:error') as string, t('auth:email.passwordTooShort') as string);
+          return;
+        }
       setIsEmailBusy(true);
 
       const exists = await isKnownEmail(email);
@@ -308,7 +318,7 @@ export default function LoginScreen() {
         try {
           fbUser = await fbSignInWithEmail(email, passwordValue);
         } catch (e: any) {
-          setEmailStatusMessage(t('auth:email.invalidPassword', { defaultValue: 'סיסמה לא נכונה' }) as string);
+          setEmailStatusMessage(t('auth:email.invalidPassword') as string);
           setEmailStatusColor('#C62828');
           return;
         }
@@ -323,7 +333,7 @@ export default function LoginScreen() {
           joinDate: nowIso,
           isActive: true,
           lastActive: nowIso,
-          location: { city: 'ישראל', country: 'IL' },
+          location: { city: t('common:labels.countryIsrael') as string, country: 'IL' },
           interests: [],
           roles: ['user'],
           postsCount: 0,
@@ -335,14 +345,14 @@ export default function LoginScreen() {
         try {
           await restAdapter.create('users', userData.id, userData.id, userData);
         } catch (e) {
-          console.log('שמירת משתמש בשרת נכשלה (לא קריטי):', e);
+          console.log('Saving user on server failed (non-critical):', e);
         }
           await setSelectedUserWithMode(userData as any, 'real');
       } else {
         try {
           const fbUser = await fbSignUpWithEmail(email, passwordValue);
           await fbSendVerification(fbUser);
-          Alert.alert('אימות מייל', 'שלחנו קישור אימות למייל שלך. לאחר אישור, חזרו למסך והתחברו כדי להשלים רישום.');
+          Alert.alert(t('auth:email.verifyTitle') as string, t('auth:email.verifySent') as string);
         } catch (e: any) {
           if (String(e?.code || '').includes('auth/email-already-in-use')) {
             try {
@@ -358,7 +368,7 @@ export default function LoginScreen() {
                 joinDate: nowIso,
                 isActive: true,
                 lastActive: nowIso,
-                location: { city: 'ישראל', country: 'IL' },
+                location: { city: t('common:labels.countryIsrael') as string, country: 'IL' },
                 interests: [],
                 roles: ['user'],
                 postsCount: 0,
@@ -371,33 +381,33 @@ export default function LoginScreen() {
               await saveRecentEmail(email);
               await setSelectedUserWithMode(userData as any, 'real');
             } catch (signinErr) {
-              setEmailStatusMessage(t('auth:email.invalidPassword', { defaultValue: 'סיסמה לא נכונה' }) as string);
+              setEmailStatusMessage(t('auth:email.invalidPassword') as string);
               setEmailStatusColor('#C62828');
             }
           } else {
             console.error('Sign up failed:', e);
-            Alert.alert('שגיאה', 'הרישום נכשל. נסו שוב.');
+            Alert.alert(t('common:error') as string, t('auth:email.signupFailed') as string);
           }
         }
       }
     } catch (err) {
       console.error('Email submit failed:', err);
-      Alert.alert('שגיאה', 'אירעה שגיאה. נסו שוב.');
+      Alert.alert(t('common:error') as string, t('common:genericTryAgain') as string);
     } finally {
       setIsEmailBusy(false);
     }
   };
 
   const handleOrgConfirm = async () => {
-    try {
-      const query = orgQuery.trim();
-      if (!query) {
-        Alert.alert('שגיאה', 'אנא הזן שם ארגון או אימייל');
-        return;
-      }
+      try {
+        const query = orgQuery.trim();
+        if (!query) {
+          Alert.alert(t('common:error') as string, t('auth:org.enterNameOrEmail') as string);
+          return;
+        }
       setIsCheckingOrg(true);
 
-      // 1) חיפוש לפי אימייל (מפתח ראשי), אחרת לפי שם מתוך תור אדמין
+      // 1) Search by email (primary key), otherwise by name from admin queue
       let applications: any[] = [];
       const isEmail = query.includes('@');
       if (isEmail) {
@@ -414,20 +424,20 @@ export default function LoginScreen() {
       const pending = applications.find((a: any) => a.status === 'pending');
 
       if (approved) {
-        // 2) יצירת משתמש ארגוני מינימלי והתחברות
+        // 2) Create minimal org user and login
         const email = String(approved.contactEmail || (isEmail ? query : '')).toLowerCase();
         const orgUser = {
           id: `org_${approved.id}`,
-          name: approved.orgName || 'ארגון',
+            name: approved.orgName || (t('auth:org.defaultName') as string),
           email: email || `org_${approved.id}@example.org`,
           phone: approved.contactPhone || '+9720000000',
           avatar: 'https://i.pravatar.cc/150?img=12',
-          bio: 'חשבון ארגוני',
+            bio: t('auth:org.defaultBio') as string,
           karmaPoints: 0,
           joinDate: new Date().toISOString(),
           isActive: true,
           lastActive: new Date().toISOString(),
-          location: { city: approved.city || 'ישראל', country: 'IL' },
+            location: { city: approved.city || (t('common:labels.countryIsrael') as string), country: 'IL' },
           interests: [],
           roles: ['org_admin'],
           postsCount: 0,
@@ -442,15 +452,15 @@ export default function LoginScreen() {
       }
 
       if (pending) {
-        Alert.alert('ממתין לאישור', 'הבקשה שלכם ממתינה לאישור מנהלי המערכת. תקבלו גישה לאחר האישור.');
+        Alert.alert(t('auth:org.pendingTitle') as string, t('auth:org.pendingMessage') as string);
         return;
       }
 
-      // 3) לא נמצא — ננווט למסך רישום ארגונים
+      // 3) Not found — navigate to org onboarding screen
       navigation.navigate('OrgOnboardingScreen' as never);
     } catch (err) {
       console.error('Org login check failed:', err);
-      Alert.alert('שגיאה', 'אירעה שגיאה בבדיקת הארגון. נסו שוב.');
+        Alert.alert(t('common:error') as string, t('auth:org.checkFailed') as string);
     } finally {
       setIsCheckingOrg(false);
     }
@@ -458,7 +468,7 @@ export default function LoginScreen() {
 
   useEffect(() => {
     if (selectedUser || isGuestMode) {
-      console.log('🔐 LoginScreen - useEffect - מנווט ל-Home', { 
+      console.log('🔐 LoginScreen - useEffect - navigating to Home', { 
         selectedUser: !!selectedUser, 
         isGuestMode,
         userName: selectedUser?.name 
@@ -472,11 +482,18 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'interactive'}
+          contentInsetAdjustmentBehavior="always"
+        >
       
       <View style={styles.container}>
         {/* Background Logo */}
-        <View style={styles.backgroundLogoContainer}>
+        <View style={styles.backgroundLogoContainer} pointerEvents="none">
           <Image 
             source={require('../assets/images/logo.png')} 
             style={styles.backgroundLogo} 
@@ -490,7 +507,8 @@ export default function LoginScreen() {
           <Text style={styles.subtitle}>{t('auth:subtitle') || ''}</Text>
           
           <View style={styles.buttonsContainer}>
-            <ModernGoogleLoginButton />
+            <SimpleGoogleLoginButton />
+            
 
 
 
@@ -560,7 +578,7 @@ export default function LoginScreen() {
                       disabled={isEmailBusy}
                       activeOpacity={0.85}
                     >
-                      <Text style={styles.orgActionButtonText}>{isEmailBusy ? (t('auth:email.checking') || 'בודק...') : (t('auth:email.continue') || 'המשך')}</Text>
+                      <Text style={styles.orgActionButtonText}>{isEmailBusy ? t('auth:email.checking') : t('auth:email.continue')}</Text>
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity
@@ -569,7 +587,7 @@ export default function LoginScreen() {
                       disabled={isEmailBusy}
                       activeOpacity={0.85}
                     >
-                      <Text style={styles.orgActionButtonText}>{isEmailBusy ? (t('auth:email.submitting') || 'שולח...') : (t('auth:email.submit') || 'הרשם/היכנס')}</Text>
+                      <Text style={styles.orgActionButtonText}>{isEmailBusy ? t('auth:email.submitting') : t('auth:email.submit')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -606,7 +624,7 @@ export default function LoginScreen() {
                         }}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.smallResetText}>{t('auth:email.resetPassword', { defaultValue: 'איפוס סיסמה' })}</Text>
+                        <Text style={styles.smallResetText}>{t('auth:email.resetPassword')}</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -623,7 +641,7 @@ export default function LoginScreen() {
                   activeOpacity={0.85}
                 >
                   <Text style={[styles.guestButtonText, { color: '#FF6B9D', fontWeight: '700' }]}>
-                    {t('auth:org.cta') || 'הכנס ארגון / עמותה'}
+                    {t('auth:org.cta')}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -656,7 +674,7 @@ export default function LoginScreen() {
                     disabled={isCheckingOrg}
                     activeOpacity={0.85}
                   >
-                    <Text style={styles.orgActionButtonText}>{isCheckingOrg ? (t('auth:org.checking') || 'בודק...') : (t('auth:org.continue') || 'המשך')}</Text>
+                    <Text style={styles.orgActionButtonText}>{isCheckingOrg ? t('auth:org.checking') : t('auth:org.continue')}</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -693,7 +711,7 @@ export default function LoginScreen() {
                 styles.characterButtonText,
                 !selectedCharacter && styles.disabledButtonText
               ]}>
-               {selectedCharacter ? t('auth:characters.loginAsSelected') : t('auth:characters.selectUserFirst')}
+               {selectedCharacter ? t('auth:characters.loginAsSelected') : t('auth:characters.selectTitle')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -754,7 +772,7 @@ export default function LoginScreen() {
                           styles.characterStat,
                           selectedCharacter === character.id && styles.selectedCharacterStat
                         ]}>
-                          💎 {character.karmaPoints} נקודות
+                          💎 {character.karmaPoints} {t('profile:stats.karmaPointsSuffix')}
                         </Text>
                         <Text style={[
                           styles.characterStat,
@@ -781,32 +799,34 @@ export default function LoginScreen() {
           <Text style={styles.infoText}>{t('common:freeAppNotice')}</Text>
         </View>
       </View>
-      {/* Language switcher (top-right) */}
-      <View pointerEvents="box-none" style={styles.languageFabContainer}>
-        <TouchableOpacity
-          style={styles.languageFab}
-          activeOpacity={0.8}
-          onPress={() => setLanguageMenuOpen((prev) => !prev)}
-        >
-          <Ionicons name="globe-outline" size={22} color="#333" />
-        </TouchableOpacity>
-        {languageMenuOpen && (
-          <View style={styles.languageMenu}>
-            <TouchableOpacity
-              style={styles.languageMenuItem}
-              onPress={() => applyLanguage('he')}
-            >
-              <Text style={styles.languageMenuText}>{t('common:languages.he', { defaultValue: 'עברית' })}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.languageMenuItem}
-              onPress={() => applyLanguage('en')}
-            >
-              <Text style={styles.languageMenuText}>{t('common:languages.en', { defaultValue: 'English' })}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+        </ScrollView>
+        {/* Language switcher (top-right) */}
+        <View pointerEvents="box-none" style={styles.languageFabContainer}>
+          <TouchableOpacity
+            style={styles.languageFab}
+            activeOpacity={0.8}
+            onPress={() => setLanguageMenuOpen((prev) => !prev)}
+          >
+            <Ionicons name="globe-outline" size={22} color="#333" />
+          </TouchableOpacity>
+          {languageMenuOpen && (
+            <View style={styles.languageMenu}>
+              <TouchableOpacity
+                style={styles.languageMenuItem}
+                onPress={() => applyLanguage('he')}
+              >
+                <Text style={styles.languageMenuText}>{t('common:languages.he')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.languageMenuItem}
+                onPress={() => applyLanguage('en')}
+              >
+                <Text style={styles.languageMenuText}>{t('common:languages.en')}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -869,7 +889,7 @@ const styles = StyleSheet.create({
     borderColor: '#E8E8E8',
     borderRadius: 10,
     paddingVertical: 6,
-    marginTop: 8,
+    marginTop: 5,
     minWidth: 130,
   },
   languageMenuItem: {
@@ -949,7 +969,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     minHeight: 220,
-    width: Math.max(Dimensions.get('window').width * 0.3, 130), // 30% מהמסך או מינימום 130px
+    width: Math.max(Dimensions.get('window').width * 0.3, 130),
     maxWidth: 170,
   },
 

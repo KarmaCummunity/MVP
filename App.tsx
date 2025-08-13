@@ -1,3 +1,14 @@
+// File overview:
+// - Purpose: Root application entry point for iOS/Android/Web.
+// - Reached from: App registry (Expo) bootstraps this component.
+// - Provides: React Navigation container with `MainNavigator`, global `UserProvider`, gesture and safe-area roots, StatusBar.
+// - Reads: AsyncStorage 'app_language' for i18n + RTL, Expo fonts, SplashScreen control, optional notificationService, WebBrowser auth completion.
+// - Listens: Push/in-app notification responses and deep links; when clicked, navigates to 'ChatDetailScreen' (with conversationId) or 'NotificationsScreen'.
+// - Downstream flow: App -> MainNavigator -> (LoginScreen | HomeStack/BottomNavigator) -> Tab stacks -> Screens.
+// - Side effects: Initializes i18n + RTL, loads fonts, hides splash, installs notification listener, holds a navigationRef for programmatic navigation.
+// - Route params: None (this is the top-level container).
+// - External deps/services: react-navigation, expo modules, i18n, UserContext.
+
 // App.tsx
 'use strict';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
@@ -6,6 +17,7 @@ import { NavigationContainer, NavigationContainerRef } from '@react-navigation/n
 import * as Font from 'expo-font';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as SplashScreen from 'expo-splash-screen';
+import * as WebBrowser from 'expo-web-browser';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -31,6 +43,9 @@ if (Platform.OS !== 'web') {
     console.warn('Failed to load notification service:', error);
   }
 }
+
+// Complete auth session results as early as possible (important for Web OAuth flows)
+try { WebBrowser.maybeCompleteAuthSession(); } catch {}
 
 SplashScreen.preventAutoHideAsync();
 

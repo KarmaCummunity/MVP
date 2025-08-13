@@ -1,3 +1,10 @@
+// File overview:
+// - Purpose: View another user's profile with tabs (Posts/Reels/Tagged), follow/unfollow, and messaging.
+// - Reached from: Home/Search/Profile/Donations stacks via 'UserProfileScreen'.
+// - Expects route params: `{ userId: string, userName: string, characterData?: CharacterType }`.
+// - Provides: Loads follow stats and counts, toggles follow state, navigates to 'FollowersScreen' and 'ChatDetailScreen'.
+// - Reads from context: `useUser()` -> `selectedUser` to check self vs other and to act on follow.
+// - External deps/services: `followService` (stats/update), `characterTypes` data source.
 import React, { useState, useEffect } from 'react';
 import {
   View,

@@ -1,3 +1,11 @@
+// File overview:
+// - Purpose: User's own profile screen in the Profile tab (stats, bio, actions, tabbed Posts/Reels/Tagged, quick menus).
+// - Reached from: `ProfileTabStack` initial route 'ProfileScreen' via `BottomNavigator`.
+// - Provides: Navigation to Followers lists, Bookmarks, Notifications, Edit Profile, Discover People, and (in demo) random persona selection and sample data creation.
+// - Reads from context: `useUser()` -> `selectedUser`, `setSelectedUserWithMode`, `isRealAuth`.
+// - Route params: None (internal state only; navigates to other screens with params).
+// - External deps/services: `followService` (stats and sample), `chatService` (sample chats), i18n translations.
+// - Notes: Hides or adapts certain demo-only features when `isRealAuth` is true.
 // screens/ProfileScreen.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import {

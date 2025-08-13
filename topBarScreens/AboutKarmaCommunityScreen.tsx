@@ -1,3 +1,8 @@
+// File overview:
+// - Purpose: Static About screen describing the Karma Community vision, challenges, model, and contact.
+// - Reached from: Top bar (guest mode shortcut) or Settings -> About.
+// - Provides: Read-only content, uses `ScreenWrapper`; no route params.
+// - External deps: Shared colors, font sizes; localized text currently inline in Hebrew.
 import React, { memo } from 'react' // Import memo here
 import colors from '../globals/colors'
 import { FontSizes } from '../globals/constants';

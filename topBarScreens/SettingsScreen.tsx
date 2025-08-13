@@ -1,3 +1,9 @@
+// File overview:
+// - Purpose: App settings screen (language, theme, notifications, privacy, org/admin links). Handles logout with guest/auth distinctions.
+// - Reached from: Top bar (via `TopBarNavigator`) and directly from multiple stacks as 'SettingsScreen'.
+// - Provides: Platform-specific scroll (web vs native), language modal and i18n+RTL application, navigation to About, Org Dashboard, Admin Approvals.
+// - Reads from context: `useUser()` -> `isGuestMode`, `selectedUser`, `isAuthenticated`, `signOut`.
+// - Side effects: On logout, navigates to 'LoginScreen'; on language change, persists to AsyncStorage and toggles RTL.
 /**
  * SettingsScreen - Modern Settings Interface
  * 

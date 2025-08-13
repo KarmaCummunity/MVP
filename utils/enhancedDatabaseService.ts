@@ -1,3 +1,7 @@
+// File overview:
+// - Purpose: Higher-level data access with caching and offline queue, built on `apiService`.
+// - Reached from: `EnhancedStatsService` and screens that need cached lists (donations, rides, stats).
+// - Provides: Cached getters, offline queue for mutations, periodic sync, and convenience utilities.
 // Enhanced Database Service - Connects frontend to new backend
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService, ApiResponse } from './apiService';

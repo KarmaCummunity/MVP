@@ -1,3 +1,8 @@
+// File overview:
+// - Purpose: Controlled dropdown with searchable modal list; returns a selected string value.
+// - Reached from: Various forms/screens needing a compact autocomplete selector.
+// - Inputs: `label`, `selectedValue`, `onValueChange`, `options`, optional `placeholder`.
+// - Behavior: Opens modal with search, filters options client-side, calls `onValueChange` on select.
 // components/AutocompleteDropdownComp.tsx
 import React, { useState } from "react";
 import { FontSizes } from '../globals/constants';

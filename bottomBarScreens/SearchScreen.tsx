@@ -1,3 +1,9 @@
+// File overview:
+// - Purpose: Unified search across donations, events, and users with filters, quick actions, and AI helper modal.
+// - Reached from: `SearchTabStack` initial route 'SearchScreen' via `BottomNavigator`.
+// - Provides: Local search over real data (donations from DB) + demo data (when not real auth), category filter tabs, popular/recent tags, result cards.
+// - Reads from context/services: `useUser()` (auth mode, selectedUser), `db.listDonations`, i18n strings for popular/recent.
+// - Route params: None; result taps currently show details via Alert, not deep-linking.
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   View, 

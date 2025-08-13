@@ -1,3 +1,7 @@
+// File overview:
+// - Purpose: Central configuration for backend usage, API base URL, caching, sync, offline, and feature flags.
+// - Reached from: `apiService`, `enhancedDatabaseService`, and many utils to decide backend vs local.
+// - Exports: USE_BACKEND, USE_FIRESTORE, API_BASE_URL, endpoints, cache/sync/perf/feature configs.
 // Database and Backend Configuration
 // This file controls whether to use the backend API or local storage
 

@@ -1,3 +1,6 @@
+// File overview:
+// - Purpose: Babel configuration for Expo app with module resolver and Reanimated plugin.
+// - Notes: Aliases `tslib` to CJS build to ensure named exports, and enables Reanimated globals.
 module.exports = function(api) {
   api.cache(true);
   return {

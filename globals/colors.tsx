@@ -101,6 +101,11 @@ const colors = {
   donationKnowledge: '#2196F3',
   donationItems: '#9C27B0',
 
+  // Category Cards (unified styling for Donations categories)
+  categoryCardBackground: '#F6F9FC',
+  categoryIconBackground: '#7A93B2',
+  categoryBorder: '#E5EDF6',
+
   // Utility
   transparent: 'transparent',
   white: '#FFFFFF',

@@ -32,7 +32,10 @@
     "cannotOpenLink": "Cannot open the link",
     "welcomeShort": "Welcome!",
     "freeAppNotice": "The app is completely free and non-profit",
-    "genericTryAgain": "An error occurred. Please try again."
+    "genericTryAgain": "An error occurred. Please try again.",
+    "labels": {
+      "countryIsrael": "Israel"
+    }
   },
   "search": {
     "sortTitle": "Sort",
@@ -544,6 +547,7 @@
     "subtitle": "The Capitalist Kibbutz of Israel",
     "continueAsGuest": "Continue as guest",
     "email": {
+      "checkFailed": "Email check failed. Please try again.",
       "cta": "Sign up with email",
       "placeholder": "Enter email",
       "passwordPlaceholder": "Enter password",
@@ -580,9 +584,15 @@
     },
     "org": {
       "cta": "Enter organization / NGO",
-      "placeholder": "Enter organization name",
+      "placeholder": "Enter organization email or name",
       "continue": "Continue",
       "checking": "Checking...",
+      "enterNameOrEmail": "Please enter organization name or email",
+      "pendingTitle": "Pending approval",
+      "pendingMessage": "Your request is pending admin approval. You'll get access after approval.",
+      "checkFailed": "Organization check failed. Please try again.",
+      "defaultName": "Organization",
+      "defaultBio": "Organization account",
       "title": "Organization / NGO registration",
       "subtitle": "Fill in the details. We'll review and approve. After approval you'll get admin permissions and a dedicated operations view.",
       "fields": {

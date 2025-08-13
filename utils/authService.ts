@@ -1,3 +1,7 @@
+// File overview:
+// - Purpose: Thin wrapper around Firebase Auth for email/password flows and verification utilities.
+// - Reached from: `LoginScreen` for email flows; occasionally for password reset.
+// - Provides: sign up/in, verify email, check verification, sign out, send password reset.
 // utils/authService.ts
 import { getFirebase } from './firebaseClient';
 import {

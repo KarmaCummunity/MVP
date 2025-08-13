@@ -1,3 +1,10 @@
+// File overview:
+// - Purpose: Stack navigator for the Search tab.
+// - Reached from: `BottomNavigator` -> Tab 'SearchScreen'.
+// - Provides: Routes for Search, UserProfile, Followers, DiscoverPeople, ChatList, Notifications, About, Settings.
+// - Header: Replaces default header with `TopBarNavigator`.
+// - Params of interest: Optional `userId` for profile/followers; no initial params for Search.
+// - External deps: react-navigation stack, TopBarNavigator, shared screens.
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useFocusEffect } from '@react-navigation/native';

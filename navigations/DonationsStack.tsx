@@ -1,3 +1,10 @@
+// File overview:
+// - Purpose: Stack navigator for the Donations tab and all donation categories.
+// - Reached from: `BottomNavigator` -> Tab 'DonationsTab'.
+// - Provides: Entry 'DonationsScreen' plus many category screens (money, time, knowledge, items, etc.).
+// - Header: Uses `TopBarNavigator`; can be hidden per-screen with route param `hideTopBar`.
+// - Params: Category screens typically have no required params; navigation is by route name.
+// - External deps: react-navigation stack, TopBarNavigator, category screens in `donationScreens/`.
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import { useFocusEffect } from "@react-navigation/native";

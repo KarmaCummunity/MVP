@@ -1,3 +1,9 @@
+// File overview:
+// - Purpose: Shared top navigation bar component for stacks; shows title and quick actions (Settings, Notifications, Chat/About).
+// - Reached from: `HomeTabStack`, `SearchTabStack`, `ProfileTabStack`, `DonationsStack` as a custom header.
+// - Inputs: Props `hideTopBar` and `showPosts`; also reads `route.params.hideTopBar`. Title resolves by current route with i18n.
+// - Reads from context: `useUser()` for guest mode to toggle Chat/About icon.
+// - Side effects: Logs focus and state changes via `logger`; animates show/hide with Reanimated.
 import React from 'react';
 import styles from '../globals/styles'; // your styles file
 import { Ionicons as Icon } from '@expo/vector-icons';
@@ -79,7 +85,7 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
   // Map route names to titles using translations
   const routeTitles: Record<string, string> = {
     SearchScreen: t('common:search'),
-    DonationsScreen: t('donations:title'),
+    DonationsTab: t('donations:title'),
     ProfileScreen: t('profile:title'),
 
     MoneyScreen: t('donations:categories.money.title'),

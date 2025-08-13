@@ -1,3 +1,9 @@
+// File overview:
+// - Purpose: Discover/suggest people to follow and view popular users; follow/unfollow inline.
+// - Reached from: Profile actions and navigation routes as 'DiscoverPeopleScreen'.
+// - Provides: Two tabs (suggestions/popular), list items navigate to 'UserProfileScreen'.
+// - Reads from context: `useUser()` -> `selectedUser`, `isRealAuth` controls demo data fallbacks.
+// - External deps/services: `followService` (suggestions/popular/follow/unfollow/stats).
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,

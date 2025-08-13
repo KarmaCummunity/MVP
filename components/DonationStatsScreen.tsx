@@ -1,3 +1,8 @@
+// File overview:
+// - Purpose: Visualize community donation stats as animated bubbles with motivational quotes.
+// - Reached from: Home or Donations related routes embedding this component.
+// - Inputs: None directly; pulls localized strings via i18n and sample data from `globals/fakeData`.
+// - Behavior: Generates background and stat bubbles, animates float/pulse, toggles selection to highlight values.
 "use strict";
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {

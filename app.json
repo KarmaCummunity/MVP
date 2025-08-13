@@ -2,10 +2,10 @@
       "expo": {
       "name": "KarmaCommunity",
       "slug": "karma-community",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
-    "scheme": "myapp",
+    "scheme": "com.navesarussi1.KarmaCommunity",
     "userInterfaceStyle": "automatic",
     "primaryColor": "#ffffff",
     "splash": {
@@ -78,6 +78,7 @@
       "EXPO_PUBLIC_API_BASE_URL": "/",
       "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "430191522654-jno2tkl1dotil0mkf4h4hahfk4e4gas8.apps.googleusercontent.com",
       "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "430191522654-o70t2qnqc4bvpvmbpak7unog7pvp9c95.apps.googleusercontent.com",
+      "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "430191522654-q05j71a8lu3e1vgf75c2r2jscgckb4mm.apps.googleusercontent.com",
       "EXPO_PUBLIC_USE_BACKEND": "1",
       "EXPO_PUBLIC_USE_FIRESTORE": "0",
       "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyCDwgAVr5IbjXe2vqSEacn_p-ruATfvqIU",

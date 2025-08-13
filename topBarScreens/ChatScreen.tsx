@@ -1,3 +1,7 @@
+// File overview:
+// - Purpose: Placeholder chat screen (legacy). Not part of the main chat flow which uses ChatList/ChatDetail.
+// - Reached from: Rare/deprecated routes; kept for compatibility.
+// - Behavior: Logs focus and provides a button to navigate back to 'FirstScreen'.
 import React from 'react';
 import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import { View, Button, Alert } from 'react-native';

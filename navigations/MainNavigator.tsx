@@ -1,3 +1,14 @@
+// File overview:
+// - Purpose: Root stack navigator controlling auth vs app flows.
+// - Reached from: `App.tsx` renders `<MainNavigator />` inside `NavigationContainer`.
+// - Provides: Stack with routes: 'LoginScreen' (entry), 'HomeStack' (BottomNavigator tabs), chats, bookmarks, user profile, top-bar screens, org/admin screens, edit profile.
+// - Decides: If user not authenticated and not guest -> shows LoginScreen first; otherwise user can navigate to HomeStack via LoginScreen logic.
+// - Reads from context: `useUser()` -> selectedUser, isLoading, isGuestMode, isAuthenticated; used to log state and render loading screen.
+// - Navigation params in common: Many screens expect optional ids (e.g., chatId, userId, url).
+// - Downstream flows:
+//   - LoginScreen -> on success/guest: `navigation.reset({ routes: [{ name: 'HomeStack' }] })`.
+//   - Notifications -> may navigate to 'ChatDetailScreen' with `conversationId`.
+// - External deps: react-navigation stack, i18n for titles, shared colors/styles.
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';

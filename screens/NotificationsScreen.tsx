@@ -1,3 +1,10 @@
+// File overview:
+// - Purpose: Displays a feed of notifications with read/unread state, actions, and settings.
+// - Reached from: Top bar routes and deep links; route name 'NotificationsScreen'.
+// - Provides: List with swipe/press actions: mark read, mark all read, delete, clear all; badge for unread count; real-time updates via in-app events and polling.
+// - Reads from context: `useUser()` -> selectedUser.
+// - Navigation side-effects: On tapping a 'message' notification with `conversationId`, navigates to 'ChatDetailScreen'.
+// - External deps/services: `notificationService` (CRUD + subscribe), i18n.
 // screens/NotificationsScreen.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {

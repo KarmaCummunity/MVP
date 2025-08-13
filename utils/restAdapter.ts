@@ -1,3 +1,7 @@
+// File overview:
+// - Purpose: Low-level REST adapter used by `DatabaseService` to call generic /api collection endpoints and auth.
+// - Reached from: `DatabaseService` when `USE_BACKEND` is true, and some direct auth flows.
+// - Provides: create/read/update/delete/list for collections; auth check/register/login; generic POST helper.
 // utils/restAdapter.ts
 import { API_BASE_URL } from './dbConfig';
 

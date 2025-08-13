@@ -1,3 +1,10 @@
+// File overview:
+// - Purpose: Stack navigator for the Home tab.
+// - Reached from: `BottomNavigator` -> Tab 'HomeScreen'.
+// - Provides: Custom header via `TopBarNavigator` that can be hidden with route param `hideTopBar`; initial route 'HomeMain'.
+// - Screens: HomeMain (HomeScreen), ChatList, ChatDetail, Notifications, About, Settings, Bookmarks, UserProfile, Followers, PostsReels (modal), WebView.
+// - Params of interest: `hideTopBar`, `showPosts` passed by HomeScreen to control header and content.
+// - External deps: react-navigation stack, TopBarNavigator wrapper.
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useFocusEffect } from '@react-navigation/native';

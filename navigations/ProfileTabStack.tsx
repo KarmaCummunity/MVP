@@ -1,3 +1,10 @@
+// File overview:
+// - Purpose: Stack navigator for the Profile tab.
+// - Reached from: `BottomNavigator` -> Tab 'ProfileScreen' (hidden when guest mode is active).
+// - Provides: Routes for Profile, Settings, ChatList, Notifications, About.
+// - Header: Uses `TopBarNavigator` for a consistent top bar across the app.
+// - Params: None for initial route; other screens use their own optional params.
+// - External deps: react-navigation stack, TopBarNavigator, common top-bar screens.
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useFocusEffect } from '@react-navigation/native';

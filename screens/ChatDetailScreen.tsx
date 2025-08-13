@@ -1,3 +1,10 @@
+// File overview:
+// - Purpose: Conversation detail screen showing messages, input box, and media attachments.
+// - Reached from: 'ChatListScreen' and notifications deep links; route name 'ChatDetailScreen'.
+// - Expects route params: `{ conversationId: string, userName: string, userAvatar: string, otherUserId: string }`.
+// - Provides: Loads messages, subscribes to updates, marks as read, sends text/files, optional fake auto-replies for demo.
+// - Reads from context: `useUser()` -> selectedUser.
+// - External deps/services: `chatService` (get/subscribe/send/mark), `fileService` (pick/validate), i18n.
 // screens/ChatDetailScreen.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {

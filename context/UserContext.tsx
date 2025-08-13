@@ -1,3 +1,8 @@
+// File overview:
+// - Purpose: Global user/session context managing auth mode (guest/demo/real), selected user, and auth persistence.
+// - Reached from: Wrapped around the app in `App.tsx`; consumed via `useUser()` in many screens.
+// - Provides: Methods to set user with mode, sign out, toggle guest/demo, and resetHomeScreen trigger.
+// - Storage: Persists `current_user`, `guest_mode`, and `auth_mode` in AsyncStorage; clears local collections on real auth.
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { db } from '../utils/databaseService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -74,11 +79,30 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       const storedUserData = await AsyncStorage.getItem('current_user');
       const guestModeData = await AsyncStorage.getItem('guest_mode');
       const storedAuthMode = (await AsyncStorage.getItem('auth_mode')) as AuthMode | null;
+      const oauthInProgress = await AsyncStorage.getItem('oauth_in_progress');
       
       console.log('🔐 UserContext - checkAuthStatus - storedUserData:', storedUserData ? 'exists' : 'null');
       console.log('🔐 UserContext - checkAuthStatus - guestModeData:', guestModeData);
       
-      if (guestModeData === 'true') {
+      if (oauthInProgress === 'true') {
+        // Clear stuck OAuth state and check normally
+        console.log('🔐 UserContext - checkAuthStatus - Clearing stuck OAuth state');
+        await AsyncStorage.removeItem('oauth_in_progress');
+        
+        // Continue with normal auth check after clearing OAuth state
+        if (guestModeData === 'true') {
+          console.log('🔐 UserContext - checkAuthStatus - Setting guest mode after clearing OAuth');
+          setIsGuestMode(true);
+          setIsAuthenticated(true);
+          setSelectedUserState(null);
+          setAuthMode('guest');
+        } else {
+          console.log('🔐 UserContext - checkAuthStatus - No auth after clearing OAuth');
+          setIsAuthenticated(false);
+          setIsGuestMode(false);
+          setAuthMode('guest');
+        }
+      } else if (guestModeData === 'true') {
         console.log('🔐 UserContext - checkAuthStatus - Setting guest mode');
         setIsGuestMode(true);
         setIsAuthenticated(true);

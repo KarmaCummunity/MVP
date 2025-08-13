@@ -1,3 +1,9 @@
+// File overview:
+// - Purpose: Start a new chat by selecting from friends/suggestions with filters and sorting; creates conversation if needed.
+// - Reached from: 'ChatListScreen' quick action and other entry points via route 'NewChatScreen'.
+// - Provides: Loads following/followers or suggestions; shows badges for existing chats; on select, navigates to 'ChatDetailScreen' with params.
+// - Reads from context: `useUser()` -> `selectedUser`.
+// - External deps/services: `followService` (suggestions/followers/following), `chatService` (create, list, exists, send first message).
 // screens/NewChatScreen.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {

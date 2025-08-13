@@ -1,9 +1,15 @@
+// File overview:
+// - Purpose: Unified client-side data access with backends: REST, Firestore, or AsyncStorage fallback.
+// - Reached from: Many screens/services via `db` helpers and `DatabaseService` static methods.
+// - Provides: CRUD/list/search/batch across logical collections; export/import; user-wide operations.
+// - Behavior: Delegates to `restAdapter` when `USE_BACKEND` is true, else Firestore/AsyncStorage.
 // utils/databaseService.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { USE_BACKEND, USE_FIRESTORE, CACHE_CONFIG, OFFLINE_CONFIG, STORAGE_KEYS } from './dbConfig';
 import { apiService, ApiResponse } from './apiService';
 import { restAdapter } from './restAdapter';
 import { firestoreAdapter } from './firestoreAdapter';
+import { enhancedDB } from './enhancedDatabaseService';
 
 // Database Collections
 export const DB_COLLECTIONS = {
@@ -584,20 +590,127 @@ export const db = {
     DatabaseService.batchDelete(DB_COLLECTIONS.MESSAGES, userId, messageIds),
 
   // Rides (Trump)
-  createRide: (userId: string, rideId: string, rideData: any) =>
-    DatabaseService.create(DB_COLLECTIONS.RIDES, userId, rideId, rideData),
+  createRide: async (userId: string, rideId: string, rideData: any) => {
+    try {
+      if (USE_BACKEND) {
+        const departureIso = (() => {
+          const dateStr = typeof rideData?.date === 'string' ? rideData.date : new Date().toISOString().split('T')[0];
+          const timeStr = typeof rideData?.time === 'string' ? rideData.time : new Date().toTimeString().slice(0, 5);
+          return new Date(`${dateStr}T${timeStr}:00Z`).toISOString();
+        })();
+        const payload = {
+          driver_id: rideData.driverId || userId,
+          title: rideData.title || `${rideData.from || 'ממקור'} → ${rideData.to || 'יעד'}`,
+          from_location: { name: rideData.from || '', city: rideData.from || '', address: rideData.from || '' },
+          to_location: { name: rideData.to || '', city: rideData.to || '', address: rideData.to || '' },
+          departure_time: departureIso,
+          arrival_time: null,
+          available_seats: typeof rideData.seats === 'number' ? rideData.seats : 1,
+          price_per_seat: Number(rideData.price || 0),
+          description: rideData.description || null,
+          requirements: (() => {
+            const reqs: string[] = [];
+            if (rideData.noSmoking) reqs.push('no-smoking');
+            if (rideData.petsAllowed) reqs.push('pets-allowed');
+            if (rideData.kidsFriendly) reqs.push('kids-friendly');
+            return reqs.join(', ');
+          })(),
+          metadata: { source: 'legacy-app', legacy_id: rideId },
+        };
+        const res = await apiService.createRide(payload);
+        if (!res.success) throw new Error(res.error || 'Failed to create ride');
+        return;
+      }
+      return DatabaseService.create(DB_COLLECTIONS.RIDES, userId, rideId, rideData);
+    } catch (error) {
+      console.error('❌ DatabaseService.db.createRide error:', error);
+      throw error;
+    }
+  },
 
-  getRide: (userId: string, rideId: string) =>
-    DatabaseService.read(DB_COLLECTIONS.RIDES, userId, rideId),
+  getRide: async (_userId: string, rideId: string) => {
+    try {
+      if (USE_BACKEND) {
+        const res = await apiService.getRideById(rideId);
+        if (!res.success || !res.data) return null;
+        const r: any = res.data;
+        return {
+          id: r.id,
+          driverName: r.driver_name || '',
+          from: r.from_location?.name || r.from_location?.city || '',
+          to: r.to_location?.name || r.to_location?.city || '',
+          date: new Date(r.departure_time).toISOString().slice(0, 10),
+          time: new Date(r.departure_time).toISOString().slice(11, 16),
+          seats: r.available_seats,
+          price: Number(r.price_per_seat) || 0,
+          rating: 5,
+          image: '🚗',
+        };
+      }
+      return DatabaseService.read(DB_COLLECTIONS.RIDES, _userId, rideId);
+    } catch (error) {
+      console.error('❌ DatabaseService.db.getRide error:', error);
+      return null;
+    }
+  },
 
-  listRides: (userId: string) =>
-    DatabaseService.list(DB_COLLECTIONS.RIDES, userId),
+  listRides: async (_userId: string) => {
+    try {
+      if (USE_BACKEND) {
+        const apiRides = await enhancedDB.getRides();
+        return (apiRides || []).map((r: any) => ({
+          id: r.id,
+          driverName: r.driver_name || r.driverId || 'Driver',
+          from: r.from_location?.name || r.from || '',
+          to: r.to_location?.name || r.to || '',
+          date: r.departure_time ? new Date(r.departure_time).toISOString().slice(0, 10) : (r.date || new Date().toISOString().slice(0, 10)),
+          time: r.departure_time ? new Date(r.departure_time).toISOString().slice(11, 16) : (r.time || '00:00'),
+          seats: r.available_seats ?? r.seats ?? 1,
+          price: Number(r.price_per_seat ?? r.price ?? 0),
+          rating: r.rating ?? 5,
+          image: r.image ?? '🚗',
+          category: r.category ?? 'ride',
+        }));
+      }
+      return DatabaseService.list(DB_COLLECTIONS.RIDES, _userId);
+    } catch (error) {
+      console.error('❌ DatabaseService.db.listRides error:', error);
+      return [];
+    }
+  },
 
-  updateRide: (userId: string, rideId: string, rideData: Partial<any>) =>
-    DatabaseService.update(DB_COLLECTIONS.RIDES, userId, rideId, rideData),
+  updateRide: async (_userId: string, rideId: string, rideData: Partial<any>) => {
+    try {
+      if (USE_BACKEND) {
+        const payload: any = {};
+        if (rideData.title) payload.title = rideData.title;
+        if (rideData.seats !== undefined) payload.available_seats = rideData.seats;
+        if (rideData.price !== undefined) payload.price_per_seat = Number(rideData.price);
+        if (rideData.status) payload.status = rideData.status;
+        const res = await apiService.updateDonation(rideId as any, payload as any); // reuse generic update if exists
+        if (!res.success) throw new Error(res.error || 'Failed to update ride');
+        return;
+      }
+      return DatabaseService.update(DB_COLLECTIONS.RIDES, _userId, rideId, rideData);
+    } catch (error) {
+      console.error('❌ DatabaseService.db.updateRide error:', error);
+      throw error;
+    }
+  },
 
-  deleteRide: (userId: string, rideId: string) =>
-    DatabaseService.delete(DB_COLLECTIONS.RIDES, userId, rideId),
+  deleteRide: async (_userId: string, rideId: string) => {
+    try {
+      if (USE_BACKEND) {
+        // RidesController uses status update for cancel; no direct delete endpoint in apiService
+        await apiService.updateBookingStatus(rideId as any, 'cancelled');
+        return;
+      }
+      return DatabaseService.delete(DB_COLLECTIONS.RIDES, _userId, rideId);
+    } catch (error) {
+      console.error('❌ DatabaseService.db.deleteRide error:', error);
+      throw error;
+    }
+  },
 
   // Donations / Items (generic items postings)
   createDonation: (userId: string, donationId: string, donationData: any) =>

@@ -1,3 +1,10 @@
+// File overview:
+// - Purpose: Entry screen for the Donations tab, surfacing category shortcuts (Popular/For You/All) and quick actions.
+// - Reached from: `DonationsStack` -> initial route 'DonationsScreen'.
+// - Provides: Navigation to category screens, tracks category analytics, persists recent categories, shows footer stats.
+// - Reads from context: `useUser()` -> isGuestMode, isRealAuth for behaviour and analytics source.
+// - Storage/services: AsyncStorage for recents; `EnhancedStatsService` or legacy `restAdapter` for analytics, `USE_BACKEND` switch.
+// - Params: None required; navigation uses route names listed in `BASE_CATEGORIES` mapping.
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
@@ -14,6 +21,7 @@ import {
   FlatList,
 } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { NavigationProp, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -31,6 +39,7 @@ import { restAdapter } from '../utils/restAdapter';
 import { enhancedDB, EnhancedDatabaseService } from '../utils/enhancedDatabaseService';
 import { EnhancedStatsService } from '../utils/statsService';
 import { USE_BACKEND } from '../utils/dbConfig';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface DonationsScreenProps {
   navigation: NavigationProp<DonationsStackParamList>;
@@ -38,7 +47,7 @@ interface DonationsScreenProps {
 
 const RECENT_CATEGORIES_KEY = 'recent_categories_ids';
 const RECENT_LIMIT = 3;
-const DEFAULT_RECENT_IDS: string[] = ['clothes', 'knowledge', 'food'];
+const DEFAULT_RECENT_IDS: string[] = ['clothes', 'food', 'knowledge'];
 const ANALYTICS_USER_ID = 'global';
 const ANALYTICS_COLLECTION = 'analytics';
 const ANALYTICS_ITEM_PREFIX = 'category:';
@@ -73,7 +82,7 @@ const BASE_CATEGORIES = [
   { id: 'fertility',  icon: 'medkit-outline',      color: colors.error,   bgColor: colors.errorLight,   screen: 'FertilityScreen' },
   { id: 'jobs',       icon: 'briefcase-outline',   color: colors.info,    bgColor: colors.infoLight,    screen: 'JobsScreen' },
   { id: 'matchmaking', icon: 'people-outline',     color: colors.pink,    bgColor: colors.pinkLight,    screen: 'MatchmakingScreen' },
-  { id: 'mentalHealth', icon: 'brain-outline',     color: colors.pinkDark,  bgColor: colors.pinkLight,  screen: 'MentalHealthScreen' },
+  { id: 'mentalHealth', icon: 'pulse-outline',     color: colors.pinkDark,  bgColor: colors.pinkLight,  screen: 'MentalHealthScreen' },
   { id: 'goldenAge',   icon: 'person-outline',     color: colors.warning, bgColor: colors.warningLight, screen: 'GoldenAgeScreen' },
   { id: 'languages',   icon: 'language-outline',   color: colors.info,    bgColor: colors.infoLight,    screen: 'LanguagesScreen' },
 ] as const;
@@ -84,6 +93,8 @@ const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
   const tabBarHeight = useBottomTabBarHeight();
+  const headerHeight = useHeaderHeight();
+  const insets = useSafeAreaInsets();
   const { isGuestMode, isRealAuth } = useUser(); // הסרנו את user כי אינו קיים ב-Type
   const { t } = useTranslation(['donations','common']);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -96,20 +107,53 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
   const allColumns = isDesktop ? 5 : isTablet || landscape ? 4 : 3;
   const recentCardWidth = `${(100 / recentColumns) - 2}%` as const;
   const allCardWidth = `${(100 / allColumns) - 2}%` as const;
-  const categoryIconSize = scaleSize(26);
-  const categoryIconOuter = scaleSize(35);
+  const baseCategoryIconSize = scaleSize(26);
+  const baseCategoryIconOuter = scaleSize(35);
   // Precise sizing so 3 cards fit almost fully across the section width on all screens
   const sectionHorizontalMargins = LAYOUT_CONSTANTS.SPACING.SM * 2; // left + right
   const sectionHorizontalPaddings = LAYOUT_CONSTANTS.SPACING.MD * 2; // left + right
-  const gridGap = LAYOUT_CONSTANTS.SPACING.XS; // gap between items
+  let gridGap = LAYOUT_CONSTANTS.SPACING.XS; // gap between items (will be scaled later)
   const sectionInnerWidth = SCREEN_WIDTH - sectionHorizontalMargins - sectionHorizontalPaddings;
-  const threeColCardWidthPx = Math.max(100, Math.floor((sectionInnerWidth - gridGap * 2) / 4));
-  const ITEM_FULL_WIDTH = threeColCardWidthPx + gridGap; // used for snapping and getItemLayout
-  const heroTitleSize = scaleSize(isTablet || isDesktop ? 18 : 16);
-  const heroSubtitleSize = scaleSize(isTablet || isDesktop ? 13 : 12);
-  const otherTitleSize = scaleSize(isTablet || isDesktop ? 16 : 14);
-  const otherSubtitleSize = scaleSize(isTablet || isDesktop ? 12 : 11);
+  let threeColCardWidthPx = Math.max(100, Math.floor((sectionInnerWidth - gridGap * 2) / 4));
+  let ITEM_FULL_WIDTH = threeColCardWidthPx + gridGap; // used for snapping and getItemLayout
+  const baseHeroTitleSize = scaleSize(isTablet || isDesktop ? 18 : 16);
+  const baseHeroSubtitleSize = scaleSize(isTablet || isDesktop ? 13 : 12);
+  const baseOtherTitleSize = scaleSize(isTablet || isDesktop ? 16 : 14);
+  const baseOtherSubtitleSize = scaleSize(isTablet || isDesktop ? 12 : 11);
   const othersMaxHeight = Math.max(scaleSize(220), Math.min(SCREEN_HEIGHT * 0.45, scaleSize(480)));
+
+  // Compute available height and scale down if needed so all sections fit without vertical scroll
+  const availableHeight = SCREEN_HEIGHT - (insets?.top ?? 0) - (insets?.bottom ?? 0) - (tabBarHeight ?? 0) - (headerHeight ?? 0);
+  const estimateCardHeight = (iconOuter: number, title: number, subtitle: number, padV: number) => {
+    // rough estimate including icon, two text lines and paddings
+    return iconOuter + (title * 1.2) + (subtitle * 1.2) + (padV * 2) + LAYOUT_CONSTANTS.SPACING.XS;
+  };
+  const sectionTitleHeight = FontSizes.heading2 + LAYOUT_CONSTANTS.SPACING.SM;
+  const desiredPopularHeight = sectionTitleHeight + estimateCardHeight(baseCategoryIconOuter, baseHeroTitleSize, baseHeroSubtitleSize, LAYOUT_CONSTANTS.SPACING.MD);
+  const desiredRecentHeight = sectionTitleHeight + estimateCardHeight(baseCategoryIconOuter, baseHeroTitleSize, baseHeroSubtitleSize, LAYOUT_CONSTANTS.SPACING.MD);
+  const desiredAllHeight = sectionTitleHeight + estimateCardHeight(baseCategoryIconOuter, baseOtherTitleSize, baseOtherSubtitleSize, LAYOUT_CONSTANTS.SPACING.MD);
+  const desiredStatsHeight = scaleSize(64);
+  const desiredTotalHeight = desiredPopularHeight + desiredRecentHeight + desiredAllHeight + desiredStatsHeight + (LAYOUT_CONSTANTS.SPACING.SM * 6);
+  const rawScale = Math.max(0.65, Math.min(1.35, availableHeight / Math.max(1, desiredTotalHeight)));
+  const sizeScale = rawScale;
+  const paddingScale = rawScale;
+  const isCompact = sizeScale < 0.98;
+
+  const categoryIconSize = Math.max(18, Math.round(baseCategoryIconSize * sizeScale));
+  const categoryIconOuter = Math.max(28, Math.round(baseCategoryIconOuter * sizeScale));
+  const heroTitleSize = Math.max(12, Math.round(baseHeroTitleSize * sizeScale));
+  const heroSubtitleSize = Math.max(10, Math.round(baseHeroSubtitleSize * sizeScale));
+  const otherTitleSize = Math.max(11, Math.round(baseOtherTitleSize * sizeScale));
+  const otherSubtitleSize = Math.max(9, Math.round(baseOtherSubtitleSize * sizeScale));
+  const sectionTitleMarginBottom = Math.max(LAYOUT_CONSTANTS.SPACING.XS, Math.round(LAYOUT_CONSTANTS.SPACING.MD * paddingScale));
+  const cardVerticalPad = Math.max(LAYOUT_CONSTANTS.SPACING.XS, Math.round(LAYOUT_CONSTANTS.SPACING.MD * paddingScale));
+  const sectionVerticalPad = Math.max(LAYOUT_CONSTANTS.SPACING.XS, Math.round(LAYOUT_CONSTANTS.SPACING.SM * paddingScale));
+  const sectionTitleFontSize = Math.max(14, Math.round(FontSizes.heading2 * sizeScale));
+
+  // Scale gaps and card width to consume remaining width nicely
+  gridGap = Math.max(2, Math.round(LAYOUT_CONSTANTS.SPACING.XS * paddingScale));
+  threeColCardWidthPx = Math.max(100, Math.floor((sectionInnerWidth - gridGap * 2) / 4));
+  ITEM_FULL_WIDTH = threeColCardWidthPx + gridGap;
 
   // Infinite horizontal list state (for "All" section)
   const LOOP_BLOCKS = 3; // center block is the natural list; both sides mirror for looping
@@ -276,12 +320,12 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundPrimary} />
-      {isGuestMode && <GuestModeNotice />}
+      {isGuestMode && <GuestModeNotice showLoginButton={false} />}
 
       {/* Popular (Top 3) */}
-      <View style={styles.categoriesSection}>
-        <Text style={styles.sectionTitle}>{t('donations:popular')}</Text>
-        <View style={[styles.categoriesGrid, { flexDirection: 'row' }]}>
+      <View style={[styles.categoriesSection, { paddingVertical: sectionVerticalPad }]}>
+        <Text style={[styles.sectionTitle, { marginBottom: sectionTitleMarginBottom, fontSize: sectionTitleFontSize }]}>{t('donations:popular')}</Text>
+        <View style={[styles.categoriesGrid, { flexDirection: 'row', gap: gridGap }]}>
           {popularCategories.slice(0, 3).map((category) => {
             const { title, subtitle } = getCategoryText(category.id);
             return (
@@ -290,9 +334,9 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                 style={[
                   styles.categoryCard,
                   {
-                    backgroundColor: category.bgColor,
+                    backgroundColor: colors.categoryCardBackground,
                     width: threeColCardWidthPx,
-                    paddingVertical: LAYOUT_CONSTANTS.SPACING.MD,
+                    paddingVertical: cardVerticalPad,
                   },
                 ]}
                 onPress={() => handleCategoryPress(category)}
@@ -301,7 +345,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                   style={[
                     styles.categoryIcon,
                     {
-                      backgroundColor: category.color,
+                      backgroundColor: colors.categoryIconBackground,
                       width: categoryIconOuter,
                       height: categoryIconOuter,
                       borderRadius: categoryIconOuter / 2,
@@ -310,10 +354,10 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                 >
                   <Ionicons name={category.icon as any} size={categoryIconSize} color="white" />
                 </View>
-                <Text style={[styles.categoryTitle, { fontSize: heroTitleSize }]} numberOfLines={1}>
+                 <Text style={[styles.categoryTitle, { fontSize: heroTitleSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
                   {title}
                 </Text>
-                <Text style={[styles.categorySubtitle, { fontSize: heroSubtitleSize }]} numberOfLines={1}>
+                 <Text style={[styles.categorySubtitle, { fontSize: heroSubtitleSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
                   {subtitle}
                 </Text>
               </TouchableOpacity>
@@ -323,9 +367,9 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
       </View>
 
       {/* For You (Last 3) */}
-      <View style={styles.categoriesSection}>
-        <Text style={styles.sectionTitle}>{t('donations:forYou')}</Text>
-        <View style={[styles.categoriesGrid, { flexDirection: 'row' }]}>
+      <View style={[styles.categoriesSection, { paddingVertical: sectionVerticalPad }]}>
+        <Text style={[styles.sectionTitle, { marginBottom: sectionTitleMarginBottom, fontSize: sectionTitleFontSize }]}>{t('donations:forYou')}</Text>
+        <View style={[styles.categoriesGrid, { flexDirection: 'row', gap: gridGap }]}>
           {recentCategories.map((category) => {
             const { title, subtitle } = getCategoryText(category.id);
             return (
@@ -334,9 +378,9 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                 style={[
                   styles.categoryCard,
                   {
-                    backgroundColor: category.bgColor,
+                    backgroundColor: colors.categoryCardBackground,
                     width: threeColCardWidthPx,
-                    paddingVertical: LAYOUT_CONSTANTS.SPACING.MD,
+                    paddingVertical: cardVerticalPad,
                   },
                 ]}
                 onPress={() => handleCategoryPress(category)}
@@ -346,7 +390,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                     style={[
                       styles.categoryIcon,
                       {
-                        backgroundColor: category.color,
+                        backgroundColor: colors.categoryIconBackground,
                         width: categoryIconOuter,
                         height: categoryIconOuter,
                         borderRadius: categoryIconOuter / 2,
@@ -357,11 +401,11 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                   </View>
                 </View>
                 <View style={styles.categoryTitleRow}>
-                  <Text style={[styles.categoryTitle, { fontSize: heroTitleSize }]} numberOfLines={1}>
+                  <Text style={[styles.categoryTitle, { fontSize: heroTitleSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
                     {title}
                   </Text>
-                </View>
-                <Text style={[styles.categorySubtitle, { fontSize: heroSubtitleSize }]} numberOfLines={1}>
+                 </View>
+                 <Text style={[styles.categorySubtitle, { fontSize: heroSubtitleSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
                   {subtitle}
                 </Text>
               </TouchableOpacity>
@@ -371,8 +415,8 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
       </View>
           
       {/* All - Horizontal scroll with infinite loop */}
-      <View style={styles.categoriesSection}>
-        <Text style={styles.sectionTitle}>{t('donations:all')}</Text>
+      <View style={[styles.categoriesSection, { paddingVertical: sectionVerticalPad }]}>
+        <Text style={[styles.sectionTitle, { marginBottom: sectionTitleMarginBottom, fontSize: sectionTitleFontSize }]}>{t('donations:all')}</Text>
         <FlatList
           ref={(r) => {
             allListRef.current = r;
@@ -406,7 +450,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
               currentAllIndexRef.current = target;
             }
           }}
-          contentContainerStyle={[styles.horizontalList, { paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XS }]}
+          contentContainerStyle={[styles.horizontalList, { paddingHorizontal: gridGap }]}
           renderItem={({ item: category, index }) => {
             const { title, subtitle } = getCategoryText(category.id as CategoryId);
             return (
@@ -415,10 +459,10 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                 style={[
                   styles.categoryCardHorizontal,
                   {
-                    backgroundColor: (category as any).bgColor,
+                    backgroundColor: colors.categoryCardBackground,
                     width: threeColCardWidthPx,
                     marginRight: gridGap,
-                    paddingVertical: LAYOUT_CONSTANTS.SPACING.MD,
+                    paddingVertical: cardVerticalPad,
                   },
                 ]}
               >
@@ -426,7 +470,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                   style={[
                     styles.categoryIcon,
                     {
-                      backgroundColor: (category as any).color,
+                      backgroundColor: colors.categoryIconBackground,
                       width: categoryIconOuter,
                       height: categoryIconOuter,
                       borderRadius: categoryIconOuter / 2,
@@ -435,10 +479,10 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                 >
                   <Ionicons name={(category as any).icon as any} size={categoryIconSize} color="white" />
                 </View>
-                <Text style={[styles.categoryTitle, { fontSize: otherTitleSize }]} numberOfLines={1}>
+                 <Text style={[styles.categoryTitle, { fontSize: otherTitleSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
                   {title}
                 </Text>
-                <Text style={[styles.categorySubtitle, { fontSize: otherSubtitleSize }]} numberOfLines={1}>
+                 <Text style={[styles.categorySubtitle, { fontSize: otherSubtitleSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
                   {subtitle}
                 </Text>
               </TouchableOpacity>
@@ -459,6 +503,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
         const activeCharities = charities.length;
         return (
             <DonationStatsFooter
+              compact={isCompact}
               stats={[
                 { label: t('donations:activeDonors'), value: activeDonors, icon: 'people-outline' },
                 { label: t('donations:weeklyDonations'), value: weeklyDonations, icon: 'heart-outline' },
@@ -572,19 +617,17 @@ const styles = StyleSheet.create({
     marginTop: LAYOUT_CONSTANTS.SPACING.SM,
   },
   categoriesSection: {
-
-    backgroundColor: colors.moneyFormBackground,
+    backgroundColor: 'transparent',
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
-    borderWidth: 1,
-    borderColor: colors.moneyFormBorder,
+    borderWidth: 0,
+    borderColor: colors.categoryBorder,
     marginTop: LAYOUT_CONSTANTS.SPACING.SM,
     marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
     marginHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
     alignItems: 'center',
     paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
     paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
-
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 4 }, 0.1, 8),
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.06, 6),
   },
   categoriesGrid: {
     flexDirection: 'row',
@@ -625,9 +668,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.08, 3),
     // minHeight: 108,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.categoryCardBackground,
     borderWidth: 0.5,
-    borderColor: colors.backgroundTertiary,
+    borderColor: colors.categoryBorder,
   },
   categoryCardHorizontal: {
     width: scaleSize(140),
@@ -636,9 +679,9 @@ const styles = StyleSheet.create({
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
     alignItems: 'center',
     ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.08, 3),
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.categoryCardBackground,
     borderWidth: 0.5,
-    borderColor: colors.backgroundTertiary,
+    borderColor: colors.categoryBorder,
     marginRight: LAYOUT_CONSTANTS.SPACING.XS,
   },
   activeCategoryCard: {
@@ -648,13 +691,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...createShadowStyle(colors.shadowLight, { width: 0, height: 3 }, 0.15, 6),
     minHeight: scaleSize(140),
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.categoryCardBackground,
     borderWidth: 1,
-    borderColor: colors.backgroundTertiary,
+    borderColor: colors.categoryBorder,
   },
   categoryCardSelected: {
     borderWidth: 2,
-    borderColor: colors.pink,
+    borderColor: colors.categoryIconBackground,
   },
   categoryIcon: {
     width: scaleSize(35),
