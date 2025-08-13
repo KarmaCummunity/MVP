@@ -70,8 +70,19 @@ export default function SimpleGoogleLoginButton({
     clearOAuthState();
   }, []);
 
-  // Check if Google is available - using Web Client ID for all platforms
-  const isGoogleAvailable = !!webClientId;
+  // Check if Google is available for current platform
+  const isGoogleAvailable = (() => {
+    if (Platform.OS === 'ios') {
+      return !!iosClientId || !!webClientId; // iOS client or fallback to web
+    }
+    if (Platform.OS === 'android') {
+      return !!androidClientId || !!webClientId; // Android client or fallback to web
+    }
+    if (Platform.OS === 'web') {
+      return !!webClientId;
+    }
+    return false;
+  })();
 
   // Initialize web auth session
   if (Platform.OS === 'web') {
@@ -80,9 +91,11 @@ export default function SimpleGoogleLoginButton({
     } catch {}
   }
 
-  // Configure OAuth request - using Web Client ID for all platforms (recommended for Expo)
+  // Configure OAuth request - using Native Client IDs for mobile platforms
   const oauthConfig: any = {
-    clientId: webClientId, // Use web client ID for all platforms
+    iosClientId: iosClientId,
+    androidClientId: androidClientId,
+    webClientId: webClientId, // Fallback for Expo Go
     scopes: ['openid', 'profile', 'email'],
     responseType: 'id_token',
     redirectUri: makeRedirectUri({
@@ -91,7 +104,7 @@ export default function SimpleGoogleLoginButton({
     }),
   };
   
-  // Expo fallback configuration
+  // Expo Go fallback configuration
   if (webClientId) {
     oauthConfig.expoClientId = webClientId;
   }
@@ -102,14 +115,15 @@ export default function SimpleGoogleLoginButton({
   try {
     [request, response, promptAsync] = Google.useAuthRequest(oauthConfig);
   } catch (e) {
-    // If the hook throws, attempt a safer config with just web client ID
-    logger.warn('GoogleLogin', 'useAuthRequest threw, retrying with basic config', {
+    // If the hook throws, attempt a safer config with just expo client ID for development
+    logger.warn('GoogleLogin', 'useAuthRequest threw, retrying with Expo Go fallback', {
       platform: Platform.OS,
+      hasIos: !!iosClientId,
+      hasAndroid: !!androidClientId,
       hasWeb: !!webClientId,
       error: String(e)
     });
     const fallbackConfig: any = {
-      clientId: webClientId,
       scopes: ['openid', 'profile', 'email'],
       responseType: 'id_token',
       redirectUri: makeRedirectUri({
@@ -258,6 +272,8 @@ export default function SimpleGoogleLoginButton({
         disabled,
         isGoogleAvailable,
         platform: Platform.OS,
+        iosClientId: !!iosClientId,
+        androidClientId: !!androidClientId,
         webClientId: !!webClientId
       });
       return;
