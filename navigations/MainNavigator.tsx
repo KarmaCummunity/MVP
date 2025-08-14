@@ -37,6 +37,8 @@ import OrgOnboardingScreen from '../screens/OrgOnboardingScreen';
 import AdminOrgApprovalsScreen from '../screens/AdminOrgApprovalsScreen';
 import OrgDashboardScreen from '../screens/OrgDashboardScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
+import LandingSiteScreen from '../screens/LandingSiteScreen';
+import { useWebMode } from '../context/WebModeContext';
 
 import { RootStackParamList } from '../globals/types';
 
@@ -45,6 +47,7 @@ const Stack = createStackNavigator<RootStackParamList>();
 export default function MainNavigator() {
   const { selectedUser, isLoading, isGuestMode, isAuthenticated } = useUser();
   const { t } = useTranslation(['common','profile']);
+  const { mode } = useWebMode();
 
   console.log('🧭 MainNavigator - Render state:', {
     selectedUser: selectedUser?.name || 'null',
@@ -87,8 +90,18 @@ export default function MainNavigator() {
   // Always start with LoginScreen - no automatic authentication
   console.log('🧭 MainNavigator - Always showing LoginScreen as initial route');
   
+  // On web, if mode is 'site', show landing screen stack; otherwise app stack
+  if (typeof window !== 'undefined' && mode === 'site') {
+    return (
+      <Stack.Navigator key={`stack-${mode}`} id={undefined} screenOptions={{ headerShown: false }} initialRouteName={"LandingSiteScreen"}>
+        <Stack.Screen name="LandingSiteScreen" component={LandingSiteScreen} />
+      </Stack.Navigator>
+    );
+  }
+
   return (
     <Stack.Navigator 
+      key={`stack-${mode}`}
       id={undefined}
       screenOptions={{ headerShown: false }}
       initialRouteName={"LoginScreen"}

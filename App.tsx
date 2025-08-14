@@ -31,6 +31,8 @@ import MainNavigator from './navigations/MainNavigator';
 import './polyfills/tslib-default';
 import colors from './globals/colors';
 import { UserProvider } from './context/UserContext';
+import { WebModeProvider, useWebMode } from './context/WebModeContext';
+import WebModeToggleOverlay from './components/WebModeToggleOverlay';
 import { FontSizes } from "./globals/constants";
 // RTL is controlled via selected language in i18n and Settings
 
@@ -162,22 +164,31 @@ export default function App() {
     );
   }
 
+  const AppNavigationRoot: React.FC = () => {
+    const { mode } = useWebMode();
+    return (
+      <NavigationContainer
+        key={`nav-${mode}`}
+        ref={navigationRef}
+        children={
+          <View style={{ flex: 1 }}>
+            <MainNavigator />
+            <WebModeToggleOverlay />
+            <StatusBar style="auto" />
+          </View>
+        }
+      />
+    );
+  };
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <UserProvider
-          children={
-            <NavigationContainer
-              ref={navigationRef}
-              children={
-                <View style={{ flex: 1 }}>
-                  <MainNavigator />
-                  <StatusBar style="auto" />
-                </View>
-              }
-            />
-          }
-        />
+        <WebModeProvider>
+          <UserProvider>
+            <AppNavigationRoot />
+          </UserProvider>
+        </WebModeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
