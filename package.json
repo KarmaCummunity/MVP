@@ -39,6 +39,7 @@
     "expo-web-browser": "~14.2.0",
     "firebase": "^10.12.4",
     "i18next": "^25.3.2",
+    "localtunnel": "^2.0.2",
     "matter-js": "^0.20.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
