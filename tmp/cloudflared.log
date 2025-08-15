@@ -21,3 +21,14 @@
 {"level":"info","time":"2025-08-15T17:31:51Z","message":"Starting metrics server on 127.0.0.1:20241/metrics"}
 {"level":"info","event":0,"ip":"198.41.192.7","connIndex":0,"time":"2025-08-15T17:31:51Z","message":"Tunnel connection curve preferences: [X25519MLKEM768 CurveP256]"}
 {"level":"info","event":0,"connection":"06157bea-21b7-44ba-8613-3a0663894fe9","connIndex":0,"location":"sea01","ip":"198.41.192.7","protocol":"quic","time":"2025-08-15T17:31:52Z","message":"Registered tunnel connection"}
+{"level":"error","event":0,"ip":"198.41.192.7","connIndex":0,"error":"context canceled","time":"2025-08-15T18:07:48Z","message":"Failed to serve tunnel connection"}
+{"level":"info","event":0,"ip":"198.41.192.7","connIndex":0,"time":"2025-08-15T18:07:48Z","message":"Retrying connection in up to 1s"}
+{"level":"error","error":"context canceled","connIndex":0,"time":"2025-08-15T18:07:49Z","message":"Connection terminated"}
+{"level":"info","event":0,"ip":"198.41.192.7","connIndex":0,"time":"2025-08-15T18:08:08Z","message":"Tunnel connection curve preferences: [X25519MLKEM768 CurveP256]"}
+{"level":"error","event":0,"ip":"198.41.192.7","connIndex":0,"error":"context canceled","time":"2025-08-15T18:08:08Z","message":"Failed to serve tunnel connection"}
+{"level":"info","event":0,"ip":"198.41.192.7","connIndex":0,"time":"2025-08-15T18:08:08Z","message":"Retrying connection in up to 4s"}
+{"level":"error","error":"context canceled","connIndex":0,"time":"2025-08-15T18:08:09Z","message":"Connection terminated"}
+{"level":"info","event":0,"ip":"198.41.192.7","connIndex":0,"time":"2025-08-15T18:08:12Z","message":"Tunnel connection curve preferences: [X25519MLKEM768 CurveP256]"}
+{"level":"error","event":0,"ip":"198.41.192.7","connIndex":0,"error":"context canceled","time":"2025-08-15T18:08:12Z","message":"Failed to serve tunnel connection"}
+{"level":"info","event":0,"ip":"198.41.192.7","connIndex":0,"time":"2025-08-15T18:08:12Z","message":"Retrying connection in up to 8s"}
+{"level":"error","error":"context canceled","connIndex":0,"time":"2025-08-15T18:08:15Z","message":"Connection terminated"}
