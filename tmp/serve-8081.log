@@ -1,0 +1,4 @@
+nohup: ignoring input
+ INFO  Accepting connections at http://localhost:8081
+ HTTP  8/16/2025 7:40:26 AM ::1 HEAD /
+ HTTP  8/16/2025 7:40:26 AM ::1 Returned 200 in 13 ms
