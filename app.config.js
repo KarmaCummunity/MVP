@@ -29,7 +29,7 @@ export default {
     web: {
       bundler: "metro",
       output: "static",
-      favicon: "./assets/images/favicon.png",
+      favicon: "./assets/images/favicon-32x32.png",
       name: "KC - הקיבוץ הקפיטליסטי",
       shortName: "KC",
       description: "פלטפורמה חינמית ללא מטרות רווח לקהילה הישראלית",
