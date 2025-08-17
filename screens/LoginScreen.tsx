@@ -847,18 +847,18 @@ const styles = StyleSheet.create({
   },
   backgroundLogoContainer: {
     position: 'absolute',
-    top: 50,
+    top: Platform.OS === 'web' ? 30 : 50, // Less top space on web
     left: 0,
     right: 0,
-    height: '50%',
+    height: Platform.OS === 'web' ? '40%' : '50%', // Less height on web
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#E3F2FD',
     opacity: 0.4,
   },
   backgroundLogo: {
-    width: '145%',
-    height: '145%',
+    width: Platform.OS === 'web' ? '120%' : '145%', // Smaller on web
+    height: Platform.OS === 'web' ? '120%' : '145%', // Smaller on web
   },
   headerSection: {
     marginBottom: 30,
@@ -906,18 +906,18 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   title: {
-    marginTop: 20,
-    fontSize: 36,
+    marginTop: Platform.OS === 'web' ? 10 : 20, // Less margin on web
+    fontSize: Platform.OS === 'web' ? 32 : 36, // Slightly smaller on web
     fontWeight: 'bold',
     color: '#2C2C2C',
     marginBottom: 10,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 20,
+    fontSize: Platform.OS === 'web' ? 18 : 20, // Slightly smaller on web
     color: '#444444',
     textAlign: 'center',
-    marginBottom: 100,
+    marginBottom: Platform.OS === 'web' ? 40 : 100, // Much less space on web
     fontWeight: '600',
   },
   characterTitle: {
@@ -959,7 +959,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 16,
+    padding: Platform.OS === 'web' ? 12 : 16, // Less padding on web
     marginRight: 12,
     marginBottom: 12,
     marginTop: 12,
@@ -972,9 +972,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    minHeight: 220,
-    width: Math.max(Dimensions.get('window').width * 0.3, 130),
-    maxWidth: 170,
+    minHeight: Platform.OS === 'web' ? 180 : 220, // Shorter on web
+    width: Platform.OS === 'web' 
+      ? Math.max(Dimensions.get('window').width * 0.28, 120) // Slightly smaller on web
+      : Math.max(Dimensions.get('window').width * 0.3, 130),
+    maxWidth: Platform.OS === 'web' ? 150 : 170, // Smaller max width on web
   },
 
   avatarContainer: {

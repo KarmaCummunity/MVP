@@ -78,7 +78,7 @@ export const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
     marginBottom: 20,
-    paddingBottom: 2000,
+    paddingBottom: Platform.OS === 'web' ? 60 : 200, // Much less padding on web
     backgroundColor: colors.orangeLight,
   },
   /**
@@ -121,7 +121,7 @@ export const styles = StyleSheet.create({
    * Content style for scrollable areas with top and bottom padding.
    */
   scrollViewContent: {
-    paddingBottom: 2400,
+    paddingBottom: Platform.OS === 'web' ? 80 : 240, // Much less padding on web
     paddingTop: 12,
   },
   /**
@@ -459,13 +459,13 @@ export const styles = StyleSheet.create({
     flex: 1,
     ...Platform.select({
       web: {
-        alignSelf: "center",
-        minWidth: 400, // Minimum width for web to maintain readability
-        maxWidth: 600, // Maximum width for web to prevent stretching
+        alignSelf: "stretch", // Use full width on web
+        width: "100%", // Full width
+        maxWidth: "100vw", // Use viewport width
+        minHeight: "100vh", // Ensure full height
       },
     }),
     backgroundColor: colors.backgroundPrimary,
-    // borderRadius
   },
   /**
    * Scroll container with padding for content.

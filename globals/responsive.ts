@@ -28,10 +28,28 @@ export const useOrientation = (): Orientation => {
   return height >= width ? 'portrait' : 'landscape';
 };
 
-// Simple scale based on iPhone 11 baseline width (414) with caps
+// Enhanced scale based on iPhone 11 baseline width (414) with better mobile web support
 export const scaleSize = (size: number) => {
-  const { width } = Dimensions.get('window');
+  const { width, height } = Dimensions.get('window');
   const baseline = 414;
+  
+  // For web, use better mobile detection and scaling
+  if (Platform.OS === 'web') {
+    // Check if it's a mobile browser based on viewport size
+    const isMobileWeb = width <= 768 && (width / height < 1.2); // Portrait-ish mobile
+    
+    if (isMobileWeb) {
+      // More aggressive scaling for mobile web to ensure readability
+      const mobileFactor = Math.min(Math.max(width / baseline, 0.9), 1.4);
+      return Math.round(size * mobileFactor);
+    } else {
+      // Desktop web - moderate scaling
+      const desktopFactor = Math.min(Math.max(width / 1024, 0.8), 1.2);
+      return Math.round(size * desktopFactor);
+    }
+  }
+  
+  // Original scaling for native mobile
   const factor = Math.min(Math.max(width / baseline, 0.85), 1.25);
   return Math.round(size * factor);
 };
@@ -42,6 +60,25 @@ export const vh = (percent: number) => Dimensions.get('window').height * (percen
 export const isWeb = Platform.OS === 'web';
 export const isIOS = Platform.OS === 'ios';
 export const isAndroid = Platform.OS === 'android';
+
+// Enhanced web platform detection
+export const isMobileWeb = () => {
+  if (!isWeb) return false;
+  const { width, height } = Dimensions.get('window');
+  return width <= 768 && (width / height < 1.5); // Mobile web viewport
+};
+
+export const isTabletWeb = () => {
+  if (!isWeb) return false;
+  const { width, height } = Dimensions.get('window');
+  return width > 768 && width <= 1024;
+};
+
+export const isDesktopWeb = () => {
+  if (!isWeb) return false;
+  const { width } = Dimensions.get('window');
+  return width > 1024;
+};
 
 // Per requirement: on web, left/right should be flipped relative to mobile (mainly texts)
 // We assume app is RTL on mobile; web should visually invert left/right for texts and inline spacing

@@ -75,20 +75,29 @@ export default function ScrollContainer({
 }
 
 const styles = StyleSheet.create({
-  // Web: Custom scrollable container with CSS overflow
+  // Web: Custom scrollable container with CSS overflow - optimized for mobile web
   webScrollContainer: {
     flex: 1,
     backgroundColor: colors.background,
     ...(Platform.OS === 'web' && {
       overflowY: 'auto' as any,
       overflowX: 'hidden' as any,
+      // Better mobile web scrolling
+      WebkitOverflowScrolling: 'touch' as any,
+      scrollBehavior: 'smooth' as any,
     }),
     height: '100%',
-    maxHeight: SCREEN_HEIGHT - 200, // Reserve space for top/bottom bars
+    // Remove restrictive maxHeight for mobile web
+    maxHeight: '100vh' as any,
+    width: '100%',
+    maxWidth: '100vw' as any,
   } as any,
   webScrollContent: {
-    paddingBottom: 40,
-    minHeight: SCREEN_HEIGHT * 0.8, // Ensure content is scrollable
+    // Much less padding on mobile web to reduce dead space
+    paddingBottom: Dimensions.get('window').width <= 768 ? 20 : 40,
+    // Better height calculation for mobile web
+    minHeight: '100%' as any,
+    width: '100%',
   },
   
   // Native: Standard ScrollView styles

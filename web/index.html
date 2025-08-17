@@ -27,7 +27,7 @@
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     
     <style>
-      /* Loading screen */
+      /* Loading screen and mobile web optimizations */
       html, body, #root {
         width: 100%;
         -webkit-overflow-scrolling: touch;
@@ -35,6 +35,9 @@
         padding: 0px;
         min-height: 100vh;
         background-color: #F0F8FF;
+        /* Mobile web optimizations */
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
       }
       
       #root {
@@ -43,12 +46,17 @@
         flex-grow: 1;
         display: flex;
         flex: 1;
+        /* Ensure full height on mobile */
+        min-height: 100vh;
+        position: relative;
       }
       
       html {
         scroll-behavior: smooth;
         -webkit-text-size-adjust: 100%;
         height: 100%;
+        /* Mobile web font scaling */
+        font-size: 16px;
       }
       
       body {
@@ -60,6 +68,41 @@
         -moz-osx-font-smoothing: grayscale;
         -ms-overflow-style: scrollbar;
         direction: rtl;
+        /* Remove any default mobile zoom */
+        zoom: 1;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+      
+      /* Mobile web specific styles */
+      @media screen and (max-width: 768px) {
+        html {
+          font-size: 14px; /* Slightly smaller base font on mobile web */
+        }
+        
+        body {
+          /* Prevent horizontal scrolling on mobile */
+          overflow-x: hidden;
+          /* Fix viewport issues on mobile browsers */
+          width: 100vw;
+          max-width: 100vw;
+        }
+        
+        #root {
+          width: 100vw;
+          max-width: 100vw;
+          overflow-x: hidden;
+        }
+      }
+      
+      /* Prevent text selection in UI elements */
+      button, .touchable {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
       }
     </style>
   </head>

@@ -104,8 +104,10 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
 
   const { isTablet, isDesktop } = getScreenInfo();
   const landscape = isLandscape();
-  const recentColumns = isDesktop ? 6 : isTablet || landscape ? 5 : 4;
-  const allColumns = isDesktop ? 5 : isTablet || landscape ? 4 : 3;
+  // Better mobile web responsive columns
+  const isMobileWebView = Platform.OS === 'web' && SCREEN_WIDTH <= 768;
+  const recentColumns = isMobileWebView ? 3 : isDesktop ? 6 : isTablet || landscape ? 5 : 4;
+  const allColumns = isMobileWebView ? 3 : isDesktop ? 5 : isTablet || landscape ? 4 : 3;
   const recentCardWidth = `${(100 / recentColumns) - 2}%` as const;
   const allCardWidth = `${(100 / allColumns) - 2}%` as const;
   const baseCategoryIconSize = scaleSize(26);
@@ -123,21 +125,24 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
   const baseOtherSubtitleSize = scaleSize(isTablet || isDesktop ? 12 : 11);
   const othersMaxHeight = Math.max(scaleSize(220), Math.min(SCREEN_HEIGHT * 0.45, scaleSize(480)));
 
-  // Compute available height and scale down if needed so all sections fit without vertical scroll
+  // Simplified responsive sizing for mobile web
   const availableHeight = SCREEN_HEIGHT - (insets?.top ?? 0) - (insets?.bottom ?? 0) - (tabBarHeight ?? 0) - (headerHeight ?? 0);
-  const estimateCardHeight = (iconOuter: number, title: number, subtitle: number, padV: number) => {
-    // rough estimate including icon, two text lines and paddings
-    return iconOuter + (title * 1.2) + (subtitle * 1.2) + (padV * 2) + LAYOUT_CONSTANTS.SPACING.XS;
-  };
-  const sectionTitleHeight = FontSizes.heading2 + LAYOUT_CONSTANTS.SPACING.SM;
-  const desiredPopularHeight = sectionTitleHeight + estimateCardHeight(baseCategoryIconOuter, baseHeroTitleSize, baseHeroSubtitleSize, LAYOUT_CONSTANTS.SPACING.MD);
-  const desiredRecentHeight = sectionTitleHeight + estimateCardHeight(baseCategoryIconOuter, baseHeroTitleSize, baseHeroSubtitleSize, LAYOUT_CONSTANTS.SPACING.MD);
-  const desiredAllHeight = sectionTitleHeight + estimateCardHeight(baseCategoryIconOuter, baseOtherTitleSize, baseOtherSubtitleSize, LAYOUT_CONSTANTS.SPACING.MD);
-  const desiredStatsHeight = scaleSize(64);
-  const desiredTotalHeight = desiredPopularHeight + desiredRecentHeight + desiredAllHeight + desiredStatsHeight + (LAYOUT_CONSTANTS.SPACING.SM * 6);
-  const rawScale = Math.max(0.65, Math.min(1.35, availableHeight / Math.max(1, desiredTotalHeight)));
-  const sizeScale = rawScale;
-  const paddingScale = rawScale;
+  
+  // For mobile web, use simplified scaling
+  let sizeScale = 1;
+  let paddingScale = 1;
+  
+  if (isMobileWebView) {
+    // Mobile web gets smaller, more compact layout
+    sizeScale = 0.9;
+    paddingScale = 0.8;
+  } else if (availableHeight < 600) {
+    // Very small screens get more aggressive scaling
+    const rawScale = Math.max(0.65, Math.min(1.35, availableHeight / 800));
+    sizeScale = rawScale;
+    paddingScale = rawScale;
+  }
+  
   const isCompact = sizeScale < 0.98;
 
   const categoryIconSize = Math.max(18, Math.round(baseCategoryIconSize * sizeScale));
@@ -657,11 +662,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderSecondary, // גבול עדין
     marginTop: LAYOUT_CONSTANTS.SPACING.SM,
-    marginBottom: LAYOUT_CONSTANTS.SPACING.MD, // מרווח גדול יותר מתחת
-    marginHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
+    marginBottom: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.SM : LAYOUT_CONSTANTS.SPACING.MD, // Less margin on web
+    marginHorizontal: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.XS : LAYOUT_CONSTANTS.SPACING.SM, // Less margin on web
     alignItems: 'center',
-    paddingVertical: LAYOUT_CONSTANTS.SPACING.LG, // padding גדול יותר
-    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
+    paddingVertical: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.MD : LAYOUT_CONSTANTS.SPACING.LG, // Less padding on web
+    paddingHorizontal: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.SM : LAYOUT_CONSTANTS.SPACING.MD, // Less padding on web
     ...createShadowStyle(colors.shadowColored, { width: 0, height: 4 }, 0.15, 8), // צל צבעוני
   },
   categoriesGrid: {
@@ -720,8 +725,8 @@ const styles = StyleSheet.create({
   },
   categoryCard: {
     width: '31.5%',
-    paddingVertical: LAYOUT_CONSTANTS.SPACING.MD, // padding גדול יותר
-    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM, // padding גדול יותר
+    paddingVertical: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.SM : LAYOUT_CONSTANTS.SPACING.MD, // Less padding on web
+    paddingHorizontal: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.XS : LAYOUT_CONSTANTS.SPACING.SM, // Less padding on web
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM, // עיגול יותר מעוגל
     alignItems: 'center',
     ...createShadowStyle(colors.shadowColored, { width: 0, height: 2 }, 0.12, 4), // צל צבעוני
@@ -730,9 +735,9 @@ const styles = StyleSheet.create({
     borderColor: colors.borderSecondary, // גבול עדין יותר
   },
   categoryCardHorizontal: {
-    width: scaleSize(140),
-    paddingVertical: LAYOUT_CONSTANTS.SPACING.MD, // padding גדול יותר
-    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM, // padding גדול יותר
+    width: Platform.OS === 'web' ? scaleSize(120) : scaleSize(140), // Smaller on web
+    paddingVertical: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.SM : LAYOUT_CONSTANTS.SPACING.MD, // Less padding on web
+    paddingHorizontal: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.XS : LAYOUT_CONSTANTS.SPACING.SM, // Less padding on web
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM, // עיגול יותר מעוגל
     alignItems: 'center',
     ...createShadowStyle(colors.shadowColored, { width: 0, height: 2 }, 0.12, 4), // צל צבעוני

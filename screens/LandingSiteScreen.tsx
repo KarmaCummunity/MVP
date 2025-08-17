@@ -381,19 +381,67 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
     backgroundColor: '#FFFFFF',
   },
-  hero: { paddingTop: 80, paddingBottom: 60, alignItems: 'center', paddingHorizontal: 40, backgroundColor: '#F2F7FF', minHeight: 600 },
-  logo: { width: 160, height: 160, marginBottom: 24 },
-  title: { fontSize: 56, fontWeight: '800', color: colors.textPrimary, textAlign: 'center', marginBottom: 20 },
-  subtitle: { fontSize: 24, color: colors.textSecondary, textAlign: 'center', marginTop: 12, maxWidth: '95%', lineHeight: 32 },
+  hero: { 
+    paddingTop: Platform.OS === 'web' ? 40 : 80, 
+    paddingBottom: Platform.OS === 'web' ? 30 : 60, 
+    alignItems: 'center', 
+    paddingHorizontal: Platform.OS === 'web' ? 20 : 40, 
+    backgroundColor: '#F2F7FF', 
+    minHeight: Platform.OS === 'web' ? 400 : 600 
+  },
+  logo: { 
+    width: Platform.OS === 'web' ? 120 : 160, 
+    height: Platform.OS === 'web' ? 120 : 160, 
+    marginBottom: Platform.OS === 'web' ? 16 : 24 
+  },
+  title: { 
+    fontSize: Platform.OS === 'web' ? 32 : 56, 
+    fontWeight: '800', 
+    color: colors.textPrimary, 
+    textAlign: 'center', 
+    marginBottom: Platform.OS === 'web' ? 12 : 20 
+  },
+  subtitle: { 
+    fontSize: Platform.OS === 'web' ? 16 : 24, 
+    color: colors.textSecondary, 
+    textAlign: 'center', 
+    marginTop: Platform.OS === 'web' ? 8 : 12, 
+    maxWidth: '95%', 
+    lineHeight: Platform.OS === 'web' ? 24 : 32 
+  },
   ctaRow: { flexDirection: 'row', gap: 20, marginTop: 30, justifyContent: 'center', flexWrap: 'wrap' },
   primaryCta: { backgroundColor: colors.info, paddingHorizontal: 28, paddingVertical: 16, borderRadius: 14, minWidth: 180 },
   primaryCtaText: { color: '#fff', fontWeight: '800', fontSize: 20, textAlign: 'center' },
   secondaryCta: { backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: colors.headerBorder, paddingHorizontal: 28, paddingVertical: 16, borderRadius: 14, minWidth: 180 },
   secondaryCtaText: { color: colors.textPrimary, fontWeight: '800', fontSize: 20, textAlign: 'center' },
-  section: { paddingHorizontal: 40, paddingVertical: 50, width: '100%', alignSelf: 'center' },
-  sectionTitle: { fontSize: 42, fontWeight: '800', color: colors.textPrimary, textAlign: 'center', marginBottom: 16 },
-  sectionSubtitle: { fontSize: 22, color: colors.textSecondary, textAlign: 'center', marginBottom: 20, lineHeight: 30 },
-  sectionSubTitle: { fontSize: 24, fontWeight: '700', color: colors.textPrimary, textAlign: 'center', marginTop: 20, marginBottom: 12 },
+  section: { 
+    paddingHorizontal: Platform.OS === 'web' ? 20 : 40, 
+    paddingVertical: Platform.OS === 'web' ? 25 : 50, 
+    width: '100%', 
+    alignSelf: 'center' 
+  },
+  sectionTitle: { 
+    fontSize: Platform.OS === 'web' ? 24 : 42, 
+    fontWeight: '800', 
+    color: colors.textPrimary, 
+    textAlign: 'center', 
+    marginBottom: Platform.OS === 'web' ? 12 : 16 
+  },
+  sectionSubtitle: { 
+    fontSize: Platform.OS === 'web' ? 14 : 22, 
+    color: colors.textSecondary, 
+    textAlign: 'center', 
+    marginBottom: Platform.OS === 'web' ? 15 : 20, 
+    lineHeight: Platform.OS === 'web' ? 20 : 30 
+  },
+  sectionSubTitle: { 
+    fontSize: Platform.OS === 'web' ? 18 : 24, 
+    fontWeight: '700', 
+    color: colors.textPrimary, 
+    textAlign: 'center', 
+    marginTop: Platform.OS === 'web' ? 15 : 20, 
+    marginBottom: Platform.OS === 'web' ? 8 : 12 
+  },
   featuresGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', gap: 24, width: '100%' },
   feature: { flex: 1, minWidth: 280, maxWidth: 350, backgroundColor: '#FAFBFF', borderWidth: 1, borderColor: '#EDF1FF', borderRadius: 16, padding: 24, alignItems: 'center', margin: 8 },
   featureEmoji: { fontSize: 42, marginBottom: 12 },

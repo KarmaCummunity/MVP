@@ -60,8 +60,8 @@ import FloatingBubblesOverlay from "../components/FloatingBubblesOverlay";
 import FloatingBubblesSkia from "../components/FloatingBubblesSkia";
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-// Panel layout dimensions derived responsively
-const PANEL_HEIGHT = SCREEN_HEIGHT - scaleSize(50);
+// Panel layout dimensions derived responsively with web optimizations
+const PANEL_HEIGHT = Platform.OS === 'web' ? SCREEN_HEIGHT - scaleSize(20) : SCREEN_HEIGHT - scaleSize(50);
 const CLOSED_POSITION = PANEL_HEIGHT - scaleSize(60);
 const OPEN_POSITION = 0;
 const MID_POSITION = PANEL_HEIGHT / 2;
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
   // Drag handle button (small pill) centered at bottom
   dragHandleButton: {
     position: 'absolute',
-    bottom: 60,
+    bottom: Platform.OS === 'web' ? 20 : 60, // Much lower on web to reduce dead space
     backgroundColor: colors.pink,
     alignSelf: 'center',
     width: scaleSize(96),
