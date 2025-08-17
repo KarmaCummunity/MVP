@@ -7,6 +7,17 @@
 // - Navigation params pattern: nested screens can pass `{ hideBottomBar: true }` to hide tab bar; Home tab press triggers reset via context.
 // - External deps: react-navigation/bottom-tabs, Ionicons, responsive helpers, colors/constants.
 // BottomNavigator.tsx
+
+// TODO: Extract complex animation logic to custom hooks (usePulseAnimation, useTabBarAnimation)
+// TODO: Add comprehensive TypeScript interfaces for all navigation types
+// TODO: Implement proper accessibility for tab navigation
+// TODO: Add comprehensive error handling for navigation failures  
+// TODO: Remove hardcoded animation values and use constants
+// TODO: Implement proper tab badge system for notifications/updates
+// TODO: Add comprehensive performance optimization with React.memo
+// TODO: Remove 'use strict' directive - not needed in modern JavaScript
+// TODO: Add comprehensive unit tests for all navigation logic
+// TODO: Implement proper deep linking support for tab navigation
 'use strict';
 import React from "react";
 import { Platform, Animated, Easing, View, StyleSheet } from "react-native";
@@ -44,6 +55,10 @@ export type BottomTabNavigatorParamList = {
 const Tab = createBottomTabNavigator<BottomTabNavigatorParamList>();
 
 // Animated icon for Donations tab when not focused
+// TODO: Extract this component to separate file (components/AnimatedTabIcon.tsx)
+// TODO: Add proper cleanup for animations on unmount
+// TODO: Implement proper animation performance optimization
+// TODO: Add proper accessibility for animated elements
 const DonationsPulseIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => {
   const ring1 = React.useRef(new Animated.Value(0)).current;
   const ring2 = React.useRef(new Animated.Value(0)).current;

@@ -1,13 +1,24 @@
 import { Dimensions, Platform, I18nManager, ScaledSize } from 'react-native';
 
+// TODO: Add comprehensive TypeScript interfaces for all responsive utilities
+// TODO: Implement proper breakpoint system with named breakpoints
+// TODO: Add comprehensive device detection (iPhone models, Android variants)
+// TODO: Create responsive hook system with proper subscription management
+// TODO: Add comprehensive orientation change handling
+// TODO: Implement proper accessibility scaling support
+// TODO: Add comprehensive performance optimization for responsive calculations
+// TODO: Create proper responsive testing and validation tools
+// TODO: Add comprehensive documentation for responsive design patterns
+// TODO: Implement proper responsive image and asset management
+
 // Screen info helpers
 export const getScreenInfo = () => {
   const { width, height } = Dimensions.get('window');
   const shortest = Math.min(width, height);
   const longest = Math.max(width, height);
-  const isTablet = shortest >= 600;
-  const isDesktop = Platform.OS === 'web' && width >= 1024;
-  const isSmallPhone = shortest < 360;
+  const isTablet = shortest >= 600; // TODO: Use proper tablet breakpoint constants
+  const isDesktop = Platform.OS === 'web' && width >= 1024; // TODO: Use proper desktop breakpoint constants
+  const isSmallPhone = shortest < 360; // TODO: Use proper small phone breakpoint constants
   return { width, height, shortest, longest, isTablet, isDesktop, isSmallPhone };
 };
 
@@ -29,9 +40,13 @@ export const useOrientation = (): Orientation => {
 };
 
 // Enhanced scale based on iPhone 11 baseline width (414) with better mobile web support
+// TODO: Make baseline configurable and support multiple device baselines
+// TODO: Add proper scale caching to improve performance
+// TODO: Implement proper scale testing across different devices
+// TODO: Add scale limits and validation to prevent extreme scaling
 export const scaleSize = (size: number) => {
   const { width, height } = Dimensions.get('window');
-  const baseline = 414;
+  const baseline = 414; // TODO: Move to constants file
   
   // For web, use better mobile detection and scaling
   if (Platform.OS === 'web') {

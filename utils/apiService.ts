@@ -4,6 +4,17 @@
 // - Provides: request helpers and endpoint-specific methods returning ApiResponse<T>.
 // - Env: Base URL derived from `dbConfig` (EXPO_PUBLIC_API_BASE_URL).
 // Enhanced API service for connecting to the new backend
+
+// TODO: Add comprehensive error handling with retry logic and exponential backoff
+// TODO: Implement proper TypeScript interfaces for all API requests/responses
+// TODO: Add request/response interceptors for authentication and logging
+// TODO: Add request caching mechanism for GET requests
+// TODO: Implement proper timeout handling and abort controllers
+// TODO: Add network connectivity checks before making requests
+// TODO: Add comprehensive unit tests for all API methods
+// TODO: Implement proper API versioning support
+// TODO: Add request/response transformation middleware
+// TODO: Add comprehensive logging and monitoring
 import { USE_BACKEND, API_BASE_URL as CONFIG_API_BASE_URL } from './dbConfig';
 
 export interface ApiResponse<T = any> {
@@ -24,6 +35,10 @@ class ApiService {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
+    // TODO: Add request timeout configuration
+    // TODO: Add authentication token to headers automatically
+    // TODO: Add request ID for tracing and debugging
+    // TODO: Add retry logic for failed requests
     try {
       const url = `${this.baseURL}${endpoint}`;
       const config: RequestInit = {

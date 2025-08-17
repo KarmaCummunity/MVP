@@ -5,6 +5,21 @@
 // - Reads from context: `useUser()` -> selectedUser, isGuestMode, isRealAuth, resetHomeScreenTrigger.
 // - Input params: None required; uses navigation params set locally.
 // - External deps/services: `EnhancedStatsService` for stats, `FloatingBubblesOverlay`, `PostsReelsScreen`.
+
+// TODO: CRITICAL - This file is too long (893+ lines). Split into smaller components:
+//   - Extract FloatingBubble to separate component
+//   - Extract StatCard to separate component  
+//   - Extract panel gesture logic to custom hook
+//   - Create HomeAnimations utility for all animation logic
+// TODO: Remove unused imports - many imports are not being used
+// TODO: Replace magic numbers with named constants (PANEL_HEIGHT, positions, etc)
+// TODO: Implement proper TypeScript interfaces for all props and state
+// TODO: Add comprehensive error handling for stats fetching
+// TODO: Optimize re-renders - too many useEffect hooks causing performance issues
+// TODO: Remove fake data imports - replace with real API calls
+// TODO: Add proper loading states for all async operations
+// TODO: Implement proper accessibility for drag gestures and animations
+// TODO: Add unit tests for complex gesture and animation logic
 import React, { useState, useEffect, useCallback } from "react";
 import { 
   View, 
@@ -61,6 +76,9 @@ import FloatingBubblesSkia from "../components/FloatingBubblesSkia";
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 // Panel layout dimensions derived responsively with web optimizations
+// TODO: Move these constants to a dedicated constants file
+// TODO: Add proper responsive calculations based on device type
+// TODO: Test panel positions on different screen sizes and orientations
 const PANEL_HEIGHT = Platform.OS === 'web' ? SCREEN_HEIGHT - scaleSize(20) : SCREEN_HEIGHT - scaleSize(50);
 const CLOSED_POSITION = PANEL_HEIGHT - scaleSize(60);
 const OPEN_POSITION = 0;
@@ -135,6 +153,10 @@ const FloatingBubble: React.FC<FloatingBubbleProps> = ({ icon, value, label, bub
 };
 
 export default function HomeScreen() {
+  // TODO: Extract all hook logic to custom hooks (useHomeScreenState, useHomeScreenAnimations)
+  // TODO: Implement proper state management with useReducer instead of multiple useState
+  // TODO: Add proper TypeScript interfaces for navigation and route params
+  // TODO: Memoize expensive calculations and objects
   const tabBarHeight = useBottomTabBarHeight();
   const isFocused = useIsFocused();
   const navigation = useNavigation();
@@ -265,6 +287,12 @@ export default function HomeScreen() {
   const { t } = useTranslation(['home','common']);
 
   // Fetch stats from DB
+  // TODO: Move stats fetching to custom hook (useStatsData)
+  // TODO: Add proper loading state for stats
+  // TODO: Add error state handling and retry mechanism
+  // TODO: Implement proper error logging/reporting
+  // TODO: Add caching mechanism for stats data
+  // TODO: Add refresh/pull-to-refresh functionality
   const [stats, setStats] = useState<StatCardProps[]>([]);
   useEffect(() => {
     const fetchStats = async () => {
@@ -277,6 +305,8 @@ export default function HomeScreen() {
         ]);
       } catch (error) {
         console.error('Failed to fetch stats', error);
+        // TODO: Show user-friendly error message
+        // TODO: Implement fallback data or retry logic
       }
     };
     fetchStats();

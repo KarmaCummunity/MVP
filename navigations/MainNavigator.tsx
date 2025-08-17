@@ -15,6 +15,17 @@
 //   - LoginScreen -> on success/guest: `navigation.reset({ routes: [{ name: 'HomeStack' }] })`.
 //   - Notifications -> may navigate to 'ChatDetailScreen' with `conversationId`.
 // - External deps: react-navigation stack, i18n for titles, shared colors/styles.
+
+// TODO: Add proper navigation state persistence for deep linking
+// TODO: Implement proper screen pre-loading for better performance
+// TODO: Add navigation analytics and tracking
+// TODO: Simplify complex navigation logic - too many conditional renders
+// TODO: Add proper TypeScript typing for all navigation params
+// TODO: Implement proper loading states during navigation transitions
+// TODO: Add navigation guards for protected routes
+// TODO: Remove hardcoded console.log statements - use proper logging
+// TODO: Add navigation error boundaries and fallback screens
+// TODO: Optimize navigation performance with lazy loading
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -55,6 +66,8 @@ export default function MainNavigator() {
   const { t } = useTranslation(['common','profile']);
   const { mode } = useWebMode();
 
+  // TODO: Replace console.log with proper logging service
+  // TODO: Add proper state validation and error handling
   console.log('🧭 MainNavigator - Render state:', {
     selectedUser: selectedUser?.name || 'null',
     isLoading,
@@ -84,9 +97,9 @@ export default function MainNavigator() {
   if (isLoading) {
     console.log('🧭 MainNavigator - Showing loading screen');
     return (
-      <View style={styles.centeredScreen}>
+      <View style={styles.centeredScreen as any}>
         <ActivityIndicator size="large" color={colors.info} />
-        <Text style={styles.loadingText}>{t('common:loading')}</Text>
+        <Text style={styles.loadingText as any}>{t('common:loading')}</Text>
       </View>
     );
   }

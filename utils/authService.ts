@@ -3,6 +3,17 @@
 // - Reached from: `LoginScreen` for email flows; occasionally for password reset.
 // - Provides: sign up/in, verify email, check verification, sign out, send password reset.
 // utils/authService.ts
+
+// TODO: Add comprehensive error handling with proper error types and messages
+// TODO: Implement proper authentication state management and persistence
+// TODO: Add comprehensive input validation for email and password
+// TODO: Implement proper password strength validation
+// TODO: Add comprehensive logging and monitoring for all auth operations
+// TODO: Implement proper session management and token refresh
+// TODO: Add comprehensive security measures (rate limiting, brute force protection)
+// TODO: Create proper TypeScript interfaces for all auth-related types
+// TODO: Add comprehensive unit tests for all authentication functions
+// TODO: Implement proper multi-factor authentication support
 import { getFirebase } from './firebaseClient';
 import {
   getAuth,
@@ -22,11 +33,18 @@ export const getAuthInstance = () => {
 };
 
 export async function getSignInMethods(email: string): Promise<string[]> {
+  // TODO: Add comprehensive input validation for email parameter
+  // TODO: Add proper error handling and user-friendly error messages
+  // TODO: Implement caching mechanism for frequently checked emails
   const auth = getAuthInstance();
   return fetchSignInMethodsForEmail(auth, email);
 }
 
 export async function signUpWithEmail(email: string, password: string): Promise<User> {
+  // TODO: Add comprehensive input validation (email format, password strength)
+  // TODO: Add proper error handling with specific error codes
+  // TODO: Implement user profile creation after successful signup
+  // TODO: Add analytics tracking for successful/failed signups
   const auth = getAuthInstance();
   const cred = await createUserWithEmailAndPassword(auth, email, password);
   return cred.user;

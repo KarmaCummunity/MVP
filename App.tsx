@@ -16,6 +16,17 @@
 
 // App.tsx
 'use strict';
+
+// TODO: Remove hardcoded console.log statements throughout the file - use proper logging service
+// TODO: Add error boundaries to catch and handle React crashes gracefully
+// TODO: Implement proper loading state management instead of local state
+// TODO: Add TypeScript strict mode - many 'any' types need to be properly typed
+// TODO: Remove 'use strict' directive - not needed in modern React/TypeScript
+// TODO: Add proper error handling for font loading failures with fallback fonts
+// TODO: Implement proper deep linking configuration and testing
+// TODO: Add crash reporting integration (Sentry, Bugsnag)
+// TODO: Remove magic numbers for padding (48px) - use constants file
+// TODO: Add proper accessibility support throughout the app
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, ActivityIndicator, Platform, StyleSheet } from 'react-native';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
@@ -63,6 +74,10 @@ export default function App() {
   const navigationRef = useRef<NavigationContainerRef<any>>(null);
 
   console.log('🚀 App component mounted');
+  
+  // TODO: Move notification setup to dedicated notification service/hook
+  // TODO: Add proper error handling for notification permission failures
+  // TODO: Test notification handling on all platforms (iOS/Android/Web)
   // Setup notification response listener (iOS + Android)
   useEffect(() => {
     if (!notificationService) return;
@@ -122,6 +137,9 @@ export default function App() {
         console.log('✅ Fonts loaded successfully');
       } catch (fontError) {
         console.warn('Font loading failed, continuing without custom fonts');
+        // TODO: Implement proper fallback font loading strategy
+        // TODO: Add user notification about font loading failure
+        // TODO: Track font loading failures in analytics
       }
 
       console.log('✅ App preparation completed');

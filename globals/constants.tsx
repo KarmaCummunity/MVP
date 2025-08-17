@@ -1,5 +1,15 @@
 // Charities list moved to fakeData.ts file
 
+// TODO: Add comprehensive constants documentation and usage examples
+// TODO: Implement proper TypeScript strict types for all constants
+// TODO: Create constants validation and testing system
+// TODO: Group related constants into logical modules/namespaces
+// TODO: Add responsive constants for different screen sizes
+// TODO: Remove hardcoded values throughout the app and use these constants
+// TODO: Create constants management system for easy updates
+// TODO: Add internationalization support for text constants
+// TODO: Implement proper naming conventions consistency
+// TODO: Add runtime constants validation
 
 // icone size
 export const IconSizes = {
@@ -84,6 +94,9 @@ export const sortOptions: string[] = [
   'byRelevance',
 ];
 
+// TODO: URGENT - Remove hardcoded Hebrew text and implement proper i18n
+// TODO: Rename 'trumps' to proper English names (rides/transportation)
+// TODO: Create proper filter/menu management system
 export const filter_for_trumps: string[] = [
   'לפי מיקום',
   'לפי סוג תרומה',

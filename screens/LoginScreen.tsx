@@ -7,6 +7,21 @@
 // - Context: `useUser()` -> `setSelectedUserWithMode`, `setGuestMode`, `selectedUser`, `isGuestMode` to proceed to home upon auth or guest.
 // - Navigation side-effects: `navigation.reset()` to 'HomeStack'; can navigate to 'OrgOnboardingScreen'.
 // - External deps/services: i18n, firebase-like authService wrappers, restAdapter, databaseService.
+
+// TODO: CRITICAL - This file is extremely long (1200+ lines). Split into smaller components:
+//   - EmailLoginForm component
+//   - OrganizationLoginForm component  
+//   - CharacterSelection component
+//   - LanguageSelector component
+// TODO: Remove character selection demo functionality - not needed in production
+// TODO: Add comprehensive form validation and error handling
+// TODO: Implement proper accessibility for all interactive elements
+// TODO: Add comprehensive loading states and user feedback
+// TODO: Remove hardcoded styles and use theme system consistently
+// TODO: Add proper TypeScript interfaces for all props and state
+// TODO: Remove console.log statements and use proper logging
+// TODO: Add unit tests for all authentication flows
+// TODO: Implement proper security measures (rate limiting, etc.)
 import React, { useState, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -40,6 +55,9 @@ import i18n from '../app/i18n';
 import ScrollContainer from '../components/ScrollContainer';
 
 export default function LoginScreen() {
+  // TODO: Extract state management to custom hooks (useAuthState, useLoginForm)
+  // TODO: Implement proper state validation and error boundaries
+  // TODO: Add comprehensive analytics tracking for auth flow
   const { setSelectedUserWithMode, setGuestMode, selectedUser, isGuestMode } = useUser();
   const { t } = useTranslation(['auth', 'common', 'settings']);
   const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);

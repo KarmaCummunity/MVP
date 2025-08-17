@@ -11,6 +11,20 @@ import {
   Share,
   Platform,
 } from 'react-native';
+
+// TODO: CRITICAL - This file is too long (>500 lines). Split into smaller components:
+//   - Extract PostItem component
+//   - Extract fake data generation to separate service
+//   - Extract user interaction logic to custom hooks
+// TODO: Remove all fake data and replace with real API integration
+// TODO: Add proper TypeScript interfaces instead of inline types
+// TODO: Add comprehensive error handling for all async operations
+// TODO: Implement proper virtualization for large lists (react-native-super-grid)
+// TODO: Add loading states and skeleton screens
+// TODO: Add proper accessibility labels and roles
+// TODO: Optimize performance with React.memo and proper memoization
+// TODO: Add unit tests for all components and functions
+// TODO: Remove hardcoded constants and use configuration file
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -51,6 +65,9 @@ type Item = {
   timestamp: string;
 };
 
+// TODO: URGENT - Remove this entire fake data generation function
+// TODO: Replace with proper data fetching from backend API
+// TODO: Implement proper data models and interfaces
 const generateFakeData = (): Item[] => {
   const data: Item[] = [];
   

@@ -3,6 +3,20 @@
 // - Reached from: Wrapped around the app in `App.tsx`; consumed via `useUser()` in many screens.
 // - Provides: Methods to set user with mode, sign out, toggle guest/demo, and resetHomeScreen trigger.
 // - Storage: Persists `current_user`, `guest_mode`, and `auth_mode` in AsyncStorage; clears local collections on real auth.
+
+// TODO: CRITICAL - This context is doing too much. Split into multiple contexts:
+//   - AuthContext for authentication state
+//   - UserProfileContext for user data
+//   - AppStateContext for app-level state
+// TODO: Add proper error handling and recovery mechanisms
+// TODO: Implement proper TypeScript strict typing - remove any types
+// TODO: Add comprehensive state validation and sanitization
+// TODO: Remove hardcoded user data and implement proper user fetching
+// TODO: Add proper loading states for all async operations
+// TODO: Implement proper storage encryption for sensitive data
+// TODO: Add unit tests for all context methods and state changes
+// TODO: Remove console.log statements and use proper logging service
+// TODO: Add proper memory management and cleanup for subscriptions
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { db } from '../utils/databaseService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -72,6 +86,9 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
+      // TODO: Remove hardcoded behavior of always resetting to login
+      // TODO: Add proper authentication persistence logic
+      // TODO: Implement proper session validation with backend
       console.log('🔐 UserContext - checkAuthStatus - Starting auth check (ALWAYS RESET TO LOGIN)');
       setIsLoading(true);
       

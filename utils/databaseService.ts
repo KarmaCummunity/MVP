@@ -4,6 +4,18 @@
 // - Provides: CRUD/list/search/batch across logical collections; export/import; user-wide operations.
 // - Behavior: Delegates to `restAdapter` when `USE_BACKEND` is true, else Firestore/AsyncStorage.
 // utils/databaseService.ts
+
+// TODO: CRITICAL - This file is extremely complex (800+ lines). Split into specialized services:
+//   - UserDataService, PostDataService, ChatDataService, etc.
+// TODO: Add comprehensive error handling and retry mechanisms
+// TODO: Implement proper caching strategy and cache invalidation
+// TODO: Add comprehensive TypeScript interfaces for all data models
+// TODO: Remove duplicate code between different adapters
+// TODO: Add comprehensive data validation and sanitization
+// TODO: Implement proper offline sync and conflict resolution
+// TODO: Add comprehensive logging and monitoring for all operations
+// TODO: Add unit tests for all CRUD operations and edge cases
+// TODO: Implement proper migration system for data schema changes
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { USE_BACKEND, USE_FIRESTORE, CACHE_CONFIG, OFFLINE_CONFIG, STORAGE_KEYS } from './dbConfig';
 import { apiService, ApiResponse } from './apiService';
@@ -48,8 +60,13 @@ export const getDBKey = (collection: string, userId: string, itemId?: string) =>
 };
 
 // Generic Database Service
+// TODO: Convert to proper class instance instead of static methods
+// TODO: Add proper dependency injection for different adapters
+// TODO: Implement proper connection management and pooling
 export class DatabaseService {
   // Simple key-space versioning for future migrations
+  // TODO: Implement proper migration system with rollback support
+  // TODO: Add schema validation and versioning
   private static DB_VERSION = 1;
   private static VERSION_KEY = 'db_version';
 

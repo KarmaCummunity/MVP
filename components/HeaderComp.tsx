@@ -9,6 +9,21 @@ import { getScreenInfo, scaleSize, rowDirection } from "../globals/responsive";
 import { FontSizes } from "../globals/constants";
 import { useUser } from "../context/UserContext";
 
+// TODO: Add comprehensive TypeScript interfaces for all props instead of loose types
+// TODO: Implement proper component composition instead of props drilling
+// TODO: Add comprehensive accessibility support (roles, labels, hints)
+// TODO: Implement proper responsive design for different screen sizes
+// TODO: Add comprehensive error handling for search operations
+// TODO: Extract search logic to custom hook (useHeaderSearch)
+// TODO: Add proper memoization with React.memo for performance
+// TODO: Implement proper theming system integration
+// TODO: Add comprehensive unit tests for all component functionality
+// TODO: Remove hardcoded styles and use theme system consistently
+
+// TODO: Create proper TypeScript interfaces in separate types file
+// TODO: Add JSDoc documentation for all interface properties
+// TODO: Replace 'any[]' with proper generic types
+// TODO: Add validation for required vs optional props
 interface HeaderSectionProps {
   mode: boolean;  // false = search, true = offer
   menuOptions: string[];
@@ -19,8 +34,8 @@ interface HeaderSectionProps {
   // New props for search functionality
   filterOptions: string[]; // Filter options specific to each screen
   sortOptions: string[]; // Sort options specific to each screen
-  searchData: any[]; // Data array to search through (charities, rides, etc.)
-  onSearch: (query: string, filters?: string[], sorts?: string[], results?: any[]) => void; // Search handler function
+  searchData: any[]; // Data array to search through (charities, rides, etc.) - TODO: Replace any[] with proper types
+  onSearch: (query: string, filters?: string[], sorts?: string[], results?: any[]) => void; // Search handler function - TODO: Improve typing
 }
 
 const HeaderComp: React.FC<HeaderSectionProps> = ({

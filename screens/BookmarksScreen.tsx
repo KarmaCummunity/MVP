@@ -4,6 +4,17 @@
 // - Provides: Loads bookmarks by user, pull-to-refresh, remove single bookmark, clear all (client-side for now).
 // - Reads from context: `useUser()` -> `selectedUser`.
 // - External deps/services: `bookmarksService` (get/remove), i18n translations.
+
+// TODO: Add comprehensive error handling with user-friendly messages
+// TODO: Implement proper loading states and skeleton screens
+// TODO: Add bookmark synchronization with backend when available
+// TODO: Implement proper pagination for large bookmark lists
+// TODO: Add bookmark categories and filtering functionality
+// TODO: Implement proper offline support with cache management
+// TODO: Add comprehensive accessibility support
+// TODO: Replace console.log with proper logging service
+// TODO: Add unit tests for all bookmark operations
+// TODO: Implement proper image loading and caching for bookmark thumbnails
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -25,6 +36,10 @@ import { FontSizes, IconSizes } from '../globals/constants';
 import { useTranslation } from 'react-i18next';
 
 export default function BookmarksScreen() {
+  // TODO: Extract state management to custom hook (useBookmarksState)
+  // TODO: Add proper TypeScript interfaces for all props and state
+  // TODO: Implement proper error boundaries for crash prevention
+  // TODO: Add comprehensive analytics tracking for bookmark actions
   const navigation = useNavigation();
   const { selectedUser } = useUser();
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
@@ -33,6 +48,10 @@ export default function BookmarksScreen() {
   const { t } = useTranslation(['bookmarks','common']);
 
   const loadBookmarks = async () => {
+    // TODO: Add proper loading state management
+    // TODO: Implement retry logic for failed requests
+    // TODO: Add proper error classification and handling
+    // TODO: Implement caching mechanism to reduce API calls
     if (!selectedUser) {
       Alert.alert(t('common:errorTitle'), t('bookmarks:selectUserFirst'));
       return;
@@ -43,6 +62,8 @@ export default function BookmarksScreen() {
       setBookmarks(userBookmarks);
     } catch (error) {
       console.error('❌ Load bookmarks error:', error);
+      // TODO: Replace Alert.alert with proper toast/snackbar notification
+      // TODO: Add error tracking and monitoring
       Alert.alert(t('common:errorTitle'), t('bookmarks:loadError'));
     }
   };

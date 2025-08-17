@@ -3,6 +3,11 @@
   "license": "0BSD",
   "version": "1.7.0",
   "main": "index.js",
+  
+  "_TODO_DEPENDENCIES": "// TODO: Audit all dependencies - remove unused packages and update outdated ones",
+  "_TODO_SECURITY": "// TODO: Add security audit script and dependency vulnerability checking",
+  "_TODO_VERSIONING": "// TODO: Implement proper semantic versioning and changelog management",
+  "_TODO_SCRIPTS": "// TODO: Add comprehensive scripts for testing, linting, and deployment",
   "scripts": {
     "start": "expo start",
     "start:local": "EXPO_PUBLIC_API_BASE_URL=http://localhost:3001 EXPO_PUBLIC_USE_BACKEND=1 EXPO_PUBLIC_USE_FIRESTORE=0 expo start",
@@ -10,7 +15,9 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "build:web": "EXPO_PUBLIC_API_BASE_URL=https://api.karma-community-kc.com expo export:web",
-    "build:web:local": "EXPO_PUBLIC_API_BASE_URL=http://localhost:3001 expo export:web"
+    "build:web:local": "EXPO_PUBLIC_API_BASE_URL=http://localhost:3001 expo export:web",
+    
+    "_TODO_ADD_SCRIPTS": "// TODO: Add missing scripts: test, lint, type-check, format, security-audit, bundle-analyze"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",

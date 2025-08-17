@@ -1,9 +1,23 @@
 // Enhanced Fake Data for Karma Community App
 // This file contains all mock data used throughout the application
 
+// TODO: URGENT - This entire file should be removed in production (3831+ lines of fake data!)
+// TODO: Replace all fake data with proper backend API integration
+// TODO: Create proper data seeding system for development/testing environments
+// TODO: Move all interfaces to proper types files instead of mixing with data
+// TODO: Implement proper data generation tools for testing purposes
+// TODO: Add proper data validation for all fake data structures
+// TODO: Create proper mock service that can be enabled/disabled via configuration
+// TODO: Remove hardcoded Hebrew text and implement proper internationalization
+// TODO: Add proper documentation for development data requirements
+// TODO: Create automated tests that verify fake data structure matches real API
+
+// TODO: URGENT - Move all interfaces to proper types files (types/models directory)
+// TODO: Add proper JSDoc documentation for all interface properties
+// TODO: Implement proper validation for all interface fields
 export interface Message {
   id: string;
-  senderId: string; // 'me' for current user, or user ID for others
+  senderId: string; // 'me' for current user, or user ID for others - TODO: Remove hardcoded 'me' logic
   text?: string;
   image?: string; // URL for image messages
   timestamp: string; // ISO string for easy sorting/display

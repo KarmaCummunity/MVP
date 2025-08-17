@@ -5,6 +5,21 @@ import { collection as fsCollection, query as fsQuery, where as fsWhere, onSnaps
 import { sendMessageNotification } from './notificationService';
 import { db, DB_COLLECTIONS, DatabaseService } from './databaseService';
 
+// TODO: CRITICAL - This file is extremely complex (735 lines). Split into specialized services:
+//   - ConversationService for conversation management
+//   - MessageService for message operations
+//   - RealtimeService for listeners and subscriptions
+//   - NotificationService integration for chat notifications
+// TODO: Add comprehensive error handling and retry mechanisms for all operations
+// TODO: Implement proper message queuing system for offline support
+// TODO: Add comprehensive TypeScript interfaces with strict typing
+// TODO: Implement proper connection management and reconnection logic
+// TODO: Add comprehensive message validation and sanitization
+// TODO: Remove console.log statements and use proper logging service
+// TODO: Add comprehensive unit tests for all chat operations
+// TODO: Implement proper memory management for listeners and subscriptions
+// TODO: Add message encryption and security measures
+
 export interface Conversation {
   id: string;
   participants: string[];
@@ -53,6 +68,10 @@ export interface Message {
 
 // Event listeners for real-time updates
 // Messages: key is `${conversationId}_${userId}` to scope polling per-user
+// TODO: Implement proper listener lifecycle management to prevent memory leaks
+// TODO: Add listener cleanup on app backgrounding/foregrounding
+// TODO: Implement proper error handling for failed listeners
+// TODO: Add connection state management and reconnection logic
 const messageListeners: Map<string, Set<(messages: Message[]) => void>> = new Map();
 // Conversations: key is `userId`
 const conversationListeners: Map<string, Set<(conversations: Conversation[]) => void>> = new Map();
@@ -62,6 +81,11 @@ const generateId = (prefix: string): string => {
 };
 
 export const createConversation = async (participants: string[]): Promise<string> => {
+  // TODO: Add comprehensive input validation for participants array
+  // TODO: Check for duplicate conversations between same participants
+  // TODO: Add proper error handling with specific error types
+  // TODO: Implement rate limiting to prevent conversation spam
+  // TODO: Add proper logging and monitoring for conversation creation
   try {
     const conversationId = generateId('conv');
     

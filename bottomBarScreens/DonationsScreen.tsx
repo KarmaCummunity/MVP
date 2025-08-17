@@ -5,6 +5,22 @@
 // - Reads from context: `useUser()` -> isGuestMode, isRealAuth for behaviour and analytics source.
 // - Storage/services: AsyncStorage for recents; `EnhancedStatsService` or legacy `restAdapter` for analytics, `USE_BACKEND` switch.
 // - Params: None required; navigation uses route names listed in `BASE_CATEGORIES` mapping.
+
+// TODO: CRITICAL - This file is extremely long (871 lines). Split into smaller components:
+//   - CategoryGrid component for category layout
+//   - CategoryCard component for individual categories  
+//   - RecentCategoriesSection component
+//   - PopularCategoriesSection component
+//   - CategoryAnalytics service for tracking
+// TODO: Remove hardcoded category data - move to configuration service
+// TODO: Add comprehensive error handling for all async operations
+// TODO: Implement proper loading states and skeleton screens
+// TODO: Add comprehensive TypeScript interfaces instead of basic types
+// TODO: Replace fake data with real backend integration
+// TODO: Add proper caching mechanism for categories and analytics
+// TODO: Implement proper accessibility for all interactive elements
+// TODO: Add comprehensive unit tests for all category logic
+// TODO: Remove console.log statements and use proper logging service
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
@@ -54,6 +70,11 @@ const ANALYTICS_COLLECTION = 'analytics';
 const ANALYTICS_ITEM_PREFIX = 'category:';
 const POPULAR_FALLBACK: string[] = ['money', 'trump', 'furniture']; // כסף, טרמפים, רהיטים
 
+// TODO: URGENT - Move this hardcoded configuration to proper data service
+// TODO: Implement proper category management system with backend sync
+// TODO: Add internationalization for category names and descriptions
+// TODO: Create proper category icon management system
+// TODO: Add category access control and permissions
 const BASE_CATEGORIES = [
   { id: 'money',      icon: 'card-outline',        color: colors.green, bgColor: colors.successLight, screen: 'MoneyScreen' },
   { id: 'trump',      icon: 'car-outline',         color: colors.blue,    bgColor: colors.infoLight,    screen: 'TrumpScreen' },
@@ -93,6 +114,10 @@ type CategoryId = typeof BASE_CATEGORIES[number]['id'];
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
+  // TODO: Extract state management to custom hooks (useDonationsState, useCategoryAnalytics)
+  // TODO: Implement proper state validation and error boundaries
+  // TODO: Add comprehensive performance optimization with React.memo and useMemo
+  // TODO: Remove Hebrew comment - implement proper internationalization
   const tabBarHeight = useBottomTabBarHeight();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();

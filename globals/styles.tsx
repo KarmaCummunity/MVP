@@ -3,9 +3,29 @@ import colors from "./colors";
 import { biDiTextAlign, rowDirection, scaleSize } from "./responsive";
 import { FontSizes, LAYOUT_CONSTANTS } from "./constants";
 
+// TODO: CRITICAL - This styles file is extremely long (601+ lines). Split into themed modules:
+//   - baseStyles.ts for common/global styles
+//   - componentStyles.ts for reusable component styles
+//   - layoutStyles.ts for layout-specific styles
+//   - utilityStyles.ts for utility classes
+// TODO: Remove duplicate style definitions and create proper style inheritance
+// TODO: Implement proper theming system with light/dark mode support
+// TODO: Add comprehensive TypeScript interfaces for all style objects
+// TODO: Remove hardcoded values and use design token system
+// TODO: Implement proper responsive breakpoint system
+// TODO: Add comprehensive style validation and linting
+// TODO: Create proper style documentation and usage guidelines
+// TODO: Remove unused styles throughout the application
+// TODO: Implement proper cross-platform style optimization
+
 const { width } = Dimensions.get('window');
 
 // Helper function to create shadow styles that work on both web and mobile
+// TODO: Extract this utility function to separate utilities file
+// TODO: Replace 'any' types with proper TypeScript interfaces
+// TODO: Add proper cross-platform shadow validation
+// TODO: Implement shadow presets for consistent usage
+// TODO: Add proper performance optimization for shadow rendering
 export const createShadowStyle = (
   shadowColor: string,
   shadowOffset: { width: number; height: number },
@@ -15,7 +35,7 @@ export const createShadowStyle = (
   if (Platform.OS === 'web') {
     return {
       boxShadow: `${shadowOffset.width}px ${shadowOffset.height}px ${shadowRadius}px rgba(0, 0, 0, ${shadowOpacity})`,
-    } as any;
+    } as any; // TODO: Replace any with proper web style type
   }
   return {
     shadowColor,
@@ -23,7 +43,7 @@ export const createShadowStyle = (
     shadowOpacity,
     shadowRadius,
     elevation: Math.max(1, Math.round(shadowRadius)),
-  } as any;
+  } as any; // TODO: Replace any with proper native style type
 };
 
 

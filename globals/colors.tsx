@@ -1,5 +1,16 @@
 // Color Constants
 
+// TODO: Create proper color design system with semantic naming
+// TODO: Reduce color duplication - many similar shades can be consolidated
+// TODO: Add dark mode color variants
+// TODO: Implement proper accessibility contrast ratios (WCAG AA/AAA)
+// TODO: Create color palette generator/validator tool
+// TODO: Remove legacy colors after migration is complete
+// TODO: Add proper TypeScript interfaces for color types
+// TODO: Implement dynamic theming system
+// TODO: Add color documentation and usage guidelines
+// TODO: Create proper color testing and validation
+
 const colors = {
   // Primary Theme - Updated to match pink_logo.png
   pink: '#FF69B4',         // Hot pink from logo
@@ -116,6 +127,8 @@ const colors = {
   clear: 'rgba(0, 0, 0, 0)',
 
   // Legacy compatibility (for existing code)
+  // TODO: URGENT - Remove all legacy color aliases after migration
+  // TODO: Update all components to use semantic color names
   text: '#2C2C2C',           // Alias for textPrimary
   primary: '#FF69B4',        // Alias for pink - updated
   background: '#FFFFFF',     // Alias for backgroundPrimary

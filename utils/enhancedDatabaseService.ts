@@ -3,10 +3,28 @@
 // - Reached from: `EnhancedStatsService` and screens that need cached lists (donations, rides, stats).
 // - Provides: Cached getters, offline queue for mutations, periodic sync, and convenience utilities.
 // Enhanced Database Service - Connects frontend to new backend
+
+// TODO: CRITICAL - This file is complex (462+ lines). Split into specialized services:
+//   - CacheService for caching operations
+//   - OfflineQueueService for offline queue management  
+//   - SyncService for data synchronization
+//   - UserDataService for user-specific operations
+// TODO: Add comprehensive error handling and retry mechanisms
+// TODO: Implement proper cache invalidation strategies
+// TODO: Add comprehensive TypeScript interfaces with strict typing
+// TODO: Implement proper memory management for cache and queue
+// TODO: Add comprehensive logging and monitoring for all operations
+// TODO: Remove console.log statements and use proper logging service
+// TODO: Add comprehensive unit tests for all service operations
+// TODO: Implement proper data encryption for sensitive cached data
+// TODO: Add comprehensive performance optimization and monitoring
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService, ApiResponse } from './apiService';
 import { USE_BACKEND, CACHE_CONFIG, OFFLINE_CONFIG, STORAGE_KEYS } from './dbConfig';
 
+// TODO: Move all interfaces to proper types directory
+// TODO: Add comprehensive validation for all interface fields
+// TODO: Replace 'any' types with proper generic constraints
 export interface CacheItem<T> {
   data: T;
   timestamp: number;
@@ -16,12 +34,15 @@ export interface CacheItem<T> {
 export interface OfflineAction {
   id: string;
   action: string;
-  data: any;
+  data: any; // TODO: Replace with proper generic type
   timestamp: number;
   retryCount: number;
 }
 
 // Enhanced Database Service with caching and offline support
+// TODO: Implement proper dependency injection instead of singleton pattern
+// TODO: Add proper connection state management
+// TODO: Implement proper service lifecycle management
 export class EnhancedDatabaseService {
   private static instance: EnhancedDatabaseService;
   private offlineQueue: OfflineAction[] = [];
@@ -42,9 +63,14 @@ export class EnhancedDatabaseService {
   // ==================== User Management ====================
 
   async registerUser(userData: any): Promise<ApiResponse> {
+    // TODO: Replace 'any' with proper user registration interface
+    // TODO: Add comprehensive input validation and sanitization
+    // TODO: Implement proper error classification and handling
+    // TODO: Add proper logging and monitoring for registration attempts
     try {
       if (!USE_BACKEND) {
         // Fallback to local storage
+        // TODO: Improve fallback user ID generation (use UUID instead of timestamp)
         const user = {
           id: Date.now().toString(),
           ...userData,
