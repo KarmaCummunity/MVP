@@ -11,7 +11,7 @@ import {
   Text,
   StyleSheet,
   SafeAreaView,
-  ScrollView,
+
   Image,
   TouchableOpacity,
   Dimensions,
@@ -26,6 +26,7 @@ import { FontSizes } from '../globals/constants';
 import { allUsers, CharacterType } from '../globals/characterTypes';
 import { getFollowStats, followUser, unfollowUser, getUpdatedFollowCounts } from '../utils/followService';
 import { useUser } from '../context/UserContext';
+import ScrollContainer from '../components/ScrollContainer';
 
 // --- Type Definitions ---
 type TabRoute = {
@@ -240,7 +241,7 @@ export default function UserProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollContainer showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity 
@@ -445,7 +446,7 @@ export default function UserProfileScreen() {
             renderTabBar={renderTabBar}
           />
         </View>
-      </ScrollView>
+      </ScrollContainer>
     </SafeAreaView>
   );
 }

@@ -1,21 +1,24 @@
 // Color Constants
 
 const colors = {
-  // Primary Theme
-  pink: '#FF6B9D',         
-  pinkLight: '#FFB3D1',    
-  pinkDark: '#E91E63',     
-  orange: '#FF8A65',       
+  // Primary Theme - Updated to match pink_logo.png
+  pink: '#FF69B4',         // Hot pink from logo
+  pinkLight: '#FFB6C1',    // Light pink 
+  pinkDark: '#C71585',     // Deep pink
+  blue: '#4169E1',         // Royal blue from logo  
+  blueLight: '#87CEEB',    // Sky blue/turquoise
+  blueDark: '#0000CD',     // Medium blue
+  green: '#90EE90',        // Light green from logo
+  orange: '#FF8A65',       // Keeping some orange as accent
   orangeLight: '#FFCCBC',  
   orangeDark: '#FF5722',   
 
   // Backgrounds
   backgroundPrimary: '#FFFFFF',      // רקע ראשי
-  //backgroundSecondary: '#FFF8F8',    // רקע משני (ורדרד)
-  backgroundSecondary: '#EBF6FF', // רקע משני (כחול בהיר)
-  backgroundSecondary_2: '#F4FCFF', // רקע משני (כחול בהיר)
-  backgroundSecondaryPink: 'rgba(255, 235, 240, 0.9)',
-  backgroundTertiary: '#FFF5F0',     // רקע שלישי (כתמתם)
+  backgroundSecondary: '#F0F8FF', // רקע משני (כחול בהיר יותר)
+  backgroundSecondary_2: '#E6F3FF', // רקע משני (כחול בהיר)
+  backgroundSecondaryPink: 'rgba(255, 182, 193, 0.9)', // Updated to match new pink
+  backgroundTertiary: '#F0FFFF',     // רקע שלישי (תכלת בהיר)
   cardBackground: '#FFFFFF',         // רקע כרטיסים
   modalBackground: '#FFFFFF',        // רקע מודאלים
 
@@ -34,7 +37,7 @@ const colors = {
   errorLight: '#FFEBEE',       
   warning: '#FF9800',         
   warningLight: '#FFF3E0',     
-  info: '#2196F3',         
+  info: '#4169E1',         // Updated to royal blue
   infoLight: '#E3F2FD',    
 
   // Border
@@ -56,10 +59,10 @@ const colors = {
   overlayColored: 'rgba(255, 107, 157, 0.1)',
 
   // Button
-  buttonPrimary: '#FF6B9D',
-  buttonPrimaryPressed: '#E91E63',
-  buttonSecondary: '#FF8A65',
-  buttonSecondaryPressed: '#FF5722',
+  buttonPrimary: '#FF69B4',        // Hot pink
+  buttonPrimaryPressed: '#C71585', // Deep pink
+  buttonSecondary: '#4169E1',      // Royal blue
+  buttonSecondaryPressed: '#0000CD', // Medium blue
   buttonDisabled: '#E0E0E0',
   buttonText: '#FFFFFF',
   buttonTextDisabled: '#999999',
@@ -67,19 +70,19 @@ const colors = {
   // Input
   inputBackground: '#FFFFFF',
   inputBorder: '#E8E8E8',
-  inputBorderFocus: '#FF8A65',
+  inputBorderFocus: '#4169E1',     // Royal blue focus
   inputPlaceholder: '#BBBBBB',
   inputText: '#2C2C2C',
 
   // Navigation
   navigationBackground: '#FFFFFF',
   navigationBorder: '#E8E8E8',
-  navigationActive: '#FF6B9D',
+  navigationActive: '#FF69B4',     // Hot pink
   navigationInactive: '#999999',
   
   // Bottom Navigation
   bottomNavBackground: 'rgba(255, 255, 255, 0.65)',
-  bottomNavActive: '#FF6B9D',
+  bottomNavActive: '#FF69B4',      // Hot pink
   bottomNavInactive: 'rgba(0, 0, 0, 0.8)',
   bottomNavShadow: 'rgba(0, 0, 0, 0.1)',
 
@@ -90,15 +93,15 @@ const colors = {
   topNavShadow: 'rgba(0, 0, 0, 0.08)',
 
   // Chat
-  chatSent: '#FF6B9D',
+  chatSent: '#FF69B4',             // Hot pink
   chatReceived: '#F0F0F0',
   chatText: '#2C2C2C',
   chatTime: '#999999',
 
   // Donation
   donationMoney: '#4CAF50',
-  donationTime: '#FF8A65',
-  donationKnowledge: '#2196F3',
+  donationTime: '#4169E1',          // Royal blue
+  donationKnowledge: '#87CEEB',    // Sky blue
   donationItems: '#9C27B0',
 
   // Category Cards (unified styling for Donations categories)
@@ -114,14 +117,13 @@ const colors = {
 
   // Legacy compatibility (for existing code)
   text: '#2C2C2C',           // Alias for textPrimary
-  primary: '#FF6B9D',        // Alias for pink
+  primary: '#FF69B4',        // Alias for pink - updated
   background: '#FFFFFF',     // Alias for backgroundPrimary
   shadow: 'rgba(0, 0, 0, 0.1)', // Alias for shadowLight
   danger: '#F44336',         // Alias for error
   accent: '#FF8A65',         // Alias for orange
   offWhite: '#F8F8F8',       // Alias for legacyOffWhite
   lightGray: '#F5F5F5',      // Alias for legacyLightGray
-  blue: '#2196F3',           // Alias for info
 
   // Money Screen Specific Colors
   moneyFormBackground: 'rgba(255, 235, 240, 0.9)',

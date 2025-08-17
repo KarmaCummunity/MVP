@@ -2,16 +2,16 @@
       "expo": {
       "name": "KarmaCommunity",
       "slug": "karma-community",
-    "version": "1.5.0",
+    "version": "1.7.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "com.navesarussi1.KarmaCommunity",
     "userInterfaceStyle": "automatic",
-    "primaryColor": "#ffffff",
+    "primaryColor": "#FF69B4",
     "splash": {
       "image": "./assets/images/logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F0F8FF"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -32,7 +32,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#F0F8FF"
       },
       "package": "com.navesarussi1.KarmaCommunity",
       "permissions": [
@@ -55,15 +55,15 @@
       "meta": {
         "viewport": "width=device-width, initial-scale=1, shrink-to-fit=no"
       },
-      "themeColor": "#ffffff",
-      "backgroundColor": "#ffffff"
+      "themeColor": "#FF69B4",
+      "backgroundColor": "#F0F8FF"
     },
     "plugins": [
       [
         "expo-notifications",
         {
           "icon": "./assets/images/logo.png",
-          "color": "#ffffff",
+          "color": "#FF69B4",
           "mode": "production",
           "androidMode": "default",
           "androidCollapsedTitle": "התראה חדשה"

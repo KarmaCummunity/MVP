@@ -7,7 +7,8 @@ import React, { memo } from 'react' // Import memo here
 import colors from '../globals/colors'
 import { FontSizes } from '../globals/constants';
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Platform } from 'react-native';
+import ScrollContainer from '../components/ScrollContainer';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import styles from '../globals/styles';
 import ScreenWrapper from '../components/ScreenWrapper';
@@ -19,7 +20,7 @@ const AboutKarmaCommunityScreen = memo(() => {
   return (
     <>
       <ScreenWrapper navigation={navigation} style={localStyles.safeArea}>
-      <ScrollView style={localStyles.container}>
+      <ScrollContainer style={localStyles.container}>
         {/* Header Section */}
         <Text style={localStyles.mainTitle}>
           אודות קהילת קארמה (Karma Community)
@@ -301,7 +302,7 @@ const AboutKarmaCommunityScreen = memo(() => {
             כתובת: רחוב הדוגמה 1, עיר הדוגמה
           </Text>
         </View>
-              </ScrollView>
+              </ScrollContainer>
       </ScreenWrapper>
     </>
   )

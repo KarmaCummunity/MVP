@@ -1,11 +1,13 @@
 // LandingSiteScreen.tsx
 // Web-only marketing landing page for KarmaCommunity
 import React, { useEffect } from 'react';
-import { Platform, ScrollView, View, Text, StyleSheet, Image, TouchableOpacity, Linking } from 'react-native';
+import { Platform, View, Text, StyleSheet, Image, TouchableOpacity, Linking } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { Ionicons } from '@expo/vector-icons';
 import { logger } from '../utils/loggerService';
+import ScrollContainer from '../components/ScrollContainer';
+import ScreenWrapper from '../components/ScreenWrapper';
 
 const Section: React.FC<{ title: string; subtitle?: string; children?: React.ReactNode }> = ({ title, subtitle, children }) => (
   <View style={styles.section}>
@@ -24,19 +26,20 @@ const Feature: React.FC<{ emoji: string; title: string; text: string }> = ({ emo
 );
 
 const LandingSiteScreen: React.FC = () => {
-  if (Platform.OS !== 'web') return null as any;
+  console.log('LandingSiteScreen');
+  
   useEffect(() => {
     logger.info('LandingSite', 'Landing page mounted');
     return () => logger.info('LandingSite', 'Landing page unmounted');
   }, []);
+
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      scrollEnabled={true}
-      scrollEventThrottle={16}
-      onContentSizeChange={(w, h) => logger.info('LandingSite', 'Content size changed', { width: w, height: h })}
-    >
+    <ScreenWrapper style={styles.container}>
+      <ScrollContainer
+        style={styles.scrollContainer}
+        contentStyle={styles.content}
+        onContentSizeChange={(w, h) => logger.info('LandingSite', 'Content size changed', { width: w, height: h })}
+      >
       <View style={styles.hero}>
         <Image source={require('../assets/images/logo.png')} style={styles.logo} resizeMode="contain" />
         <Text style={styles.title}>KarmaCommunity</Text>
@@ -361,73 +364,83 @@ const LandingSiteScreen: React.FC = () => {
       <View style={styles.footer}> 
         <Text style={styles.footerText}>© {new Date().getFullYear()} KarmaCommunity — נבנה באהבה.</Text>
       </View>
-    </ScrollView>
+      </ScrollContainer>
+    </ScreenWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#FFFFFF' },
-  content: { paddingBottom: 120 },
-  hero: { paddingTop: 100, paddingBottom: 50, alignItems: 'center', paddingHorizontal: 20, backgroundColor: '#F2F7FF' },
-  logo: { width: 120, height: 120, marginBottom: 12 },
-  title: { fontSize: 40, fontWeight: '800', color: colors.textPrimary, textAlign: 'center' },
-  subtitle: { fontSize: 18, color: colors.textSecondary, textAlign: 'center', marginTop: 8, maxWidth: 780 },
-  ctaRow: { flexDirection: 'row', gap: 12, marginTop: 20 },
-  primaryCta: { backgroundColor: colors.info, paddingHorizontal: 18, paddingVertical: 12, borderRadius: 10 },
-  primaryCtaText: { color: '#fff', fontWeight: '800', fontSize: 16 },
-  secondaryCta: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: colors.headerBorder, paddingHorizontal: 18, paddingVertical: 12, borderRadius: 10 },
-  secondaryCtaText: { color: colors.textPrimary, fontWeight: '800', fontSize: 16 },
-  section: { paddingHorizontal: 20, paddingVertical: 32, maxWidth: 1100, alignSelf: 'center' },
-  sectionTitle: { fontSize: 28, fontWeight: '800', color: colors.textPrimary, textAlign: 'center', marginBottom: 8 },
-  sectionSubtitle: { fontSize: 16, color: colors.textSecondary, textAlign: 'center', marginBottom: 14 },
-  sectionSubTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, textAlign: 'center', marginTop: 12, marginBottom: 8 },
-  featuresGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 14 },
-  feature: { width: 220, backgroundColor: '#FAFBFF', borderWidth: 1, borderColor: '#EDF1FF', borderRadius: 12, padding: 14, alignItems: 'center' },
-  featureEmoji: { fontSize: 28, marginBottom: 6 },
-  featureTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary, textAlign: 'center' },
-  featureText: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: 4 },
-  paragraph: { fontSize: 15, color: colors.textPrimary, lineHeight: 22, textAlign: 'center', marginTop: 8 },
-  linksRow: { flexDirection: 'row', gap: 16, marginTop: 10, alignSelf: 'center' },
-  link: { color: '#2563EB', fontWeight: '700' },
-  faqItem: { marginTop: 8 },
-  faqQ: { fontWeight: '800', color: colors.textPrimary, fontSize: 15 },
-  faqA: { color: colors.textSecondary, fontSize: 14, marginTop: 2 },
-  iconBullets: { marginTop: 8, gap: 8 },
-  iconBulletRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, justifyContent: 'center' },
-  iconBulletText: { color: colors.textPrimary, fontSize: 14 },
-  stepsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, justifyContent: 'center', marginTop: 8 },
-  stepCard: { width: 240, borderRadius: 14, borderWidth: 1, borderColor: '#E6EEF9', backgroundColor: '#FBFDFF', padding: 16, alignItems: 'center' },
-  stepTitle: { marginTop: 8, fontWeight: '800', color: colors.textPrimary, fontSize: 16 },
-  stepText: { marginTop: 6, textAlign: 'center', color: colors.textSecondary, fontSize: 13 },
-  splitRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 20, justifyContent: 'center' },
-  splitColumn: { flexGrow: 1, minWidth: 280, maxWidth: 500 },
-  splitTitle: { textAlign: 'center', fontSize: 18, fontWeight: '800', color: colors.textPrimary, marginBottom: 6 },
+  container: { 
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  content: { 
+    paddingBottom: 120,
+    backgroundColor: '#FFFFFF',
+  },
+  hero: { paddingTop: 80, paddingBottom: 60, alignItems: 'center', paddingHorizontal: 40, backgroundColor: '#F2F7FF', minHeight: 600 },
+  logo: { width: 160, height: 160, marginBottom: 24 },
+  title: { fontSize: 56, fontWeight: '800', color: colors.textPrimary, textAlign: 'center', marginBottom: 20 },
+  subtitle: { fontSize: 24, color: colors.textSecondary, textAlign: 'center', marginTop: 12, maxWidth: '95%', lineHeight: 32 },
+  ctaRow: { flexDirection: 'row', gap: 20, marginTop: 30, justifyContent: 'center', flexWrap: 'wrap' },
+  primaryCta: { backgroundColor: colors.info, paddingHorizontal: 28, paddingVertical: 16, borderRadius: 14, minWidth: 180 },
+  primaryCtaText: { color: '#fff', fontWeight: '800', fontSize: 20, textAlign: 'center' },
+  secondaryCta: { backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: colors.headerBorder, paddingHorizontal: 28, paddingVertical: 16, borderRadius: 14, minWidth: 180 },
+  secondaryCtaText: { color: colors.textPrimary, fontWeight: '800', fontSize: 20, textAlign: 'center' },
+  section: { paddingHorizontal: 40, paddingVertical: 50, width: '100%', alignSelf: 'center' },
+  sectionTitle: { fontSize: 42, fontWeight: '800', color: colors.textPrimary, textAlign: 'center', marginBottom: 16 },
+  sectionSubtitle: { fontSize: 22, color: colors.textSecondary, textAlign: 'center', marginBottom: 20, lineHeight: 30 },
+  sectionSubTitle: { fontSize: 24, fontWeight: '700', color: colors.textPrimary, textAlign: 'center', marginTop: 20, marginBottom: 12 },
+  featuresGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', gap: 24, width: '100%' },
+  feature: { flex: 1, minWidth: 280, maxWidth: 350, backgroundColor: '#FAFBFF', borderWidth: 1, borderColor: '#EDF1FF', borderRadius: 16, padding: 24, alignItems: 'center', margin: 8 },
+  featureEmoji: { fontSize: 42, marginBottom: 12 },
+  featureTitle: { fontSize: 22, fontWeight: '800', color: colors.textPrimary, textAlign: 'center', marginBottom: 8 },
+  featureText: { fontSize: 18, color: colors.textSecondary, textAlign: 'center', lineHeight: 26 },
+  paragraph: { fontSize: 20, color: colors.textPrimary, lineHeight: 30, textAlign: 'center', marginTop: 12, maxWidth: '90%', alignSelf: 'center' },
+  linksRow: { flexDirection: 'row', gap: 24, marginTop: 16, alignSelf: 'center', flexWrap: 'wrap', justifyContent: 'center' },
+  link: { color: '#2563EB', fontWeight: '700', fontSize: 20, padding: 8 },
+  faqItem: { marginTop: 20, paddingHorizontal: 20, maxWidth: '90%', alignSelf: 'center' },
+  faqQ: { fontWeight: '800', color: colors.textPrimary, fontSize: 20, marginBottom: 8 },
+  faqA: { color: colors.textSecondary, fontSize: 18, lineHeight: 26 },
+  iconBullets: { marginTop: 16, gap: 16, width: '100%', maxWidth: '90%', alignSelf: 'center' },
+  iconBulletRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 16, justifyContent: 'center', paddingVertical: 4 },
+  iconBulletText: { color: colors.textPrimary, fontSize: 18, textAlign: 'center', flex: 1 },
+  stepsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 24, justifyContent: 'space-around', marginTop: 20, width: '100%' },
+  stepCard: { flex: 1, minWidth: 280, maxWidth: 350, borderRadius: 18, borderWidth: 1, borderColor: '#E6EEF9', backgroundColor: '#FBFDFF', padding: 24, alignItems: 'center', margin: 8 },
+  stepTitle: { marginTop: 12, fontWeight: '800', color: colors.textPrimary, fontSize: 22 },
+  stepText: { marginTop: 8, textAlign: 'center', color: colors.textSecondary, fontSize: 18, lineHeight: 26 },
+  splitRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 30, justifyContent: 'space-around', width: '100%' },
+  splitColumn: { flex: 1, minWidth: 320, maxWidth: 500, padding: 20 },
+  splitTitle: { textAlign: 'center', fontSize: 24, fontWeight: '800', color: colors.textPrimary, marginBottom: 12 },
   valuesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center', marginTop: 6 },
-  valuePill: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: '#F5F7FB', borderWidth: 1, borderColor: '#E6EEF9' },
-  valuePillText: { color: colors.textPrimary, fontWeight: '700' },
+  valuePill: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 999, backgroundColor: '#F5F7FB', borderWidth: 1, borderColor: '#E6EEF9', margin: 4 },
+  valuePillText: { color: colors.textPrimary, fontWeight: '700', fontSize: 18 },
   roadmap: { flexDirection: 'row', gap: 16, justifyContent: 'center', marginTop: 8, flexWrap: 'wrap' },
   roadItem: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: '#E6EEF9', backgroundColor: '#FBFDFF' },
   roadTime: { fontWeight: '800', color: colors.info, textAlign: 'center' },
   roadLabel: { color: colors.textPrimary, textAlign: 'center' },
   brandStrip: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, paddingVertical: 16 },
   brandIcon: { width: 40, height: 40, opacity: 0.9 },
-  contactRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginTop: 10 },
-  contactButton: { flexDirection: 'row', gap: 8, alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12 },
-  contactButtonText: { color: '#fff', fontWeight: '800' },
+  contactRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 20, justifyContent: 'center', marginTop: 24, width: '100%' },
+  contactButton: { flexDirection: 'row', gap: 12, alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16, borderRadius: 14, minWidth: 200, justifyContent: 'center' },
+  contactButtonText: { color: '#fff', fontWeight: '800', fontSize: 18 },
   footer: { paddingHorizontal: 20, paddingVertical: 20, borderTopWidth: 1, borderTopColor: '#F1F5F9', alignItems: 'center', marginTop: 20 },
   footerText: { color: colors.textSecondary, fontSize: 12 },
   // New styles
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 14, marginTop: 8 },
-  statCard: { width: 220, paddingVertical: 18, borderRadius: 12, borderWidth: 1, borderColor: '#E6EEF9', backgroundColor: '#FBFDFF', alignItems: 'center' },
-  statNumber: { fontSize: 24, fontWeight: '900', color: colors.textPrimary },
-  statLabel: { fontSize: 13, color: colors.textSecondary, marginTop: 4 },
-  useCases: { gap: 10, marginTop: 8, alignSelf: 'center', width: '100%', maxWidth: 720 },
-  useCaseRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10, alignSelf: 'center' },
-  useCaseText: { color: colors.textPrimary, fontSize: 14 },
-  testimonials: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 14, marginTop: 8 },
-  testimonialCard: { width: 300, borderRadius: 12, borderWidth: 1, borderColor: '#E6EEF9', backgroundColor: '#FFFFFF', padding: 14 },
-  testimonialText: { color: colors.textPrimary, fontSize: 14, lineHeight: 20, textAlign: 'center' },
-  testimonialUser: { color: colors.textSecondary, marginTop: 8, textAlign: 'center', fontWeight: '700' },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', gap: 24, marginTop: 20, width: '100%' },
+  statCard: { flex: 1, minWidth: 250, maxWidth: 300, paddingVertical: 28, borderRadius: 16, borderWidth: 1, borderColor: '#E6EEF9', backgroundColor: '#FBFDFF', alignItems: 'center', margin: 8 },
+  statNumber: { fontSize: 36, fontWeight: '900', color: colors.textPrimary, marginBottom: 8 },
+  statLabel: { fontSize: 18, color: colors.textSecondary, textAlign: 'center', lineHeight: 24 },
+  useCases: { gap: 16, marginTop: 16, alignSelf: 'center', width: '100%', maxWidth: '90%' },
+  useCaseRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 16, alignSelf: 'center', paddingVertical: 8 },
+  useCaseText: { color: colors.textPrimary, fontSize: 18, textAlign: 'center', flex: 1 },
+  testimonials: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', gap: 24, marginTop: 20, width: '100%' },
+  testimonialCard: { flex: 1, minWidth: 320, maxWidth: 400, borderRadius: 16, borderWidth: 1, borderColor: '#E6EEF9', backgroundColor: '#FFFFFF', padding: 24, margin: 8 },
+  testimonialText: { color: colors.textPrimary, fontSize: 18, lineHeight: 28, textAlign: 'center' },
+  testimonialUser: { color: colors.textSecondary, marginTop: 12, textAlign: 'center', fontWeight: '700', fontSize: 16 },
   galleryGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginTop: 8 },
   galleryImage: { width: 140, height: 140, borderRadius: 12, borderWidth: 1, borderColor: '#EDF1FF' },
   partnersRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20, marginTop: 8 },

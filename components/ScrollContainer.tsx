@@ -1,71 +1,102 @@
+// ScrollContainer.tsx
+// Universal scrolling component that handles web and mobile consistently
 import React from 'react';
-import { Platform, Dimensions, View, ScrollView, ViewStyle, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { 
+  ScrollView, 
+  ScrollViewProps,
+  View, 
+  Platform, 
+  Dimensions,
+  StyleSheet,
+  ViewStyle 
+} from 'react-native';
+import colors from '../globals/colors';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-type Props = {
+interface ScrollContainerProps extends Omit<ScrollViewProps, 'style' | 'contentContainerStyle'> {
   children: React.ReactNode;
-  bottomPadding?: number;
   style?: ViewStyle;
   contentStyle?: ViewStyle;
-  showsVerticalScrollIndicator?: boolean;
-  nativeOnScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
-  scrollEventThrottle?: number;
-  nestedScrollEnabled?: boolean;
-};
+  enableWebScrolling?: boolean;
+}
 
-export default function ScrollContainer({
-  children,
-  bottomPadding = 24,
-  style,
-  contentStyle,
-  showsVerticalScrollIndicator = false,
-  nativeOnScroll,
-  scrollEventThrottle = 16,
-  nestedScrollEnabled = true,
-}: Props) {
-  if (Platform.OS === 'web') {
+/**
+ * ScrollContainer - Universal scrolling component
+ * 
+ * Features:
+ * - Platform-specific scrolling (CSS overflow for web, ScrollView for native)
+ * - Consistent behavior across all platforms
+ * - Optimized performance for each platform
+ * 
+ * Usage:
+ * ```tsx
+ * <ScrollContainer>
+ *   <YourContent />
+ * </ScrollContainer>
+ * ```
+ */
+export default function ScrollContainer({ 
+  children, 
+  style = {},
+  contentStyle = {},
+  enableWebScrolling = true,
+  ...scrollViewProps 
+}: ScrollContainerProps) {
+  
+  if (Platform.OS === 'web' && enableWebScrolling) {
+    // Web: Custom scrollable container with CSS overflow
     return (
-      <View
-        style={[
-          {
-            flex: 1,
-            overflow: 'auto' as any,
-            WebkitOverflowScrolling: 'touch' as any,
-            overscrollBehavior: 'contain' as any,
-            height: SCREEN_HEIGHT as any,
-            maxHeight: SCREEN_HEIGHT as any,
-            width: '100%' as any,
-            touchAction: 'auto' as any,
-          } as any,
-          style,
-        ]}
-      >
-        <View
-          style={[
-            { minHeight: SCREEN_HEIGHT * 1.2, paddingBottom: bottomPadding },
-            contentStyle,
-          ]}
-        >
+      <View style={[styles.webScrollContainer, style]}>
+        <View style={[styles.webScrollContent, contentStyle]}>
           {children}
         </View>
       </View>
     );
   }
-
+  
+  // Native: Standard ScrollView for iOS/Android
   return (
     <ScrollView
-      style={[{ flex: 1 }, style]}
-      contentContainerStyle={[{ paddingBottom: bottomPadding }, contentStyle]}
-      showsVerticalScrollIndicator={showsVerticalScrollIndicator}
+      style={[styles.nativeScrollView, style]}
+      contentContainerStyle={[styles.nativeScrollContent, contentStyle]}
+      showsVerticalScrollIndicator={true}
+      scrollEnabled={true}
+      bounces={Platform.OS === 'ios'}
+      overScrollMode={Platform.OS === 'android' ? 'auto' : undefined}
+      nestedScrollEnabled={true}
       keyboardShouldPersistTaps="handled"
-      scrollEventThrottle={scrollEventThrottle}
-      nestedScrollEnabled={nestedScrollEnabled}
-      onScroll={nativeOnScroll}
+      scrollEventThrottle={16}
+      {...scrollViewProps}
     >
       {children}
     </ScrollView>
   );
 }
 
-
+const styles = StyleSheet.create({
+  // Web: Custom scrollable container with CSS overflow
+  webScrollContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+    ...(Platform.OS === 'web' && {
+      overflowY: 'auto' as any,
+      overflowX: 'hidden' as any,
+    }),
+    height: '100%',
+    maxHeight: SCREEN_HEIGHT - 200, // Reserve space for top/bottom bars
+  } as any,
+  webScrollContent: {
+    paddingBottom: 40,
+    minHeight: SCREEN_HEIGHT * 0.8, // Ensure content is scrollable
+  },
+  
+  // Native: Standard ScrollView styles
+  nativeScrollView: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  nativeScrollContent: {
+    paddingBottom: 40,
+  },
+});

@@ -12,7 +12,7 @@ import {
   Dimensions, 
   Text, 
   TouchableOpacity, 
-  ScrollView,
+
   Image,
   Alert,
   SafeAreaView,

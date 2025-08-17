@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, Alert } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import HeaderComp from '../components/HeaderComp';
@@ -7,6 +7,7 @@ import DonationStatsFooter from '../components/DonationStatsFooter';
 import { biDiTextAlign, isLandscape, scaleSize } from '../globals/responsive';
 import { useTranslation } from 'react-i18next';
 import { donationResources } from '../utils/donationResources';
+import ScrollContainer from '../components/ScrollContainer';
 
 export interface CategoryConfig {
   id: string;
@@ -112,7 +113,7 @@ const CategoryScreen: React.FC<Props> = ({ route, config: propConfig }) => {
         onSearch={handleSearch}
       />
 
-      <ScrollView contentContainerStyle={[
+      <ScrollContainer contentStyle={[
         styles.content,
         isLandscape() && { paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XL },
       ]} showsVerticalScrollIndicator={false}>
@@ -178,7 +179,7 @@ const CategoryScreen: React.FC<Props> = ({ route, config: propConfig }) => {
             ]}
           />
         </View>
-      </ScrollView>
+      </ScrollContainer>
     </View>
   );
 };

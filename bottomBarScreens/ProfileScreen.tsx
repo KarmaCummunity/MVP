@@ -13,7 +13,7 @@ import {
   Text,
   StyleSheet,
   SafeAreaView,
-  ScrollView,
+
   Image,
   TouchableOpacity,
   Dimensions,
@@ -31,6 +31,7 @@ import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { useTranslation } from 'react-i18next';
 import { currentUser } from '../globals/fakeData';
 import { useUser } from '../context/UserContext';
+import ScrollContainer from '../components/ScrollContainer';
 import ProfileCompletionBanner from '../components/ProfileCompletionBanner';
 import { createShadowStyle } from '../globals/styles';
 import { scaleSize } from '../globals/responsive';
@@ -599,11 +600,11 @@ export default function ProfileScreen() {
           </View>
         </View>
       ) : (
-      <ScrollView 
+      <ScrollContainer 
         style={styles.mainScrollView}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.mainScrollContent, { paddingBottom: tabBarHeight + scaleSize(24) }]}
+        contentStyle={[styles.mainScrollContent, { paddingBottom: tabBarHeight + scaleSize(24) }]}
       >
         {/* Completion Banner */}
         <ProfileCompletionBanner />
@@ -893,7 +894,7 @@ export default function ProfileScreen() {
             renderTabBar={renderTabBar}
           />
         </View>
-      </ScrollView>
+      </ScrollContainer>
       )}
     </SafeAreaView>
   );

@@ -1,11 +1,17 @@
 // File overview:
-// - Purpose: Root stack navigator controlling auth vs app flows.
+// - Purpose: Root stack navigator controlling auth vs app flows, with web mode support.
 // - Reached from: `App.tsx` renders `<MainNavigator />` inside `NavigationContainer`.
-// - Provides: Stack with routes: 'LoginScreen' (entry), 'HomeStack' (BottomNavigator tabs), chats, bookmarks, user profile, top-bar screens, org/admin screens, edit profile.
-// - Decides: If user not authenticated and not guest -> shows LoginScreen first; otherwise user can navigate to HomeStack via LoginScreen logic.
-// - Reads from context: `useUser()` -> selectedUser, isLoading, isGuestMode, isAuthenticated; used to log state and render loading screen.
+// - Provides: Stack with routes that depend on web mode:
+//   * Site mode: Shows 'LandingSiteScreen' as entry point
+//   * App mode: Shows 'LoginScreen' -> 'HomeStack' (BottomNavigator tabs)
+// - Decides: Based on web mode and authentication state which screen to show initially
+// - Web Mode Logic:
+//   * 'site' mode: LandingSiteScreen is initial route, toggle switches to app mode (Login/Home)
+//   * 'app' mode: Normal app flow with persistent toggle button above content
+// - Reads from context: `useUser()`, `useWebMode()` for controlling navigation flow
 // - Navigation params in common: Many screens expect optional ids (e.g., chatId, userId, url).
 // - Downstream flows:
+//   - LandingSiteScreen -> toggle to app mode -> Login/Home
 //   - LoginScreen -> on success/guest: `navigation.reset({ routes: [{ name: 'HomeStack' }] })`.
 //   - Notifications -> may navigate to 'ChatDetailScreen' with `conversationId`.
 // - External deps: react-navigation stack, i18n for titles, shared colors/styles.
@@ -87,25 +93,32 @@ export default function MainNavigator() {
 
   console.log('🧭 MainNavigator - Loading completed, rendering navigator');
 
-  // Always start with LoginScreen - no automatic authentication
-  console.log('🧭 MainNavigator - Always showing LoginScreen as initial route');
+  // Determine initial route based on web mode and authentication state
+  let initialRouteName: string;
   
-  // On web, if mode is 'site', show landing screen stack; otherwise app stack
-  if (typeof window !== 'undefined' && mode === 'site') {
-    return (
-      <Stack.Navigator key={`stack-${mode}`} id={undefined} screenOptions={{ headerShown: false }} initialRouteName={"LandingSiteScreen"}>
-        <Stack.Screen name="LandingSiteScreen" component={LandingSiteScreen} />
-      </Stack.Navigator>
-    );
+  if (mode === 'site') {
+    // Site mode: always start with landing page
+    initialRouteName = 'LandingSiteScreen';
+    console.log('🧭 MainNavigator - Site mode: showing LandingSiteScreen as initial route');
+  } else {
+    // App mode: determine based on authentication
+    if (isAuthenticated || isGuestMode) {
+      initialRouteName = 'HomeStack';
+      console.log('🧭 MainNavigator - App mode: user authenticated/guest, showing HomeStack');
+    } else {
+      initialRouteName = 'LoginScreen';
+      console.log('🧭 MainNavigator - App mode: user not authenticated, showing LoginScreen');
+    }
   }
 
   return (
     <Stack.Navigator 
-      key={`stack-${mode}`}
+      key={`stack-${mode}-${isAuthenticated}-${isGuestMode}`}
       id={undefined}
       screenOptions={{ headerShown: false }}
-      initialRouteName={"LoginScreen"}
+      initialRouteName={initialRouteName as any}
     >
+      <Stack.Screen name="LandingSiteScreen" component={LandingSiteScreen} />
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
       <Stack.Screen name="HomeStack" component={BottomNavigator} />
       <Stack.Screen name="NewChatScreen" component={NewChatScreen} />

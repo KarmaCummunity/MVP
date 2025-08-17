@@ -1,5 +1,12 @@
 // WebModeContext.tsx
 // Provides a simple global mode for Web: 'site' (marketing landing) vs 'app' (application UI)
+//
+// IMPORTANT BEHAVIOR:
+// - Default mode for web is 'site' - new users will see the landing page first
+// - Mode persisted in localStorage to remember user preference
+// - First-time web visitors always start with 'site' mode (landing page)
+// - Navigation automatically handled by MainNavigator based on current mode
+// - 'app' mode for mobile platforms by default (no site mode on native)
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
 
@@ -42,8 +49,12 @@ export const WebModeProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   const toggleMode = useCallback(() => {
-    setMode((prev) => (prev === 'site' ? 'app' : 'site'));
-  }, [setMode]);
+    setModeState((prev) => (prev === 'site' ? 'app' : 'site'));
+    if (Platform.OS === 'web') {
+      const newMode = mode === 'site' ? 'app' : 'site';
+      try { window.localStorage.setItem(STORAGE_KEY, newMode); } catch (_) {}
+    }
+  }, [mode]);
 
   const value = useMemo(() => ({ mode, setMode, toggleMode }), [mode, setMode, toggleMode]);
 

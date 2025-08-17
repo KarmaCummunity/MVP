@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
+import ScrollContainer from '../components/ScrollContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import colors from '../globals/colors';
@@ -178,15 +179,15 @@ export default function OrgOnboardingScreen() {
   }
 
   return (
-    <ScrollView
+    <ScrollContainer
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentStyle={styles.content}
       showsVerticalScrollIndicator
       nestedScrollEnabled
       keyboardShouldPersistTaps="handled"
     >
       {Content}
-    </ScrollView>
+    </ScrollContainer>
   );
 }
 

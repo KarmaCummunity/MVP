@@ -20,6 +20,7 @@ import {
   Dimensions,
   FlatList,
 } from 'react-native';
+import ScrollContainer from '../components/ScrollContainer';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { NavigationProp, useFocusEffect } from '@react-navigation/native';
@@ -47,44 +48,44 @@ interface DonationsScreenProps {
 
 const RECENT_CATEGORIES_KEY = 'recent_categories_ids';
 const RECENT_LIMIT = 3;
-const DEFAULT_RECENT_IDS: string[] = ['clothes', 'food', 'knowledge'];
+const DEFAULT_RECENT_IDS: string[] = ['clothes', 'knowledge', 'food']; // בגדים, ידע, אוכל
 const ANALYTICS_USER_ID = 'global';
 const ANALYTICS_COLLECTION = 'analytics';
 const ANALYTICS_ITEM_PREFIX = 'category:';
-const POPULAR_FALLBACK: string[] = ['money', 'trump', 'items'];
+const POPULAR_FALLBACK: string[] = ['money', 'trump', 'furniture']; // כסף, טרמפים, רהיטים
 
 const BASE_CATEGORIES = [
-  { id: 'money',      icon: 'card-outline',        color: colors.success, bgColor: colors.successLight, screen: 'MoneyScreen' },
-  { id: 'trump',      icon: 'car-outline',         color: colors.info,    bgColor: colors.infoLight,    screen: 'TrumpScreen' },
-  { id: 'knowledge',  icon: 'school-outline',      color: colors.legacyMediumPurple, bgColor: colors.backgroundTertiary, screen: 'KnowledgeScreen' },
-  { id: 'time',       icon: 'time-outline',        color: colors.orange,  bgColor: colors.backgroundTertiary, screen: 'TimeScreen' },
-  { id: 'food',       icon: 'restaurant-outline',  color: colors.textPrimary, bgColor: colors.backgroundSecondary, screen: 'FoodScreen' },
-  { id: 'clothes',    icon: 'shirt-outline',       color: colors.info,    bgColor: colors.infoLight,    screen: 'ClothesScreen' },
-  { id: 'books',      icon: 'library-outline',     color: colors.success, bgColor: colors.successLight, screen: 'BooksScreen' },
-  { id: 'items',      icon: 'cube-outline',        color: colors.textPrimary, bgColor: colors.backgroundSecondary, screen: 'ItemsScreen' },
-  { id: 'furniture',  icon: 'bed-outline',         color: colors.textPrimary, bgColor: colors.backgroundSecondary, screen: 'FurnitureScreen' },
+  { id: 'money',      icon: 'card-outline',        color: colors.green, bgColor: colors.successLight, screen: 'MoneyScreen' },
+  { id: 'trump',      icon: 'car-outline',         color: colors.blue,    bgColor: colors.infoLight,    screen: 'TrumpScreen' },
+  { id: 'knowledge',  icon: 'school-outline',      color: colors.blue, bgColor: colors.infoLight, screen: 'KnowledgeScreen' },
+  { id: 'time',       icon: 'time-outline',        color: colors.pink,  bgColor: colors.pinkLight, screen: 'TimeScreen' },
+  { id: 'food',       icon: 'restaurant-outline',  color: colors.green, bgColor: colors.successLight, screen: 'FoodScreen' },
+  { id: 'clothes',    icon: 'shirt-outline',       color: colors.pink,    bgColor: colors.pinkLight,    screen: 'ClothesScreen' },
+  { id: 'books',      icon: 'library-outline',     color: colors.blue, bgColor: colors.infoLight, screen: 'BooksScreen' },
+  { id: 'items',      icon: 'cube-outline',        color: colors.green, bgColor: colors.successLight, screen: 'ItemsScreen' },
+  { id: 'furniture',  icon: 'bed-outline',         color: colors.pink, bgColor: colors.pinkLight, screen: 'FurnitureScreen' },
   { id: 'medical',    icon: 'medical-outline',     color: colors.error,   bgColor: colors.errorLight,   screen: 'MedicalScreen' },
-  { id: 'animals',    icon: 'paw-outline',         color: colors.orangeDark, bgColor: colors.backgroundTertiary, screen: 'AnimalsScreen' },
-  { id: 'housing',    icon: 'home-outline',        color: colors.info,    bgColor: colors.infoLight,    screen: 'HousingScreen' },
-  { id: 'support',    icon: 'heart-outline',       color: colors.pinkDark, bgColor: colors.pinkLight,   screen: 'SupportScreen' },
-  { id: 'education',  icon: 'book-outline',        color: colors.info,    bgColor: colors.infoLight,    screen: 'EducationScreen' },
-  { id: 'environment',icon: 'leaf-outline',        color: colors.success, bgColor: colors.successLight, screen: 'EnvironmentScreen' },
-  { id: 'technology', icon: 'laptop-outline',      color: colors.info,    bgColor: colors.infoLight,    screen: 'TechnologyScreen' },
+  { id: 'animals',    icon: 'paw-outline',         color: colors.green, bgColor: colors.successLight, screen: 'AnimalsScreen' },
+  { id: 'housing',    icon: 'home-outline',        color: colors.blue,    bgColor: colors.infoLight,    screen: 'HousingScreen' },
+  { id: 'support',    icon: 'heart-outline',       color: colors.pink, bgColor: colors.pinkLight,   screen: 'SupportScreen' },
+  { id: 'education',  icon: 'book-outline',        color: colors.blue,    bgColor: colors.infoLight,    screen: 'EducationScreen' },
+  { id: 'environment',icon: 'leaf-outline',        color: colors.green, bgColor: colors.successLight, screen: 'EnvironmentScreen' },
+  { id: 'technology', icon: 'laptop-outline',      color: colors.blue,    bgColor: colors.infoLight,    screen: 'TechnologyScreen' },
   { id: 'music',      icon: 'musical-notes-outline', color: colors.pink,  bgColor: colors.pinkLight,    screen: 'MusicScreen' },
-  { id: 'games',      icon: 'game-controller-outline', color: colors.orange, bgColor: colors.orangeLight, screen: 'GamesScreen' },
-  { id: 'riddles',    icon: 'help-circle-outline', color: colors.info,    bgColor: colors.infoLight,    screen: 'RiddlesScreen' },
-  { id: 'recipes',    icon: 'fast-food-outline',   color: colors.success, bgColor: colors.successLight, screen: 'RecipesScreen' },
-  { id: 'plants',     icon: 'flower-outline',      color: colors.success, bgColor: colors.successLight, screen: 'PlantsScreen' },
+  { id: 'games',      icon: 'game-controller-outline', color: colors.blue, bgColor: colors.infoLight, screen: 'GamesScreen' },
+  { id: 'riddles',    icon: 'help-circle-outline', color: colors.pink,    bgColor: colors.pinkLight,    screen: 'RiddlesScreen' },
+  { id: 'recipes',    icon: 'fast-food-outline',   color: colors.green, bgColor: colors.successLight, screen: 'RecipesScreen' },
+  { id: 'plants',     icon: 'flower-outline',      color: colors.green, bgColor: colors.successLight, screen: 'PlantsScreen' },
   { id: 'waste',      icon: 'trash-outline',       color: colors.warning, bgColor: colors.warningLight, screen: 'WasteScreen' },
   { id: 'art',        icon: 'color-palette-outline', color: colors.pink,  bgColor: colors.pinkLight,    screen: 'ArtScreen' },
-  { id: 'sports',     icon: 'football-outline',    color: colors.orange,  bgColor: colors.orangeLight,  screen: 'SportsScreen' },
+  { id: 'sports',     icon: 'football-outline',    color: colors.blue,  bgColor: colors.infoLight,  screen: 'SportsScreen' },
   { id: 'dreams',     icon: 'star-outline',        color: colors.pink,    bgColor: colors.pinkLight,    screen: 'DreamsScreen' },
   { id: 'fertility',  icon: 'medkit-outline',      color: colors.error,   bgColor: colors.errorLight,   screen: 'FertilityScreen' },
-  { id: 'jobs',       icon: 'briefcase-outline',   color: colors.info,    bgColor: colors.infoLight,    screen: 'JobsScreen' },
+  { id: 'jobs',       icon: 'briefcase-outline',   color: colors.blue,    bgColor: colors.infoLight,    screen: 'JobsScreen' },
   { id: 'matchmaking', icon: 'people-outline',     color: colors.pink,    bgColor: colors.pinkLight,    screen: 'MatchmakingScreen' },
-  { id: 'mentalHealth', icon: 'pulse-outline',     color: colors.pinkDark,  bgColor: colors.pinkLight,  screen: 'MentalHealthScreen' },
+  { id: 'mentalHealth', icon: 'pulse-outline',     color: colors.pink,  bgColor: colors.pinkLight,  screen: 'MentalHealthScreen' },
   { id: 'goldenAge',   icon: 'person-outline',     color: colors.warning, bgColor: colors.warningLight, screen: 'GoldenAgeScreen' },
-  { id: 'languages',   icon: 'language-outline',   color: colors.info,    bgColor: colors.infoLight,    screen: 'LanguagesScreen' },
+  { id: 'languages',   icon: 'language-outline',   color: colors.blue,    bgColor: colors.infoLight,    screen: 'LanguagesScreen' },
 ] as const;
 
 type CategoryId = typeof BASE_CATEGORIES[number]['id'];
@@ -153,19 +154,9 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
   // Scale gaps and card width to consume remaining width nicely
   gridGap = Math.max(2, Math.round(LAYOUT_CONSTANTS.SPACING.XS * paddingScale));
   threeColCardWidthPx = Math.max(100, Math.floor((sectionInnerWidth - gridGap * 2) / 4));
-  ITEM_FULL_WIDTH = threeColCardWidthPx + gridGap;
 
-  // Infinite horizontal list state (for "All" section)
-  const LOOP_BLOCKS = 3; // center block is the natural list; both sides mirror for looping
-  const baseAllCategories = useMemo(() => BASE_CATEGORIES.slice(), []);
-  const loopedAllCategories = useMemo(
-    () => Array.from({ length: LOOP_BLOCKS }).flatMap(() => baseAllCategories),
-    [baseAllCategories]
-  );
-  const baseLen = baseAllCategories.length;
-  const middleBlockStartIndex = baseLen; // start of middle block
-  const allListRef = useRef<FlatList<any> | null>(null);
-  const currentAllIndexRef = useRef<number>(middleBlockStartIndex);
+  // Simplified horizontal scroll for "All" section
+  const allScrollViewRef = useRef<ScrollView | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -189,9 +180,11 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
 
         // Fetch popular categories analytics (top 3 globally)
         try {
+          console.log('🔄 Loading popular categories...');
           let analytics: any[] = [];
           
           if (USE_BACKEND && isRealAuth) {
+            console.log('📊 Using enhanced backend analytics');
             // Use enhanced backend analytics
             const categoryAnalytics = await EnhancedStatsService.getCategoryAnalytics();
             analytics = categoryAnalytics.map((cat: any) => ({
@@ -199,7 +192,9 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
               categoryId: cat.slug,
               count: cat.donation_count + (cat.clicks || 0),
             }));
+            console.log('📊 Backend analytics loaded:', analytics);
           } else {
+            console.log('📊 Using legacy analytics fallback');
             // Fallback to legacy analytics
             analytics = await restAdapter.list<any>(ANALYTICS_COLLECTION, ANALYTICS_USER_ID).catch(() => [] as any[]);
             analytics = analytics.map((d: any) => {
@@ -207,19 +202,29 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
               const count: number = Number(d?.count ?? 0);
               return id ? { id, count } : null;
             }).filter(Boolean);
+            console.log('📊 Legacy analytics loaded:', analytics);
           }
 
           const baseIds = new Set((BASE_CATEGORIES as readonly any[]).map((c) => c.id));
           const topSorted = analytics
-            .filter((c) => baseIds.has(c.id))
+            .filter((c) => baseIds.has(c.id) && c.count > 0) // רק עם נתונים אמיתיים
             .sort((a, b) => b.count - a.count)
             .map((c) => c.id);
-          const resolved = (topSorted.length > 0 ? topSorted : POPULAR_FALLBACK).filter((id) => baseIds.has(id));
-          setPopularCategoryIds(resolved.slice(0, 3));
+            
+          console.log('📈 Top sorted analytics:', topSorted);
+          console.log('📈 Analytics count with data:', topSorted.length);
+          
+          // 🚨 כעת נשתמש תמיד בדיפולט כי זה מה שהמשתמש מבקש
+          const resolved = POPULAR_FALLBACK.filter((id) => baseIds.has(id));
+          console.log('🎯 POPULAR categories set to:', resolved);
+          setPopularCategoryIds(resolved);
         } catch (e) {
-          console.error('Failed to load category analytics:', e);
+          console.error('❌ Failed to load category analytics:', e);
+          // במקרה של שגיאה, השתמש בדיפולט
           const baseIds = new Set((BASE_CATEGORIES as readonly any[]).map((c) => c.id));
-          setPopularCategoryIds(POPULAR_FALLBACK.filter((id) => baseIds.has(id)).slice(0, 3));
+          const resolved = POPULAR_FALLBACK.filter((id) => baseIds.has(id));
+          console.log('🎯 POPULAR categories fallback to:', resolved);
+          setPopularCategoryIds(resolved);
         }
       })();
     }, [])
@@ -254,14 +259,23 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
 
   const handleCategoryPress = (category: { id: CategoryId; screen?: string }) => {
     setSelectedCategory(category.id);
+    // עדכון "בשבילך" - הוסף את הקטגוריה שנלחצה לראש הרשימה
     setRecentCategoryIds((prev) => {
       const next = [category.id, ...prev.filter((id) => id !== category.id)].slice(0, RECENT_LIMIT);
-      AsyncStorage.setItem(RECENT_CATEGORIES_KEY, JSON.stringify(next)).catch(() => {});
+      AsyncStorage.setItem(RECENT_CATEGORIES_KEY, JSON.stringify(next)).catch((err) => {
+        console.warn('Failed to save recent categories:', err);
+      });
       return next;
     });
 
-    // Fire-and-forget analytics increment
+    // Fire-and-forget analytics increment  
     incrementCategoryCounter(category.id).catch(() => {});
+    
+    console.log('🔥 Category pressed:', {
+      id: category.id,
+      title: getCategoryText(category.id).title,
+      screen: category.screen
+    });
 
     if (category.screen) {
       (navigation as any).navigate(category.screen);
@@ -300,28 +314,51 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
     .map((id) => BASE_CATEGORIES.find((c) => c.id === id))
     .filter((c): c is typeof BASE_CATEGORIES[number] => Boolean(c));
 
-  const recentIdsBase = (recentCategoryIds.length > 0 ? recentCategoryIds : DEFAULT_RECENT_IDS);
+  // שיפור הלוגיקה של "בשבילך" - אחרונים שהיוזר השתמש
+  console.log('🔄 Processing "בשבילך" categories...');
+  console.log('📝 Recent category IDs from storage:', recentCategoryIds);
+  console.log('📝 DEFAULT_RECENT_IDS:', DEFAULT_RECENT_IDS);
+  console.log('📝 Popular categories (to avoid):', popularIdsResolved);
+  
   const baseIdSet = new Set((BASE_CATEGORIES as readonly any[]).map((c) => c.id as string));
   const popularIdSet = new Set(popularIdsResolved as unknown as string[]);
-  const recentFillPool = [
-    ...recentIdsBase,
-    ...DEFAULT_RECENT_IDS,
-    ...((BASE_CATEGORIES as readonly any[]).map((c) => c.id as string)),
-  ];
-  const desiredRecentIds = Array.from(new Set(recentFillPool))
-    .filter((id) => baseIdSet.has(id) && !popularIdSet.has(id))
-    .slice(0, RECENT_LIMIT) as string[];
-  const recentCategories = desiredRecentIds
+  
+  // 🚨 נשתמש תמיד בדיפולט כמו שהמשתמש מבקש
+  let finalRecentIds = [...DEFAULT_RECENT_IDS];
+  
+  // סנן רק אם יש חפיפה עם פופולרים
+  finalRecentIds = finalRecentIds.filter((id) => !popularIdSet.has(id));
+  
+  // אם עדיין לא מספיק אחרי הסינון, קח מכל הקטגוריות
+  if (finalRecentIds.length < RECENT_LIMIT) {
+    const additionalIds = BASE_CATEGORIES
+      .map(c => c.id)
+      .filter((id) => !finalRecentIds.includes(id) && !popularIdSet.has(id))
+      .slice(0, RECENT_LIMIT - finalRecentIds.length);
+    finalRecentIds = [...finalRecentIds, ...additionalIds];
+  }
+  
+  console.log('🎯 RECENT categories set to:', finalRecentIds);
+  
+  const recentCategories = finalRecentIds
     .map((id) => BASE_CATEGORIES.find((c) => c.id === id))
     .filter((c): c is typeof BASE_CATEGORIES[number] => Boolean(c));
+    
+  console.log('🎯 RECENT categories objects:', recentCategories.map(c => c.id));
 
   const otherCategories = BASE_CATEGORIES.filter((c) => !popularCategories.some((pc) => pc.id === c.id) && !recentCategories.some((rc) => rc.id === c.id));
+  
+  console.log('📊 Final categories summary:');
+  console.log('🌟 Popular categories:', popularCategories.map(c => `${c.id}(${getCategoryText(c.id).title})`));
+  console.log('👤 Recent categories:', recentCategories.map(c => `${c.id}(${getCategoryText(c.id).title})`));
+  console.log('📝 Other categories count:', otherCategories.length);
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundPrimary} />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundSecondary} />
       {isGuestMode && <GuestModeNotice showLoginButton={false} />}
-
+      
+      <ScrollContainer style={styles.scrollContainer} contentStyle={styles.scrollContent}>
       {/* Popular (Top 3) */}
       <View style={[styles.categoriesSection, { paddingVertical: sectionVerticalPad }]}>
         <Text style={[styles.sectionTitle, { marginBottom: sectionTitleMarginBottom, fontSize: sectionTitleFontSize }]}>{t('donations:popular')}</Text>
@@ -334,7 +371,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                 style={[
                   styles.categoryCard,
                   {
-                    backgroundColor: colors.categoryCardBackground,
+                    backgroundColor: category.bgColor, // השתמש בצבע הרקע של הקטגוריה
                     width: threeColCardWidthPx,
                     paddingVertical: cardVerticalPad,
                   },
@@ -345,7 +382,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                   style={[
                     styles.categoryIcon,
                     {
-                      backgroundColor: colors.categoryIconBackground,
+                      backgroundColor: category.color, // השתמש בצבע הקטגוריה
                       width: categoryIconOuter,
                       height: categoryIconOuter,
                       borderRadius: categoryIconOuter / 2,
@@ -378,7 +415,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                 style={[
                   styles.categoryCard,
                   {
-                    backgroundColor: colors.categoryCardBackground,
+                    backgroundColor: category.bgColor, // השתמש בצבע הרקע של הקטגוריה
                     width: threeColCardWidthPx,
                     paddingVertical: cardVerticalPad,
                   },
@@ -390,7 +427,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                     style={[
                       styles.categoryIcon,
                       {
-                        backgroundColor: colors.categoryIconBackground,
+                        backgroundColor: category.color, // השתמש בצבע הקטגוריה
                         width: categoryIconOuter,
                         height: categoryIconOuter,
                         borderRadius: categoryIconOuter / 2,
@@ -414,81 +451,71 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
         </View>
       </View>
           
-      {/* All - Horizontal scroll with infinite loop */}
+      {/* All - Horizontal scroll (improved) */}
       <View style={[styles.categoriesSection, { paddingVertical: sectionVerticalPad }]}>
         <Text style={[styles.sectionTitle, { marginBottom: sectionTitleMarginBottom, fontSize: sectionTitleFontSize }]}>{t('donations:all')}</Text>
-        <FlatList
-          ref={(r) => {
-            allListRef.current = r;
-          }}
-          data={loopedAllCategories}
-          keyExtractor={(item, index) => `${item.id}-${index}`}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          initialScrollIndex={middleBlockStartIndex}
-          getItemLayout={(_, index) => ({ length: ITEM_FULL_WIDTH, offset: ITEM_FULL_WIDTH * index, index })}
-          decelerationRate="fast"
-          snapToInterval={ITEM_FULL_WIDTH}
-          snapToAlignment="start"
-          onScrollToIndexFailed={(info) => {
-            // Fallback scroll without animation
-            allListRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false });
-          }}
-          onMomentumScrollEnd={(e) => {
-            const x = e.nativeEvent.contentOffset.x;
-            const approxIndex = Math.round(x / ITEM_FULL_WIDTH);
-            currentAllIndexRef.current = approxIndex;
-            if (approxIndex < baseLen) {
-              // Jump forward by one block to stay in middle
-              const target = approxIndex + baseLen;
-              allListRef.current?.scrollToIndex({ index: target, animated: false });
-              currentAllIndexRef.current = target;
-            } else if (approxIndex >= baseLen * 2) {
-              // Jump back by one block to stay in middle
-              const target = approxIndex - baseLen;
-              allListRef.current?.scrollToIndex({ index: target, animated: false });
-              currentAllIndexRef.current = target;
-            }
-          }}
-          contentContainerStyle={[styles.horizontalList, { paddingHorizontal: gridGap }]}
-          renderItem={({ item: category, index }) => {
-            const { title, subtitle } = getCategoryText(category.id as CategoryId);
-            return (
-              <TouchableOpacity
-                onPress={() => handleCategoryPress(category as any)}
-                style={[
-                  styles.categoryCardHorizontal,
-                  {
-                    backgroundColor: colors.categoryCardBackground,
-                    width: threeColCardWidthPx,
-                    marginRight: gridGap,
-                    paddingVertical: cardVerticalPad,
-                  },
-                ]}
-              >
-                <View
+        <View style={styles.horizontalScrollContainer}>
+          <ScrollView
+            ref={allScrollViewRef}
+            horizontal={true}
+            showsHorizontalScrollIndicator={false}
+            decelerationRate="fast"
+            bounces={Platform.OS === 'ios'}
+            directionalLockEnabled={true}
+            alwaysBounceVertical={false}
+            alwaysBounceHorizontal={true}
+            scrollEnabled={true}
+            contentContainerStyle={styles.horizontalScrollContent}
+            style={styles.horizontalScrollView}
+            onScrollBeginDrag={() => console.log('🔄 Horizontal scroll started')}
+            onScrollEndDrag={() => console.log('⏸️ Horizontal scroll ended')}
+            onScroll={() => console.log('📜 Horizontal scrolling...')}
+            scrollEventThrottle={100}
+          >
+            {otherCategories.map((category, index) => {
+              const { title, subtitle } = getCategoryText(category.id as CategoryId);
+              console.log(`🎯 Rendering "All" category ${index}:`, category.id, title);
+              return (
+                <TouchableOpacity
+                  key={`all-${category.id}`}
+                  onPress={() => {
+                    console.log('🔥 Category pressed in "All":', category.id, title);
+                    handleCategoryPress(category as any);
+                  }}
                   style={[
-                    styles.categoryIcon,
+                    styles.categoryCardHorizontal,
                     {
-                      backgroundColor: colors.categoryIconBackground,
-                      width: categoryIconOuter,
-                      height: categoryIconOuter,
-                      borderRadius: categoryIconOuter / 2,
+                      backgroundColor: category.bgColor,
+                      width: threeColCardWidthPx,
+                      marginRight: index === otherCategories.length - 1 ? 0 : gridGap,
+                      paddingVertical: cardVerticalPad,
                     },
                   ]}
                 >
-                  <Ionicons name={(category as any).icon as any} size={categoryIconSize} color="white" />
-                </View>
-                 <Text style={[styles.categoryTitle, { fontSize: otherTitleSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
-                  {title}
-                </Text>
-                 <Text style={[styles.categorySubtitle, { fontSize: otherSubtitleSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
-                  {subtitle}
-                </Text>
-              </TouchableOpacity>
-            );
-          }}
-        />
+                  <View
+                    style={[
+                      styles.categoryIcon,
+                      {
+                        backgroundColor: category.color,
+                        width: categoryIconOuter,
+                        height: categoryIconOuter,
+                        borderRadius: categoryIconOuter / 2,
+                      },
+                    ]}
+                  >
+                    <Ionicons name={category.icon as any} size={categoryIconSize} color="white" />
+                  </View>
+                  <Text style={[styles.categoryTitle, { fontSize: otherTitleSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
+                    {title}
+                  </Text>
+                  <Text style={[styles.categorySubtitle, { fontSize: otherSubtitleSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
+                    {subtitle}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
       </View>
 
       {/* Stats Section */}
@@ -512,6 +539,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
             />
         );
       })()}
+      </ScrollContainer>
     </SafeAreaView>
   );
 };
@@ -519,7 +547,13 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.backgroundSecondary, // עודכן לכחול בהיר
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   // Web-specific scroll wrappers
   webScrollContainer: {
@@ -594,9 +628,10 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: FontSizes.heading2,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
+    fontWeight: '800', // פונט עבה יותר
+    color: colors.pink, // צבע ורוד מהלוגו החדש
     marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
+    textAlign: 'center', // מרכוז הכותרת
   },
   quickActionsContainer: {
     flexDirection: 'row',
@@ -617,17 +652,17 @@ const styles = StyleSheet.create({
     marginTop: LAYOUT_CONSTANTS.SPACING.SM,
   },
   categoriesSection: {
-    backgroundColor: 'transparent',
-    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
-    borderWidth: 0,
-    borderColor: colors.categoryBorder,
+    backgroundColor: colors.backgroundPrimary, // רקע לבן נקי לקטגוריות
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE, // עיגול גדול יותר
+    borderWidth: 1,
+    borderColor: colors.borderSecondary, // גבול עדין
     marginTop: LAYOUT_CONSTANTS.SPACING.SM,
-    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD, // מרווח גדול יותר מתחת
     marginHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
     alignItems: 'center',
-    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.LG, // padding גדול יותר
     paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.06, 6),
+    ...createShadowStyle(colors.shadowColored, { width: 0, height: 4 }, 0.15, 8), // צל צבעוני
   },
   categoriesGrid: {
     flexDirection: 'row',
@@ -635,10 +670,33 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: LAYOUT_CONSTANTS.SPACING.SM,
   },
+  horizontalScrollContainer: {
+    height: Math.max(120, scaleSize(140)), // גובה קבוע
+    width: '100%',
+  },
+  horizontalScrollView: {
+    flex: 1,
+    height: '100%',
+    ...(Platform.OS === 'web' && {
+      overflowX: 'auto' as any,
+      overflowY: 'hidden' as any,
+      WebkitOverflowScrolling: 'touch' as any,
+    }),
+  } as any,
+  horizontalScrollContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
+    height: '100%',
+  },
   horizontalList: {
     paddingVertical: LAYOUT_CONSTANTS.SPACING.XS,
-    gap: LAYOUT_CONSTANTS.SPACING.XS,
     paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
+    flexDirection: 'row',
+    ...(Platform.OS === 'web' && {
+      display: 'flex' as any,
+      flexWrap: 'nowrap' as any,
+    }),
   },
   othersSection: {
     alignSelf: 'stretch',
@@ -662,26 +720,25 @@ const styles = StyleSheet.create({
   },
   categoryCard: {
     width: '31.5%',
-    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
-    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
-    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.MD, // padding גדול יותר
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM, // padding גדול יותר
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM, // עיגול יותר מעוגל
     alignItems: 'center',
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.08, 3),
-    // minHeight: 108,
-    backgroundColor: colors.categoryCardBackground,
-    borderWidth: 0.5,
-    borderColor: colors.categoryBorder,
+    ...createShadowStyle(colors.shadowColored, { width: 0, height: 2 }, 0.12, 4), // צל צבעוני
+    backgroundColor: colors.backgroundPrimary, // רקע לבן נקי
+    borderWidth: 1,
+    borderColor: colors.borderSecondary, // גבול עדין יותר
   },
   categoryCardHorizontal: {
     width: scaleSize(140),
-    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
-    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
-    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.MD, // padding גדול יותר
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM, // padding גדול יותר
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM, // עיגול יותר מעוגל
     alignItems: 'center',
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.08, 3),
-    backgroundColor: colors.categoryCardBackground,
-    borderWidth: 0.5,
-    borderColor: colors.categoryBorder,
+    ...createShadowStyle(colors.shadowColored, { width: 0, height: 2 }, 0.12, 4), // צל צבעוני
+    backgroundColor: colors.backgroundPrimary, // רקע לבן נקי
+    borderWidth: 1,
+    borderColor: colors.borderSecondary, // גבול עדין יותר
     marginRight: LAYOUT_CONSTANTS.SPACING.XS,
   },
   activeCategoryCard: {
@@ -705,7 +762,8 @@ const styles = StyleSheet.create({
     borderRadius: scaleSize(35) / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM, // מרווח גדול יותר מתחת לאיקון
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.3, 4), // צל לאיקון
   },
   categoryIconWrapper: {
     position: 'relative',
@@ -725,9 +783,10 @@ const styles = StyleSheet.create({
   },
   categoryTitle: {
     fontSize: FontSizes.medium,
-    fontWeight: '600',
+    fontWeight: '700', // פונט עבה יותר
     color: colors.textPrimary,
     textAlign: 'center',
+    marginTop: LAYOUT_CONSTANTS.SPACING.XS, // מרווח קטן מעל הכותרת
   },
   categoryTitleRow: {
     flexDirection: 'row',

@@ -87,6 +87,7 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
     SearchScreen: t('common:search'),
     DonationsTab: t('donations:title'),
     ProfileScreen: t('profile:title'),
+    LandingSiteScreen: 'Karma Community',
 
     MoneyScreen: t('donations:categories.money.title'),
     TrumpScreen: t('donations:categories.trump.title'),

@@ -2,7 +2,7 @@ export default {
   expo: {
     name: "KC - הקיבוץ הקפיטליסטי",
     slug: "karma-community",
-    version: "1.6.0",
+    version: "1.7.0",
     orientation: "portrait",
     icon: "./assets/images/logo.png",
     scheme: "karma-community",
@@ -10,7 +10,7 @@ export default {
     splash: {
       image: "./assets/images/logo.png",
       resizeMode: "contain",
-      backgroundColor: "#ffffff"
+      backgroundColor: "#F0F8FF"
     },
     assetBundlePatterns: [
       "**/*"
@@ -22,7 +22,7 @@ export default {
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/images/logo.png",
-        backgroundColor: "#ffffff"
+        backgroundColor: "#F0F8FF"
       },
       package: "com.navesarussi1.KarmaCommunity"
     },
@@ -35,8 +35,8 @@ export default {
       description: "פלטפורמה חינמית ללא מטרות רווח לקהילה הישראלית",
       lang: "he",
       dir: "rtl",
-      themeColor: "#ffffff",
-      backgroundColor: "#ffffff"
+      themeColor: "#FF69B4",
+      backgroundColor: "#F0F8FF"
     },
     plugins: [
       "expo-router"

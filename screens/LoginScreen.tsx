@@ -37,6 +37,7 @@ import { Platform } from 'react-native';
 import SimpleGoogleLoginButton from '../components/SimpleGoogleLoginButton';
 import { useTranslation } from 'react-i18next';
 import i18n from '../app/i18n';
+import ScrollContainer from '../components/ScrollContainer';
 
 export default function LoginScreen() {
   const { setSelectedUserWithMode, setGuestMode, selectedUser, isGuestMode } = useUser();
@@ -487,8 +488,8 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
+        <ScrollContainer
+          contentStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'interactive'}
           contentInsetAdjustmentBehavior="always"
@@ -802,7 +803,7 @@ export default function LoginScreen() {
           <Text style={styles.infoText}>{t('common:freeAppNotice')}</Text>
         </View>
       </View>
-        </ScrollView>
+        </ScrollContainer>
         {/* Language switcher (top-right) */}
         <View pointerEvents="box-none" style={styles.languageFabContainer}>
           <TouchableOpacity

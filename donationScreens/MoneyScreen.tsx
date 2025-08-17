@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   Image,
   Alert,
-  ScrollView,
+
   TextInput,
   Platform,
   Modal,
@@ -21,6 +21,7 @@ import { charityNames, charities, donations } from '../globals/fakeData';
 import { charitiesStore } from '../utils/charitiesStore';
 import { donationResources } from '../utils/donationResources';
 import { useUser } from '../context/UserContext';
+import ScrollContainer from '../components/ScrollContainer';
 
 // Convert new charity format to old dummy format for compatibility
 const dummyCharitiesBase = charities.map((charity, index) => ({
@@ -622,9 +623,9 @@ export default function MoneyScreen({
 
       {/* Quick Donate Section */}
      
-      <ScrollView 
+      <ScrollContainer 
         style={localStyles.container} 
-        contentContainerStyle={localStyles.scrollContent}
+        contentStyle={localStyles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <FormHeader />
@@ -738,7 +739,7 @@ export default function MoneyScreen({
               />
           </View>
         )}
-      </ScrollView>
+      </ScrollContainer>
 
       {/* Charity Details Modal (centered, not full screen) */}
       <Modal

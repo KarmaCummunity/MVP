@@ -8,7 +8,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   View, 
   Text, 
-  ScrollView, 
+  ScrollView,
   StyleSheet, 
   TouchableOpacity, 
   Image, 
@@ -22,6 +22,7 @@ import SearchBar from '../components/SearchBar';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { useTranslation } from 'react-i18next';
+import ScrollContainer from '../components/ScrollContainer';
 import { 
   donations, 
   communityEvents, 
@@ -318,11 +319,11 @@ const SearchScreen = () => {
         </ScrollView>
       </View>
 
-      <ScrollView 
+      <ScrollContainer 
         style={styles.content} 
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: tabBarHeight + LAYOUT_CONSTANTS.SPACING.XL }}
+        contentStyle={{ paddingBottom: tabBarHeight + LAYOUT_CONSTANTS.SPACING.XL }}
       >
         {/* Guest Mode Notice */}
         
@@ -423,7 +424,7 @@ const SearchScreen = () => {
             )}
           </View>
         )}
-      </ScrollView>
+      </ScrollContainer>
 
       {/* Floating AI Assistant Button */}
       <Pressable

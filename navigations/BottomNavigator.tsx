@@ -26,6 +26,7 @@ import colors from "../globals/colors"; // Adjust path if needed
 import { vw, getScreenInfo, isLandscape } from "../globals/responsive";
 import { LAYOUT_CONSTANTS } from "../globals/constants";
 import { useUser } from "../context/UserContext";
+import { useWebMode } from "../context/WebModeContext";
 
 // Define the type for your bottom tab navigator's route names and their parameters.
 export type BottomTabNavigatorParamList = {
@@ -134,6 +135,7 @@ const styles = StyleSheet.create({
 export default function BottomNavigator(): React.ReactElement {
   console.log('📱 BottomNavigator - Component rendered');
   const { isGuestMode, resetHomeScreen } = useUser();
+  const { mode } = useWebMode();
   const navigation = useNavigation();
   
   // Refresh data when navigator comes into focus
@@ -182,6 +184,8 @@ export default function BottomNavigator(): React.ReactElement {
         screenOptions={({ route }): BottomTabNavigationOptions => {
           const activeParams = getActiveNestedParams(route as any) || {};
           const hideBottomBar = activeParams.hideBottomBar === true;
+          const hideDueToSiteMode = (typeof window !== 'undefined' && mode === 'site');
+          const shouldHideTabBar = hideBottomBar || hideDueToSiteMode;
           const { isTablet, isDesktop } = getScreenInfo();
           const landscape = isLandscape();
           const horizontalInset = isDesktop ? vw(20) : isTablet ? vw(10) : LAYOUT_CONSTANTS.SPACING.MD;
@@ -210,7 +214,7 @@ export default function BottomNavigator(): React.ReactElement {
               elevation: LAYOUT_CONSTANTS.SHADOW.MEDIUM.elevation,
               height: barHeight,
               backgroundColor: colors.bottomNavBackground,
-              display: hideBottomBar ? 'none' as const : 'flex' as const,
+              display: shouldHideTabBar ? 'none' as const : 'flex' as const,
             },
           });
         }}

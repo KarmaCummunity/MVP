@@ -7,7 +7,8 @@
 // - External deps/services: `chatService` (get/subscribe), i18n, Haptics, static users from `fakeData` and `characterTypes`.
 // ChatListScreen – professional, concise, with in-file demo support and live updates
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Alert, TextInput, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, RefreshControl, Alert, TextInput, TouchableOpacity, Platform } from 'react-native';
+import ScrollContainer from '../components/ScrollContainer';
 import { useNavigation, NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import ChatListItem from '../components/ChatListItem';
 import { users as allUsers, ChatUser } from '../globals/fakeData';
@@ -138,8 +139,8 @@ export default function ChatListScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.listContent}
+      <ScrollContainer
+        contentStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         {filteredSortedConversations.map(item => {
@@ -187,7 +188,7 @@ export default function ChatListScreen() {
             <Text style={styles.emptyStateSubtitle}>{t('chat:startNewOrClearSearch')}</Text>
           </View>
         )}
-      </ScrollView>
+      </ScrollContainer>
     </ScreenWrapper>
   );
 }

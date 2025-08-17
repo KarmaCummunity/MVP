@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Platform, ScrollView, Image } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Platform, Image } from 'react-native';
+import ScrollContainer from '../components/ScrollContainer';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
@@ -82,13 +83,12 @@ export default function EditProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
+      <ScrollContainer
         style={styles.container}
-        contentContainerStyle={styles.content}
+        contentStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={true}
         bounces={Platform.OS === 'ios'}
-        {...(Platform.OS === 'web' ? { stickyHeaderIndices: [] } : {})}
       >
       <Text style={styles.header}>{t('profile:banner.editTitle')}</Text>
 
@@ -233,7 +233,7 @@ export default function EditProfileScreen() {
         <Ionicons name="save-outline" size={18} color={colors.white} />
         <Text style={styles.saveText}>{t('common:done')}</Text>
       </TouchableOpacity>
-      </ScrollView>
+      </ScrollContainer>
     </View>
   );
 }

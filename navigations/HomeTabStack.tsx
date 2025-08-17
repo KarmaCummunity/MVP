@@ -20,11 +20,14 @@ import PostsReelsScreenWrapper from '../components/PostsReelsScreenWrapper';
 import WebViewScreen from '../screens/WebViewScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
 import FollowersScreen from '../screens/FollowersScreen';
+import LandingSiteScreen from '../screens/LandingSiteScreen';
 
 import TopBarNavigator from './TopBarNavigator';
+import { useWebMode } from '../context/WebModeContext';
 
 type HomeTabStackParamList = {
   HomeMain: undefined;
+  LandingSiteScreen: undefined;
   ChatListScreen: undefined;
   ChatDetailScreen: { chatId?: string } | undefined;
   NotificationsScreen: undefined;
@@ -40,16 +43,23 @@ type HomeTabStackParamList = {
 const Stack = createStackNavigator<HomeTabStackParamList>();
 
 export default function HomeTabStack(): React.ReactElement {
+  const { mode } = useWebMode();
+  
   useFocusEffect(
     React.useCallback(() => {
       console.log('🏠 HomeTabStack - focused');
     }, [])
   );
 
+  // Determine initial route based on web mode
+  const initialRouteName = (typeof window !== 'undefined' && mode === 'site') 
+    ? "LandingSiteScreen" 
+    : "HomeMain";
+
   return (
     <Stack.Navigator
       id={undefined}
-      initialRouteName="HomeMain"
+      initialRouteName={initialRouteName as keyof HomeTabStackParamList}
       screenOptions={({ navigation, route }) => ({
         headerShown: true,
         header: () => (
@@ -62,6 +72,7 @@ export default function HomeTabStack(): React.ReactElement {
       })}
     >
       <Stack.Screen name="HomeMain" component={HomeScreen} />
+      <Stack.Screen name="LandingSiteScreen" component={LandingSiteScreen} />
       <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
       <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
       <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />

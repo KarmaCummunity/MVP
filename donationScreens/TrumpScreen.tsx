@@ -6,7 +6,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Alert,
-  ScrollView,
+
   TextInput,
   Platform,
   Linking,
@@ -21,6 +21,7 @@ import DonationStatsFooter from '../components/DonationStatsFooter';
 import TimePicker from '../components/TimePicker';
 import { db } from '../utils/databaseService';
 import { useUser } from '../context/UserContext';
+import ScrollContainer from '../components/ScrollContainer';
 
 export default function TrumpScreen({
   navigation,
@@ -740,9 +741,9 @@ export default function TrumpScreen({
       <FormHeader />
 
       {mode ? (
-        <ScrollView
+        <ScrollContainer
           style={localStyles.container}
-          contentContainerStyle={localStyles.scrollContent}
+          contentStyle={localStyles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="always"
         >
@@ -772,7 +773,7 @@ export default function TrumpScreen({
                 />
             );
           })()}
-        </ScrollView>
+        </ScrollContainer>
       ) : (
         // Beneficiary (seeker) mode - two independent vertical scroll sections
           <View style={[localStyles.container, localStyles.noOuterScrollContainer]}> 
