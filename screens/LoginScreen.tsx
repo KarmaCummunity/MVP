@@ -504,7 +504,12 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        accessible={true}
+        accessibilityViewIsModal={false}
+      >
         <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
         <ScrollContainer
           contentStyle={{ flexGrow: 1 }}
@@ -535,7 +540,12 @@ export default function LoginScreen() {
 
 
             {/* Email Register/Login CTA - collapsible with input + status line */}
-            <View style={styles.orgLoginContainer}>
+            <View 
+              style={styles.orgLoginContainer}
+              accessible={true}
+              
+              importantForAccessibility="yes"
+            >
               {!emailLoginOpen && (
                 <TouchableOpacity
                   style={[styles.guestButton, styles.emailButton]}
@@ -549,7 +559,12 @@ export default function LoginScreen() {
               )}
 
               {emailLoginOpen && (
-                <View style={styles.orgExpandedRow}>
+                <View 
+                  style={styles.orgExpandedRow}
+                  accessible={true}
+                  
+                  importantForAccessibility="yes"
+                >
                   <Animated.View style={[styles.orgMiniButton, { opacity: emailOpenAnim }] }>
                     <TouchableOpacity onPress={toggleEmailLogin} activeOpacity={0.8}>
                       <Ionicons name="mail-outline" size={20} color="#4C7EFF" />
@@ -562,7 +577,6 @@ export default function LoginScreen() {
                       placeholderTextColor="#B0B0B0"
                       value={emailValue}
                       textAlign="right"
-
                       onChangeText={setEmailValue}
                       autoCapitalize="none"
                       autoCorrect={false}
@@ -572,6 +586,10 @@ export default function LoginScreen() {
                       keyboardType="email-address"
                       returnKeyType="done"
                       onSubmitEditing={handleEmailContinue}
+                      accessible={true}
+                      accessibilityLabel={t('auth:email.placeholder')}
+                      accessibilityHint={t('auth:email.accessibilityHint') || 'Enter your email address'}
+                      importantForAccessibility="yes"
                     />
                   ) : (
                     <View style={styles.inputWrapper}>
@@ -587,6 +605,10 @@ export default function LoginScreen() {
                         secureTextEntry={!passwordVisible}
                         returnKeyType="done"
                         onSubmitEditing={handleEmailSubmit}
+                        accessible={true}
+                        accessibilityLabel={t('auth:email.passwordPlaceholder')}
+                        accessibilityHint={t('auth:email.passwordAccessibilityHint') || 'Enter your password'}
+                        importantForAccessibility="yes"
                       />
                       <TouchableOpacity onPress={() => setPasswordVisible(v => !v)} style={styles.eyeToggle}>
                         <Ionicons name={passwordVisible ? 'eye-outline' : 'eye-off-outline'} size={20} color="#666" />
@@ -655,7 +677,12 @@ export default function LoginScreen() {
             </View>
 
             {/* Enter Organization CTA - collapsible with input */}
-            <View style={styles.orgLoginContainer}>
+            <View 
+              style={styles.orgLoginContainer}
+              accessible={true}
+              
+              importantForAccessibility="yes"
+            >
               {!orgLoginOpen && (
                 <TouchableOpacity
                   style={[styles.guestButton, styles.orgButton]}
@@ -669,7 +696,12 @@ export default function LoginScreen() {
               )}
 
               {orgLoginOpen && (
-                <View style={styles.orgExpandedRow}>
+                <View 
+                  style={styles.orgExpandedRow}
+                  accessible={true}
+                  
+                  importantForAccessibility="yes"
+                >
                   <Animated.View style={[styles.orgMiniButton, { opacity: orgOpenAnim }] }>
                     <TouchableOpacity onPress={toggleOrgLogin} activeOpacity={0.8}>
                       <Ionicons name="business-outline" size={20} color="#FF6B9D" />
@@ -689,6 +721,10 @@ export default function LoginScreen() {
                     inputMode="email"
                     returnKeyType="done"
                     onSubmitEditing={handleOrgConfirm}
+                    accessible={true}
+                    accessibilityLabel={t('auth:org.placeholder')}
+                    accessibilityHint={t('auth:org.accessibilityHint') || 'Enter your organization email'}
+                    importantForAccessibility="yes"
                   />
                   <TouchableOpacity
                     style={[styles.orgActionButton, isCheckingOrg && styles.disabledButton]}

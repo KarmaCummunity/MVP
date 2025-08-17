@@ -75,6 +75,8 @@ export default function AutocompleteDropdownComp({
         transparent={true}
         visible={isModalVisible}
         onRequestClose={() => setIsModalVisible(false)}
+        accessibilityViewIsModal={true}
+        statusBarTranslucent={false}
       >
         <TouchableOpacity
           style={dropdownStyles.modalOverlay}
@@ -84,7 +86,12 @@ export default function AutocompleteDropdownComp({
             Keyboard.dismiss();
           }} // Dismiss modal and keyboard on overlay press
         >
-          <View style={dropdownStyles.modalContent}>
+          <View 
+            style={dropdownStyles.modalContent}
+            accessible={true}
+            accessibilityRole="dialog"
+            accessibilityLabel="Search options"
+          >
             <View style={dropdownStyles.searchContainer}>
               <Icon name="search" size={20} color={colors.dropdownSearchIcon} style={{ marginRight: 8 }} />
               <TextInput
