@@ -31,7 +31,6 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
-  ScrollView,
   Image,
   Alert,
   Animated,
@@ -40,9 +39,10 @@ import {
   Linking,
   KeyboardAvoidingView,
   I18nManager,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { characterTypes } from '../globals/characterTypes';
+// characterTypes import removed - not needed for production
 import { useUser } from '../context/UserContext';
 import { db } from '../utils/databaseService';
 import { restAdapter } from '../utils/restAdapter';
@@ -60,13 +60,7 @@ export default function LoginScreen() {
   // TODO: Add comprehensive analytics tracking for auth flow
   const { setSelectedUserWithMode, setGuestMode, selectedUser, isGuestMode } = useUser();
   const { t } = useTranslation(['auth', 'common', 'settings']);
-  const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
-  const [animationValues] = useState(() => 
-    characterTypes.reduce((acc, character) => {
-      acc[character.id] = new Animated.Value(1);
-      return acc;
-    }, {} as Record<string, Animated.Value>)
-  );
+  // Character selection removed for production
   const navigation = useNavigation<any>();
   // Org login UI state
   const [orgLoginOpen, setOrgLoginOpen] = useState(false);
@@ -92,6 +86,13 @@ export default function LoginScreen() {
 
   // Language menu state
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
+  
+  // Security: Rate limiting for login attempts
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  const [lockoutEndTime, setLockoutEndTime] = useState<Date | null>(null);
+  const MAX_LOGIN_ATTEMPTS = 10;
+  const LOCKOUT_DURATION = 5 * 60 * 1000; // 5 minutes
 
   const applyLanguage = async (lang: 'he' | 'en') => {
     try {
@@ -110,65 +111,7 @@ export default function LoginScreen() {
     }
   };
 
-  const handleCharacterSelect = (characterId: string) => {
-    if (selectedCharacter === characterId) {
-      setSelectedCharacter(null);
-      console.log('🔐 LoginScreen - Character deselected:', characterId);
-      
-      Animated.spring(animationValues[characterId], {
-        toValue: 1,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      setSelectedCharacter(characterId);
-      console.log('🔐 LoginScreen - Character selected:', characterId);
-      
-      Animated.spring(animationValues[characterId], {
-        toValue: 1.05,
-        useNativeDriver: true,
-      }).start();
-    }
-  };
-
-  const handleLoginWithCharacter = async () => {
-    if (!selectedCharacter) {
-      Alert.alert(t('auth:characters.selectTitle'), t('auth:characters.selectSubtitle'));
-      return;
-    }
-
-    const character = characterTypes.find(c => c.id === selectedCharacter);
-    console.log('🔐 LoginScreen - character:', character);
-    if (character) {
-      const userData = {
-        id: character.id,
-        name: character.name,
-        email: `${character.id}@karmacommunity.com`,
-        phone: '+972501234567',
-        avatar: character.avatar,
-        bio: character.bio,
-        karmaPoints: character.karmaPoints,
-        joinDate: character.joinDate,
-        isActive: true,
-        lastActive: new Date().toISOString(),
-        location: character.location,
-        interests: character.interests,
-        roles: character.roles,
-        postsCount: character.postsCount,
-        followersCount: character.followersCount,
-        followingCount: character.followingCount,
-          notifications: [
-            { type: 'system', text: t('home:welcome'), date: new Date().toISOString() },
-          ],
-        settings: {
-          language: character.preferences.language,
-          darkMode: false,
-          notificationsEnabled: character.preferences.notifications,
-        },
-      };
-      
-      await setSelectedUserWithMode(userData as any, 'real');
-    }
-  };
+  // Character login functions removed for production
 
   const handleGuestMode = async () => {
     console.log('🔐 LoginScreen - handleGuestMode - Starting');
@@ -281,9 +224,31 @@ export default function LoginScreen() {
     }
   };
 
-  const validateEmailFormat = (email: string) => {
-    const re = /[^@\s]+@[^@\s]+\.[^@\s]+/;
-    return re.test(String(email).toLowerCase());
+  // Enhanced email validation for production
+  const validateEmailFormat = (email: string): boolean => {
+    if (!email || email.length === 0) return false;
+    if (email.length > 254) return false; // RFC 5321 limit
+    
+    // More robust email regex
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+    return emailRegex.test(email.toLowerCase());
+  };
+
+  // Password strength validation
+  const validatePasswordStrength = (password: string): { isValid: boolean; message?: string } => {
+    if (!password) return { isValid: false, message: t('auth:validation.passwordRequired') as string };
+    if (password.length < 8) return { isValid: false, message: t('auth:validation.passwordTooShort') as string };
+    if (password.length > 128) return { isValid: false, message: t('auth:validation.passwordTooLong') as string };
+    
+    const hasLower = /[a-z]/.test(password);
+    const hasUpper = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    
+    const strength = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
+    if (strength < 3) return { isValid: false, message: t('auth:validation.passwordWeak') as string };
+    
+    return { isValid: true };
   };
 
   useEffect(() => {
@@ -332,13 +297,30 @@ export default function LoginScreen() {
 
   const handleEmailSubmit = async () => {
       try {
+        // Check rate limiting
+        if (isRateLimited) {
+          const timeLeft = lockoutEndTime ? Math.ceil((lockoutEndTime.getTime() - Date.now()) / 1000) : 0;
+          if (timeLeft > 0) {
+            Alert.alert(
+              t('auth:security.rateLimitTitle') as string, 
+              `${t('auth:security.rateLimitMessage')} ${Math.ceil(timeLeft / 60)} דקות`
+            );
+            return;
+          } else {
+            setIsRateLimited(false);
+            setLockoutEndTime(null);
+            setLoginAttempts(0);
+          }
+        }
+
         const email = emailValue.trim().toLowerCase();
         if (!email || !validateEmailFormat(email)) {
           Alert.alert(t('common:error') as string, t('auth:email.invalidFormat') as string);
           return;
         }
-        if (!passwordValue || passwordValue.length < 6) {
-          Alert.alert(t('common:error') as string, t('auth:email.passwordTooShort') as string);
+        const passwordValidation = validatePasswordStrength(passwordValue);
+        if (!passwordValidation.isValid) {
+          Alert.alert(t('common:error') as string, passwordValidation.message || t('auth:email.passwordTooShort') as string);
           return;
         }
       setIsEmailBusy(true);
@@ -352,8 +334,19 @@ export default function LoginScreen() {
         try {
           fbUser = await fbSignInWithEmail(email, passwordValue);
         } catch (e: any) {
-          setEmailStatusMessage(t('auth:email.invalidPassword') as string);
-          setEmailStatusColor('#C62828');
+          // Handle failed login attempt
+          const newAttempts = loginAttempts + 1;
+          setLoginAttempts(newAttempts);
+          
+          if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
+            setIsRateLimited(true);
+            setLockoutEndTime(new Date(Date.now() + LOCKOUT_DURATION));
+            setEmailStatusMessage(t('auth:security.accountLocked') as string);
+            setEmailStatusColor('#D32F2F');
+          } else {
+            setEmailStatusMessage(`${t('auth:email.invalidPassword')} (${newAttempts}/${MAX_LOGIN_ATTEMPTS})`);
+            setEmailStatusColor('#C62828');
+          }
           return;
         }
         const userData = {
@@ -500,7 +493,16 @@ export default function LoginScreen() {
     }
   };
 
-  // REMOVED: No automatic navigation - user must manually navigate after login/guest selection
+    // Auto-navigation after successful authentication
+  useEffect(() => {
+    if (selectedUser && !isGuestMode) {
+      // Navigate to home after successful login
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'HomeStack' }],
+      });
+    }
+  }, [selectedUser, isGuestMode, navigation]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -534,12 +536,16 @@ export default function LoginScreen() {
           <Text style={styles.subtitle}>{t('auth:subtitle') || ''}</Text>
           
           <View style={styles.buttonsContainer}>
+            {/* Primary Authentication Method */}
             <SimpleGoogleLoginButton />
             
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>{t('auth:orContinueWith')}</Text>
+              <View style={styles.dividerLine} />
+            </View>
 
-
-
-            {/* Email Register/Login CTA - collapsible with input + status line */}
+            {/* Email Register/Login CTA */}
             <View 
               style={styles.orgLoginContainer}
               accessible={true}
@@ -622,7 +628,10 @@ export default function LoginScreen() {
                       disabled={isEmailBusy}
                       activeOpacity={0.85}
                     >
-                      <Text style={styles.orgActionButtonText}>{isEmailBusy ? t('auth:email.checking') : t('auth:email.continue')}</Text>
+                      <View style={styles.buttonContent}>
+                        {isEmailBusy && <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />}
+                        <Text style={styles.orgActionButtonText}>{isEmailBusy ? t('auth:email.checking') : t('auth:email.continue')}</Text>
+                      </View>
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity
@@ -631,7 +640,10 @@ export default function LoginScreen() {
                       disabled={isEmailBusy}
                       activeOpacity={0.85}
                     >
-                      <Text style={styles.orgActionButtonText}>{isEmailBusy ? t('auth:email.submitting') : t('auth:email.submit')}</Text>
+                      <View style={styles.buttonContent}>
+                        {isEmailBusy && <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />}
+                        <Text style={styles.orgActionButtonText}>{isEmailBusy ? t('auth:email.submitting') : t('auth:email.submit')}</Text>
+                      </View>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -732,7 +744,10 @@ export default function LoginScreen() {
                     disabled={isCheckingOrg}
                     activeOpacity={0.85}
                   >
-                    <Text style={styles.orgActionButtonText}>{isCheckingOrg ? t('auth:org.checking') : t('auth:org.continue')}</Text>
+                    <View style={styles.buttonContent}>
+                      {isCheckingOrg && <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />}
+                      <Text style={styles.orgActionButtonText}>{isCheckingOrg ? t('auth:org.checking') : t('auth:org.continue')}</Text>
+                    </View>
                   </TouchableOpacity>
                 </View>
               )}
@@ -756,105 +771,14 @@ export default function LoginScreen() {
               <Text style={styles.guestButtonText}>{t('auth:continueAsGuest')}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.characterButton,
-                !selectedCharacter && styles.disabledButton
-              ]}
-              onPress={handleLoginWithCharacter}
-              disabled={!selectedCharacter}
-              activeOpacity={selectedCharacter ? 0.8 : 1}
-            >
-              <Text style={[
-                styles.characterButtonText,
-                !selectedCharacter && styles.disabledButtonText
-              ]}>
-               {selectedCharacter ? t('auth:characters.loginAsSelected') : t('auth:characters.selectTitle')}
-              </Text>
-            </TouchableOpacity>
+            {/* Character login removed for production */}
           </View>
         </View>
 
-        {/* Characters Section */}
-        <View style={styles.charactersSection}>
-          <Text style={styles.characterTitle}>{t('auth:characters.selectTitle')}</Text>
-          <Text style={styles.characterSubtitle}>{t('auth:characters.selectSubtitle')}</Text>
-          
-          <ScrollView 
-            horizontal 
-            style={styles.charactersContainer} 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.charactersContent}
-          >
-            {characterTypes && characterTypes.length > 0 ? (
-              characterTypes.map((character) => (
-                <TouchableOpacity
-                  key={character.id}
-                  style={[
-                    styles.characterCard,
-                    selectedCharacter === character.id && styles.selectedCharacter,
-                  ]}
-                  onPress={() => handleCharacterSelect(character.id)}
-                  activeOpacity={0.7}
-                >
-                  <Animated.View
-                    style={{
-                      transform: [{ scale: animationValues[character.id] }],
-                      width: '100%',
-                      height: '100%',
-                    }}
-                  >
-                    <View style={styles.avatarContainer}>
-                      <Image source={{ uri: character.avatar }} style={styles.characterAvatar} />
-                      {selectedCharacter === character.id && (
-                        <View style={styles.checkmarkContainer}>
-                          <Ionicons name="checkmark-circle" size={24} color="#FF6B9D" />
-                        </View>
-                      )}
-                    </View>
-                    <View style={styles.characterInfo}>
-                      <Text style={[
-                        styles.characterName,
-                        selectedCharacter === character.id && styles.selectedCharacterName
-                      ]}>
-                        {character.name}
-                      </Text>
-                      <Text style={[
-                        styles.characterDescription,
-                        selectedCharacter === character.id && styles.selectedCharacterDescription
-                      ]}>
-                        {character.description}
-                      </Text>
-                      <View style={styles.characterStats}>
-                        <Text style={[
-                          styles.characterStat,
-                          selectedCharacter === character.id && styles.selectedCharacterStat
-                        ]}>
-                          💎 {character.karmaPoints} {t('profile:stats.karmaPointsSuffix')}
-                        </Text>
-                        <Text style={[
-                          styles.characterStat,
-                          selectedCharacter === character.id && styles.selectedCharacterStat
-                        ]}>
-                          📍 {character.location.city}
-                        </Text>
-                      </View>
-                    </View>
-                  </Animated.View>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <View style={styles.errorContainer}>
-                 <Text style={styles.errorText}>{t('auth:characters.loadError')}</Text>
-                <Text style={styles.errorSubtext}>characterTypes length: {characterTypes?.length || 'undefined'}</Text>
-              </View>
-            )}
-          </ScrollView>
-        </View>
-
-        {/* Footer Section */}
+        {/* Improved Footer Section */}
         <View style={styles.footerSection}>
           <Text style={styles.infoText}>{t('common:freeAppNotice')}</Text>
+          <Text style={styles.versionText}>גרסה 1.0.0 | אפליקציה בטוחה ומאושרת</Text>
         </View>
       </View>
         </ScrollContainer>
@@ -892,7 +816,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F5F9FF',
+    backgroundColor: '#FAFBFF',
   },
   container: {
     flex: 1,
@@ -919,10 +843,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 1,
   },
-  charactersSection: {
-    flex: 1,
-    marginBottom: 20,
-  },
+  // Characters section removed for production
   footerSection: {
     marginTop: 20,
   },
@@ -960,40 +881,24 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   title: {
-    marginTop: Platform.OS === 'web' ? 10 : 20, // Less margin on web
-    fontSize: Platform.OS === 'web' ? 32 : 36, // Slightly smaller on web
-    fontWeight: 'bold',
-    color: '#2C2C2C',
-    marginBottom: 10,
+    marginTop: Platform.OS === 'web' ? 20 : 30,
+    fontSize: Platform.OS === 'web' ? 34 : 38,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    marginBottom: 12,
     textAlign: 'center',
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: Platform.OS === 'web' ? 18 : 20, // Slightly smaller on web
-    color: '#444444',
+    fontSize: Platform.OS === 'web' ? 18 : 20,
+    color: '#4A5568',
     textAlign: 'center',
-    marginBottom: Platform.OS === 'web' ? 40 : 100, // Much less space on web
-    fontWeight: '600',
+    marginBottom: Platform.OS === 'web' ? 50 : 80,
+    fontWeight: '500',
+    lineHeight: 26,
+    paddingHorizontal: 20,
   },
-  characterTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#2C2C2C',
-    marginBottom: 5,
-    textAlign: 'center',
-  },
-  characterSubtitle: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 5,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  charactersContainer: {
-    flex: 1,
-  },
-  charactersContent: {
-    paddingHorizontal: 15,
-  },
+  // Character-related styles removed for production
   errorContainer: {
     alignItems: 'center',
     padding: 20,
@@ -1009,118 +914,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 5,
   },
-  characterCard: {
-    flexDirection: 'column',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: Platform.OS === 'web' ? 12 : 16, // Less padding on web
-    marginRight: 12,
-    marginBottom: 12,
-    marginTop: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    minHeight: Platform.OS === 'web' ? 180 : 220, // Shorter on web
-    width: Platform.OS === 'web' 
-      ? Math.max(Dimensions.get('window').width * 0.28, 120) // Slightly smaller on web
-      : Math.max(Dimensions.get('window').width * 0.3, 130),
-    maxWidth: Platform.OS === 'web' ? 150 : 170, // Smaller max width on web
-  },
-
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: 8,
-  },
-  checkmarkContainer: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  selectedCharacter: {
-    // borderColor: '#FF6B9ֿD',
-    backgroundColor: 'rgba(255, 240, 245, 0.95)',
-    transform: [{ scale: 1.05 }],
-    shadowColor: '#FF6B9D',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  characterAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginBottom: 8,
-  },
-  characterInfo: {
-    alignItems: 'center',
-    width: '100%',
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  characterName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#2C2C2C',
-    marginBottom: 6,
-    textAlign: 'center',
-    flexWrap: 'wrap',
-  },
-  characterDescription: {
-    fontSize: 12,
-    color: '#666666',
-    marginBottom: 8,
-    lineHeight: 16,
-    textAlign: 'center',
-    flexWrap: 'wrap',
-  },
-  characterStats: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 4,
-    width: '100%',
-  },
-  characterStat: {
-    fontSize: 10,
-    color: '#888888',
-    textAlign: 'center',
-    flexWrap: 'wrap',
-  },
-  selectedCharacterName: {
-    color: '#FF6B9D',
-    fontWeight: '700',
-  },
-  selectedCharacterDescription: {
-    color: '#FF6B9D',
-  },
-  selectedCharacterStat: {
-    color: '#FF6B9D',
-    fontWeight: '600',
-  },
+  // All character-related styles removed for production
   buttonsContainer: {
     marginBottom: 20,
     width: '100%',
     alignSelf: 'stretch',
   },
-  characterButton: {
-    backgroundColor: '#9C27B0',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
+  // Button styles for general use
   disabledButton: {
     backgroundColor: '#CCCCCC',
     opacity: 0.6,
@@ -1128,27 +928,21 @@ const styles = StyleSheet.create({
   disabledButtonText: {
     color: '#999999',
   },
-  characterButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
   guestButton: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderWidth: 2,
+    borderColor: '#E0E7FF',
     borderRadius: 12,
-    padding: 16,
+    padding: 18,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#4C7EFF',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 4,
     width: '100%',
-    marginVertical: 6,
-    marginBottom: 22,
+    marginVertical: 8,
+    marginBottom: 24,
   },
   guestButtonText: {
     fontSize: 16,
@@ -1161,6 +955,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666666',
     textAlign: 'center',
+    marginBottom: 8,
+  },
+  versionText: {
+    fontSize: 12,
+    color: '#999999',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  // Divider Styles
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+    marginHorizontal: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E8E8E8',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    fontSize: 14,
+    color: '#888888',
+    fontWeight: '500',
   },
   clearDataButton: {
     backgroundColor: '#FF4444',
@@ -1296,6 +1115,12 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     width: 40,
     height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Button content for loading states
+  buttonContent: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
