@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 import { useUser } from '../context/UserContext';
 import { db } from '../utils/databaseService';
 

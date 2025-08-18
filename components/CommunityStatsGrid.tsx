@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 import { useTranslation } from 'react-i18next';
 import type { StatDetails } from './StatDetailsModal';
 import { useUser } from '../context/UserContext';

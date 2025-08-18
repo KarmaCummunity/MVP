@@ -8,7 +8,7 @@ import {
   LayoutChangeEvent,
 } from "react-native";
 import colors from "../globals/colors";
-import { FontSizes } from "../globals/constants";
+import { fontSizes as FontSizes } from "../globals/appConstants";
 
 interface AutocompleteInputOnlyProps {
   label: string;

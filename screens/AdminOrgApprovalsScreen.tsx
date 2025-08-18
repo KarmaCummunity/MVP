@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 import { db } from '../utils/databaseService';
 import { useUser } from '../context/UserContext';
 

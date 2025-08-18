@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 import { useTranslation } from 'react-i18next';
 import { useUser } from '../context/UserContext';
 

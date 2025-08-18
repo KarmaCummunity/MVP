@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import colors from '../globals/colors';
-import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
+import { fontSizes as FontSizes, layoutConstants as LAYOUT_CONSTANTS } from '../globals/appConstants';
 import { useUser, type User } from '../context/UserContext';
 import { useTranslation } from 'react-i18next';
 

@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { Platform, View, Text, StyleSheet, Image, TouchableOpacity, Linking } from 'react-native';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 import { Ionicons } from '@expo/vector-icons';
 import { logger } from '../utils/loggerService';
 import ScrollContainer from '../components/ScrollContainer';

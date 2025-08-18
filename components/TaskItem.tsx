@@ -6,7 +6,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-n
 import { Ionicons } from '@expo/vector-icons';
 import { Task } from '../globals/types';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 
 interface TaskItemProps {
   task: Task;

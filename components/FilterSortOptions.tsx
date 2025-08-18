@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 
 type Filter = 'Pending' | 'Completed' | 'All';
 type SortBy = 'priority' | 'createdAt' | 'dueDate';

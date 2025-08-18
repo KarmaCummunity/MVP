@@ -22,7 +22,7 @@ import { TabView, TabBar, SceneMap } from 'react-native-tab-view';
 import type { SceneRendererProps, NavigationState } from 'react-native-tab-view';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 import { allUsers, CharacterType } from '../globals/characterTypes';
 import { getFollowStats, followUser, unfollowUser, getUpdatedFollowCounts } from '../utils/followService';
 import { useUser } from '../context/UserContext';

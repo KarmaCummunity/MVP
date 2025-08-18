@@ -28,7 +28,7 @@ import { getFollowing, getFollowers, getFollowSuggestions } from '../utils/follo
 import { createConversation, getAllConversations, conversationExists, sendMessage } from '../utils/chatService';
 import { CharacterType } from '../globals/characterTypes';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 import { Ionicons as Icon } from '@expo/vector-icons';
 
 type FilterType = 'all' | 'online' | 'highKarma' | 'recentFollowers';

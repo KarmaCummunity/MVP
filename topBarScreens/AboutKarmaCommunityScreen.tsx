@@ -5,7 +5,7 @@
 // - External deps: Shared colors, font sizes; localized text currently inline in Hebrew.
 import React, { memo } from 'react' // Import memo here
 import colors from '../globals/colors'
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Platform } from 'react-native';
 import ScrollContainer from '../components/ScrollContainer';

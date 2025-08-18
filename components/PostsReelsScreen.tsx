@@ -34,7 +34,7 @@ import CommentsModal from './CommentsModal';
 import logger from '../utils/logger';
 import { isBookmarked, addBookmark, removeBookmark } from '../utils/bookmarksService';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 import { characterTypes, CharacterType } from '../globals/characterTypes';
 import ScreenWrapper from './ScreenWrapper';
 import { db } from '../utils/databaseService';

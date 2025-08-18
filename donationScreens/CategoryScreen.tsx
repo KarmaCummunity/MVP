@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking, Alert } from 'react-native';
 import colors from '../globals/colors';
-import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
+import { fontSizes as FontSizes, layoutConstants as LAYOUT_CONSTANTS } from '../globals/appConstants';
 import HeaderComp from '../components/HeaderComp';
 import DonationStatsFooter from '../components/DonationStatsFooter';
 import { biDiTextAlign, isLandscape, scaleSize } from '../globals/responsive';

@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-na
 import { Message } from '../utils/chatService'; // Use new Message type
 import { useTranslation } from 'react-i18next';
 import colors from '../globals/colors'; // Assuming you have a Colors file
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { formatFileSize } from '../utils/fileService';
 

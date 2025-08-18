@@ -13,7 +13,7 @@ import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/
 import { useWebMode } from '../context/WebModeContext';
 import { useUser } from '../context/UserContext';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 
 const WebModeToggleOverlay: React.FC = () => {
   if (Platform.OS !== 'web') return null as any;

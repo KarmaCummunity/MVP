@@ -4,7 +4,7 @@ import ScrollContainer from '../components/ScrollContainer';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 import { useNavigation } from '@react-navigation/native';
 import { db } from '../utils/databaseService';
 import { useUser } from '../context/UserContext';

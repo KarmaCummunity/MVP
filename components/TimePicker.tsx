@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 import { useTranslation } from 'react-i18next';
 import { Ionicons as Icon } from '@expo/vector-icons';
 

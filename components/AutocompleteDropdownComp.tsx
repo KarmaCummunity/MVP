@@ -5,7 +5,7 @@
 // - Behavior: Opens modal with search, filters options client-side, calls `onValueChange` on select.
 // components/AutocompleteDropdownComp.tsx
 import React, { useState } from "react";
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 import colors from '../globals/colors';
 import {
   View,

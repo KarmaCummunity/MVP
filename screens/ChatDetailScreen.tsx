@@ -29,7 +29,7 @@ import { useUser } from '../context/UserContext';
 import { getMessages, sendMessage, markMessagesAsRead, Message, subscribeToMessages } from '../utils/chatService';
 import { pickImage, pickVideo, takePhoto, pickDocument, validateFile, FileData } from '../utils/fileService';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 

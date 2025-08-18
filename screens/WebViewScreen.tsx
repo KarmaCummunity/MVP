@@ -21,7 +21,7 @@ import { WebView } from 'react-native-webview';
 // useNavigation is still needed for navigating back on the web side
 import { NavigationProp, ParamListBase, useNavigation } from '@react-navigation/native';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 // WebBrowser is no longer needed as we are using WebView for native.
 // import * as WebBrowser from 'expo-web-browser';
 

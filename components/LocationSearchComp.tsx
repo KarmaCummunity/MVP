@@ -9,7 +9,7 @@ import {
   Platform,
 } from "react-native";
 import colors from "../globals/colors";
-import { FontSizes } from "../globals/constants";
+import { fontSizes as FontSizes } from "../globals/appConstants";
 import logger from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 
