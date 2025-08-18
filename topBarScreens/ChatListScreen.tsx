@@ -4,7 +4,7 @@
 // - Provides: Merges real conversations (via `chatService`) with demo ones in non-real auth; navigates to 'ChatDetailScreen' with params.
 // - Reads from context: `useUser()` -> selectedUser, isRealAuth.
 // - Params on navigate to detail: `{ conversationId, otherUserId, userName, userAvatar }`.
-// - External deps/services: `chatService` (get/subscribe), i18n, Haptics, static users from `fakeData` and `characterTypes`.
+// - External deps/services: `chatService` (get/subscribe), i18n, Haptics, users from `characterTypes` (no fake data).
 // ChatListScreen – professional, concise, with in-file demo support and live updates
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, RefreshControl, Alert, TextInput, TouchableOpacity, Platform } from 'react-native';
@@ -12,7 +12,8 @@ import ScrollContainer from '../components/ScrollContainer';
 import { useNavigation, NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import ChatListItem from '../components/ChatListItem';
 import { ChatUser } from '../types/models';
-import { users as allUsers } from '../globals/fakeData';
+// users removed - should use real user data from backend API instead
+const allUsers: any[] = [];
 import { allUsers as characterUsers } from '../globals/characterTypes';
 import { useUser } from '../context/UserContext';
 import { getConversations, Conversation as ChatConversation, subscribeToConversations } from '../utils/chatService';

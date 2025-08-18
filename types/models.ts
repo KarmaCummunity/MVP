@@ -1,5 +1,4 @@
 // Type definitions for Karma Community App
-// Moved from fakeData.ts to proper types file
 
 export interface Message {
   id: string;

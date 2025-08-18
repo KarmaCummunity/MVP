@@ -23,12 +23,11 @@ import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { useTranslation } from 'react-i18next';
 import ScrollContainer from '../components/ScrollContainer';
-import { 
-  donations, 
-  communityEvents, 
-  users, 
-  categories 
-} from '../globals/fakeData';
+import { donationCategories as categories } from '../globals/categories';
+// Fake data removed - should be fetched from backend API instead
+const donations: any[] = [];
+const communityEvents: any[] = [];
+const users: any[] = [];
 import { useUser } from '../context/UserContext';
 import { db } from '../utils/databaseService';
 import GuestModeNotice from '../components/GuestModeNotice';

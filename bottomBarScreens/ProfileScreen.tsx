@@ -35,7 +35,8 @@ import ScrollContainer from '../components/ScrollContainer';
 import ProfileCompletionBanner from '../components/ProfileCompletionBanner';
 import { createShadowStyle } from '../globals/styles';
 import { scaleSize } from '../globals/responsive';
-import { users } from '../globals/fakeData';
+// users removed - should use real user data from backend API instead
+const users: any[] = [];
 import { allUsers } from '../globals/characterTypes';
 import { getFollowStats, followUser, unfollowUser, createSampleFollowData } from '../utils/followService';
 import { createSampleChatData } from '../utils/chatService';
