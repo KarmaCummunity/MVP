@@ -53,6 +53,14 @@ import SimpleGoogleLoginButton from '../components/SimpleGoogleLoginButton';
 import { useTranslation } from 'react-i18next';
 import i18n from '../app/i18n';
 import ScrollContainer from '../components/ScrollContainer';
+import { scaleSize, getScreenInfo, vw, vh, biDiTextAlign } from '../globals/responsive';
+import { 
+  fontSizes, 
+  layoutConstants, 
+  componentSizes, 
+  iconSizes 
+} from '../globals/appConstants';
+import colors from '../globals/colors';
 
 export default function LoginScreen() {
   // TODO: Extract state management to custom hooks (useAuthState, useLoginForm)
@@ -60,8 +68,10 @@ export default function LoginScreen() {
   // TODO: Add comprehensive analytics tracking for auth flow
   const { setSelectedUserWithMode, setGuestMode, selectedUser, isGuestMode } = useUser();
   const { t } = useTranslation(['auth', 'common', 'settings']);
-  // Character selection removed for production
   const navigation = useNavigation<any>();
+  
+  // Responsive screen info
+  const { isTablet, isDesktop, isSmallPhone } = getScreenInfo();
   // Org login UI state
   const [orgLoginOpen, setOrgLoginOpen] = useState(false);
   const [orgQuery, setOrgQuery] = useState('');
@@ -539,11 +549,6 @@ export default function LoginScreen() {
             {/* Primary Authentication Method */}
             <SimpleGoogleLoginButton />
             
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>{t('auth:orContinueWith')}</Text>
-              <View style={styles.dividerLine} />
-            </View>
 
             {/* Email Register/Login CTA */}
             <View 
@@ -813,315 +818,342 @@ export default function LoginScreen() {
   );
 }
 
+// Responsive variables outside component for better performance
+const { isTablet, isDesktop, isSmallPhone } = getScreenInfo();
+
+const spacing = {
+  xs: scaleSize(layoutConstants.SPACING.XS),
+  sm: scaleSize(layoutConstants.SPACING.SM),
+  md: scaleSize(layoutConstants.SPACING.MD),
+  lg: scaleSize(layoutConstants.SPACING.LG),
+  xl: scaleSize(layoutConstants.SPACING.XL),
+};
+
+const responsive = {
+  padding: isDesktop ? spacing.xl : isTablet ? spacing.lg : spacing.md,
+  titleSize: isDesktop ? scaleSize(42) : isTablet ? scaleSize(38) : scaleSize(34),
+  subtitleSize: isDesktop ? scaleSize(22) : isTablet ? scaleSize(20) : scaleSize(18),
+  buttonPadding: isDesktop ? spacing.lg : isTablet ? spacing.md : spacing.sm,
+  logoSize: isDesktop ? '100%' : isTablet ? '110%' : '120%' as any,
+  maxWidth: isDesktop ? vw(40) : isTablet ? vw(60) : vw(90),
+};
+
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#FAFBFF',
-  },
-  container: {
-    flex: 1,
-    padding: 20,
-    position: 'relative',
-  },
-  backgroundLogoContainer: {
-    position: 'absolute',
-    top: Platform.OS === 'web' ? 30 : 50, // Less top space on web
-    left: 0,
-    right: 0,
-    height: Platform.OS === 'web' ? '40%' : '50%', // Less height on web
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#E3F2FD',
-    opacity: 0.4,
-  },
-  backgroundLogo: {
-    width: Platform.OS === 'web' ? '120%' : '145%', // Smaller on web
-    height: Platform.OS === 'web' ? '120%' : '145%', // Smaller on web
-  },
-  headerSection: {
-    marginBottom: 30,
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  // Characters section removed for production
-  footerSection: {
-    marginTop: 20,
-  },
-  languageFabContainer: {
-    position: 'absolute',
-    top: 12,
-    right: 16,
-    alignItems: 'flex-end',
-    zIndex: 20,
-  },
-  languageFab: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  languageMenu: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    borderRadius: 10,
-    paddingVertical: 6,
-    marginTop: 5,
-    minWidth: 130,
-  },
-  languageMenuItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  languageMenuText: {
-    fontSize: 14,
-    color: '#333333',
-    textAlign: 'right',
-  },
-  title: {
-    marginTop: Platform.OS === 'web' ? 20 : 30,
-    fontSize: Platform.OS === 'web' ? 34 : 38,
-    fontWeight: '800',
-    color: '#1A1A1A',
-    marginBottom: 12,
-    textAlign: 'center',
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: Platform.OS === 'web' ? 18 : 20,
-    color: '#4A5568',
-    textAlign: 'center',
-    marginBottom: Platform.OS === 'web' ? 50 : 80,
-    fontWeight: '500',
-    lineHeight: 26,
-    paddingHorizontal: 20,
-  },
-  // Character-related styles removed for production
-  errorContainer: {
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#FF4444',
-    textAlign: 'center',
-  },
-  errorSubtext: {
-    fontSize: 14,
-    color: '#888888',
-    textAlign: 'center',
-    marginTop: 5,
-  },
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.backgroundSecondary,
+    },
+    container: {
+      flex: 1,
+      padding: responsive.padding,
+      position: 'relative',
+      maxWidth: responsive.maxWidth,
+      alignSelf: 'center',
+      width: '100%',
+    },
+    backgroundLogoContainer: {
+      position: 'absolute',
+      top: isDesktop ? vh(8) : isTablet ? vh(10) : vh(12),
+      left: 0,
+      right: 0,
+      height: isDesktop ? vh(35) : isTablet ? vh(40) : vh(45),
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.blueLight || '#E3F2FD',
+      opacity: 0.3,
+    },
+    backgroundLogo: {
+      width: responsive.logoSize,
+      height: responsive.logoSize,
+    },
+    headerSection: {
+      marginBottom: isDesktop ? spacing.xl : spacing.lg,
+      alignItems: 'center',
+      zIndex: 1,
+      paddingHorizontal: spacing.md,
+    },
+    footerSection: {
+      marginTop: spacing.lg,
+      paddingBottom: spacing.md,
+    },
+    languageFabContainer: {
+      position: 'absolute',
+      top: spacing.sm,
+      right: spacing.md,
+      alignItems: 'flex-end',
+      zIndex: 20,
+    },
+    languageFab: {
+      width: scaleSize(componentSizes.buttonSmall + 4),
+      height: scaleSize(componentSizes.buttonSmall + 4),
+      borderRadius: scaleSize((componentSizes.buttonSmall + 4) / 2),
+      backgroundColor: colors.transparent,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    languageMenu: {
+      backgroundColor: colors.backgroundPrimary,
+      borderWidth: 1,
+      borderColor: colors.border || '#E8E8E8',
+      borderRadius: scaleSize(layoutConstants.borderRadiusMedium),
+      paddingVertical: spacing.xs,
+      marginTop: spacing.xs,
+      minWidth: scaleSize(130),
+      shadowColor: colors.shadow || '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    languageMenuItem: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+    },
+    languageMenuText: {
+      fontSize: scaleSize(fontSizes.body),
+      color: colors.textPrimary,
+      textAlign: biDiTextAlign('right'),
+      fontWeight: '500',
+    },
+    title: {
+      marginTop: isDesktop ? spacing.lg : spacing.md,
+      fontSize: responsive.titleSize,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      marginBottom: spacing.sm,
+      textAlign: 'center',
+      letterSpacing: -0.5,
+    },
+    subtitle: {
+      fontSize: responsive.subtitleSize,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginBottom: isDesktop ? spacing.xl * 2 : isTablet ? spacing.xl : spacing.lg,
+      fontWeight: '500',
+      lineHeight: responsive.subtitleSize * 1.4,
+      paddingHorizontal: spacing.md,
+    },
+    // Error handling styles
+    errorContainer: {
+      alignItems: 'center',
+      padding: spacing.lg,
+    },
+    errorText: {
+      fontSize: scaleSize(fontSizes.medium),
+      color: colors.error || '#FF4444',
+      textAlign: 'center',
+      fontWeight: '600',
+    },
+    errorSubtext: {
+      fontSize: scaleSize(fontSizes.body),
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginTop: spacing.xs,
+    },
   // All character-related styles removed for production
-  buttonsContainer: {
-    marginBottom: 20,
-    width: '100%',
-    alignSelf: 'stretch',
-  },
-  // Button styles for general use
-  disabledButton: {
-    backgroundColor: '#CCCCCC',
-    opacity: 0.6,
-  },
-  disabledButtonText: {
-    color: '#999999',
-  },
-  guestButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#E0E7FF',
-    borderRadius: 12,
-    padding: 18,
-    alignItems: 'center',
-    shadowColor: '#4C7EFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    width: '100%',
-    marginVertical: 8,
-    marginBottom: 24,
-  },
-  guestButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#666666',
-    textAlign: 'center',
-    width: '100%',
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  versionText: {
-    fontSize: 12,
-    color: '#999999',
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  // Divider Styles
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-    marginHorizontal: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E8E8E8',
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    fontSize: 14,
-    color: '#888888',
-    fontWeight: '500',
-  },
-  clearDataButton: {
-    backgroundColor: '#FF4444',
-    borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
-  },
-  clearDataButtonText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  // Org login styles
-  orgLoginContainer: {
-    marginVertical: 3,
-  },
-  orgButton: {
-    borderColor: '#FF6B9D',
-    width: '100%',
-  },
-  emailButton: {
-    borderColor: '#4C7EFF',
-    marginTop: 12,
-    width: '100%',
-  },
-  orgExpandedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    borderRadius: 12,
-    padding: 6,
-    marginHorizontal: 0,
-    marginVertical: 3,
-    gap: 8,
-    width: '100%',
-  },
-  orgMiniButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,107,157,0.08)',
-  },
-  orgInput: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  orgActionButton: {
-    backgroundColor: '#FF6B9D',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  orgActionButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  suggestionsBox: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    borderRadius: 10,
-    marginTop: 6,
-    marginBottom: 6,
-    overflow: 'hidden',
-  },
-  suggestionItem: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  suggestionText: {
-    fontSize: 14,
-    color: '#333333',
-    textAlign: 'right',
-  },
-  inputWrapper: {
-    position: 'relative',
-    flex: 1,
-  },
-  eyeToggle: {
-    position: 'absolute',
-    right: 5,
-    top: 0,
-    bottom: 0,
-    width: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emailStatusRow: {
-    marginTop: 6,
-    marginBottom: 6,
-    paddingHorizontal: 6,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'flex-start',
-  },
-  emailStatusText: {
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'right',
-  },
-  smallResetButton: {
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    borderRadius: 0,
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-    marginLeft: 8,
-  },
-  smallResetContainer: {
-    paddingHorizontal: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-    marginBottom: 4,
-  },
-  smallResetText: {
-    fontSize: 13,
-    color: '#1976D2',
-    fontWeight: '700',
-    textDecorationLine: 'underline',
-  },
-  passwordEyeButton: {
-    marginLeft: 6,
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Button content for loading states
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-}); 
+    buttonsContainer: {
+      marginBottom: spacing.lg,
+      width: '100%',
+      alignSelf: 'stretch',
+      gap: spacing.sm,
+    },
+    // Button styles for general use
+    disabledButton: {
+      backgroundColor: colors.disabled || '#CCCCCC',
+      opacity: 0.6,
+    },
+    disabledButtonText: {
+      color: colors.textDisabled || '#999999',
+    },
+    guestButton: {
+      backgroundColor: colors.backgroundPrimary,
+      borderWidth: 2,
+      borderColor: colors.blueLight || '#E0E7FF',
+      borderRadius: scaleSize(layoutConstants.borderRadiusMedium),
+      padding: responsive.buttonPadding,
+      alignItems: 'center',
+      shadowColor: colors.primary || '#4C7EFF',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 4,
+      width: '100%',
+      marginVertical: spacing.xs,
+      minHeight: scaleSize(componentSizes.buttonLarge),
+    },
+    guestButtonText: {
+      fontSize: scaleSize(fontSizes.medium),
+      fontWeight: '600',
+      color: colors.textSecondary,
+      textAlign: 'center',
+      width: '100%',
+    },
+    infoText: {
+      fontSize: scaleSize(fontSizes.body),
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginBottom: spacing.xs,
+    },
+    versionText: {
+      fontSize: scaleSize(fontSizes.small),
+      color: colors.textTertiary || '#999999',
+      textAlign: 'center',
+      fontStyle: 'italic',
+    },
+    clearDataButton: {
+      backgroundColor: colors.error || '#FF4444',
+      borderRadius: scaleSize(layoutConstants.borderRadiusSmall),
+      padding: spacing.sm,
+      alignItems: 'center',
+    },
+    clearDataButtonText: {
+      fontSize: scaleSize(fontSizes.body),
+      color: colors.backgroundPrimary,
+      fontWeight: '600',
+    },
+    // Organization and Email login styles
+    orgLoginContainer: {
+      marginVertical: spacing.xs,
+    },
+    orgButton: {
+      borderColor: colors.pink || '#FF6B9D',
+      width: '100%',
+    },
+    emailButton: {
+      borderColor: colors.primary || '#4C7EFF',
+      marginTop: spacing.sm,
+      width: '100%',
+    },
+    orgExpandedRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundPrimary,
+      borderWidth: 1,
+      borderColor: colors.border || '#E8E8E8',
+      borderRadius: scaleSize(layoutConstants.borderRadiusMedium),
+      padding: spacing.xs,
+      marginHorizontal: 0,
+      marginVertical: spacing.xs,
+      gap: spacing.xs,
+      width: '100%',
+      minHeight: scaleSize(componentSizes.buttonMedium + 8),
+    },
+    orgMiniButton: {
+      width: scaleSize(componentSizes.buttonMedium),
+      height: scaleSize(componentSizes.buttonMedium),
+      borderRadius: scaleSize(layoutConstants.borderRadiusSmall),
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.pinkLight || 'rgba(255,107,157,0.08)',
+    },
+    orgInput: {
+      flex: 1,
+      backgroundColor: colors.backgroundPrimary,
+      borderWidth: 1,
+      borderColor: colors.border || '#E8E8E8',
+      borderRadius: scaleSize(layoutConstants.borderRadiusSmall),
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+      fontSize: scaleSize(fontSizes.body),
+      color: colors.textPrimary,
+      textAlign: biDiTextAlign('right'),
+    },
+    orgActionButton: {
+      backgroundColor: colors.pink || '#FF6B9D',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: scaleSize(layoutConstants.borderRadiusSmall),
+      minWidth: scaleSize(80),
+    },
+    orgActionButtonText: {
+      color: colors.backgroundPrimary,
+      fontWeight: '700',
+      fontSize: scaleSize(fontSizes.body),
+      textAlign: 'center',
+    },
+    suggestionsBox: {
+      backgroundColor: colors.backgroundPrimary,
+      borderWidth: 1,
+      borderColor: colors.border || '#E8E8E8',
+      borderRadius: scaleSize(layoutConstants.borderRadiusSmall),
+      marginTop: spacing.xs,
+      marginBottom: spacing.xs,
+      overflow: 'hidden',
+      shadowColor: colors.shadow || '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    suggestionItem: {
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.sm,
+      borderBottomWidth: 0.5,
+      borderBottomColor: colors.headerBorder || '#F0F0F0',
+    },
+    suggestionText: {
+      fontSize: scaleSize(fontSizes.body),
+      color: colors.textPrimary,
+      textAlign: biDiTextAlign('right'),
+    },
+    inputWrapper: {
+      position: 'relative',
+      flex: 1,
+    },
+    eyeToggle: {
+      position: 'absolute',
+      right: spacing.xs,
+      top: 0,
+      bottom: 0,
+      width: scaleSize(componentSizes.buttonMedium),
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emailStatusRow: {
+      marginTop: spacing.xs,
+      marginBottom: spacing.xs,
+      paddingHorizontal: spacing.xs,
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'flex-start',
+    },
+    emailStatusText: {
+      fontSize: scaleSize(fontSizes.small),
+      fontWeight: '600',
+      textAlign: biDiTextAlign('right'),
+    },
+    smallResetButton: {
+      paddingHorizontal: 0,
+      paddingVertical: 0,
+      borderRadius: 0,
+      borderWidth: 0,
+      backgroundColor: colors.transparent,
+      marginLeft: spacing.xs,
+    },
+    smallResetContainer: {
+      paddingHorizontal: spacing.xs,
+      alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'center',
+      marginBottom: spacing.xs / 2,
+    },
+    smallResetText: {
+      fontSize: scaleSize(fontSizes.small),
+      color: colors.primary || '#1976D2',
+      fontWeight: '700',
+      textDecorationLine: 'underline',
+    },
+    passwordEyeButton: {
+      marginLeft: spacing.xs,
+      width: scaleSize(componentSizes.buttonMedium),
+      height: scaleSize(componentSizes.buttonMedium),
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    // Button content for loading states
+    buttonContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+});

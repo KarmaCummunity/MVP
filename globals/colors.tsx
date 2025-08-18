@@ -125,6 +125,15 @@ const colors = {
   white: '#FFFFFF',
   black: '#000000',
   clear: 'rgba(0, 0, 0, 0)',
+  
+  // Login screen specific colors
+  primaryLight: '#E0E7FF',
+  disabled: '#CCCCCC',
+  textDisabled: '#999999',
+  textTertiary: '#999999',
+  border: '#E8E8E8',
+  borderLight: '#F0F0F0',
+  shadow: '#000000',
 
   // Legacy compatibility (for existing code)
   // TODO: URGENT - Remove all legacy color aliases after migration
