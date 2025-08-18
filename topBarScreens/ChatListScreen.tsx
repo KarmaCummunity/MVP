@@ -18,7 +18,7 @@ import { allUsers as characterUsers } from '../globals/characterTypes';
 import { useUser } from '../context/UserContext';
 import { getConversations, Conversation as ChatConversation, subscribeToConversations } from '../utils/chatService';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 import ScreenWrapper from '../components/ScreenWrapper';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';

@@ -6,7 +6,7 @@ import ModeToggleButton from "../components/ModeToggleButton";
 import GuestModeNotice from "../components/GuestModeNotice";
 import colors from "../globals/colors";
 import { getScreenInfo, scaleSize, rowDirection } from "../globals/responsive";
-import { FontSizes } from "../globals/constants";
+import { fontSizes as FontSizes } from "../globals/appConstants";
 import { useUser } from "../context/UserContext";
 
 // TODO: Add comprehensive TypeScript interfaces for all props instead of loose types

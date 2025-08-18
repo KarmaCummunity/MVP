@@ -16,7 +16,7 @@ import {
   PanResponder,
 } from 'react-native';
 import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 // Fake data removed - should be fetched from backend API instead
 const charityNames: string[] = [];
 const charities: any[] = [];

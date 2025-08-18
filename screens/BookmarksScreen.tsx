@@ -32,7 +32,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../context/UserContext';
 import { getBookmarks, removeBookmark, Bookmark } from '../utils/bookmarksService';
 import colors from '../globals/colors';
-import { FontSizes, IconSizes } from '../globals/constants';
+import { fontSizes as FontSizes, iconSizes as IconSizes } from '../globals/appConstants';
 import { useTranslation } from 'react-i18next';
 
 export default function BookmarksScreen() {

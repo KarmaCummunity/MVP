@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import colors from "../globals/colors";
-import { FontSizes } from "../globals/constants";
+import { fontSizes as FontSizes } from "../globals/appConstants";
 
 // Define the props that the MenuComp component will accept
 interface MenuCompProps {

@@ -35,7 +35,7 @@ import AboutKarmaCommunityScreen from "../topBarScreens/AboutKarmaCommunityScree
 import NotificationsScreen from "../screens/NotificationsScreen";
 import colors from "../globals/colors"; // Adjust path if needed
 import { vw, getScreenInfo, isLandscape } from "../globals/responsive";
-import { LAYOUT_CONSTANTS } from "../globals/constants";
+import { layoutConstants as LAYOUT_CONSTANTS } from "../globals/appConstants";
 import { useUser } from "../context/UserContext";
 import { useWebMode } from "../context/WebModeContext";
 

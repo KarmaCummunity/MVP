@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 import colors from '../../globals/colors';
-import { FontSizes } from '../../globals/constants';
+import { fontSizes as FontSizes } from '../../globals/appConstants';
 
 export default function HomeScreen() {
   return (
