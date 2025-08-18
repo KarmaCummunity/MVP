@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { ChatConversation, ChatUser } from '../types/models';
 import colors from '../globals/colors'; // Assuming you have a Colors file
-import { FontSizes } from '../globals/constants';
+import { fontSizes as FontSizes } from '../globals/appConstants';
 
 interface ChatListItemProps {
   conversation: ChatConversation;

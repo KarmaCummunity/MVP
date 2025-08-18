@@ -20,10 +20,10 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import SearchBar from '../components/SearchBar';
 import colors from '../globals/colors';
-import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
+import { fontSizes as FontSizes, layoutConstants as LAYOUT_CONSTANTS } from '../globals/appConstants';
 import { useTranslation } from 'react-i18next';
 import ScrollContainer from '../components/ScrollContainer';
-import { donationCategories as categories } from '../globals/categories';
+import { donationCategories as categories } from '../globals/appConstants';
 // Fake data removed - should be fetched from backend API instead
 const donations: any[] = [];
 const communityEvents: any[] = [];

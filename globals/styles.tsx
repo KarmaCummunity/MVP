@@ -1,7 +1,7 @@
 import { StyleSheet, Dimensions, Platform } from "react-native";
 import colors from "./colors";
 import { biDiTextAlign, rowDirection, scaleSize } from "./responsive";
-import { FontSizes, LAYOUT_CONSTANTS } from "./constants";
+import { fontSizes as FontSizes, layoutConstants as LAYOUT_CONSTANTS } from "./appConstants";
 
 // TODO: CRITICAL - This styles file is extremely long (601+ lines). Split into themed modules:
 //   - baseStyles.ts for common/global styles

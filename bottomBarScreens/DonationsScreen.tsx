@@ -45,7 +45,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DonationsStackParamList } from '../globals/types';
 import colors from '../globals/colors';
-import { FontSizes, LAYOUT_CONSTANTS, IconSizes } from '../globals/constants';
+import { fontSizes as FontSizes, layoutConstants as LAYOUT_CONSTANTS, iconSizes as IconSizes } from '../globals/appConstants';
 import { useUser } from '../context/UserContext';
 import GuestModeNotice from '../components/GuestModeNotice';
 import DonationStatsFooter from '../components/DonationStatsFooter';

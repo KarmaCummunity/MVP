@@ -27,7 +27,7 @@ import { TabView, TabBar, SceneMap } from 'react-native-tab-view';
 import type { SceneRendererProps, NavigationState } from 'react-native-tab-view';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import colors from '../globals/colors';
-import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
+import { fontSizes as FontSizes, layoutConstants as LAYOUT_CONSTANTS } from '../globals/appConstants';
 import { useTranslation } from 'react-i18next';
 // currentUser removed - using selectedUser from context instead
 import { useUser } from '../context/UserContext';

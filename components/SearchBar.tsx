@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // Ensure @expo/vector-icons is installed
 import colors from "../globals/colors"; // Ensure this path is correct
-import { FontSizes, filterOptions as defaultFilterOptions, sortOptions as defaultSortOptions } from "../globals/constants";
+import { fontSizes as FontSizes, filterOptions as defaultFilterOptions, sortOptions as defaultSortOptions } from "../globals/appConstants";
 import { useTranslation } from 'react-i18next';
 import { createShadowStyle } from "../globals/styles";
 import { biDiTextAlign, rowDirection } from "../globals/responsive";

@@ -1,3 +1,5 @@
+// App.tsx
+
 // File overview:
 // - Purpose: Root application entry point for iOS/Android/Web with web mode support.
 // - Reached from: App registry (Expo) bootstraps this component.
@@ -14,7 +16,6 @@
 // - WebModeToggleOverlay positioned absolutely above all content
 // - Navigation container key changes with mode to trigger proper re-renders
 
-// App.tsx
 
 // TODO: Add proper error handling for font loading failures with fallback fonts
 // TODO: Implement proper deep linking configuration and testing
@@ -44,7 +45,7 @@ import { UserProvider } from './context/UserContext';
 import { WebModeProvider, useWebMode } from './context/WebModeContext';
 import { AppLoadingProvider, useAppLoading } from './context/AppLoadingContext';
 import WebModeToggleOverlay from './components/WebModeToggleOverlay';
-import { FontSizes } from "./globals/constants";
+import { fontSizes as FontSizes } from "./globals/appConstants";
 import { logger } from './utils/loggerService';
 import ErrorBoundary from './components/ErrorBoundary';
 // RTL is controlled via selected language in i18n and Settings

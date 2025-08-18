@@ -24,7 +24,7 @@ import Animated, {
   Easing,
   interpolate,
 } from "react-native-reanimated";
-import { FontSizes } from "../globals/constants";
+import { fontSizes as FontSizes } from "../globals/appConstants";
 // charities removed - should be fetched from backend API instead
 const charities: any[] = [];
 import { TouchableOpacity } from "react-native";

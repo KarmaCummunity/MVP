@@ -54,7 +54,7 @@ import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/n
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import colors from "../globals/colors";
-import { FontSizes, LAYOUT_CONSTANTS } from "../globals/constants";
+import { fontSizes as FontSizes, layoutConstants as LAYOUT_CONSTANTS } from "../globals/appConstants";
 import { useTranslation } from 'react-i18next';
 import CommunityStatsPanel from "../components/CommunityStatsPanel";
 import PostsReelsScreen from "../components/PostsReelsScreen";
