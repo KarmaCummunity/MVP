@@ -167,6 +167,25 @@ export const layoutConstants = {
   // Grid & Layout
   gridSpacing: 8,
   listItemHeight: 60,
+  
+  // Spacing (for backward compatibility with old styles.tsx)
+  SPACING: {
+    XS: 4,
+    SM: 8,
+    MD: 16,
+    LG: 24,
+    XL: 32,
+  },
+  
+  // Panel and Layout Constants (from old constants.tsx)
+  PANEL_OFFSET: 50,
+  BOTTOM_NAV_HEIGHT: 80,
+  TOP_BAR_HEIGHT: 60,
+  BORDER_RADIUS: {
+    SMALL: 8,
+    MEDIUM: 12,
+    LARGE: 16,
+  },
 } as const;
 
 // ====================================
