@@ -87,32 +87,26 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
     return [...typeSpecific, ...itemsFilterOptionsBase];
   }, [itemType]);
 
-  const dummyItems: DonationItem[] = useMemo(() => [
-    { id: 'i1', ownerId: 'u1', title: 'ספת בד אפורה 3 מושבים', category: 'furniture', condition: 'used', location: 'תל אביב', price: 0, rating: 4.7, timestamp: new Date().toISOString(), tags: ['ספות'], qty: 1 },
-    { id: 'i2', ownerId: 'u2', title: 'ארון 2 דלתות לבן', category: 'furniture', condition: 'like_new', location: 'אשדוד', price: 50, rating: 4.6, timestamp: new Date().toISOString(), tags: ['ארונות'], qty: 1 },
-    { id: 'i3', ownerId: 'u3', title: 'מכנסי ג׳ינס נשים M', category: 'clothes', condition: 'like_new', location: 'ירושלים', price: 0, rating: 4.8, timestamp: new Date().toISOString(), tags: ['נשים'], qty: 1 },
-    { id: 'i4', ownerId: 'u4', title: 'מעיל חורף ילדים 6Y', category: 'clothes', condition: 'used', location: 'חיפה', price: 20, rating: 4.4, timestamp: new Date().toISOString(), tags: ['ילדים'], qty: 1 },
-    { id: 'i5', ownerId: 'u5', title: 'מיקסר יד חשמלי', category: 'general', condition: 'like_new', location: 'רמת גן', price: 30, rating: 4.5, timestamp: new Date().toISOString(), tags: ['מטבח'], qty: 1 },
-  ], []);
+  // Demo items removed - using only real data from backend
 
   useEffect(() => {
     const load = async () => {
       try {
         const uid = selectedUser?.id || 'guest';
         const my = (await db.listDonations(uid)) as DonationItem[];
-        const merged: DonationItem[] = [...dummyItems, ...my];
+        const merged: DonationItem[] = [...my];
         const forType: DonationItem[] = merged.filter(i => itemType === 'general' ? true : i.category === itemType);
         setAllItems(forType);
         setFilteredItems(forType);
         setRecentMine(my.filter(i => itemType === 'general' ? true : i.category === itemType));
       } catch (e) {
-        setAllItems(dummyItems.filter(i => itemType === 'general' ? true : i.category === itemType));
-        setFilteredItems(dummyItems.filter(i => itemType === 'general' ? true : i.category === itemType));
+        setAllItems([]);
+        setFilteredItems([]);
         setRecentMine([]);
       }
     };
     load();
-  }, [selectedUser, itemType, dummyItems]);
+  }, [selectedUser, itemType]);
 
   const getFilteredItems = useCallback(() => {
     let filtered = [...allItems];

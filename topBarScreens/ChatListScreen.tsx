@@ -11,7 +11,8 @@ import { View, Text, StyleSheet, RefreshControl, Alert, TextInput, TouchableOpac
 import ScrollContainer from '../components/ScrollContainer';
 import { useNavigation, NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import ChatListItem from '../components/ChatListItem';
-import { users as allUsers, ChatUser } from '../globals/fakeData';
+import { ChatUser } from '../types/models';
+import { users as allUsers } from '../globals/fakeData';
 import { allUsers as characterUsers } from '../globals/characterTypes';
 import { useUser } from '../context/UserContext';
 import { getConversations, Conversation as ChatConversation, subscribeToConversations } from '../utils/chatService';
@@ -22,17 +23,7 @@ import { Ionicons as Icon } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import * as Haptics from 'expo-haptics';
 
-// Demo users (kept in-file for MVP – remove when real users are plugged in)
-const DEMO_USERS: ChatUser[] = [
-  { id: 'dummy_user_1', name: 'יוזר דמה 1', avatar: 'https://i.pravatar.cc/150?u=dummy_user_1', isOnline: true },
-  { id: 'dummy_user_2', name: 'יוזר דמה 2', avatar: 'https://i.pravatar.cc/150?u=dummy_user_2', isOnline: false, lastSeen: new Date(Date.now() - 86400000).toISOString() },
-];
-
-// Demo conversations (merged with real ones; participant[0] will be switched to current user)
-const DEMO_CONVERSATIONS: ChatConversation[] = [
-  { id: 'dummy_conv_1', participants: ['user001', 'dummy_user_1'], lastMessageText: 'זוהי הודעת דמה ראשונה.', lastMessageTime: new Date().toISOString(), unreadCount: 2, createdAt: new Date().toISOString() },
-  { id: 'dummy_conv_2', participants: ['user001', 'dummy_user_2'], lastMessageText: 'הודעת דמה שנייה, קצת יותר ארוכה.', lastMessageTime: new Date(Date.now() - 3600000).toISOString(), unreadCount: 0, createdAt: new Date(Date.now() - 3600000).toISOString() },
-];
+// Demo data removed - using only real data from backend
 
 export default function ChatListScreen() {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -51,8 +42,7 @@ export default function ChatListScreen() {
     setRefreshing(true);
     try {
       const realConversations = await getConversations(selectedUser.id);
-      const demoForUser = isRealAuth ? [] : DEMO_CONVERSATIONS.map(c => ({ ...c, participants: [selectedUser.id, c.participants[1]] }));
-      setConversations([...(demoForUser as any), ...realConversations]);
+      setConversations(realConversations);
     } catch (error) {
       console.error('❌ Load conversations error:', error);
       Alert.alert(t('common:errorTitle'), t('chat:loadConversationsError'));
@@ -68,12 +58,9 @@ export default function ChatListScreen() {
       if (!selectedUser) return;
        const unsubscribe = subscribeToConversations(selectedUser.id, updated => {
         setConversations(prev => {
-           const prevReal = prev.filter(c => !c.id.startsWith('dummy_'));
-           const demoForUser = isRealAuth ? [] : DEMO_CONVERSATIONS.map(c => ({ ...c, participants: [selectedUser.id, c.participants[1]] }));
           const updatedIds = new Set(updated.map(c => c.id));
           const merged = [
-            ...(demoForUser as any),
-            ...prevReal.filter(c => !updatedIds.has(c.id)),
+            ...prev.filter(c => !updatedIds.has(c.id)),
             ...updated,
           ];
           return merged;
@@ -96,7 +83,7 @@ export default function ChatListScreen() {
       lastSeen: u.lastActive || new Date().toISOString(),
       status: u.bio || '',
     }));
-    return isRealAuth ? mappedCharacterUsers : [...allUsers, ...DEMO_USERS, ...mappedCharacterUsers];
+    return isRealAuth ? mappedCharacterUsers : [...allUsers, ...mappedCharacterUsers];
   }, []);
 
   const filteredSortedConversations = useMemo(() => {

@@ -59,7 +59,7 @@ interface UserContextType {
   isGuestMode: boolean;
   isRealAuth: boolean;
   setGuestMode: () => Promise<void>;
-  setDemoUser: () => Promise<void>;
+
   resetHomeScreen: () => void;
   resetHomeScreenTrigger: number;
 }
@@ -252,39 +252,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
   };
 
-  const setDemoUser = async () => {
-    const { characterTypes } = require('../globals/characterTypes');
-    if (characterTypes.length > 0) {
-      const randomIndex = Math.floor(Math.random() * characterTypes.length);
-      const demoCharacter = characterTypes[randomIndex];
-      
-      const demoUser: User = {
-        id: demoCharacter.id,
-        name: demoCharacter.name,
-        email: `${demoCharacter.id}@karmacommunity.com`,
-        phone: '+972501234567',
-        avatar: demoCharacter.avatar,
-        bio: demoCharacter.bio,
-        karmaPoints: demoCharacter.karmaPoints,
-        joinDate: demoCharacter.joinDate,
-        isActive: true,
-        lastActive: new Date().toISOString(),
-        location: demoCharacter.location,
-        interests: demoCharacter.interests,
-        roles: demoCharacter.roles,
-        postsCount: demoCharacter.postsCount,
-        followersCount: demoCharacter.followersCount,
-        followingCount: demoCharacter.followingCount,
-        notifications: [
-          { type: 'system', text: require('i18next').t('home:welcome', { defaultValue: 'שלום' }) as string, date: new Date().toISOString() },
-        ],
-        settings: demoCharacter.preferences,
-      };
-      
-      await setSelectedUserWithMode(demoUser, 'demo');
-      console.log('Demo user set successfully', { userId: demoUser.id });
-    }
-  };
+  // setDemoUser function removed - no longer needed without demo data
 
   const resetHomeScreen = () => {
     console.log('🏠 UserContext - resetHomeScreen called');
@@ -302,7 +270,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     isGuestMode,
     isRealAuth: authMode === 'real',
     setGuestMode,
-    setDemoUser,
+
     resetHomeScreen,
     resetHomeScreenTrigger,
   };

@@ -29,7 +29,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { useTranslation } from 'react-i18next';
-import { currentUser } from '../globals/fakeData';
+// currentUser removed - using selectedUser from context instead
 import { useUser } from '../context/UserContext';
 import ScrollContainer from '../components/ScrollContainer';
 import ProfileCompletionBanner from '../components/ProfileCompletionBanner';
@@ -132,14 +132,15 @@ export default function ProfileScreen() {
   // Function to update user statistics
   const updateUserStats = async () => {
     try {
-      const currentUserStats = await getFollowStats(selectedUser?.id || currentUser.id, selectedUser?.id || currentUser.id);
-      const character = selectedUser || allUsers.find(u => u.id === currentUser.id);
+      if (!selectedUser?.id) return;
+      const currentUserStats = await getFollowStats(selectedUser.id, selectedUser.id);
+      const character = selectedUser;
       
       setUserStats({
         posts: character?.postsCount || 24,
         followers: currentUserStats.followersCount,
         following: currentUserStats.followingCount,
-        karmaPoints: character?.karmaPoints || currentUser.karmaPoints,
+        karmaPoints: character?.karmaPoints || 0,
         completedTasks: (character as any)?.completedTasks || 0,
         totalDonations: (character as any)?.totalDonations || 0,
       });
@@ -170,7 +171,8 @@ export default function ProfileScreen() {
       return;
     }
     await createSampleFollowData();
-    await createSampleChatData(selectedUser?.id || currentUser.id);
+    if (!selectedUser?.id) return;
+    await createSampleChatData(selectedUser.id);
     updateUserStats();
     Alert.alert(t('profile:alerts.sampleDataTitle'), t('profile:alerts.sampleDataCreated'));
   };
@@ -284,7 +286,7 @@ export default function ProfileScreen() {
   // Derived display values to avoid דמה במצב התחברות אמיתי
   const avatarSource = isRealAuth
     ? (selectedUser?.avatar ? { uri: selectedUser.avatar } : defaultLogo)
-    : ({ uri: selectedUser?.avatar || currentUser.avatar } as any);
+    : (selectedUser?.avatar ? { uri: selectedUser.avatar } : defaultLogo);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -320,7 +322,7 @@ export default function ProfileScreen() {
               style={styles.statItem}
               onPress={() => {
                 (navigation as any).navigate('FollowersScreen', {
-                  userId: selectedUser?.id || currentUser.id,
+                  userId: selectedUser?.id || '',
                   type: 'followers',
                   title: t('profile:followersTitle')
                 });
@@ -333,7 +335,7 @@ export default function ProfileScreen() {
               style={styles.statItem}
               onPress={() => {
                 (navigation as any).navigate('FollowersScreen', {
-                  userId: selectedUser?.id || currentUser.id,
+                  userId: selectedUser?.id || '',
                   type: 'following',
                   title: t('profile:followingTitle')
                 });
@@ -455,14 +457,14 @@ export default function ProfileScreen() {
 
         {/* Bio Section */}
         <View style={styles.bioSection}>
-          <Text style={styles.fullName}>{(isRealAuth ? (selectedUser?.name || '') : (selectedUser?.name || currentUser.name))}</Text>
-          {!!(isRealAuth ? selectedUser?.bio : (selectedUser?.bio || currentUser.bio)) && (
-            <Text style={styles.bioText}>{isRealAuth ? selectedUser?.bio : (selectedUser?.bio || currentUser.bio)}</Text>
+          <Text style={styles.fullName}>{(isRealAuth ? (selectedUser?.name || '') : (selectedUser?.name || ''))}</Text>
+          {!!(isRealAuth ? selectedUser?.bio : (selectedUser?.bio || '')) && (
+            <Text style={styles.bioText}>{isRealAuth ? selectedUser?.bio : (selectedUser?.bio || '')}</Text>
           )}
-          {!!(isRealAuth ? (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city) : (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || currentUser.location)) && (
+          {!!(isRealAuth ? (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city) : (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || '')) && (
             <Text style={styles.locationText}>
               <Ionicons name="location-outline" size={scaleSize(14)} color={colors.textSecondary} />{' '}
-              {isRealAuth ? (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || '') : (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || currentUser.location)}
+              {isRealAuth ? (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || '') : (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || '')}
             </Text>
           )}
           
@@ -631,7 +633,7 @@ export default function ProfileScreen() {
               style={styles.statItem}
               onPress={() => {
                 (navigation as any).navigate('FollowersScreen', {
-                  userId: selectedUser?.id || currentUser.id,
+                  userId: selectedUser?.id || '',
                   type: 'followers',
                   title: t('profile:followersTitle')
                 });
@@ -644,7 +646,7 @@ export default function ProfileScreen() {
               style={styles.statItem}
               onPress={() => {
                 (navigation as any).navigate('FollowersScreen', {
-                  userId: selectedUser?.id || currentUser.id,
+                  userId: selectedUser?.id || '',
                   type: 'following',
                   title: t('profile:followingTitle')
                 });
@@ -762,14 +764,14 @@ export default function ProfileScreen() {
 
         {/* Bio Section */}
         <View style={styles.bioSection}>
-          <Text style={styles.fullName}>{(isRealAuth ? (selectedUser?.name || '') : (selectedUser?.name || currentUser.name))}</Text>
-          {!!(isRealAuth ? selectedUser?.bio : (selectedUser?.bio || currentUser.bio)) && (
-            <Text style={styles.bioText}>{isRealAuth ? selectedUser?.bio : (selectedUser?.bio || currentUser.bio)}</Text>
+          <Text style={styles.fullName}>{(isRealAuth ? (selectedUser?.name || '') : (selectedUser?.name || ''))}</Text>
+          {!!(isRealAuth ? selectedUser?.bio : (selectedUser?.bio || '')) && (
+            <Text style={styles.bioText}>{isRealAuth ? selectedUser?.bio : (selectedUser?.bio || '')}</Text>
           )}
-          {!!(isRealAuth ? (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city) : (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || currentUser.location)) && (
+          {!!(isRealAuth ? (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city) : (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || '')) && (
             <Text style={styles.locationText}>
               <Ionicons name="location-outline" size={scaleSize(14)} color={colors.textSecondary} />{' '}
-              {isRealAuth ? (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || '') : (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || currentUser.location)}
+              {isRealAuth ? (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || '') : (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || '')}
             </Text>
           )}
           
