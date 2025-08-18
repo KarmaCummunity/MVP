@@ -13,7 +13,7 @@ import {
   Text,
   StyleSheet,
   SafeAreaView,
-
+  ScrollView,
   Image,
   TouchableOpacity,
   Dimensions,
@@ -604,7 +604,7 @@ export default function ProfileScreen() {
         style={styles.mainScrollView}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentStyle={[styles.mainScrollContent, { paddingBottom: tabBarHeight + scaleSize(24) }]}
+        contentStyle={{...styles.mainScrollContent, paddingBottom: tabBarHeight + scaleSize(24)}}
       >
         {/* Completion Banner */}
         <ProfileCompletionBanner />

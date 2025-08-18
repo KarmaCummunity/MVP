@@ -20,7 +20,8 @@
 // TODO: Add proper caching mechanism for categories and analytics
 // TODO: Implement proper accessibility for all interactive elements
 // TODO: Add comprehensive unit tests for all category logic
-// TODO: Remove console.log statements and use proper logging service
+import { logger } from '../utils/loggerService';
+// Removed console.log statements - using proper logging service
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
@@ -210,11 +211,11 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
 
         // Fetch popular categories analytics (top 3 globally)
         try {
-          console.log('🔄 Loading popular categories...');
+          logger.info('DonationsScreen', 'Loading popular categories');
           let analytics: any[] = [];
           
           if (USE_BACKEND && isRealAuth) {
-            console.log('📊 Using enhanced backend analytics');
+            logger.info('DonationsScreen', 'Using enhanced backend analytics');
             // Use enhanced backend analytics
             const categoryAnalytics = await EnhancedStatsService.getCategoryAnalytics();
             analytics = categoryAnalytics.map((cat: any) => ({
@@ -222,9 +223,9 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
               categoryId: cat.slug,
               count: cat.donation_count + (cat.clicks || 0),
             }));
-            console.log('📊 Backend analytics loaded:', analytics);
+            logger.debug('DonationsScreen', 'Backend analytics loaded', { analytics });
           } else {
-            console.log('📊 Using legacy analytics fallback');
+            logger.info('DonationsScreen', 'Using legacy analytics fallback');
             // Fallback to legacy analytics
             analytics = await restAdapter.list<any>(ANALYTICS_COLLECTION, ANALYTICS_USER_ID).catch(() => [] as any[]);
             analytics = analytics.map((d: any) => {
@@ -232,7 +233,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
               const count: number = Number(d?.count ?? 0);
               return id ? { id, count } : null;
             }).filter(Boolean);
-            console.log('📊 Legacy analytics loaded:', analytics);
+            logger.debug('DonationsScreen', 'Legacy analytics loaded', { analytics });
           }
 
           const baseIds = new Set((BASE_CATEGORIES as readonly any[]).map((c) => c.id));
@@ -241,19 +242,19 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
             .sort((a, b) => b.count - a.count)
             .map((c) => c.id);
             
-          console.log('📈 Top sorted analytics:', topSorted);
-          console.log('📈 Analytics count with data:', topSorted.length);
+          logger.debug('DonationsScreen', 'Top sorted analytics', { topSorted });
+          logger.debug('DonationsScreen', 'Analytics count with data', { count: topSorted.length });
           
           // 🚨 כעת נשתמש תמיד בדיפולט כי זה מה שהמשתמש מבקש
           const resolved = POPULAR_FALLBACK.filter((id) => baseIds.has(id));
-          console.log('🎯 POPULAR categories set to:', resolved);
+          logger.info('DonationsScreen', 'Popular categories set', { categories: resolved });
           setPopularCategoryIds(resolved);
         } catch (e) {
-          console.error('❌ Failed to load category analytics:', e);
+          logger.error('DonationsScreen', 'Failed to load category analytics', { error: e });
           // במקרה של שגיאה, השתמש בדיפולט
           const baseIds = new Set((BASE_CATEGORIES as readonly any[]).map((c) => c.id));
           const resolved = POPULAR_FALLBACK.filter((id) => baseIds.has(id));
-          console.log('🎯 POPULAR categories fallback to:', resolved);
+          logger.info('DonationsScreen', 'Popular categories fallback', { categories: resolved });
           setPopularCategoryIds(resolved);
         }
       })();
@@ -283,7 +284,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
         }
       }
     } catch (e) {
-      console.warn('Failed to track category view:', e);
+      logger.warn('DonationsScreen', 'Failed to track category view', { error: e });
     }
   };
 
@@ -293,7 +294,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
     setRecentCategoryIds((prev) => {
       const next = [category.id, ...prev.filter((id) => id !== category.id)].slice(0, RECENT_LIMIT);
       AsyncStorage.setItem(RECENT_CATEGORIES_KEY, JSON.stringify(next)).catch((err) => {
-        console.warn('Failed to save recent categories:', err);
+        logger.warn('DonationsScreen', 'Failed to save recent categories', { error: err });
       });
       return next;
     });
@@ -301,7 +302,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
     // Fire-and-forget analytics increment  
     incrementCategoryCounter(category.id).catch(() => {});
     
-    console.log('🔥 Category pressed:', {
+    logger.info('DonationsScreen', 'Category pressed', {
       id: category.id,
       title: getCategoryText(category.id).title,
       screen: category.screen
@@ -319,7 +320,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
   };
 
   const handleQuickDonation = (type: string) => {
-    console.log('Quick donation pressed:', type);
+    logger.info('DonationsScreen', 'Quick donation pressed', { type });
     
     switch (type) {
       case t('donations:categories.money.title'):
@@ -345,10 +346,10 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
     .filter((c): c is typeof BASE_CATEGORIES[number] => Boolean(c));
 
   // שיפור הלוגיקה של "בשבילך" - אחרונים שהיוזר השתמש
-  console.log('🔄 Processing "בשבילך" categories...');
-  console.log('📝 Recent category IDs from storage:', recentCategoryIds);
-  console.log('📝 DEFAULT_RECENT_IDS:', DEFAULT_RECENT_IDS);
-  console.log('📝 Popular categories (to avoid):', popularIdsResolved);
+  logger.info('DonationsScreen', 'Processing "בשבילך" categories');
+  logger.debug('DonationsScreen', 'Recent category IDs from storage', { recentCategoryIds });
+  logger.debug('DonationsScreen', 'DEFAULT_RECENT_IDS', { ids: DEFAULT_RECENT_IDS });
+  logger.debug('DonationsScreen', 'Popular categories to avoid', { popularIds: popularIdsResolved });
   
   const baseIdSet = new Set((BASE_CATEGORIES as readonly any[]).map((c) => c.id as string));
   const popularIdSet = new Set(popularIdsResolved as unknown as string[]);
@@ -368,20 +369,20 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
     finalRecentIds = [...finalRecentIds, ...additionalIds];
   }
   
-  console.log('🎯 RECENT categories set to:', finalRecentIds);
+  logger.info('DonationsScreen', 'Recent categories set', { categories: finalRecentIds });
   
   const recentCategories = finalRecentIds
     .map((id) => BASE_CATEGORIES.find((c) => c.id === id))
     .filter((c): c is typeof BASE_CATEGORIES[number] => Boolean(c));
     
-  console.log('🎯 RECENT categories objects:', recentCategories.map(c => c.id));
+  logger.debug('DonationsScreen', 'Recent categories objects', { categoryIds: recentCategories.map(c => c.id) });
 
   const otherCategories = BASE_CATEGORIES.filter((c) => !popularCategories.some((pc) => pc.id === c.id) && !recentCategories.some((rc) => rc.id === c.id));
   
-  console.log('📊 Final categories summary:');
-  console.log('🌟 Popular categories:', popularCategories.map(c => `${c.id}(${getCategoryText(c.id).title})`));
-  console.log('👤 Recent categories:', recentCategories.map(c => `${c.id}(${getCategoryText(c.id).title})`));
-  console.log('📝 Other categories count:', otherCategories.length);
+  logger.info('DonationsScreen', 'Final categories summary');
+  logger.debug('DonationsScreen', 'Popular categories', { categories: popularCategories.map(c => `${c.id}(${getCategoryText(c.id).title})`) });
+  logger.debug('DonationsScreen', 'Recent categories', { categories: recentCategories.map(c => `${c.id}(${getCategoryText(c.id).title})`) });
+  logger.debug('DonationsScreen', 'Other categories count', { count: otherCategories.length });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -497,19 +498,19 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
             scrollEnabled={true}
             contentContainerStyle={styles.horizontalScrollContent}
             style={styles.horizontalScrollView}
-            onScrollBeginDrag={() => console.log('🔄 Horizontal scroll started')}
-            onScrollEndDrag={() => console.log('⏸️ Horizontal scroll ended')}
-            onScroll={() => console.log('📜 Horizontal scrolling...')}
+            onScrollBeginDrag={() => logger.debug('DonationsScreen', 'Horizontal scroll started')}
+            onScrollEndDrag={() => logger.debug('DonationsScreen', 'Horizontal scroll ended')}
+            onScroll={() => logger.debug('DonationsScreen', 'Horizontal scrolling')}
             scrollEventThrottle={100}
           >
             {otherCategories.map((category, index) => {
               const { title, subtitle } = getCategoryText(category.id as CategoryId);
-              console.log(`🎯 Rendering "All" category ${index}:`, category.id, title);
+              logger.debug('DonationsScreen', 'Rendering "All" category', { index, categoryId: category.id, title });
               return (
                 <TouchableOpacity
                   key={`all-${category.id}`}
                   onPress={() => {
-                    console.log('🔥 Category pressed in "All":', category.id, title);
+                    logger.info('DonationsScreen', 'Category pressed in "All"', { categoryId: category.id, title });
                     handleCategoryPress(category as any);
                   }}
                   style={[

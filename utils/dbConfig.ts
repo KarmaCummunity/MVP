@@ -5,9 +5,16 @@
 // Database and Backend Configuration
 // This file controls whether to use the backend API or local storage
 
-// Environment configuration
-export const IS_DEVELOPMENT = __DEV__;
-export const IS_PRODUCTION = !__DEV__;
+// Environment configuration - safe check for __DEV__
+let isDevelopmentMode = false;
+try {
+  isDevelopmentMode = typeof __DEV__ !== 'undefined' ? __DEV__ : false;
+} catch (e) {
+  // If __DEV__ is not defined, assume production
+  isDevelopmentMode = false;
+}
+export const IS_DEVELOPMENT = isDevelopmentMode;
+export const IS_PRODUCTION = !isDevelopmentMode;
 
 // Backend configuration
 export const BACKEND_CONFIG = {

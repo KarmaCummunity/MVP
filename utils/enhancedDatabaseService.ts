@@ -14,7 +14,8 @@
 // TODO: Add comprehensive TypeScript interfaces with strict typing
 // TODO: Implement proper memory management for cache and queue
 // TODO: Add comprehensive logging and monitoring for all operations
-// TODO: Remove console.log statements and use proper logging service
+import { logger } from './loggerService';
+// Removed console.log statements - using proper logging service
 // TODO: Add comprehensive unit tests for all service operations
 // TODO: Implement proper data encryption for sensitive cached data
 // TODO: Add comprehensive performance optimization and monitoring
@@ -25,6 +26,67 @@ import { USE_BACKEND, CACHE_CONFIG, OFFLINE_CONFIG, STORAGE_KEYS } from './dbCon
 // TODO: Move all interfaces to proper types directory
 // TODO: Add comprehensive validation for all interface fields
 // TODO: Replace 'any' types with proper generic constraints
+
+// User authentication interfaces
+export interface UserRegistrationData {
+  email: string;
+  password: string;
+  name?: string;
+  phone?: string;
+  [key: string]: unknown; // Allow additional registration fields
+}
+
+export interface UserLoginCredentials {
+  email: string;
+  password: string;
+}
+
+// Donation interfaces
+export interface DonationData {
+  id: string;
+  type: 'money' | 'time' | 'items' | 'rides';
+  title: string;
+  description?: string;
+  amount?: number;
+  category?: string;
+  createdBy: string;
+  createdAt: string;
+  status?: string;
+  [key: string]: unknown; // Allow additional fields
+}
+
+export interface CreateDonationData {
+  type: 'money' | 'time' | 'items' | 'rides';
+  title: string;
+  description?: string;
+  amount?: number;
+  category?: string;
+  [key: string]: unknown; // Allow additional fields
+}
+
+// Ride interfaces
+export interface RideData {
+  id: string;
+  from: string;
+  to: string;
+  departure_time: string;
+  available_seats: number;
+  price?: number;
+  createdBy: string;
+  createdAt: string;
+  status?: string;
+  [key: string]: unknown; // Allow additional fields
+}
+
+export interface CreateRideData {
+  from: string;
+  to: string;
+  departure_time: string;
+  available_seats: number;
+  price?: number;
+  [key: string]: unknown; // Allow additional fields
+}
+
 export interface CacheItem<T> {
   data: T;
   timestamp: number;
@@ -34,7 +96,7 @@ export interface CacheItem<T> {
 export interface OfflineAction {
   id: string;
   action: string;
-  data: any; // TODO: Replace with proper generic type
+  data: Record<string, unknown>; // Generic object data for offline actions
   timestamp: number;
   retryCount: number;
 }
@@ -62,7 +124,7 @@ export class EnhancedDatabaseService {
 
   // ==================== User Management ====================
 
-  async registerUser(userData: any): Promise<ApiResponse> {
+  async registerUser(userData: UserRegistrationData): Promise<ApiResponse> {
     // TODO: Replace 'any' with proper user registration interface
     // TODO: Add comprehensive input validation and sanitization
     // TODO: Implement proper error classification and handling
@@ -89,12 +151,12 @@ export class EnhancedDatabaseService {
 
       return response;
     } catch (error) {
-      console.error('Register user error:', error);
+      logger.error('EnhancedDatabaseService', 'Register user error', { error });
       return { success: false, error: 'Failed to register user' };
     }
   }
 
-  async loginUser(credentials: any): Promise<ApiResponse> {
+  async loginUser(credentials: UserLoginCredentials): Promise<ApiResponse> {
     try {
       if (!USE_BACKEND) {
         // Fallback authentication logic
@@ -115,7 +177,7 @@ export class EnhancedDatabaseService {
 
       return response;
     } catch (error) {
-      console.error('Login user error:', error);
+      logger.error('EnhancedDatabaseService', 'Login user error', { error });
       return { success: false, error: 'Failed to login' };
     }
   }
@@ -125,12 +187,12 @@ export class EnhancedDatabaseService {
       const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
       return userData ? JSON.parse(userData) : null;
     } catch (error) {
-      console.error('Get current user error:', error);
+      logger.error('EnhancedDatabaseService', 'Get current user error', { error });
       return null;
     }
   }
 
-  async updateUserProfile(userId: string, updateData: any): Promise<ApiResponse> {
+  async updateUserProfile(userId: string, updateData: Partial<UserRegistrationData>): Promise<ApiResponse> {
     try {
       if (!USE_BACKEND) {
         const currentUser = await this.getCurrentUser();
@@ -152,7 +214,7 @@ export class EnhancedDatabaseService {
 
       return response;
     } catch (error) {
-      console.error('Update user profile error:', error);
+      logger.error('EnhancedDatabaseService', 'Update user profile error', { error });
       
       // Queue for offline sync
       await this.queueOfflineAction('update_user_profile', { userId, updateData });
@@ -167,7 +229,7 @@ export class EnhancedDatabaseService {
       // Try cache first
       const cached = await this.getCache('donation_categories', 'all');
       if (cached) {
-        return cached;
+        return cached as any[]; // Type assertion for cached data
       }
 
       if (!USE_BACKEND) {
@@ -192,22 +254,22 @@ export class EnhancedDatabaseService {
 
       return [];
     } catch (error) {
-      console.error('Get donation categories error:', error);
+      logger.error('EnhancedDatabaseService', 'Get donation categories error', { error });
       return [];
     }
   }
 
-  async getDonations(filters: any = {}): Promise<any[]> {
+  async getDonations(filters: Record<string, unknown> = {}): Promise<DonationData[]> {
     try {
       const cacheKey = `donations_${JSON.stringify(filters)}`;
       const cached = await this.getCache('donations_list', cacheKey);
       if (cached) {
-        return cached;
+        return cached as DonationData[]; // Type assertion for cached data
       }
 
       if (!USE_BACKEND) {
         // Return sample donations
-        const sampleDonations = [];
+        const sampleDonations: DonationData[] = [];
         await this.setCache('donations_list', cacheKey, sampleDonations);
         return sampleDonations;
       }
@@ -221,12 +283,12 @@ export class EnhancedDatabaseService {
 
       return [];
     } catch (error) {
-      console.error('Get donations error:', error);
+      logger.error('EnhancedDatabaseService', 'Get donations error', { error });
       return [];
     }
   }
 
-  async createDonation(donationData: any): Promise<ApiResponse> {
+  async createDonation(donationData: CreateDonationData): Promise<ApiResponse> {
     try {
       if (!USE_BACKEND) {
         const donation = {
@@ -248,7 +310,7 @@ export class EnhancedDatabaseService {
 
       return response;
     } catch (error) {
-      console.error('Create donation error:', error);
+      logger.error('EnhancedDatabaseService', 'Create donation error', { error });
       
       // Queue for offline sync
       await this.queueOfflineAction('create_donation', donationData);
@@ -258,12 +320,12 @@ export class EnhancedDatabaseService {
 
   // ==================== Community Stats ====================
 
-  async getCommunityStats(filters: any = {}): Promise<any> {
+  async getCommunityStats(filters: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
     try {
       const cacheKey = `community_stats_${JSON.stringify(filters)}`;
       const cached = await this.getCache('community_stats', cacheKey);
       if (cached) {
-        return cached;
+        return cached as Record<string, unknown>; // Type assertion for cached data
       }
 
       if (!USE_BACKEND) {
@@ -281,20 +343,20 @@ export class EnhancedDatabaseService {
       
       if (response.success && response.data) {
         await this.setCache('community_stats', cacheKey, response.data);
-        return response.data;
+        return response.data as Record<string, unknown>;
       }
 
-      return {};
+      return {} as Record<string, unknown>;
     } catch (error) {
-      console.error('Get community stats error:', error);
-      return {};
+      logger.error('EnhancedDatabaseService', 'Get community stats error', { error });
+      return {} as Record<string, unknown>;
     }
   }
 
   async incrementStat(statType: string, value: number = 1, city?: string): Promise<void> {
     try {
       if (!USE_BACKEND) {
-        console.log(`📊 Increment stat: ${statType} += ${value} ${city ? `in ${city}` : 'globally'}`);
+        logger.info('EnhancedDatabaseService', 'Increment stat', { statType, value, city: city || 'globally' });
         return;
       }
 
@@ -303,7 +365,7 @@ export class EnhancedDatabaseService {
       // Clear stats cache to force refresh
       await this.clearCachePattern('community_stats');
     } catch (error) {
-      console.error('Increment stat error:', error);
+      logger.error('EnhancedDatabaseService', 'Increment stat error', { error });
       
       // Queue for offline sync
       await this.queueOfflineAction('increment_stat', { statType, value, city });
@@ -312,16 +374,16 @@ export class EnhancedDatabaseService {
 
   // ==================== Rides Management ====================
 
-  async getRides(filters: any = {}): Promise<any[]> {
+  async getRides(filters: Record<string, unknown> = {}): Promise<RideData[]> {
     try {
       const cacheKey = `rides_${JSON.stringify(filters)}`;
       const cached = await this.getCache('rides_list', cacheKey);
       if (cached) {
-        return cached;
+        return cached as RideData[]; // Type assertion for cached data
       }
 
       if (!USE_BACKEND) {
-        return [];
+        return [] as RideData[];
       }
 
       const response = await apiService.getRides(filters);
@@ -333,12 +395,12 @@ export class EnhancedDatabaseService {
 
       return [];
     } catch (error) {
-      console.error('Get rides error:', error);
-      return [];
+      logger.error('EnhancedDatabaseService', 'Get rides error', { error });
+      return [] as RideData[];
     }
   }
 
-  async createRide(rideData: any): Promise<ApiResponse> {
+  async createRide(rideData: CreateRideData): Promise<ApiResponse> {
     try {
       if (!USE_BACKEND) {
         const ride = {
@@ -358,7 +420,7 @@ export class EnhancedDatabaseService {
 
       return response;
     } catch (error) {
-      console.error('Create ride error:', error);
+      logger.error('EnhancedDatabaseService', 'Create ride error', { error });
       
       // Queue for offline sync
       await this.queueOfflineAction('create_ride', rideData);
@@ -387,7 +449,7 @@ export class EnhancedDatabaseService {
 
       return cacheItem.data;
     } catch (error) {
-      console.error('Get cache error:', error);
+      logger.error('EnhancedDatabaseService', 'Get cache error', { error });
       return null;
     }
   }
@@ -395,7 +457,7 @@ export class EnhancedDatabaseService {
   private async setCache<T>(collection: string, key: string, data: T): Promise<void> {
     try {
       const cacheKey = `${collection}_${key}`;
-      const expiryDuration = CACHE_CONFIG.CACHE_EXPIRY[collection] || 5 * 60 * 1000; // Default 5 minutes
+      const expiryDuration = (CACHE_CONFIG as any)[collection as string] || 5 * 60 * 1000; // Default 5 minutes
       
       const cacheItem: CacheItem<T> = {
         data,
@@ -405,7 +467,7 @@ export class EnhancedDatabaseService {
 
       await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheItem));
     } catch (error) {
-      console.error('Set cache error:', error);
+      logger.error('EnhancedDatabaseService', 'Set cache error', { error });
     }
   }
 
@@ -416,13 +478,13 @@ export class EnhancedDatabaseService {
       
       await AsyncStorage.multiRemove(matchingKeys);
     } catch (error) {
-      console.error('Clear cache pattern error:', error);
+      logger.error('EnhancedDatabaseService', 'Clear cache pattern error', { error });
     }
   }
 
   // ==================== Offline Queue Management ====================
 
-  private async queueOfflineAction(action: string, data: any): Promise<void> {
+  private async queueOfflineAction(action: string, data: Record<string, unknown>): Promise<void> {
     try {
       if (this.offlineQueue.length >= OFFLINE_CONFIG.MAX_QUEUE_SIZE) {
         this.offlineQueue.shift(); // Remove oldest action
@@ -439,7 +501,7 @@ export class EnhancedDatabaseService {
       this.offlineQueue.push(offlineAction);
       await this.saveOfflineQueue();
     } catch (error) {
-      console.error('Queue offline action error:', error);
+      logger.error('EnhancedDatabaseService', 'Queue offline action error', { error });
     }
   }
 
@@ -450,7 +512,7 @@ export class EnhancedDatabaseService {
         this.offlineQueue = JSON.parse(queueData);
       }
     } catch (error) {
-      console.error('Load offline queue error:', error);
+      logger.error('EnhancedDatabaseService', 'Load offline queue error', { error });
       this.offlineQueue = [];
     }
   }
@@ -459,7 +521,7 @@ export class EnhancedDatabaseService {
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.OFFLINE_QUEUE, JSON.stringify(this.offlineQueue));
     } catch (error) {
-      console.error('Save offline queue error:', error);
+      logger.error('EnhancedDatabaseService', 'Save offline queue error', { error });
     }
   }
 
@@ -469,7 +531,7 @@ export class EnhancedDatabaseService {
     }
 
     this.syncInProgress = true;
-    console.log(`🔄 Processing ${this.offlineQueue.length} offline actions`);
+    logger.info('EnhancedDatabaseService', 'Processing offline actions', { count: this.offlineQueue.length });
 
     const processedActions: string[] = [];
 
@@ -487,27 +549,27 @@ export class EnhancedDatabaseService {
             success = rideResponse.success;
             break;
           case 'update_user_profile':
-            const updateResponse = await apiService.updateUser(action.data.userId, action.data.updateData);
+            const updateResponse = await apiService.updateUser(action.data.userId as string, action.data.updateData as any);
             success = updateResponse.success;
             break;
           case 'increment_stat':
-            await apiService.incrementStat(action.data);
+            await apiService.incrementStat(action.data as { stat_type: string; value?: number; city?: string });
             success = true;
             break;
         }
 
         if (success) {
           processedActions.push(action.id);
-          console.log(`✅ Offline action processed: ${action.action}`);
+          logger.info('EnhancedDatabaseService', 'Offline action processed', { action: action.action });
         } else {
           action.retryCount++;
           if (action.retryCount >= 3) {
             processedActions.push(action.id);
-            console.log(`❌ Offline action failed after 3 retries: ${action.action}`);
+            logger.warn('EnhancedDatabaseService', 'Offline action failed after 3 retries', { action: action.action });
           }
         }
       } catch (error) {
-        console.error(`❌ Error processing offline action ${action.action}:`, error);
+        logger.error('EnhancedDatabaseService', 'Error processing offline action', { action: action.action, error });
         action.retryCount++;
         if (action.retryCount >= 3) {
           processedActions.push(action.id);
@@ -520,7 +582,7 @@ export class EnhancedDatabaseService {
     await this.saveOfflineQueue();
 
     this.syncInProgress = false;
-    console.log(`✅ Offline sync completed. ${processedActions.length} actions processed.`);
+    logger.info('EnhancedDatabaseService', 'Offline sync completed', { processedCount: processedActions.length });
   }
 
   private setupSyncInterval(): void {
@@ -543,9 +605,9 @@ export class EnhancedDatabaseService {
       );
       
       await AsyncStorage.multiRemove(cacheKeys);
-      console.log('✅ All cache cleared');
+      logger.info('EnhancedDatabaseService', 'All cache cleared');
     } catch (error) {
-      console.error('Clear all cache error:', error);
+      logger.error('EnhancedDatabaseService', 'Clear all cache error', { error });
     }
   }
 

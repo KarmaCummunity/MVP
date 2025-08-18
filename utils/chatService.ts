@@ -15,7 +15,8 @@ import { db, DB_COLLECTIONS, DatabaseService } from './databaseService';
 // TODO: Add comprehensive TypeScript interfaces with strict typing
 // TODO: Implement proper connection management and reconnection logic
 // TODO: Add comprehensive message validation and sanitization
-// TODO: Remove console.log statements and use proper logging service
+import { logger } from './loggerService';
+// Removed console.log statements - using proper logging service
 // TODO: Add comprehensive unit tests for all chat operations
 // TODO: Implement proper memory management for listeners and subscriptions
 // TODO: Add message encryption and security measures
@@ -102,7 +103,7 @@ export const createConversation = async (participants: string[]): Promise<string
       await db.createChat(participantId, conversationId, { ...newConversation, unreadCount: 0 });
     }
     
-    console.log('✅ Conversation created (Database):', conversationId);
+    logger.info('ChatService', 'Conversation created', { conversationId });
     
     // Notify conversation listeners for all participants
     participants.forEach(participantId => {
@@ -111,26 +112,26 @@ export const createConversation = async (participants: string[]): Promise<string
     
     return conversationId;
   } catch (error) {
-    console.error('❌ Create conversation error:', error);
+    logger.error('ChatService', 'Create conversation error', { error });
     throw error;
   }
 };
 
 export const getConversations = async (userId: string): Promise<Conversation[]> => {
   try {
-    console.log(`📋 Getting conversations for user: ${userId}`);
+    logger.info('ChatService', 'Getting conversations for user', { userId });
     const conversations = await db.getUserChats(userId);
-    console.log(`📋 Raw conversations from DB:`, conversations.length, conversations);
+    logger.debug('ChatService', 'Raw conversations from DB', { count: conversations.length, conversations });
     
     // Don't filter empty conversations - show all
     const sorted = (conversations as Conversation[]).sort((a, b) => 
       new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
     );
     
-    console.log(`📋 Sorted conversations:`, sorted.length, sorted.map(c => ({ id: c.id, lastMessage: c.lastMessageText || 'שיחה חדשה' })));
+    logger.debug('ChatService', 'Sorted conversations', { count: sorted.length, conversations: sorted.map(c => ({ id: c.id, lastMessage: c.lastMessageText || 'שיחה חדשה' })) });
     return sorted;
   } catch (error) {
-    console.error('❌ Get conversations error:', error);
+    logger.error('ChatService', 'Get conversations error', { error });
     return [];
   }
 };
@@ -140,7 +141,7 @@ export const getConversationById = async (conversationId: string, userId: string
     const conversation = await db.getChat(userId, conversationId);
     return conversation as Conversation | null;
   } catch (error) {
-    console.error('❌ Get conversation error:', error);
+    logger.error('ChatService', 'Get conversation error', { error });
     return null;
   }
 };
@@ -192,11 +193,11 @@ export const sendMessage = async (message: Omit<Message, 'id'>): Promise<string>
       };
 
       await db.createChat(participantId, message.conversationId, updatedConversation);
-      console.log(`💾 Updated conversation for participant ${participantId}`);
+      logger.debug('ChatService', 'Updated conversation for participant', { participantId });
     }
 
-    console.log('✅ Message sent (Database):', messageId);
-    console.log('📢 Conversation participants:', participants);
+    logger.info('ChatService', 'Message sent', { messageId });
+    logger.debug('ChatService', 'Conversation participants', { participants });
     
     // Notify listeners about the new message for each participant
     for (const participantId of participants) {
@@ -204,9 +205,9 @@ export const sendMessage = async (message: Omit<Message, 'id'>): Promise<string>
     }
     
     // Notify conversation listeners for all participants
-    console.log('📢 Notifying conversation listeners for participants:', participants);
+    logger.debug('ChatService', 'Notifying conversation listeners', { participants });
     participants.forEach(participantId => {
-      console.log(`📢 Notifying participant ${participantId}`);
+      logger.debug('ChatService', 'Notifying participant', { participantId });
       notifyConversationListeners(participantId);
       
       // Send notification to other participants (not the sender)
@@ -218,7 +219,7 @@ export const sendMessage = async (message: Omit<Message, 'id'>): Promise<string>
     
     return messageId;
   } catch (error) {
-    console.error('❌ Send message error:', error);
+    logger.error('ChatService', 'Send message error', { error });
     throw error;
   }
 };
@@ -230,21 +231,21 @@ export const getMessages = async (conversationId: string, userId: string): Promi
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
   } catch (error) {
-    console.error('❌ Get messages error:', error);
+    logger.error('ChatService', 'Get messages error', { error });
     return [];
   }
 };
 
 export const markMessagesAsRead = async (conversationId: string, userId: string): Promise<void> => {
   try {
-    console.log('🔍 Marking messages as read for conversation:', conversationId, 'user:', userId);
+    logger.info('ChatService', 'Marking messages as read', { conversationId, userId });
     
     const messages = await getMessages(conversationId, userId);
-    console.log('📝 Found', messages.length, 'total messages');
+    logger.debug('ChatService', 'Found total messages', { count: messages.length });
     
     for (const msg of messages) {
       if (msg.conversationId === conversationId && msg.senderId !== userId && !msg.read) {
-        console.log('✅ Marking message as read:', msg.id);
+        logger.debug('ChatService', 'Marking message as read', { messageId: msg.id });
         await DatabaseService.update(DB_COLLECTIONS.MESSAGES, userId, msg.id, { read: true });
       }
     }
@@ -253,14 +254,14 @@ export const markMessagesAsRead = async (conversationId: string, userId: string)
     if (conversation) {
       const updatedConversation = { ...conversation, unreadCount: 0 };
       await db.createChat(userId, conversationId, updatedConversation);
-      console.log('✅ Conversation unread count reset to 0');
+      logger.debug('ChatService', 'Conversation unread count reset to 0');
     } else {
-      console.log('⚠️ Conversation not found:', conversationId);
+      logger.warn('ChatService', 'Conversation not found', { conversationId });
     }
 
-    console.log('✅ Messages marked as read (Database)');
+    logger.info('ChatService', 'Messages marked as read');
   } catch (error) {
-    console.error('❌ Mark as read error:', error);
+    logger.error('ChatService', 'Mark as read error', { error });
     throw error;
   }
 };
@@ -373,10 +374,10 @@ const notifyMessageListeners = async (conversationId: string, userId: string) =>
 
 const notifyConversationListeners = async (userId: string) => {
   const listeners = conversationListeners.get(userId);
-  console.log(`🔔 Notifying conversation listeners for user ${userId}, has listeners: ${!!listeners}`);
+  logger.debug('ChatService', 'Notifying conversation listeners for user', { userId, hasListeners: !!listeners });
   if (listeners && listeners.size > 0) {
     const conversations = await getConversations(userId);
-    console.log(`🔔 Found ${conversations.length} conversations for user ${userId}`);
+    logger.debug('ChatService', 'Found conversations for user', { userId, count: conversations.length });
     // Conversations are already sorted by getConversations
     listeners.forEach(callback => {
       if (typeof callback === 'function') {
@@ -394,9 +395,9 @@ export const deleteConversation = async (conversationId: string, userId: string)
     const messageIds = messages.map(msg => msg.id);
     await DatabaseService.batchDelete(DB_COLLECTIONS.MESSAGES, userId, messageIds);
 
-    console.log('✅ Conversation deleted (Database)');
+    logger.info('ChatService', 'Conversation deleted');
   } catch (error) {
-    console.error('❌ Delete conversation error:', error);
+    logger.error('ChatService', 'Delete conversation error', { error });
     throw error;
   }
 };
@@ -405,28 +406,28 @@ export const clearAllData = async (userId?: string): Promise<void> => {
   try {
     if (userId) {
       await DatabaseService.deleteUserData(userId);
-      console.log('✅ All chat data cleared for user (Database):', userId);
+      logger.info('ChatService', 'All chat data cleared for user', { userId });
     } else {
       await DatabaseService.clearAllData();
-      console.log('✅ All chat data cleared (Database)');
+      logger.info('ChatService', 'All chat data cleared');
     }
   } catch (error) {
-    console.error('❌ Clear data error:', error);
+    logger.error('ChatService', 'Clear data error', { error });
     throw error;
   }
 };
 
 export const createSampleData = async (): Promise<void> => {
   try {
-    console.log('📊 Sample data creation disabled to prevent overwriting real conversations');
+    logger.info('ChatService', 'Sample data creation disabled to prevent overwriting real conversations');
   } catch (error) {
-    console.error('❌ Create sample data error:', error);
+    logger.error('ChatService', 'Create sample data error', { error });
   }
 };
 
 export const createSampleChatData = async (userId: string): Promise<void> => {
   try {
-    console.log('📊 Creating sample chat data for user:', userId);
+    logger.info('ChatService', 'Creating sample chat data for user', { userId });
     
     const sampleConversations: Conversation[] = [
       {
@@ -490,7 +491,7 @@ export const createSampleChatData = async (userId: string): Promise<void> => {
       }
     })();
     if (mode === 'real') {
-      console.log('🛑 Skipping sample chat data creation in real auth mode');
+      logger.info('ChatService', 'Skipping sample chat data creation in real auth mode');
       return;
     }
 
@@ -502,9 +503,9 @@ export const createSampleChatData = async (userId: string): Promise<void> => {
       await db.createMessage(userId, message.id, message);
     }
     
-    console.log('✅ Sample chat data created for user:', userId, sampleConversations.length, 'conversations,', sampleMessages.length, 'messages');
+    logger.info('ChatService', 'Sample chat data created for user', { userId, conversationCount: sampleConversations.length, messageCount: sampleMessages.length });
   } catch (error) {
-    console.error('❌ Create sample chat data error:', error);
+    logger.error('ChatService', 'Create sample chat data error', { error });
   }
 };
 
@@ -526,9 +527,9 @@ export const editMessage = async (
     // Note: We would need the conversationId to notify listeners properly
     // For now, we'll skip notification as we don't have access to conversationId from messageId alone
     
-    console.log('✅ Message edited:', messageId);
+    logger.info('ChatService', 'Message edited', { messageId });
   } catch (error) {
-    console.error('❌ Edit message error:', error);
+    logger.error('ChatService', 'Edit message error', { error });
     throw error;
   }
 };
@@ -552,9 +553,9 @@ export const deleteMessage = async (
       await db.deleteMessage(userId, messageId);
     }
     
-    console.log('✅ Message deleted:', messageId);
+    logger.info('ChatService', 'Message deleted', { messageId });
   } catch (error) {
-    console.error('❌ Delete message error:', error);
+    logger.error('ChatService', 'Delete message error', { error });
     throw error;
   }
 };
@@ -575,9 +576,9 @@ export const addMessageReaction = async (
       timestamp: new Date().toISOString(),
     });
     
-    console.log('✅ Reaction added:', reactionId);
+    logger.info('ChatService', 'Reaction added', { reactionId });
   } catch (error) {
-    console.error('❌ Add reaction error:', error);
+    logger.error('ChatService', 'Add reaction error', { error });
     throw error;
   }
 };
@@ -589,9 +590,9 @@ export const removeMessageReaction = async (
 ): Promise<void> => {
   try {
     await db.removeReaction(userId, reactionId);
-    console.log('✅ Reaction removed:', reactionId);
+    logger.info('ChatService', 'Reaction removed', { reactionId });
   } catch (error) {
-    console.error('❌ Remove reaction error:', error);
+    logger.error('ChatService', 'Remove reaction error', { error });
     throw error;
   }
 };
@@ -642,7 +643,7 @@ export const sendVoiceMessage = async (
     await sendMessage(message);
     return messageId;
   } catch (error) {
-    console.error('❌ Send voice message error:', error);
+    logger.error('ChatService', 'Send voice message error', { error });
     throw error;
   }
 };
@@ -656,7 +657,7 @@ export const searchMessages = async (
     const results = await db.searchMessages(userId, searchQuery);
     return results as Message[];
   } catch (error) {
-    console.error('❌ Search messages error:', error);
+    logger.error('ChatService', 'Search messages error', { error });
     return [];
   }
 };
@@ -670,7 +671,7 @@ export const getMessageReactions = async (
     const reactions = await db.getMessageReactions(userId, messageId);
     return reactions as any[];
   } catch (error) {
-    console.error('❌ Get reactions error:', error);
+    logger.error('ChatService', 'Get reactions error', { error });
     return [];
   }
 };
@@ -693,7 +694,7 @@ export const setTypingStatus = async (
       await db.clearTypingStatus(userId, conversationId);
     }
   } catch (error) {
-    console.error('❌ Set typing status error:', error);
+    logger.error('ChatService', 'Set typing status error', { error });
   }
 };
 
@@ -705,7 +706,7 @@ export const getAllConversations = async (userId: string): Promise<Conversation[
       new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
     );
   } catch (error) {
-    console.error('❌ Get all conversations error:', error);
+    logger.error('ChatService', 'Get all conversations error', { error });
     return [];
   }
 };
@@ -725,7 +726,7 @@ export const conversationExists = async (
     );
     return existingConv ? existingConv.id : null;
   } catch (error) {
-    console.error('❌ Check conversation exists error:', error);
+    logger.error('ChatService', 'Check conversation exists error', { error });
     return null;
   }
 };
@@ -733,14 +734,14 @@ export const conversationExists = async (
 // Debug function to check database content
 export const debugDatabaseContent = async (userId: string) => {
   try {
-    console.log('🔍 === DATABASE DEBUG ===');
-    console.log('🔍 User ID:', userId);
+    logger.debug('ChatService', '=== DATABASE DEBUG ===');
+    logger.debug('ChatService', 'User ID', { userId });
     
     // Get all chats
     const chats = await db.getUserChats(userId);
-    console.log('🔍 Total Chats:', chats.length);
+    logger.debug('ChatService', 'Total Chats', { count: chats.length });
     chats.forEach((chat: any) => {
-      console.log('🔍 Chat:', {
+      logger.debug('ChatService', 'Chat', {
         id: chat.id,
         participants: chat.participants,
         lastMessage: chat.lastMessageText,
@@ -750,10 +751,10 @@ export const debugDatabaseContent = async (userId: string) => {
     
     // Get all messages
     const messages = await DatabaseService.list(DB_COLLECTIONS.MESSAGES, userId);
-    console.log('🔍 Total Messages:', messages.length);
+    logger.debug('ChatService', 'Total Messages', { count: messages.length });
     
-    console.log('🔍 === END DEBUG ===');
+    logger.debug('ChatService', '=== END DEBUG ===');
   } catch (error) {
-    console.error('🔍 Debug error:', error);
+    logger.error('ChatService', 'Debug error', { error });
   }
 }; 

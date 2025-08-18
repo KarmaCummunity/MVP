@@ -15,13 +15,7 @@
 // - Navigation container key changes with mode to trigger proper re-renders
 
 // App.tsx
-'use strict';
 
-// TODO: Remove hardcoded console.log statements throughout the file - use proper logging service
-// TODO: Add error boundaries to catch and handle React crashes gracefully
-// TODO: Implement proper loading state management instead of local state
-// TODO: Add TypeScript strict mode - many 'any' types need to be properly typed
-// TODO: Remove 'use strict' directive - not needed in modern React/TypeScript
 // TODO: Add proper error handling for font loading failures with fallback fonts
 // TODO: Implement proper deep linking configuration and testing
 // TODO: Add crash reporting integration (Sentry, Bugsnag)
@@ -48,17 +42,37 @@ import './polyfills/tslib-default';
 import colors from './globals/colors';
 import { UserProvider } from './context/UserContext';
 import { WebModeProvider, useWebMode } from './context/WebModeContext';
+import { AppLoadingProvider, useAppLoading } from './context/AppLoadingContext';
 import WebModeToggleOverlay from './components/WebModeToggleOverlay';
 import { FontSizes } from "./globals/constants";
+import { logger } from './utils/loggerService';
+import ErrorBoundary from './components/ErrorBoundary';
 // RTL is controlled via selected language in i18n and Settings
 
 // Initialize notifications only on supported platforms
-let notificationService: any = null;
+type NotificationService = {
+  setupNotificationResponseListener: (
+    callback: (response: { 
+      notification: { 
+        request: { 
+          content: { 
+            data?: { 
+              type?: string; 
+              conversationId?: string; 
+            } 
+          } 
+        } 
+      } 
+    }) => void
+  ) => { remove?: () => void } | null;
+} | null;
+
+let notificationService: NotificationService = null;
 if (Platform.OS !== 'web') {
   try {
     notificationService = require('./utils/notificationService');
   } catch (error) {
-    console.warn('Failed to load notification service:', error);
+    logger.warn('App', 'Failed to load notification service', { error });
   }
 }
 
@@ -67,13 +81,27 @@ try { WebBrowser.maybeCompleteAuthSession(); } catch {}
 
 SplashScreen.preventAutoHideAsync();
 
-export default function App() {
+function AppContent() {
   const { t } = useTranslation(['common']);
-  const [appIsReady, setAppIsReady] = useState(false);
-  const [fontError, setFontError] = useState<Error | null>(null);
-  const navigationRef = useRef<NavigationContainerRef<any>>(null);
+  // Define proper navigation param list type
+  type RootParamList = {
+    ChatDetailScreen: { conversationId: string };
+    NotificationsScreen: undefined;
+    [key: string]: any; // Allow other routes for now
+  };
+  
+  const navigationRef = useRef<NavigationContainerRef<RootParamList>>(null);
+  
+  // Use centralized loading state instead of local state
+  const { 
+    state: { isAppReady }, 
+    setLoading, 
+    setError, 
+    markAppReady,
+    getCriticalError 
+  } = useAppLoading();
 
-  console.log('🚀 App component mounted');
+  logger.info('App', 'App component mounted');
   
   // TODO: Move notification setup to dedicated notification service/hook
   // TODO: Add proper error handling for notification permission failures
@@ -82,9 +110,9 @@ export default function App() {
   useEffect(() => {
     if (!notificationService) return;
 
-    const subscription = notificationService.setupNotificationResponseListener((response: any) => {
+    const subscription = notificationService.setupNotificationResponseListener((response) => {
       try {
-        console.log('📱 Notification clicked:', response);
+        logger.info('App', 'Notification clicked', { response });
         const data = response?.notification?.request?.content?.data || {};
         const type = data?.type;
         const conversationId = data?.conversationId;
@@ -97,7 +125,7 @@ export default function App() {
           }
         }
       } catch (err) {
-        console.warn('Failed to handle notification response:', err);
+        logger.warn('App', 'Failed to handle notification response', { error: err });
       }
     });
 
@@ -110,10 +138,12 @@ export default function App() {
 
   const prepareApp = useCallback(async () => {
     try {
-      console.log('🚀 Starting app preparation...');
+      logger.info('App', 'Starting app preparation');
+      setLoading('app', true);
 
       // Apply stored language before UI mounts
       try {
+        setLoading('language', true);
         const storedLang = await AsyncStorage.getItem('app_language');
         const lang = storedLang === 'he' || storedLang === 'en' ? storedLang : null;
         if (lang) {
@@ -124,38 +154,43 @@ export default function App() {
             I18nManager.forceRTL(isRTL);
           }
         }
+        setLoading('language', false);
       } catch (e) {
-        console.warn('Language load failed, using defaults');
+        logger.warn('App', 'Language load failed, using defaults');
+        setError('language', e as Error);
       }
       
       // Loading fonts with better error handling
       try {
+        setLoading('fonts', true);
         await Font.loadAsync({
           ...Ionicons.font,
           ...MaterialIcons.font,
         });
-        console.log('✅ Fonts loaded successfully');
+        logger.info('App', 'Fonts loaded successfully');
+        setLoading('fonts', false);
       } catch (fontError) {
-        console.warn('Font loading failed, continuing without custom fonts');
+        logger.warn('App', 'Font loading failed, continuing without custom fonts');
+        setError('fonts', fontError as Error);
         // TODO: Implement proper fallback font loading strategy
         // TODO: Add user notification about font loading failure
         // TODO: Track font loading failures in analytics
       }
 
-      console.log('✅ App preparation completed');
-      setAppIsReady(true);
-    } catch (e: any) {
-      console.error("App preparation failed:", e);
-      setFontError(e);
+      logger.info('App', 'App preparation completed');
+      markAppReady();
+    } catch (e: unknown) {
+      logger.error('App', 'App preparation failed', { error: e });
+      setError('app', e instanceof Error ? e : new Error('Unknown error occurred'));
     } finally {
       try {
         await SplashScreen.hideAsync();
-        console.log('✅ Splash screen hidden');
+        logger.info('App', 'Splash screen hidden');
       } catch (splashError) {
-        console.warn('Failed to hide splash screen:', splashError);
+        logger.warn('App', 'Failed to hide splash screen', { error: splashError });
       }
     }
-  }, []);
+  }, [setLoading, setError, markAppReady]);
 
   useEffect(() => {
     prepareApp();
@@ -163,7 +198,9 @@ export default function App() {
 
 
 
-  if (fontError) {
+  // Check for critical errors
+  const criticalError = getCriticalError();
+  if (criticalError) {
     return (
       <View style={errorStyles.container}>
         <Text style={errorStyles.errorText}>
@@ -173,12 +210,12 @@ export default function App() {
           Please try restarting the app.
         </Text>
         {/* For debugging, you can re-enable this if needed */}
-        {/* <Text style={errorStyles.detailText}>Error: {fontError.message}</Text> */}
+        {(typeof __DEV__ !== 'undefined' && __DEV__) && <Text style={errorStyles.detailText}>Error: {criticalError.message}</Text>}
       </View>
     );
   }
 
-  if (!appIsReady) {
+  if (!isAppReady) {
     return (
       <View style={loadingStyles.container}>
           <ActivityIndicator size="large" color={colors.info}/>
@@ -212,15 +249,39 @@ export default function App() {
   };
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <WebModeProvider>
-          <UserProvider>
-            <AppNavigationRoot />
-          </UserProvider>
-        </WebModeProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <AppNavigationRoot />
+  );
+}
+
+// Main App component with all providers
+export default function App() {
+  return (
+    <ErrorBoundary 
+      onError={(error, errorInfo) => {
+        logger.error('App', 'React component tree crashed', {
+          error: {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+          },
+          errorInfo: {
+            componentStack: errorInfo.componentStack
+          }
+        });
+      }}
+    >
+      <AppLoadingProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <SafeAreaProvider>
+            <WebModeProvider>
+              <UserProvider>
+                <AppContent />
+              </UserProvider>
+            </WebModeProvider>
+          </SafeAreaProvider>
+        </GestureHandlerRootView>
+      </AppLoadingProvider>
+    </ErrorBoundary>
   );
 }
 
