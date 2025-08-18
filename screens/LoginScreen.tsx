@@ -834,7 +834,7 @@ const responsive = {
   titleSize: isDesktop ? scaleSize(42) : isTablet ? scaleSize(38) : scaleSize(34),
   subtitleSize: isDesktop ? scaleSize(22) : isTablet ? scaleSize(20) : scaleSize(18),
   buttonPadding: isDesktop ? spacing.lg : isTablet ? spacing.md : spacing.sm,
-  logoSize: isDesktop ? '100%' : isTablet ? '110%' : '120%' as any,
+  logoSize: isDesktop ? '100%' : isTablet ? '110%' : '120%',
   maxWidth: isDesktop ? vw(40) : isTablet ? vw(60) : vw(90),
 };
 
@@ -863,8 +863,8 @@ const styles = StyleSheet.create({
       opacity: 0.3,
     },
     backgroundLogo: {
-      width: responsive.logoSize,
-      height: responsive.logoSize,
+      width: responsive.logoSize as any,
+      height: responsive.logoSize as any,
     },
     headerSection: {
       marginBottom: isDesktop ? spacing.xl : spacing.lg,
