@@ -146,6 +146,11 @@ export const fontSizes = {
   heading3: 18,    // כותרת שלישית
   title: 24,       // תואם heading1
   
+  // Display Sizes
+  displayLarge: 32, // גדלים גדולים (אמוג'י, אייקונים)
+  displayMedium: 28,
+  displaySmall: 24,
+  
   // Button and Interactive Elements
   button: 16,      // כפתורים
   link: 14,        // קישורים
