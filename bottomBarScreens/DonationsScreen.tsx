@@ -143,10 +143,11 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
   // Precise sizing so 3 cards fit almost fully across the section width on all screens
   const sectionHorizontalMargins = LAYOUT_CONSTANTS.SPACING.SM * 2; // left + right
   const sectionHorizontalPaddings = LAYOUT_CONSTANTS.SPACING.MD * 2; // left + right
-  let gridGap = LAYOUT_CONSTANTS.SPACING.XS; // gap between items (will be scaled later)
+  let gridGap: number = LAYOUT_CONSTANTS.SPACING.XS; // gap between items (will be scaled later)
   const sectionInnerWidth = SCREEN_WIDTH - sectionHorizontalMargins - sectionHorizontalPaddings;
-  let threeColCardWidthPx = Math.max(100, Math.floor((sectionInnerWidth - gridGap * 2) / 4));
-  let ITEM_FULL_WIDTH = threeColCardWidthPx + gridGap; // used for snapping and getItemLayout
+  const columnsCount: number = 4; // Number of columns for layout
+  let threeColCardWidthPx: number = Math.max(100, Math.floor((sectionInnerWidth - gridGap * 2) / columnsCount));
+  let ITEM_FULL_WIDTH: number = threeColCardWidthPx + gridGap; // used for snapping and getItemLayout
   const baseHeroTitleSize = scaleSize(isTablet || isDesktop ? 18 : 16);
   const baseHeroSubtitleSize = scaleSize(isTablet || isDesktop ? 13 : 12);
   const baseOtherTitleSize = scaleSize(isTablet || isDesktop ? 16 : 14);
@@ -186,7 +187,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
 
   // Scale gaps and card width to consume remaining width nicely
   gridGap = Math.max(2, Math.round(LAYOUT_CONSTANTS.SPACING.XS * paddingScale));
-  threeColCardWidthPx = Math.max(100, Math.floor((sectionInnerWidth - gridGap * 2) / 4));
+  threeColCardWidthPx = Math.max(100, Math.floor((sectionInnerWidth - gridGap * 2) / columnsCount));
 
   // Simplified horizontal scroll for "All" section
   const allScrollViewRef = useRef<ScrollView | null>(null);

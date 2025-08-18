@@ -145,6 +145,11 @@ export const fontSizes = {
   heading2: 20,    // כותרת משנית
   heading3: 18,    // כותרת שלישית
   title: 24,       // תואם heading1
+  
+  // Button and Interactive Elements
+  button: 16,      // כפתורים
+  link: 14,        // קישורים
+  label: 14,       // תוויות
 } as const;
 
 export const layoutConstants = {
