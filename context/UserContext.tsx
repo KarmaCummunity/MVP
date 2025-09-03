@@ -86,33 +86,96 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      // TODO: Remove hardcoded behavior of always resetting to login
-      // TODO: Add proper authentication persistence logic
-      // TODO: Implement proper session validation with backend
-      console.log('🔐 UserContext - checkAuthStatus - Starting auth check (ALWAYS RESET TO LOGIN)');
+      console.log('🔐 UserContext - checkAuthStatus - Starting auth check');
       setIsLoading(true);
       
-      // Always clear any stored authentication data
-      console.log('🔐 UserContext - checkAuthStatus - Clearing all stored auth data');
-      await AsyncStorage.removeItem('current_user');
-      await AsyncStorage.removeItem('guest_mode');
-      await AsyncStorage.removeItem('auth_mode');
-      await AsyncStorage.removeItem('oauth_in_progress');
+      // First, check for successful OAuth authentication
+      console.log('🔐 UserContext - checkAuthStatus - Checking for OAuth success');
+      const oauthSuccess = await AsyncStorage.getItem('oauth_success_flag');
+      const userData = await AsyncStorage.getItem('google_auth_user');
+      const token = await AsyncStorage.getItem('google_auth_token');
       
-      // Always start fresh - no authentication
-      console.log('🔐 UserContext - checkAuthStatus - Setting fresh unauthenticated state');
+      if (oauthSuccess && userData && token) {
+        try {
+          console.log('🔐 UserContext - checkAuthStatus - Found OAuth success data, processing');
+          const parsedUserData = JSON.parse(userData);
+          
+          // Validate the user data
+          if (parsedUserData && parsedUserData.id && parsedUserData.email) {
+            console.log('🔐 UserContext - checkAuthStatus - Setting authenticated user from OAuth');
+            
+            // Enrich user with org roles if applicable
+            const enrichedUser = await enrichUserWithOrgRoles(parsedUserData);
+            
+            setSelectedUserState(enrichedUser);
+            setIsAuthenticated(true);
+            setIsGuestMode(false);
+            setAuthMode('real');
+            
+            // Clean up OAuth success flags since we've processed them
+            await AsyncStorage.multiRemove(['oauth_success_flag', 'google_auth_user', 'google_auth_token']);
+            
+            console.log('🔐 UserContext - checkAuthStatus - OAuth authentication restored successfully');
+            return; // Exit early - user is authenticated
+          } else {
+            console.warn('🔐 UserContext - checkAuthStatus - Invalid OAuth user data found');
+          }
+        } catch (parseError) {
+          console.error('🔐 UserContext - checkAuthStatus - Error parsing OAuth user data:', parseError);
+        }
+      }
+      
+      // Check for persistent user session (if implemented in the future)
+      console.log('🔐 UserContext - checkAuthStatus - Checking for persistent session');
+      const persistedUser = await AsyncStorage.getItem('current_user');
+      const guestMode = await AsyncStorage.getItem('guest_mode');
+      const authModeStored = await AsyncStorage.getItem('auth_mode');
+      
+      if (persistedUser) {
+        try {
+          const parsedUser = JSON.parse(persistedUser);
+          if (parsedUser && parsedUser.id) {
+            console.log('🔐 UserContext - checkAuthStatus - Restoring persisted user session');
+            const enrichedUser = await enrichUserWithOrgRoles(parsedUser);
+            setSelectedUserState(enrichedUser);
+            setIsAuthenticated(true);
+            setIsGuestMode(guestMode === 'true');
+            setAuthMode((authModeStored as AuthMode) || 'real');
+            console.log('🔐 UserContext - checkAuthStatus - Persisted session restored successfully');
+            return; // Exit early - user is authenticated
+          }
+        } catch (parseError) {
+          console.error('🔐 UserContext - checkAuthStatus - Error parsing persisted user:', parseError);
+        }
+      }
+      
+      // No valid authentication found - clear any invalid data and set unauthenticated state
+      console.log('🔐 UserContext - checkAuthStatus - No valid authentication found, clearing data');
+      await AsyncStorage.multiRemove([
+        'current_user',
+        'guest_mode',
+        'auth_mode',
+        'oauth_in_progress',
+        'oauth_success_flag',
+        'google_auth_user',
+        'google_auth_token'
+      ]);
+      
+      console.log('🔐 UserContext - checkAuthStatus - Setting unauthenticated state');
       setIsAuthenticated(false);
       setIsGuestMode(false);
       setSelectedUserState(null);
       setAuthMode('guest');
+      
     } catch (error) {
       console.error('🔐 UserContext - checkAuthStatus - Error:', error);
+      // On error, ensure clean unauthenticated state
       setIsAuthenticated(false);
       setIsGuestMode(false);
       setSelectedUserState(null);
       setAuthMode('guest');
     } finally {
-      console.log('🔐 UserContext - checkAuthStatus - Auth check completed (fresh start)');
+      console.log('🔐 UserContext - checkAuthStatus - Auth check completed');
       setIsLoading(false);
     }
   };
