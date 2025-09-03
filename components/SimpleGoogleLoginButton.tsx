@@ -18,6 +18,41 @@ interface SimpleGoogleLoginButtonProps {
   style?: any;
 }
 
+// Google OAuth response types
+interface GoogleAuthSuccessResponse {
+  type: 'success';
+  params: Record<string, string>;
+  authentication: any;
+  url: string;
+}
+
+interface GoogleAuthErrorResponse {
+  type: 'error';
+  error: {
+    description?: string;
+    message?: string;
+    [key: string]: any;
+  } | null;
+  errorCode: string | null;
+  params: Record<string, string>;
+  authentication: any;
+  url: string;
+}
+
+interface GoogleAuthCancelResponse {
+  type: 'cancel';
+  params: Record<string, string>;
+  authentication: any;
+  url: string;
+}
+
+type GoogleAuthResponse = GoogleAuthSuccessResponse | GoogleAuthErrorResponse | GoogleAuthCancelResponse;
+
+// Type guard for Google OAuth success response
+const isGoogleAuthSuccess = (response: any): response is GoogleAuthSuccessResponse => {
+  return response.type === 'success' && response.params && typeof response.params === 'object';
+};
+
 // Parse JWT token payload
 const parseJWT = (token: string) => {
   try {
@@ -81,7 +116,7 @@ export default function SimpleGoogleLoginButton({
   style,
 }: SimpleGoogleLoginButtonProps) {
   // All hooks must be at the top level, always in the same order
-  const { t } = useTranslation(['auth']);
+  const { t, i18n } = useTranslation(['auth']);
   const { setSelectedUserWithMode } = useUser();
   const navigation = useNavigation<any>();
   
@@ -89,7 +124,80 @@ export default function SimpleGoogleLoginButton({
   const [authState, setAuthState] = useState<'idle' | 'ready' | 'authenticating' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isInitialized, setIsInitialized] = useState(false);
-
+  const [isTranslationReady, setIsTranslationReady] = useState(false);
+  
+  // Debug translation hook
+  useEffect(() => {
+    if (i18n.isInitialized) {
+      logger.info('GoogleLogin', 'Translation initialized', { 
+        language: i18n.language,
+        namespaces: i18n.reportNamespaces?.getUsedNamespaces() || [],
+        hasAuthNamespace: i18n.hasResourceBundle(i18n.language, 'auth'),
+        availableLanguages: Object.keys(i18n.options.resources || {}),
+        currentResources: i18n.options.resources?.[i18n.language] || {}
+      });
+      
+      // Check if auth namespace resources are loaded
+      const authResources = i18n.options.resources?.[i18n.language]?.auth as any;
+      if (authResources) {
+        logger.info('GoogleLogin', 'Auth namespace resources found', {
+          hasGoogleCta: !!authResources.googleCta,
+          googleCtaValue: authResources.googleCta
+        });
+      } else {
+        logger.warn('GoogleLogin', 'Auth namespace resources not found', {
+          language: i18n.language,
+          availableNamespaces: Object.keys(i18n.options.resources?.[i18n.language] || {})
+        });
+      }
+      
+      // Test translation directly from i18n instance
+      try {
+        const directTranslation = i18n.t('googleCta', { ns: 'auth' });
+        logger.info('GoogleLogin', 'Direct translation test', { 
+          key: 'googleCta',
+          result: directTranslation,
+          isWorking: directTranslation && directTranslation !== 'googleCta'
+        });
+        
+        // Also test the hook translation
+        const testTranslation = t('googleCta', { ns: 'auth' });
+        logger.info('GoogleLogin', 'Hook translation test', { 
+          key: 'googleCta',
+          result: testTranslation,
+          isWorking: testTranslation && testTranslation !== 'googleCta'
+        });
+        
+        // Test a simple key to see if translation is working at all
+        const simpleTest = t('title', { ns: 'auth' });
+        logger.info('GoogleLogin', 'Simple translation test', {
+          key: 'title',
+          result: simpleTest,
+          isWorking: simpleTest && simpleTest !== 'title'
+        });
+        
+        // Set translation ready if either test was successful
+        if ((testTranslation && testTranslation !== 'googleCta' && testTranslation.trim() !== '') ||
+            (directTranslation && directTranslation !== 'googleCta' && directTranslation.trim() !== '') ||
+            (simpleTest && simpleTest !== 'title' && simpleTest.trim() !== '')) {
+          setIsTranslationReady(true);
+        }
+      } catch (error) {
+        logger.error('GoogleLogin', 'Translation test failed', { error: String(error) });
+      }
+    }
+    
+    // Fallback: if translation is not ready after 3 seconds, use fallback text
+    const timeoutId = setTimeout(() => {
+      if (!isTranslationReady) {
+        logger.warn('GoogleLogin', 'Translation timeout, using fallback');
+        setIsTranslationReady(true);
+      }
+    }, 3000);
+    
+    return () => clearTimeout(timeoutId);
+  }, [i18n.isInitialized, i18n.language, t, isTranslationReady]);
+  
   // Get client IDs
   const extra = (Constants?.expoConfig as any)?.extra ?? {};
   const iosClientId = extra.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
@@ -211,17 +319,26 @@ export default function SimpleGoogleLoginButton({
 
     const handleResponse = async () => {
       logger.info('GoogleLogin', 'OAuth response received', { 
-        type: response.type,
-        hasAuthentication: !!response.authentication 
+        type: response.type
       });
 
       try {
-        if (response.type === 'success') {
-          const idToken = response.authentication?.idToken;
+        if (response.type === 'success' && isGoogleAuthSuccess(response)) {
+          // For id_token response type, the token is in response.params.id_token
+          const idToken = response.params.id_token;
           
           if (!idToken) {
+            logger.error('GoogleLogin', 'No ID token found in response params', {
+              availableParams: Object.keys(response.params),
+              params: response.params
+            });
             throw new Error('No ID token received');
           }
+
+          logger.info('GoogleLogin', 'ID token received', { 
+            tokenLength: idToken.length,
+            tokenStart: idToken.substring(0, 20) + '...'
+          });
 
           const profile = parseJWT(idToken);
           if (!profile) {
@@ -230,7 +347,8 @@ export default function SimpleGoogleLoginButton({
 
           logger.info('GoogleLogin', 'Google profile parsed', { 
             email: profile.email,
-            name: profile.name 
+            name: profile.name,
+            sub: profile.sub
           });
 
           const userData = createUserData(profile, t);
@@ -241,6 +359,7 @@ export default function SimpleGoogleLoginButton({
           // Save to database
           try {
             await db.createUser(userData.id, userData);
+            logger.info('GoogleLogin', 'User saved to database successfully');
           } catch (dbError) {
             logger.warn('GoogleLogin', 'Database save failed', { error: String(dbError) });
           }
@@ -254,9 +373,20 @@ export default function SimpleGoogleLoginButton({
           setAuthState('success');
           
         } else if (response.type === 'error') {
-          throw new Error(response.error?.description || 'OAuth failed');
+          const errorMessage = response.error?.description || response.error?.message || 'OAuth failed';
+          logger.error('GoogleLogin', 'OAuth error response', {
+            error: response.error,
+            errorMessage
+          });
+          throw new Error(errorMessage);
         } else if (response.type === 'cancel') {
           logger.info('GoogleLogin', 'OAuth cancelled by user');
+          setAuthState('ready');
+        } else if (response.type === 'dismiss' || response.type === 'opened' || response.type === 'locked') {
+          logger.info('GoogleLogin', 'OAuth response dismissed/opened/locked', { type: response.type });
+          setAuthState('ready');
+        } else {
+          logger.warn('GoogleLogin', 'Unknown response type', { response });
           setAuthState('ready');
         }
       } catch (error) {
@@ -292,9 +422,7 @@ export default function SimpleGoogleLoginButton({
       
       if (Platform.OS === 'web') {
         await promptAsync({ 
-          useProxy: false, 
-          windowName: '_self',
-          redirectUri 
+          windowName: '_self'
         });
       } else {
         await promptAsync();
@@ -320,7 +448,50 @@ export default function SimpleGoogleLoginButton({
       case 'authenticating': return 'מתחבר...';
       case 'success': return 'התחבר בהצלחה!';
       case 'error': return 'נסה שוב';
-      default: return t('auth:googleCta') || 'התחבר/הרשם עם גוגל';
+      default: {
+        // Show loading while translation is initializing
+        if (!isTranslationReady) {
+          return 'טוען...';
+        }
+        
+        // Fallback text in Hebrew (default language)
+        const fallbackText = 'התחבר/הרשם עם גוגל';
+        
+        try {
+          const translatedText = t('googleCta', { ns: 'auth' });
+          
+          // Log the translation attempt for debugging
+          logger.debug('GoogleLogin', 'Translation attempt', { 
+            key: 'googleCta',
+            namespace: 'auth',
+            result: translatedText,
+            isTranslationReady,
+            currentLanguage: i18n.language
+          });
+          
+          // Return translated text if it's valid
+          if (translatedText && translatedText !== 'googleCta' && translatedText.trim() !== '') {
+            return translatedText;
+          }
+          
+          // Return fallback if translation is not valid
+          return fallbackText;
+        } catch (error) {
+          logger.warn('GoogleLogin', 'Translation failed, using fallback', { error: String(error) });
+          return fallbackText;
+        }
+      }
+    }
+  };
+  
+  // Fallback button text that doesn't rely on translation
+  const getFallbackButtonText = () => {
+    switch (authState) {
+      case 'idle': return 'מתכונן...';
+      case 'authenticating': return 'מתחבר...';
+      case 'success': return 'התחבר בהצלחה!';
+      case 'error': return 'נסה שוב';
+      default: return 'התחבר/הרשם עם גוגל';
     }
   };
 
@@ -361,7 +532,16 @@ export default function SimpleGoogleLoginButton({
           style={styles.icon} 
         />
         <Text style={styles.text}>
-          {getButtonText()}
+          {(() => {
+            const buttonText = getButtonText() || getFallbackButtonText();
+            console.log('GoogleLogin Button Text:', { 
+              buttonText, 
+              authState, 
+              isTranslationReady,
+              fallbackText: getFallbackButtonText()
+            });
+            return buttonText;
+          })()}
         </Text>
       </View>
       

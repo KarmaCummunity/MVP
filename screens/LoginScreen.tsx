@@ -533,6 +533,11 @@ export default function LoginScreen() {
           <Text style={styles.title}>{t('auth:title') || t('common:welcomeShort')}</Text>
           <Text style={styles.subtitle}>{t('auth:subtitle') || ''}</Text>
           
+          {/* Version Number */}
+          <View style={styles.versionContainer}>
+            <Text style={styles.versionText}>v1.8.0</Text>
+          </View>
+          
           <View style={styles.buttonsContainer}>
             <SimpleGoogleLoginButton />
             
@@ -1298,5 +1303,17 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Version styles
+  versionContainer: {
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  versionText: {
+    fontSize: 14,
+    color: '#888888',
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontWeight: '500',
   },
 }); 

@@ -94,8 +94,30 @@ export POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-kc_password}
 export POSTGRES_DB=${POSTGRES_DB:-kc_db}
 export PORT="$SERVER_PORT"
 
+# Google OAuth Configuration (CRITICAL for auth to work)
+export GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-430191522654-o70t2qnqc4bvpvmbpak7unog7pvp9c95.apps.googleusercontent.com}
+export EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=${EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID:-430191522654-o70t2qnqc4bvpvmbpak7unog7pvp9c95.apps.googleusercontent.com}
+export EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=${EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID:-430191522654-q05j71a8lu3e1vgf75c2r2jscgckb4mm.apps.googleusercontent.com}
+export EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=${EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID:-430191522654-jno2tkl1dotil0mkf4h4hahfk4e4gas8.apps.googleusercontent.com}
+
+# Environment configuration
+export NODE_ENV=${NODE_ENV:-development}
+export DATABASE_URL=${DATABASE_URL:-postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB}
+
+echo "\n🔑 Google OAuth Configuration:"
+echo "   GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:0:20}..."
+echo "   Web Client ID: ${EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID:0:20}..."
+echo "   Environment: $NODE_ENV"
+
 echo "\n🗄️  Ensuring DB tables (init script)..."
-if ! SKIP_FULL_SCHEMA=1 NODE_OPTIONS= npx ts-node -r tsconfig-paths/register src/scripts/init-db.ts; then
+if ! SKIP_FULL_SCHEMA=1 NODE_OPTIONS= \
+  POSTGRES_HOST="$POSTGRES_HOST" \
+  POSTGRES_PORT="$POSTGRES_PORT" \
+  POSTGRES_USER="$POSTGRES_USER" \
+  POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+  POSTGRES_DB="$POSTGRES_DB" \
+  DATABASE_URL="$DATABASE_URL" \
+  npx ts-node -r tsconfig-paths/register src/scripts/init-db.ts; then
   echo "❌ DB init failed. Aborting."
   exit 1
 fi
@@ -105,9 +127,23 @@ if [[ -n "${FALLBACK_SERVER_JS:-}" ]]; then
   echo "(fallback) running TS directly via ts-node"
   # ensure dev deps
   if [[ ! -d node_modules ]]; then npm ci || npm install; fi
-  SKIP_FULL_SCHEMA=1 node -r ts-node/register -r tsconfig-paths/register src/main.ts &
+  SKIP_FULL_SCHEMA=1 \
+  GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
+  EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID="$EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID" \
+  DATABASE_URL="$DATABASE_URL" \
+  REDIS_URL="$REDIS_URL" \
+  NODE_ENV="$NODE_ENV" \
+  PORT="$PORT" \
+  node -r ts-node/register -r tsconfig-paths/register src/main.ts &
 else
-  SKIP_FULL_SCHEMA=1 node dist/main.js &
+  SKIP_FULL_SCHEMA=1 \
+  GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
+  EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID="$EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID" \
+  DATABASE_URL="$DATABASE_URL" \
+  REDIS_URL="$REDIS_URL" \
+  NODE_ENV="$NODE_ENV" \
+  PORT="$PORT" \
+  node dist/main.js &
 fi
 SERVER_PID=$!
 
