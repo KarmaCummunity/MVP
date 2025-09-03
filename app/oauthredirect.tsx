@@ -46,3 +46,13 @@ export default function OAuthRedirect() {
     </View>
   );
 }
+
+// Log page load for debugging
+if (typeof window !== 'undefined') {
+  console.log('🔄 OAuth redirect page loaded:', {
+    url: window.location.href,
+    search: window.location.search,
+    hash: window.location.hash,
+    timestamp: new Date().toISOString()
+  });
+}

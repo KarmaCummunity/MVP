@@ -15,7 +15,14 @@ import { restAdapter } from '../utils/restAdapter';
 import { logger } from '../utils/loggerService';
 import { runAuthDiagnostics } from '../utils/authTestUtils';
 
-// Auth validation utilities
+// Extend window interface for diagnostics tracking
+declare global {
+  interface Window {
+    __authDiagnosticsRun?: boolean;
+  }
+}
+
+// Auth validation utilities (optimized)
 const validateOAuthConfig = (config: any) => {
   const issues = [];
   if (!config.webClientId && Platform.OS === 'web') {
@@ -33,30 +40,29 @@ const validateOAuthConfig = (config: any) => {
   return issues;
 };
 
+// Simplified endpoint testing (no CORS issues)
 const testOAuthEndpoints = async (config: any) => {
+  // Skip network tests in browser to avoid CORS issues
+  if (typeof window !== 'undefined') {
+    return {
+      redirectUri: 'skipped_browser',
+      googleDiscovery: 'skipped_browser'
+    };
+  }
+  
   const results = { redirectUri: 'unknown', googleDiscovery: 'unknown' };
   
-  // Test redirect URI accessibility (for web)
-  if (Platform.OS === 'web' && config.redirectUri) {
+  // Basic redirect URI validation (format only)
+  if (config.redirectUri) {
     try {
-      const response = await fetch(config.redirectUri.replace('/oauthredirect', '/'), {
-        method: 'HEAD',
-        mode: 'cors'
-      });
-      results.redirectUri = response.ok ? 'accessible' : 'not_accessible';
+      new URL(config.redirectUri); // Just test if it's a valid URL format
+      results.redirectUri = 'valid_format';
     } catch (error) {
-      results.redirectUri = 'error';
+      results.redirectUri = 'invalid_format';
     }
   }
   
-  // Test Google's discovery endpoint
-  try {
-    const response = await fetch('https://accounts.google.com/.well-known/openid_configuration');
-    results.googleDiscovery = response.ok ? 'accessible' : 'not_accessible';
-  } catch (error) {
-    results.googleDiscovery = 'error';
-  }
-  
+  results.googleDiscovery = 'skipped_cors';
   return results;
 };
 
@@ -132,8 +138,12 @@ function GoogleAuthInner({ onSuccess, style, iosClientId, androidClientId, webCl
   const { t } = useTranslation(['auth']);
   const [authState, setAuthState] = useState<'idle' | 'configuring' | 'ready' | 'authenticating' | 'success' | 'error'>('idle');
   const [validationResults, setValidationResults] = useState<any>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // Single initialization effect
   useEffect(() => {
+    if (isInitialized) return;
+    
     (async () => {
       setAuthState('configuring');
       logger.info('GoogleLogin', 'Initializing OAuth setup');
@@ -143,9 +153,10 @@ function GoogleAuthInner({ onSuccess, style, iosClientId, androidClientId, webCl
         logger.info('GoogleLogin', 'Cleared stuck OAuth state');
       } catch {}
       
+      setIsInitialized(true);
       setAuthState('ready');
     })();
-  }, []);
+  }, [isInitialized]);
 
   if (Platform.OS === 'web') {
     try { WebBrowser.maybeCompleteAuthSession(); } catch {}
@@ -173,59 +184,71 @@ function GoogleAuthInner({ onSuccess, style, iosClientId, androidClientId, webCl
   };
   if (webClientId) oauthConfig.expoClientId = webClientId;
 
-  // Comprehensive OAuth configuration validation
+  // Configuration validation effect (runs only once after initialization)
   useEffect(() => {
+    if (!isInitialized || validationResults) return;
+    
     (async () => {
-      const configIssues = validateOAuthConfig(oauthConfig);
-      const endpointTests = await testOAuthEndpoints(oauthConfig);
-      
-      const validation = {
-        timestamp: new Date().toISOString(),
-        platform: Platform.OS,
-        configIssues,
-        endpointTests,
-        config: {
-          hasRedirectUri: !!redirectUri,
-          redirectUri,
-          hasScopes: oauthConfig.scopes?.length > 0,
-          scopes: oauthConfig.scopes,
-          responseType: oauthConfig.responseType
+      try {
+        const configIssues = validateOAuthConfig(oauthConfig);
+        const endpointTests = await testOAuthEndpoints(oauthConfig);
+        
+        const validation = {
+          timestamp: new Date().toISOString(),
+          platform: Platform.OS,
+          configIssues,
+          endpointTests,
+          config: {
+            hasRedirectUri: !!redirectUri,
+            redirectUri,
+            hasScopes: oauthConfig.scopes?.length > 0,
+            scopes: oauthConfig.scopes,
+            responseType: oauthConfig.responseType
+          }
+        };
+        
+        setValidationResults(validation);
+        
+        logger.info('GoogleLogin', 'OAuth configuration validation', validation);
+        
+        // Run comprehensive authentication diagnostics in development (only once)
+        if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && !window.__authDiagnosticsRun) {
+          window.__authDiagnosticsRun = true;
+          try {
+            await runAuthDiagnostics({
+              webClientId,
+              iosClientId,
+              androidClientId,
+              redirectUri
+            });
+          } catch (error) {
+            logger.error('GoogleLogin', 'Authentication diagnostics failed', { error: String(error) });
+          }
         }
-      };
-      
-      setValidationResults(validation);
-      
-      logger.info('GoogleLogin', 'OAuth configuration validation', validation);
-      
-      // Run comprehensive authentication diagnostics in development
-      if (process.env.NODE_ENV === 'development') {
-        try {
-          await runAuthDiagnostics({
-            webClientId,
-            iosClientId,
-            androidClientId,
-            redirectUri
-          });
-        } catch (error) {
-          logger.error('GoogleLogin', 'Authentication diagnostics failed', { error: String(error) });
+        
+        if (configIssues.length > 0) {
+          logger.warn('GoogleLogin', 'OAuth configuration issues found', { issues: configIssues });
+        } else {
+          logger.info('GoogleLogin', 'OAuth configuration validation passed');
         }
-      }
-      
-      if (configIssues.length > 0) {
-        logger.warn('GoogleLogin', 'OAuth configuration issues found', { issues: configIssues });
-      } else {
-        logger.info('GoogleLogin', 'OAuth configuration validation passed');
+      } catch (error) {
+        logger.error('GoogleLogin', 'Configuration validation failed', { error: String(error) });
       }
     })();
-  }, [redirectUri, iosClientId, androidClientId, webClientId]);
+  }, [isInitialized, validationResults, redirectUri, iosClientId, androidClientId, webClientId]);
 
-  logger.info('GoogleLogin', 'OAuth config being used', {
-    ...oauthConfig,
-    // Mask sensitive client IDs in logs
-    iosClientId: iosClientId ? `${iosClientId.substring(0, 10)}...` : undefined,
-    androidClientId: androidClientId ? `${androidClientId.substring(0, 10)}...` : undefined,
-    webClientId: webClientId ? `${webClientId.substring(0, 10)}...` : undefined
-  });
+  // Log OAuth config only once during development
+  useEffect(() => {
+    if (!isInitialized) return;
+    
+    logger.info('GoogleLogin', 'OAuth config being used', {
+      ...oauthConfig,
+      // Mask sensitive client IDs in logs
+      iosClientId: iosClientId ? `${iosClientId.substring(0, 10)}...` : undefined,
+      androidClientId: androidClientId ? `${androidClientId.substring(0, 10)}...` : undefined,
+      webClientId: webClientId ? `${webClientId.substring(0, 10)}...` : undefined
+    });
+  }, [isInitialized]); // Only log once after initialization
 
   let request: any, response: any, promptAsync: any;
   try {
