@@ -486,8 +486,8 @@ export default function SettingsScreen() {
           {selectedUser && selectedUser.roles?.includes('org_admin') && (
             <SettingsItem
               icon="briefcase-outline"
-              title={'לוח בקרה לארגון'}
-              subtitle={'ניהול ארגון מאושר'}
+              title={t('settings:orgDashboardTitle')}
+              subtitle={t('settings:orgDashboardSubtitle')}
               onPress={() => navigation.navigate('OrgDashboardScreen' as never)}
             />
           )}
@@ -496,8 +496,8 @@ export default function SettingsScreen() {
           {selectedUser && selectedUser.roles?.includes('admin') && (
             <SettingsItem
               icon="checkmark-done-outline"
-              title={'אישורי ארגונים'}
-              subtitle={'ניהול בקשות ארגונים'}
+              title={t('settings:adminApprovalsTitle')}
+              subtitle={t('settings:adminApprovalsSubtitle')}
               onPress={() => navigation.navigate('AdminOrgApprovalsScreen' as never)}
             />
           )}

@@ -22,17 +22,7 @@ import { Ionicons as Icon } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import * as Haptics from 'expo-haptics';
 
-// Demo users (kept in-file for MVP – remove when real users are plugged in)
-const DEMO_USERS: ChatUser[] = [
-  { id: 'dummy_user_1', name: 'יוזר דמה 1', avatar: 'https://i.pravatar.cc/150?u=dummy_user_1', isOnline: true },
-  { id: 'dummy_user_2', name: 'יוזר דמה 2', avatar: 'https://i.pravatar.cc/150?u=dummy_user_2', isOnline: false, lastSeen: new Date(Date.now() - 86400000).toISOString() },
-];
-
-// Demo conversations (merged with real ones; participant[0] will be switched to current user)
-const DEMO_CONVERSATIONS: ChatConversation[] = [
-  { id: 'dummy_conv_1', participants: ['user001', 'dummy_user_1'], lastMessageText: 'זוהי הודעת דמה ראשונה.', lastMessageTime: new Date().toISOString(), unreadCount: 2, createdAt: new Date().toISOString() },
-  { id: 'dummy_conv_2', participants: ['user001', 'dummy_user_2'], lastMessageText: 'הודעת דמה שנייה, קצת יותר ארוכה.', lastMessageTime: new Date(Date.now() - 3600000).toISOString(), unreadCount: 0, createdAt: new Date(Date.now() - 3600000).toISOString() },
-];
+// Demo data is now localized via i18n inside the component
 
 export default function ChatListScreen() {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -41,6 +31,17 @@ export default function ChatListScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { t } = useTranslation(['chat','common']);
+
+  // Localized demo users and conversations
+  const DEMO_USERS: ChatUser[] = useMemo(() => ([
+    { id: 'dummy_user_1', name: t('chat:demo.user1Name'), avatar: 'https://i.pravatar.cc/150?u=dummy_user_1', isOnline: true },
+    { id: 'dummy_user_2', name: t('chat:demo.user2Name'), avatar: 'https://i.pravatar.cc/150?u=dummy_user_2', isOnline: false, lastSeen: new Date(Date.now() - 86400000).toISOString() },
+  ]), [t]);
+
+  const DEMO_CONVERSATIONS: ChatConversation[] = useMemo(() => ([
+    { id: 'dummy_conv_1', participants: ['user001', 'dummy_user_1'], lastMessageText: t('chat:demo.conv1Last'), lastMessageTime: new Date().toISOString(), unreadCount: 2, createdAt: new Date().toISOString() },
+    { id: 'dummy_conv_2', participants: ['user001', 'dummy_user_2'], lastMessageText: t('chat:demo.conv2Last'), lastMessageTime: new Date(Date.now() - 3600000).toISOString(), unreadCount: 0, createdAt: new Date(Date.now() - 3600000).toISOString() },
+  ]), [t]);
 
   // Load conversations (real + demo)
   const loadConversations = useCallback(async () => {

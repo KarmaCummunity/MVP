@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { TouchableOpacity, Text, StyleSheet, View, Platform, Alert } from 'react-native';
 import * as Google from 'expo-auth-session/providers/google';
 import { makeRedirectUri } from 'expo-auth-session';
@@ -13,6 +13,52 @@ import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { restAdapter } from '../utils/restAdapter';
 import { logger } from '../utils/loggerService';
+import { runAuthDiagnostics } from '../utils/authTestUtils';
+
+// Auth validation utilities
+const validateOAuthConfig = (config: any) => {
+  const issues = [];
+  if (!config.webClientId && Platform.OS === 'web') {
+    issues.push('Missing webClientId for web platform');
+  }
+  if (!config.iosClientId && Platform.OS === 'ios') {
+    issues.push('Missing iosClientId for iOS platform');
+  }
+  if (!config.androidClientId && Platform.OS === 'android') {
+    issues.push('Missing androidClientId for Android platform');
+  }
+  if (!config.redirectUri) {
+    issues.push('Missing redirectUri');
+  }
+  return issues;
+};
+
+const testOAuthEndpoints = async (config: any) => {
+  const results = { redirectUri: 'unknown', googleDiscovery: 'unknown' };
+  
+  // Test redirect URI accessibility (for web)
+  if (Platform.OS === 'web' && config.redirectUri) {
+    try {
+      const response = await fetch(config.redirectUri.replace('/oauthredirect', '/'), {
+        method: 'HEAD',
+        mode: 'cors'
+      });
+      results.redirectUri = response.ok ? 'accessible' : 'not_accessible';
+    } catch (error) {
+      results.redirectUri = 'error';
+    }
+  }
+  
+  // Test Google's discovery endpoint
+  try {
+    const response = await fetch('https://accounts.google.com/.well-known/openid_configuration');
+    results.googleDiscovery = response.ok ? 'accessible' : 'not_accessible';
+  } catch (error) {
+    results.googleDiscovery = 'error';
+  }
+  
+  return results;
+};
 
 interface SimpleGoogleLoginButtonProps {
   onSuccess?: (user: any) => void;
@@ -32,19 +78,44 @@ export default function SimpleGoogleLoginButton({
   const webClientId = extra.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
   const isGoogleAvailable = (() => {
-    if (Platform.OS === 'ios') return !!iosClientId || !!webClientId;
-    if (Platform.OS === 'android') return !!androidClientId || !!webClientId;
-    if (Platform.OS === 'web') return !!webClientId;
-    return false;
+    const available = (() => {
+      if (Platform.OS === 'ios') return !!iosClientId || !!webClientId;
+      if (Platform.OS === 'android') return !!androidClientId || !!webClientId;
+      if (Platform.OS === 'web') return !!webClientId;
+      return false;
+    })();
+    
+    // Log Google availability check
+    logger.info('GoogleLogin', 'Google availability check', {
+      platform: Platform.OS,
+      available,
+      hasIosClientId: !!iosClientId,
+      hasAndroidClientId: !!androidClientId,
+      hasWebClientId: !!webClientId,
+      clientIds: {
+        ios: iosClientId ? `${iosClientId.substring(0, 10)}...` : 'missing',
+        android: androidClientId ? `${androidClientId.substring(0, 10)}...` : 'missing',
+        web: webClientId ? `${webClientId.substring(0, 10)}...` : 'missing'
+      }
+    });
+    
+    return available;
   })();
 
   // If Google is not available, render a disabled-looking button without initializing the hook
   if (disabled || !isGoogleAvailable) {
+    logger.warn('GoogleLogin', 'Google login unavailable', {
+      disabled,
+      isGoogleAvailable,
+      platform: Platform.OS,
+      reason: disabled ? 'manually disabled' : 'client IDs missing'
+    });
+    
     return (
       <TouchableOpacity style={[styles.button, styles.disabled, style]} disabled>
         <View style={styles.content}>
           <Ionicons name="logo-google" size={20} color="#fff" style={styles.icon} />
-          <Text style={styles.text}>{t('auth:googleCta') || 'התחבר עם Google'}</Text>
+          <Text style={styles.text}>{t('auth:googleCta') || 'התחבר/הרשם עם גוגל'}</Text>
         </View>
       </TouchableOpacity>
     );
@@ -59,18 +130,37 @@ function GoogleAuthInner({ onSuccess, style, iosClientId, androidClientId, webCl
   const { setSelectedUserWithMode } = useUser();
   const navigation = useNavigation<any>();
   const { t } = useTranslation(['auth']);
+  const [authState, setAuthState] = useState<'idle' | 'configuring' | 'ready' | 'authenticating' | 'success' | 'error'>('idle');
+  const [validationResults, setValidationResults] = useState<any>(null);
 
   useEffect(() => {
     (async () => {
+      setAuthState('configuring');
+      logger.info('GoogleLogin', 'Initializing OAuth setup');
+      
       try {
         await AsyncStorage.removeItem('oauth_in_progress');
         logger.info('GoogleLogin', 'Cleared stuck OAuth state');
       } catch {}
+      
+      setAuthState('ready');
     })();
   }, []);
 
   if (Platform.OS === 'web') {
     try { WebBrowser.maybeCompleteAuthSession(); } catch {}
+  }
+
+  // Configure redirect URI based on platform
+  let redirectUri;
+  if (Platform.OS === 'web') {
+    // For web, use the current origin + /oauthredirect
+    redirectUri = `${window.location.origin}/oauthredirect`;
+    console.log('🔍 Web redirect URI:', redirectUri);
+  } else {
+    // For mobile, use the custom scheme
+    redirectUri = makeRedirectUri({ scheme: 'com.navesarussi1.KarmaCommunity', path: 'oauthredirect' });
+    console.log('🔍 Mobile redirect URI:', redirectUri);
   }
 
   const oauthConfig: any = {
@@ -79,11 +169,63 @@ function GoogleAuthInner({ onSuccess, style, iosClientId, androidClientId, webCl
     webClientId,
     scopes: ['openid', 'profile', 'email'],
     responseType: 'id_token',
-    redirectUri: makeRedirectUri({ scheme: 'com.navesarussi1.KarmaCommunity', path: 'oauthredirect' }),
+    redirectUri,
   };
   if (webClientId) oauthConfig.expoClientId = webClientId;
 
-  logger.info('GoogleLogin', 'OAuth config being used', oauthConfig);
+  // Comprehensive OAuth configuration validation
+  useEffect(() => {
+    (async () => {
+      const configIssues = validateOAuthConfig(oauthConfig);
+      const endpointTests = await testOAuthEndpoints(oauthConfig);
+      
+      const validation = {
+        timestamp: new Date().toISOString(),
+        platform: Platform.OS,
+        configIssues,
+        endpointTests,
+        config: {
+          hasRedirectUri: !!redirectUri,
+          redirectUri,
+          hasScopes: oauthConfig.scopes?.length > 0,
+          scopes: oauthConfig.scopes,
+          responseType: oauthConfig.responseType
+        }
+      };
+      
+      setValidationResults(validation);
+      
+      logger.info('GoogleLogin', 'OAuth configuration validation', validation);
+      
+      // Run comprehensive authentication diagnostics in development
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          await runAuthDiagnostics({
+            webClientId,
+            iosClientId,
+            androidClientId,
+            redirectUri
+          });
+        } catch (error) {
+          logger.error('GoogleLogin', 'Authentication diagnostics failed', { error: String(error) });
+        }
+      }
+      
+      if (configIssues.length > 0) {
+        logger.warn('GoogleLogin', 'OAuth configuration issues found', { issues: configIssues });
+      } else {
+        logger.info('GoogleLogin', 'OAuth configuration validation passed');
+      }
+    })();
+  }, [redirectUri, iosClientId, androidClientId, webClientId]);
+
+  logger.info('GoogleLogin', 'OAuth config being used', {
+    ...oauthConfig,
+    // Mask sensitive client IDs in logs
+    iosClientId: iosClientId ? `${iosClientId.substring(0, 10)}...` : undefined,
+    androidClientId: androidClientId ? `${androidClientId.substring(0, 10)}...` : undefined,
+    webClientId: webClientId ? `${webClientId.substring(0, 10)}...` : undefined
+  });
 
   let request: any, response: any, promptAsync: any;
   try {
@@ -99,7 +241,7 @@ function GoogleAuthInner({ onSuccess, style, iosClientId, androidClientId, webCl
     const fallbackConfig: any = {
       scopes: ['openid', 'profile', 'email'],
       responseType: 'id_token',
-      redirectUri: makeRedirectUri({ scheme: 'com.navesarussi1.KarmaCommunity', path: 'oauthredirect' }),
+      redirectUri,
       expoClientId: webClientId,
     };
     [request, response, promptAsync] = Google.useAuthRequest(fallbackConfig);
@@ -116,25 +258,112 @@ function GoogleAuthInner({ onSuccess, style, iosClientId, androidClientId, webCl
   useEffect(() => {
     const handleOAuthResponse = async () => {
       if (!response) return;
+      
+      logger.info('GoogleLogin', 'OAuth response received', {
+        type: response.type,
+        url: response.url ? `${response.url.substring(0, 50)}...` : undefined,
+        hasAuthentication: !!response.authentication,
+        hasParams: !!(response as any)?.params
+      });
+      
       try {
         if (response.type !== 'success') {
+          logger.warn('GoogleLogin', 'OAuth response not successful', {
+            type: response.type,
+            errorCode: (response as any)?.error_code,
+            error: (response as any)?.error
+          });
+          
+          setAuthState('error');
           await AsyncStorage.removeItem('oauth_in_progress');
+          
+          if (response.type === 'cancel') {
+            logger.info('GoogleLogin', 'User cancelled OAuth flow');
+            return;
+          }
+          
+          Alert.alert(
+            t('auth:errors.oauthTitle') || 'שגיאת אימות',
+            t('auth:errors.oauthFailed') || `אימות נכשל: ${(response as any)?.error || 'סיבה לא ידועה'}`
+          );
           return;
         }
+        
+        setAuthState('success');
+        
         const idToken = response.authentication?.idToken || (response as any)?.params?.id_token;
+        const accessToken = response.authentication?.accessToken || (response as any)?.params?.access_token;
+        
+        logger.info('GoogleLogin', 'OAuth tokens received', {
+          hasIdToken: !!idToken,
+          hasAccessToken: !!accessToken,
+          idTokenLength: idToken?.length,
+          accessTokenLength: accessToken?.length
+        });
+        
         if (!idToken) {
-          Alert.alert('שגיאה', 'לא ניתן להתחבר עם Google');
+          logger.error('GoogleLogin', 'No ID token received from Google OAuth response');
+          setAuthState('error');
+          Alert.alert(
+            t('auth:errors.oauthTitle') || 'שגיאה', 
+            t('auth:errors.googleSignInNotAvailable') || 'לא ניתן להתחבר עם Google - לא התקבל טוקן'
+          );
           return;
         }
+        
         const profile = parseJWT(idToken);
-        const userData = createUserData(profile);
+        if (!profile) {
+          logger.error('GoogleLogin', 'Failed to parse JWT token');
+          setAuthState('error');
+          Alert.alert(
+            t('auth:errors.oauthTitle') || 'שגיאה', 
+            'שגיאה בפענוח פרטי המשתמש'
+          );
+          return;
+        }
+        
+        logger.info('GoogleLogin', 'User profile parsed successfully', {
+          userId: profile.sub,
+          email: profile.email,
+          name: profile.name,
+          emailVerified: profile.email_verified
+        });
+        
+        const userData = createUserData(profile, t);
+        logger.info('GoogleLogin', 'User data created', { userId: userData.id, email: userData.email });
+        
         await setSelectedUserWithMode(userData, 'real');
-        try { await db.createUser(userData.id, userData); } catch {}
-        if (onSuccess) onSuccess(userData);
+        logger.info('GoogleLogin', 'User set in context');
+        
+        try {
+          await db.createUser(userData.id, userData);
+          logger.info('GoogleLogin', 'User saved to database');
+        } catch (dbError) {
+          logger.warn('GoogleLogin', 'Failed to save user to database', { error: String(dbError) });
+          // Don't fail the auth flow if DB save fails
+        }
+        
+        if (onSuccess) {
+          onSuccess(userData);
+          logger.info('GoogleLogin', 'onSuccess callback executed');
+        }
+        
         navigation.replace('HomeStack');
         await AsyncStorage.removeItem('oauth_in_progress');
+        
+        logger.info('GoogleLogin', 'Authentication flow completed successfully');
+        
       } catch (error) {
-        Alert.alert('שגיאה', 'התחברות נכשלה. נסה שוב.');
+        logger.error('GoogleLogin', 'OAuth response handling failed', { 
+          error: String(error),
+          stack: (error as Error)?.stack
+        });
+        
+        setAuthState('error');
+        Alert.alert(
+          t('auth:errors.oauthTitle') || 'שגיאה', 
+          t('auth:errors.loginFailed') || `התחברות נכשלה: ${(error as Error)?.message || 'שגיאה לא צפויה'}`
+        );
         await AsyncStorage.removeItem('oauth_in_progress');
       }
     };
@@ -142,31 +371,128 @@ function GoogleAuthInner({ onSuccess, style, iosClientId, androidClientId, webCl
   }, [response]);
 
   const handlePress = async () => {
+    if (authState === 'authenticating') {
+      logger.warn('GoogleLogin', 'Authentication already in progress');
+      return;
+    }
+    
+    setAuthState('authenticating');
+    logger.info('GoogleLogin', 'Starting OAuth flow', {
+      platform: Platform.OS,
+      redirectUri,
+      hasPromptAsync: !!promptAsync,
+      validationIssues: validationResults?.configIssues?.length || 0
+    });
+    
     try {
+      // Pre-flight checks
+      if (validationResults?.configIssues?.length > 0) {
+        logger.warn('GoogleLogin', 'Starting OAuth with configuration issues', {
+          issues: validationResults.configIssues
+        });
+      }
+      
+      if (!promptAsync) {
+        throw new Error('OAuth prompt function not available');
+      }
+      
       await AsyncStorage.setItem('oauth_in_progress', 'true');
+      logger.info('GoogleLogin', 'Marked OAuth as in progress');
+      
       if (Platform.OS === 'web') {
-        const result = await promptAsync({ useProxy: false, windowName: '_self', redirectUri: makeRedirectUri() } as any);
+        logger.info('GoogleLogin', 'Starting web OAuth flow');
+        const webConfig = { 
+          useProxy: false, 
+          windowName: '_self', 
+          redirectUri 
+        };
+        logger.info('GoogleLogin', 'Web OAuth config', webConfig);
+        
+        const result = await promptAsync(webConfig as any);
+        logger.info('GoogleLogin', 'Web OAuth prompt completed', { 
+          resultType: result?.type,
+          hasUrl: !!result?.url 
+        });
       } else {
-        await promptAsync();
+        logger.info('GoogleLogin', 'Starting mobile OAuth flow');
+        const result = await promptAsync();
+        logger.info('GoogleLogin', 'Mobile OAuth prompt completed', { 
+          resultType: result?.type 
+        });
       }
     } catch (error: any) {
-      Alert.alert('שגיאה OAuth', `OAuth נכשל: ${error?.message || error}`);
+      logger.error('GoogleLogin', 'OAuth flow failed', {
+        error: String(error),
+        message: error?.message,
+        stack: error?.stack,
+        platform: Platform.OS
+      });
+      
+      setAuthState('error');
+      
+      const errorMessage = error?.message || String(error);
+      const isNetworkError = errorMessage.includes('Network') || errorMessage.includes('fetch');
+      const isConfigError = errorMessage.includes('client_id') || errorMessage.includes('redirect_uri');
+      
+      let userMessage = t('auth:errors.loginFailed') || 'התחברות נכשלה. נסה שוב.';
+      
+      if (isNetworkError) {
+        userMessage = 'בעיית רשת. בדוק את החיבור לאינטרנט ונסה שוב.';
+      } else if (isConfigError) {
+        userMessage = 'שגיאה בהגדרות האימות. פנה לתמיכה.';
+      }
+      
+      Alert.alert(
+        t('auth:errors.oauthTitle') || 'שגיאת אימות OAuth',
+        userMessage + (process.env.NODE_ENV === 'development' ? `\n\nפרטים טכניים: ${errorMessage}` : '')
+      );
+      
       await AsyncStorage.removeItem('oauth_in_progress');
+      
+      // Reset state after a delay
+      setTimeout(() => setAuthState('ready'), 2000);
     }
   };
 
+  const getButtonText = () => {
+    switch (authState) {
+      case 'configuring':
+        return 'מתכונן...';
+      case 'authenticating':
+        return 'מתחבר...';
+      case 'success':
+        return 'התחבר בהצלחה!';
+      case 'error':
+        return 'נסה שוב';
+      default:
+        return t('auth:googleCta') || 'התחבר/הרשם עם גוגל';
+    }
+  };
+  
+  const isButtonDisabled = authState === 'configuring' || authState === 'authenticating';
+  
   return (
-    <TouchableOpacity style={[styles.button, style]} onPress={(e) => { e.preventDefault?.(); e.stopPropagation?.(); handlePress(); }} activeOpacity={0.8}>
+    <TouchableOpacity 
+      style={[styles.button, isButtonDisabled && styles.disabled, style]} 
+      onPress={(e) => { e.preventDefault?.(); e.stopPropagation?.(); handlePress(); }} 
+      activeOpacity={0.8}
+      disabled={isButtonDisabled}
+    >
       <View style={styles.content}>
-        <Ionicons name="logo-google" size={20} color="#fff" style={styles.icon} />
-        <Text style={styles.text}>{t('auth:googleCta') || 'התחבר עם Google'}</Text>
+        <Ionicons 
+          name={authState === 'success' ? 'checkmark-circle' : 'logo-google'} 
+          size={20} 
+          color="#fff" 
+          style={styles.icon} 
+        />
+        <Text style={styles.text}>{getButtonText()}</Text>
       </View>
     </TouchableOpacity>
   );
 }
 
 // Create user data from Google profile
-const createUserData = (profile: any) => ({
+const createUserData = (profile: any, t: (k: string, opts?: any) => string) => ({
     id: profile.sub,
     name: profile.name || profile.given_name || 'Google User',
     email: profile.email,
@@ -183,23 +509,84 @@ const createUserData = (profile: any) => ({
     bio: '',
     karmaPoints: 0,
     joinDate: new Date().toISOString(),
-    location: { city: 'ישראל', country: 'IL' },
+    location: { city: t('common:labels.countryIsrael') || 'ישראל', country: 'IL' },
     interests: [],
     postsCount: 0,
     followersCount: 0,
     followingCount: 0,
     notifications: [
-      { type: 'system', text: 'ברוך הבא לקרמה קומיוניטי!', date: new Date().toISOString() }
+      { type: 'system', text: t('notifications:welcomeSystem') || 'ברוך הבא לקרמה קומיוניטי!', date: new Date().toISOString() }
     ],
 });
 
-// Parse JWT token payload (simplified)
+// Parse JWT token payload with comprehensive validation
 const parseJWT = (token: string) => {
   try {
-    const [, payloadBase64] = token.split('.');
-    return JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
+    if (!token || typeof token !== 'string') {
+      logger.error('GoogleLogin', 'Invalid token provided to parseJWT', { tokenType: typeof token });
+      return null;
+    }
+    
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      logger.error('GoogleLogin', 'JWT token has invalid structure', { partsCount: parts.length });
+      return null;
+    }
+    
+    const [header, payloadBase64, signature] = parts;
+    
+    // Validate header
+    let headerObj;
+    try {
+      headerObj = JSON.parse(atob(header.replace(/-/g, '+').replace(/_/g, '/')));
+      logger.info('GoogleLogin', 'JWT header parsed', { alg: headerObj.alg, typ: headerObj.typ });
+    } catch (error) {
+      logger.error('GoogleLogin', 'Failed to parse JWT header', { error: String(error) });
+      return null;
+    }
+    
+    // Parse payload
+    const payload = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
+    
+    // Validate essential fields
+    if (!payload.sub) {
+      logger.error('GoogleLogin', 'JWT payload missing sub (user ID)');
+      return null;
+    }
+    
+    if (!payload.email) {
+      logger.warn('GoogleLogin', 'JWT payload missing email');
+    }
+    
+    // Check token expiration
+    if (payload.exp) {
+      const now = Math.floor(Date.now() / 1000);
+      if (payload.exp < now) {
+        logger.error('GoogleLogin', 'JWT token has expired', {
+          exp: payload.exp,
+          now,
+          expiredBy: now - payload.exp
+        });
+        return null;
+      }
+    }
+    
+    logger.info('GoogleLogin', 'JWT token validated successfully', {
+      sub: payload.sub,
+      email: payload.email,
+      name: payload.name,
+      iss: payload.iss,
+      aud: payload.aud,
+      exp: payload.exp,
+      iat: payload.iat
+    });
+    
+    return payload;
   } catch (error) {
-    console.error('Failed to parse JWT:', error);
+    logger.error('GoogleLogin', 'Failed to parse JWT token', { 
+      error: String(error),
+      tokenLength: token?.length
+    });
     return null;
   }
 };
