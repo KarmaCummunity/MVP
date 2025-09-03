@@ -13,15 +13,16 @@ echo "📦 Building web version..."
 npm run build:web
 
 # Check if build was successful
-if [[ ! -d "web-build" ]]; then
-  echo "❌ Build failed - web-build directory not found"
+if [[ ! -d "dist" ]]; then
+  echo "❌ Build failed - dist directory not found"
   exit 1
 fi
 
 echo "✅ Build completed successfully!"
+echo "📁 Build output location: dist/"
 echo ""
 echo "📋 Next steps:"
-echo "1. Upload the contents of 'web-build' to your hosting provider"
+echo "1. Upload the contents of 'dist/' to your hosting provider"
 echo "2. Configure your domain DNS to point to your hosting provider"
 echo "3. Set up SSL certificate for https://karma-community-kc.com"
 echo ""
