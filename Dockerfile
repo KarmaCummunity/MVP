@@ -7,7 +7,7 @@ WORKDIR /app
 # Copy package manifest(s). If package-lock.json קיים הוא ייכלל אוטומטית.
 COPY package*.json ./
 # התקנת תלויות: אם יש lockfile נשתמש ב-ci, אחרת ב-install
-RUN if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm install --no-audit --no-fund --legacy-peer-deps; fi
 COPY . .
 
 # Expo web export (defaults ensure production works on Railway even without build args)
