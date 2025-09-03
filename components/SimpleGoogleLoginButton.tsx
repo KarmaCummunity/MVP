@@ -149,6 +149,59 @@ function GoogleAuthInner({ onSuccess, style, iosClientId, androidClientId, webCl
       logger.info('GoogleLogin', 'Initializing OAuth setup');
       
       try {
+        // Check if we have successful OAuth data from redirect
+        const oauthSuccess = await AsyncStorage.getItem('oauth_success_flag');
+        const userData = await AsyncStorage.getItem('google_auth_user');
+        const token = await AsyncStorage.getItem('google_auth_token');
+        
+        if (oauthSuccess && userData && token) {
+          logger.info('GoogleLogin', 'Found successful OAuth data from redirect');
+          
+          try {
+            const parsedUserData = JSON.parse(userData);
+            logger.info('GoogleLogin', 'Processing OAuth redirect success', {
+              userId: parsedUserData.id,
+              email: parsedUserData.email
+            });
+            
+            // Set user in context
+            await setSelectedUserWithMode(parsedUserData, 'real');
+            
+            // Save to database
+            try {
+              await db.createUser(parsedUserData.id, parsedUserData);
+              logger.info('GoogleLogin', 'User saved to database from redirect');
+            } catch (dbError) {
+              logger.warn('GoogleLogin', 'Failed to save user to database from redirect', { error: String(dbError) });
+            }
+            
+            // Call success callback
+            if (onSuccess) {
+              onSuccess(parsedUserData);
+            }
+            
+            // Clean up stored data
+            await AsyncStorage.removeItem('oauth_success_flag');
+            await AsyncStorage.removeItem('google_auth_user');
+            await AsyncStorage.removeItem('google_auth_token');
+            
+            // Navigate to home
+            navigation.replace('HomeStack');
+            
+            setAuthState('success');
+            logger.info('GoogleLogin', 'OAuth redirect processing completed successfully');
+            return;
+            
+          } catch (parseError) {
+            logger.error('GoogleLogin', 'Failed to process OAuth redirect data', { error: String(parseError) });
+            // Clean up bad data
+            await AsyncStorage.removeItem('oauth_success_flag');
+            await AsyncStorage.removeItem('google_auth_user');
+            await AsyncStorage.removeItem('google_auth_token');
+          }
+        }
+        
+        // Normal initialization
         await AsyncStorage.removeItem('oauth_in_progress');
         logger.info('GoogleLogin', 'Cleared stuck OAuth state');
       } catch {}
@@ -156,7 +209,7 @@ function GoogleAuthInner({ onSuccess, style, iosClientId, androidClientId, webCl
       setIsInitialized(true);
       setAuthState('ready');
     })();
-  }, [isInitialized]);
+  }, [isInitialized, setSelectedUserWithMode, onSuccess, navigation]);
 
   if (Platform.OS === 'web') {
     try { WebBrowser.maybeCompleteAuthSession(); } catch {}
@@ -211,19 +264,20 @@ function GoogleAuthInner({ onSuccess, style, iosClientId, androidClientId, webCl
         
         logger.info('GoogleLogin', 'OAuth configuration validation', validation);
         
-        // Run comprehensive authentication diagnostics in development (only once)
+        // Skip diagnostics in production to avoid hooks issues
         if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && !window.__authDiagnosticsRun) {
           window.__authDiagnosticsRun = true;
-          try {
-            await runAuthDiagnostics({
+          // Run diagnostics in next tick to avoid hooks order issues
+          setTimeout(() => {
+            runAuthDiagnostics({
               webClientId,
               iosClientId,
               androidClientId,
               redirectUri
+            }).catch(error => {
+              logger.error('GoogleLogin', 'Authentication diagnostics failed', { error: String(error) });
             });
-          } catch (error) {
-            logger.error('GoogleLogin', 'Authentication diagnostics failed', { error: String(error) });
-          }
+          }, 100);
         }
         
         if (configIssues.length > 0) {
@@ -250,33 +304,52 @@ function GoogleAuthInner({ onSuccess, style, iosClientId, androidClientId, webCl
     });
   }, [isInitialized]); // Only log once after initialization
 
+  // Always use hooks in the same order
   let request: any, response: any, promptAsync: any;
+  
+  // Primary configuration
   try {
     [request, response, promptAsync] = Google.useAuthRequest(oauthConfig);
+    logger.info('GoogleLogin', 'useAuthRequest initialized successfully');
   } catch (e) {
-    logger.warn('GoogleLogin', 'useAuthRequest threw, retrying with Expo Go fallback', {
+    logger.warn('GoogleLogin', 'useAuthRequest failed', {
       platform: Platform.OS,
       hasIos: !!iosClientId,
       hasAndroid: !!androidClientId,
       hasWeb: !!webClientId,
       error: String(e)
     });
+    
+    // Fallback configuration - but keep same hook order
     const fallbackConfig: any = {
       scopes: ['openid', 'profile', 'email'],
       responseType: 'id_token',
       redirectUri,
       expoClientId: webClientId,
     };
-    [request, response, promptAsync] = Google.useAuthRequest(fallbackConfig);
+    
+    try {
+      [request, response, promptAsync] = Google.useAuthRequest(fallbackConfig);
+    } catch (fallbackError) {
+      logger.error('GoogleLogin', 'Fallback useAuthRequest also failed', {
+        error: String(fallbackError)
+      });
+      // Set default values to maintain hook consistency
+      request = null;
+      response = null;
+      promptAsync = null;
+    }
   }
 
   useEffect(() => {
+    if (!isInitialized) return;
+    
     logger.info('GoogleLogin', 'OAuth request state', {
       request: !!request,
       response: response?.type || 'none',
       promptAsync: !!promptAsync
     });
-  }, [request, response]);
+  }, [request, response, isInitialized]);
 
   useEffect(() => {
     const handleOAuthResponse = async () => {
