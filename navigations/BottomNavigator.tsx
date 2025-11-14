@@ -27,7 +27,8 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import HomeTabStack from "./HomeTabStack";
 import SearchTabStack from "./SearchTabStack";
 import ProfileTabStack from "./ProfileTabStack";
-import DonationsStack from "./DonationsStack"; 
+import DonationsStack from "./DonationsStack";
+import AdminStack from "./AdminStack"; 
 import BookmarksScreen from "../screens/BookmarksScreen";
 import SettingsScreen from "../topBarScreens/SettingsScreen";
 import ChatListScreen from "../topBarScreens/ChatListScreen";
@@ -45,6 +46,7 @@ export type BottomTabNavigatorParamList = {
   HomeScreen: undefined;
   SearchScreen: undefined;
   ProfileScreen: undefined;
+  AdminTab: undefined;
   SettingsScreen: undefined;
   ChatListScreen: undefined;
   AboutKarmaCommunityScreen: undefined;
@@ -149,7 +151,7 @@ const styles = StyleSheet.create({
  */
 export default function BottomNavigator(): React.ReactElement {
   console.log('📱 BottomNavigator - Component rendered');
-  const { isGuestMode, resetHomeScreen } = useUser();
+  const { isGuestMode, resetHomeScreen, isAdmin } = useUser();
   const { mode } = useWebMode();
   const navigation = useNavigation();
   
@@ -179,6 +181,8 @@ export default function BottomNavigator(): React.ReactElement {
         return focused ? "heart" : "heart-outline";
       case "ProfileScreen":
         return focused ? "person" : "person-outline";
+      case "AdminTab":
+        return focused ? "shield" : "shield-outline";
       default:
         return "help-circle-outline";
     }
@@ -237,6 +241,7 @@ export default function BottomNavigator(): React.ReactElement {
         {!isGuestMode && <Tab.Screen name="ProfileScreen" component={ProfileTabStack} />}
         <Tab.Screen name="DonationsTab" component={DonationsStack} />
         <Tab.Screen name="SearchScreen" component={SearchTabStack} />
+        {isAdmin && <Tab.Screen name="AdminTab" component={AdminStack} />}
         <Tab.Screen 
           name="HomeScreen" 
           component={HomeTabStack}

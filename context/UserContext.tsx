@@ -58,6 +58,7 @@ interface UserContextType {
   isAuthenticated: boolean;
   isGuestMode: boolean;
   isRealAuth: boolean;
+  isAdmin: boolean;
   setGuestMode: () => Promise<void>;
   setDemoUser: () => Promise<void>;
   resetHomeScreen: () => void;
@@ -230,18 +231,32 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     try {
       const emailKey = (user.email || '').toLowerCase();
       if (!emailKey) return user;
+      
+      // Super admin email - hardcoded for main admin
+      const SUPER_ADMIN_EMAIL = 'navesarussi@gmail.com';
+      const isSuperAdmin = emailKey === SUPER_ADMIN_EMAIL.toLowerCase();
+      
       // Grant admin role by env config (comma-separated emails)
       const adminEmailsEnv = (process.env.EXPO_PUBLIC_ADMIN_EMAILS || '').toLowerCase();
       const adminEmails = adminEmailsEnv
         .split(',')
         .map((s: string) => s.trim())
         .filter(Boolean);
-      const withAdmin = adminEmails.includes(emailKey);
+      const withAdmin = adminEmails.includes(emailKey) || isSuperAdmin;
+      
       const applications = await db.listOrgApplications(emailKey);
       const approved = (applications as any[]).find((a) => a.status === 'approved');
+      
       if (approved || withAdmin) {
-        const extraRoles = [approved ? 'org_admin' : null, withAdmin ? 'admin' : null].filter(Boolean) as string[];
-        const roles = Array.isArray(user.roles) ? Array.from(new Set([...user.roles, ...extraRoles])) : extraRoles;
+        // Super admin gets super_admin role, others get admin
+        const adminRole = isSuperAdmin ? 'super_admin' : 'admin';
+        const extraRoles = [
+          approved ? 'org_admin' : null,
+          withAdmin ? adminRole : null
+        ].filter(Boolean) as string[];
+        const roles = Array.isArray(user.roles) 
+          ? Array.from(new Set([...user.roles, ...extraRoles])) 
+          : extraRoles;
         return { ...user, roles, orgApplicationId: approved?.id, orgName: approved?.orgName };
       }
       return user;
@@ -354,6 +369,16 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     setResetHomeScreenTrigger(prev => prev + 1);
   };
 
+  /**
+   * Checks if the current user has admin privileges
+   * Returns true if user has 'admin' or 'super_admin' role
+   */
+  const isAdmin = (): boolean => {
+    if (!selectedUser || !selectedUser.roles) return false;
+    const roles = Array.isArray(selectedUser.roles) ? selectedUser.roles : [];
+    return roles.includes('admin') || roles.includes('super_admin');
+  };
+
   const value: UserContextType = {
     selectedUser,
     setSelectedUser,
@@ -364,6 +389,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     isAuthenticated,
     isGuestMode,
     isRealAuth: authMode === 'real',
+    isAdmin: isAdmin(),
     setGuestMode,
     setDemoUser,
     resetHomeScreen,

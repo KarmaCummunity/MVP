@@ -176,6 +176,7 @@ export type BottomTabNavigatorParamList = {
   HomeScreen: undefined; // This is the HomeScreen with the drag handle
   SearchScreen: undefined;
   ProfileScreen: undefined;
+  AdminTab: undefined; // Admin management tab (only visible to admins)
   SettingsScreen: undefined;
   ChatListScreen: undefined;
   AboutKarmaCommunityScreen: undefined;
