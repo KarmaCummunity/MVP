@@ -10,6 +10,7 @@ import {
   TextInput,
   Alert,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { NavigationProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -84,6 +85,8 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
   const [isWipeVisible, setIsWipeVisible] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [isMounted, setIsMounted] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingDonationId, setEditingDonationId] = useState<string | null>(null);
 
   useEffect(() => {
     logger.info(LOG_SOURCE, 'Initializing admin donations screen');
@@ -103,15 +106,16 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
     };
   }, []);
 
-  const loadDonations = async () => {
-    logger.info(LOG_SOURCE, 'Loading donations list', { useBackend: USE_BACKEND });
+  const loadDonations = async (forceRefresh = false) => {
+    logger.info(LOG_SOURCE, 'Loading donations list', { useBackend: USE_BACKEND, forceRefresh });
     try {
       setIsLoading(true);
       if (USE_BACKEND) {
-        const donationsData = await enhancedDB.getDonations({});
+        const donationsData = await enhancedDB.getDonations({}, forceRefresh);
         setDonationsList(donationsData as unknown as Donation[]);
         logger.info(LOG_SOURCE, 'Donations loaded from backend', {
           count: Array.isArray(donationsData) ? donationsData.length : 0,
+          forceRefresh,
         });
       } else {
         // No backend - show empty state
@@ -162,6 +166,42 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
 
   const handleAddDonation = () => {
     logger.info(LOG_SOURCE, 'Opening add donation modal');
+    setIsEditMode(false);
+    setEditingDonationId(null);
+    setFormData({
+      donorName: '',
+      amount: '',
+      category: 'כסף',
+      date: new Date().toISOString().split('T')[0],
+      notes: '',
+    });
+    setIsModalVisible(true);
+  };
+
+  const handleEditDonation = (donation: Donation) => {
+    logger.info(LOG_SOURCE, 'Opening edit donation modal', { donationId: donation.id });
+    setIsEditMode(true);
+    setEditingDonationId(donation.id);
+    // ניסיון פשוט לחלץ שם תורם מהכותרת "תרומה מ-<שם>"
+    const donorFromTitle =
+      donation.title?.startsWith('תרומה מ-') ? donation.title.replace('תרומה מ-', '') : donation.title || '';
+    // נרמול תאריך בטוח: אם ערך לא תקין, השתמש בתאריך של היום
+    let normalizedDate = '';
+    try {
+      const parsed = new Date(donation.createdAt as any);
+      normalizedDate = isNaN(parsed.getTime())
+        ? new Date().toISOString().split('T')[0]
+        : parsed.toISOString().split('T')[0];
+    } catch {
+      normalizedDate = new Date().toISOString().split('T')[0];
+    }
+    setFormData({
+      donorName: donorFromTitle,
+      amount: donation.amount ? String(donation.amount) : '',
+      category: donation.category || 'כללי',
+      date: normalizedDate,
+      notes: donation.description || '',
+    });
     setIsModalVisible(true);
   };
 
@@ -178,24 +218,38 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
 
     try {
       setIsMutating(true);
-      logger.info(LOG_SOURCE, 'Saving donation', {
-        donorName: formData.donorName.trim(),
-        amount: Number(formData.amount),
-        category: formData.category,
-      });
-      const payload = {
-        type: 'money' as const,
+      const basePayload = {
         title: `תרומה מ-${formData.donorName}`,
         description: formData.notes || '',
         amount: Number(formData.amount),
         category: formData.category,
       };
-      const res = await enhancedDB.createDonation(payload);
-      if (!res.success) {
-        throw new Error(res.error || 'create failed');
+
+      if (isEditMode && editingDonationId) {
+        logger.info(LOG_SOURCE, 'Updating donation', { editingDonationId });
+        const res = await enhancedDB.updateDonation(editingDonationId, basePayload as Partial<DonationData>);
+        if (!res.success) {
+          throw new Error(res.error || 'update failed');
+        }
+        // נקה קאש כדי למנוע נתונים מיושנים
+        await enhancedDB.clearAllCache();
+      } else {
+        logger.info(LOG_SOURCE, 'Creating donation', {
+          donorName: formData.donorName.trim(),
+          amount: Number(formData.amount),
+          category: formData.category,
+        });
+        const res = await enhancedDB.createDonation({
+          type: 'money' as const,
+          ...basePayload,
+        });
+        if (!res.success) {
+          throw new Error(res.error || 'create failed');
+        }
+        await enhancedDB.clearAllCache();
       }
       // Always refetch from server to ensure canonical data and IDs
-      await loadDonations();
+      await loadDonations(true);
       logger.info(LOG_SOURCE, 'Donation saved successfully');
 
       // Reset form
@@ -208,50 +262,81 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
       });
 
       setIsModalVisible(false);
-      Alert.alert('הצלחה', 'התרומה נוספה בהצלחה');
+      setIsEditMode(false);
+      setEditingDonationId(null);
+      Alert.alert('הצלחה', isEditMode ? 'התרומה עודכנה בהצלחה' : 'התרומה נוספה בהצלחה');
     } catch (error) {
       logger.error(LOG_SOURCE, 'Error saving donation', { error });
-      Alert.alert('שגיאה', 'לא ניתן היה לשמור את התרומה');
+      Alert.alert('שגיאה', isEditMode ? 'לא ניתן היה לעדכן את התרומה' : 'לא ניתן היה לשמור את התרומה');
     } finally {
       setIsMutating(false);
     }
   };
 
-  const handleDeleteDonation = (donationId: string) => {
+  const handleDeleteDonation = async (donationId: string) => {
     logger.info(LOG_SOURCE, 'Prompting delete donation', { donationId });
-    Alert.alert(
-      'מחיקת תרומה',
-      'האם אתה בטוח שברצונך למחוק תרומה זו?',
-      [
-        { text: 'ביטול', style: 'cancel' },
-        {
-          text: 'מחק',
-          style: 'destructive',
-          onPress: async () => {
-            logger.info(LOG_SOURCE, 'Deleting donation', { donationId });
-            // Optimistic UI with rollback
-            const prev = donationsList;
-            setDonationsList((p) => p.filter((d) => d.id !== donationId));
-            try {
-              setIsMutating(true);
-              const res = await enhancedDB.deleteDonation(donationId);
-              if (!res.success) {
-                throw new Error(res.error || 'delete failed');
-              }
-              await loadDonations();
-              logger.info(LOG_SOURCE, 'Donation deleted successfully', { donationId });
-            } catch (e) {
-              logger.error(LOG_SOURCE, 'Error deleting donation', { donationId, error: e });
-              setDonationsList(prev); // rollback
-              Alert.alert('שגיאה', 'לא ניתן היה למחוק את התרומה');
-            } finally {
-              setIsMutating(false);
-              logger.debug(LOG_SOURCE, 'Delete donation mutation finished', { donationId });
-            }
-          },
-        },
-      ]
-    );
+    
+    // Use confirm for web compatibility
+    const confirmed = Platform.OS === 'web' 
+      ? (typeof window !== 'undefined' && window.confirm('האם אתה בטוח שברצונך למחוק תרומה זו?'))
+      : await new Promise<boolean>((resolve) => {
+          Alert.alert(
+            'מחיקת תרומה',
+            'האם אתה בטוח שברצונך למחוק תרומה זו?',
+            [
+              { 
+                text: 'ביטול', 
+                style: 'cancel',
+                onPress: () => resolve(false)
+              },
+              {
+                text: 'מחק',
+                style: 'destructive',
+                onPress: () => resolve(true)
+              },
+            ]
+          );
+        });
+
+    if (!confirmed) {
+      logger.info(LOG_SOURCE, 'Delete cancelled by user', { donationId });
+      return;
+    }
+
+    logger.info(LOG_SOURCE, 'Delete confirmed, starting deletion', { donationId });
+    // Optimistic UI with rollback
+    const prev = donationsList;
+    setDonationsList((p) => p.filter((d) => d.id !== donationId));
+    
+    try {
+      setIsMutating(true);
+      logger.info(LOG_SOURCE, 'Calling deleteDonation API', { donationId });
+      const res = await enhancedDB.deleteDonation(donationId);
+      
+      logger.info(LOG_SOURCE, 'deleteDonation API response', { donationId, success: res.success, error: res.error });
+      
+      if (!res.success) {
+        throw new Error(res.error || 'delete failed');
+      }
+      
+      // נקה קאש כדי למנוע נתונים מיושנים
+      logger.info(LOG_SOURCE, 'Clearing cache after deletion', { donationId });
+      await enhancedDB.clearAllCache();
+      
+      // Force refresh from server, ignoring cache
+      logger.info(LOG_SOURCE, 'Loading donations with force refresh', { donationId });
+      await loadDonations(true);
+      
+      logger.info(LOG_SOURCE, 'Donation deleted successfully', { donationId });
+      Alert.alert('הצלחה', 'התרומה נמחקה בהצלחה');
+    } catch (e) {
+      logger.error(LOG_SOURCE, 'Error deleting donation', { donationId, error: e, errorMessage: e instanceof Error ? e.message : String(e) });
+      setDonationsList(prev); // rollback
+      Alert.alert('שגיאה', `לא ניתן היה למחוק את התרומה: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setIsMutating(false);
+      logger.debug(LOG_SOURCE, 'Delete donation mutation finished', { donationId });
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -275,12 +360,22 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
           <Text style={styles.donationTitle}>{item.title}</Text>
           <Text style={styles.donationCategory}>{item.category}</Text>
         </View>
-        <TouchableOpacity
-          onPress={() => handleDeleteDonation(item.id)}
-          style={styles.deleteButton}
-        >
-          <Ionicons name="trash-outline" size={20} color={colors.error} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: LAYOUT_CONSTANTS.SPACING.XS }}>
+          <TouchableOpacity
+            onPress={() => handleEditDonation(item)}
+            style={styles.iconButton}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="create-outline" size={20} color={colors.textPrimary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => handleDeleteDonation(item.id)}
+            style={styles.deleteButton}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="trash-outline" size={20} color={colors.error} />
+          </TouchableOpacity>
+        </View>
       </View>
       <View style={styles.donationDetails}>
         <View style={styles.detailRow}>
@@ -308,24 +403,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>ניהול תרומות</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={handleAddDonation}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="add-circle" size={24} color="white" />
-            <Text style={styles.addButtonText}>הוסף תרומה</Text>
-          </TouchableOpacity>
-          {isAdmin && (
-            <TouchableOpacity
-              style={[styles.addButton, styles.dangerButton]}
-              onPress={() => setIsWipeVisible(true)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="warning" size={24} color="white" />
-              <Text style={styles.addButtonText}>מחק הכל</Text>
-            </TouchableOpacity>
-          )}
+          
         </View>
 
         {isLoading && donationsList.length === 0 ? (
@@ -361,7 +439,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>הוסף תרומה חדשה</Text>
+              <Text style={styles.modalTitle}>{isEditMode ? 'ערוך תרומה' : 'הוסף תרומה חדשה'}</Text>
               <TouchableOpacity
                 onPress={() => setIsModalVisible(false)}
                 style={styles.closeButton}
@@ -454,11 +532,9 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={handleSaveDonation}
-                disabled={isLoading}
+                disabled={isMutating}
               >
-                <Text style={styles.saveButtonText}>
-                  {isLoading ? 'שומר...' : 'שמור'}
-                </Text>
+                <Text style={styles.saveButtonText}>{isMutating ? (isEditMode ? 'מעדכן...' : 'שומר...') : (isEditMode ? 'עדכן' : 'שמור')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -514,6 +590,16 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
           </View>
         </View>
       </Modal>
+      
+      {/* Floating Add Donation Button */}
+      <TouchableOpacity
+        style={styles.fabButton}
+        onPress={handleAddDonation}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={28} color="white" />
+        <Text style={styles.fabButtonText}>הוסף תרומה</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -590,6 +676,9 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   deleteButton: {
+    padding: LAYOUT_CONSTANTS.SPACING.XS,
+  },
+  iconButton: {
     padding: LAYOUT_CONSTANTS.SPACING.XS,
   },
   donationDetails: {
@@ -737,6 +826,28 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: FontSizes.medium,
     color: 'white',
+    fontWeight: '600',
+  },
+  fabButton: {
+    position: 'absolute',
+    right: LAYOUT_CONSTANTS.SPACING.LG,
+    bottom: LAYOUT_CONSTANTS.SPACING.LG,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: LAYOUT_CONSTANTS.SPACING.XS,
+    backgroundColor: colors.pink,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
+    shadowColor: colors.shadowLight,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  fabButtonText: {
+    color: 'white',
+    fontSize: FontSizes.medium,
     fontWeight: '600',
   },
 });

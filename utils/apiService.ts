@@ -31,6 +31,46 @@ class ApiService {
     this.baseURL = CONFIG_API_BASE_URL;
   }
 
+  // Tasks APIs
+  async getTasks(filters: {
+    status?: 'open' | 'in_progress' | 'done' | 'archived';
+    priority?: 'low' | 'medium' | 'high';
+    category?: string;
+    assignee?: string;
+    q?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && String(value).length > 0) {
+        params.append(key, String(value));
+      }
+    });
+    const qs = params.toString();
+    return this.request(`/api/tasks${qs ? `?${qs}` : ''}`);
+  }
+
+  async createTask(taskData: any): Promise<ApiResponse> {
+    return this.request('/api/tasks', {
+      method: 'POST',
+      body: JSON.stringify(taskData),
+    });
+  }
+
+  async updateTask(taskId: string, updateData: any): Promise<ApiResponse> {
+    return this.request(`/api/tasks/${taskId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updateData),
+    });
+  }
+
+  async deleteTask(taskId: string): Promise<ApiResponse> {
+    return this.request(`/api/tasks/${taskId}`, {
+      method: 'DELETE',
+    });
+  }
+
   private normalizeEndpoint(endpoint: string): string {
     if (!endpoint) {
       return '/';

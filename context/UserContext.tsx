@@ -20,6 +20,8 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { db } from '../utils/databaseService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAuth, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { getFirebase } from '../utils/firebaseClient';
 
 // Auth mode of the current session
 export type AuthMode = 'guest' | 'demo' | 'real';
@@ -88,6 +90,91 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   useEffect(() => {
     console.log('🔐 UserContext - useEffect - Starting auth check');
     checkAuthStatus();
+  }, []);
+
+  // Firebase Auth State Listener - automatically detects when user logs in/out
+  useEffect(() => {
+    console.log('🔥 UserContext - Setting up Firebase Auth listener');
+    let unsubscribe: (() => void) | undefined;
+    
+    try {
+      const { app } = getFirebase();
+      const auth = getAuth(app);
+      
+      unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+        console.log('🔥 Firebase Auth State Changed:', {
+          hasUser: !!firebaseUser,
+          email: firebaseUser?.email,
+          uid: firebaseUser?.uid,
+          emailVerified: firebaseUser?.emailVerified
+        });
+
+        if (firebaseUser) {
+          // Firebase user is logged in - restore/create session
+          console.log('🔥 Firebase user detected, restoring session');
+          
+          // Create or restore user data
+          const nowIso = new Date().toISOString();
+          const userData: User = {
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+            email: firebaseUser.email || '',
+            phone: firebaseUser.phoneNumber || '+9720000000',
+            avatar: firebaseUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+            bio: '',
+            karmaPoints: 0,
+            joinDate: nowIso,
+            isActive: true,
+            lastActive: nowIso,
+            location: { city: 'ישראל', country: 'IL' },
+            interests: [],
+            roles: ['user'],
+            postsCount: 0,
+            followersCount: 0,
+            followingCount: 0,
+            notifications: [],
+            settings: { language: 'he', darkMode: false, notificationsEnabled: true },
+          };
+
+          // Save to AsyncStorage for persistence
+          await AsyncStorage.setItem('current_user', JSON.stringify(userData));
+          await AsyncStorage.setItem('auth_mode', 'real');
+          await AsyncStorage.setItem('firebase_user_id', firebaseUser.uid);
+          
+          // Update context state
+          const enrichedUser = await enrichUserWithOrgRoles(userData);
+          setSelectedUserState(enrichedUser);
+          setIsAuthenticated(true);
+          setIsGuestMode(false);
+          setAuthMode('real');
+          
+          console.log('🔥 Firebase session restored successfully');
+        } else {
+          // No Firebase user - only clear if we had a Firebase user before
+          const firebaseUserId = await AsyncStorage.getItem('firebase_user_id');
+          if (firebaseUserId) {
+            console.log('🔥 Firebase user logged out, clearing session');
+            await AsyncStorage.multiRemove(['current_user', 'auth_mode', 'firebase_user_id']);
+            setSelectedUserState(null);
+            setIsAuthenticated(false);
+            setIsGuestMode(false);
+            setAuthMode('guest');
+          }
+        }
+      });
+      
+      console.log('🔥 Firebase Auth listener set up successfully');
+    } catch (error) {
+      console.error('🔥 Error setting up Firebase Auth listener:', error);
+    }
+
+    // Cleanup function
+    return () => {
+      console.log('🔥 Cleaning up Firebase Auth listener');
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
   const computeRole = (user: User | null, mode: AuthMode): Role => {
@@ -297,16 +384,27 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       console.log('🔐 UserContext - signOut - Starting sign out process');
       setIsLoading(true);
       
-      console.log('🔐 UserContext - signOut - Removing current_user from AsyncStorage');
-      await AsyncStorage.removeItem('current_user');
+      // Sign out from Firebase Auth
+      try {
+        const { app } = getFirebase();
+        const auth = getAuth(app);
+        await auth.signOut();
+        console.log('🔥 Firebase - User signed out successfully');
+      } catch (firebaseError) {
+        console.warn('🔥 Firebase - Sign out error (non-fatal):', firebaseError);
+      }
       
-      console.log('🔐 UserContext - signOut - Removing guest_mode from AsyncStorage');
-      await AsyncStorage.removeItem('guest_mode');
-      
-      const checkUser = await AsyncStorage.getItem('current_user');
-      const checkGuest = await AsyncStorage.getItem('guest_mode');
-      console.log('🔐 UserContext - signOut - After removal check - current_user:', checkUser ? 'still exists' : 'removed');
-      console.log('🔐 UserContext - signOut - After removal check - guest_mode:', checkGuest ? 'still exists' : 'removed');
+      console.log('🔐 UserContext - signOut - Removing all auth data from AsyncStorage');
+      await AsyncStorage.multiRemove([
+        'current_user',
+        'guest_mode',
+        'auth_mode',
+        'firebase_user_id',
+        'oauth_in_progress',
+        'oauth_success_flag',
+        'google_auth_user',
+        'google_auth_token'
+      ]);
       
       console.log('🔐 UserContext - signOut - Setting user state to null');
       setSelectedUserState(null);
@@ -317,12 +415,16 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       console.log('🔐 UserContext - signOut - Setting isGuestMode to false');
       setIsGuestMode(false);
       
+      console.log('🔐 UserContext - signOut - Setting authMode to guest');
+      setAuthMode('guest');
+      
       console.log('🔐 UserContext - signOut - Sign out completed successfully');
     } catch (error) {
       console.error('🔐 UserContext - signOut - Error during sign out:', error);
       setSelectedUserState(null);
       setIsAuthenticated(false);
       setIsGuestMode(false);
+      setAuthMode('guest');
     } finally {
       console.log('🔐 UserContext - signOut - Setting isLoading to false');
       setIsLoading(false);

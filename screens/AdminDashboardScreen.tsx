@@ -37,6 +37,14 @@ const adminButtons: AdminButton[] = [
     route: 'AdminMoney',
   },
   {
+    id: 'tasks',
+    title: 'משימות',
+    icon: 'checkmark-done-outline',
+    color: colors.blue,
+    bgColor: colors.successLight,
+    route: 'AdminTasks',
+  },
+  {
     id: 'people',
     title: 'אנשים',
     icon: 'people-outline',
@@ -51,15 +59,7 @@ const adminButtons: AdminButton[] = [
     color: colors.pink,
     bgColor: colors.pinkLight,
     route: 'AdminReview',
-  },
-  {
-    id: 'settings',
-    title: 'הגדרות',
-    icon: 'settings-outline',
-    color: colors.orange,
-    bgColor: colors.orangeLight,
-    route: 'AdminDashboard', // Placeholder - stays on dashboard for now
-  },
+  }
 ];
 
 export default function AdminDashboardScreen({ navigation }: AdminDashboardScreenProps) {

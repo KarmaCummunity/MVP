@@ -12,6 +12,8 @@ import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '../utils/loggerService';
 import { getScreenInfo, scaleSize } from '../globals/responsive';
+import { getAuth, GoogleAuthProvider, signInWithCredential, updateProfile } from 'firebase/auth';
+import { getFirebase } from '../utils/firebaseClient';
 
 interface SimpleGoogleLoginButtonProps {
   onSuccess?: (user: any) => void;
@@ -352,25 +354,60 @@ export default function SimpleGoogleLoginButton({
             sub: profile.sub
           });
 
-          const userData = createUserData(profile, t);
-          
-          // Set user
-          await setSelectedUserWithMode(userData, 'real');
-          
-          // Save to database
+          // 🔥 NEW: Sign in to Firebase Auth with Google credential
+          // This enables Firebase persistence and the onAuthStateChanged listener
           try {
-            await db.createUser(userData.id, userData);
-            logger.info('GoogleLogin', 'User saved to database successfully');
-          } catch (dbError) {
-            logger.warn('GoogleLogin', 'Database save failed', { error: String(dbError) });
+            const { app } = getFirebase();
+            const auth = getAuth(app);
+            const credential = GoogleAuthProvider.credential(idToken);
+            
+            logger.info('GoogleLogin', 'Signing in to Firebase with Google credential');
+            const firebaseUserCredential = await signInWithCredential(auth, credential);
+            const firebaseUser = firebaseUserCredential.user;
+            
+            logger.info('GoogleLogin', 'Firebase sign-in successful', {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email
+            });
+            
+            // Update Firebase profile if needed
+            if (!firebaseUser.displayName && profile.name) {
+              await updateProfile(firebaseUser, {
+                displayName: profile.name,
+                photoURL: profile.picture
+              });
+              logger.info('GoogleLogin', 'Updated Firebase user profile');
+            }
+            
+            // The Firebase Auth listener in UserContext will automatically:
+            // 1. Create the userData
+            // 2. Save to AsyncStorage
+            // 3. Update the context
+            // 4. Enable automatic session restore
+            
+            logger.info('GoogleLogin', 'Google login completed - Firebase Auth listener will handle the rest');
+            
+          } catch (firebaseError) {
+            logger.error('GoogleLogin', 'Firebase sign-in failed, falling back to manual auth', {
+              error: String(firebaseError)
+            });
+            
+            // Fallback: Manual authentication (old flow)
+            const userData = createUserData(profile, t);
+            await setSelectedUserWithMode(userData, 'real');
+            
+            try {
+              await db.createUser(userData.id, userData);
+              logger.info('GoogleLogin', 'User saved to database (fallback)');
+            } catch (dbError) {
+              logger.warn('GoogleLogin', 'Database save failed (fallback)', { error: String(dbError) });
+            }
+            
+            if (onSuccess) onSuccess(userData);
           }
 
-          // Success callback
-          if (onSuccess) onSuccess(userData);
-
-          // Navigate
+          // Navigate to home
           navigation.replace('HomeStack');
-          
           setAuthState('success');
           
         } else if (response.type === 'error') {

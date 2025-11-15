@@ -10,11 +10,13 @@ import AdminDashboardScreen from "../screens/AdminDashboardScreen";
 import AdminMoneyScreen from "../screens/AdminMoneyScreen";
 import AdminPeopleScreen from "../screens/AdminPeopleScreen";
 import AdminReviewScreen from "../screens/AdminReviewScreen";
+import AdminTasksScreen from "../screens/AdminTasksScreen";
 import TopBarNavigator from "./TopBarNavigator";
 
 export type AdminStackParamList = {
   AdminDashboard: undefined;
   AdminMoney: undefined;
+  AdminTasks: undefined;
   AdminPeople: undefined;
   AdminReview: undefined;
 };
@@ -46,6 +48,7 @@ export default function AdminStack() {
       <Stack.Screen name="AdminMoney" component={AdminMoneyScreen} />
       <Stack.Screen name="AdminPeople" component={AdminPeopleScreen} />
       <Stack.Screen name="AdminReview" component={AdminReviewScreen} />
+      <Stack.Screen name="AdminTasks" component={AdminTasksScreen} />
     </Stack.Navigator>
   );
 }

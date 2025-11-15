@@ -271,16 +271,22 @@ export class EnhancedDatabaseService {
     }
   }
 
-  async getDonations(filters: Record<string, unknown> = {}): Promise<DonationData[]> {
+  async getDonations(filters: Record<string, unknown> = {}, forceRefresh = false): Promise<DonationData[]> {
     try {
       const cacheKey = `donations_${JSON.stringify(filters)}`;
-      const cached = await this.getCache('donations_list', cacheKey);
-      if (cached) {
-        logger.debug('EnhancedDatabaseService', 'Donations cache hit', {
-          cacheKey,
-          count: Array.isArray(cached) ? cached.length : 0,
-        });
-        return cached as DonationData[]; // Type assertion for cached data
+      if (!forceRefresh) {
+        const cached = await this.getCache('donations_list', cacheKey);
+        if (cached) {
+          logger.debug('EnhancedDatabaseService', 'Donations cache hit', {
+            cacheKey,
+            count: Array.isArray(cached) ? cached.length : 0,
+          });
+          return cached as DonationData[]; // Type assertion for cached data
+        }
+      } else {
+        logger.info('EnhancedDatabaseService', 'Force refresh - skipping cache', { cacheKey });
+        // Clear cache for donations_list pattern
+        await this.clearCachePattern('donations_list');
       }
 
       if (!USE_BACKEND) {

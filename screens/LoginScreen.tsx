@@ -452,7 +452,7 @@ export default function LoginScreen() {
           
           {/* Version Number */}
           <View style={styles.versionContainer}>
-            <Text style={styles.versionText}>v1.8.1</Text>
+            <Text style={styles.versionText}>v1.9.0</Text>
           </View>
           
           <View style={styles.buttonsContainer}>

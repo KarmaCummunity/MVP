@@ -25,11 +25,34 @@ import {
   reload,
   User,
   sendPasswordResetEmail,
+  setPersistence,
+  browserLocalPersistence,
+  inMemoryPersistence,
 } from 'firebase/auth';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+let authInstance: any = null;
 
 export const getAuthInstance = () => {
-  const { app } = getFirebase();
-  return getAuth(app);
+  if (!authInstance) {
+    const { app } = getFirebase();
+    authInstance = getAuth(app);
+    
+    // Configure persistence based on platform
+    if (Platform.OS === 'web') {
+      // Web: use browserLocalPersistence (localStorage)
+      setPersistence(authInstance, browserLocalPersistence).catch((error) => {
+        console.warn('Failed to set web auth persistence:', error);
+      });
+    } else {
+      // React Native: Firebase automatically uses AsyncStorage
+      // No need to set persistence explicitly - it's the default
+      console.log('🔥 Firebase Auth - Using native AsyncStorage persistence (default)');
+    }
+  }
+  
+  return authInstance;
 };
 
 export async function getSignInMethods(email: string): Promise<string[]> {
