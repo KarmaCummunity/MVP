@@ -32,6 +32,7 @@ interface Donation {
   createdBy: string;
   createdAt: string;
   status?: string;
+  metadata?: Record<string, unknown> | null;
 }
 
 interface AdminMoneyScreenProps {
@@ -185,10 +186,25 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
     // ניסיון פשוט לחלץ שם תורם מהכותרת "תרומה מ-<שם>"
     const donorFromTitle =
       donation.title?.startsWith('תרומה מ-') ? donation.title.replace('תרומה מ-', '') : donation.title || '';
-    // נרמול תאריך בטוח: אם ערך לא תקין, השתמש בתאריך של היום
+    // נרמול תאריך בטוח: נסה לקחת מתאריך שנבחר על ידי המשתמש (metadata), אחרת מ-createdAt
     let normalizedDate = '';
+    let dateToUse: string | null = null;
+    
+    // Try to get date from metadata first (user-selected date)
+    if (donation.metadata && typeof donation.metadata === 'object' && donation.metadata !== null) {
+      const metadata = donation.metadata as Record<string, unknown>;
+      if (metadata.selectedDate && typeof metadata.selectedDate === 'string') {
+        dateToUse = metadata.selectedDate;
+      }
+    }
+    
+    // Fallback to createdAt if metadata not available
+    if (!dateToUse) {
+      dateToUse = donation.createdAt;
+    }
+    
     try {
-      const parsed = new Date(donation.createdAt as any);
+      const parsed = new Date(dateToUse);
       normalizedDate = isNaN(parsed.getTime())
         ? new Date().toISOString().split('T')[0]
         : parsed.toISOString().split('T')[0];
@@ -215,18 +231,67 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
       Alert.alert('שגיאה', 'אנא הזן סכום תקין');
       return;
     }
+    
+    // Validate date - must be in YYYY-MM-DD format and valid date
+    if (!formData.date || !formData.date.trim()) {
+      Alert.alert('שגיאה', 'אנא הזן תאריך');
+      return;
+    }
+    
+    // Check if date is in correct format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(formData.date.trim())) {
+      Alert.alert('שגיאה', 'אנא הזן תאריך בפורמט YYYY-MM-DD (למשל: 2024-01-15)');
+      return;
+    }
+    
+    // Check if date is valid
+    const dateParts = formData.date.trim().split('-');
+    const year = parseInt(dateParts[0], 10);
+    const month = parseInt(dateParts[1], 10);
+    const day = parseInt(dateParts[2], 10);
+    const testDate = new Date(year, month - 1, day);
+    
+    if (
+      testDate.getFullYear() !== year ||
+      testDate.getMonth() !== month - 1 ||
+      testDate.getDate() !== day
+    ) {
+      Alert.alert('שגיאה', 'התאריך שהוזן לא תקין. אנא הזן תאריך חוקי');
+      return;
+    }
 
     try {
       setIsMutating(true);
+      
+      // Convert date from YYYY-MM-DD to ISO string format
+      let createdAtISO: string;
+      try {
+        const dateParts = formData.date.trim().split('-');
+        const year = parseInt(dateParts[0], 10);
+        const month = parseInt(dateParts[1], 10);
+        const day = parseInt(dateParts[2], 10);
+        const donationDate = new Date(year, month - 1, day);
+        // Set time to midnight UTC to ensure consistent date
+        createdAtISO = donationDate.toISOString();
+      } catch (error) {
+        logger.warn(LOG_SOURCE, 'Error parsing date, using current date', { error, date: formData.date });
+        createdAtISO = new Date().toISOString();
+      }
+      
       const basePayload = {
         title: `תרומה מ-${formData.donorName}`,
         description: formData.notes || '',
         amount: Number(formData.amount),
         category: formData.category,
+        // Store the selected date in metadata so we can use it later
+        metadata: {
+          selectedDate: createdAtISO,
+        },
       };
 
       if (isEditMode && editingDonationId) {
-        logger.info(LOG_SOURCE, 'Updating donation', { editingDonationId });
+        logger.info(LOG_SOURCE, 'Updating donation', { editingDonationId, selectedDate: createdAtISO });
         const res = await enhancedDB.updateDonation(editingDonationId, basePayload as Partial<DonationData>);
         if (!res.success) {
           throw new Error(res.error || 'update failed');
@@ -238,6 +303,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
           donorName: formData.donorName.trim(),
           amount: Number(formData.amount),
           category: formData.category,
+          selectedDate: createdAtISO,
         });
         const res = await enhancedDB.createDonation({
           type: 'money' as const,
@@ -339,12 +405,33 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (donation: Donation) => {
     try {
+      // Try to get date from metadata first (user-selected date)
+      let dateString: string | null | undefined = null;
+      if (donation.metadata && typeof donation.metadata === 'object' && donation.metadata !== null) {
+        const metadata = donation.metadata as Record<string, unknown>;
+        if (metadata.selectedDate && typeof metadata.selectedDate === 'string') {
+          dateString = metadata.selectedDate;
+        }
+      }
+      
+      // Fallback to createdAt if metadata not available
+      if (!dateString) {
+        dateString = donation.createdAt;
+      }
+      
+      if (!dateString || typeof dateString !== 'string' || dateString.trim() === '') {
+        return 'תאריך לא זמין';
+      }
       const date = new Date(dateString);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'תאריך לא זמין';
+      }
       return date.toLocaleDateString('he-IL');
     } catch {
-      return dateString;
+      return 'תאריך לא זמין';
     }
   };
 
@@ -384,7 +471,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
         </View>
         <View style={styles.detailRow}>
           <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} />
-          <Text style={styles.detailText}>{isMounted ? formatDate(item.createdAt) : ''}</Text>
+          <Text style={styles.detailText}>{isMounted ? formatDate(item) : ''}</Text>
         </View>
         {Boolean(item.description?.trim()) && (
           <View style={styles.detailRow}>
@@ -498,14 +585,52 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.label}>תאריך</Text>
+                <Text style={styles.label}>תאריך *</Text>
                 <TextInput
                   style={styles.input}
                   value={formData.date}
-                  onChangeText={(text) => setFormData({ ...formData, date: text })}
-                  placeholder="YYYY-MM-DD"
+                  onChangeText={(text) => {
+                    // Allow only digits and hyphens, enforce YYYY-MM-DD format
+                    let cleaned = text.replace(/[^\d-]/g, '');
+                    // Auto-format: YYYY-MM-DD
+                    if (cleaned.length > 4 && cleaned[4] !== '-') {
+                      cleaned = cleaned.slice(0, 4) + '-' + cleaned.slice(4);
+                    }
+                    if (cleaned.length > 7 && cleaned[7] !== '-') {
+                      cleaned = cleaned.slice(0, 7) + '-' + cleaned.slice(7);
+                    }
+                    // Limit to YYYY-MM-DD format (10 characters)
+                    if (cleaned.length <= 10) {
+                      setFormData({ ...formData, date: cleaned });
+                    }
+                  }}
+                  placeholder="YYYY-MM-DD (למשל: 2024-01-15)"
                   placeholderTextColor={colors.textPlaceholder}
+                  maxLength={10}
                 />
+                {formData.date && formData.date.length > 0 && (
+                  <Text style={[styles.label, { fontSize: FontSizes.caption, color: colors.textSecondary, marginTop: 4 }]}>
+                    {(() => {
+                      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                      if (!dateRegex.test(formData.date)) {
+                        return '⚠️ אנא הזן תאריך בפורמט YYYY-MM-DD';
+                      }
+                      const dateParts = formData.date.split('-');
+                      const year = parseInt(dateParts[0], 10);
+                      const month = parseInt(dateParts[1], 10);
+                      const day = parseInt(dateParts[2], 10);
+                      const testDate = new Date(year, month - 1, day);
+                      if (
+                        testDate.getFullYear() !== year ||
+                        testDate.getMonth() !== month - 1 ||
+                        testDate.getDate() !== day
+                      ) {
+                        return '⚠️ התאריך שהוזן לא תקין';
+                      }
+                      return `✓ ${testDate.toLocaleDateString('he-IL')}`;
+                    })()}
+                  </Text>
+                )}
               </View>
 
               <View style={styles.formGroup}>
@@ -831,7 +956,7 @@ const styles = StyleSheet.create({
   fabButton: {
     position: 'absolute',
     right: LAYOUT_CONSTANTS.SPACING.LG,
-    bottom: LAYOUT_CONSTANTS.SPACING.LG,
+    bottom: LAYOUT_CONSTANTS.SPACING.XL,
     flexDirection: 'row',
     alignItems: 'center',
     gap: LAYOUT_CONSTANTS.SPACING.XS,
