@@ -23,6 +23,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Auth mode of the current session
 export type AuthMode = 'guest' | 'demo' | 'real';
+// Simplified role model for the app
+export type Role = 'guest' | 'user' | 'admin';
 
 interface User {
   id: string;
@@ -52,6 +54,9 @@ interface UserContextType {
   selectedUser: User | null;
   setSelectedUser: (user: User | null) => Promise<void>;
   setSelectedUserWithMode: (user: User | null, mode: AuthMode) => Promise<void>;
+  // New simplified API
+  role: Role;
+  setCurrentPrincipal: (principal: { user: User | null; role: Role }) => Promise<void>;
   isUserSelected: boolean;
   isLoading: boolean;
   signOut: () => Promise<void>;
@@ -84,6 +89,12 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     console.log('🔐 UserContext - useEffect - Starting auth check');
     checkAuthStatus();
   }, []);
+
+  const computeRole = (user: User | null, mode: AuthMode): Role => {
+    if (mode === 'guest' || !user) return 'guest';
+    const roles = Array.isArray(user?.roles) ? user!.roles : [];
+    return (roles.includes('admin') || roles.includes('super_admin') || roles.includes('org_admin')) ? 'admin' : 'user';
+  };
 
   const checkAuthStatus = async () => {
     try {
@@ -181,42 +192,57 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
   };
 
+  // New simplified setter: sets current principal using role model
+  const setCurrentPrincipal = async (principal: { user: User | null; role: Role }) => {
+    try {
+      console.log('🔐 UserContext - setCurrentPrincipal:', { user: principal.user?.name || 'null', role: principal.role });
+      if (principal.role === 'guest' || !principal.user) {
+        setSelectedUserState(null);
+        setIsAuthenticated(true);
+        setIsGuestMode(true);
+        setAuthMode('guest');
+        return;
+      }
+      const enriched = await enrichUserWithOrgRoles(principal.user);
+      // Treat any non-guest role as real auth
+      try {
+        const { DatabaseService } = await import('../utils/databaseService');
+        await DatabaseService.clearLocalCollections();
+      } catch (e) {
+        console.log('⚠️ Failed to clear local collections on real auth (non-fatal):', e);
+      }
+      setSelectedUserState(enriched);
+      setIsAuthenticated(true);
+      setIsGuestMode(false);
+      setAuthMode('real');
+    } catch (error) {
+      console.error('Error in setCurrentPrincipal:', error);
+      // Fallbacks
+      if (principal.role === 'guest' || !principal.user) {
+        setSelectedUserState(null);
+        setIsAuthenticated(true);
+        setIsGuestMode(true);
+        setAuthMode('guest');
+      } else {
+        setSelectedUserState(principal.user);
+        setIsAuthenticated(true);
+        setIsGuestMode(false);
+        setAuthMode('real');
+      }
+    }
+  };
+
   const setSelectedUserWithMode = async (user: User | null, mode: AuthMode) => {
     try {
       console.log('🔐 UserContext - setSelectedUserWithMode:', { user: user?.name || 'null', mode });
-      if (user) {
-        // Enrich user with org roles if applicable
-        const enriched = await enrichUserWithOrgRoles(user);
-        if (mode === 'real') {
-          // On real auth, clear only local collections to preserve app prefs
-          try {
-            const { DatabaseService } = await import('../utils/databaseService');
-            await DatabaseService.clearLocalCollections();
-          } catch (e) {
-            console.log('⚠️ Failed to clear local collections on real auth (non-fatal):', e);
-          }
-        }
-        // DO NOT SAVE TO AsyncStorage - session only
-        console.log('🔐 UserContext - setSelectedUserWithMode - NOT saving to storage (session only)');
-        setSelectedUserState(enriched);
-        setIsAuthenticated(true);
-        setIsGuestMode(mode === 'guest');
-        setAuthMode(mode);
-        console.log('🔐 UserContext - setSelectedUserWithMode - session set & isAuthenticated TRUE');
-      } else {
-        // No need to remove from AsyncStorage since we're not saving
-        setSelectedUserState(null);
-        setIsAuthenticated(false);
-        setIsGuestMode(false);
-        setAuthMode('guest');
-        console.log('🔐 UserContext - setSelectedUserWithMode - cleared & isAuthenticated FALSE');
-      }
+      // Bridge to new API
+      const role = computeRole(user, mode);
+      await setCurrentPrincipal({ user, role });
+      console.log('🔐 UserContext - setSelectedUserWithMode - bridged to setCurrentPrincipal');
     } catch (error) {
       console.error('Error setting user:', error);
-      setSelectedUserState(user);
-      setIsAuthenticated(user !== null);
-      setIsGuestMode(false);
-      setAuthMode(user ? 'real' : 'guest');
+      const role = computeRole(user, mode);
+      await setCurrentPrincipal({ user, role });
     }
   };
 
@@ -354,6 +380,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     selectedUser,
     setSelectedUser,
     setSelectedUserWithMode,
+    role: computeRole(selectedUser, authMode),
+    setCurrentPrincipal,
     isUserSelected: selectedUser !== null,
     isLoading,
     signOut,

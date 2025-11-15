@@ -9,6 +9,8 @@ export default {
     icon: "./assets/images/logo.png",
     scheme: "karma-community",
     userInterfaceStyle: "automatic",
+    // שמירה על primaryColor שהיה ב-app.json
+    primaryColor: "#FF69B4",
     splash: {
       image: "./assets/images/logo.png",
       resizeMode: "contain",
@@ -19,14 +21,33 @@ export default {
     ],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.navesarussi1.KarmaCommunity"
+      bundleIdentifier: "com.navesarussi1.KarmaCommunity",
+      // איחוד הרשאות ו־ATS שהיו ב-app.json
+      infoPlist: {
+        NSAppTransportSecurity: {
+          NSAllowsArbitraryLoads: false,
+          NSAllowsLocalNetworking: true
+        },
+        NSCameraUsageDescription: "האפליקציה זקוקה לגישה למצלמה כדי לצלם תמונות וסרטונים",
+        NSMicrophoneUsageDescription: "האפליקציה זקוקה לגישה למיקרופון לצורך הקלטת אודיו",
+        NSPhotoLibraryUsageDescription: "האפליקציה זקוקה לגישה לספריית התמונות כדי לבחור ולהעלות קבצים"
+      }
     },
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/images/logo.png",
         backgroundColor: "#F0F8FF"
       },
-      package: "com.navesarussi1.KarmaCommunity"
+      package: "com.navesarussi1.KarmaCommunity",
+      // הרשאות שהוגדרו ב-app.json
+      permissions: [
+        "android.permission.VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.WAKE_LOCK",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+      ]
     },
     web: {
       bundler: "metro",
@@ -38,14 +59,36 @@ export default {
       lang: "he",
       dir: "rtl",
       themeColor: "#FF69B4",
-      backgroundColor: "#F0F8FF"
+      backgroundColor: "#F0F8FF",
+      // הגדרות meta ו-build מה-app.json
+      meta: {
+        viewport: "width=device-width, initial-scale=1, shrink-to-fit=no"
+      },
+      build: {
+        babel: {
+          include: ["@expo/vector-icons"]
+        }
+      }
     },
     plugins: [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          icon: "./assets/images/logo.png",
+          color: "#FF69B4",
+          mode: "production",
+          androidMode: "default",
+          androidCollapsedTitle: "התראה חדשה"
+        }
+      ]
     ],
     experiments: {
+      // ב-app.json היה false; אנו שומרים על true לשילוב עם expo-router
       typedRoutes: true
     },
+    // שמירה על owner מ-app.json
+    owner: "navesarussi1",
     extra: {
       EXPO_PUBLIC_API_BASE_URL: DEFAULT_API_BASE_URL,
       EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID: "430191522654-jno2tkl1dotil0mkf4h4hahfk4e4gas8.apps.googleusercontent.com",

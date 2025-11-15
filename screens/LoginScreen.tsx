@@ -4,22 +4,10 @@
 // - On success: Resets navigation to `{ name: 'HomeStack' }` (BottomNavigator tabs).
 // - Provides: UI states for email flow (2 steps), org lookup, language switcher (he/en with RTL toggle), guest mode.
 // - Reads/writes: AsyncStorage for recent emails and language; queries org applications via `db`, users via `authService` + `restAdapter`.
-// - Context: `useUser()` -> `setSelectedUserWithMode`, `setGuestMode`, `selectedUser`, `isGuestMode` to proceed to home upon auth or guest.
+// - Context: `useUser()` -> `setCurrentPrincipal` + `role` to לקבוע אורח/משתמש/מנהל ולנווט הביתה.
 // - Navigation side-effects: `navigation.reset()` to 'HomeStack'; can navigate to 'OrgOnboardingScreen'.
 // - External deps/services: i18n, firebase-like authService wrappers, restAdapter, databaseService.
 
-// TODO: CRITICAL - This file is extremely long (1200+ lines). Split into smaller components:
-//   - EmailLoginForm component
-//   - OrganizationLoginForm component  
-//   - LanguageSelector component
-// TODO: Add comprehensive form validation and error handling
-// TODO: Implement proper accessibility for all interactive elements
-// TODO: Add comprehensive loading states and user feedback
-// TODO: Remove hardcoded styles and use theme system consistently
-// TODO: Add proper TypeScript interfaces for all props and state
-// TODO: Remove console.log statements and use proper logging
-// TODO: Add unit tests for all authentication flows
-// TODO: Implement proper security measures (rate limiting, etc.)
 import React, { useState, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -53,11 +41,9 @@ import ScrollContainer from '../components/ScrollContainer';
 import { getScreenInfo, scaleSize } from '../globals/responsive';
 
 export default function LoginScreen() {
-  // TODO: Extract state management to custom hooks (useAuthState, useLoginForm)
-  // TODO: Implement proper state validation and error boundaries
-  // TODO: Add comprehensive analytics tracking for auth flow
-  const { setSelectedUserWithMode, setGuestMode, selectedUser, isGuestMode } = useUser();
-  const { t } = useTranslation(['auth', 'common', 'settings']);
+  
+  const { setCurrentPrincipal } = useUser(); // new API to set user identity and role
+  const { t } = useTranslation(['auth', 'common', 'settings']); // translations for the login screen
   
   // Get responsive values for dynamic styles in JSX
   const { width } = Dimensions.get('window');
@@ -66,6 +52,7 @@ export default function LoginScreen() {
   const buttonMinWidth = isDesktopWeb ? 280 : isTablet ? 240 : 200;
   const expandedRowMaxWidth = isDesktopWeb ? 400 : isTablet ? 360 : '100%';
   const navigation = useNavigation<any>();
+ 
   // Org login UI state
   const [orgLoginOpen, setOrgLoginOpen] = useState(false);
   const [orgQuery, setOrgQuery] = useState('');
@@ -110,17 +97,14 @@ export default function LoginScreen() {
 
 
   const handleGuestMode = async () => {
-    console.log('🔐 LoginScreen - handleGuestMode - Starting');
     try {
-      await setGuestMode();
-      console.log('🔐 LoginScreen - handleGuestMode - Guest mode set, navigating...');
+      await setCurrentPrincipal({ user: null as any, role: 'guest' });
       // Force immediate navigation to home
       navigation.reset({
         index: 0,
         routes: [{ name: 'HomeStack' }],
       });
     } catch (error) {
-      console.error('🔐 LoginScreen - handleGuestMode - Error:', error);
       // Even if there's an error, try to navigate (fallback)
       navigation.reset({
         index: 0,
@@ -262,7 +246,6 @@ export default function LoginScreen() {
       setEmailStep('password');
       setPasswordValue('');
     } catch (err) {
-      console.error('Email check failed:', err);
         Alert.alert(t('common:error') as string, t('common:genericTryAgain') as string);
     } finally {
       setIsEmailBusy(false);
@@ -318,9 +301,8 @@ export default function LoginScreen() {
         try {
           await restAdapter.create('users', userData.id, userData.id, userData);
         } catch (e) {
-          console.log('Saving user on server failed (non-critical):', e);
         }
-          await setSelectedUserWithMode(userData as any, 'real');
+          await setCurrentPrincipal({ user: userData as any, role: 'user' });
       } else {
         try {
           const fbUser = await fbSignUpWithEmail(email, passwordValue);
@@ -352,19 +334,17 @@ export default function LoginScreen() {
               } as any;
               try { await restAdapter.create('users', userData.id, userData.id, userData); } catch (_) {}
               await saveRecentEmail(email);
-              await setSelectedUserWithMode(userData as any, 'real');
+              await setCurrentPrincipal({ user: userData as any, role: 'user' });
             } catch (signinErr) {
               setEmailStatusMessage(t('auth:email.invalidPassword') as string);
               setEmailStatusColor('#C62828');
             }
           } else {
-            console.error('Sign up failed:', e);
             Alert.alert(t('common:error') as string, t('auth:email.signupFailed') as string);
           }
         }
       }
     } catch (err) {
-      console.error('Email submit failed:', err);
       Alert.alert(t('common:error') as string, t('common:genericTryAgain') as string);
     } finally {
       setIsEmailBusy(false);
@@ -420,7 +400,7 @@ export default function LoginScreen() {
           settings: { language: 'he', darkMode: false, notificationsEnabled: true },
         } as any;
 
-        await setSelectedUserWithMode(orgUser as any, 'real');
+        await setCurrentPrincipal({ user: orgUser as any, role: 'user' });
         return;
       }
 
@@ -432,7 +412,6 @@ export default function LoginScreen() {
       // 3) Not found — navigate to org onboarding screen
       navigation.navigate('OrgOnboardingScreen' as never);
     } catch (err) {
-      console.error('Org login check failed:', err);
         Alert.alert(t('common:error') as string, t('auth:org.checkFailed') as string);
     } finally {
       setIsCheckingOrg(false);
