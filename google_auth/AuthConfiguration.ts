@@ -28,6 +28,7 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { logger } from '../utils/loggerService';
+import { API_BASE_URL } from '../utils/dbConfig';
 
 // ========================================
 // ENVIRONMENT VALIDATION
@@ -51,9 +52,11 @@ const validateEnvironmentConfiguration = (): {
     'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID', 
     'EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID',
   ];
+  const extra = (Constants?.expoConfig as any)?.extra || {};
+  const getVar = (varName: string) => process.env[varName] ?? extra[varName];
 
-  const missingRequired = requiredVars.filter(varName => !process.env[varName]);
-  const missingRecommended = recommendedVars.filter(varName => !process.env[varName]);
+  const missingRequired = requiredVars.filter(varName => !getVar(varName));
+  const missingRecommended = recommendedVars.filter(varName => !getVar(varName));
 
   const isValid = missingRequired.length === 0;
 
@@ -644,29 +647,7 @@ export const PERFORMANCE_SETTINGS = {
 /**
  * Get API base URL based on current environment
  */
-export const getApiBaseUrl = (): string => {
-  // Use explicit environment variable if set
-  const envApiUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
-  if (envApiUrl) {
-    return envApiUrl;
-  }
-
-  // Determine environment and use appropriate URL
-  const isDevelopment = process.env.NODE_ENV === 'development' || 
-                       process.env.EXPO_PUBLIC_ENV === 'development';
-  
-  const isStaging = process.env.EXPO_PUBLIC_ENV === 'staging';
-  
-  if (isDevelopment) {
-    return API_SETTINGS.BASE_URLS.development;
-  }
-  
-  if (isStaging) {
-    return API_SETTINGS.BASE_URLS.staging;
-  }
-  
-  return API_SETTINGS.BASE_URLS.production;
-};
+export const getApiBaseUrl = (): string => API_BASE_URL;
 
 // ========================================
 // CONFIGURATION VALIDATION

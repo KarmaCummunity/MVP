@@ -1,3 +1,5 @@
+import Constants from 'expo-constants';
+
 // File overview:
 // - Purpose: Central configuration for backend usage, API base URL, caching, sync, offline, and feature flags.
 // - Reached from: `apiService`, `enhancedDatabaseService`, and many utils to decide backend vs local.
@@ -16,11 +18,63 @@ try {
 export const IS_DEVELOPMENT = isDevelopmentMode;
 export const IS_PRODUCTION = !isDevelopmentMode;
 
+const DEFAULT_API_BASE_URLS = {
+  development: 'http://localhost:3001',
+  production: 'https://kc-mvp-server-production.up.railway.app',
+};
+
+type ExpoExtra = Record<string, any>;
+const expoExtra: ExpoExtra = (() => {
+  try {
+    return (Constants?.expoConfig as any)?.extra || (Constants as any)?.manifest?.extra || {};
+  } catch (_error) {
+    return {};
+  }
+})();
+
+const sanitizeBaseUrl = (value?: string | null): string | null => {
+  if (!value || typeof value !== 'string') {
+    return null;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+  if (trimmed === '/' || trimmed === './' || trimmed === '.') {
+    return '';
+  }
+  return trimmed.replace(/\/+$/, '');
+};
+
+const resolveApiBaseUrl = (): string => {
+  const candidates = [
+    process.env.EXPO_PUBLIC_API_BASE_URL,
+    process.env.EXPO_PUBLIC_API_URL,
+    expoExtra?.EXPO_PUBLIC_API_BASE_URL,
+    expoExtra?.EXPO_PUBLIC_API_URL,
+    expoExtra?.apiBaseUrl,
+  ];
+
+  for (const candidate of candidates) {
+    const sanitized = sanitizeBaseUrl(candidate);
+    if (sanitized !== null) {
+      return sanitized;
+    }
+  }
+
+  return IS_PRODUCTION
+    ? DEFAULT_API_BASE_URLS.production
+    : DEFAULT_API_BASE_URLS.development;
+};
+
+const RESOLVED_API_BASE_URL = resolveApiBaseUrl();
+
 // Backend configuration
 export const BACKEND_CONFIG = {
   // Base URLs for different environments
-  development: 'http://localhost:3001',
-  production: process.env.EXPO_PUBLIC_API_URL || 'https://your-production-api.com',
+  development: DEFAULT_API_BASE_URLS.development,
+  production: DEFAULT_API_BASE_URLS.production,
+  resolved: RESOLVED_API_BASE_URL,
   
   // Feature flags
   USE_REAL_API: true, // Set to false to use fake data during development
@@ -41,20 +95,10 @@ export const USE_BACKEND = BACKEND_CONFIG.USE_REAL_API && (
 export const USE_FIRESTORE = false;
 
 // Get the appropriate API URL
-export const getApiUrl = (): string => {
-  // Prefer explicit env var if provided (set by run-local-e2e.sh)
-  const envBase = process.env.EXPO_PUBLIC_API_BASE_URL;
-  if (envBase && envBase.startsWith('http')) {
-    return envBase;
-  }
-  if (IS_PRODUCTION) {
-    return BACKEND_CONFIG.production;
-  }
-  return BACKEND_CONFIG.development;
-};
+export const getApiUrl = (): string => RESOLVED_API_BASE_URL;
 
 // Canonical API base URL used across the app
-export const API_BASE_URL = getApiUrl();
+export const API_BASE_URL = RESOLVED_API_BASE_URL;
 
 // API endpoints
 export const API_ENDPOINTS = {
@@ -214,21 +258,22 @@ export const validateConfig = (): boolean => {
   try {
     // Check if API URL is valid
     const apiUrl = getApiUrl();
-    if (!apiUrl || !apiUrl.startsWith('http')) {
+    const isRelativeUrl = apiUrl === '';
+    const isAbsoluteUrl = /^https?:\/\//i.test(apiUrl);
+
+    if (!isRelativeUrl && !isAbsoluteUrl) {
       console.warn('⚠️ Invalid API URL:', apiUrl);
       return false;
     }
-    
-    // Check if all required environment variables are set
-    if (IS_PRODUCTION && !process.env.EXPO_PUBLIC_API_URL) {
-      console.error('❌ Missing EXPO_PUBLIC_API_URL in production');
-      return false;
+
+    if (IS_PRODUCTION && isRelativeUrl) {
+      console.warn('⚠️ API base URL resolves to current origin in production. Make sure your hosting layer proxies /api to the backend or set EXPO_PUBLIC_API_BASE_URL explicitly.');
     }
     
     console.log('✅ Configuration validated successfully');
     console.log('🔧 Config:', {
       useBackend: USE_BACKEND,
-      apiUrl: apiUrl,
+      apiUrl: isRelativeUrl ? '(current origin)' : apiUrl,
       environment: IS_PRODUCTION ? 'production' : 'development',
       features: Object.entries(FEATURE_FLAGS)
         .filter(([_, enabled]) => enabled)

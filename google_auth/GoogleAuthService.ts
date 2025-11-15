@@ -29,6 +29,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform, AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '../utils/loggerService';
+import { API_BASE_URL as GLOBAL_API_BASE_URL } from '../utils/dbConfig';
 
 // ========================================
 // TYPE DEFINITIONS
@@ -159,7 +160,7 @@ const CONFIG = {
   /** How often to validate tokens when app is active (15 minutes) */
   TOKEN_VALIDATION_INTERVAL: 15 * 60 * 1000,
   /** API base URL for authentication endpoints */
-  API_BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3001',
+  API_BASE_URL: GLOBAL_API_BASE_URL ?? 'http://localhost:3001',
 } as const;
 
 // ========================================

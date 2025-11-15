@@ -31,6 +31,25 @@ class ApiService {
     this.baseURL = CONFIG_API_BASE_URL;
   }
 
+  private normalizeEndpoint(endpoint: string): string {
+    if (!endpoint) {
+      return '/';
+    }
+    return endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  }
+
+  private buildUrl(endpoint: string): string {
+    const normalizedEndpoint = this.normalizeEndpoint(endpoint);
+    if (!this.baseURL) {
+      return normalizedEndpoint;
+    }
+    const normalizedBase = this.baseURL.replace(/\/+$/, '');
+    if (!normalizedBase) {
+      return normalizedEndpoint;
+    }
+    return `${normalizedBase}${normalizedEndpoint}`;
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -40,7 +59,7 @@ class ApiService {
     // TODO: Add request ID for tracing and debugging
     // TODO: Add retry logic for failed requests
     try {
-      const url = `${this.baseURL}${endpoint}`;
+      const url = this.buildUrl(endpoint);
       const config: RequestInit = {
         headers: {
           'Content-Type': 'application/json',
@@ -368,7 +387,7 @@ class ApiService {
 
   async healthCheck(): Promise<boolean> {
     try {
-      const res = await fetch(`${this.baseURL}/health/redis`);
+      const res = await fetch(this.buildUrl('/health/redis'));
       return res.ok;
     } catch {
       return false;
