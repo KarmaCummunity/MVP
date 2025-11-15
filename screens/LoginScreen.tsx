@@ -439,7 +439,6 @@ export default function LoginScreen() {
     }
   };
 
-  // REMOVED: No automatic navigation - user must manually navigate after login/guest selection
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -474,7 +473,7 @@ export default function LoginScreen() {
           
           {/* Version Number */}
           <View style={styles.versionContainer}>
-            <Text style={styles.versionText}>v1.8.0</Text>
+            <Text style={styles.versionText}>v1.8.1</Text>
           </View>
           
           <View style={styles.buttonsContainer}>
