@@ -3,7 +3,6 @@
   "license": "0BSD",
   "version": "1.8.0",
   "main": "index.js",
-  
   "_TODO_DEPENDENCIES": "// TODO: Audit all dependencies - remove unused packages and update outdated ones",
   "_TODO_SECURITY": "// TODO: Add security audit script and dependency vulnerability checking",
   "_TODO_VERSIONING": "// TODO: Implement proper semantic versioning and changelog management",
@@ -16,7 +15,6 @@
     "web": "expo start --web",
     "build:web": "EXPO_PUBLIC_API_BASE_URL=https://kc-mvp-server-production.up.railway.app expo export --platform web",
     "build:web:local": "EXPO_PUBLIC_API_BASE_URL=http://localhost:3001 expo export:web",
-    
     "_TODO_ADD_SCRIPTS": "// TODO: Add missing scripts: test, lint, type-check, format, security-audit, bundle-analyze"
   },
   "dependencies": {
@@ -66,7 +64,8 @@
     "@babel/core": "^7.20.0",
     "@types/matter-js": "^0.20.0",
     "babel-plugin-module-resolver": "^5.0.2",
-    "typescript": "~5.8.3"
+    "typescript": "~5.8.3",
+    "@types/react": "~19.0.10"
   },
   "private": true
 }

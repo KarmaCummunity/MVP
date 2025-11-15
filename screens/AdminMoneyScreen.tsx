@@ -19,6 +19,7 @@ import { AdminStackParamList } from '../navigations/AdminStack';
 import { enhancedDB, wipeAllDataAdmin, DonationData } from '../utils/enhancedDatabaseService';
 import { USE_BACKEND } from '../utils/dbConfig';
 import { useUser } from '../context/UserContext';
+import { logger } from '../utils/loggerService';
 
 interface Donation {
   id: string;
@@ -64,6 +65,8 @@ const DONATION_CATEGORIES = [
   'כללי',
 ];
 
+const LOG_SOURCE = 'AdminMoneyScreen';
+
 export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) {
   const { isAdmin } = useUser();
   const [donationsList, setDonationsList] = useState<Donation[]>([]);
@@ -80,31 +83,43 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
   const [pollingId, setPollingId] = useState<ReturnType<typeof setInterval> | null>(null);
   const [isWipeVisible, setIsWipeVisible] = useState(false);
   const [confirmText, setConfirmText] = useState('');
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    logger.info(LOG_SOURCE, 'Initializing admin donations screen');
     loadDonations();
     // Lightweight polling to approximate real-time updates
     const id = setInterval(() => {
+      logger.debug(LOG_SOURCE, 'Polling donations tick');
       loadDonations();
     }, 5000);
     setPollingId(id);
+    setIsMounted(true);
     return () => {
-      if (id) clearInterval(id);
+      if (id) {
+        clearInterval(id);
+        logger.info(LOG_SOURCE, 'Stopped donations polling interval');
+      }
     };
   }, []);
 
   const loadDonations = async () => {
+    logger.info(LOG_SOURCE, 'Loading donations list', { useBackend: USE_BACKEND });
     try {
       setIsLoading(true);
       if (USE_BACKEND) {
         const donationsData = await enhancedDB.getDonations({});
         setDonationsList(donationsData as unknown as Donation[]);
+        logger.info(LOG_SOURCE, 'Donations loaded from backend', {
+          count: Array.isArray(donationsData) ? donationsData.length : 0,
+        });
       } else {
         // No backend - show empty state
         setDonationsList([]);
+        logger.warn(LOG_SOURCE, 'Backend disabled - showing empty donations list');
       }
     } catch (error) {
-      console.error('Error loading donations:', error);
+      logger.error(LOG_SOURCE, 'Error loading donations', { error });
       // Show empty state on error
       setDonationsList([]);
     } finally {
@@ -113,16 +128,20 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
   };
 
   const handleWipeAll = async () => {
+    logger.warn(LOG_SOURCE, 'Attempting to wipe all donations and data');
     try {
       if (!isAdmin) {
+        logger.warn(LOG_SOURCE, 'Wipe all blocked - missing admin permissions');
         Alert.alert('שגיאה', 'פעולה זו דורשת הרשאת מנהל');
         return;
       }
       if (confirmText.trim().toUpperCase() !== 'CONFIRM') {
+        logger.warn(LOG_SOURCE, 'Wipe all blocked - confirmation text invalid');
         Alert.alert('אימות נדרש', 'נא להקליד CONFIRM באנגלית כדי לאשר מחיקה כוללת');
         return;
       }
       setIsMutating(true);
+      logger.info(LOG_SOURCE, 'Sending wipe all request to backend');
       const res = await wipeAllDataAdmin();
       if (!res.success) {
         throw new Error(res.error || 'wipe failed');
@@ -130,16 +149,19 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
       setIsWipeVisible(false);
       setConfirmText('');
       await loadDonations();
+      logger.info(LOG_SOURCE, 'Wipe all completed successfully');
       Alert.alert('בוצע', 'כל הנתונים נמחקו בהצלחה');
     } catch (e) {
-      console.error('Admin wipe error:', e);
+      logger.error(LOG_SOURCE, 'Admin wipe error', { error: e });
       Alert.alert('שגיאה', 'לא ניתן היה למחוק את כל הנתונים');
     } finally {
       setIsMutating(false);
+      logger.debug(LOG_SOURCE, 'Wipe all mutation finished');
     }
   };
 
   const handleAddDonation = () => {
+    logger.info(LOG_SOURCE, 'Opening add donation modal');
     setIsModalVisible(true);
   };
 
@@ -156,6 +178,11 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
 
     try {
       setIsMutating(true);
+      logger.info(LOG_SOURCE, 'Saving donation', {
+        donorName: formData.donorName.trim(),
+        amount: Number(formData.amount),
+        category: formData.category,
+      });
       const payload = {
         type: 'money' as const,
         title: `תרומה מ-${formData.donorName}`,
@@ -169,6 +196,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
       }
       // Always refetch from server to ensure canonical data and IDs
       await loadDonations();
+      logger.info(LOG_SOURCE, 'Donation saved successfully');
 
       // Reset form
       setFormData({
@@ -182,7 +210,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
       setIsModalVisible(false);
       Alert.alert('הצלחה', 'התרומה נוספה בהצלחה');
     } catch (error) {
-      console.error('Error saving donation:', error);
+      logger.error(LOG_SOURCE, 'Error saving donation', { error });
       Alert.alert('שגיאה', 'לא ניתן היה לשמור את התרומה');
     } finally {
       setIsMutating(false);
@@ -190,6 +218,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
   };
 
   const handleDeleteDonation = (donationId: string) => {
+    logger.info(LOG_SOURCE, 'Prompting delete donation', { donationId });
     Alert.alert(
       'מחיקת תרומה',
       'האם אתה בטוח שברצונך למחוק תרומה זו?',
@@ -199,6 +228,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
           text: 'מחק',
           style: 'destructive',
           onPress: async () => {
+            logger.info(LOG_SOURCE, 'Deleting donation', { donationId });
             // Optimistic UI with rollback
             const prev = donationsList;
             setDonationsList((p) => p.filter((d) => d.id !== donationId));
@@ -209,12 +239,14 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
                 throw new Error(res.error || 'delete failed');
               }
               await loadDonations();
+              logger.info(LOG_SOURCE, 'Donation deleted successfully', { donationId });
             } catch (e) {
-              console.error('Error deleting donation:', e);
+              logger.error(LOG_SOURCE, 'Error deleting donation', { donationId, error: e });
               setDonationsList(prev); // rollback
               Alert.alert('שגיאה', 'לא ניתן היה למחוק את התרומה');
             } finally {
               setIsMutating(false);
+              logger.debug(LOG_SOURCE, 'Delete donation mutation finished', { donationId });
             }
           },
         },
@@ -253,13 +285,13 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
       <View style={styles.donationDetails}>
         <View style={styles.detailRow}>
           <Ionicons name="cash-outline" size={16} color={colors.textSecondary} />
-          <Text style={styles.detailText}>{formatAmount(item.amount)}</Text>
+          <Text style={styles.detailText}>{isMounted ? formatAmount(item.amount) : ''}</Text>
         </View>
         <View style={styles.detailRow}>
           <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} />
-          <Text style={styles.detailText}>{formatDate(item.createdAt)}</Text>
+          <Text style={styles.detailText}>{isMounted ? formatDate(item.createdAt) : ''}</Text>
         </View>
-        {item.description && (
+        {Boolean(item.description?.trim()) && (
           <View style={styles.detailRow}>
             <Ionicons name="document-text-outline" size={16} color={colors.textSecondary} />
             <Text style={styles.detailText} numberOfLines={2}>
