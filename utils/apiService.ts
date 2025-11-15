@@ -293,11 +293,16 @@ class ApiService {
   async getCommunityStats(filters: {
     city?: string;
     period?: string;
+    forceRefresh?: boolean;
   } = {}): Promise<ApiResponse> {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined) {
-        params.append(key, value.toString());
+        if (key === 'forceRefresh' && value === true) {
+          params.append(key, 'true');
+        } else if (key !== 'forceRefresh') {
+          params.append(key, value.toString());
+        }
       }
     });
     
@@ -326,6 +331,12 @@ class ApiService {
     return this.request('/api/stats/increment', {
       method: 'POST',
       body: JSON.stringify(statData),
+    });
+  }
+
+  async resetCommunityStats(): Promise<ApiResponse> {
+    return this.request('/api/stats/community/reset', {
+      method: 'POST',
     });
   }
 

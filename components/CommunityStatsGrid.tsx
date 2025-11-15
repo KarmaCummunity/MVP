@@ -8,6 +8,7 @@ import { useUser } from '../context/UserContext';
 import { useEffect, useState } from 'react';
 import { getGlobalStats, formatShortNumber, parseShortNumber, CommunityStats, EnhancedStatsService } from '../utils/statsService';
 import { USE_BACKEND } from '../utils/dbConfig';
+import { enhancedDB } from '../utils/enhancedDatabaseService';
 
 export type CommunityStat = {
   key: string;
@@ -51,7 +52,12 @@ const CommunityStatsGrid: React.FC<CommunityStatsGridProps> = ({ onSelect }) => 
 
   useEffect(() => {
     let mounted = true;
-    const run = async () => {
+    const POLLING_INTERVAL = 5000; // 5 seconds
+    
+    const loadStats = async (forceRefresh = false) => {
+      if (!mounted) return;
+      
+      console.log(`[CommunityStatsGrid] Loading stats, forceRefresh: ${forceRefresh}`);
       setLoading(true);
       
       try {
@@ -59,15 +65,21 @@ const CommunityStatsGrid: React.FC<CommunityStatsGridProps> = ({ onSelect }) => 
         
         if (USE_BACKEND && isRealAuth) {
           // Use enhanced backend service for real users
-          stats = await EnhancedStatsService.getCommunityStats();
+          console.log('[CommunityStatsGrid] Fetching from backend with forceRefresh:', forceRefresh);
+          stats = await EnhancedStatsService.getCommunityStats({}, forceRefresh);
+          console.log('[CommunityStatsGrid] Stats received from backend:', Object.keys(stats).length, 'keys');
         } else {
           // Use legacy local stats for guests or if backend unavailable
+          console.log('[CommunityStatsGrid] Using local stats (no backend or not authenticated)');
           stats = await getGlobalStats();
         }
         
-        if (mounted) setStatsState(stats);
+        if (mounted) {
+          setStatsState(stats);
+          console.log('[CommunityStatsGrid] Stats state updated');
+        }
       } catch (error) {
-        console.error('Failed to load community stats:', error);
+        console.error('[CommunityStatsGrid] Failed to load community stats:', error);
         
         // Fallback to legacy stats
         const fallbackStats = await getGlobalStats();
@@ -77,8 +89,18 @@ const CommunityStatsGrid: React.FC<CommunityStatsGridProps> = ({ onSelect }) => 
       setLoading(false);
     };
     
-    run();
-    return () => { mounted = false; };
+    // Initial load
+    loadStats();
+    
+    // Auto-refresh every 5 seconds
+    const intervalId = setInterval(() => {
+      loadStats(true); // Force refresh from server
+    }, POLLING_INTERVAL);
+    
+    return () => {
+      mounted = false;
+      clearInterval(intervalId);
+    };
   }, [isRealAuth]);
   const realStats: CommunityStat[] = statsState
     ? (() => {

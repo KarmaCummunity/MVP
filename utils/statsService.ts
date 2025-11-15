@@ -138,10 +138,10 @@ export function parseShortNumber(s: string): number {
 // Enhanced Stats Service with Backend Integration
 export class EnhancedStatsService {
   // Get community stats from backend or fallback to local
-  static async getCommunityStats(filters: { city?: string; period?: string } = {}): Promise<CommunityStats> {
+  static async getCommunityStats(filters: { city?: string; period?: string } = {}, forceRefresh = false): Promise<CommunityStats> {
     try {
       if (USE_BACKEND) {
-        const stats = await enhancedDB.getCommunityStats(filters);
+        const stats = await enhancedDB.getCommunityStats(filters, forceRefresh);
         return this.mapBackendStats(stats);
       }
 
@@ -295,6 +295,28 @@ export class EnhancedStatsService {
       }
     } catch (error) {
       console.error('Track ride created error:', error);
+    }
+  }
+
+  // Reset community statistics (admin only)
+  static async resetCommunityStats(): Promise<boolean> {
+    try {
+      if (USE_BACKEND) {
+        const response = await apiService.resetCommunityStats();
+        if (response.success) {
+          // Clear local cache as well
+          await enhancedDB.clearAllCache();
+          return true;
+        }
+        return false;
+      }
+
+      // Fallback: Reset local stats
+      await DatabaseService.setItem(DB_COLLECTIONS.ANALYTICS, 'global', 'community_stats', DEFAULT_STATS);
+      return true;
+    } catch (error) {
+      console.error('Reset community stats error:', error);
+      return false;
     }
   }
 

@@ -412,12 +412,19 @@ export class EnhancedDatabaseService {
 
   // ==================== Community Stats ====================
 
-  async getCommunityStats(filters: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
+  async getCommunityStats(filters: Record<string, unknown> = {}, forceRefresh = false): Promise<Record<string, unknown>> {
     try {
       const cacheKey = `community_stats_${JSON.stringify(filters)}`;
-      const cached = await this.getCache('community_stats', cacheKey);
-      if (cached) {
-        return cached as Record<string, unknown>; // Type assertion for cached data
+      if (!forceRefresh) {
+        const cached = await this.getCache('community_stats', cacheKey);
+        if (cached) {
+          logger.debug('EnhancedDatabaseService', 'Community stats cache hit', { cacheKey });
+          return cached as Record<string, unknown>; // Type assertion for cached data
+        }
+      } else {
+        logger.info('EnhancedDatabaseService', 'Force refresh - skipping community stats cache', { cacheKey });
+        // Clear cache for community_stats pattern
+        await this.clearCachePattern('community_stats');
       }
 
       if (!USE_BACKEND) {
@@ -431,10 +438,13 @@ export class EnhancedDatabaseService {
         return defaultStats;
       }
 
-      const response = await apiService.getCommunityStats(filters);
+      // Pass forceRefresh to API to bypass server-side Redis cache
+      const apiFilters = { ...filters, forceRefresh };
+      const response = await apiService.getCommunityStats(apiFilters);
       
       if (response.success && response.data) {
         await this.setCache('community_stats', cacheKey, response.data);
+        logger.info('EnhancedDatabaseService', 'Community stats fetched from backend', { cacheKey, forceRefresh });
         return response.data as Record<string, unknown>;
       }
 
