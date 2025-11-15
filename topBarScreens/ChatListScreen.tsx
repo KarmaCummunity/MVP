@@ -11,8 +11,6 @@ import { View, Text, StyleSheet, RefreshControl, Alert, TextInput, TouchableOpac
 import ScrollContainer from '../components/ScrollContainer';
 import { useNavigation, NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import ChatListItem from '../components/ChatListItem';
-import { users as allUsers, ChatUser } from '../globals/fakeData';
-import { allUsers as characterUsers } from '../globals/characterTypes';
 import { useUser } from '../context/UserContext';
 import { getConversations, Conversation as ChatConversation, subscribeToConversations } from '../utils/chatService';
 import colors from '../globals/colors';
@@ -32,16 +30,15 @@ export default function ChatListScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const { t } = useTranslation(['chat','common']);
 
-  // Localized demo users and conversations
-  const DEMO_USERS: ChatUser[] = useMemo(() => ([
-    { id: 'dummy_user_1', name: t('chat:demo.user1Name'), avatar: 'https://i.pravatar.cc/150?u=dummy_user_1', isOnline: true },
-    { id: 'dummy_user_2', name: t('chat:demo.user2Name'), avatar: 'https://i.pravatar.cc/150?u=dummy_user_2', isOnline: false, lastSeen: new Date(Date.now() - 86400000).toISOString() },
-  ]), [t]);
-
-  const DEMO_CONVERSATIONS: ChatConversation[] = useMemo(() => ([
-    { id: 'dummy_conv_1', participants: ['user001', 'dummy_user_1'], lastMessageText: t('chat:demo.conv1Last'), lastMessageTime: new Date().toISOString(), unreadCount: 2, createdAt: new Date().toISOString() },
-    { id: 'dummy_conv_2', participants: ['user001', 'dummy_user_2'], lastMessageText: t('chat:demo.conv2Last'), lastMessageTime: new Date(Date.now() - 3600000).toISOString(), unreadCount: 0, createdAt: new Date(Date.now() - 3600000).toISOString() },
-  ]), [t]);
+  // Local ChatUser type for display only
+  interface ChatUser {
+    id: string;
+    name: string;
+    avatar?: string;
+    isOnline?: boolean;
+    lastSeen?: string;
+    status?: string;
+  }
 
   // Load conversations (real + demo)
   const loadConversations = useCallback(async () => {
@@ -52,8 +49,7 @@ export default function ChatListScreen() {
     setRefreshing(true);
     try {
       const realConversations = await getConversations(selectedUser.id);
-      const demoForUser = isRealAuth ? [] : DEMO_CONVERSATIONS.map(c => ({ ...c, participants: [selectedUser.id, c.participants[1]] }));
-      setConversations([...(demoForUser as any), ...realConversations]);
+      setConversations(realConversations);
     } catch (error) {
       console.error('❌ Load conversations error:', error);
       Alert.alert(t('common:errorTitle'), t('chat:loadConversationsError'));
@@ -69,15 +65,11 @@ export default function ChatListScreen() {
       if (!selectedUser) return;
        const unsubscribe = subscribeToConversations(selectedUser.id, updated => {
         setConversations(prev => {
-           const prevReal = prev.filter(c => !c.id.startsWith('dummy_'));
-           const demoForUser = isRealAuth ? [] : DEMO_CONVERSATIONS.map(c => ({ ...c, participants: [selectedUser.id, c.participants[1]] }));
           const updatedIds = new Set(updated.map(c => c.id));
-          const merged = [
-            ...(demoForUser as any),
-            ...prevReal.filter(c => !updatedIds.has(c.id)),
+          return [
+            ...prev.filter(c => !updatedIds.has(c.id)),
             ...updated,
           ];
-          return merged;
         });
       });
        return () => unsubscribe();
@@ -88,16 +80,8 @@ export default function ChatListScreen() {
 
   // Resolve display data for conversations (other user, last message, unread)
   const combinedUsers = useMemo(() => {
-    // Merge fakeData users, demo users, and character users into ChatUser shape
-    const mappedCharacterUsers: ChatUser[] = characterUsers.map(u => ({
-      id: u.id,
-      name: u.name,
-      avatar: u.avatar,
-      isOnline: Boolean(u.isActive),
-      lastSeen: u.lastActive || new Date().toISOString(),
-      status: u.bio || '',
-    }));
-    return isRealAuth ? mappedCharacterUsers : [...allUsers, ...DEMO_USERS, ...mappedCharacterUsers];
+    // No demo/static users – rely on real user data from backend elsewhere if available
+    return [] as ChatUser[];
   }, []);
 
   const filteredSortedConversations = useMemo(() => {

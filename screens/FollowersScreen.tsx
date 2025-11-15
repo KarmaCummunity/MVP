@@ -20,7 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
-import { allUsers, CharacterType } from '../globals/characterTypes';
+import { UserPreview as CharacterType } from '../globals/types';
 import { 
   getFollowers, 
   getFollowing, 

@@ -213,3 +213,17 @@ export type BottomTabNavigationPropType<
 // You might also need a type for the 'route' prop if you're accessing params:
 // import { RouteProp } from '@react-navigation/native';
 // export type PostsReelsScreenRouteProp = RouteProp<RootStackParamList, 'PostsReelsScreen'>;
+
+// --- Shared app user preview type (lightweight, nullable fields allowed) ---
+export interface UserPreview {
+  id: string;
+  name: string;
+  avatar?: string;
+  bio?: string;
+  karmaPoints?: number;
+  completedTasks?: number;
+  followersCount?: number;
+  roles?: string[];
+  isVerified?: boolean;
+  isActive?: boolean;
+}

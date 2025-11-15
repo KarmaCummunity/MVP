@@ -17,7 +17,10 @@ import {
 } from 'react-native';
 import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import { FontSizes } from '../globals/constants';
-import { charityNames, charities, donations } from '../globals/fakeData';
+// Empty arrays - replace with real data from API
+const charityNames: string[] = [];
+const charities: any[] = [];
+const donations: any[] = [];
 import { charitiesStore } from '../utils/charitiesStore';
 import { donationResources } from '../utils/donationResources';
 import { useUser } from '../context/UserContext';

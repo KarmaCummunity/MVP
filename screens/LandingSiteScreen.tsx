@@ -1,13 +1,18 @@
 // LandingSiteScreen.tsx
 // Web-only marketing landing page for KarmaCommunity
-import React, { useEffect } from 'react';
-import { Platform, View, Text, StyleSheet, Image, TouchableOpacity, Linking } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Platform, View, Text, StyleSheet, Image, TouchableOpacity, Linking, Dimensions, ActivityIndicator } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { Ionicons } from '@expo/vector-icons';
 import { logger } from '../utils/loggerService';
 import ScrollContainer from '../components/ScrollContainer';
 import ScreenWrapper from '../components/ScreenWrapper';
+import { EnhancedStatsService } from '../utils/statsService';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isTablet = SCREEN_WIDTH > 768;
 
 const Section: React.FC<{ title: string; subtitle?: string; children?: React.ReactNode }> = ({ title, subtitle, children }) => (
   <View style={styles.section}>
@@ -25,11 +30,62 @@ const Feature: React.FC<{ emoji: string; title: string; text: string }> = ({ emo
   </View>
 );
 
+interface LandingStats {
+  uniqueDonors: number;
+  totalMoneyDonated: number;
+  totalUsers: number;
+  itemDonations: number;
+  completedRides: number;
+  totalOrganizations: number;
+}
+
 const LandingSiteScreen: React.FC = () => {
   console.log('LandingSiteScreen');
   
+  const [stats, setStats] = useState<LandingStats>({
+    uniqueDonors: 0,
+    totalMoneyDonated: 0,
+    totalUsers: 0,
+    itemDonations: 0,
+    completedRides: 0,
+    totalOrganizations: 0,
+  });
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+  
   useEffect(() => {
     logger.info('LandingSite', 'Landing page mounted');
+    
+    // Load community statistics
+    const loadStats = async () => {
+      try {
+        setIsLoadingStats(true);
+        const communityStats = await EnhancedStatsService.getCommunityStats();
+        
+        // Extract values - handle both direct values and nested value objects
+        const getValue = (stat: any): number => {
+          if (typeof stat === 'number') return stat;
+          if (stat && typeof stat === 'object' && 'value' in stat) return stat.value || 0;
+          return 0;
+        };
+        
+        setStats({
+          uniqueDonors: getValue(communityStats.uniqueDonors) || 0,
+          totalMoneyDonated: getValue(communityStats.totalMoneyDonated) || 0,
+          totalUsers: getValue(communityStats.totalUsers) || 0,
+          itemDonations: getValue(communityStats.itemDonations) || 0,
+          completedRides: getValue(communityStats.completedRides) || 0,
+          totalOrganizations: getValue(communityStats.totalOrganizations) || 0,
+        });
+      } catch (error) {
+        logger.error('LandingSite', 'Failed to load stats', { error });
+        // Keep default values (0) on error
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+    
+    loadStats();
+    
     return () => logger.info('LandingSite', 'Landing page unmounted');
   }, []);
 
@@ -41,18 +97,79 @@ const LandingSiteScreen: React.FC = () => {
         onContentSizeChange={(w, h) => logger.info('LandingSite', 'Content size changed', { width: w, height: h })}
       >
       <View style={styles.hero}>
-        <Image source={require('../assets/images/logo.png')} style={styles.logo} resizeMode="contain" />
-        <Text style={styles.title}>KarmaCommunity</Text>
-        <Text style={styles.subtitle}>קהילה שעוזרת אחת לשנייה — תרומות, תמיכה, משאבים וחיבורים אנושיים.</Text>
-        <View style={styles.ctaRow}>
-          <TouchableOpacity style={styles.primaryCta} onPress={() => { logger.info('LandingSite', 'CTA click - download'); Linking.openURL('https://expo.dev'); }}>
-            <Text style={styles.primaryCtaText}>הורדת האפליקציה</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryCta} onPress={() => { logger.info('LandingSite', 'CTA click - contact email'); Linking.openURL('mailto:navesarussi1@gmail.com'); }}>
-            <Text style={styles.secondaryCtaText}>דברו איתי</Text>
-          </TouchableOpacity>
+        <View style={styles.heroGradient}>
+          <View style={styles.heroContent}>
+            <Text style={styles.welcomeTitle}>ברוכים הבאים לקהילת קארמה</Text>
+            <View style={styles.logoContainer}>
+              <Image source={require('../assets/images/logo.png')} style={styles.logo} resizeMode="contain" />
+              <View style={styles.logoGlow} />
+            </View>
+            <Text style={styles.title}>KarmaCommunity</Text>
+            <Text style={styles.subtitle}>קהילה שעוזרת אחת לשני111יה — תרומות, תמיכה, משאבים וחיבורים אנושיים.</Text>
+            <View style={styles.ctaRow}>
+              <TouchableOpacity 
+                style={styles.primaryCta} 
+                onPress={() => { logger.info('LandingSite', 'CTA click - download'); Linking.openURL('https://expo.dev'); }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="download-outline" size={22} color="#fff" style={styles.ctaIcon} />
+                <Text style={styles.primaryCtaText}>הורדת האפליקציה</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.secondaryCta} 
+                onPress={() => { logger.info('LandingSite', 'CTA click - contact email'); Linking.openURL('mailto:navesarussi1@gmail.com'); }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="mail-outline" size={22} color={colors.info} style={styles.ctaIcon} />
+                <Text style={styles.secondaryCtaText}>דברו איתי</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </View>
+
+      {/* Statistics Section - At the top of the page */}
+      <Section title="במספרים" subtitle="השפעה אמיתית מהקהילה">
+        {isLoadingStats ? (
+          <View style={styles.statsLoadingContainer}>
+            <ActivityIndicator size="large" color={colors.info} />
+            <Text style={styles.statsLoadingText}>טוען נתונים...</Text>
+          </View>
+        ) : (
+          <View style={styles.statsGrid}>
+            <View style={styles.statCard}>
+              <Ionicons name="people-outline" size={32} color={colors.info} style={styles.statIcon} />
+              <Text style={styles.statNumber}>{stats.uniqueDonors.toLocaleString('he-IL')}</Text>
+              <Text style={styles.statLabel}>תורמים פעילים</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="cash-outline" size={32} color={colors.success} style={styles.statIcon} />
+              <Text style={styles.statNumber}>{stats.totalMoneyDonated.toLocaleString('he-IL')} ₪</Text>
+              <Text style={styles.statLabel}>שקלים שנתרמו</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="heart-outline" size={32} color={colors.pink} style={styles.statIcon} />
+              <Text style={styles.statNumber}>{stats.totalUsers.toLocaleString('he-IL')}</Text>
+              <Text style={styles.statLabel}>חברים בקהילה</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="cube-outline" size={32} color={colors.orange} style={styles.statIcon} />
+              <Text style={styles.statNumber}>{stats.itemDonations.toLocaleString('he-IL')}</Text>
+              <Text style={styles.statLabel}>חפצים שנמסרו</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="car-outline" size={32} color={colors.accent} style={styles.statIcon} />
+              <Text style={styles.statNumber}>{stats.completedRides.toLocaleString('he-IL')}</Text>
+              <Text style={styles.statLabel}>טרמפים שבוצעו</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="business-outline" size={32} color={colors.info} style={styles.statIcon} />
+              <Text style={styles.statNumber}>{stats.totalOrganizations.toLocaleString('he-IL')}</Text>
+              <Text style={styles.statLabel}>עמותות שהצטרפו</Text>
+            </View>
+          </View>
+        )}
+      </Section>
 
       <Section title="מה יש בתוך האפליקציה?" subtitle="כלים קהילתיים חזקים ופשוטים">
         <View style={styles.featuresGrid}>
@@ -211,27 +328,6 @@ const LandingSiteScreen: React.FC = () => {
         </View>
       </Section>
 
-      {/* Stats Section */}
-      <Section title="במספרים" subtitle="השפעה שגדלה מיום ליום">
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>10,000+</Text>
-            <Text style={styles.statLabel}>תרומות ומשאבים</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>3,500+</Text>
-            <Text style={styles.statLabel}>התנדבויות וזמן</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>120+</Text>
-            <Text style={styles.statLabel}>ארגונים שותפים</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>50K+</Text>
-            <Text style={styles.statLabel}>חיבורים בין אנשים</Text>
-          </View>
-        </View>
-      </Section>
 
       {/* Use-cases Section */}
       <Section title="שימושים נפוצים" subtitle="איך קהילה עוזרת לקהילה">
@@ -305,15 +401,6 @@ const LandingSiteScreen: React.FC = () => {
         </View>
       </Section>
 
-      {/* Expanded Stats */}
-      <Section title="עוד נתונים" subtitle="למה זה עובד">
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}><Text style={styles.statNumber}>92%</Text><Text style={styles.statLabel}>מדווחים על חווית נתינה טובה</Text></View>
-          <View style={styles.statCard}><Text style={styles.statNumber}>78%</Text><Text style={styles.statLabel}>שיפור בתחושת שייכות</Text></View>
-          <View style={styles.statCard}><Text style={styles.statNumber}>5X</Text><Text style={styles.statLabel}>יותר חיבורים חוזרים</Text></View>
-          <View style={styles.statCard}><Text style={styles.statNumber}>24/7</Text><Text style={styles.statLabel}>קהילה פעילה כל הזמן</Text></View>
-        </View>
-      </Section>
 
       {/* Category Grid */}
       <Section title="קטגוריות נתינה מרכזיות" subtitle="מה חשוב לכם?">
@@ -382,72 +469,209 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   hero: { 
-    paddingTop: Platform.OS === 'web' ? 40 : 80, 
-    paddingBottom: Platform.OS === 'web' ? 30 : 60, 
-    alignItems: 'center', 
-    paddingHorizontal: Platform.OS === 'web' ? 20 : 40, 
-    backgroundColor: '#F2F7FF', 
-    minHeight: Platform.OS === 'web' ? 400 : 600 
+    width: '100%',
+    overflow: 'hidden',
+  },
+  heroGradient: {
+    backgroundColor: '#F2F7FF',
+    paddingTop: isWeb ? 60 : 80, 
+    paddingBottom: isWeb ? 50 : 70, 
+    paddingHorizontal: isWeb ? 20 : 40,
+    position: 'relative',
+  },
+  heroContent: {
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  welcomeTitle: {
+    fontSize: isWeb ? (isTablet ? 56 : 42) : 64,
+    fontWeight: '900',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: isWeb ? 24 : 32,
+    letterSpacing: -1,
+    lineHeight: isWeb ? (isTablet ? 64 : 50) : 72,
+  },
+  logoContainer: {
+    position: 'relative',
+    marginBottom: isWeb ? 20 : 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: isWeb ? (isTablet ? 180 : 160) : 200,
+    height: isWeb ? (isTablet ? 180 : 160) : 200,
   },
   logo: { 
-    width: Platform.OS === 'web' ? 120 : 160, 
-    height: Platform.OS === 'web' ? 120 : 160, 
-    marginBottom: Platform.OS === 'web' ? 16 : 24 
+    width: isWeb ? (isTablet ? 140 : 120) : 160, 
+    height: isWeb ? (isTablet ? 140 : 120) : 160,
+    zIndex: 2,
+  },
+  logoGlow: {
+    position: 'absolute',
+    width: isWeb ? (isTablet ? 180 : 160) : 200,
+    height: isWeb ? (isTablet ? 180 : 160) : 200,
+    borderRadius: isWeb ? (isTablet ? 90 : 80) : 100,
+    backgroundColor: 'rgba(65, 105, 225, 0.15)',
+    zIndex: 1,
   },
   title: { 
-    fontSize: Platform.OS === 'web' ? 32 : 56, 
-    fontWeight: '800', 
+    fontSize: isWeb ? (isTablet ? 48 : 36) : 56, 
+    fontWeight: '900', 
     color: colors.textPrimary, 
     textAlign: 'center', 
-    marginBottom: Platform.OS === 'web' ? 12 : 20 
+    marginBottom: isWeb ? 16 : 20,
+    letterSpacing: -0.5,
   },
   subtitle: { 
-    fontSize: Platform.OS === 'web' ? 16 : 24, 
+    fontSize: isWeb ? (isTablet ? 20 : 18) : 24, 
     color: colors.textSecondary, 
     textAlign: 'center', 
-    marginTop: Platform.OS === 'web' ? 8 : 12, 
-    maxWidth: '95%', 
-    lineHeight: Platform.OS === 'web' ? 24 : 32 
+    marginTop: isWeb ? 8 : 12, 
+    maxWidth: isTablet ? '70%' : '90%', 
+    lineHeight: isWeb ? 28 : 32,
+    fontWeight: '500',
   },
-  ctaRow: { flexDirection: 'row', gap: 20, marginTop: 30, justifyContent: 'center', flexWrap: 'wrap' },
-  primaryCta: { backgroundColor: colors.info, paddingHorizontal: 28, paddingVertical: 16, borderRadius: 14, minWidth: 180 },
-  primaryCtaText: { color: '#fff', fontWeight: '800', fontSize: 20, textAlign: 'center' },
-  secondaryCta: { backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: colors.headerBorder, paddingHorizontal: 28, paddingVertical: 16, borderRadius: 14, minWidth: 180 },
-  secondaryCtaText: { color: colors.textPrimary, fontWeight: '800', fontSize: 20, textAlign: 'center' },
+  ctaRow: { 
+    flexDirection: 'row', 
+    gap: 16, 
+    marginTop: 40, 
+    justifyContent: 'center', 
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  ctaIcon: {
+    marginRight: 8,
+  },
+  primaryCta: { 
+    backgroundColor: colors.info, 
+    paddingHorizontal: 32, 
+    paddingVertical: 18, 
+    borderRadius: 16, 
+    minWidth: 200,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.info,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  primaryCtaText: { 
+    color: '#fff', 
+    fontWeight: '800', 
+    fontSize: isWeb ? 18 : 20, 
+    textAlign: 'center',
+    letterSpacing: 0.3,
+  },
+  secondaryCta: { 
+    backgroundColor: '#FFFFFF', 
+    borderWidth: 2, 
+    borderColor: colors.info, 
+    paddingHorizontal: 32, 
+    paddingVertical: 18, 
+    borderRadius: 16, 
+    minWidth: 200,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  secondaryCtaText: { 
+    color: colors.info, 
+    fontWeight: '800', 
+    fontSize: isWeb ? 18 : 20, 
+    textAlign: 'center',
+    letterSpacing: 0.3,
+  },
   section: { 
-    paddingHorizontal: Platform.OS === 'web' ? 20 : 40, 
-    paddingVertical: Platform.OS === 'web' ? 25 : 50, 
+    paddingHorizontal: isWeb ? (isTablet ? 40 : 24) : 40, 
+    paddingVertical: isWeb ? (isTablet ? 60 : 40) : 50, 
     width: '100%', 
-    alignSelf: 'center' 
+    alignSelf: 'center',
+    maxWidth: isTablet ? 1200 : '100%',
   },
   sectionTitle: { 
-    fontSize: Platform.OS === 'web' ? 24 : 42, 
-    fontWeight: '800', 
+    fontSize: isWeb ? (isTablet ? 36 : 28) : 42, 
+    fontWeight: '900', 
     color: colors.textPrimary, 
     textAlign: 'center', 
-    marginBottom: Platform.OS === 'web' ? 12 : 16 
+    marginBottom: isWeb ? 12 : 16,
+    letterSpacing: -0.5,
   },
   sectionSubtitle: { 
-    fontSize: Platform.OS === 'web' ? 14 : 22, 
+    fontSize: isWeb ? (isTablet ? 18 : 16) : 22, 
     color: colors.textSecondary, 
     textAlign: 'center', 
-    marginBottom: Platform.OS === 'web' ? 15 : 20, 
-    lineHeight: Platform.OS === 'web' ? 20 : 30 
+    marginBottom: isWeb ? 20 : 24, 
+    lineHeight: isWeb ? 26 : 30,
+    fontWeight: '500',
   },
   sectionSubTitle: { 
-    fontSize: Platform.OS === 'web' ? 18 : 24, 
+    fontSize: isWeb ? 18 : 24, 
     fontWeight: '700', 
     color: colors.textPrimary, 
     textAlign: 'center', 
-    marginTop: Platform.OS === 'web' ? 15 : 20, 
-    marginBottom: Platform.OS === 'web' ? 8 : 12 
+    marginTop: isWeb ? 15 : 20, 
+    marginBottom: isWeb ? 8 : 12 
   },
-  featuresGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', gap: 24, width: '100%' },
-  feature: { flex: 1, minWidth: 280, maxWidth: 350, backgroundColor: '#FAFBFF', borderWidth: 1, borderColor: '#EDF1FF', borderRadius: 16, padding: 24, alignItems: 'center', margin: 8 },
-  featureEmoji: { fontSize: 42, marginBottom: 12 },
-  featureTitle: { fontSize: 22, fontWeight: '800', color: colors.textPrimary, textAlign: 'center', marginBottom: 8 },
-  featureText: { fontSize: 18, color: colors.textSecondary, textAlign: 'center', lineHeight: 26 },
-  paragraph: { fontSize: 20, color: colors.textPrimary, lineHeight: 30, textAlign: 'center', marginTop: 12, maxWidth: '90%', alignSelf: 'center' },
+  featuresGrid: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    justifyContent: 'space-around', 
+    gap: 24, 
+    width: '100%',
+    marginTop: 20,
+  },
+  feature: { 
+    flex: 1, 
+    minWidth: 280, 
+    maxWidth: 350, 
+    backgroundColor: '#FFFFFF', 
+    borderWidth: 1, 
+    borderColor: '#EDF1FF', 
+    borderRadius: 20, 
+    padding: 28, 
+    alignItems: 'center', 
+    margin: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  featureEmoji: { 
+    fontSize: 48, 
+    marginBottom: 16,
+  },
+  featureTitle: { 
+    fontSize: 24, 
+    fontWeight: '800', 
+    color: colors.textPrimary, 
+    textAlign: 'center', 
+    marginBottom: 12,
+    letterSpacing: -0.3,
+  },
+  featureText: { 
+    fontSize: 18, 
+    color: colors.textSecondary, 
+    textAlign: 'center', 
+    lineHeight: 28,
+    fontWeight: '400',
+  },
+  paragraph: { 
+    fontSize: isWeb ? 18 : 20, 
+    color: colors.textPrimary, 
+    lineHeight: isWeb ? 28 : 30, 
+    textAlign: 'center', 
+    marginTop: 12, 
+    maxWidth: isTablet ? '80%' : '90%', 
+    alignSelf: 'center',
+    fontWeight: '400',
+  },
   linksRow: { flexDirection: 'row', gap: 24, marginTop: 16, alignSelf: 'center', flexWrap: 'wrap', justifyContent: 'center' },
   link: { color: '#2563EB', fontWeight: '700', fontSize: 20, padding: 8 },
   faqItem: { marginTop: 20, paddingHorizontal: 20, maxWidth: '90%', alignSelf: 'center' },
@@ -457,15 +681,61 @@ const styles = StyleSheet.create({
   iconBulletRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 16, justifyContent: 'center', paddingVertical: 4 },
   iconBulletText: { color: colors.textPrimary, fontSize: 18, textAlign: 'center', flex: 1 },
   stepsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 24, justifyContent: 'space-around', marginTop: 20, width: '100%' },
-  stepCard: { flex: 1, minWidth: 280, maxWidth: 350, borderRadius: 18, borderWidth: 1, borderColor: '#E6EEF9', backgroundColor: '#FBFDFF', padding: 24, alignItems: 'center', margin: 8 },
-  stepTitle: { marginTop: 12, fontWeight: '800', color: colors.textPrimary, fontSize: 22 },
-  stepText: { marginTop: 8, textAlign: 'center', color: colors.textSecondary, fontSize: 18, lineHeight: 26 },
+  stepCard: { 
+    flex: 1, 
+    minWidth: 280, 
+    maxWidth: 350, 
+    borderRadius: 20, 
+    borderWidth: 1, 
+    borderColor: '#E6EEF9', 
+    backgroundColor: '#FFFFFF', 
+    padding: 28, 
+    alignItems: 'center', 
+    margin: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  stepTitle: { 
+    marginTop: 16, 
+    fontWeight: '800', 
+    color: colors.textPrimary, 
+    fontSize: 24,
+    letterSpacing: -0.3,
+  },
+  stepText: { 
+    marginTop: 12, 
+    textAlign: 'center', 
+    color: colors.textSecondary, 
+    fontSize: 18, 
+    lineHeight: 28,
+    fontWeight: '400',
+  },
   splitRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 30, justifyContent: 'space-around', width: '100%' },
   splitColumn: { flex: 1, minWidth: 320, maxWidth: 500, padding: 20 },
   splitTitle: { textAlign: 'center', fontSize: 24, fontWeight: '800', color: colors.textPrimary, marginBottom: 12 },
   valuesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center', marginTop: 6 },
-  valuePill: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 999, backgroundColor: '#F5F7FB', borderWidth: 1, borderColor: '#E6EEF9', margin: 4 },
-  valuePillText: { color: colors.textPrimary, fontWeight: '700', fontSize: 18 },
+  valuePill: { 
+    paddingHorizontal: 24, 
+    paddingVertical: 14, 
+    borderRadius: 999, 
+    backgroundColor: '#FFFFFF', 
+    borderWidth: 2, 
+    borderColor: colors.info, 
+    margin: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  valuePillText: { 
+    color: colors.info, 
+    fontWeight: '700', 
+    fontSize: 18,
+  },
   roadmap: { flexDirection: 'row', gap: 16, justifyContent: 'center', marginTop: 8, flexWrap: 'wrap' },
   roadItem: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: '#E6EEF9', backgroundColor: '#FBFDFF' },
   roadTime: { fontWeight: '800', color: colors.info, textAlign: 'center' },
@@ -473,22 +743,132 @@ const styles = StyleSheet.create({
   brandStrip: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, paddingVertical: 16 },
   brandIcon: { width: 40, height: 40, opacity: 0.9 },
   contactRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 20, justifyContent: 'center', marginTop: 24, width: '100%' },
-  contactButton: { flexDirection: 'row', gap: 12, alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16, borderRadius: 14, minWidth: 200, justifyContent: 'center' },
-  contactButtonText: { color: '#fff', fontWeight: '800', fontSize: 18 },
-  footer: { paddingHorizontal: 20, paddingVertical: 20, borderTopWidth: 1, borderTopColor: '#F1F5F9', alignItems: 'center', marginTop: 20 },
-  footerText: { color: colors.textSecondary, fontSize: 12 },
-  // New styles
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', gap: 24, marginTop: 20, width: '100%' },
-  statCard: { flex: 1, minWidth: 250, maxWidth: 300, paddingVertical: 28, borderRadius: 16, borderWidth: 1, borderColor: '#E6EEF9', backgroundColor: '#FBFDFF', alignItems: 'center', margin: 8 },
-  statNumber: { fontSize: 36, fontWeight: '900', color: colors.textPrimary, marginBottom: 8 },
-  statLabel: { fontSize: 18, color: colors.textSecondary, textAlign: 'center', lineHeight: 24 },
+  contactButton: { 
+    flexDirection: 'row', 
+    gap: 12, 
+    alignItems: 'center', 
+    paddingHorizontal: 28, 
+    paddingVertical: 18, 
+    borderRadius: 16, 
+    minWidth: 200, 
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  contactButtonText: { 
+    color: '#fff', 
+    fontWeight: '800', 
+    fontSize: 18,
+    letterSpacing: 0.3,
+  },
+  footer: { 
+    paddingHorizontal: 20, 
+    paddingVertical: 32, 
+    borderTopWidth: 1, 
+    borderTopColor: '#F1F5F9', 
+    alignItems: 'center', 
+    marginTop: 40,
+    backgroundColor: '#FAFBFF',
+  },
+  footerText: { 
+    color: colors.textSecondary, 
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  // Statistics styles
+  statsGrid: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    justifyContent: 'space-around', 
+    gap: 24, 
+    marginTop: 20, 
+    width: '100%' 
+  },
+  statCard: { 
+    flex: 1, 
+    minWidth: 250, 
+    maxWidth: 300, 
+    paddingVertical: 32, 
+    paddingHorizontal: 20,
+    borderRadius: 20, 
+    borderWidth: 1, 
+    borderColor: '#E6EEF9', 
+    backgroundColor: '#FFFFFF', 
+    alignItems: 'center', 
+    margin: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  statIcon: {
+    marginBottom: 12,
+  },
+  statNumber: { 
+    fontSize: isWeb ? 36 : 40, 
+    fontWeight: '900', 
+    color: colors.textPrimary, 
+    marginBottom: 8,
+    letterSpacing: -1,
+    textAlign: 'center',
+  },
+  statLabel: { 
+    fontSize: 18, 
+    color: colors.textSecondary, 
+    textAlign: 'center', 
+    lineHeight: 26,
+    fontWeight: '500',
+  },
+  statsLoadingContainer: {
+    paddingVertical: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statsLoadingText: {
+    marginTop: 16,
+    fontSize: 18,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
   useCases: { gap: 16, marginTop: 16, alignSelf: 'center', width: '100%', maxWidth: '90%' },
   useCaseRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 16, alignSelf: 'center', paddingVertical: 8 },
   useCaseText: { color: colors.textPrimary, fontSize: 18, textAlign: 'center', flex: 1 },
   testimonials: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', gap: 24, marginTop: 20, width: '100%' },
-  testimonialCard: { flex: 1, minWidth: 320, maxWidth: 400, borderRadius: 16, borderWidth: 1, borderColor: '#E6EEF9', backgroundColor: '#FFFFFF', padding: 24, margin: 8 },
-  testimonialText: { color: colors.textPrimary, fontSize: 18, lineHeight: 28, textAlign: 'center' },
-  testimonialUser: { color: colors.textSecondary, marginTop: 12, textAlign: 'center', fontWeight: '700', fontSize: 16 },
+  testimonialCard: { 
+    flex: 1, 
+    minWidth: 320, 
+    maxWidth: 400, 
+    borderRadius: 20, 
+    borderWidth: 1, 
+    borderColor: '#E6EEF9', 
+    backgroundColor: '#FFFFFF', 
+    padding: 28, 
+    margin: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  testimonialText: { 
+    color: colors.textPrimary, 
+    fontSize: 18, 
+    lineHeight: 30, 
+    textAlign: 'center',
+    fontStyle: 'italic',
+    fontWeight: '400',
+  },
+  testimonialUser: { 
+    color: colors.textSecondary, 
+    marginTop: 16, 
+    textAlign: 'center', 
+    fontWeight: '700', 
+    fontSize: 16,
+  },
   galleryGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginTop: 8 },
   galleryImage: { width: 140, height: 140, borderRadius: 12, borderWidth: 1, borderColor: '#EDF1FF' },
   partnersRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20, marginTop: 8 },
@@ -498,8 +878,27 @@ const styles = StyleSheet.create({
   trustRow: { flexDirection: 'row-reverse', gap: 8, alignItems: 'center' },
   trustText: { color: colors.textPrimary, fontSize: 14 },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 8 },
-  categoryCard: { width: 150, height: 80, borderRadius: 12, borderWidth: 1, borderColor: '#E6EEF9', backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  categoryText: { fontWeight: '700', color: colors.textPrimary },
+  categoryCard: { 
+    width: 150, 
+    height: 90, 
+    borderRadius: 16, 
+    borderWidth: 1, 
+    borderColor: '#E6EEF9', 
+    backgroundColor: '#FFFFFF', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  categoryText: { 
+    fontWeight: '700', 
+    color: colors.textPrimary,
+    fontSize: 16,
+  },
 });
 
 export default LandingSiteScreen;

@@ -126,12 +126,6 @@
     "noChats": "אין שיחות",
     "startNewOrClearSearch": "התחל שיחה חדשה או נקה חיפוש",
     "loadConversationsError": "שגיאה בטעינת השיחות",
-    "demo": {
-      "user1Name": "יוזר דמה 1",
-      "user2Name": "יוזר דמה 2",
-      "conv1Last": "זוהי הודעת דמה ראשונה.",
-      "conv2Last": "הודעת דמה שנייה, קצת יותר ארוכה."
-    }
   },
   "home": {
     "title": "בית",
@@ -421,25 +415,6 @@
       "noCost": "ללא עלות",
       "groupMembers": "חברי קבוצות"
     },
-    "mock": {
-      "driver1": "דוד",
-      "driver2": "שרה",
-      "driver3": "יוסי",
-      "driver4": "נועה",
-      "driver5": "אבי",
-      "driver6": "מאיה",
-      "tlv": "תל אביב",
-      "jerusalem": "ירושלים",
-      "haifa": "חיפה",
-      "beerSheva": "באר שבע",
-      "ashdod": "אשדוד",
-      "petahTikva": "פתח תקווה",
-      "ramatGan": "רמת גן",
-      "category": { "work": "עבודה", "study": "לימודים", "health": "בריאות", "leisure": "פנאי" },
-      "group1": "טרמפים תל אביב ⇄ ירושלים",
-      "group2": "טרמפים חיפה ⇄ תל אביב",
-      "group3": "טרמפים באר שבע ⇄ תל אביב"
-    }
   },
   "profile": {
     "title": "פרופיל",
@@ -469,8 +444,6 @@
       "activityHistory": "היסטוריית פעילות",
       "favorites": "מועדפים",
       "yourFavorites": "המועדפים שלך",
-      "sampleDataTitle": "נתונים לדוגמה",
-      "sampleDataCreated": "נוצרו נתוני עוקבים וצ'אט לדוגמה!"
     },
     "menu": {
       "bookmarks": "מועדפים",
@@ -481,7 +454,6 @@
       "help": "עזרה",
       "login": "התחברות",
       "switchUser": "שנה משתמש",
-      "createSampleData": "צור נתונים לדוגמה"
     },
     "activity": "פעילות",
     "history": "היסטוריה",
@@ -642,12 +614,6 @@
       "errorFill": "אנא מלאו את כל השדות החיוניים המסומנים",
       "errorSend": "שליחת הבקשה נכשלה",
       "hint": "לאחר האישור תקבלו גישה לאפליקציה עם הרשאות ניהול ותצוגת תפעול ייעודית."
-    },
-    "characters": {
-      "selectTitle": "בחר דמות להתחברות:",
-      "selectSubtitle": "לחץ שוב על דמות נבחרת כדי לבטל",
-      "loadError": "שגיאה בטעינת הדמויות",
-      "loginAsSelected": "התחבר כדמות נבחרת"
     },
     "errors": {
       "oauthTitle": "שגיאת OAuth",

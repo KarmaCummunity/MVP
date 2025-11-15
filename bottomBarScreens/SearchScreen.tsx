@@ -23,18 +23,18 @@ import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { useTranslation } from 'react-i18next';
 import ScrollContainer from '../components/ScrollContainer';
-import { 
-  donations, 
-  communityEvents, 
-  users, 
-  categories 
-} from '../globals/fakeData';
 import { useUser } from '../context/UserContext';
 import { db } from '../utils/databaseService';
 import GuestModeNotice from '../components/GuestModeNotice';
 import { Pressable, Modal, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { scaleSize } from '../globals/responsive';
+
+// Empty arrays - replace with real data from API
+const donations: any[] = [];
+const communityEvents: any[] = [];
+const users: any[] = [];
+const categories: any[] = [];
 import { createShadowStyle } from '../globals/styles';
 
 interface SearchResult {

@@ -286,6 +286,15 @@ class ApiService {
     return this.request('/api/stats/real-time');
   }
 
+  // Admin APIs
+  async adminWipeAllData(): Promise<ApiResponse> {
+    // WARNING: This should be protected by server-side admin auth
+    return this.request('/api/admin/wipe', {
+      method: 'POST',
+      body: JSON.stringify({ confirm: true }),
+    });
+  }
+
   // Chat APIs
   async getUserConversations(userId: string): Promise<ApiResponse> {
     return this.request(`/api/chat/conversations/user/${userId}`);

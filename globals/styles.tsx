@@ -1,6 +1,19 @@
 import { StyleSheet, Dimensions, Platform } from "react-native";
 import colors from "./colors";
-import { biDiTextAlign, rowDirection, scaleSize } from "./responsive";
+import { 
+  biDiTextAlign, 
+  rowDirection, 
+  scaleSize, 
+  getScreenInfo, 
+  getResponsiveButtonStyles,
+  getResponsiveContainerStyles,
+  getResponsiveModalStyles,
+  getResponsiveMenuStyles,
+  responsiveSpacing,
+  responsiveFontSize,
+  responsiveWidth,
+  BREAKPOINTS
+} from "./responsive";
 import { FontSizes, LAYOUT_CONSTANTS } from "./constants";
 
 // TODO: CRITICAL - This styles file is extremely long (601+ lines). Split into themed modules:
@@ -18,7 +31,6 @@ import { FontSizes, LAYOUT_CONSTANTS } from "./constants";
 // TODO: Remove unused styles throughout the application
 // TODO: Implement proper cross-platform style optimization
 
-const { width } = Dimensions.get('window');
 
 // Helper function to create shadow styles that work on both web and mobile
 // TODO: Extract this utility function to separate utilities file
@@ -549,6 +561,7 @@ export const styles = StyleSheet.create({
   },
   /**
    * Button style with dark pink background, padding, rounded corners, and centered content.
+   * Note: Use getResponsiveButtonStyles() for dynamic responsive values in components
    */
   button: {
     alignSelf: "center", // Make container as small as needed
@@ -557,9 +570,12 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 25,
     alignItems: 'center',
+    minWidth: 200,
+    maxWidth: 400,
   },
   /**
    * Text style for buttons.
+   * Note: Use responsiveFontSize() for dynamic responsive font sizes in components
    */
   buttonText: {
     color: colors.white,

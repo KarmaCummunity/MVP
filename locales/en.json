@@ -122,7 +122,11 @@
     "file": "File",
     "openFile": "Open file: {{name}}",
     "searchChatsPlaceholder": "Search chats..",
-    "startNewConversation": "Start a new conversation..."
+    "startNewConversation": "Start a new conversation...",
+    "unknownUser": "Unknown user",
+    "noChats": "No conversations",
+    "startNewOrClearSearch": "Start a new chat or clear search",
+    "loadConversationsError": "Failed to load conversations"
   },
   "home": {
     "title": "Home",
@@ -410,25 +414,6 @@
       "availableRides": "Available rides",
       "noCost": "No cost",
       "groupMembers": "Group members"
-    },
-    "mock": {
-      "driver1": "David",
-      "driver2": "Sarah",
-      "driver3": "Yossi",
-      "driver4": "Noa",
-      "driver5": "Avi",
-      "driver6": "Maya",
-      "tlv": "Tel Aviv",
-      "jerusalem": "Jerusalem",
-      "haifa": "Haifa",
-      "beerSheva": "Be'er Sheva",
-      "ashdod": "Ashdod",
-      "petahTikva": "Petah Tikva",
-      "ramatGan": "Ramat Gan",
-      "category": { "work": "Work", "study": "Study", "health": "Health", "leisure": "Leisure" },
-      "group1": "Tel Aviv ⇄ Jerusalem rides",
-      "group2": "Haifa ⇄ Tel Aviv rides",
-      "group3": "Be'er Sheva ⇄ Tel Aviv rides"
     }
   },
   "profile": {
@@ -458,9 +443,7 @@
       "history": "History",
       "activityHistory": "Activity history",
       "favorites": "Favorites",
-      "yourFavorites": "Your favorites",
-      "sampleDataTitle": "Sample data",
-      "sampleDataCreated": "Sample followers and chat data created!"
+      "yourFavorites": "Your favorites"
     },
     "menu": {
       "bookmarks": "Bookmarks",
@@ -470,8 +453,7 @@
       "settings": "Settings",
       "help": "Help",
       "login": "Login",
-      "switchUser": "Switch user",
-      "createSampleData": "Create sample data"
+      "switchUser": "Switch user"
     },
     "activity": "Activity",
     "history": "History",
@@ -540,13 +522,16 @@
     "clearAllDoneBody": "All notifications deleted",
     "clearAllError": "Failed to delete notifications",
     "empty": { "title": "No notifications", "subtitle": "When you receive new notifications, they will appear here" },
-    "unreadBadge": "{{count}} new notifications"
+    "unreadBadge": "{{count}} new notifications",
+    "welcomeSystem": "Welcome to Karma Community!"
   },
   "auth": {
     "title": "Welcome!",
     "subtitle": "The Capitalist Kibbutz of Israel",
     "continueAsGuest": "Continue as guest",
     "email": {
+      "accessibilityHint": "Enter your email address",
+      "passwordAccessibilityHint": "Enter your password",
       "checkFailed": "Email check failed. Please try again.",
       "cta": "Sign up with email",
       "placeholder": "Enter email",
@@ -578,11 +563,8 @@
       "pleaseWait": "Please wait..."
     },
     "loginCta": "Login",
-    "characters": {
-      "loginAsSelected": "Login as selected character",
-      "selectUserFirst": "Select a character first"
-    },
     "org": {
+      "accessibilityHint": "Enter your organization email or name",
       "cta": "Enter organization / NGO",
       "placeholder": "Enter organization email or name",
       "continue": "Continue",
@@ -632,11 +614,11 @@
       "errorSend": "Failed to submit application",
       "hint": "After approval you'll get access with admin permissions and a dedicated operations view."
     },
-    "characters": {
-      "selectTitle": "Choose a character to login:",
-      "selectSubtitle": "Tap selected character again to deselect",
-      "loadError": "Failed to load characters",
-      "selectUserFirst": "Select a character first"
+    "errors": {
+      "oauthTitle": "OAuth Error",
+      "oauthFailed": "OAuth failed: {{message}}",
+      "googleSignInNotAvailable": "Google sign-in not available",
+      "loginFailed": "Login failed. Please try again."
     }
   },
   "errors": {},
@@ -820,30 +802,6 @@
     "moreTestimonials": { "title": "More stories from the field", "item1": "I met neighbors through KC, and suddenly there's a building community. Small things that make change. — Ilan, Petah Tikva", "item2": "As a small org we got massive exposure to quality volunteers. The dashboard saved us hours. — Yad LaLev NGO", "item3": "Gave a few hours a week, got a huge sense of meaning and new friends. — Sivan, Ramat Gan" },
     "moreFaq": { "title": "More questions", "q1": "How is privacy preserved?", "a1": "We minimize data collection and give users control over visibility and exposure.", "q2": "Are there ads?", "a2": "No. The platform is ad-free and focuses solely on community content.", "q3": "How do I report an issue?", "a3": "There's a built-in reporting mechanism on every post/chat. You can also contact us directly via WhatsApp." },
     "footer": { "text": "© {{year}} KarmaCommunity — Built with love." }
-  },
-  "chat": {
-    "unknownUser": "Unknown user",
-    "noChats": "No conversations",
-    "startNewOrClearSearch": "Start a new chat or clear search",
-    "loadConversationsError": "Failed to load conversations"
-  },
-  "notifications": {
-    "welcomeSystem": "Welcome to Karma Community!"
-  },
-  "auth": {
-    "email": {
-      "accessibilityHint": "Enter your email address",
-      "passwordAccessibilityHint": "Enter your password"
-    },
-    "org": {
-      "accessibilityHint": "Enter your organization email or name"
-    },
-    "errors": {
-      "oauthTitle": "OAuth Error",
-      "oauthFailed": "OAuth failed: {{message}}",
-      "googleSignInNotAvailable": "Google sign-in not available",
-      "loginFailed": "Login failed. Please try again."
-    }
   }
 }
 

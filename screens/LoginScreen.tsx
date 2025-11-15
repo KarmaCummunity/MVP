@@ -1,8 +1,8 @@
 // File overview:
-// - Purpose: Entry authentication screen with multiple login modes (Google, email/password, organization, guest, character personas).
+// - Purpose: Entry authentication screen with multiple login modes (Google, email/password, organization, guest).
 // - Reached from: `MainNavigator` as initial route 'LoginScreen'.
 // - On success: Resets navigation to `{ name: 'HomeStack' }` (BottomNavigator tabs).
-// - Provides: UI states for email flow (2 steps), org lookup, language switcher (he/en with RTL toggle), character selection for demo/real augmented data, guest mode.
+// - Provides: UI states for email flow (2 steps), org lookup, language switcher (he/en with RTL toggle), guest mode.
 // - Reads/writes: AsyncStorage for recent emails and language; queries org applications via `db`, users via `authService` + `restAdapter`.
 // - Context: `useUser()` -> `setSelectedUserWithMode`, `setGuestMode`, `selectedUser`, `isGuestMode` to proceed to home upon auth or guest.
 // - Navigation side-effects: `navigation.reset()` to 'HomeStack'; can navigate to 'OrgOnboardingScreen'.
@@ -11,9 +11,7 @@
 // TODO: CRITICAL - This file is extremely long (1200+ lines). Split into smaller components:
 //   - EmailLoginForm component
 //   - OrganizationLoginForm component  
-//   - CharacterSelection component
 //   - LanguageSelector component
-// TODO: Remove character selection demo functionality - not needed in production
 // TODO: Add comprehensive form validation and error handling
 // TODO: Implement proper accessibility for all interactive elements
 // TODO: Add comprehensive loading states and user feedback
@@ -42,7 +40,6 @@ import {
   I18nManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { characterTypes } from '../globals/characterTypes';
 import { useUser } from '../context/UserContext';
 import { db } from '../utils/databaseService';
 import { restAdapter } from '../utils/restAdapter';
@@ -53,6 +50,7 @@ import SimpleGoogleLoginButton from '../components/SimpleGoogleLoginButton';
 import { useTranslation } from 'react-i18next';
 import i18n from '../app/i18n';
 import ScrollContainer from '../components/ScrollContainer';
+import { getScreenInfo, scaleSize } from '../globals/responsive';
 
 export default function LoginScreen() {
   // TODO: Extract state management to custom hooks (useAuthState, useLoginForm)
@@ -60,13 +58,13 @@ export default function LoginScreen() {
   // TODO: Add comprehensive analytics tracking for auth flow
   const { setSelectedUserWithMode, setGuestMode, selectedUser, isGuestMode } = useUser();
   const { t } = useTranslation(['auth', 'common', 'settings']);
-  const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
-  const [animationValues] = useState(() => 
-    characterTypes.reduce((acc, character) => {
-      acc[character.id] = new Animated.Value(1);
-      return acc;
-    }, {} as Record<string, Animated.Value>)
-  );
+  
+  // Get responsive values for dynamic styles in JSX
+  const { width } = Dimensions.get('window');
+  const { isTablet, isDesktop } = getScreenInfo();
+  const isDesktopWeb = Platform.OS === 'web' && width > 1024;
+  const buttonMinWidth = isDesktopWeb ? 280 : isTablet ? 240 : 200;
+  const expandedRowMaxWidth = isDesktopWeb ? 400 : isTablet ? 360 : '100%';
   const navigation = useNavigation<any>();
   // Org login UI state
   const [orgLoginOpen, setOrgLoginOpen] = useState(false);
@@ -110,65 +108,6 @@ export default function LoginScreen() {
     }
   };
 
-  const handleCharacterSelect = (characterId: string) => {
-    if (selectedCharacter === characterId) {
-      setSelectedCharacter(null);
-      console.log('🔐 LoginScreen - Character deselected:', characterId);
-      
-      Animated.spring(animationValues[characterId], {
-        toValue: 1,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      setSelectedCharacter(characterId);
-      console.log('🔐 LoginScreen - Character selected:', characterId);
-      
-      Animated.spring(animationValues[characterId], {
-        toValue: 1.05,
-        useNativeDriver: true,
-      }).start();
-    }
-  };
-
-  const handleLoginWithCharacter = async () => {
-    if (!selectedCharacter) {
-      Alert.alert(t('auth:characters.selectTitle'), t('auth:characters.selectSubtitle'));
-      return;
-    }
-
-    const character = characterTypes.find(c => c.id === selectedCharacter);
-    console.log('🔐 LoginScreen - character:', character);
-    if (character) {
-      const userData = {
-        id: character.id,
-        name: character.name,
-        email: `${character.id}@karmacommunity.com`,
-        phone: '+972501234567',
-        avatar: character.avatar,
-        bio: character.bio,
-        karmaPoints: character.karmaPoints,
-        joinDate: character.joinDate,
-        isActive: true,
-        lastActive: new Date().toISOString(),
-        location: character.location,
-        interests: character.interests,
-        roles: character.roles,
-        postsCount: character.postsCount,
-        followersCount: character.followersCount,
-        followingCount: character.followingCount,
-          notifications: [
-            { type: 'system', text: t('home:welcome'), date: new Date().toISOString() },
-          ],
-        settings: {
-          language: character.preferences.language,
-          darkMode: false,
-          notificationsEnabled: character.preferences.notifications,
-        },
-      };
-      
-      await setSelectedUserWithMode(userData as any, 'real');
-    }
-  };
 
   const handleGuestMode = async () => {
     console.log('🔐 LoginScreen - handleGuestMode - Starting');
@@ -565,7 +504,17 @@ export default function LoginScreen() {
 
               {emailLoginOpen && (
                 <View 
-                  style={styles.orgExpandedRow}
+                  style={[
+                    styles.orgExpandedRow,
+                    (isDesktopWeb || isTablet) && {
+                      alignSelf: 'center',
+                      minWidth: buttonMinWidth,
+                      maxWidth: expandedRowMaxWidth,
+                    },
+                    !isDesktopWeb && !isTablet && {
+                      width: '100%',
+                    },
+                  ]}
                   accessible={true}
                   
                   importantForAccessibility="yes"
@@ -702,7 +651,17 @@ export default function LoginScreen() {
 
               {orgLoginOpen && (
                 <View 
-                  style={styles.orgExpandedRow}
+                  style={[
+                    styles.orgExpandedRow,
+                    (isDesktopWeb || isTablet) && {
+                      alignSelf: 'center',
+                      minWidth: buttonMinWidth,
+                      maxWidth: expandedRowMaxWidth,
+                    },
+                    !isDesktopWeb && !isTablet && {
+                      width: '100%',
+                    },
+                  ]}
                   accessible={true}
                   
                   importantForAccessibility="yes"
@@ -761,101 +720,9 @@ export default function LoginScreen() {
               <Text style={styles.guestButtonText}>{t('auth:continueAsGuest')}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.characterButton,
-                !selectedCharacter && styles.disabledButton
-              ]}
-              onPress={handleLoginWithCharacter}
-              disabled={!selectedCharacter}
-              activeOpacity={selectedCharacter ? 0.8 : 1}
-            >
-              <Text style={[
-                styles.characterButtonText,
-                !selectedCharacter && styles.disabledButtonText
-              ]}>
-               {selectedCharacter ? t('auth:characters.loginAsSelected') : t('auth:characters.selectTitle')}
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
 
-        {/* Characters Section */}
-        <View style={styles.charactersSection}>
-          <Text style={styles.characterTitle}>{t('auth:characters.selectTitle')}</Text>
-          <Text style={styles.characterSubtitle}>{t('auth:characters.selectSubtitle')}</Text>
-          
-          <ScrollView 
-            horizontal 
-            style={styles.charactersContainer} 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.charactersContent}
-          >
-            {characterTypes && characterTypes.length > 0 ? (
-              characterTypes.map((character) => (
-                <TouchableOpacity
-                  key={character.id}
-                  style={[
-                    styles.characterCard,
-                    selectedCharacter === character.id && styles.selectedCharacter,
-                  ]}
-                  onPress={() => handleCharacterSelect(character.id)}
-                  activeOpacity={0.7}
-                >
-                  <Animated.View
-                    style={{
-                      transform: [{ scale: animationValues[character.id] }],
-                      width: '100%',
-                      height: '100%',
-                    }}
-                  >
-                    <View style={styles.avatarContainer}>
-                      <Image source={{ uri: character.avatar }} style={styles.characterAvatar} />
-                      {selectedCharacter === character.id && (
-                        <View style={styles.checkmarkContainer}>
-                          <Ionicons name="checkmark-circle" size={24} color="#FF6B9D" />
-                        </View>
-                      )}
-                    </View>
-                    <View style={styles.characterInfo}>
-                      <Text style={[
-                        styles.characterName,
-                        selectedCharacter === character.id && styles.selectedCharacterName
-                      ]}>
-                        {character.name}
-                      </Text>
-                      <Text style={[
-                        styles.characterDescription,
-                        selectedCharacter === character.id && styles.selectedCharacterDescription
-                      ]}>
-                        {character.description}
-                      </Text>
-                      <View style={styles.characterStats}>
-                        <Text style={[
-                          styles.characterStat,
-                          selectedCharacter === character.id && styles.selectedCharacterStat
-                        ]}>
-                          💎 {character.karmaPoints} {t('profile:stats.karmaPointsSuffix')}
-                        </Text>
-                        <Text style={[
-                          styles.characterStat,
-                          selectedCharacter === character.id && styles.selectedCharacterStat
-                        ]}>
-                          📍 {character.location.city}
-                        </Text>
-                      </View>
-                    </View>
-                  </Animated.View>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <View style={styles.errorContainer}>
-                 <Text style={styles.errorText}>{t('auth:characters.loadError')}</Text>
-                <Text style={styles.errorSubtext}>characterTypes length: {characterTypes?.length || 'undefined'}</Text>
-              </View>
-            )}
-          </ScrollView>
-        </View>
 
         {/* Footer Section */}
         <View style={styles.footerSection}>
@@ -894,426 +761,388 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F5F9FF',
-  },
-  container: {
-    flex: 1,
-    padding: 20,
-    position: 'relative',
-  },
-  backgroundLogoContainer: {
-    position: 'absolute',
-    top: Platform.OS === 'web' ? 30 : 50, // Less top space on web
-    left: 0,
-    right: 0,
-    height: Platform.OS === 'web' ? '40%' : '50%', // Less height on web
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#E3F2FD',
-    opacity: 0.4,
-  },
-  backgroundLogo: {
-    width: Platform.OS === 'web' ? '120%' : '145%', // Smaller on web
-    height: Platform.OS === 'web' ? '120%' : '145%', // Smaller on web
-  },
-  headerSection: {
-    marginBottom: 30,
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  charactersSection: {
-    flex: 1,
-    marginBottom: 20,
-  },
-  footerSection: {
-    marginTop: 20,
-  },
-  languageFabContainer: {
-    position: 'absolute',
-    top: 12,
-    right: 16,
-    alignItems: 'flex-end',
-    zIndex: 20,
-  },
-  languageFab: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  languageMenu: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    borderRadius: 10,
-    paddingVertical: 6,
-    marginTop: 5,
-    minWidth: 130,
-  },
-  languageMenuItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  languageMenuText: {
-    fontSize: 14,
-    color: '#333333',
-    textAlign: 'right',
-  },
-  title: {
-    marginTop: Platform.OS === 'web' ? 10 : 20, // Less margin on web
-    fontSize: Platform.OS === 'web' ? 32 : 36, // Slightly smaller on web
-    fontWeight: 'bold',
-    color: '#2C2C2C',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: Platform.OS === 'web' ? 18 : 20, // Slightly smaller on web
-    color: '#444444',
-    textAlign: 'center',
-    marginBottom: Platform.OS === 'web' ? 40 : 100, // Much less space on web
-    fontWeight: '600',
-  },
-  characterTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#2C2C2C',
-    marginBottom: 5,
-    textAlign: 'center',
-  },
-  characterSubtitle: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 5,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  charactersContainer: {
-    flex: 1,
-  },
-  charactersContent: {
-    paddingHorizontal: 15,
-  },
-  errorContainer: {
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#FF4444',
-    textAlign: 'center',
-  },
-  errorSubtext: {
-    fontSize: 14,
-    color: '#888888',
-    textAlign: 'center',
-    marginTop: 5,
-  },
-  characterCard: {
-    flexDirection: 'column',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: Platform.OS === 'web' ? 12 : 16, // Less padding on web
-    marginRight: 12,
-    marginBottom: 12,
-    marginTop: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    minHeight: Platform.OS === 'web' ? 180 : 220, // Shorter on web
-    width: Platform.OS === 'web' 
-      ? Math.max(Dimensions.get('window').width * 0.28, 120) // Slightly smaller on web
-      : Math.max(Dimensions.get('window').width * 0.3, 130),
-    maxWidth: Platform.OS === 'web' ? 150 : 170, // Smaller max width on web
-  },
+// Create responsive styles function
+const createLoginScreenStyles = () => {
+  const { width } = Dimensions.get('window');
+  const { isTablet, isDesktop } = getScreenInfo();
+  const isDesktopWeb = Platform.OS === 'web' && width > 1024;
+  const isMobileWeb = Platform.OS === 'web' && width <= 768;
+  
+  // Responsive button values
+  const buttonPaddingH = isDesktopWeb ? 32 : isTablet ? 28 : 24;
+  const buttonPaddingV = isDesktopWeb ? 16 : isTablet ? 14 : 12;
+  const buttonMinWidth = isDesktopWeb ? 280 : isTablet ? 240 : 200;
+  const buttonMaxWidth = isDesktopWeb ? 400 : isTablet ? 360 : '100%';
+  const buttonBorderRadius = isDesktopWeb ? 14 : isTablet ? 13 : 12;
+  const buttonFontSize = isDesktopWeb ? 18 : isTablet ? 17 : scaleSize(16);
+  const buttonMarginBottom = isDesktopWeb ? 16 : isTablet ? 14 : 12;
+  const buttonMarginVertical = isDesktopWeb ? 8 : isTablet ? 7 : 6;
+  
+  // Expanded row values
+  const expandedRowMaxWidth = isDesktopWeb ? 400 : isTablet ? 360 : '100%';
+  const expandedRowPadding = isDesktopWeb ? 8 : isTablet ? 7 : 6;
+  const expandedRowGap = isDesktopWeb ? 10 : isTablet ? 9 : 8;
+  const expandedRowBorderRadius = isDesktopWeb ? 14 : isTablet ? 13 : 12;
+  
+  // Input values
+  const inputPaddingH = isDesktopWeb ? 16 : isTablet ? 14 : 12;
+  const inputPaddingV = isDesktopWeb ? 12 : isTablet ? 11 : 10;
+  const inputFontSize = isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14);
+  const inputBorderRadius = isDesktopWeb ? 12 : isTablet ? 11 : 10;
+  
+  // Action button values
+  const actionButtonPaddingH = isDesktopWeb ? 20 : isTablet ? 18 : 16;
+  const actionButtonPaddingV = isDesktopWeb ? 14 : isTablet ? 13 : 12;
+  const actionButtonFontSize = isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14);
+  const actionButtonBorderRadius = isDesktopWeb ? 12 : isTablet ? 11 : 10;
+  
+  // Mini button values
+  const miniButtonSize = isDesktopWeb ? 44 : isTablet ? 42 : 40;
+  const miniButtonBorderRadius = isDesktopWeb ? 11 : isTablet ? 10.5 : 10;
+  
+  // Suggestions box values
+  const suggestionsBoxMaxWidth = isDesktopWeb ? 400 : isTablet ? 360 : '100%';
+  const suggestionsBoxBorderRadius = isDesktopWeb ? 12 : isTablet ? 11 : 10;
+  const suggestionsBoxMargin = isDesktopWeb ? 8 : isTablet ? 7 : 6;
+  
+  // Status row values
+  const statusRowMaxWidth = isDesktopWeb ? 400 : isTablet ? 360 : '100%';
+  const statusRowPadding = isDesktopWeb ? 8 : isTablet ? 7 : 6;
+  const statusRowFontSize = isDesktopWeb ? 15 : isTablet ? 14 : scaleSize(13);
 
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: 8,
-  },
-  checkmarkContainer: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  selectedCharacter: {
-    // borderColor: '#FF6B9ֿD',
-    backgroundColor: 'rgba(255, 240, 245, 0.95)',
-    transform: [{ scale: 1.05 }],
-    shadowColor: '#FF6B9D',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  characterAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginBottom: 8,
-  },
-  characterInfo: {
-    alignItems: 'center',
-    width: '100%',
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  characterName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#2C2C2C',
-    marginBottom: 6,
-    textAlign: 'center',
-    flexWrap: 'wrap',
-  },
-  characterDescription: {
-    fontSize: 12,
-    color: '#666666',
-    marginBottom: 8,
-    lineHeight: 16,
-    textAlign: 'center',
-    flexWrap: 'wrap',
-  },
-  characterStats: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 4,
-    width: '100%',
-  },
-  characterStat: {
-    fontSize: 10,
-    color: '#888888',
-    textAlign: 'center',
-    flexWrap: 'wrap',
-  },
-  selectedCharacterName: {
-    color: '#FF6B9D',
-    fontWeight: '700',
-  },
-  selectedCharacterDescription: {
-    color: '#FF6B9D',
-  },
-  selectedCharacterStat: {
-    color: '#FF6B9D',
-    fontWeight: '600',
-  },
-  buttonsContainer: {
-    marginBottom: 20,
-    width: '100%',
-    alignSelf: 'stretch',
-  },
-  characterButton: {
-    backgroundColor: '#9C27B0',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  disabledButton: {
-    backgroundColor: '#CCCCCC',
-    opacity: 0.6,
-  },
-  disabledButtonText: {
-    color: '#999999',
-  },
-  characterButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  guestButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    width: '100%',
-    marginVertical: 6,
-    marginBottom: 22,
-  },
-  guestButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#666666',
-    textAlign: 'center',
-    width: '100%',
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
-  },
-  clearDataButton: {
-    backgroundColor: '#FF4444',
-    borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
-  },
-  clearDataButtonText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  // Org login styles
-  orgLoginContainer: {
-    marginVertical: 3,
-  },
-  orgButton: {
-    borderColor: '#FF6B9D',
-    width: '100%',
-  },
-  emailButton: {
-    borderColor: '#4C7EFF',
-    marginTop: 12,
-    width: '100%',
-  },
-  orgExpandedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    borderRadius: 12,
-    padding: 6,
-    marginHorizontal: 0,
-    marginVertical: 3,
-    gap: 8,
-    width: '100%',
-  },
-  orgMiniButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,107,157,0.08)',
-  },
-  orgInput: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  orgActionButton: {
-    backgroundColor: '#FF6B9D',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  orgActionButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  suggestionsBox: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    borderRadius: 10,
-    marginTop: 6,
-    marginBottom: 6,
-    overflow: 'hidden',
-  },
-  suggestionItem: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  suggestionText: {
-    fontSize: 14,
-    color: '#333333',
-    textAlign: 'right',
-  },
-  inputWrapper: {
-    position: 'relative',
-    flex: 1,
-  },
-  eyeToggle: {
-    position: 'absolute',
-    right: 5,
-    top: 0,
-    bottom: 0,
-    width: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emailStatusRow: {
-    marginTop: 6,
-    marginBottom: 6,
-    paddingHorizontal: 6,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'flex-start',
-  },
-  emailStatusText: {
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'right',
-  },
-  smallResetButton: {
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    borderRadius: 0,
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-    marginLeft: 8,
-  },
-  smallResetContainer: {
-    paddingHorizontal: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-    marginBottom: 4,
-  },
-  smallResetText: {
-    fontSize: 13,
-    color: '#1976D2',
-    fontWeight: '700',
-    textDecorationLine: 'underline',
-  },
-  passwordEyeButton: {
-    marginLeft: 6,
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Version styles
-  versionContainer: {
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  versionText: {
-    fontSize: 14,
-    color: '#888888',
-    textAlign: 'center',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    fontWeight: '500',
-  },
-}); 
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: '#F5F9FF',
+    },
+    container: {
+      flex: 1,
+      padding: isDesktopWeb ? 40 : isTablet ? 32 : 20,
+      position: 'relative',
+      ...(isDesktopWeb && {
+        maxWidth: 600,
+        alignSelf: 'center',
+        width: '100%',
+      }),
+    },
+    backgroundLogoContainer: {
+      position: 'absolute',
+      top: isDesktopWeb ? 40 : isTablet ? 30 : Platform.OS === 'web' ? 30 : 50,
+      left: 0,
+      right: 0,
+      height: isDesktopWeb ? '35%' : Platform.OS === 'web' ? '40%' : '50%',
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#E3F2FD',
+      opacity: 0.4,
+    },
+    backgroundLogo: {
+      width: isDesktopWeb ? '100%' : Platform.OS === 'web' ? '120%' : '145%',
+      height: isDesktopWeb ? '100%' : Platform.OS === 'web' ? '120%' : '145%',
+    },
+    headerSection: {
+      marginBottom: isDesktopWeb ? 40 : isTablet ? 35 : 30,
+      alignItems: 'center',
+      zIndex: 1,
+      width: '100%',
+    },
+    footerSection: {
+      marginTop: isDesktopWeb ? 30 : isTablet ? 25 : 20,
+    },
+    languageFabContainer: {
+      position: 'absolute',
+      top: isDesktopWeb ? 16 : isTablet ? 14 : 12,
+      right: isDesktopWeb ? 20 : isTablet ? 18 : 16,
+      alignItems: 'flex-end',
+      zIndex: 20,
+    },
+    languageFab: {
+      width: isDesktopWeb ? 40 : isTablet ? 38 : 36,
+      height: isDesktopWeb ? 40 : isTablet ? 38 : 36,
+      borderRadius: isDesktopWeb ? 20 : isTablet ? 19 : 18,
+      backgroundColor: 'transparent',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    languageMenu: {
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: '#E8E8E8',
+      borderRadius: isDesktopWeb ? 12 : isTablet ? 11 : 10,
+      paddingVertical: isDesktopWeb ? 8 : isTablet ? 7 : 6,
+      marginTop: isDesktopWeb ? 6 : isTablet ? 5.5 : 5,
+      minWidth: isDesktopWeb ? 150 : isTablet ? 140 : 130,
+    },
+    languageMenuItem: {
+      paddingHorizontal: isDesktopWeb ? 16 : isTablet ? 14 : 12,
+      paddingVertical: isDesktopWeb ? 10 : isTablet ? 9 : 8,
+    },
+    languageMenuText: {
+      fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
+      color: '#333333',
+      textAlign: 'right',
+    },
+    title: {
+      marginTop: isDesktopWeb ? 20 : isTablet ? 15 : Platform.OS === 'web' ? 10 : 20,
+      fontSize: isDesktopWeb ? 42 : isTablet ? 36 : scaleSize(32),
+      fontWeight: 'bold',
+      color: '#2C2C2C',
+      marginBottom: isDesktopWeb ? 12 : isTablet ? 11 : 10,
+      textAlign: 'center',
+    },
+    subtitle: {
+      fontSize: isDesktopWeb ? 20 : isTablet ? 18 : scaleSize(16),
+      color: '#444444',
+      textAlign: 'center',
+      marginBottom: isDesktopWeb ? 50 : isTablet ? 45 : Platform.OS === 'web' ? 40 : 100,
+      fontWeight: '600',
+      paddingHorizontal: isDesktopWeb ? 20 : 0,
+    },
+    errorContainer: {
+      alignItems: 'center',
+      padding: isDesktopWeb ? 30 : isTablet ? 25 : 20,
+    },
+    errorText: {
+      fontSize: isDesktopWeb ? 18 : isTablet ? 17 : scaleSize(16),
+      color: '#FF4444',
+      textAlign: 'center',
+    },
+    errorSubtext: {
+      fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
+      color: '#888888',
+      textAlign: 'center',
+      marginTop: isDesktopWeb ? 8 : isTablet ? 6 : 5,
+    },
+    avatarContainer: {
+      position: 'relative',
+      marginBottom: isDesktopWeb ? 10 : isTablet ? 9 : 8,
+    },
+    checkmarkContainer: {
+      position: 'absolute',
+      top: isDesktopWeb ? -6 : isTablet ? -5.5 : -5,
+      right: isDesktopWeb ? -6 : isTablet ? -5.5 : -5,
+      backgroundColor: '#FFFFFF',
+      borderRadius: isDesktopWeb ? 14 : isTablet ? 13 : 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    // 🔥 buttonsContainer - מרכז את כל הכפתורים
+    buttonsContainer: {
+      marginBottom: isDesktopWeb ? 30 : isTablet ? 25 : 20,
+      width: '100%',
+      alignItems: 'center', // Center all buttons instead of stretch
+    },
+    disabledButton: {
+      backgroundColor: '#CCCCCC',
+      opacity: 0.6,
+    },
+    disabledButtonText: {
+      color: '#999999',
+    },
+    // 🔥 guestButton - responsive, מותאם לטקסט, לא מרוח!
+    guestButton: {
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: '#E8E8E8',
+      borderRadius: buttonBorderRadius,
+      paddingHorizontal: buttonPaddingH,
+      paddingVertical: buttonPaddingV,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+      alignSelf: 'center', // Center button instead of full width
+      marginVertical: buttonMarginVertical,
+      marginBottom: isDesktopWeb ? 28 : isTablet ? 25 : 22,
+      minWidth: buttonMinWidth,
+      maxWidth: buttonMaxWidth,
+    },
+    // 🔥 guestButtonText - ללא width: '100%'
+    guestButtonText: {
+      fontSize: buttonFontSize,
+      fontWeight: '600',
+      color: '#666666',
+      textAlign: 'center',
+      // Removed width: '100%' - let text determine width
+    },
+    infoText: {
+      fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
+      color: '#666666',
+      textAlign: 'center',
+    },
+    clearDataButton: {
+      backgroundColor: '#FF4444',
+      borderRadius: isDesktopWeb ? 10 : isTablet ? 9 : 8,
+      padding: isDesktopWeb ? 12 : isTablet ? 11 : 10,
+      alignItems: 'center',
+    },
+    clearDataButtonText: {
+      fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
+      color: '#FFFFFF',
+      fontWeight: '600',
+    },
+    // 🔥 orgLoginContainer - מרכז את הכפתורים
+    orgLoginContainer: {
+      marginVertical: isDesktopWeb ? 4 : isTablet ? 3.5 : 3,
+      alignItems: 'center', // Center container
+      width: '100%',
+    },
+    // 🔥 orgButton - ללא width: '100%'
+    orgButton: {
+      borderColor: '#FF6B9D',
+      // Removed width: '100%' - button will use guestButton styles
+    },
+    // 🔥 emailButton - ללא width: '100%'
+    emailButton: {
+      borderColor: '#4C7EFF',
+      marginTop: isDesktopWeb ? 16 : isTablet ? 14 : 12,
+      // Removed width: '100%' - button will use guestButton styles
+    },
+    // 🔥 orgExpandedRow - responsive, מותאם לכפתורים
+    // Note: Dynamic width/alignment is applied in JSX, not in StyleSheet
+    orgExpandedRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: '#E8E8E8',
+      borderRadius: expandedRowBorderRadius,
+      padding: expandedRowPadding,
+      marginHorizontal: 0,
+      marginVertical: isDesktopWeb ? 4 : isTablet ? 3.5 : 3,
+      gap: expandedRowGap,
+    },
+    // 🔥 orgMiniButton - responsive
+    orgMiniButton: {
+      width: miniButtonSize,
+      height: miniButtonSize,
+      borderRadius: miniButtonBorderRadius,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(255,107,157,0.08)',
+    },
+    // 🔥 orgInput - responsive
+    orgInput: {
+      flex: 1,
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: '#E8E8E8',
+      borderRadius: inputBorderRadius,
+      paddingHorizontal: inputPaddingH,
+      paddingVertical: inputPaddingV,
+      fontSize: inputFontSize,
+    },
+    // 🔥 orgActionButton - responsive
+    orgActionButton: {
+      backgroundColor: '#FF6B9D',
+      paddingHorizontal: actionButtonPaddingH,
+      paddingVertical: actionButtonPaddingV,
+      borderRadius: actionButtonBorderRadius,
+    },
+    orgActionButtonText: {
+      color: '#FFFFFF',
+      fontWeight: '700',
+      fontSize: actionButtonFontSize,
+    },
+    // 🔥 suggestionsBox - responsive, מותאם לכפתורים
+    suggestionsBox: {
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: '#E8E8E8',
+      borderRadius: suggestionsBoxBorderRadius,
+      marginTop: suggestionsBoxMargin,
+      marginBottom: suggestionsBoxMargin,
+      overflow: 'hidden',
+      alignSelf: 'center', // Center suggestions box
+      minWidth: buttonMinWidth,
+      maxWidth: suggestionsBoxMaxWidth,
+    },
+    suggestionItem: {
+      paddingVertical: isDesktopWeb ? 10 : isTablet ? 9 : 8,
+      paddingHorizontal: isDesktopWeb ? 16 : isTablet ? 14 : 12,
+    },
+    suggestionText: {
+      fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
+      color: '#333333',
+      textAlign: 'right',
+    },
+    inputWrapper: {
+      position: 'relative',
+      flex: 1,
+    },
+    // 🔥 eyeToggle - responsive
+    eyeToggle: {
+      position: 'absolute',
+      right: isDesktopWeb ? 6 : isTablet ? 5.5 : 5,
+      top: 0,
+      bottom: 0,
+      width: miniButtonSize,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    // 🔥 emailStatusRow - responsive, מותאם לכפתורים
+    emailStatusRow: {
+      marginTop: suggestionsBoxMargin,
+      marginBottom: suggestionsBoxMargin,
+      paddingHorizontal: statusRowPadding,
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'flex-start',
+      alignSelf: 'center', // Center status row
+      minWidth: buttonMinWidth,
+      maxWidth: statusRowMaxWidth,
+    },
+    emailStatusText: {
+      fontSize: statusRowFontSize,
+      fontWeight: '600',
+      textAlign: 'right',
+    },
+    smallResetButton: {
+      paddingHorizontal: 0,
+      paddingVertical: 0,
+      borderRadius: 0,
+      borderWidth: 0,
+      backgroundColor: 'transparent',
+      marginLeft: isDesktopWeb ? 10 : isTablet ? 9 : 8,
+    },
+    smallResetContainer: {
+      paddingHorizontal: isDesktopWeb ? 8 : isTablet ? 7 : 6,
+      alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'center',
+      marginBottom: isDesktopWeb ? 6 : isTablet ? 5 : 4,
+    },
+    smallResetText: {
+      fontSize: isDesktopWeb ? 15 : isTablet ? 14 : scaleSize(13),
+      color: '#1976D2',
+      fontWeight: '700',
+      textDecorationLine: 'underline',
+    },
+    passwordEyeButton: {
+      marginLeft: isDesktopWeb ? 8 : isTablet ? 7 : 6,
+      width: miniButtonSize,
+      height: miniButtonSize,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    // Version styles
+    versionContainer: {
+      marginBottom: isDesktopWeb ? 24 : isTablet ? 22 : 20,
+      alignItems: 'center',
+    },
+    versionText: {
+      fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
+      color: '#888888',
+      textAlign: 'center',
+      fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+      fontWeight: '500',
+    },
+  });
+};
+
+const styles = createLoginScreenStyles(); 

@@ -25,7 +25,8 @@ import Animated, {
   interpolate,
 } from "react-native-reanimated";
 import { FontSizes } from "../globals/constants";
-import { charities } from "../globals/fakeData";
+// Empty array - replace with real data from API
+const charities: any[] = [];
 import { TouchableOpacity } from "react-native";
 import colors from "../globals/colors";
 import { useTranslation } from "react-i18next";

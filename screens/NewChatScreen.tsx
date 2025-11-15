@@ -26,7 +26,7 @@ import { ParamListBase } from '@react-navigation/native';
 import { useUser } from '../context/UserContext';
 import { getFollowing, getFollowers, getFollowSuggestions } from '../utils/followService';
 import { createConversation, getAllConversations, conversationExists, sendMessage } from '../utils/chatService';
-import { CharacterType } from '../globals/characterTypes';
+import { UserPreview as CharacterType } from '../globals/types';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { Ionicons as Icon } from '@expo/vector-icons';
@@ -101,29 +101,29 @@ export default function NewChatScreen() {
         filtered = filtered.filter(friend => friend.isActive);
         break;
       case 'highKarma':
-        filtered = filtered.filter(friend => friend.karmaPoints >= 100);
+        filtered = filtered.filter(friend => (friend.karmaPoints ?? 0) >= 100);
         break;
       case 'recentFollowers':
-        filtered = filtered.filter(friend => friend.followersCount > 0);
+        filtered = filtered.filter(friend => (friend.followersCount ?? 0) > 0);
         break;
     }
     
     if (searchQuery.trim() !== '') {
       filtered = filtered.filter(friend =>
-        friend.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        friend.bio?.toLowerCase().includes(searchQuery.toLowerCase())
+        (friend.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (friend.bio || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
     
     switch (sortBy) {
       case 'name':
-        filtered.sort((a, b) => a.name.localeCompare(b.name, 'he'));
+        filtered.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'));
         break;
       case 'karma':
-        filtered.sort((a, b) => b.karmaPoints - a.karmaPoints);
+        filtered.sort((a, b) => (b.karmaPoints ?? 0) - (a.karmaPoints ?? 0));
         break;
       case 'followers':
-        filtered.sort((a, b) => (b.followersCount || 0) - (a.followersCount || 0));
+        filtered.sort((a, b) => (b.followersCount ?? 0) - (a.followersCount ?? 0));
         break;
       case 'recent':
         filtered.sort((a, b) => {
@@ -220,9 +220,9 @@ export default function NewChatScreen() {
             {item.bio || 'אין תיאור'}
           </Text>
           <View style={styles.friendStats}>
-            <Text style={styles.karmaPoints}>⭐ {item.karmaPoints} נקודות קארמה</Text>
+            <Text style={styles.karmaPoints}>⭐ {item.karmaPoints ?? 0} נקודות קארמה</Text>
             <Text style={styles.followersCount}>
-              👥 {item.followersCount || 0} עוקבים
+              👥 {item.followersCount ?? 0} עוקבים
             </Text>
           </View>
         </View>

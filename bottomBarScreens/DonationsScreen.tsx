@@ -49,7 +49,6 @@ import { FontSizes, LAYOUT_CONSTANTS, IconSizes } from '../globals/constants';
 import { useUser } from '../context/UserContext';
 import GuestModeNotice from '../components/GuestModeNotice';
 import DonationStatsFooter from '../components/DonationStatsFooter';
-import { donations, charities } from '../globals/fakeData';
 import { useTranslation } from 'react-i18next';
 import { getScreenInfo, isLandscape, scaleSize } from '../globals/responsive';
 import stylesGlobal, { createShadowStyle } from '../globals/styles';
@@ -58,6 +57,10 @@ import { enhancedDB, EnhancedDatabaseService } from '../utils/enhancedDatabaseSe
 import { EnhancedStatsService } from '../utils/statsService';
 import { USE_BACKEND } from '../utils/dbConfig';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// Placeholder datasets (purged demo) – replace with real API data
+const donations: any[] = [];
+const charities: any[] = [];
 
 interface DonationsScreenProps {
   navigation: NavigationProp<DonationsStackParamList>;

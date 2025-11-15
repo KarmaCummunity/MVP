@@ -21,7 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect, NavigationProp, ParamListBase } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
-import { allUsers, CharacterType } from '../globals/characterTypes';
+import { UserPreview as CharacterType } from '../globals/types';
 import { 
   getFollowSuggestions, 
   getPopularUsers,
@@ -68,17 +68,16 @@ export default function DiscoverPeopleScreen() {
     try {
       if (selectedUser) {
         const userSuggestions = await getFollowSuggestions(selectedUser.id, 20);
-        setSuggestions(userSuggestions);
+        setSuggestions(userSuggestions as any);
       } else {
-        // במצב התחברות אמיתי – אין הצעות דמו
-        setSuggestions(isRealAuth ? [] : allUsers.slice(0, 20));
+        setSuggestions([]);
       }
       
       const popular = await getPopularUsers(20);
-      setPopularUsers(isRealAuth ? popular.filter(u => !String(u.id).startsWith('user')) : popular);
+      setPopularUsers(popular as any);
       
       // Load follow stats for all users
-      const allUsersToCheck = [...suggestions, ...popular];
+      const allUsersToCheck = [...(suggestions as any[]), ...(popular as any[])];
       const stats: Record<string, { isFollowing: boolean }> = {};
       
       for (const user of allUsersToCheck) {
@@ -167,7 +166,7 @@ export default function DiscoverPeopleScreen() {
               </Text>
             </View>
             <View style={styles.rolesContainer}>
-              {item.roles.slice(0, 2).map((role, index) => (
+              {(item.roles ?? []).slice(0, 2).map((role, index) => (
                 <View key={index} style={styles.roleTag}>
                   <Text style={styles.roleText}>{role}</Text>
                 </View>

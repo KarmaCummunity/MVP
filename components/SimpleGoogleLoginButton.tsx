@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { TouchableOpacity, Text, StyleSheet, View, Platform, Alert } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, View, Platform, Alert, Dimensions } from 'react-native';
 import * as Google from 'expo-auth-session/providers/google';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
@@ -11,6 +11,7 @@ import { db } from '../utils/databaseService';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '../utils/loggerService';
+import { getScreenInfo, scaleSize } from '../globals/responsive';
 
 interface SimpleGoogleLoginButtonProps {
   onSuccess?: (user: any) => void;
@@ -507,6 +508,17 @@ export default function SimpleGoogleLoginButton({
   // Check if button should be disabled
   const isButtonDisabled = !isGoogleAvailable || !promptAsync || authState === 'authenticating' || disabled;
 
+  // Get responsive values
+  const { isTablet, isDesktop, width } = getScreenInfo();
+  const isDesktopWeb = Platform.OS === 'web' && width > 1024;
+  const buttonPaddingH = isDesktopWeb ? 32 : isTablet ? 28 : 24;
+  const buttonPaddingV = isDesktopWeb ? 16 : isTablet ? 14 : 12;
+  const buttonMinWidth = isDesktopWeb ? 280 : isTablet ? 240 : 200;
+  const buttonMaxWidth = isDesktopWeb ? 400 : isTablet ? 360 : '100%';
+  const buttonBorderRadius = isDesktopWeb ? 14 : isTablet ? 13 : 12;
+  const buttonFontSize = isDesktopWeb ? 18 : isTablet ? 17 : scaleSize(16);
+  const buttonIconSize = isDesktopWeb ? 22 : isTablet ? 21 : 20;
+
   if (!isGoogleAvailable) {
     logger.warn('GoogleLogin', 'Google authentication not available', { platform: Platform.OS });
   }
@@ -514,7 +526,22 @@ export default function SimpleGoogleLoginButton({
   return (
     <TouchableOpacity 
       style={[
-        styles.button, 
+        {
+          backgroundColor: '#4285F4',
+          borderRadius: buttonBorderRadius,
+          paddingHorizontal: buttonPaddingH,
+          paddingVertical: buttonPaddingV,
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
+          alignSelf: 'center',
+          minWidth: buttonMinWidth,
+          maxWidth: buttonMaxWidth,
+        },
         isButtonDisabled && styles.disabled,
         authState === 'error' && styles.error,
         authState === 'success' && styles.success,
@@ -527,11 +554,11 @@ export default function SimpleGoogleLoginButton({
       <View style={styles.content}>
         <Ionicons 
           name={getButtonIcon()} 
-          size={20} 
+          size={buttonIconSize} 
           color="#fff" 
           style={styles.icon} 
         />
-        <Text style={styles.text}>
+        <Text style={[styles.text, { fontSize: buttonFontSize }]}>
           {(() => {
             const buttonText = getButtonText() || getFallbackButtonText();
             console.log('GoogleLogin Button Text:', { 
@@ -555,18 +582,6 @@ export default function SimpleGoogleLoginButton({
 }
 
 const styles = StyleSheet.create({
-  button: {
-    backgroundColor: '#4285F4',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -576,7 +591,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   text: {
-    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
   },

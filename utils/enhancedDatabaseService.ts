@@ -318,6 +318,42 @@ export class EnhancedDatabaseService {
     }
   }
 
+  async updateDonation(donationId: string, updateData: Partial<DonationData>): Promise<ApiResponse> {
+    try {
+      if (!USE_BACKEND) {
+        // Local-only success fallback
+        return { success: true, data: { id: donationId, ...updateData } as any };
+      }
+      const response = await apiService.updateDonation(donationId, updateData);
+      if (response.success) {
+        await this.clearCachePattern('donations_list');
+        await this.clearCachePattern('user_donations');
+      }
+      return response;
+    } catch (error) {
+      logger.error('EnhancedDatabaseService', 'Update donation error', { error });
+      return { success: false, error: 'Failed to update donation' };
+    }
+  }
+
+  async deleteDonation(donationId: string): Promise<ApiResponse> {
+    try {
+      if (!USE_BACKEND) {
+        // Local-only success fallback
+        return { success: true };
+      }
+      const response = await apiService.deleteDonation(donationId);
+      if (response.success) {
+        await this.clearCachePattern('donations_list');
+        await this.clearCachePattern('user_donations');
+      }
+      return response;
+    } catch (error) {
+      logger.error('EnhancedDatabaseService', 'Delete donation error', { error });
+      return { success: false, error: 'Failed to delete donation' };
+    }
+  }
+
   // ==================== Community Stats ====================
 
   async getCommunityStats(filters: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
@@ -627,3 +663,37 @@ export class EnhancedDatabaseService {
 // Export singleton instance
 export const enhancedDB = EnhancedDatabaseService.getInstance();
 export default enhancedDB;
+
+// Admin utilities
+export async function wipeAllDataAdmin(): Promise<ApiResponse> {
+  try {
+    if (!USE_BACKEND) {
+      // Local purge only
+      try {
+        const { DatabaseService } = await import('./databaseService');
+        await DatabaseService.clearLocalCollections?.();
+      } catch {}
+      try {
+        const keys = await AsyncStorage.getAllKeys();
+        await AsyncStorage.multiRemove(keys);
+      } catch {}
+      return { success: true, message: 'Local data cleared (no backend enabled)' };
+    }
+    const result = await apiService.adminWipeAllData();
+    if (result.success) {
+      // Clear all local caches and queues after server wipe
+      try {
+        const { DatabaseService } = await import('./databaseService');
+        await DatabaseService.clearLocalCollections?.();
+      } catch {}
+      try {
+        const keys = await AsyncStorage.getAllKeys();
+        await AsyncStorage.multiRemove(keys);
+      } catch {}
+    }
+    return result;
+  } catch (error) {
+    logger.error('EnhancedDatabaseService', 'Admin wipe all data error', { error });
+    return { success: false, error: 'Failed to wipe all data' };
+  }
+}

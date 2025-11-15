@@ -35,7 +35,6 @@ import logger from '../utils/logger';
 import { isBookmarked, addBookmark, removeBookmark } from '../utils/bookmarksService';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
-import { characterTypes, CharacterType } from '../globals/characterTypes';
 import ScreenWrapper from './ScreenWrapper';
 import { db } from '../utils/databaseService';
 
@@ -69,61 +68,8 @@ type Item = {
 // TODO: Replace with proper data fetching from backend API
 // TODO: Implement proper data models and interfaces
 const generateFakeData = (): Item[] => {
-  const data: Item[] = [];
-  
-  const postTopics = [
-    'תרומה לקהילה', 'התנדבות השבוע', 'שיתוף ידע', 'בקשת עזרה', 'הודיה לקהילה',
-    'אירוע קהילתי', 'טיפ מועיל', 'חוויה אישית', 'פרויקט חדש', 'הישג אישי',
-    'בקשת ייעוץ', 'שיתוף חוויה', 'הזמנה לפעילות', 'עדכון פרויקט', 'תודות לקהילה'
-  ];
-  
-  for (let i = 1; i <= NUM_ITEMS; i++) {
-    const type = Math.random() < 0.5 ? 'post' : 'reel';
-    const randomCharacter = characterTypes[Math.floor(Math.random() * characterTypes.length)];
-    const randomTopic = postTopics[Math.floor(Math.random() * postTopics.length)];
-    const randomLikes = Math.floor(Math.random() * (randomCharacter.followersCount * 0.1)) + 5;
-    const randomComments = Math.floor(Math.random() * 30) + 1;
-    
-    const getCharacterSpecificDescription = (character: CharacterType, topic: string) => {
-      const descriptions = {
-        'user001': `איש העסקים יוסי שותף: "${topic} - חשוב לי לתרום לקהילה שלנו כי ביחד נחזקים. השקעתי השבוע ב..."
-💼 תרומה עסקית | 🤝 שיתוף קהילתי`,
-        'user002': `שרה המתנדבת מספרת: "${topic} - השבוע התנדבתי בספרייה עם הילדים ומה שקרה פה היה פשוט קסום..."
-👩‍👧‍👦 אמא מתנדבת | ✨ יצירה וחינוך`,
-        'user003': `עמותת 'יד ביד' מעדכנת: "${topic} - הארגנו השבוע אירוע קהילתי נהדר! תודה לכל המתנדבים..."
-🏢 עמותה קהילתית | 🤲 עזרה הדדית`,
-        'user004': `דני הסטודנט שותף: "${topic} - כמו סטודנט שמתמחה בתכנות, רציתי לשתף איתכם..."
-💻 סטודנט טכנולוגיה | 🚗 טרמפים`,
-        'user005': `רחל, אמא חד הורית מודה: "${topic} - כאמא לשתיים, הקהילה הזאת מאפשרת לי לתת ולקבל..."
-👩‍👧‍👧 אמא חד הורית | 💪 חוזק קהילתי`,
-        'user006': `משה הפרילנסר מציע: "${topic} - כמעצב גרפי, אני מאמין בכוח של עיצוב טוב לשנות..."
-🎨 מעצב גרפי | 💡 יצירתיות`,
-        'user007': `ליאת הקשישה הפעילה מלמדת: "${topic} - בגיל שלי למדתי שחכמת החיים היא לתת ולקבל..."
-👵 קשישה פעילה | 🧶 סריגה ותרבות`
-      };
-      return descriptions[character.id as keyof typeof descriptions] || 
-        `${character.name} שותף: "${topic} - הקהילה שלנו היא המקום שבו אני מרגיש שייך ויכול לתרום..."\n🌟 חבר קהילה | 💫 תרומה משמעותית`;
-    };
-    
-    data.push({
-      id: `${type}-${i}`,
-      type,
-      title: `${randomTopic} | ${randomCharacter.name}`,
-      description: getCharacterSpecificDescription(randomCharacter, randomTopic),
-      thumbnail: `https://picsum.photos/seed/${type}-${i}/300/200`,
-      user: {
-        id: randomCharacter.id,
-        name: randomCharacter.name,
-        avatar: randomCharacter.avatar,
-        karmaPoints: randomCharacter.karmaPoints,
-      },
-      likes: randomLikes,
-      comments: randomComments,
-      isLiked: Math.random() < 0.3, // 30% chance current user liked it
-      timestamp: `${Math.floor(Math.random() * 72) + 1} שעות`,
-    });
-  }
-  return data;
+  // Purged fake feed. Return empty list when no real data is available.
+  return [];
 };
 
 const data = generateFakeData();
@@ -153,7 +99,7 @@ const PostReelItem = ({ item }: { item: Item }) => {
       userId: item.user.id,
       userName: item.user.name,
       // Pass additional character data for better profile display
-      characterData: characterTypes.find(char => char.id === item.user.id)
+      characterData: null // Removed fake character data
     });
   };
 

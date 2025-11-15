@@ -15,7 +15,7 @@ import colors from "../globals/colors"; // Ensure this path is correct
 import { FontSizes, filterOptions as defaultFilterOptions, sortOptions as defaultSortOptions } from "../globals/constants";
 import { useTranslation } from 'react-i18next';
 import { createShadowStyle } from "../globals/styles";
-import { biDiTextAlign, rowDirection } from "../globals/responsive";
+import { biDiTextAlign, rowDirection, getResponsiveModalStyles, responsiveSpacing, responsiveFontSize, getScreenInfo, BREAKPOINTS } from "../globals/responsive";
 
 interface SearchBarProps {
   onHasActiveConditionsChange?: (isActive: boolean) => void;
@@ -250,6 +250,12 @@ const SearchBar = ({
     handleSearch();
   };
 
+  // Get responsive styles
+  const modalStyles = getResponsiveModalStyles();
+  const { isTablet, isDesktop, isLargeDesktop, width } = getScreenInfo();
+  const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
+  const iconSize = isLargeDesktop ? 28 : isDesktopWeb ? 26 : isTablet ? 24 : 22;
+
   return (
     <View style={localStyles.container}>
       {/* --- Main Search Bar Row --- */}
@@ -287,7 +293,7 @@ const SearchBar = ({
           onPress={handleSearch}
           style={localStyles.searchIconContainer}
         >
-          <Ionicons name="search" size={24} color="#333" />
+          <Ionicons name="search" size={iconSize} color="#333" />
         </TouchableOpacity>
 
         {/* --- Filter Options Modal --- */}
@@ -302,7 +308,16 @@ const SearchBar = ({
             activeOpacity={1}
             onPress={() => setIsFilterModalVisible(false)}
           >
-            <View style={localStyles.modalContent}>
+            <View style={[
+              localStyles.modalContent,
+              {
+                width: modalStyles.width,
+                maxWidth: modalStyles.maxWidth,
+                maxHeight: modalStyles.maxHeight,
+                padding: modalStyles.padding,
+                borderRadius: modalStyles.borderRadius,
+              }
+            ]}>
               <Text style={localStyles.modalTitle}>{t('search:chooseFiltersTitle')}</Text>
               <ScrollView style={localStyles.modalScrollView}>
                 {filterOptions.map((option, index) => (
@@ -355,7 +370,16 @@ const SearchBar = ({
             activeOpacity={1}
             onPress={() => setIsSortModalVisible(false)}
           >
-            <View style={localStyles.modalContent}>
+            <View style={[
+              localStyles.modalContent,
+              {
+                width: modalStyles.width,
+                maxWidth: modalStyles.maxWidth,
+                maxHeight: modalStyles.maxHeight,
+                padding: modalStyles.padding,
+                borderRadius: modalStyles.borderRadius,
+              }
+            ]}>
               <Text style={localStyles.modalTitle}>{t('search:chooseSortsTitle')}</Text>
               <ScrollView style={localStyles.modalScrollView}>
                 {sortOptions.map((option, index) => (
@@ -466,24 +490,25 @@ const localStyles = StyleSheet.create({
     alignItems: "center",
     alignSelf: "center",
     backgroundColor: colors.backgroundSecondary,
-    borderRadius: 25,
-    marginHorizontal: 20,
-    marginTop: 8,
+    borderRadius: responsiveSpacing(25, 27, 30),
+    marginHorizontal: responsiveSpacing(20, 24, 28),
+    marginTop: responsiveSpacing(8, 10, 12),
     ...createShadowStyle("#000", { width: 0, height: 2 }, 0.1, 4),
     elevation: 3,
-    paddingVertical: 2,
+    paddingVertical: responsiveSpacing(2, 3, 4),
     borderWidth: 1,
     borderColor: colors.searchBorder,
+    maxWidth: '100%',
   },
   buttonContainer: {
     backgroundColor: colors.moneyFormBackground,
-    borderRadius: 18,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    marginHorizontal: 4,
+    borderRadius: responsiveSpacing(18, 20, 22),
+    paddingVertical: responsiveSpacing(4, 5, 6),
+    paddingHorizontal: responsiveSpacing(12, 14, 16),
+    marginHorizontal: responsiveSpacing(4, 5, 6),
   },
   buttonText: {
-    fontSize: FontSizes.caption,
+    fontSize: responsiveFontSize(FontSizes.caption, 13, 15),
     color: colors.searchText,
     fontWeight: "bold",
     writingDirection: "rtl",
@@ -491,12 +516,12 @@ const localStyles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: "100%",
-    fontSize: FontSizes.small,
+    fontSize: responsiveFontSize(FontSizes.small, 15, 17),
     color: colors.searchText,
-    paddingHorizontal: 10,
+    paddingHorizontal: responsiveSpacing(10, 12, 14),
   },
   searchIconContainer: {
-    paddingLeft: 10,
+    paddingLeft: responsiveSpacing(10, 12, 14),
   },
 
   // --- Modals Styles ---
@@ -508,37 +533,34 @@ const localStyles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: "white",
-    borderRadius: 10,
-    padding: 20,
-    width: "80%",
-    maxHeight: "70%",
+    // Dynamic styles applied in JSX for responsive sizing
     ...createShadowStyle("#000", { width: 0, height: 2 }, 0.25, 4),
     elevation: 5,
   },
   modalTitle: {
-    fontSize: FontSizes.heading2,
+    fontSize: responsiveFontSize(FontSizes.heading2, 20, 22),
     fontWeight: "bold",
-    marginBottom: 15,
+    marginBottom: responsiveSpacing(15, 18, 20),
     textAlign: "center",
     color: colors.textSecondary,
   },
   modalScrollView: {
-    maxHeight: 300,
+    maxHeight: responsiveSpacing(300, 400, 500),
   },
   modalOption: {
-    paddingVertical: 15,
+    paddingVertical: responsiveSpacing(15, 18, 20),
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
     flexDirection: rowDirection("row-reverse"),
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 10,
+    paddingHorizontal: responsiveSpacing(10, 12, 14),
   },
   modalOptionSelected: {
     backgroundColor: colors.orangeLight,
   },
   modalOptionText: {
-    fontSize: FontSizes.medium,
+    fontSize: responsiveFontSize(FontSizes.medium, 16, 18),
     textAlign: "right",
     writingDirection: "rtl",
     color: "#333",
@@ -549,18 +571,18 @@ const localStyles = StyleSheet.create({
     color: colors.pink,
   },
   modalCheckmark: {
-    marginLeft: 10,
+    marginLeft: responsiveSpacing(10, 12, 14),
   },
   modalCloseButton: {
-    marginTop: 20,
+    marginTop: responsiveSpacing(20, 24, 28),
     backgroundColor: colors.pink,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: responsiveSpacing(12, 14, 16),
+    borderRadius: responsiveSpacing(8, 10, 12),
     alignItems: "center",
   },
   modalCloseButtonText: {
     color: "white",
-    fontSize: FontSizes.medium,
+    fontSize: responsiveFontSize(FontSizes.medium, 16, 18),
     fontWeight: "bold",
   },
 
@@ -572,35 +594,35 @@ const localStyles = StyleSheet.create({
     // minHeight: 20,
   },
   rowLabel: {
-    fontSize: FontSizes.small,
+    fontSize: responsiveFontSize(FontSizes.small, 14, 16),
     fontWeight: "bold",
     color: colors.textSecondary,
-    marginRight: 8,
-    paddingVertical: 5,
-    paddingLeft: 10,
+    marginRight: responsiveSpacing(8, 10, 12),
+    paddingVertical: responsiveSpacing(5, 6, 7),
+    paddingLeft: responsiveSpacing(10, 12, 14),
   },
   selectedButtonsContainer: {
     flexDirection: "row",
-    gap: 8,
-    paddingRight: 10,
+    gap: responsiveSpacing(8, 10, 12),
+    paddingRight: responsiveSpacing(10, 12, 14),
     alignItems: 'center',
     flexGrow: 1,
   },
   selectedFilterSortButton: {
     backgroundColor: colors.pinkLight,
-    paddingVertical: 2,
-    paddingHorizontal: 5,
-    borderRadius: 18,
+    paddingVertical: responsiveSpacing(2, 3, 4),
+    paddingHorizontal: responsiveSpacing(5, 6, 7),
+    borderRadius: responsiveSpacing(18, 20, 22),
     flexDirection: "row-reverse",
     alignItems: "center",
     ...createShadowStyle("#000", { width: 0, height: 1 }, 0.1, 2),
     elevation: 2,
   },
   selectedFilterSortButtonText: {
-    fontSize: FontSizes.caption,
+    fontSize: responsiveFontSize(FontSizes.caption, 12, 14),
     fontWeight: 'bold',
     color: colors.black,
-    marginLeft: 4,
+    marginLeft: responsiveSpacing(4, 5, 6),
   },
 
   // --- Static Filter Buttons Row Styles ---

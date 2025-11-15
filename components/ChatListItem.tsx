@@ -2,7 +2,23 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { ChatConversation, ChatUser } from '../globals/fakeData'; // Adjust path
+// Define types locally - replace with real types from API
+interface ChatUser {
+  id: string;
+  name: string;
+  avatar?: string;
+}
+
+interface ChatConversation {
+  id: string;
+  participants: string[];
+  lastMessage?: {
+    text: string;
+    timestamp: string;
+    senderId: string;
+  };
+  unreadCount?: number;
+}
 import colors from '../globals/colors'; // Assuming you have a Colors file
 import { FontSizes } from '../globals/constants';
 

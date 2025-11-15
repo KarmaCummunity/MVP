@@ -67,22 +67,18 @@ const WebModeToggleOverlay: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  // Site mode: centered at top, over landing page content
+  // Site mode: positioned at top-right corner
   containerSite: {
     position: 'absolute',
     top: 8,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
+    right: 16,
     zIndex: 1000,
   },
-  // App mode: positioned at top-center, above app content and top bar (persistent across all screens)
+  // App mode: positioned at top-right corner, above app content and top bar (persistent across all screens)
   containerApp: {
     position: 'absolute',
     top: 8,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
+    right: 16,
     zIndex: 9999, // Higher z-index to stay above top bar
   },
   wrapper: {

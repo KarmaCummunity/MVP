@@ -4,7 +4,7 @@
 // - Expects route params: `{ userId: string, userName: string, characterData?: CharacterType }`.
 // - Provides: Loads follow stats and counts, toggles follow state, navigates to 'FollowersScreen' and 'ChatDetailScreen'.
 // - Reads from context: `useUser()` -> `selectedUser` to check self vs other and to act on follow.
-// - External deps/services: `followService` (stats/update), `characterTypes` data source.
+// - External deps/services: `followService` (stats/update).
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -23,7 +23,6 @@ import type { SceneRendererProps, NavigationState } from 'react-native-tab-view'
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
-import { allUsers, CharacterType } from '../globals/characterTypes';
 import { getFollowStats, followUser, unfollowUser, getUpdatedFollowCounts } from '../utils/followService';
 import { useUser } from '../context/UserContext';
 import ScrollContainer from '../components/ScrollContainer';

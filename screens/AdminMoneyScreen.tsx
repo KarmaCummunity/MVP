@@ -16,10 +16,21 @@ import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { AdminStackParamList } from '../navigations/AdminStack';
-import { donations } from '../globals/fakeData';
-import { Donation } from '../globals/fakeData';
-import { enhancedDB } from '../utils/enhancedDatabaseService';
+import { enhancedDB, wipeAllDataAdmin, DonationData } from '../utils/enhancedDatabaseService';
 import { USE_BACKEND } from '../utils/dbConfig';
+import { useUser } from '../context/UserContext';
+
+interface Donation {
+  id: string;
+  type: 'money' | 'time' | 'items' | 'rides';
+  title: string;
+  description?: string;
+  amount?: number;
+  category?: string;
+  createdBy: string;
+  createdAt: string;
+  status?: string;
+}
 
 interface AdminMoneyScreenProps {
   navigation: NavigationProp<AdminStackParamList>;
@@ -54,6 +65,7 @@ const DONATION_CATEGORIES = [
 ];
 
 export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) {
+  const { isAdmin } = useUser();
   const [donationsList, setDonationsList] = useState<Donation[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [formData, setFormData] = useState<DonationFormData>({
@@ -64,9 +76,21 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
     notes: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isMutating, setIsMutating] = useState(false);
+  const [pollingId, setPollingId] = useState<ReturnType<typeof setInterval> | null>(null);
+  const [isWipeVisible, setIsWipeVisible] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
 
   useEffect(() => {
     loadDonations();
+    // Lightweight polling to approximate real-time updates
+    const id = setInterval(() => {
+      loadDonations();
+    }, 5000);
+    setPollingId(id);
+    return () => {
+      if (id) clearInterval(id);
+    };
   }, []);
 
   const loadDonations = async () => {
@@ -74,17 +98,44 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
       setIsLoading(true);
       if (USE_BACKEND) {
         const donationsData = await enhancedDB.getDonations({});
-        setDonationsList(donationsData as Donation[]);
+        setDonationsList(donationsData as unknown as Donation[]);
       } else {
-        // Use fake data for now
-        setDonationsList(donations);
+        // No backend - show empty state
+        setDonationsList([]);
       }
     } catch (error) {
       console.error('Error loading donations:', error);
-      // Fallback to fake data
-      setDonationsList(donations);
+      // Show empty state on error
+      setDonationsList([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleWipeAll = async () => {
+    try {
+      if (!isAdmin) {
+        Alert.alert('שגיאה', 'פעולה זו דורשת הרשאת מנהל');
+        return;
+      }
+      if (confirmText.trim().toUpperCase() !== 'CONFIRM') {
+        Alert.alert('אימות נדרש', 'נא להקליד CONFIRM באנגלית כדי לאשר מחיקה כוללת');
+        return;
+      }
+      setIsMutating(true);
+      const res = await wipeAllDataAdmin();
+      if (!res.success) {
+        throw new Error(res.error || 'wipe failed');
+      }
+      setIsWipeVisible(false);
+      setConfirmText('');
+      await loadDonations();
+      Alert.alert('בוצע', 'כל הנתונים נמחקו בהצלחה');
+    } catch (e) {
+      console.error('Admin wipe error:', e);
+      Alert.alert('שגיאה', 'לא ניתן היה למחוק את כל הנתונים');
+    } finally {
+      setIsMutating(false);
     }
   };
 
@@ -104,32 +155,20 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
     }
 
     try {
-      setIsLoading(true);
-      const newDonation: Donation = {
-        id: Date.now().toString(),
+      setIsMutating(true);
+      const payload = {
+        type: 'money' as const,
         title: `תרומה מ-${formData.donorName}`,
         description: formData.notes || '',
         amount: Number(formData.amount),
-        currency: 'ILS',
-        type: 'money',
-        status: 'approved',
         category: formData.category,
-        createdBy: 'admin',
-        createdAt: formData.date || new Date().toISOString(),
       };
-
-      if (USE_BACKEND) {
-        await enhancedDB.createDonation({
-          type: 'money',
-          title: newDonation.title,
-          description: newDonation.description,
-          amount: newDonation.amount,
-          category: newDonation.category,
-        });
+      const res = await enhancedDB.createDonation(payload);
+      if (!res.success) {
+        throw new Error(res.error || 'create failed');
       }
-
-      // Add to local list
-      setDonationsList((prev) => [newDonation, ...prev]);
+      // Always refetch from server to ensure canonical data and IDs
+      await loadDonations();
 
       // Reset form
       setFormData({
@@ -146,7 +185,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
       console.error('Error saving donation:', error);
       Alert.alert('שגיאה', 'לא ניתן היה לשמור את התרומה');
     } finally {
-      setIsLoading(false);
+      setIsMutating(false);
     }
   };
 
@@ -159,8 +198,24 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
         {
           text: 'מחק',
           style: 'destructive',
-          onPress: () => {
-            setDonationsList((prev) => prev.filter((d) => d.id !== donationId));
+          onPress: async () => {
+            // Optimistic UI with rollback
+            const prev = donationsList;
+            setDonationsList((p) => p.filter((d) => d.id !== donationId));
+            try {
+              setIsMutating(true);
+              const res = await enhancedDB.deleteDonation(donationId);
+              if (!res.success) {
+                throw new Error(res.error || 'delete failed');
+              }
+              await loadDonations();
+            } catch (e) {
+              console.error('Error deleting donation:', e);
+              setDonationsList(prev); // rollback
+              Alert.alert('שגיאה', 'לא ניתן היה למחוק את התרומה');
+            } finally {
+              setIsMutating(false);
+            }
           },
         },
       ]
@@ -229,6 +284,16 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
             <Ionicons name="add-circle" size={24} color="white" />
             <Text style={styles.addButtonText}>הוסף תרומה</Text>
           </TouchableOpacity>
+          {isAdmin && (
+            <TouchableOpacity
+              style={[styles.addButton, styles.dangerButton]}
+              onPress={() => setIsWipeVisible(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="warning" size={24} color="white" />
+              <Text style={styles.addButtonText}>מחק הכל</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {isLoading && donationsList.length === 0 ? (
@@ -247,6 +312,8 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
             renderItem={renderDonationItem}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
+            refreshing={isLoading || isMutating}
+            onRefresh={loadDonations}
             showsVerticalScrollIndicator={false}
           />
         )}
@@ -365,6 +432,56 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
           </View>
         </View>
       </Modal>
+
+      {/* Wipe All Confirmation Modal */}
+      <Modal
+        visible={isWipeVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsWipeVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>אישור מחיקת כל הנתונים</Text>
+              <TouchableOpacity
+                onPress={() => setIsWipeVisible(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalBody}>
+              <Text style={{ color: colors.textPrimary, marginBottom: LAYOUT_CONSTANTS.SPACING.SM }}>
+                פעולה מסוכנת! מחיקת כל הנתונים תבוצע באופן סופי בצד השרת. כדי לאשר, הקלד/י CONFIRM:
+              </Text>
+              <TextInput
+                style={styles.input}
+                value={confirmText}
+                onChangeText={setConfirmText}
+                placeholder="CONFIRM"
+                autoCapitalize="characters"
+                placeholderTextColor={colors.textPlaceholder}
+              />
+            </View>
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setIsWipeVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>ביטול</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.error }]}
+                onPress={handleWipeAll}
+                disabled={isMutating}
+              >
+                <Text style={styles.saveButtonText}>{isMutating ? 'מוחק...' : 'מחק הכל'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -402,6 +519,10 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: FontSizes.medium,
     fontWeight: '600',
+  },
+  dangerButton: {
+    backgroundColor: colors.error,
+    marginLeft: LAYOUT_CONSTANTS.SPACING.SM,
   },
   listContent: {
     paddingBottom: LAYOUT_CONSTANTS.SPACING.LG,

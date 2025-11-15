@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import colors from "../globals/colors";
 import { FontSizes } from "../globals/constants";
+import { getResponsiveMenuStyles, responsiveFontSize, responsiveSpacing } from "../globals/responsive";
 
 // Define the props that the MenuComp component will accept
 interface MenuCompProps {
@@ -24,6 +25,9 @@ const MenuComp: React.FC<MenuCompProps> = ({ options, onSelectOption }) => {
   // Animated values for scale and opacity
   const scaleAnim = useRef(new Animated.Value(0.01)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  
+  // Get responsive menu styles
+  const menuStyles = getResponsiveMenuStyles();
 
   const openMenu = () => {
     setIsVisible(true);
@@ -90,9 +94,15 @@ const MenuComp: React.FC<MenuCompProps> = ({ options, onSelectOption }) => {
                 {
                   opacity: opacityAnim,
                   transform: [{ scale: scaleAnim }],
-                  // Position the modal content relative to the top-right of the screen
-                  top: 70, // Adjust this value to position it below the header
-                  right: 15, // A small offset from the right edge of the screen
+                  // Position the modal content relative to the top-right of the screen - responsive
+                  top: menuStyles.top,
+                  right: menuStyles.right,
+                  minWidth: menuStyles.minWidth,
+                  maxWidth: menuStyles.maxWidth,
+                  maxHeight: menuStyles.maxHeight,
+                  paddingVertical: menuStyles.paddingVertical,
+                  paddingHorizontal: menuStyles.paddingHorizontal,
+                  borderRadius: menuStyles.borderRadius,
                 },
               ]}
             >
@@ -123,8 +133,8 @@ const MenuComp: React.FC<MenuCompProps> = ({ options, onSelectOption }) => {
 
 const localStyles = StyleSheet.create({
   menuIconPlacement: {
-    padding: 10,
-    marginBottom: 5,
+    padding: responsiveSpacing(10, 12, 14),
+    marginBottom: responsiveSpacing(5, 6, 7),
   },
   modalOverlay: {
     flex: 1,
@@ -134,29 +144,26 @@ const localStyles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: colors.menuBackground,
-    borderRadius: 10,
     position: "absolute",
-    minWidth: 180,
-    maxHeight: 250,
+    // Dynamic styles applied in JSX for responsive sizing
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-    paddingVertical: 10,
     borderWidth: 1,
     borderColor: colors.menuBorder,
   },
   menuOption: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: responsiveSpacing(20, 24, 28),
+    paddingVertical: responsiveSpacing(12, 14, 16),
     borderBottomWidth: 1,
     borderBottomColor: colors.menuBorder,
     width: "100%",
     alignSelf: "flex-end", // Align text to the right for rtl layout
   },
   menuOptionText: {
-    fontSize: FontSizes.body,
+    fontSize: responsiveFontSize(FontSizes.body, 16, 18),
     textAlign: "right", // Text alignment for rtl
     writingDirection: "rtl", // Explicit rtl text direction
     color: colors.menuText,
