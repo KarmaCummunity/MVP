@@ -13,6 +13,8 @@ import { EnhancedStatsService } from '../utils/statsService';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
 const isTablet = SCREEN_WIDTH > 768;
+const isSmallWeb = isWeb && SCREEN_WIDTH <= 480;
+const isMediumWeb = isWeb && !isSmallWeb && SCREEN_WIDTH <= 768;
 const showFloatingMenu = isWeb && SCREEN_WIDTH > 1200; // Show only on large screens
 
 const getSectionElement = (sectionId: string): HTMLElement | null => {
@@ -241,7 +243,10 @@ const HeroSection = () => {
   );
 }
 
-const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean }> = ({stats, isLoadingStats}) => (
+const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean }> = ({ stats, isLoadingStats }) => {
+  const statIconSize = isSmallWeb ? 24 : isMediumWeb ? 28 : isTablet ? 36 : 32;
+
+  return (
     <Section id="section-stats" title="הכוח של הקהילה שלנו" subtitle="השפעה אמיתית, במספרים">
       {isLoadingStats ? (
         <View style={styles.statsLoadingContainer}>
@@ -251,39 +256,40 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean }> =
       ) : (
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
-            <Ionicons name="people-outline" size={32} color={colors.info} style={styles.statIcon} />
+            <Ionicons name="people-outline" size={statIconSize} color={colors.info} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.uniqueDonors.toLocaleString('he-IL')}</Text>
             <Text style={styles.statLabel}>אנשים טובים בקהילה</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="cash-outline" size={32} color={colors.success} style={styles.statIcon} />
+            <Ionicons name="cash-outline" size={statIconSize} color={colors.success} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.totalMoneyDonated.toLocaleString('he-IL')} ₪</Text>
             <Text style={styles.statLabel}>ש"ח שנתרמו ישירות</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="heart-outline" size={32} color={colors.pink} style={styles.statIcon} />
+            <Ionicons name="heart-outline" size={statIconSize} color={colors.pink} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.totalUsers.toLocaleString('he-IL')}</Text>
             <Text style={styles.statLabel}>חברי קהילה רשומים</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="cube-outline" size={32} color={colors.orange} style={styles.statIcon} />
+            <Ionicons name="cube-outline" size={statIconSize} color={colors.orange} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.itemDonations.toLocaleString('he-IL')}</Text>
             <Text style={styles.statLabel}>פריטים שמצאו בית חדש</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="car-outline" size={32} color={colors.accent} style={styles.statIcon} />
+            <Ionicons name="car-outline" size={statIconSize} color={colors.accent} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.completedRides.toLocaleString('he-IL')}</Text>
             <Text style={styles.statLabel}>נסיעות קהילתיות</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="business-outline" size={32} color={colors.info} style={styles.statIcon} />
+            <Ionicons name="business-outline" size={statIconSize} color={colors.info} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.totalOrganizations.toLocaleString('he-IL')}</Text>
             <Text style={styles.statLabel}>עמותות וארגונים שותפים</Text>
           </View>
         </View>
       )}
     </Section>
-);
+  );
+};
 
 const FeaturesSection = () => (
     <Section id="section-features" title="כל מה שצריך כדי לעשות טוב" subtitle="יצרנו כלים פשוטים שהופכים עזרה הדדית לחלק מהיום-יום" style={styles.sectionAltBackground}>
@@ -1079,17 +1085,18 @@ const styles = StyleSheet.create({
   statsGrid: { 
     flexDirection: 'row', 
     flexWrap: 'wrap', 
-    justifyContent: 'space-around', 
-    gap: 24, 
+    justifyContent: isSmallWeb ? 'center' : 'space-around', 
+    gap: isSmallWeb ? 16 : 24, 
     marginTop: 20, 
-    width: '100%' 
+    width: '100%',
+    paddingHorizontal: isSmallWeb ? 8 : 0,
   },
   statCard: { 
     flex: 1, 
-    minWidth: 250, 
-    maxWidth: 300, 
-    paddingVertical: 32, 
-    paddingHorizontal: 20,
+    minWidth: isSmallWeb ? 150 : isMediumWeb ? 200 : 230, 
+    maxWidth: isSmallWeb ? 200 : isMediumWeb ? 240 : 300, 
+    paddingVertical: isSmallWeb ? 20 : 32, 
+    paddingHorizontal: isSmallWeb ? 16 : 20,
     borderRadius: 20, 
     borderWidth: 1, 
     borderColor: '#E6EEF9', 
@@ -1103,10 +1110,10 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   statIcon: {
-    marginBottom: 12,
+    marginBottom: isSmallWeb ? 8 : 12,
   },
   statNumber: { 
-    fontSize: isWeb ? 36 : 40, 
+    fontSize: isSmallWeb ? 28 : isMediumWeb ? 32 : isWeb ? (isTablet ? 40 : 36) : 40, 
     fontWeight: '900', 
     color: colors.textPrimary, 
     marginBottom: 8,
@@ -1114,10 +1121,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   statLabel: { 
-    fontSize: 18, 
+    fontSize: isSmallWeb ? 16 : 18, 
     color: colors.textSecondary, 
     textAlign: 'center', 
-    lineHeight: 26,
+    lineHeight: isSmallWeb ? 22 : 26,
     fontWeight: '500',
   },
   statsLoadingContainer: {
