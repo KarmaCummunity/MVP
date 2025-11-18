@@ -216,7 +216,7 @@ const HeroSection = () => {
               <View style={styles.logoGlow} />
             </View>
             <Text style={styles.title}>KarmaCommunity</Text>
-            <Text style={styles.subtitle}>רשת חברתית ישראלית שמחברת בין אנשים שצריכים עזרה, לאנשים שרוצים לעזור. פשוט, שקוף ומהלב.</Text>
+              <Text style={styles.subtitle}>רשת חברתית גלובלית שמחברת בין אנשים שצריכים עזרה, לאנשים שרוצים לעזור. פשוט, שקוף ומהלב.</Text>
             <View style={styles.ctaRow}>
               <TouchableOpacity 
                 style={styles.primaryCta} 
