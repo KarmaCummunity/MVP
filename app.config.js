@@ -4,7 +4,7 @@ export default {
   expo: {
     name: "KC - הקיבוץ הקפיטליסטי",
     slug: "karma-community",
-    version: "1.7.0",
+    version: "1.9.4",
     orientation: "portrait",
     icon: "./assets/images/logo.png",
     scheme: "karma-community",
@@ -39,6 +39,21 @@ export default {
         backgroundColor: "#F0F8FF"
       },
       package: "com.navesarussi1.KarmaCommunity",
+      intentFilters: [
+        {
+          action: "VIEW",
+          autoVerify: true,
+          data: [
+            {
+              scheme: "com.navesarussi1.KarmaCommunity"
+            },
+            {
+              scheme: "karma-community"
+            }
+          ],
+          category: ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       // הרשאות שהוגדרו ב-app.json
       permissions: [
         "android.permission.VIBRATE",
