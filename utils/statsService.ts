@@ -40,6 +40,7 @@ export const DEFAULT_STATS: CommunityStats = {
   itemDonations: 0,
   serviceDonations: 0,
   totalMoneyDonated: 0,
+  recurringDonationsAmount: 0,
   uniqueDonors: 0,
   avgDonationAmount: 0,
   
@@ -136,8 +137,12 @@ export function parseShortNumber(s: string): number {
 }
 
 // Enhanced Stats Service with Backend Integration
+// שירות סטטיסטיקות משופר עם אינטגרציה לשרת
+// Enhanced Stats Service with Backend Integration
 export class EnhancedStatsService {
   // Get community stats from backend or fallback to local
+  // שינוי: תמיכה ב-forceRefresh לטעינה מחדש של נתונים מהשרת
+  // Change: Support for forceRefresh to reload data from backend
   static async getCommunityStats(filters: { city?: string; period?: string } = {}, forceRefresh = false): Promise<CommunityStats> {
     try {
       if (USE_BACKEND) {
@@ -354,10 +359,13 @@ export class EnhancedStatsService {
   }
 
   // Helper methods
+  // שינוי: מיפוי סטטיסטיקות מהשרת לפורמט הלקוח עם תמיכה בערכים מקוננים
+  // Change: Mapping backend stats to client format with support for nested values
   private static mapBackendStats(backendStats: any): CommunityStats {
     const mapped: CommunityStats = { ...DEFAULT_STATS };
 
     // Direct mapping for stats with matching names
+    // מיפוי ישיר של סטטיסטיקות עם שמות תואמים
     const mappings = {
       // Core stats
       'money_donations': 'moneyDonations',
@@ -384,6 +392,7 @@ export class EnhancedStatsService {
       'item_donations': 'itemDonations',
       'service_donations': 'serviceDonations',
       'total_money_donated': 'totalMoneyDonated',
+      'recurring_donations_amount': 'recurringDonationsAmount',
       'unique_donors': 'uniqueDonors',
       'avg_donation_amount': 'avgDonationAmount',
       
