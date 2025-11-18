@@ -136,12 +136,29 @@ function AppContent() {
     };
   }, []);
 
-  const prepareApp = useCallback(async () => {
-    try {
-      logger.info('App', 'Starting app preparation');
-      setLoading('app', true);
+  // Fast initial setup to show the UI as quickly as possible
+  useEffect(() => {
+    const showUiQuickly = async () => {
+      try {
+        logger.info('App', 'Performing fast initial setup');
+        markAppReady();
+        await SplashScreen.hideAsync();
+        logger.info('App', 'Splash screen hidden');
+      } catch (e) {
+        logger.error('App', 'Fast initial setup failed', { error: e });
+        setError('app', e instanceof Error ? e : new Error('Unknown error during fast setup'));
+      }
+    };
+    
+    showUiQuickly();
+  }, [markAppReady, setError]);
 
-      // Apply stored language before UI mounts
+  // Load heavy resources in the background after the UI is visible
+  useEffect(() => {
+    const loadBackgroundResources = async () => {
+      logger.info('App', 'Starting background resource loading');
+
+      // Apply stored language
       try {
         setLoading('language', true);
         const storedLang = await AsyncStorage.getItem('app_language');
@@ -154,13 +171,14 @@ function AppContent() {
             I18nManager.forceRTL(isRTL);
           }
         }
-        setLoading('language', false);
       } catch (e) {
         logger.warn('App', 'Language load failed, using defaults');
         setError('language', e as Error);
+      } finally {
+        setLoading('language', false);
       }
       
-      // Loading fonts with better error handling
+      // Loading fonts
       try {
         setLoading('fonts', true);
         await Font.loadAsync({
@@ -168,33 +186,18 @@ function AppContent() {
           ...MaterialIcons.font,
         });
         logger.info('App', 'Fonts loaded successfully');
-        setLoading('fonts', false);
       } catch (fontError) {
         logger.warn('App', 'Font loading failed, continuing without custom fonts');
         setError('fonts', fontError as Error);
-        // TODO: Implement proper fallback font loading strategy
-        // TODO: Add user notification about font loading failure
-        // TODO: Track font loading failures in analytics
+      } finally {
+        setLoading('fonts', false);
       }
+    };
 
-      logger.info('App', 'App preparation completed');
-      markAppReady();
-    } catch (e: unknown) {
-      logger.error('App', 'App preparation failed', { error: e });
-      setError('app', e instanceof Error ? e : new Error('Unknown error occurred'));
-    } finally {
-      try {
-        await SplashScreen.hideAsync();
-        logger.info('App', 'Splash screen hidden');
-      } catch (splashError) {
-        logger.warn('App', 'Failed to hide splash screen', { error: splashError });
-      }
+    if (isAppReady) {
+      loadBackgroundResources();
     }
-  }, [setLoading, setError, markAppReady]);
-
-  useEffect(() => {
-    prepareApp();
-  }, [prepareApp]);
+  }, [isAppReady, setLoading, setError]);
 
 
 

@@ -52,6 +52,7 @@ export interface DonationData {
   createdBy: string;
   createdAt: string;
   status?: string;
+   isRecurring?: boolean;
   [key: string]: unknown; // Allow additional fields
 }
 
@@ -61,6 +62,7 @@ export interface CreateDonationData {
   description?: string;
   amount?: number;
   category?: string;
+  isRecurring?: boolean;
   [key: string]: unknown; // Allow additional fields
 }
 

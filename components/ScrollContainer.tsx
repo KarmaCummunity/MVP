@@ -1,6 +1,6 @@
 // ScrollContainer.tsx
 // Universal scrolling component that handles web and mobile consistently
-import React from 'react';
+import React, { MutableRefObject } from 'react';
 import { 
   ScrollView, 
   ScrollViewProps,
@@ -8,7 +8,8 @@ import {
   Platform, 
   Dimensions,
   StyleSheet,
-  ViewStyle 
+  ViewStyle,
+  StyleProp,
 } from 'react-native';
 import colors from '../globals/colors';
 
@@ -16,9 +17,10 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface ScrollContainerProps extends Omit<ScrollViewProps, 'style' | 'contentContainerStyle'> {
   children: React.ReactNode;
-  style?: ViewStyle;
-  contentStyle?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
+  contentStyle?: StyleProp<ViewStyle>;
   enableWebScrolling?: boolean;
+  scrollRef?: MutableRefObject<ScrollView | null> | null;
 }
 
 /**
@@ -38,12 +40,17 @@ interface ScrollContainerProps extends Omit<ScrollViewProps, 'style' | 'contentC
  */
 export default function ScrollContainer({ 
   children, 
-  style = {},
-  contentStyle = {},
+  style,
+  contentStyle,
   enableWebScrolling = true,
+  scrollRef = null,
   ...scrollViewProps 
 }: ScrollContainerProps) {
   
+  const resolvedRef = scrollRef ? (node: ScrollView | null) => {
+    scrollRef.current = node;
+  } : undefined;
+
   if (Platform.OS === 'web' && enableWebScrolling) {
     // Web: Custom scrollable container with CSS overflow
     return (
@@ -58,6 +65,7 @@ export default function ScrollContainer({
   // Native: Standard ScrollView for iOS/Android
   return (
     <ScrollView
+      ref={resolvedRef}
       style={[styles.nativeScrollView, style]}
       contentContainerStyle={[styles.nativeScrollContent, contentStyle]}
       showsVerticalScrollIndicator={true}

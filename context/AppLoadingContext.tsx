@@ -207,7 +207,7 @@ export function AppLoadingProvider({ children }: AppLoadingProviderProps) {
   
   const getCriticalError = useCallback(() => {
     // Critical errors that should show error screen
-    const criticalComponents: (keyof LoadingErrors)[] = ['app', 'fonts'];
+    const criticalComponents: (keyof LoadingErrors)[] = ['app'];
     
     for (const component of criticalComponents) {
       if (state.errors[component]) {

@@ -11,6 +11,7 @@ import {
   Alert,
   ScrollView,
   Platform,
+  Switch,
 } from 'react-native';
 import { NavigationProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,6 +34,8 @@ interface Donation {
   createdAt: string;
   status?: string;
   metadata?: Record<string, unknown> | null;
+  is_recurring?: boolean;
+  isRecurring?: boolean;
 }
 
 interface AdminMoneyScreenProps {
@@ -45,6 +48,7 @@ interface DonationFormData {
   category: string;
   date: string;
   notes: string;
+  isRecurring: boolean;
 }
 
 const DONATION_CATEGORIES = [
@@ -79,6 +83,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
     category: 'כסף',
     date: new Date().toISOString().split('T')[0],
     notes: '',
+    isRecurring: false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isMutating, setIsMutating] = useState(false);
@@ -175,6 +180,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
       category: 'כסף',
       date: new Date().toISOString().split('T')[0],
       notes: '',
+      isRecurring: false,
     });
     setIsModalVisible(true);
   };
@@ -217,6 +223,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
       category: donation.category || 'כללי',
       date: normalizedDate,
       notes: donation.description || '',
+      isRecurring: Boolean(donation.is_recurring ?? donation.isRecurring ?? false),
     });
     setIsModalVisible(true);
   };
@@ -284,6 +291,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
         description: formData.notes || '',
         amount: Number(formData.amount),
         category: formData.category,
+        isRecurring: formData.isRecurring,
         // Store the selected date in metadata so we can use it later
         metadata: {
           selectedDate: createdAtISO,
@@ -325,6 +333,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
         category: 'כסף',
         date: new Date().toISOString().split('T')[0],
         notes: '',
+        isRecurring: false,
       });
 
       setIsModalVisible(false);
@@ -633,6 +642,21 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
                 )}
               </View>
 
+              <View style={[styles.formGroup, styles.recurringGroup]}>
+                <View style={styles.recurringRow}>
+                  <Text style={styles.label}>סמן כהוראת קבע</Text>
+                  <Switch
+                    value={formData.isRecurring}
+                    onValueChange={(value) => setFormData({ ...formData, isRecurring: value })}
+                    thumbColor="#FFFFFF"
+                    trackColor={{ false: '#CBD5F5', true: colors.info }}
+                  />
+                </View>
+                <Text style={styles.helperText}>
+                  תרומות בהוראת קבע נספרות כ"תורמים פעילים" בדף הנחיתה ומתעדכנות ברגע שנוספות או נמחקות.
+                </Text>
+              </View>
+
               <View style={styles.formGroup}>
                 <Text style={styles.label}>הערות</Text>
                 <TextInput
@@ -879,6 +903,22 @@ const styles = StyleSheet.create({
   },
   formGroup: {
     marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
+  },
+  recurringGroup: {
+    borderTopWidth: 1,
+    borderTopColor: '#EEF2FF',
+    paddingTop: LAYOUT_CONSTANTS.SPACING.SM,
+  },
+  recurringRow: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  helperText: {
+    fontSize: FontSizes.caption,
+    color: colors.textSecondary,
+    textAlign: 'right',
   },
   label: {
     fontSize: FontSizes.medium,

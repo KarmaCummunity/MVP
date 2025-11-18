@@ -27,7 +27,7 @@
 // TODO: Add navigation error boundaries and fallback screens
 // TODO: Optimize navigation performance with lazy loading
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator, Text } from 'react-native';
+import { View, ActivityIndicator, Text, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { createStackNavigator } from "@react-navigation/stack";
 import { useFocusEffect } from "@react-navigation/native";
@@ -109,7 +109,7 @@ export default function MainNavigator() {
   // Determine initial route based on web mode and authentication state
   let initialRouteName: string;
   
-  if (mode === 'site') {
+  if (Platform.OS === 'web' && mode === 'site') {
     // Site mode: always start with landing page
     initialRouteName = 'LandingSiteScreen';
     console.log('🧭 MainNavigator - Site mode: showing LandingSiteScreen as initial route');
@@ -131,7 +131,9 @@ export default function MainNavigator() {
       screenOptions={{ headerShown: false }}
       initialRouteName={initialRouteName as any}
     >
-      <Stack.Screen name="LandingSiteScreen" component={LandingSiteScreen} />
+      {Platform.OS === 'web' ? (
+        <Stack.Screen name="LandingSiteScreen" component={LandingSiteScreen} />
+      ) : null}
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
       <Stack.Screen name="HomeStack" component={BottomNavigator} />
       <Stack.Screen name="NewChatScreen" component={NewChatScreen} />
