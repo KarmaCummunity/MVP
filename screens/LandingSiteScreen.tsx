@@ -1,4 +1,4 @@
-// LandingSiteScreen.tsx
+// LandingSiteScreen.tsx.
 // Web-only marketing landing page for KarmaCommunity
 import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { Platform, View, Text, StyleSheet, Image, TouchableOpacity, Linking, Dimensions, ActivityIndicator, ScrollView, Animated } from 'react-native';
