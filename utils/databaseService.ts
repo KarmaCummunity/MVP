@@ -17,7 +17,8 @@
 // TODO: Add unit tests for all CRUD operations and edge cases
 // TODO: Implement proper migration system for data schema changes
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { USE_BACKEND, USE_FIRESTORE, CACHE_CONFIG, OFFLINE_CONFIG, STORAGE_KEYS } from './dbConfig';
+import { USE_BACKEND, USE_FIRESTORE } from './config.constants';
+import { CACHE_CONFIG, OFFLINE_CONFIG, STORAGE_KEYS } from './dbConfig';
 import { apiService, ApiResponse } from './apiService';
 import { restAdapter } from './restAdapter';
 import { firestoreAdapter } from './firestoreAdapter';

@@ -15,7 +15,7 @@
 // TODO: Implement proper API versioning support
 // TODO: Add request/response transformation middleware
 // TODO: Add comprehensive logging and monitoring
-import { USE_BACKEND, API_BASE_URL as CONFIG_API_BASE_URL } from './dbConfig';
+import { API_BASE_URL as CONFIG_API_BASE_URL } from './config.constants';
 
 export interface ApiResponse<T = any> {
   success: boolean;

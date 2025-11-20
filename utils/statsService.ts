@@ -6,7 +6,7 @@
 import { DatabaseService, DB_COLLECTIONS } from './databaseService';
 import { enhancedDB } from './enhancedDatabaseService';
 import { apiService } from './apiService';
-import { USE_BACKEND } from './dbConfig';
+import { USE_BACKEND } from './config.constants';
 
 export type CommunityStats = Record<string, number>;
 

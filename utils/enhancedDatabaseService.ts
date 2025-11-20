@@ -21,7 +21,8 @@ import { logger } from './loggerService';
 // TODO: Add comprehensive performance optimization and monitoring
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService, ApiResponse } from './apiService';
-import { USE_BACKEND, CACHE_CONFIG, OFFLINE_CONFIG, STORAGE_KEYS } from './dbConfig';
+import { USE_BACKEND } from './config.constants';
+import { CACHE_CONFIG, OFFLINE_CONFIG, STORAGE_KEYS } from './dbConfig';
 
 // TODO: Move all interfaces to proper types directory
 // TODO: Add comprehensive validation for all interface fields
