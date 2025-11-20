@@ -1,6 +1,6 @@
 // LandingSiteScreen.tsx
 // Web-only marketing landing page for KarmaCommunity
-import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
+import React, { useEffect, useState, useRef, Suspense, lazy, useCallback } from 'react';
 import { Platform, View, Text, StyleSheet, Image, TouchableOpacity, Linking, Dimensions, ActivityIndicator, ScrollView, Animated } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
@@ -733,49 +733,66 @@ const LandingSiteScreen: React.FC = () => {
     }
   };
   
+  // Shared loadStats function - used by both initial load and auto-refresh
+  // פונקציה משותפת לטעינת סטטיסטיקות - משמשת גם לטעינה ראשונית וגם לרענון אוטומטי
+  const loadStats = useCallback(async (forceRefresh = false) => {
+    try {
+      setIsLoadingStats(true);
+      logger.info('LandingSite', 'Loading stats', { forceRefresh });
+      const communityStats = await EnhancedStatsService.getCommunityStats({}, forceRefresh);
+      
+      // Extract values - handle both direct values and nested value objects
+      // תמיכה בשני פורמטים: מספר ישיר או אובייקט עם שדה value
+      // Support for two formats: direct number or object with value field
+      const getValue = (stat: any): number => {
+        if (typeof stat === 'number') return stat;
+        if (stat && typeof stat === 'object' && 'value' in stat) return stat.value || 0;
+        return 0;
+      };
+      
+      const statsData = {
+        siteVisits: getValue(communityStats.siteVisits) || 0,
+        totalMoneyDonated: getValue(communityStats.totalMoneyDonated) || 0,
+        totalUsers: getValue(communityStats.totalUsers) || 0,
+        itemDonations: getValue(communityStats.itemDonations) || 0,
+        completedRides: getValue(communityStats.completedRides) || 0,
+        recurringDonationsAmount: getValue(communityStats.recurringDonationsAmount) || 0,
+      };
+      
+      logger.info('LandingSite', 'Stats loaded', statsData);
+      setStats(statsData);
+    } catch (error) {
+      logger.error('LandingSite', 'Failed to load stats', { error });
+      // Keep default values (0) on error
+    } finally {
+      setIsLoadingStats(false);
+    }
+  }, []);
+
+  // Auto-refresh stats every second
+  // ריענון אוטומטי של סטטיסטיקות כל שניה
+  useEffect(() => {
+    logger.info('LandingSite', 'Setting up auto-refresh interval (1 second)');
+    
+    // Set up interval to refresh stats every second
+    const refreshInterval = setInterval(() => {
+      logger.info('LandingSite', 'Auto-refreshing stats...');
+      loadStats(true); // Force refresh to bypass cache
+    }, 1000); // 1 second
+
+    // Cleanup interval on unmount
+    return () => {
+      logger.info('LandingSite', 'Clearing auto-refresh interval');
+      clearInterval(refreshInterval);
+    };
+  }, [loadStats]);
+
   useEffect(() => {
     logger.info('LandingSite', 'useEffect triggered - Landing page mounted', { isWeb, USE_BACKEND });
     
     // Use sessionStorage to prevent double tracking across all instances
     // שימוש ב-sessionStorage למניעת ספירה כפולה בכל ה-instances
     const VISIT_TRACKED_KEY = 'kc_site_visit_tracked';
-    
-    // Load community statistics from backend
-    // שינוי: טעינת סטטיסטיקות מהשרת עם תמיכה בערכים מקוננים (nested value objects)
-    // Change: Loading stats from backend with support for nested value objects
-    const loadStats = async (forceRefresh = false) => {
-      try {
-        setIsLoadingStats(true);
-        logger.info('LandingSite', 'Loading stats', { forceRefresh });
-        const communityStats = await EnhancedStatsService.getCommunityStats({}, forceRefresh);
-        
-        // Extract values - handle both direct values and nested value objects
-        // תמיכה בשני פורמטים: מספר ישיר או אובייקט עם שדה value
-        // Support for two formats: direct number or object with value field
-        const getValue = (stat: any): number => {
-          if (typeof stat === 'number') return stat;
-          if (stat && typeof stat === 'object' && 'value' in stat) return stat.value || 0;
-          return 0;
-        };
-        
-        const statsData = {
-          siteVisits: getValue(communityStats.siteVisits) || 0,
-          totalMoneyDonated: getValue(communityStats.totalMoneyDonated) || 0,
-          totalUsers: getValue(communityStats.totalUsers) || 0,
-          itemDonations: getValue(communityStats.itemDonations) || 0,
-          completedRides: getValue(communityStats.completedRides) || 0,
-          recurringDonationsAmount: getValue(communityStats.recurringDonationsAmount) || 0,
-        };
-        
-        logger.info('LandingSite', 'Stats loaded', statsData);
-        setStats(statsData);
-      } catch (error) {
-        logger.error('LandingSite', 'Failed to load stats', { error });
-        // Keep default values (0) on error
-      } finally {
-        setIsLoadingStats(false);
-      }
-    };
 
     // Track site visit - only on web and if backend is available
     // ספירת ביקור באתר - רק ב-web ואם השרת זמין
