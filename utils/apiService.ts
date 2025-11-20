@@ -25,10 +25,14 @@ export interface ApiResponse<T = any> {
 }
 
 class ApiService {
-  private baseURL: string;
+  private _baseURL: string | null = null;
 
-  constructor() {
-    this.baseURL = CONFIG_API_BASE_URL;
+  private get baseURL(): string {
+    if (this._baseURL === null) {
+      // Lazy initialization to avoid circular dependency issues
+      this._baseURL = CONFIG_API_BASE_URL;
+    }
+    return this._baseURL;
   }
 
   // Tasks APIs

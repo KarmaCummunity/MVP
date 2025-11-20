@@ -4,7 +4,7 @@ export default {
   expo: {
     name: "KC - הקיבוץ הקפיטליסטי",
     slug: "karma-community",
-    version: "1.9.4",
+    version: "1.9.5",
     orientation: "portrait",
     icon: "./assets/images/logo.png",
     scheme: "karma-community",

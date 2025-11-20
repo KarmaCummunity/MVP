@@ -287,5 +287,8 @@ export const validateConfig = (): boolean => {
   }
 };
 
-// Initialize configuration
-validateConfig();
+// Initialize configuration lazily - will be called when first used
+if (typeof window !== 'undefined') {
+  // Only run in browser context, not during module evaluation
+  setTimeout(() => validateConfig(), 0);
+}
