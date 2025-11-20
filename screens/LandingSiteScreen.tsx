@@ -683,6 +683,7 @@ const LandingSiteScreen: React.FC = () => {
   });
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [statsVersion, setStatsVersion] = useState<string>('');
   const scrollViewRef = useRef<ScrollView | null>(null);
   const scrollSpyObserverRef = useRef<IntersectionObserver | null>(null);
   const observedElementsRef = useRef<Set<HTMLElement>>(new Set());
@@ -769,23 +770,52 @@ const LandingSiteScreen: React.FC = () => {
     }
   }, []);
 
-  // Auto-refresh stats every second
-  // ריענון אוטומטי של סטטיסטיקות כל שניה
+  // Smart polling - only refresh when stats actually change
+  // בדיקה חכמה - רק מרענן כשיש שינוי אמיתי בסטטיסטיקות
   useEffect(() => {
-    logger.info('LandingSite', 'Setting up auto-refresh interval (1 second)');
+    if (!USE_BACKEND) {
+      logger.info('LandingSite', 'Backend not available, skipping smart polling');
+      return;
+    }
+
+    logger.info('LandingSite', 'Setting up smart polling (checks every second)');
     
-    // Set up interval to refresh stats every second
-    const refreshInterval = setInterval(() => {
-      logger.info('LandingSite', 'Auto-refreshing stats...');
-      loadStats(true); // Force refresh to bypass cache
-    }, 1000); // 1 second
+    const checkForUpdates = async () => {
+      try {
+        // Lightweight check - only gets version hash
+        const response = await apiService.getCommunityStatsVersion();
+        if (response.success && response.version) {
+          const newVersion = response.version;
+          
+          // Only reload if version changed
+          if (statsVersion && newVersion !== statsVersion) {
+            logger.info('LandingSite', 'Stats version changed, reloading...', {
+              oldVersion: statsVersion,
+              newVersion: newVersion
+            });
+            await loadStats(true); // Force refresh to get latest data
+          }
+          
+          // Update version for next check
+          setStatsVersion(newVersion);
+        }
+      } catch (error) {
+        logger.error('LandingSite', 'Failed to check stats version', { error });
+      }
+    };
+
+    // Check immediately on mount
+    checkForUpdates();
+    
+    // Set up interval to check for updates every second
+    const pollInterval = setInterval(checkForUpdates, 1000);
 
     // Cleanup interval on unmount
     return () => {
-      logger.info('LandingSite', 'Clearing auto-refresh interval');
-      clearInterval(refreshInterval);
+      logger.info('LandingSite', 'Clearing smart polling interval');
+      clearInterval(pollInterval);
     };
-  }, [loadStats]);
+  }, [loadStats, statsVersion]);
 
   useEffect(() => {
     logger.info('LandingSite', 'useEffect triggered - Landing page mounted', { isWeb, USE_BACKEND });

@@ -309,6 +309,11 @@ class ApiService {
     return this.request(`/api/stats/community?${params.toString()}`);
   }
 
+  async getCommunityStatsVersion(city?: string): Promise<ApiResponse> {
+    const params = city ? `?city=${city}` : '';
+    return this.request(`/api/stats/community/version${params}`);
+  }
+
   async getCommunityTrends(statType: string, city?: string, days = 30): Promise<ApiResponse> {
     const params = new URLSearchParams({ stat_type: statType, days: days.toString() });
     if (city) {
