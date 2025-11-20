@@ -465,5 +465,23 @@ class ApiService {
   }
 }
 
-export const apiService = new ApiService();
+// Lazy singleton to avoid circular dependency issues during module initialization
+let _apiServiceInstance: ApiService | null = null;
+
+function getApiServiceInstance(): ApiService {
+  if (_apiServiceInstance === null) {
+    _apiServiceInstance = new ApiService();
+  }
+  return _apiServiceInstance;
+}
+
+// Export as a Proxy to ensure lazy initialization
+export const apiService = new Proxy({} as ApiService, {
+  get(target, prop) {
+    const instance = getApiServiceInstance();
+    const value = (instance as any)[prop];
+    return typeof value === 'function' ? value.bind(instance) : value;
+  }
+});
+
 export default apiService;

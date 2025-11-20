@@ -253,7 +253,7 @@ export const FEATURE_FLAGS = {
   ENABLE_ADVANCED_SEARCH: true,
 };
 
-// Validation
+// Validation function - call manually when needed
 export const validateConfig = (): boolean => {
   try {
     // Check if API URL is valid
@@ -286,9 +286,3 @@ export const validateConfig = (): boolean => {
     return false;
   }
 };
-
-// Initialize configuration lazily - will be called when first used
-if (typeof window !== 'undefined') {
-  // Only run in browser context, not during module evaluation
-  setTimeout(() => validateConfig(), 0);
-}
