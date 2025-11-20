@@ -367,6 +367,10 @@ class ApiService {
     return this.request('/api/stats/real-time');
   }
 
+  async getStatDetails(statType: string): Promise<ApiResponse> {
+    return this.request(`/api/stats/details/${statType}`);
+  }
+
   // Admin APIs
   async adminWipeAllData(): Promise<ApiResponse> {
     // WARNING: This should be protected by server-side admin auth

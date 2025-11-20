@@ -1,7 +1,7 @@
 // LandingSiteScreen.tsx
 // Web-only marketing landing page for KarmaCommunity
 import React, { useEffect, useState, useRef, Suspense, lazy, useCallback } from 'react';
-import { Platform, View, Text, StyleSheet, Image, TouchableOpacity, Linking, Dimensions, ActivityIndicator, ScrollView, Animated } from 'react-native';
+import { Platform, View, Text, StyleSheet, Image, TouchableOpacity, Linking, Dimensions, ActivityIndicator, ScrollView, Animated, Modal, FlatList } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,16 @@ import ScreenWrapper from '../components/ScreenWrapper';
 import { EnhancedStatsService } from '../utils/statsService';
 import { apiService } from '../utils/apiService';
 import { USE_BACKEND } from '../utils/dbConfig';
+
+interface LandingStats {
+  siteVisits: number;
+  totalMoneyDonated: number;
+  totalUsers: number;
+  itemDonations: number;
+  completedRides: number;
+  recurringDonationsAmount: number;
+  uniqueDonors: number;
+}
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
@@ -285,8 +295,242 @@ const VisionSection = () => (
     </Section>
 );
 
-const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean }> = ({stats, isLoadingStats}) => (
+// Stats Detail Modal Component
+const StatsDetailModal: React.FC<{
+  visible: boolean;
+  onClose: () => void;
+  statType: string;
+  statTitle: string;
+  statValue: number;
+  iconName: string;
+  iconColor: string;
+}> = ({ visible, onClose, statType, statTitle, statValue, iconName, iconColor }) => {
+  const [detailData, setDetailData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const loadDetailData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      logger.info('StatsDetailModal', `Loading detail data for ${statType}`);
+      const response = await apiService.getStatDetails(statType);
+      if (response.success && response.data) {
+        setDetailData(response.data);
+        logger.info('StatsDetailModal', `Loaded ${response.data.length} items for ${statType}`);
+      }
+    } catch (error) {
+      logger.error('StatsDetailModal', 'Failed to load detail data', { error, statType });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [statType]);
+
+  useEffect(() => {
+    if (visible && USE_BACKEND) {
+      loadDetailData();
+    }
+  }, [visible, loadDetailData]);
+
+  const renderDetailItem = ({ item, index }: { item: any; index: number }) => {
+    // Different rendering based on stat type
+    switch (statType) {
+      case 'siteVisits':
+        return (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailItemNumber}>{index + 1}.</Text>
+            <View style={styles.detailItemContent}>
+              <Text style={styles.detailItemText}>
+                {new Date(item.timestamp || item.created_at).toLocaleString('he-IL')}
+              </Text>
+              {item.user_agent && (
+                <Text style={styles.detailItemSubtext}>{item.user_agent.substring(0, 50)}...</Text>
+              )}
+            </View>
+          </View>
+        );
+      
+      case 'totalUsers':
+        return (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailItemNumber}>{index + 1}.</Text>
+            <View style={styles.detailItemContent}>
+              <Text style={styles.detailItemText}>
+                {item.name || item.email || 'משתמש'}
+              </Text>
+              <Text style={styles.detailItemSubtext}>
+                הצטרף: {new Date(item.join_date || item.created_at).toLocaleDateString('he-IL')}
+              </Text>
+              {item.city && <Text style={styles.detailItemSubtext}>עיר: {item.city}</Text>}
+            </View>
+          </View>
+        );
+      
+      case 'totalMoneyDonated':
+        return (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailItemNumber}>{index + 1}.</Text>
+            <View style={styles.detailItemContent}>
+              <Text style={styles.detailItemText}>
+                {item.donor_name || 'תורם אנונימי'} • {item.amount?.toLocaleString('he-IL')} ₪
+              </Text>
+              <Text style={styles.detailItemSubtext}>
+                {new Date(item.donation_date || item.created_at).toLocaleDateString('he-IL')}
+              </Text>
+              {item.category_name && (
+                <Text style={styles.detailItemSubtext}>קטגוריה: {item.category_name}</Text>
+              )}
+            </View>
+          </View>
+        );
+      
+      case 'itemDonations':
+        return (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailItemNumber}>{index + 1}.</Text>
+            <View style={styles.detailItemContent}>
+              <Text style={styles.detailItemText}>
+                {item.title || item.item_name || 'פריט'}
+              </Text>
+              <Text style={styles.detailItemSubtext}>
+                {new Date(item.created_at).toLocaleDateString('he-IL')}
+              </Text>
+              {item.donor_name && (
+                <Text style={styles.detailItemSubtext}>תורם: {item.donor_name}</Text>
+              )}
+            </View>
+          </View>
+        );
+      
+      case 'completedRides':
+        return (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailItemNumber}>{index + 1}.</Text>
+            <View style={styles.detailItemContent}>
+              <Text style={styles.detailItemText}>
+                {item.from_city || 'מוצא'} → {item.to_city || 'יעד'}
+              </Text>
+              <Text style={styles.detailItemSubtext}>
+                {new Date(item.ride_date || item.created_at).toLocaleDateString('he-IL')}
+              </Text>
+              {item.driver_name && (
+                <Text style={styles.detailItemSubtext}>נהג: {item.driver_name}</Text>
+              )}
+            </View>
+          </View>
+        );
+      
+      case 'uniqueDonors':
+      case 'recurringDonationsAmount':
+        return (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailItemNumber}>{index + 1}.</Text>
+            <View style={styles.detailItemContent}>
+              <Text style={styles.detailItemText}>
+                {item.donor_name || 'תורם'} 
+                {item.amount && ` • ${item.amount.toLocaleString('he-IL')} ₪`}
+              </Text>
+              {item.frequency && (
+                <Text style={styles.detailItemSubtext}>תדירות: {item.frequency}</Text>
+              )}
+              {item.start_date && (
+                <Text style={styles.detailItemSubtext}>
+                  החל מ: {new Date(item.start_date).toLocaleDateString('he-IL')}
+                </Text>
+              )}
+            </View>
+          </View>
+        );
+      
+      default:
+        return (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailItemNumber}>{index + 1}.</Text>
+            <View style={styles.detailItemContent}>
+              <Text style={styles.detailItemText}>{JSON.stringify(item)}</Text>
+            </View>
+          </View>
+        );
+    }
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <View style={styles.modalTitleRow}>
+              <Ionicons name={iconName as any} size={isMobileWeb ? 28 : 36} color={iconColor} />
+              <View style={styles.modalTitleContainer}>
+                <Text style={styles.modalTitle}>{statTitle}</Text>
+                <Text style={styles.modalSubtitle}>
+                  {statValue.toLocaleString('he-IL')} {statType === 'totalMoneyDonated' || statType === 'recurringDonationsAmount' ? '₪' : 'פריטים'}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
+              <Ionicons name="close" size={isMobileWeb ? 24 : 32} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.modalContent}>
+            {isLoading ? (
+              <View style={styles.modalLoadingContainer}>
+                <ActivityIndicator size="large" color={colors.info} />
+                <Text style={styles.modalLoadingText}>טוען פרטים...</Text>
+              </View>
+            ) : detailData.length === 0 ? (
+              <View style={styles.modalEmptyContainer}>
+                <Ionicons name="information-circle-outline" size={isMobileWeb ? 48 : 64} color={colors.textSecondary} />
+                <Text style={styles.modalEmptyText}>אין נתונים להצגה</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={detailData}
+                renderItem={renderDetailItem}
+                keyExtractor={(item, index) => `${statType}-${index}`}
+                showsVerticalScrollIndicator={true}
+                contentContainerStyle={styles.detailList}
+              />
+            )}
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean }> = ({stats, isLoadingStats}) => {
+  const [selectedStat, setSelectedStat] = useState<{
+    type: string;
+    title: string;
+    value: number;
+    icon: string;
+    color: string;
+  } | null>(null);
+
+  const handleStatPress = (type: string, title: string, value: number, icon: string, color: string) => {
+    logger.info('StatsSection', `Stat card pressed: ${type}`);
+    setSelectedStat({ type, title, value, icon, color });
+  };
+
+  return (
     <Section id="section-stats" title="הכוח של הקהילה שלנו" subtitle="השפעה אמיתית, במספרים">
+      {selectedStat && (
+        <StatsDetailModal
+          visible={!!selectedStat}
+          onClose={() => setSelectedStat(null)}
+          statType={selectedStat.type}
+          statTitle={selectedStat.title}
+          statValue={selectedStat.value}
+          iconName={selectedStat.icon}
+          iconColor={selectedStat.color}
+        />
+      )}
+      
       {isLoadingStats ? (
         <View style={styles.statsLoadingContainer}>
           <ActivityIndicator size="large" color={colors.info} />
@@ -294,40 +538,87 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean }> =
         </View>
       ) : (
         <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
+          <TouchableOpacity 
+            style={styles.statCard}
+            onPress={() => handleStatPress('siteVisits', 'ביקורים באתר', stats.siteVisits, 'eye-outline', colors.info)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="eye-outline" size={isMobileWeb ? 24 : 32} color={colors.info} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.siteVisits.toLocaleString('he-IL')}</Text>
             <Text style={styles.statLabel}>ביקורים באתר</Text>
-          </View>
-          <View style={styles.statCard}>
+            <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.statCard}
+            onPress={() => handleStatPress('totalMoneyDonated', 'תרומות כספיות', stats.totalMoneyDonated, 'cash-outline', colors.success)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="cash-outline" size={isMobileWeb ? 24 : 32} color={colors.success} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.totalMoneyDonated.toLocaleString('he-IL')} ₪</Text>
             <Text style={styles.statLabel}>ש"ח שנתרמו ישירות</Text>
-          </View>
-          <View style={styles.statCard}>
+            <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.statCard}
+            onPress={() => handleStatPress('totalUsers', 'חברי קהילה רשומים', stats.totalUsers, 'heart-outline', colors.pink)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="heart-outline" size={isMobileWeb ? 24 : 32} color={colors.pink} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.totalUsers.toLocaleString('he-IL')}</Text>
             <Text style={styles.statLabel}>חברי קהילה רשומים</Text>
-          </View>
-          <View style={styles.statCard}>
+            <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.statCard}
+            onPress={() => handleStatPress('itemDonations', 'פריטים שפורסמו', stats.itemDonations, 'cube-outline', colors.orange)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="cube-outline" size={isMobileWeb ? 24 : 32} color={colors.orange} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.itemDonations.toLocaleString('he-IL')}</Text>
             <Text style={styles.statLabel}>פריטים שפורסמו</Text>
-          </View>
-          <View style={styles.statCard}>
+            <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.statCard}
+            onPress={() => handleStatPress('completedRides', 'נסיעות קהילתיות', stats.completedRides, 'car-outline', colors.accent)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="car-outline" size={isMobileWeb ? 24 : 32} color={colors.accent} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.completedRides.toLocaleString('he-IL')}</Text>
             <Text style={styles.statLabel}>נסיעות קהילתיות</Text>
-          </View>
-          <View style={styles.statCard}>
+            <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.statCard}
+            onPress={() => handleStatPress('recurringDonationsAmount', 'תרומות קבועות', stats.recurringDonationsAmount, 'repeat-outline', colors.success)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="repeat-outline" size={isMobileWeb ? 24 : 32} color={colors.success} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.recurringDonationsAmount.toLocaleString('he-IL')} ₪</Text>
             <Text style={styles.statLabel}>תרומות קבועות פעילות</Text>
-          </View>
+            <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.statCard}
+            onPress={() => handleStatPress('uniqueDonors', 'תורמים פעילים', stats.uniqueDonors, 'people-outline', colors.info)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="people-outline" size={isMobileWeb ? 24 : 32} color={colors.info} style={styles.statIcon} />
+            <Text style={styles.statNumber}>{stats.uniqueDonors.toLocaleString('he-IL')}</Text>
+            <Text style={styles.statLabel}>תורמים פעילים</Text>
+            <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
+          </TouchableOpacity>
         </View>
       )}
     </Section>
-);
+  );
+};
 
 const ProblemsSection = () => (
     <Section id="section-problems" title="הבעיות שאנחנו באים לפתור" subtitle="למה צריך בכלל את KC?">
@@ -661,15 +952,6 @@ const FinalCTASection = () => (
     </Section>
 );
 
-interface LandingStats {
-  siteVisits: number;
-  totalMoneyDonated: number;
-  totalUsers: number;
-  itemDonations: number;
-  completedRides: number;
-  recurringDonationsAmount: number;
-}
-
 const LandingSiteScreen: React.FC = () => {
   console.log('LandingSiteScreen - Component rendered');
   
@@ -680,6 +962,7 @@ const LandingSiteScreen: React.FC = () => {
     itemDonations: 0,
     completedRides: 0,
     recurringDonationsAmount: 0,
+    uniqueDonors: 0,
   });
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -758,6 +1041,7 @@ const LandingSiteScreen: React.FC = () => {
         itemDonations: getValue(communityStats.itemDonations) || 0,
         completedRides: getValue(communityStats.completedRides) || 0,
         recurringDonationsAmount: getValue(communityStats.recurringDonationsAmount) || 0,
+        uniqueDonors: getValue(communityStats.uniqueDonors) || 0,
       };
       
       logger.info('LandingSite', 'Stats loaded', statsData);
@@ -1796,6 +2080,129 @@ const styles = StyleSheet.create({
   stepIcon: {
     marginTop: isMobileWeb ? 12 : 16,
     marginBottom: isMobileWeb ? 12 : 16,
+  },
+  statChevron: {
+    position: 'absolute',
+    bottom: isMobileWeb ? 12 : 16,
+    left: isMobileWeb ? 12 : 16,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: isMobileWeb ? 16 : 24,
+  },
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: isMobileWeb ? 16 : 24,
+    width: '100%',
+    maxWidth: isTablet ? 800 : (isMobileWeb ? '95%' : 600),
+    maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 15,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: isMobileWeb ? 16 : 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E6EEF9',
+    backgroundColor: '#F2F7FF',
+  },
+  modalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: isMobileWeb ? 12 : 16,
+    flex: 1,
+  },
+  modalTitleContainer: {
+    flex: 1,
+  },
+  modalTitle: {
+    fontSize: isMobileWeb ? 18 : 24,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    marginBottom: isMobileWeb ? 4 : 6,
+  },
+  modalSubtitle: {
+    fontSize: isMobileWeb ? 14 : 18,
+    fontWeight: '600',
+    color: colors.info,
+  },
+  modalCloseButton: {
+    padding: isMobileWeb ? 4 : 8,
+    marginRight: isMobileWeb ? -4 : -8,
+  },
+  modalContent: {
+    flex: 1,
+  },
+  modalLoadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: isMobileWeb ? 40 : 60,
+  },
+  modalLoadingText: {
+    marginTop: isMobileWeb ? 12 : 16,
+    fontSize: isMobileWeb ? 14 : 18,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  modalEmptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: isMobileWeb ? 40 : 60,
+  },
+  modalEmptyText: {
+    marginTop: isMobileWeb ? 16 : 24,
+    fontSize: isMobileWeb ? 16 : 20,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  detailList: {
+    padding: isMobileWeb ? 16 : 24,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: isMobileWeb ? 12 : 16,
+    paddingHorizontal: isMobileWeb ? 12 : 16,
+    borderRadius: isMobileWeb ? 12 : 16,
+    backgroundColor: '#FAFBFF',
+    marginBottom: isMobileWeb ? 8 : 12,
+    borderWidth: 1,
+    borderColor: '#E6EEF9',
+  },
+  detailItemNumber: {
+    fontSize: isMobileWeb ? 14 : 18,
+    fontWeight: '700',
+    color: colors.info,
+    marginLeft: isMobileWeb ? 8 : 12,
+    minWidth: isMobileWeb ? 24 : 32,
+  },
+  detailItemContent: {
+    flex: 1,
+  },
+  detailItemText: {
+    fontSize: isMobileWeb ? 14 : 18,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: isMobileWeb ? 4 : 6,
+    lineHeight: isMobileWeb ? 20 : 24,
+  },
+  detailItemSubtext: {
+    fontSize: isMobileWeb ? 12 : 14,
+    color: colors.textSecondary,
+    lineHeight: isMobileWeb ? 16 : 20,
+    marginTop: isMobileWeb ? 2 : 4,
   },
   howItWorksNote: {
     flexDirection: 'row',
