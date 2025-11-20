@@ -9,6 +9,8 @@ import { logger } from '../utils/loggerService';
 import ScrollContainer from '../components/ScrollContainer';
 import ScreenWrapper from '../components/ScreenWrapper';
 import { EnhancedStatsService } from '../utils/statsService';
+import { apiService } from '../utils/apiService';
+import { USE_BACKEND } from '../utils/dbConfig';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
@@ -293,9 +295,9 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean }> =
       ) : (
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
-            <Ionicons name="people-outline" size={isMobileWeb ? 24 : 32} color={colors.info} style={styles.statIcon} />
-            <Text style={styles.statNumber}>{stats.uniqueDonors.toLocaleString('he-IL')}</Text>
-            <Text style={styles.statLabel}>אנשים טובים בקהילה</Text>
+            <Ionicons name="eye-outline" size={isMobileWeb ? 24 : 32} color={colors.info} style={styles.statIcon} />
+            <Text style={styles.statNumber}>{stats.siteVisits.toLocaleString('he-IL')}</Text>
+            <Text style={styles.statLabel}>ביקורים באתר</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="cash-outline" size={isMobileWeb ? 24 : 32} color={colors.success} style={styles.statIcon} />
@@ -310,7 +312,7 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean }> =
           <View style={styles.statCard}>
             <Ionicons name="cube-outline" size={isMobileWeb ? 24 : 32} color={colors.orange} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.itemDonations.toLocaleString('he-IL')}</Text>
-            <Text style={styles.statLabel}>פריטים שמצאו בית חדש</Text>
+            <Text style={styles.statLabel}>פריטים שפורסמו</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="car-outline" size={isMobileWeb ? 24 : 32} color={colors.accent} style={styles.statIcon} />
@@ -660,7 +662,7 @@ const FinalCTASection = () => (
 );
 
 interface LandingStats {
-  uniqueDonors: number;
+  siteVisits: number;
   totalMoneyDonated: number;
   totalUsers: number;
   itemDonations: number;
@@ -669,10 +671,10 @@ interface LandingStats {
 }
 
 const LandingSiteScreen: React.FC = () => {
-  console.log('LandingSiteScreen');
+  console.log('LandingSiteScreen - Component rendered');
   
   const [stats, setStats] = useState<LandingStats>({
-    uniqueDonors: 0,
+    siteVisits: 0,
     totalMoneyDonated: 0,
     totalUsers: 0,
     itemDonations: 0,
@@ -732,23 +734,20 @@ const LandingSiteScreen: React.FC = () => {
   };
   
   useEffect(() => {
-    logger.info('LandingSite', 'Landing page mounted');
+    logger.info('LandingSite', 'useEffect triggered - Landing page mounted', { isWeb, USE_BACKEND });
     
-    // Entrance Animation
-    // Animated.timing(heroAnimation, {
-    //   toValue: 1,
-    //   duration: 800,
-    //   delay: 200,
-    //   useNativeDriver: !isWeb,
-    // }).start();
-
+    // Use sessionStorage to prevent double tracking across all instances
+    // שימוש ב-sessionStorage למניעת ספירה כפולה בכל ה-instances
+    const VISIT_TRACKED_KEY = 'kc_site_visit_tracked';
+    
     // Load community statistics from backend
     // שינוי: טעינת סטטיסטיקות מהשרת עם תמיכה בערכים מקוננים (nested value objects)
     // Change: Loading stats from backend with support for nested value objects
-    const loadStats = async () => {
+    const loadStats = async (forceRefresh = false) => {
       try {
         setIsLoadingStats(true);
-        const communityStats = await EnhancedStatsService.getCommunityStats();
+        logger.info('LandingSite', 'Loading stats', { forceRefresh });
+        const communityStats = await EnhancedStatsService.getCommunityStats({}, forceRefresh);
         
         // Extract values - handle both direct values and nested value objects
         // תמיכה בשני פורמטים: מספר ישיר או אובייקט עם שדה value
@@ -759,14 +758,17 @@ const LandingSiteScreen: React.FC = () => {
           return 0;
         };
         
-        setStats({
-          uniqueDonors: getValue(communityStats.uniqueDonors) || 0,
+        const statsData = {
+          siteVisits: getValue(communityStats.siteVisits) || 0,
           totalMoneyDonated: getValue(communityStats.totalMoneyDonated) || 0,
           totalUsers: getValue(communityStats.totalUsers) || 0,
           itemDonations: getValue(communityStats.itemDonations) || 0,
           completedRides: getValue(communityStats.completedRides) || 0,
           recurringDonationsAmount: getValue(communityStats.recurringDonationsAmount) || 0,
-        });
+        };
+        
+        logger.info('LandingSite', 'Stats loaded', statsData);
+        setStats(statsData);
       } catch (error) {
         logger.error('LandingSite', 'Failed to load stats', { error });
         // Keep default values (0) on error
@@ -774,10 +776,71 @@ const LandingSiteScreen: React.FC = () => {
         setIsLoadingStats(false);
       }
     };
+
+    // Track site visit - only on web and if backend is available
+    // ספירת ביקור באתר - רק ב-web ואם השרת זמין
+    // שינוי: שימוש ב-sessionStorage למניעת כפילות בכל ה-instances
+    // Change: Use sessionStorage to prevent double tracking across all instances
+    const trackVisitAndLoadStats = async () => {
+      // Check if visit already tracked in this session (shared across all component instances)
+      // בדיקה אם הביקור כבר נספר ב-session זה (משותף לכל ה-instances של הקומפוננטה)
+      const visitTracked = isWeb && typeof window !== 'undefined' 
+        ? sessionStorage.getItem(VISIT_TRACKED_KEY) === 'true'
+        : false;
+
+      if (visitTracked) {
+        logger.info('LandingSite', 'Visit already tracked in this session, skipping');
+        await loadStats(false);
+        return;
+      }
+
+      if (isWeb && USE_BACKEND) {
+        try {
+          // Mark as tracked immediately in sessionStorage to prevent double calls
+          // סימון כנספר מיד ב-sessionStorage כדי למנוע קריאות כפולות
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(VISIT_TRACKED_KEY, 'true');
+          }
+          
+          logger.info('LandingSite', 'Tracking site visit...');
+          const response = await apiService.trackSiteVisit();
+          if (response.success) {
+            logger.info('LandingSite', 'Site visit tracked successfully');
+            // Reload stats with forceRefresh to get updated site_visits count
+            // טעינה מחדש של סטטיסטיקות עם forceRefresh כדי לקבל את מספר הביקורים המעודכן
+            await loadStats(true);
+          } else {
+            logger.warn('LandingSite', 'Site visit tracking failed', response.error);
+            // Reset flag on failure so we can retry
+            // איפוס הדגל בכשל כדי שנוכל לנסות שוב
+            if (typeof window !== 'undefined') {
+              sessionStorage.removeItem(VISIT_TRACKED_KEY);
+            }
+            // Still load stats even if tracking failed
+            await loadStats(false);
+          }
+        } catch (error) {
+          logger.error('LandingSite', 'Failed to track site visit', { error });
+          // Reset flag on error so we can retry
+          // איפוס הדגל בשגיאה כדי שנוכל לנסות שוב
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem(VISIT_TRACKED_KEY);
+          }
+          // Still load stats even if tracking failed
+          await loadStats(false);
+        }
+      } else {
+        // If not web or backend not available, just load stats
+        logger.info('LandingSite', 'Skipping site visit tracking', { isWeb, USE_BACKEND });
+        await loadStats(false);
+      }
+    };
     
-    loadStats();
+    trackVisitAndLoadStats();
     
-    return () => logger.info('LandingSite', 'Landing page unmounted');
+    return () => {
+      logger.info('LandingSite', 'Landing page unmounted');
+    };
   }, []);
 
   // Scroll Spy - Track which section is currently in view

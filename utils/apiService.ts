@@ -323,6 +323,12 @@ class ApiService {
     return this.request(`/api/stats/community/cities${params}`);
   }
 
+  async trackSiteVisit(): Promise<ApiResponse> {
+    return this.request('/api/stats/track-visit', {
+      method: 'POST',
+    });
+  }
+
   async incrementStat(statData: {
     stat_type: string;
     value?: number;
