@@ -242,6 +242,27 @@ const HeroSection = () => {
             </View>
             <Text style={styles.title}>Karma Community</Text>
             <Text style={styles.subtitle}>רשת חברתית שמחברת בין אנשים שצריכים עזרה, לאנשים שרוצים לעזור. פשוט, שקוף ומהלב.</Text>
+            
+            <View style={styles.heroMottosContainer}>
+            
+              <View style={styles.mottoItem}>
+                <Ionicons name="sparkles" size={isMobileWeb ? 18 : 24} color={colors.accent} style={styles.mottoItemIcon} />
+                <Text style={styles.mottoSubtitle}>השאריות של האחד יכול להיות האוצר של מישהו אחר</Text>
+              </View>
+              
+              <View style={styles.mottoItem}>
+                <Ionicons name="heart-circle" size={isMobileWeb ? 18 : 24} color={colors.pink} style={styles.mottoItemIcon} />
+                <Text style={styles.mottoSubtitle}>לכל אחד מאיתנו יש משהו לתת וגם משהו שהוא היה שמח לקבל</Text>
+              </View>
+            
+              <View style={styles.mottoItem}>
+                <Ionicons name="swap-horizontal" size={isMobileWeb ? 18 : 24} color={colors.info} style={styles.mottoItemIcon} />
+                <Text style={styles.mottoSubtitle}>לתת זה גם לקבל</Text>
+              </View>
+              
+            </View>
+
+            
             <View style={styles.ctaRow}>
             <TouchableOpacity style={[styles.contactButton, { backgroundColor: '#25D366' }]} onPress={() => { logger.info('LandingSite', 'Click - whatsapp direct'); Linking.openURL('https://wa.me/972528616878'); }}>
           <Ionicons name="logo-whatsapp" color="#fff" size={isMobileWeb ? 14 : 18} /><Text style={styles.contactButtonText}>שלחו לי ווטסאפ </Text>
@@ -254,8 +275,9 @@ const HeroSection = () => {
 }
 
 const VisionSection = () => (
-    <Section id="section-vision" title="החזון שלנו" subtitle="אנחנו בתהליך הקמה" style={styles.sectionAltBackground}>
+    <Section id="section-vision" title="החזון שלנו" subtitle="הקיבוץ הקפיטליסטי" style={styles.sectionAltBackground}>
       <Text style={styles.paragraph}>
+        <Text style={styles.emphasis}>קיבוץ דגיטלי בעולם קפיטליסטי.</Text>רשת חברתית לאיחוד, ריכוז, הגנשה, והפצת פילנתרופיה ועשייה חברתית מכל הסוגים ולכל האנשים
         <Text style={styles.emphasis}>כרגע אנחנו בתהליך הקמה.</Text> כל מה שרשום בהמשך הוא חלק מהחזון שאנחנו רוצים לבנות, וכרגע אנחנו מזמינים אתכם לעזור לבנות את זה.
       </Text>
       <Text style={styles.paragraph}>
@@ -1354,6 +1376,34 @@ const styles = StyleSheet.create({
     maxWidth: isMobileWeb ? '95%' : (isTablet ? '70%' : '90%'), 
     lineHeight: isMobileWeb ? 20 : (isWeb ? 28 : 32),
     fontWeight: '500',
+  },
+  heroMottosContainer: {
+    marginTop: isMobileWeb ? 16 : 24,
+    width: '100%',
+    alignItems: 'center',
+    gap: isMobileWeb ? 8 : 12,
+  },
+  mottoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: isMobileWeb ? 8 : 12,
+    maxWidth: isMobileWeb ? '95%' : '85%',
+  },
+  mottoItemIcon: {
+    marginTop: isMobileWeb ? 2 : 4,
+  },
+  mottoSubtitle: {
+    fontSize: isMobileWeb ? 16 : (isWeb ? (isTablet ? 22 : 20) : 26),
+    color: colors.textPrimary,
+    textAlign: 'center',
+    fontWeight: '700',
+    lineHeight: isMobileWeb ? 24 : (isWeb ? 32 : 36),
+    fontStyle: 'italic',
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+    flex: 1,
   },
   ctaRow: { 
     flexDirection: 'row', 
