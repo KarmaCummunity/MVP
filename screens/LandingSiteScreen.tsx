@@ -1163,7 +1163,7 @@ const LandingSiteScreen: React.FC = () => {
             // טעינה מחדש של סטטיסטיקות עם forceRefresh כדי לקבל את מספר הביקורים המעודכן
             await loadStats(true);
           } else {
-            logger.warn('LandingSite', 'Site visit tracking failed', response.error);
+            logger.warn('LandingSite', 'Site visit tracking failed', { error: response.error });
             // Reset flag on failure so we can retry
             // איפוס הדגל בכשל כדי שנוכל לנסות שוב
             if (typeof window !== 'undefined') {
