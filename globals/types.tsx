@@ -198,6 +198,14 @@ export type PostsReelsStackParamList = {
   // Add any other screens that can be displayed inside the PostsReelsScreen modal
 };
 
+export type AdminStackParamList = {
+  AdminDashboard: undefined;
+  AdminMoney: undefined;
+  AdminTasks: undefined;
+  AdminPeople: undefined;
+  AdminReview: undefined;
+};
+
 // --- Helper Types for Navigation Props ---
 
 // For use with `useNavigation()` within screens that are part of the RootStack

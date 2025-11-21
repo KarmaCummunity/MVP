@@ -11,7 +11,7 @@ import { NavigationProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
-import { AdminStackParamList } from '../navigations/AdminStack';
+import { AdminStackParamList } from '../globals/types';
 import { useUser } from '../context/UserContext';
 
 interface AdminDashboardScreenProps {

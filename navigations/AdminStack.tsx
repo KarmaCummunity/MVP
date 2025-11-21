@@ -12,14 +12,7 @@ import AdminPeopleScreen from "../screens/AdminPeopleScreen";
 import AdminReviewScreen from "../screens/AdminReviewScreen";
 import AdminTasksScreen from "../screens/AdminTasksScreen";
 import TopBarNavigator from "./TopBarNavigator";
-
-export type AdminStackParamList = {
-  AdminDashboard: undefined;
-  AdminMoney: undefined;
-  AdminTasks: undefined;
-  AdminPeople: undefined;
-  AdminReview: undefined;
-};
+import { AdminStackParamList } from "../globals/types";
 
 const Stack = createStackNavigator<AdminStackParamList>();
 

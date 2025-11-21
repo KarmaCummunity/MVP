@@ -22,6 +22,7 @@ import { logger } from './loggerService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService, ApiResponse } from './apiService';
 import { USE_BACKEND, CACHE_CONFIG, OFFLINE_CONFIG, STORAGE_KEYS } from './dbConfig';
+import { DB_COLLECTIONS } from './dbCollections';
 
 // TODO: Move all interfaces to proper types directory
 // TODO: Add comprehensive validation for all interface fields
@@ -732,16 +733,30 @@ export class EnhancedDatabaseService {
 export const enhancedDB = EnhancedDatabaseService.getInstance();
 export default enhancedDB;
 
+async function clearLocalCollectionsLocal(): Promise<void> {
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    const collectionPrefixes = Object.values(DB_COLLECTIONS).map((collection) => `${collection}_`);
+    const keysToRemove = keys.filter((key) =>
+      collectionPrefixes.some((prefix) => key.startsWith(prefix)) ||
+      key.includes('_collection_meta')
+    );
+    if (keysToRemove.length) {
+      await AsyncStorage.multiRemove(keysToRemove);
+    }
+    logger.info('EnhancedDatabaseService', 'Local database collections cleared');
+  } catch (error) {
+    logger.warn('EnhancedDatabaseService', 'Failed to clear local collections', { error });
+  }
+}
+
 // Admin utilities
 export async function wipeAllDataAdmin(): Promise<ApiResponse> {
   try {
     logger.warn('EnhancedDatabaseService', 'Admin requested wipe all data', { useBackend: USE_BACKEND });
     if (!USE_BACKEND) {
       // Local purge only
-      try {
-        const { DatabaseService } = await import('./databaseService');
-        await DatabaseService.clearLocalCollections?.();
-      } catch {}
+      await clearLocalCollectionsLocal();
       try {
         const keys = await AsyncStorage.getAllKeys();
         await AsyncStorage.multiRemove(keys);
@@ -752,10 +767,7 @@ export async function wipeAllDataAdmin(): Promise<ApiResponse> {
     const result = await apiService.adminWipeAllData();
     if (result.success) {
       // Clear all local caches and queues after server wipe
-      try {
-        const { DatabaseService } = await import('./databaseService');
-        await DatabaseService.clearLocalCollections?.();
-      } catch {}
+      await clearLocalCollectionsLocal();
       try {
         const keys = await AsyncStorage.getAllKeys();
         await AsyncStorage.multiRemove(keys);

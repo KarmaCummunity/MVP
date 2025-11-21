@@ -21,35 +21,17 @@ import { USE_BACKEND, USE_FIRESTORE, CACHE_CONFIG, OFFLINE_CONFIG, STORAGE_KEYS 
 import { apiService, ApiResponse } from './apiService';
 import { restAdapter } from './restAdapter';
 import { firestoreAdapter } from './firestoreAdapter';
-import { enhancedDB } from './enhancedDatabaseService';
+import { DB_COLLECTIONS } from './dbCollections';
 
-// Database Collections
-export const DB_COLLECTIONS = {
-  USERS: 'users',
-  POSTS: 'posts',
-  FOLLOWERS: 'followers',
-  FOLLOWING: 'following',
-  CHATS: 'chats',
-  MESSAGES: 'messages',
-  NOTIFICATIONS: 'notifications',
-  BOOKMARKS: 'bookmarks',
-  DONATIONS: 'donations',
-  TASKS: 'tasks',
-  SETTINGS: 'settings',
-  MEDIA: 'media',
-  BLOCKED_USERS: 'blocked_users',
-  MESSAGE_REACTIONS: 'message_reactions',
-  TYPING_STATUS: 'typing_status',
-  READ_RECEIPTS: 'read_receipts',
-  VOICE_MESSAGES: 'voice_messages',
-  CONVERSATION_METADATA: 'conversation_metadata',
-  RIDES: 'rides',
-  // Organizations / NGO onboarding
-  ORGANIZATIONS: 'organizations',
-  ORG_APPLICATIONS: 'org_applications',
-  // Analytics
-  ANALYTICS: 'analytics',
-} as const;
+export { DB_COLLECTIONS };
+let enhancedDbInstance: any = null;
+
+async function loadEnhancedDB() {
+  if (enhancedDbInstance) return enhancedDbInstance;
+  const module = await import('./enhancedDatabaseService');
+  enhancedDbInstance = module.enhancedDB;
+  return enhancedDbInstance;
+}
 
 // Database Keys Generator
 export const getDBKey = (collection: string, userId: string, itemId?: string) => {
@@ -720,6 +702,7 @@ export const db = {
   listRides: async (_userId: string) => {
     try {
       if (USE_BACKEND) {
+        const enhancedDB = await loadEnhancedDB();
         const apiRides = await enhancedDB.getRides();
         return (apiRides || []).map((r: any) => ({
           id: r.id,
