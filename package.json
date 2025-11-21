@@ -1,7 +1,7 @@
 {
   "name": "KarmaCommunity",
   "license": "0BSD",
-  "version": "1.9.1",
+  "version": "2.0.0",
   "main": "index.js",
   "_TODO_DEPENDENCIES": "// TODO: Audit all dependencies - remove unused packages and update outdated ones",
   "_TODO_SECURITY": "// TODO: Add security audit script and dependency vulnerability checking",
