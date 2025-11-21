@@ -1,4 +1,8 @@
 import Constants from 'expo-constants';
+// Re-export basic constants from the minimal config file to avoid circular dependencies
+import { IS_DEVELOPMENT, IS_PRODUCTION, API_BASE_URL as RESOLVED_API_BASE_URL, USE_BACKEND, USE_FIRESTORE } from './config.constants';
+export { IS_DEVELOPMENT, IS_PRODUCTION, USE_BACKEND, USE_FIRESTORE };
+export { API_BASE_URL } from './config.constants';
 
 // File overview:
 // - Purpose: Central configuration for backend usage, API base URL, caching, sync, offline, and feature flags.
@@ -7,67 +11,10 @@ import Constants from 'expo-constants';
 // Database and Backend Configuration
 // This file controls whether to use the backend API or local storage
 
-// Environment configuration - safe check for __DEV__
-let isDevelopmentMode = false;
-try {
-  isDevelopmentMode = typeof __DEV__ !== 'undefined' ? __DEV__ : false;
-} catch (e) {
-  // If __DEV__ is not defined, assume production
-  isDevelopmentMode = false;
-}
-export const IS_DEVELOPMENT = isDevelopmentMode;
-export const IS_PRODUCTION = !isDevelopmentMode;
-
 const DEFAULT_API_BASE_URLS = {
   development: 'http://localhost:3001',
   production: 'https://kc-mvp-server-production.up.railway.app',
 };
-
-type ExpoExtra = Record<string, any>;
-const expoExtra: ExpoExtra = (() => {
-  try {
-    return (Constants?.expoConfig as any)?.extra || (Constants as any)?.manifest?.extra || {};
-  } catch (_error) {
-    return {};
-  }
-})();
-
-const sanitizeBaseUrl = (value?: string | null): string | null => {
-  if (!value || typeof value !== 'string') {
-    return null;
-  }
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-  if (trimmed === '/' || trimmed === './' || trimmed === '.') {
-    return '';
-  }
-  return trimmed.replace(/\/+$/, '');
-};
-
-const resolveApiBaseUrl = (): string => {
-  const candidates = [
-    process.env.EXPO_PUBLIC_API_BASE_URL,
-    process.env.EXPO_PUBLIC_API_URL,
-    expoExtra?.EXPO_PUBLIC_API_BASE_URL,
-    expoExtra?.EXPO_PUBLIC_API_URL,
-    expoExtra?.apiBaseUrl,
-  ];
-
-  for (const candidate of candidates) {
-    const sanitized = sanitizeBaseUrl(candidate);
-    if (sanitized !== null) {
-      return sanitized;
-    }
-  }
-
-  return IS_PRODUCTION
-    ? DEFAULT_API_BASE_URLS.production
-    : DEFAULT_API_BASE_URLS.development;
-};
-
-const RESOLVED_API_BASE_URL = resolveApiBaseUrl();
 
 // Backend configuration
 export const BACKEND_CONFIG = {
@@ -86,19 +33,8 @@ export const BACKEND_CONFIG = {
   RETRY_ATTEMPTS: 3,
 };
 
-// Determine if we should use the backend
-export const USE_BACKEND = BACKEND_CONFIG.USE_REAL_API && (
-  IS_DEVELOPMENT || IS_PRODUCTION
-);
-
-// Firestore configuration (currently disabled)
-export const USE_FIRESTORE = false;
-
-// Get the appropriate API URL
+// Get the appropriate API URL (for backward compatibility)
 export const getApiUrl = (): string => RESOLVED_API_BASE_URL;
-
-// Canonical API base URL used across the app
-export const API_BASE_URL = RESOLVED_API_BASE_URL;
 
 // API endpoints
 export const API_ENDPOINTS = {
@@ -253,7 +189,7 @@ export const FEATURE_FLAGS = {
   ENABLE_ADVANCED_SEARCH: true,
 };
 
-// Validation
+// Validation function - call manually when needed
 export const validateConfig = (): boolean => {
   try {
     // Check if API URL is valid
@@ -286,6 +222,3 @@ export const validateConfig = (): boolean => {
     return false;
   }
 };
-
-// Initialize configuration
-validateConfig();

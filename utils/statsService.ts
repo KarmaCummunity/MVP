@@ -6,7 +6,7 @@
 import { DatabaseService, DB_COLLECTIONS } from './databaseService';
 import { enhancedDB } from './enhancedDatabaseService';
 import { apiService } from './apiService';
-import { USE_BACKEND } from './dbConfig';
+import { USE_BACKEND } from './config.constants';
 
 export type CommunityStats = Record<string, number>;
 
@@ -42,6 +42,7 @@ export const DEFAULT_STATS: CommunityStats = {
   totalMoneyDonated: 0,
   recurringDonationsAmount: 0,
   uniqueDonors: 0,
+  siteVisits: 0,
   avgDonationAmount: 0,
   
   // Ride stats
@@ -394,6 +395,7 @@ export class EnhancedStatsService {
       'total_money_donated': 'totalMoneyDonated',
       'recurring_donations_amount': 'recurringDonationsAmount',
       'unique_donors': 'uniqueDonors',
+      'site_visits': 'siteVisits',
       'avg_donation_amount': 'avgDonationAmount',
       
       // Ride stats
