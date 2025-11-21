@@ -1,7 +1,7 @@
 // LandingSiteScreen.tsx
 // Web-only marketing landing page for KarmaCommunity
-import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
-import { Platform, View, Text, StyleSheet, Image, TouchableOpacity, Linking, Dimensions, ActivityIndicator, ScrollView, Animated } from 'react-native';
+import React, { useEffect, useState, useRef, Suspense, lazy, useCallback } from 'react';
+import { Platform, View, Text, StyleSheet, Image, TouchableOpacity, Linking, Dimensions, ActivityIndicator, ScrollView, Animated, Modal, FlatList } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,18 @@ import { logger } from '../utils/loggerService';
 import ScrollContainer from '../components/ScrollContainer';
 import ScreenWrapper from '../components/ScreenWrapper';
 import { EnhancedStatsService } from '../utils/statsService';
+import { apiService } from '../utils/apiService';
+import { USE_BACKEND } from '../utils/dbConfig';
+
+interface LandingStats {
+  siteVisits: number;
+  totalMoneyDonated: number;
+  totalUsers: number;
+  itemDonations: number;
+  completedRides: number;
+  recurringDonationsAmount: number;
+  uniqueDonors: number;
+}
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
@@ -230,6 +242,27 @@ const HeroSection = () => {
             </View>
             <Text style={styles.title}>Karma Community</Text>
             <Text style={styles.subtitle}>רשת חברתית שמחברת בין אנשים שצריכים עזרה, לאנשים שרוצים לעזור. פשוט, שקוף ומהלב.</Text>
+            
+            <View style={styles.heroMottosContainer}>
+            
+              <View style={styles.mottoItem}>
+                <Ionicons name="sparkles" size={isMobileWeb ? 18 : 24} color={colors.accent} style={styles.mottoItemIcon} />
+                <Text style={styles.mottoSubtitle}>השאריות של האחד יכול להיות האוצר של מישהו אחר</Text>
+              </View>
+              
+              <View style={styles.mottoItem}>
+                <Ionicons name="heart-circle" size={isMobileWeb ? 18 : 24} color={colors.pink} style={styles.mottoItemIcon} />
+                <Text style={styles.mottoSubtitle}>לכל אחד מאיתנו יש משהו לתת וגם משהו שהוא היה שמח לקבל</Text>
+              </View>
+            
+              <View style={styles.mottoItem}>
+                <Ionicons name="swap-horizontal" size={isMobileWeb ? 18 : 24} color={colors.info} style={styles.mottoItemIcon} />
+                <Text style={styles.mottoSubtitle}>לתת זה גם לקבל</Text>
+              </View>
+              
+            </View>
+
+            
             <View style={styles.ctaRow}>
             <TouchableOpacity style={[styles.contactButton, { backgroundColor: '#25D366' }]} onPress={() => { logger.info('LandingSite', 'Click - whatsapp direct'); Linking.openURL('https://wa.me/972528616878'); }}>
           <Ionicons name="logo-whatsapp" color="#fff" size={isMobileWeb ? 14 : 18} /><Text style={styles.contactButtonText}>שלחו לי ווטסאפ </Text>
@@ -242,8 +275,9 @@ const HeroSection = () => {
 }
 
 const VisionSection = () => (
-    <Section id="section-vision" title="החזון שלנו" subtitle="אנחנו בתהליך הקמה" style={styles.sectionAltBackground}>
+    <Section id="section-vision" title="החזון שלנו" subtitle="הקיבוץ הקפיטליסטי" style={styles.sectionAltBackground}>
       <Text style={styles.paragraph}>
+        <Text style={styles.emphasis}>קיבוץ דגיטלי בעולם קפיטליסטי.</Text>רשת חברתית לאיחוד, ריכוז, הגנשה, והפצת פילנתרופיה ועשייה חברתית מכל הסוגים ולכל האנשים
         <Text style={styles.emphasis}>כרגע אנחנו בתהליך הקמה.</Text> כל מה שרשום בהמשך הוא חלק מהחזון שאנחנו רוצים לבנות, וכרגע אנחנו מזמינים אתכם לעזור לבנות את זה.
       </Text>
       <Text style={styles.paragraph}>
@@ -283,8 +317,242 @@ const VisionSection = () => (
     </Section>
 );
 
-const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean }> = ({stats, isLoadingStats}) => (
+// Stats Detail Modal Component
+const StatsDetailModal: React.FC<{
+  visible: boolean;
+  onClose: () => void;
+  statType: string;
+  statTitle: string;
+  statValue: number;
+  iconName: string;
+  iconColor: string;
+}> = ({ visible, onClose, statType, statTitle, statValue, iconName, iconColor }) => {
+  const [detailData, setDetailData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const loadDetailData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      logger.info('StatsDetailModal', `Loading detail data for ${statType}`);
+      const response = await apiService.getStatDetails(statType);
+      if (response.success && response.data) {
+        setDetailData(response.data);
+        logger.info('StatsDetailModal', `Loaded ${response.data.length} items for ${statType}`);
+      }
+    } catch (error) {
+      logger.error('StatsDetailModal', 'Failed to load detail data', { error, statType });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [statType]);
+
+  useEffect(() => {
+    if (visible && USE_BACKEND) {
+      loadDetailData();
+    }
+  }, [visible, loadDetailData]);
+
+  const renderDetailItem = ({ item, index }: { item: any; index: number }) => {
+    // Different rendering based on stat type
+    switch (statType) {
+      case 'siteVisits':
+        return (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailItemNumber}>{index + 1}.</Text>
+            <View style={styles.detailItemContent}>
+              <Text style={styles.detailItemText}>
+                {new Date(item.timestamp || item.created_at).toLocaleString('he-IL')}
+              </Text>
+              {item.user_agent && (
+                <Text style={styles.detailItemSubtext}>{item.user_agent.substring(0, 50)}...</Text>
+              )}
+            </View>
+          </View>
+        );
+      
+      case 'totalUsers':
+        return (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailItemNumber}>{index + 1}.</Text>
+            <View style={styles.detailItemContent}>
+              <Text style={styles.detailItemText}>
+                {item.name || item.email || 'משתמש'}
+              </Text>
+              <Text style={styles.detailItemSubtext}>
+                הצטרף: {new Date(item.join_date || item.created_at).toLocaleDateString('he-IL')}
+              </Text>
+              {item.city && <Text style={styles.detailItemSubtext}>עיר: {item.city}</Text>}
+            </View>
+          </View>
+        );
+      
+      case 'totalMoneyDonated':
+        return (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailItemNumber}>{index + 1}.</Text>
+            <View style={styles.detailItemContent}>
+              <Text style={styles.detailItemText}>
+                {item.donor_name || 'תורם אנונימי'} • {item.amount?.toLocaleString('he-IL')} ₪
+              </Text>
+              <Text style={styles.detailItemSubtext}>
+                {new Date(item.donation_date || item.created_at).toLocaleDateString('he-IL')}
+              </Text>
+              {item.category_name && (
+                <Text style={styles.detailItemSubtext}>קטגוריה: {item.category_name}</Text>
+              )}
+            </View>
+          </View>
+        );
+      
+      case 'itemDonations':
+        return (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailItemNumber}>{index + 1}.</Text>
+            <View style={styles.detailItemContent}>
+              <Text style={styles.detailItemText}>
+                {item.title || item.item_name || 'פריט'}
+              </Text>
+              <Text style={styles.detailItemSubtext}>
+                {new Date(item.created_at).toLocaleDateString('he-IL')}
+              </Text>
+              {item.donor_name && (
+                <Text style={styles.detailItemSubtext}>תורם: {item.donor_name}</Text>
+              )}
+            </View>
+          </View>
+        );
+      
+      case 'completedRides':
+        return (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailItemNumber}>{index + 1}.</Text>
+            <View style={styles.detailItemContent}>
+              <Text style={styles.detailItemText}>
+                {item.from_city || 'מוצא'} → {item.to_city || 'יעד'}
+              </Text>
+              <Text style={styles.detailItemSubtext}>
+                {new Date(item.ride_date || item.created_at).toLocaleDateString('he-IL')}
+              </Text>
+              {item.driver_name && (
+                <Text style={styles.detailItemSubtext}>נהג: {item.driver_name}</Text>
+              )}
+            </View>
+          </View>
+        );
+      
+      case 'uniqueDonors':
+      case 'recurringDonationsAmount':
+        return (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailItemNumber}>{index + 1}.</Text>
+            <View style={styles.detailItemContent}>
+              <Text style={styles.detailItemText}>
+                {item.donor_name || 'תורם'} 
+                {item.amount && ` • ${item.amount.toLocaleString('he-IL')} ₪`}
+              </Text>
+              {item.frequency && (
+                <Text style={styles.detailItemSubtext}>תדירות: {item.frequency}</Text>
+              )}
+              {item.start_date && (
+                <Text style={styles.detailItemSubtext}>
+                  החל מ: {new Date(item.start_date).toLocaleDateString('he-IL')}
+                </Text>
+              )}
+            </View>
+          </View>
+        );
+      
+      default:
+        return (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailItemNumber}>{index + 1}.</Text>
+            <View style={styles.detailItemContent}>
+              <Text style={styles.detailItemText}>{JSON.stringify(item)}</Text>
+            </View>
+          </View>
+        );
+    }
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <View style={styles.modalTitleRow}>
+              <Ionicons name={iconName as any} size={isMobileWeb ? 28 : 36} color={iconColor} />
+              <View style={styles.modalTitleContainer}>
+                <Text style={styles.modalTitle}>{statTitle}</Text>
+                <Text style={styles.modalSubtitle}>
+                  {statValue.toLocaleString('he-IL')} {statType === 'totalMoneyDonated' || statType === 'recurringDonationsAmount' ? '₪' : 'פריטים'}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
+              <Ionicons name="close" size={isMobileWeb ? 24 : 32} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.modalContent}>
+            {isLoading ? (
+              <View style={styles.modalLoadingContainer}>
+                <ActivityIndicator size="large" color={colors.info} />
+                <Text style={styles.modalLoadingText}>טוען פרטים...</Text>
+              </View>
+            ) : detailData.length === 0 ? (
+              <View style={styles.modalEmptyContainer}>
+                <Ionicons name="information-circle-outline" size={isMobileWeb ? 48 : 64} color={colors.textSecondary} />
+                <Text style={styles.modalEmptyText}>אין נתונים להצגה</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={detailData}
+                renderItem={renderDetailItem}
+                keyExtractor={(item, index) => `${statType}-${index}`}
+                showsVerticalScrollIndicator={true}
+                contentContainerStyle={styles.detailList}
+              />
+            )}
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean }> = ({stats, isLoadingStats}) => {
+  const [selectedStat, setSelectedStat] = useState<{
+    type: string;
+    title: string;
+    value: number;
+    icon: string;
+    color: string;
+  } | null>(null);
+
+  const handleStatPress = (type: string, title: string, value: number, icon: string, color: string) => {
+    logger.info('StatsSection', `Stat card pressed: ${type}`);
+    setSelectedStat({ type, title, value, icon, color });
+  };
+
+  return (
     <Section id="section-stats" title="הכוח של הקהילה שלנו" subtitle="השפעה אמיתית, במספרים">
+      {selectedStat && (
+        <StatsDetailModal
+          visible={!!selectedStat}
+          onClose={() => setSelectedStat(null)}
+          statType={selectedStat.type}
+          statTitle={selectedStat.title}
+          statValue={selectedStat.value}
+          iconName={selectedStat.icon}
+          iconColor={selectedStat.color}
+        />
+      )}
+      
       {isLoadingStats ? (
         <View style={styles.statsLoadingContainer}>
           <ActivityIndicator size="large" color={colors.info} />
@@ -292,40 +560,87 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean }> =
         </View>
       ) : (
         <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Ionicons name="people-outline" size={isMobileWeb ? 24 : 32} color={colors.info} style={styles.statIcon} />
-            <Text style={styles.statNumber}>{stats.uniqueDonors.toLocaleString('he-IL')}</Text>
-            <Text style={styles.statLabel}>אנשים טובים בקהילה</Text>
-          </View>
-          <View style={styles.statCard}>
+          <TouchableOpacity 
+            style={styles.statCard}
+            onPress={() => handleStatPress('siteVisits', 'ביקורים באתר', stats.siteVisits, 'eye-outline', colors.info)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="eye-outline" size={isMobileWeb ? 24 : 32} color={colors.info} style={styles.statIcon} />
+            <Text style={styles.statNumber}>{stats.siteVisits.toLocaleString('he-IL')}</Text>
+            <Text style={styles.statLabel}>ביקורים באתר</Text>
+            <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.statCard}
+            onPress={() => handleStatPress('totalMoneyDonated', 'תרומות כספיות', stats.totalMoneyDonated, 'cash-outline', colors.success)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="cash-outline" size={isMobileWeb ? 24 : 32} color={colors.success} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.totalMoneyDonated.toLocaleString('he-IL')} ₪</Text>
             <Text style={styles.statLabel}>ש"ח שנתרמו ישירות</Text>
-          </View>
-          <View style={styles.statCard}>
+            <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.statCard}
+            onPress={() => handleStatPress('totalUsers', 'חברי קהילה רשומים', stats.totalUsers, 'heart-outline', colors.pink)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="heart-outline" size={isMobileWeb ? 24 : 32} color={colors.pink} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.totalUsers.toLocaleString('he-IL')}</Text>
             <Text style={styles.statLabel}>חברי קהילה רשומים</Text>
-          </View>
-          <View style={styles.statCard}>
+            <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.statCard}
+            onPress={() => handleStatPress('itemDonations', 'פריטים שפורסמו', stats.itemDonations, 'cube-outline', colors.orange)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="cube-outline" size={isMobileWeb ? 24 : 32} color={colors.orange} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.itemDonations.toLocaleString('he-IL')}</Text>
-            <Text style={styles.statLabel}>פריטים שמצאו בית חדש</Text>
-          </View>
-          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>פריטים שפורסמו</Text>
+            <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.statCard}
+            onPress={() => handleStatPress('completedRides', 'נסיעות קהילתיות', stats.completedRides, 'car-outline', colors.accent)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="car-outline" size={isMobileWeb ? 24 : 32} color={colors.accent} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.completedRides.toLocaleString('he-IL')}</Text>
             <Text style={styles.statLabel}>נסיעות קהילתיות</Text>
-          </View>
-          <View style={styles.statCard}>
+            <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.statCard}
+            onPress={() => handleStatPress('recurringDonationsAmount', 'תרומות קבועות', stats.recurringDonationsAmount, 'repeat-outline', colors.success)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="repeat-outline" size={isMobileWeb ? 24 : 32} color={colors.success} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.recurringDonationsAmount.toLocaleString('he-IL')} ₪</Text>
             <Text style={styles.statLabel}>תרומות קבועות פעילות</Text>
-          </View>
+            <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.statCard}
+            onPress={() => handleStatPress('uniqueDonors', 'תורמים פעילים', stats.uniqueDonors, 'people-outline', colors.info)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="people-outline" size={isMobileWeb ? 24 : 32} color={colors.info} style={styles.statIcon} />
+            <Text style={styles.statNumber}>{stats.uniqueDonors.toLocaleString('he-IL')}</Text>
+            <Text style={styles.statLabel}>תורמים פעילים</Text>
+            <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
+          </TouchableOpacity>
         </View>
       )}
     </Section>
-);
+  );
+};
 
 const ProblemsSection = () => (
     <Section id="section-problems" title="הבעיות שאנחנו באים לפתור" subtitle="למה צריך בכלל את KC?">
@@ -659,28 +974,21 @@ const FinalCTASection = () => (
     </Section>
 );
 
-interface LandingStats {
-  uniqueDonors: number;
-  totalMoneyDonated: number;
-  totalUsers: number;
-  itemDonations: number;
-  completedRides: number;
-  recurringDonationsAmount: number;
-}
-
 const LandingSiteScreen: React.FC = () => {
-  console.log('LandingSiteScreen');
+  console.log('LandingSiteScreen - Component rendered');
   
   const [stats, setStats] = useState<LandingStats>({
-    uniqueDonors: 0,
+    siteVisits: 0,
     totalMoneyDonated: 0,
     totalUsers: 0,
     itemDonations: 0,
     completedRides: 0,
     recurringDonationsAmount: 0,
+    uniqueDonors: 0,
   });
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [statsVersion, setStatsVersion] = useState<string>('');
   const scrollViewRef = useRef<ScrollView | null>(null);
   const scrollSpyObserverRef = useRef<IntersectionObserver | null>(null);
   const observedElementsRef = useRef<Set<HTMLElement>>(new Set());
@@ -731,53 +1039,161 @@ const LandingSiteScreen: React.FC = () => {
     }
   };
   
-  useEffect(() => {
-    logger.info('LandingSite', 'Landing page mounted');
-    
-    // Entrance Animation
-    // Animated.timing(heroAnimation, {
-    //   toValue: 1,
-    //   duration: 800,
-    //   delay: 200,
-    //   useNativeDriver: !isWeb,
-    // }).start();
+  // Shared loadStats function - used by both initial load and auto-refresh
+  // פונקציה משותפת לטעינת סטטיסטיקות - משמשת גם לטעינה ראשונית וגם לרענון אוטומטי
+  const loadStats = useCallback(async (forceRefresh = false) => {
+    try {
+      setIsLoadingStats(true);
+      logger.info('LandingSite', 'Loading stats', { forceRefresh });
+      const communityStats = await EnhancedStatsService.getCommunityStats({}, forceRefresh);
+      
+      // Extract values - handle both direct values and nested value objects
+      // תמיכה בשני פורמטים: מספר ישיר או אובייקט עם שדה value
+      // Support for two formats: direct number or object with value field
+      const getValue = (stat: any): number => {
+        if (typeof stat === 'number') return stat;
+        if (stat && typeof stat === 'object' && 'value' in stat) return stat.value || 0;
+        return 0;
+      };
+      
+      const statsData = {
+        siteVisits: getValue(communityStats.siteVisits) || 0,
+        totalMoneyDonated: getValue(communityStats.totalMoneyDonated) || 0,
+        totalUsers: getValue(communityStats.totalUsers) || 0,
+        itemDonations: getValue(communityStats.itemDonations) || 0,
+        completedRides: getValue(communityStats.completedRides) || 0,
+        recurringDonationsAmount: getValue(communityStats.recurringDonationsAmount) || 0,
+        uniqueDonors: getValue(communityStats.uniqueDonors) || 0,
+      };
+      
+      logger.info('LandingSite', 'Stats loaded', statsData);
+      setStats(statsData);
+    } catch (error) {
+      logger.error('LandingSite', 'Failed to load stats', { error });
+      // Keep default values (0) on error
+    } finally {
+      setIsLoadingStats(false);
+    }
+  }, []);
 
-    // Load community statistics from backend
-    // שינוי: טעינת סטטיסטיקות מהשרת עם תמיכה בערכים מקוננים (nested value objects)
-    // Change: Loading stats from backend with support for nested value objects
-    const loadStats = async () => {
+  // Smart polling - only refresh when stats actually change
+  // בדיקה חכמה - רק מרענן כשיש שינוי אמיתי בסטטיסטיקות
+  useEffect(() => {
+    if (!USE_BACKEND) {
+      logger.info('LandingSite', 'Backend not available, skipping smart polling');
+      return;
+    }
+
+    logger.info('LandingSite', 'Setting up smart polling (checks every second)');
+    
+    const checkForUpdates = async () => {
       try {
-        setIsLoadingStats(true);
-        const communityStats = await EnhancedStatsService.getCommunityStats();
-        
-        // Extract values - handle both direct values and nested value objects
-        // תמיכה בשני פורמטים: מספר ישיר או אובייקט עם שדה value
-        // Support for two formats: direct number or object with value field
-        const getValue = (stat: any): number => {
-          if (typeof stat === 'number') return stat;
-          if (stat && typeof stat === 'object' && 'value' in stat) return stat.value || 0;
-          return 0;
-        };
-        
-        setStats({
-          uniqueDonors: getValue(communityStats.uniqueDonors) || 0,
-          totalMoneyDonated: getValue(communityStats.totalMoneyDonated) || 0,
-          totalUsers: getValue(communityStats.totalUsers) || 0,
-          itemDonations: getValue(communityStats.itemDonations) || 0,
-          completedRides: getValue(communityStats.completedRides) || 0,
-          recurringDonationsAmount: getValue(communityStats.recurringDonationsAmount) || 0,
-        });
+        // Lightweight check - only gets version hash
+        const response = await apiService.getCommunityStatsVersion();
+        if (response.success && response.version) {
+          const newVersion = response.version;
+          
+          // Only reload if version changed
+          if (statsVersion && newVersion !== statsVersion) {
+            logger.info('LandingSite', 'Stats version changed, reloading...', {
+              oldVersion: statsVersion,
+              newVersion: newVersion
+            });
+            await loadStats(true); // Force refresh to get latest data
+          }
+          
+          // Update version for next check
+          setStatsVersion(newVersion);
+        }
       } catch (error) {
-        logger.error('LandingSite', 'Failed to load stats', { error });
-        // Keep default values (0) on error
-      } finally {
-        setIsLoadingStats(false);
+        logger.error('LandingSite', 'Failed to check stats version', { error });
+      }
+    };
+
+    // Check immediately on mount
+    checkForUpdates();
+    
+    // Set up interval to check for updates every second
+    const pollInterval = setInterval(checkForUpdates, 1000);
+
+    // Cleanup interval on unmount
+    return () => {
+      logger.info('LandingSite', 'Clearing smart polling interval');
+      clearInterval(pollInterval);
+    };
+  }, [loadStats, statsVersion]);
+
+  useEffect(() => {
+    logger.info('LandingSite', 'useEffect triggered - Landing page mounted', { isWeb, USE_BACKEND });
+    
+    // Use sessionStorage to prevent double tracking across all instances
+    // שימוש ב-sessionStorage למניעת ספירה כפולה בכל ה-instances
+    const VISIT_TRACKED_KEY = 'kc_site_visit_tracked';
+
+    // Track site visit - only on web and if backend is available
+    // ספירת ביקור באתר - רק ב-web ואם השרת זמין
+    // שינוי: שימוש ב-sessionStorage למניעת כפילות בכל ה-instances
+    // Change: Use sessionStorage to prevent double tracking across all instances
+    const trackVisitAndLoadStats = async () => {
+      // Check if visit already tracked in this session (shared across all component instances)
+      // בדיקה אם הביקור כבר נספר ב-session זה (משותף לכל ה-instances של הקומפוננטה)
+      const visitTracked = isWeb && typeof window !== 'undefined' 
+        ? sessionStorage.getItem(VISIT_TRACKED_KEY) === 'true'
+        : false;
+
+      if (visitTracked) {
+        logger.info('LandingSite', 'Visit already tracked in this session, skipping');
+        await loadStats(false);
+        return;
+      }
+
+      if (isWeb && USE_BACKEND) {
+        try {
+          // Mark as tracked immediately in sessionStorage to prevent double calls
+          // סימון כנספר מיד ב-sessionStorage כדי למנוע קריאות כפולות
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(VISIT_TRACKED_KEY, 'true');
+          }
+          
+          logger.info('LandingSite', 'Tracking site visit...');
+          const response = await apiService.trackSiteVisit();
+          if (response.success) {
+            logger.info('LandingSite', 'Site visit tracked successfully');
+            // Reload stats with forceRefresh to get updated site_visits count
+            // טעינה מחדש של סטטיסטיקות עם forceRefresh כדי לקבל את מספר הביקורים המעודכן
+            await loadStats(true);
+          } else {
+            logger.warn('LandingSite', 'Site visit tracking failed', { error: response.error });
+            // Reset flag on failure so we can retry
+            // איפוס הדגל בכשל כדי שנוכל לנסות שוב
+            if (typeof window !== 'undefined') {
+              sessionStorage.removeItem(VISIT_TRACKED_KEY);
+            }
+            // Still load stats even if tracking failed
+            await loadStats(false);
+          }
+        } catch (error) {
+          logger.error('LandingSite', 'Failed to track site visit', { error });
+          // Reset flag on error so we can retry
+          // איפוס הדגל בשגיאה כדי שנוכל לנסות שוב
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem(VISIT_TRACKED_KEY);
+          }
+          // Still load stats even if tracking failed
+          await loadStats(false);
+        }
+      } else {
+        // If not web or backend not available, just load stats
+        logger.info('LandingSite', 'Skipping site visit tracking', { isWeb, USE_BACKEND });
+        await loadStats(false);
       }
     };
     
-    loadStats();
+    trackVisitAndLoadStats();
     
-    return () => logger.info('LandingSite', 'Landing page unmounted');
+    return () => {
+      logger.info('LandingSite', 'Landing page unmounted');
+    };
   }, []);
 
   // Scroll Spy - Track which section is currently in view
@@ -960,6 +1376,34 @@ const styles = StyleSheet.create({
     maxWidth: isMobileWeb ? '95%' : (isTablet ? '70%' : '90%'), 
     lineHeight: isMobileWeb ? 20 : (isWeb ? 28 : 32),
     fontWeight: '500',
+  },
+  heroMottosContainer: {
+    marginTop: isMobileWeb ? 16 : 24,
+    width: '100%',
+    alignItems: 'center',
+    gap: isMobileWeb ? 8 : 12,
+  },
+  mottoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: isMobileWeb ? 8 : 12,
+    maxWidth: isMobileWeb ? '95%' : '85%',
+  },
+  mottoItemIcon: {
+    marginTop: isMobileWeb ? 2 : 4,
+  },
+  mottoSubtitle: {
+    fontSize: isMobileWeb ? 16 : (isWeb ? (isTablet ? 22 : 20) : 26),
+    color: colors.textPrimary,
+    textAlign: 'center',
+    fontWeight: '700',
+    lineHeight: isMobileWeb ? 24 : (isWeb ? 32 : 36),
+    fontStyle: 'italic',
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+    flex: 1,
   },
   ctaRow: { 
     flexDirection: 'row', 
@@ -1686,6 +2130,129 @@ const styles = StyleSheet.create({
   stepIcon: {
     marginTop: isMobileWeb ? 12 : 16,
     marginBottom: isMobileWeb ? 12 : 16,
+  },
+  statChevron: {
+    position: 'absolute',
+    bottom: isMobileWeb ? 12 : 16,
+    left: isMobileWeb ? 12 : 16,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: isMobileWeb ? 16 : 24,
+  },
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: isMobileWeb ? 16 : 24,
+    width: '100%',
+    maxWidth: isTablet ? 800 : (isMobileWeb ? '95%' : 600),
+    maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 15,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: isMobileWeb ? 16 : 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E6EEF9',
+    backgroundColor: '#F2F7FF',
+  },
+  modalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: isMobileWeb ? 12 : 16,
+    flex: 1,
+  },
+  modalTitleContainer: {
+    flex: 1,
+  },
+  modalTitle: {
+    fontSize: isMobileWeb ? 18 : 24,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    marginBottom: isMobileWeb ? 4 : 6,
+  },
+  modalSubtitle: {
+    fontSize: isMobileWeb ? 14 : 18,
+    fontWeight: '600',
+    color: colors.info,
+  },
+  modalCloseButton: {
+    padding: isMobileWeb ? 4 : 8,
+    marginRight: isMobileWeb ? -4 : -8,
+  },
+  modalContent: {
+    flex: 1,
+  },
+  modalLoadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: isMobileWeb ? 40 : 60,
+  },
+  modalLoadingText: {
+    marginTop: isMobileWeb ? 12 : 16,
+    fontSize: isMobileWeb ? 14 : 18,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  modalEmptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: isMobileWeb ? 40 : 60,
+  },
+  modalEmptyText: {
+    marginTop: isMobileWeb ? 16 : 24,
+    fontSize: isMobileWeb ? 16 : 20,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  detailList: {
+    padding: isMobileWeb ? 16 : 24,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: isMobileWeb ? 12 : 16,
+    paddingHorizontal: isMobileWeb ? 12 : 16,
+    borderRadius: isMobileWeb ? 12 : 16,
+    backgroundColor: '#FAFBFF',
+    marginBottom: isMobileWeb ? 8 : 12,
+    borderWidth: 1,
+    borderColor: '#E6EEF9',
+  },
+  detailItemNumber: {
+    fontSize: isMobileWeb ? 14 : 18,
+    fontWeight: '700',
+    color: colors.info,
+    marginLeft: isMobileWeb ? 8 : 12,
+    minWidth: isMobileWeb ? 24 : 32,
+  },
+  detailItemContent: {
+    flex: 1,
+  },
+  detailItemText: {
+    fontSize: isMobileWeb ? 14 : 18,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: isMobileWeb ? 4 : 6,
+    lineHeight: isMobileWeb ? 20 : 24,
+  },
+  detailItemSubtext: {
+    fontSize: isMobileWeb ? 12 : 14,
+    color: colors.textSecondary,
+    lineHeight: isMobileWeb ? 16 : 20,
+    marginTop: isMobileWeb ? 2 : 4,
   },
   howItWorksNote: {
     flexDirection: 'row',

@@ -15,20 +15,25 @@
 // TODO: Implement proper API versioning support
 // TODO: Add request/response transformation middleware
 // TODO: Add comprehensive logging and monitoring
-import { USE_BACKEND, API_BASE_URL as CONFIG_API_BASE_URL } from './dbConfig';
+import { API_BASE_URL as CONFIG_API_BASE_URL } from './config.constants';
 
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
   error?: string;
   message?: string;
+  version?: string;
 }
 
 class ApiService {
-  private baseURL: string;
+  private _baseURL: string | null = null;
 
-  constructor() {
-    this.baseURL = CONFIG_API_BASE_URL;
+  private get baseURL(): string {
+    if (this._baseURL === null) {
+      // Lazy initialization to avoid circular dependency issues
+      this._baseURL = CONFIG_API_BASE_URL;
+    }
+    return this._baseURL;
   }
 
   // Tasks APIs
@@ -309,6 +314,11 @@ class ApiService {
     return this.request(`/api/stats/community?${params.toString()}`);
   }
 
+  async getCommunityStatsVersion(city?: string): Promise<ApiResponse> {
+    const params = city ? `?city=${city}` : '';
+    return this.request(`/api/stats/community/version${params}`);
+  }
+
   async getCommunityTrends(statType: string, city?: string, days = 30): Promise<ApiResponse> {
     const params = new URLSearchParams({ stat_type: statType, days: days.toString() });
     if (city) {
@@ -321,6 +331,12 @@ class ApiService {
   async getStatsByCity(statType?: string): Promise<ApiResponse> {
     const params = statType ? `?stat_type=${statType}` : '';
     return this.request(`/api/stats/community/cities${params}`);
+  }
+
+  async trackSiteVisit(): Promise<ApiResponse> {
+    return this.request('/api/stats/track-visit', {
+      method: 'POST',
+    });
   }
 
   async incrementStat(statData: {
@@ -354,6 +370,10 @@ class ApiService {
 
   async getRealTimeStats(): Promise<ApiResponse> {
     return this.request('/api/stats/real-time');
+  }
+
+  async getStatDetails(statType: string): Promise<ApiResponse> {
+    return this.request(`/api/stats/details/${statType}`);
   }
 
   // Admin APIs
@@ -446,5 +466,23 @@ class ApiService {
   }
 }
 
-export const apiService = new ApiService();
+// Lazy singleton to avoid circular dependency issues during module initialization
+let _apiServiceInstance: ApiService | null = null;
+
+function getApiServiceInstance(): ApiService {
+  if (_apiServiceInstance === null) {
+    _apiServiceInstance = new ApiService();
+  }
+  return _apiServiceInstance;
+}
+
+// Export as a Proxy to ensure lazy initialization
+export const apiService = new Proxy({} as ApiService, {
+  get(target, prop) {
+    const instance = getApiServiceInstance();
+    const value = (instance as any)[prop];
+    return typeof value === 'function' ? value.bind(instance) : value;
+  }
+});
+
 export default apiService;

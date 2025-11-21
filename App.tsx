@@ -158,6 +158,14 @@ function AppContent() {
     const loadBackgroundResources = async () => {
       logger.info('App', 'Starting background resource loading');
 
+      // Validate configuration after all modules are loaded
+      try {
+        const { validateConfig } = await import('./utils/dbConfig');
+        validateConfig();
+      } catch (e) {
+        logger.warn('App', 'Config validation failed', { error: e });
+      }
+
       // Apply stored language
       try {
         setLoading('language', true);

@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { USE_FIRESTORE } from './dbConfig';
+import { USE_FIRESTORE } from './config.constants';
 import { getFirebase } from './firebaseClient';
 import { collection as fsCollection, query as fsQuery, where as fsWhere, onSnapshot } from 'firebase/firestore';
 import { sendMessageNotification } from './notificationService';
