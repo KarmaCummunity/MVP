@@ -1196,6 +1196,24 @@ const LandingSiteScreen: React.FC = () => {
     };
   }, []);
 
+  // Auto-refresh stats every second for real-time updates
+  // רענון אוטומטי של סטטיסטיקות כל שניה לעדכונים בזמן אמת
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        logger.debug('LandingSite', 'Auto-refreshing stats');
+        await loadStats(true); // forceRefresh: true to bypass cache
+      } catch (error) {
+        logger.error('LandingSite', 'Auto-refresh failed', { error });
+      }
+    }, 1000); // Refresh every second / רענון כל שניה
+    
+    return () => {
+      logger.info('LandingSite', 'Clearing auto-refresh interval');
+      clearInterval(interval);
+    };
+  }, [loadStats]);
+
   // Scroll Spy - Track which section is currently in view
   useEffect(() => {
     if (!isWeb) return; // Works on all web screens including mobile
