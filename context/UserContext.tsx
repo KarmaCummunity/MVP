@@ -86,13 +86,14 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [authMode, setAuthMode] = useState<AuthMode>('guest');
   const [resetHomeScreenTrigger, setResetHomeScreenTrigger] = useState(0);
 
-  // Check authentication status on app start
+  // Check authentication status on app start (run only once)
   useEffect(() => {
     console.log('🔐 UserContext - useEffect - Starting auth check');
     checkAuthStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Firebase Auth State Listener - automatically detects when user logs in/out
+  // Firebase Auth State Listener - automatically detects when user logs in/out (run only once)
   useEffect(() => {
     console.log('🔥 UserContext - Setting up Firebase Auth listener');
     let unsubscribe: (() => void) | undefined;
@@ -175,7 +176,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         unsubscribe();
       }
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
   const computeRole = (user: User | null, mode: AuthMode): Role => {
     if (mode === 'guest' || !user) return 'guest';

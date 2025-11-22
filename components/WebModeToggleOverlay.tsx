@@ -7,7 +7,7 @@
 // - In site mode: centered at top of screen over landing page content
 // - Seamless switching between site mode (landing page) and app mode (login/home)
 // - Enhanced styling for better visibility and user experience
-import React from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { Platform, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
 import { useWebMode } from '../stores/webModeStore';
@@ -20,35 +20,49 @@ const WebModeToggleOverlay: React.FC = () => {
   const { mode, setMode } = useWebMode();
   const { isAuthenticated, isGuestMode } = useUser();
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const lastModeRef = useRef(mode);
 
-  // Dynamic container style based on mode
-  const containerStyle = mode === 'app' ? styles.containerApp : styles.containerSite;
+  // Memoize container style based on mode to prevent unnecessary re-renders
+  const containerStyle = useMemo(() => 
+    mode === 'app' ? styles.containerApp : styles.containerSite, 
+    [mode]
+  );
 
-  const handleToggle = () => {
-    if (mode === 'site') {
-      // Switch to app mode
-      setMode('app');
-      // Navigate to appropriate screen based on authentication
-      if (isAuthenticated || isGuestMode) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'HomeStack' }],
-        });
+  const handleToggle = useCallback(() => {
+    // Prevent duplicate toggles
+    if (lastModeRef.current === mode) {
+      if (mode === 'site') {
+        // Switch to app mode
+        lastModeRef.current = 'app';
+        setMode('app');
+        // Navigate to appropriate screen based on authentication
+        if (isAuthenticated || isGuestMode) {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'HomeStack' }],
+          });
+        } else {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'LoginScreen' }],
+          });
+        }
       } else {
+        // Switch to site mode
+        lastModeRef.current = 'site';
+        setMode('site');
         navigation.reset({
           index: 0,
-          routes: [{ name: 'LoginScreen' }],
+          routes: [{ name: 'LandingSiteScreen' }],
         });
       }
-    } else {
-      // Switch to site mode
-      setMode('site');
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'LandingSiteScreen' }],
-      });
     }
-  };
+  }, [mode, setMode, navigation, isAuthenticated, isGuestMode]);
+
+  // Sync ref with mode
+  React.useEffect(() => {
+    lastModeRef.current = mode;
+  }, [mode]);
 
   return (
     <View pointerEvents="box-none" style={containerStyle}>
@@ -115,6 +129,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default WebModeToggleOverlay;
-
+// Memoize the component to prevent unnecessary re-renders
+export default React.memo(WebModeToggleOverlay);
 

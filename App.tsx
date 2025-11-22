@@ -103,7 +103,7 @@ function AppContent() {
     getCriticalError 
   } = useAppLoading();
   
-  // Initialize stores on mount
+  // Initialize stores on mount (run only once)
   useEffect(() => {
     const initializeStores = async () => {
       try {
@@ -127,14 +127,15 @@ function AppContent() {
     
     // Initialize immediately - no delay needed
     initializeStores();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
   logger.info('App', 'App component mounted');
   
   // TODO: Move notification setup to dedicated notification service/hook
   // TODO: Add proper error handling for notification permission failures
   // TODO: Test notification handling on all platforms (iOS/Android/Web)
-  // Setup notification response listener (iOS + Android)
+  // Setup notification response listener (iOS + Android) (run only once)
   useEffect(() => {
     if (!notificationService) return;
 
@@ -162,9 +163,10 @@ function AppContent() {
         subscription.remove();
       }
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
-  // Fast initial setup to show the UI as quickly as possible
+  // Fast initial setup to show the UI as quickly as possible (run only once)
   useEffect(() => {
     const showUiQuickly = async () => {
       try {
@@ -179,10 +181,13 @@ function AppContent() {
     };
     
     showUiQuickly();
-  }, [markAppReady, setError]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
-  // Load heavy resources in the background after the UI is visible
+  // Load heavy resources in the background after the UI is visible (run only once when app is ready)
   useEffect(() => {
+    if (!isAppReady) return;
+    
     const loadBackgroundResources = async () => {
       logger.info('App', 'Starting background resource loading');
 
@@ -230,10 +235,9 @@ function AppContent() {
       }
     };
 
-    if (isAppReady) {
-      loadBackgroundResources();
-    }
-  }, [isAppReady, setLoading, setError]);
+    loadBackgroundResources();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAppReady]); // Run only once when app is ready
 
 
 
@@ -263,32 +267,26 @@ function AppContent() {
     );
   }
 
-  const AppNavigationRoot: React.FC = () => {
-    const { mode } = useWebMode();
-    
-    // Add top padding in app mode to make room for toggle button
-    const containerStyle = {
-      flex: 1,
-      paddingTop: Platform.OS === 'web' && mode === 'app' ? 48 : 0 // Space for toggle button in app mode
-    };
-    
-    return (
-      <NavigationContainer
-        key={`nav-${mode}`}
-        ref={navigationRef}
-        children={
-          <View style={containerStyle}>
-            <MainNavigator />
-            <WebModeToggleOverlay />
-            <StatusBar style="auto" />
-          </View>
-        }
-      />
-    );
-  };
+  const { mode } = useWebMode();
+  
+  // Memoize container style to prevent unnecessary re-renders
+  const containerStyle = React.useMemo(() => ({
+    flex: 1,
+    paddingTop: Platform.OS === 'web' && mode === 'app' ? 48 : 0 // Space for toggle button in app mode
+  }), [mode]);
 
   return (
-    <AppNavigationRoot />
+    <NavigationContainer
+      key={`nav-${mode}`}
+      ref={navigationRef}
+      children={
+        <View style={containerStyle}>
+          <MainNavigator />
+          <WebModeToggleOverlay />
+          <StatusBar style="auto" />
+        </View>
+      }
+    />
   );
 }
 
