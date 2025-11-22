@@ -28,7 +28,7 @@ import {
   I18nManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import { db } from '../utils/databaseService';
 import { restAdapter } from '../utils/restAdapter';
 import { getSignInMethods, signInWithEmail as fbSignInWithEmail, signUpWithEmail as fbSignUpWithEmail, sendVerification as fbSendVerification, isEmailVerified as fbIsEmailVerified, sendPasswordReset } from '../utils/authService';

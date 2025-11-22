@@ -7,7 +7,7 @@ import HeaderComp from '../components/HeaderComp';
 import DonationStatsFooter from '../components/DonationStatsFooter';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { db } from '../utils/databaseService';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import { biDiTextAlign, rowDirection, isLandscape, marginStartEnd } from '../globals/responsive';
 
 type ItemType = 'furniture' | 'clothes' | 'general';

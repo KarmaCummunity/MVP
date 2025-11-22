@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { AdminStackParamList } from '../globals/types';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 
 interface AdminDashboardScreenProps {
   navigation: NavigationProp<AdminStackParamList>;

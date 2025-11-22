@@ -19,7 +19,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useNavigation, useFocusEffect, NavigationProp, ParamListBase } from '@react-navigation/native';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import {
   getNotifications,
   markNotificationAsRead,

@@ -23,7 +23,7 @@ const charities: any[] = [];
 const donations: any[] = [];
 import { charitiesStore } from '../utils/charitiesStore';
 import { donationResources } from '../utils/donationResources';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import ScrollContainer from '../components/ScrollContainer';
 
 // Convert new charity format to old dummy format for compatibility

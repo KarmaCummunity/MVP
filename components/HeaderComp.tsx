@@ -7,7 +7,7 @@ import GuestModeNotice from "../components/GuestModeNotice";
 import colors from "../globals/colors";
 import { getScreenInfo, scaleSize, rowDirection, responsiveSpacing, responsiveFontSize, BREAKPOINTS } from "../globals/responsive";
 import { FontSizes } from "../globals/constants";
-import { useUser } from "../context/UserContext";
+import { useUser } from "../stores/userStore";
 
 // TODO: Add comprehensive TypeScript interfaces for all props instead of loose types
 // TODO: Implement proper component composition instead of props drilling

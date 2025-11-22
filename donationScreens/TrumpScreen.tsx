@@ -20,7 +20,7 @@ import HeaderComp from '../components/HeaderComp';
 import DonationStatsFooter from '../components/DonationStatsFooter';
 import TimePicker from '../components/TimePicker';
 import { db } from '../utils/databaseService';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import ScrollContainer from '../components/ScrollContainer';
 
 export default function TrumpScreen({

@@ -29,7 +29,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import CommentsModal from './CommentsModal';
 import logger from '../utils/logger';
 import { isBookmarked, addBookmark, removeBookmark } from '../utils/bookmarksService';

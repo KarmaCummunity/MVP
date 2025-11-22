@@ -58,7 +58,7 @@ import { FontSizes, LAYOUT_CONSTANTS } from "../globals/constants";
 import { useTranslation } from 'react-i18next';
 import CommunityStatsPanel from "../components/CommunityStatsPanel";
 import PostsReelsScreen from "../components/PostsReelsScreen";
-import { useUser } from "../context/UserContext";
+import { useUser } from "../stores/userStore";
 import GuestModeNotice from "../components/GuestModeNotice";
 import CommunityStatsGrid from "../components/CommunityStatsGrid";
 import StatDetailsModal, { StatDetails } from "../components/StatDetailsModal";

@@ -7,7 +7,7 @@ import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { useNavigation } from '@react-navigation/native';
 import { db } from '../utils/databaseService';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 
 type OrgApplication = {
   id: string;

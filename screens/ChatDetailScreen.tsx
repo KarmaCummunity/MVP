@@ -25,7 +25,7 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { ParamListBase } from '@react-navigation/native';
 import ChatMessageBubble from '../components/ChatMessageBubble';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import { getMessages, sendMessage, markMessagesAsRead, Message, subscribeToMessages } from '../utils/chatService';
 import { pickImage, pickVideo, takePhoto, pickDocument, validateFile, FileData } from '../utils/fileService';
 import colors from '../globals/colors';

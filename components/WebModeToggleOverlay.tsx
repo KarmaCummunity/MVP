@@ -10,8 +10,8 @@
 import React from 'react';
 import { Platform, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
-import { useWebMode } from '../context/WebModeContext';
-import { useUser } from '../context/UserContext';
+import { useWebMode } from '../stores/webModeStore';
+import { useUser } from '../stores/userStore';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 

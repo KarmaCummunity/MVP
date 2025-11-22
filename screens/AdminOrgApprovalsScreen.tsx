@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { db } from '../utils/databaseService';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 
 type OrgApplication = {
   id: string;

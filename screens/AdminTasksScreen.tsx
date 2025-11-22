@@ -4,7 +4,7 @@ import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { Ionicons } from '@expo/vector-icons';
 import apiService, { ApiResponse } from '../utils/apiService';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 
 type TaskStatus = 'open' | 'in_progress' | 'done' | 'archived';
 type TaskPriority = 'low' | 'medium' | 'high';

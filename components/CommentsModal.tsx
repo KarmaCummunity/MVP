@@ -13,7 +13,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import { sendMessage, getMessages, Message } from '../utils/chatService';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';

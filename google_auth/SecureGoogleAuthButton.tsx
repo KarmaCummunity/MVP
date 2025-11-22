@@ -49,7 +49,7 @@ import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../utils/loggerService';
 import { googleAuthService, AuthState, SecureAuthUser } from './GoogleAuthService';

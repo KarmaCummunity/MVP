@@ -37,8 +37,8 @@ import NotificationsScreen from "../screens/NotificationsScreen";
 import colors from "../globals/colors"; // Adjust path if needed
 import { vw, getScreenInfo, isLandscape } from "../globals/responsive";
 import { LAYOUT_CONSTANTS } from "../globals/constants";
-import { useUser } from "../context/UserContext";
-import { useWebMode } from "../context/WebModeContext";
+import { useUser } from "../stores/userStore";
+import { useWebMode } from "../stores/webModeStore";
 
 // Define the type for your bottom tab navigator's route names and their parameters.
 export type BottomTabNavigatorParamList = {

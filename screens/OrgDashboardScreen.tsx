@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import { db } from '../utils/databaseService';
 
 export default function OrgDashboardScreen() {

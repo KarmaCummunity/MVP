@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import colors from '../globals/colors';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import { useTranslation } from 'react-i18next';
 
 interface GuestModeNoticeProps {

@@ -52,20 +52,21 @@
     "react-native-game-engine": "^1.2.0",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-pager-view": "6.7.1",
-    "react-native-reanimated": "~3.19.1",
+    "react-native-reanimated": "^3.19.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-tab-view": "^4.1.2",
     "react-native-web": "^0.20.0",
     "react-native-webview": "13.13.5",
-    "tslib": "^2.6.2"
+    "tslib": "^2.6.2",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@types/matter-js": "^0.20.0",
+    "@types/react": "~19.0.10",
     "babel-plugin-module-resolver": "^5.0.2",
-    "typescript": "~5.8.3",
-    "@types/react": "~19.0.10"
+    "typescript": "~5.8.3"
   },
   "private": true
 }

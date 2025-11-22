@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { scaleSize } from '../globals/responsive';
