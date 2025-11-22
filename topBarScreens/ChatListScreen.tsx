@@ -11,7 +11,7 @@ import { View, Text, StyleSheet, RefreshControl, Alert, TextInput, TouchableOpac
 import ScrollContainer from '../components/ScrollContainer';
 import { useNavigation, NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import ChatListItem from '../components/ChatListItem';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import { getConversations, Conversation as ChatConversation, subscribeToConversations } from '../utils/chatService';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';

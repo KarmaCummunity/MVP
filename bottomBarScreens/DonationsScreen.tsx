@@ -46,7 +46,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DonationsStackParamList } from '../globals/types';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS, IconSizes } from '../globals/constants';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import GuestModeNotice from '../components/GuestModeNotice';
 import DonationStatsFooter from '../components/DonationStatsFooter';
 import { useTranslation } from 'react-i18next';

@@ -58,7 +58,7 @@ import { FontSizes, LAYOUT_CONSTANTS } from "../globals/constants";
 import { useTranslation } from 'react-i18next';
 import CommunityStatsPanel from "../components/CommunityStatsPanel";
 import PostsReelsScreen from "../components/PostsReelsScreen";
-import { useUser } from "../context/UserContext";
+import { useUser } from "../stores/userStore";
 import GuestModeNotice from "../components/GuestModeNotice";
 import CommunityStatsGrid from "../components/CommunityStatsGrid";
 import StatDetailsModal, { StatDetails } from "../components/StatDetailsModal";
@@ -66,7 +66,7 @@ import { createShadowStyle } from "../globals/styles";
 import { scaleSize } from "../globals/responsive";
 import { EnhancedStatsService, formatShortNumber } from "../utils/statsService";
 import FloatingBubblesOverlay from "../components/FloatingBubblesOverlay";
-import FloatingBubblesSkia from "../components/FloatingBubblesSkia";
+// FloatingBubblesSkia imported dynamically to avoid Web bundle issues
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 // Panel layout dimensions derived responsively with web optimizations
@@ -159,6 +159,20 @@ export default function HomeScreen() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedStat, setSelectedStat] = useState<StatDetails | null>(null);
   const [isStatModalVisible, setIsStatModalVisible] = useState(false);
+  const [NativeBubblesComponent, setNativeBubblesComponent] = useState<React.ComponentType | null>(null);
+  
+  // Dynamically load FloatingBubblesSkia only on Native platforms to avoid Web bundle issues
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      import('../components/FloatingBubblesSkia')
+        .then((module) => {
+          setNativeBubblesComponent(() => module.default);
+        })
+        .catch((error) => {
+          console.error('Failed to load FloatingBubblesSkia:', error);
+        });
+    }
+  }, []);
   
   // No logical difference between guest/user modes other than the header banner
   useEffect(() => {
@@ -323,7 +337,11 @@ export default function HomeScreen() {
         // Home screen with enhanced scrolling
         <>
         <Animated.View style={[styles.homeContainer, homeAnimatedStyle]}>
-          {Platform.OS === 'web' ? <FloatingBubblesOverlay /> : <FloatingBubblesSkia />}
+          {Platform.OS === 'web' ? (
+            <FloatingBubblesOverlay />
+          ) : (
+            NativeBubblesComponent ? <NativeBubblesComponent /> : null
+          )}
         </Animated.View>
         {/* Drag Handle Button - the ONLY way to open PostsReelsScreen */}
         {!showPosts && (

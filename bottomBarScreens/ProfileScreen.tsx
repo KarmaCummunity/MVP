@@ -29,7 +29,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { useTranslation } from 'react-i18next';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import ScrollContainer from '../components/ScrollContainer';
 import ProfileCompletionBanner from '../components/ProfileCompletionBanner';
 import { createShadowStyle } from '../globals/styles';

@@ -29,7 +29,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import { getBookmarks, removeBookmark, Bookmark } from '../utils/bookmarksService';
 import colors from '../globals/colors';
 import { FontSizes, IconSizes } from '../globals/constants';

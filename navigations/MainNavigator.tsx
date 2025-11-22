@@ -41,7 +41,7 @@ import UserProfileScreen from "../screens/UserProfileScreen";
 import FollowersScreen from "../screens/FollowersScreen";
 import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
 import LoginScreen from "../screens/LoginScreen";
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import colors from '../globals/colors';
 import styles from '../globals/styles';
 import NewChatScreen from '../screens/NewChatScreen';
@@ -55,7 +55,7 @@ import AdminOrgApprovalsScreen from '../screens/AdminOrgApprovalsScreen';
 import OrgDashboardScreen from '../screens/OrgDashboardScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import LandingSiteScreen from '../screens/LandingSiteScreen';
-import { useWebMode } from '../context/WebModeContext';
+import { useWebMode } from '../stores/webModeStore';
 
 import { RootStackParamList } from '../globals/types';
 

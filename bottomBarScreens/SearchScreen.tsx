@@ -23,7 +23,7 @@ import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { useTranslation } from 'react-i18next';
 import ScrollContainer from '../components/ScrollContainer';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import { db } from '../utils/databaseService';
 import GuestModeNotice from '../components/GuestModeNotice';
 import { Pressable, Modal, TextInput } from 'react-native';

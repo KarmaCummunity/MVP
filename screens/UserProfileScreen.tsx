@@ -24,7 +24,7 @@ import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/nativ
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { getFollowStats, followUser, unfollowUser, getUpdatedFollowCounts } from '../utils/followService';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import ScrollContainer from '../components/ScrollContainer';
 
 // --- Type Definitions ---

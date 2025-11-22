@@ -4,7 +4,7 @@ import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { useTranslation } from 'react-i18next';
 import type { StatDetails } from './StatDetailsModal';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import { useEffect, useState } from 'react';
 import { getGlobalStats, formatShortNumber, parseShortNumber, CommunityStats, EnhancedStatsService } from '../utils/statsService';
 import { USE_BACKEND } from '../utils/dbConfig';

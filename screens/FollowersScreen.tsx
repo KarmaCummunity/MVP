@@ -28,7 +28,7 @@ import {
   unfollowUser,
   getFollowStats 
 } from '../utils/followService';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 
 type FollowersScreenRouteParams = {
   userId: string;

@@ -13,7 +13,7 @@ import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { useRoute, useFocusEffect, useNavigationState } from '@react-navigation/native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import colors from '../globals/colors';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import logger from '../utils/logger';
 import { rowDirection } from '../globals/responsive';
 import { useTranslation } from 'react-i18next';

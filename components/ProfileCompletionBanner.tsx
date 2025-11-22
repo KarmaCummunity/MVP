@@ -4,7 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
-import { useUser, type User } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
+import type { User } from '../stores/userStore';
 import { useTranslation } from 'react-i18next';
 
 const isFullName = (name?: string): boolean => {

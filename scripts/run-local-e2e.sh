@@ -34,6 +34,9 @@ kill_port() {
 # free critical ports
 kill_port "$SERVER_PORT"
 kill_port "$EXPO_PORT"
+# Also check for any other common web server ports that might serve the old static page
+kill_port 8080
+kill_port 3000
 
 # 0) Start Postgres + Redis via docker if available (or FORCE_DOCKER=1)
 if command -v docker >/dev/null 2>&1; then
@@ -201,12 +204,42 @@ echo "✅ Extended API tests passed."
 # 3) Start client (Expo) pointing to local API (with deps ensure)
 cd "$CLIENT_DIR"
 echo "\n🖥️  Starting Expo (API=http://localhost:$SERVER_PORT)"
+
+# CRITICAL: Remove old static HTML file that interferes with Expo web
+if [[ -f "$CLIENT_DIR/public/index.html" ]]; then
+  echo "⚠️  Removing old static HTML file (public/index.html) that interferes with Expo web"
+  mv "$CLIENT_DIR/public/index.html" "$CLIENT_DIR/public/index.html.old" 2>/dev/null || true
+fi
+
 if [[ ! -d node_modules ]]; then echo "📥 Installing client deps..."; npm ci || npm install; fi
 export EXPO_PUBLIC_API_BASE_URL=http://localhost:"$SERVER_PORT"
 export EXPO_PUBLIC_USE_BACKEND=1
 export EXPO_PUBLIC_USE_FIRESTORE=0
 
 # Run Expo on specific port without prompts
-EXPO_DEV_SERVER_PORT="$EXPO_PORT" npx expo start --port "$EXPO_PORT"
+echo ""
+echo "═══════════════════════════════════════════════════════════════"
+echo "🌐 IMPORTANT: Open http://localhost:$EXPO_PORT in your browser"
+echo "   (NOT http://localhost:3001 or any other port)"
+echo ""
+echo "⚠️  The 'coming soon' page is OLD and should NOT appear!"
+echo ""
+echo "   If you see the 'coming soon' page:"
+echo "   1. Clear browser cache (Ctrl+Shift+R or Cmd+Shift+R)"
+echo "   2. Make sure you're opening http://localhost:$EXPO_PORT"
+echo "   3. Check browser console for errors (F12)"
+echo "   4. Try incognito/private mode"
+echo ""
+echo "   The app should show either:"
+echo "   - LandingSiteScreen (if web mode = 'site')"
+echo "   - LoginScreen or HomeScreen (if web mode = 'app')"
+echo "═══════════════════════════════════════════════════════════════"
+echo ""
+
+# Clear cache before starting to avoid circular dependency issues
+echo "🧹 Clearing Metro cache..."
+rm -rf "$CLIENT_DIR/.expo" "$CLIENT_DIR/node_modules/.cache" 2>/dev/null || true
+
+EXPO_DEV_SERVER_PORT="$EXPO_PORT" npx expo start --port "$EXPO_PORT" --web --clear
 
 

@@ -20,7 +20,7 @@ import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { AdminStackParamList } from '../globals/types';
 import { enhancedDB, wipeAllDataAdmin, DonationData } from '../utils/enhancedDatabaseService';
 import { USE_BACKEND } from '../utils/dbConfig';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import { logger } from '../utils/loggerService';
 
 interface Donation {

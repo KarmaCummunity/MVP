@@ -40,9 +40,8 @@ import MainNavigator from './navigations/MainNavigator';
 // Ensure tslib default interop for certain vendor bundles
 import './polyfills/tslib-default';
 import colors from './globals/colors';
-import { UserProvider } from './context/UserContext';
-import { WebModeProvider, useWebMode } from './context/WebModeContext';
-import { AppLoadingProvider, useAppLoading } from './context/AppLoadingContext';
+import { useWebMode } from './stores/webModeStore';
+import { useAppLoading } from './stores/appLoadingStore';
 import WebModeToggleOverlay from './components/WebModeToggleOverlay';
 import { FontSizes } from "./globals/constants";
 import { logger } from './utils/loggerService';
@@ -81,6 +80,9 @@ try { WebBrowser.maybeCompleteAuthSession(); } catch {}
 
 SplashScreen.preventAutoHideAsync();
 
+// Web mode store initializes automatically when created (synchronous)
+// No need for early initialization - it reads from localStorage on creation
+
 function AppContent() {
   const { t } = useTranslation(['common']);
   // Define proper navigation param list type
@@ -100,6 +102,32 @@ function AppContent() {
     markAppReady,
     getCriticalError 
   } = useAppLoading();
+  
+  // Initialize stores on mount
+  useEffect(() => {
+    const initializeStores = async () => {
+      try {
+        logger.info('App', 'Initializing Zustand stores');
+        
+        // Initialize web mode store (reads from localStorage synchronously on creation)
+        if (Platform.OS === 'web') {
+          const { useWebModeStore } = await import('./stores/webModeStore');
+          useWebModeStore.getState().initialize();
+        }
+        
+        // Initialize user store
+        const { useUserStore } = await import('./stores/userStore');
+        await useUserStore.getState().initialize();
+        
+        logger.info('App', 'Zustand stores initialized');
+      } catch (error) {
+        logger.error('App', 'Failed to initialize stores', { error });
+      }
+    };
+    
+    // Initialize immediately - no delay needed
+    initializeStores();
+  }, []);
 
   logger.info('App', 'App component mounted');
   
@@ -264,7 +292,7 @@ function AppContent() {
   );
 }
 
-// Main App component with all providers
+// Main App component (no providers needed with Zustand)
 export default function App() {
   return (
     <ErrorBoundary 
@@ -281,17 +309,11 @@ export default function App() {
         });
       }}
     >
-      <AppLoadingProvider>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <SafeAreaProvider>
-            <WebModeProvider>
-              <UserProvider>
-                <AppContent />
-              </UserProvider>
-            </WebModeProvider>
-          </SafeAreaProvider>
-        </GestureHandlerRootView>
-      </AppLoadingProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <AppContent />
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
     </ErrorBoundary>
   );
 }

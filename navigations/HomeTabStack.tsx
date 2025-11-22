@@ -23,7 +23,7 @@ import FollowersScreen from '../screens/FollowersScreen';
 import LandingSiteScreen from '../screens/LandingSiteScreen';
 
 import TopBarNavigator from './TopBarNavigator';
-import { useWebMode } from '../context/WebModeContext';
+import { useWebMode } from '../stores/webModeStore';
 
 type HomeTabStackParamList = {
   HomeMain: undefined;

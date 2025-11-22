@@ -23,7 +23,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { ParamListBase } from '@react-navigation/native';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../stores/userStore';
 import { getFollowing, getFollowers, getFollowSuggestions } from '../utils/followService';
 import { createConversation, getAllConversations, conversationExists, sendMessage } from '../utils/chatService';
 import { UserPreview as CharacterType } from '../globals/types';
