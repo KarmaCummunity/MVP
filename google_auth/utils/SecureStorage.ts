@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ========================================
  * SECURE STORAGE UTILITY

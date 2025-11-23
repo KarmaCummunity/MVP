@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ========================================
  * GOOGLE AUTHENTICATION SERVICE

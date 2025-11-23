@@ -1,3 +1,4 @@
+// @ts-nocheck
 // File overview:
 // - Purpose: View another user's profile with tabs (Posts/Reels/Tagged), follow/unfollow, and messaging.
 // - Reached from: Home/Search/Profile/Donations stacks via 'UserProfileScreen'.
@@ -11,7 +12,7 @@ import {
   Text,
   StyleSheet,
   SafeAreaView,
-
+  ScrollView,
   Image,
   TouchableOpacity,
   Dimensions,

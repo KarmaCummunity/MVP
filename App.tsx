@@ -253,39 +253,42 @@ function AppContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAppReady]); // Run only once when app is ready
 
-
-
-  // Check for critical errors
-  const criticalError = getCriticalError();
-  if (criticalError) {
-    return (
-      <View style={errorStyles.container}>
-        <Text style={errorStyles.errorText}>
-          Oops! There was an issue loading essential resources.
-        </Text>
-        <Text style={errorStyles.detailText}>
-          Please try restarting the app.
-        </Text>
-        {/* For debugging, you can re-enable this if needed */}
-        {(typeof __DEV__ !== 'undefined' && __DEV__) && <Text style={errorStyles.detailText}>Error: {criticalError.message}</Text>}
-      </View>
+    // Memoize container style to prevent unnecessary re-renders
+    const containerStyle = React.useMemo(
+      () => ({
+        flex: 1,
+        paddingTop: Platform.OS === 'web' && mode === 'app' ? 48 : 0, // Space for toggle button in app mode
+      }),
+      [mode],
     );
-  }
 
-  // Memoize container style to prevent unnecessary re-renders
-  const containerStyle = React.useMemo(() => ({
-    flex: 1,
-    paddingTop: Platform.OS === 'web' && mode === 'app' ? 48 : 0 // Space for toggle button in app mode
-  }), [mode]);
+    // Check for critical errors
+    const criticalError = getCriticalError();
+    if (criticalError) {
+      return (
+        <View style={errorStyles.container}>
+          <Text style={errorStyles.errorText}>
+            Oops! There was an issue loading essential resources.
+          </Text>
+          <Text style={errorStyles.detailText}>
+            Please try restarting the app.
+          </Text>
+          {/* For debugging, you can re-enable this if needed */}
+          {typeof __DEV__ !== 'undefined' && __DEV__ && (
+            <Text style={errorStyles.detailText}>Error: {criticalError.message}</Text>
+          )}
+        </View>
+      );
+    }
 
-  if (!isAppReady) {
-    return (
-      <View style={loadingStyles.container}>
-          <ActivityIndicator size="large" color={colors.info}/>
+    if (!isAppReady) {
+      return (
+        <View style={loadingStyles.container}>
+          <ActivityIndicator size="large" color={colors.info} />
           <Text style={loadingStyles.loadingText}>{t('common:loading')}</Text>
-      </View>
-    );
-  }
+        </View>
+      );
+    }
 
   return (
     <NavigationContainer

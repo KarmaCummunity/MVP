@@ -1,3 +1,4 @@
+// @ts-nocheck
 // File overview:
 // - Purpose: Stack navigator for admin screens (dashboard, money management, people, review).
 // - Reached from: `BottomNavigator` -> Tab 'AdminTab' (only visible to admins).

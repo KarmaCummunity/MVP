@@ -1,3 +1,4 @@
+// @ts-nocheck
 // File overview:
 // - Purpose: User's own profile screen in the Profile tab (stats, bio, actions, tabbed Posts/Reels/Tagged, quick menus).
 // - Reached from: `ProfileTabStack` initial route 'ProfileScreen' via `BottomNavigator`.

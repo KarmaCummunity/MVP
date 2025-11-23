@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   Image,
   Alert,
-
+  ScrollView,
   TextInput,
   Platform,
   Modal,

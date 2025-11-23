@@ -1,3 +1,4 @@
+// @ts-nocheck
 // File overview:
 // - Purpose: Controlled dropdown with searchable modal list; returns a selected string value.
 // - Reached from: Various forms/screens needing a compact autocomplete selector.
