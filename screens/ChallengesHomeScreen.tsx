@@ -15,6 +15,7 @@ import {
 import { Challenge, ChallengeFormData } from '../types/challenges';
 import { ChallengeService } from '../utils/challengeService';
 import { ChallengeCard } from '../components/ChallengeCard';
+import { ChallengeForm } from '../components/ChallengeForm';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import apiService from '../utils/apiService';
@@ -25,6 +26,8 @@ export default function ChallengesHomeScreen() {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isFormVisible, setIsFormVisible] = useState(false);
+  const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null);
   
   // Refs for debouncing and preventing memory leaks
   const lastUpdateTime = useRef<number>(0);
@@ -58,15 +61,14 @@ export default function ChallengesHomeScreen() {
         const parsedChallenges = result.data.map((c: any) => ({
           ...c,
           startDate: typeof c.start_date === 'number' ? c.start_date : parseInt(c.start_date, 10),
-          lastCalculated: typeof c.last_calculated === 'number' ? c.last_calculated : parseInt(c.last_calculated, 10),
-          lastResetDate: typeof c.last_reset_date === 'number' ? c.last_reset_date : parseInt(c.last_reset_date, 10),
           timeUnit: c.time_unit,
           customResetAmount: c.custom_reset_amount,
           currentValue: c.current_value,
-          lastCalculated: c.last_calculated,
+          lastCalculated: typeof c.last_calculated === 'number' ? c.last_calculated : parseInt(c.last_calculated, 10),
           currentStreak: c.current_streak,
           bestStreak: c.best_streak,
           resetCount: c.reset_count,
+          lastResetDate: typeof c.last_reset_date === 'number' ? c.last_reset_date : parseInt(c.last_reset_date, 10),
           userId: c.user_id,
         }));
         setChallenges(parsedChallenges);
@@ -81,14 +83,49 @@ export default function ChallengesHomeScreen() {
   };
 
   const handleAddChallenge = () => {
-    // TODO: הוסף מודל ליצירת אתגר חדש
-    Alert.alert('בקרוב', 'יצירת אתגר חדש בקרוב!');
+    setEditingChallenge(null);
+    setIsFormVisible(true);
   };
 
   const handleEditChallenge = useCallback((challenge: Challenge) => {
-    // TODO: הוסף מודל לעריכת אתגר
-    Alert.alert('בקרוב', 'עריכת אתגר בקרוב!');
+    setEditingChallenge(challenge);
+    setIsFormVisible(true);
   }, []);
+
+  const handleSaveChallenge = async (data: ChallengeFormData) => {
+    if (!selectedUser?.id) return;
+
+    try {
+      if (editingChallenge) {
+        // עריכת אתגר קיים
+        const updatedChallenge: Challenge = {
+          ...editingChallenge,
+          name: data.name,
+          timeUnit: data.timeUnit,
+          customResetAmount: data.customResetAmount,
+        };
+        await apiService.updateChallenge(
+          editingChallenge.id,
+          selectedUser.id,
+          updatedChallenge
+        );
+      } else {
+        // יצירת אתגר חדש
+        await apiService.createChallenge({
+          name: data.name,
+          timeUnit: data.timeUnit,
+          customResetAmount: data.customResetAmount,
+          userId: selectedUser.id,
+        });
+      }
+      await loadChallenges();
+      setIsFormVisible(false);
+      setEditingChallenge(null);
+    } catch (error) {
+      console.error('Error saving challenge:', error);
+      Alert.alert('שגיאה', 'לא הצלחנו לשמור את האתגר');
+    }
+  };
 
   const handleUpdateChallenge = useCallback(async (challenge: Challenge) => {
     try {
@@ -159,7 +196,7 @@ export default function ChallengesHomeScreen() {
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color={colors.primaryColor} />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>טוען אתגרים...</Text>
       </View>
     );
@@ -197,7 +234,7 @@ export default function ChallengesHomeScreen() {
 
       {/* כפתור FAB */}
       <TouchableOpacity style={styles.fab} onPress={handleAddChallenge}>
-        <Ionicons name="add" size={32} color="#FFFFFF" />
+        <Ionicons name="add" size={32} />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -286,7 +323,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.primaryColor,
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',

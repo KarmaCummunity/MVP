@@ -240,24 +240,6 @@ export default function AdminTasksScreen() {
     <View style={styles.container}>
       <Text style={styles.header}>ניהול משימות</Text>
 
-      {/* כרטיס אתגרים */}
-      <TouchableOpacity 
-        style={styles.challengeCard}
-        onPress={() => {
-          // נניווט למסך האתגרים
-          Alert.alert('אתגרים', 'מסך אתגרים בקרוב!');
-        }}
-      >
-        <View style={styles.challengeIconContainer}>
-          <Ionicons name="trophy" size={scaleSize(28)} color="#FFA726" />
-        </View>
-        <View style={styles.challengeContent}>
-          <Text style={styles.challengeTitle}>האתגרים שלי</Text>
-          <Text style={styles.challengeSubtitle}>עקוב אחר ההתקדמות האישית שלך</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={scaleSize(20)} color={colors.textSecondary} />
-      </TouchableOpacity>
-
       <View style={styles.filtersRow}>
         <TextInput
           style={styles.input}
@@ -716,49 +698,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: scaleSize(FontSizes.medium),
-  },
-  // Challenge card styles
-  challengeCard: {
-    backgroundColor: colors.backgroundPrimary,
-    borderRadius: scaleSize(12),
-    padding: responsiveSpacing(14, 16, 18),
-    marginBottom: responsiveSpacing(12, 14, 16),
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: responsiveSpacing(10, 12, 14),
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#FFA726',
-  },
-  challengeIconContainer: {
-    width: scaleSize(50),
-    height: scaleSize(50),
-    borderRadius: scaleSize(25),
-    backgroundColor: '#FFF3E0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  challengeContent: {
-    flex: 1,
-  },
-  challengeTitle: {
-    fontSize: scaleSize(FontSizes.large),
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-    marginBottom: 4,
-    textAlign: 'right',
-  },
-  challengeSubtitle: {
-    fontSize: scaleSize(FontSizes.small),
-    color: colors.textSecondary,
-    textAlign: 'right',
   },
 });
 
