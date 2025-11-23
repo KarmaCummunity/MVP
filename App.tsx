@@ -137,38 +137,47 @@ function AppContent() {
 
   logger.info('App', 'App component mounted');
   
-  // TODO: Move notification setup to dedicated notification service/hook
-  // TODO: Add proper error handling for notification permission failures
-  // TODO: Test notification handling on all platforms (iOS/Android/Web)
   // Setup notification response listener (iOS + Android) (run only once)
+  // MEMORY LEAK FIX: Properly cleanup subscription on unmount
   useEffect(() => {
     if (!notificationService) return;
 
-    const subscription = notificationService.setupNotificationResponseListener((response) => {
-      try {
-        logger.info('App', 'Notification clicked', { response });
-        const data = response?.notification?.request?.content?.data || {};
-        const type = data?.type;
-        const conversationId = data?.conversationId;
+    let subscription: any = null;
+    
+    try {
+      subscription = notificationService.setupNotificationResponseListener((response) => {
+        try {
+          logger.info('App', 'Notification clicked', { response });
+          const data = response?.notification?.request?.content?.data || {};
+          const type = data?.type;
+          const conversationId = data?.conversationId;
 
-        if (navigationRef.current?.isReady()) {
-          if (type === 'message' && conversationId) {
-            navigationRef.current.navigate('ChatDetailScreen', { conversationId });
-          } else {
-            navigationRef.current.navigate('NotificationsScreen');
+          if (navigationRef.current?.isReady()) {
+            if (type === 'message' && conversationId) {
+              navigationRef.current.navigate('ChatDetailScreen', { conversationId });
+            } else {
+              navigationRef.current.navigate('NotificationsScreen');
+            }
           }
+        } catch (err) {
+          logger.warn('App', 'Failed to handle notification response', { error: err });
         }
-      } catch (err) {
-        logger.warn('App', 'Failed to handle notification response', { error: err });
-      }
-    });
+      });
+    } catch (err) {
+      logger.error('App', 'Failed to setup notification listener', { error: err });
+    }
 
+    // CLEANUP: Remove subscription when component unmounts
     return () => {
       if (subscription && typeof subscription.remove === 'function') {
-        subscription.remove();
+        try {
+          subscription.remove();
+          logger.debug('App', 'Notification subscription cleaned up');
+        } catch (err) {
+          logger.warn('App', 'Error cleaning up notification subscription', { error: err });
+        }
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only once on mount
 
   // Fast initial setup to show the UI as quickly as possible (run only once)

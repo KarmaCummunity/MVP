@@ -76,6 +76,75 @@ class ApiService {
     });
   }
 
+  // Challenges APIs
+  async getChallenges(userId: string): Promise<ApiResponse> {
+    return this.request(`/api/challenges?userId=${userId}`);
+  }
+
+  async getChallenge(id: string, userId: string): Promise<ApiResponse> {
+    return this.request(`/api/challenges/${id}?userId=${userId}`);
+  }
+
+  async createChallenge(challengeData: any): Promise<ApiResponse> {
+    return this.request('/api/challenges', {
+      method: 'POST',
+      body: JSON.stringify(challengeData),
+    });
+  }
+
+  async updateChallenge(id: string, userId: string, updateData: any): Promise<ApiResponse> {
+    return this.request(`/api/challenges/${id}?userId=${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
+  }
+
+  async deleteChallenge(id: string, userId: string): Promise<ApiResponse> {
+    return this.request(`/api/challenges/${id}?userId=${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async restoreChallenge(id: string, userId: string): Promise<ApiResponse> {
+    return this.request(`/api/challenges/restore/${id}?userId=${userId}`, {
+      method: 'POST',
+    });
+  }
+
+  async getDeletedChallenges(userId: string): Promise<ApiResponse> {
+    return this.request(`/api/challenges/history/deleted?userId=${userId}`);
+  }
+
+  async createResetLog(resetLogData: any): Promise<ApiResponse> {
+    return this.request('/api/challenges/reset-logs', {
+      method: 'POST',
+      body: JSON.stringify(resetLogData),
+    });
+  }
+
+  async getResetLogs(userId: string, challengeId?: string): Promise<ApiResponse> {
+    let url = `/api/challenges/reset-logs/all?userId=${userId}`;
+    if (challengeId) {
+      url += `&challengeId=${challengeId}`;
+    }
+    return this.request(url);
+  }
+
+  async createRecordBreak(recordBreakData: any): Promise<ApiResponse> {
+    return this.request('/api/challenges/record-breaks', {
+      method: 'POST',
+      body: JSON.stringify(recordBreakData),
+    });
+  }
+
+  async getRecordBreaks(userId: string, challengeId?: string): Promise<ApiResponse> {
+    let url = `/api/challenges/record-breaks/all?userId=${userId}`;
+    if (challengeId) {
+      url += `&challengeId=${challengeId}`;
+    }
+    return this.request(url);
+  }
+
   private normalizeEndpoint(endpoint: string): string {
     if (!endpoint) {
       return '/';
