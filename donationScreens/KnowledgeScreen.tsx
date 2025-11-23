@@ -142,7 +142,7 @@ export default function KnowledgeScreen({
   // Refresh data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      console.log('📚 KnowledgeScreen - Screen focused, refreshing data...');
+      // console removed
       // Reset form when returning to screen
       setSelectedMentorship(null);
       // Force re-render by updating refresh key
@@ -174,7 +174,7 @@ export default function KnowledgeScreen({
     "לפי רלוונטיות",
   ];
   const handleLinkPress = async (url: string, title: string) => {
-    console.log('Opening educational link:', title);
+    // console removed
     try {
       const supported = await Linking.canOpenURL(url);
       if (supported) {
@@ -189,7 +189,7 @@ export default function KnowledgeScreen({
   };
 
   const handleCommunityContentPress = (content: any) => {
-    console.log('Community content pressed:', content.title);
+    // console removed
     Alert.alert(
       'הצטרפות לקורס',
       `האם תרצה להצטרף לקורס "${content.title}" עם ${content.teacher}?`,
@@ -202,12 +202,7 @@ export default function KnowledgeScreen({
 
   // Function to handle search results from HeaderComp
   const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
-    console.log('📚 KnowledgeScreen - Search received:', { 
-      query, 
-      filters: filters || [], 
-      sorts: sorts || [], 
-      resultsCount: results?.length || 0 
-    });
+    // console removed
     
     // Update state with search results
     setSearchQuery(query);

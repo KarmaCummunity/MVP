@@ -46,7 +46,7 @@ export const addBookmark = async (userId: string, postData: any): Promise<boolea
     );
     
     if (existingBookmark) {
-      console.log('📖 Post already bookmarked');
+      // console removed
       return false;
     }
 
@@ -66,7 +66,7 @@ export const addBookmark = async (userId: string, postData: any): Promise<boolea
     bookmarks.push(newBookmark);
     await setStoredBookmarks(bookmarks);
     
-    console.log('✅ Bookmark added:', newBookmark.id);
+    // console removed
     return true;
   } catch (error) {
     console.error('❌ Add bookmark error:', error);
@@ -83,7 +83,7 @@ export const removeBookmark = async (userId: string, postId: string): Promise<bo
     
     await setStoredBookmarks(filteredBookmarks);
     
-    console.log('✅ Bookmark removed');
+    // console removed
     return true;
   } catch (error) {
     console.error('❌ Remove bookmark error:', error);
@@ -120,7 +120,7 @@ export const clearAllBookmarks = async (userId: string): Promise<void> => {
     const bookmarks = await getStoredBookmarks();
     const filteredBookmarks = bookmarks.filter(bookmark => bookmark.userId !== userId);
     await setStoredBookmarks(filteredBookmarks);
-    console.log('✅ All bookmarks cleared for user:', userId);
+    // console removed
   } catch (error) {
     console.error('❌ Clear bookmarks error:', error);
   }

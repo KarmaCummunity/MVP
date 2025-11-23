@@ -139,7 +139,7 @@ const UI_CONFIG = {
  * ```tsx
  * <SecureGoogleAuthButton
  *   onSuccess={(user) => {
- *     console.log('User authenticated:', user.email);
+ *     // console removed
  *   }}
  *   onError={(error) => {
  *     console.error('Auth failed:', error);

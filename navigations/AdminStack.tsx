@@ -20,7 +20,7 @@ const Stack = createStackNavigator<AdminStackParamList>();
 export default function AdminStack() {
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🛡️ AdminStack - Navigator focused');
+      // console removed
     }, [])
   );
 

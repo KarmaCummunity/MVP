@@ -81,7 +81,7 @@ const isOverlapping = (
 };
 
 const generateStatsLayout = () => {
-  console.log("Generating donation stats bubbles...");
+  // console removed
   const bubbles: any[] = [];
   let attempts = 0;
   const maxAttempts = 3000;
@@ -157,7 +157,7 @@ const generateStatsLayout = () => {
     }
   }
 
-  console.log(`Generated ${bubbles.length} bubbles total`);
+  // console removed
   return bubbles;
 };
 

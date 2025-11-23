@@ -44,7 +44,7 @@ import './utils/disableConsoleLogs';
 import colors from './globals/colors';
 import { useWebMode } from './stores/webModeStore';
 import { useAppLoading } from './stores/appLoadingStore';
-import WebModeToggleOverlay from './components/WebModeToggleOverlay';
+import WebModeToggle from './components/WebModeToggle';
 import { FontSizes } from "./globals/constants";
 import { logger } from './utils/loggerService';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -294,7 +294,7 @@ function AppContent() {
       children={
         <View style={containerStyle}>
           <MainNavigator />
-          <WebModeToggleOverlay />
+          <WebModeToggle />
           <StatusBar style="auto" />
         </View>
       }

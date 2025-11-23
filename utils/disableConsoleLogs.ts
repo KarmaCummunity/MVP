@@ -11,23 +11,33 @@ const originalConsole = {
 };
 
 // Check if we're in development mode
-const isDevelopment = typeof __DEV__ !== 'undefined' && __DEV__;
+// For web, also check NODE_ENV
+const isDevelopment = (typeof __DEV__ !== 'undefined' && __DEV__) || 
+                     (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development');
 
 /**
  * Disable console logs in production mode
  * Only errors will be kept for debugging critical issues
+ * CRITICAL: 678 console.log statements are killing performance!
  */
 export function disableConsoleLogs() {
   if (!isDevelopment) {
-    // In production, disable log, info, debug, and warn
-    // Keep error for critical issues
-    console.log = () => {};
-    console.info = () => {};
-    console.debug = () => {};
-    console.warn = () => {};
+    // In production, disable ALL console methods except error
+    const noop = () => {};
+    console.log = noop;
+    console.info = noop;
+    console.debug = noop;
+    console.warn = noop;
+    console.trace = noop;
+    console.table = noop;
+    console.group = noop;
+    console.groupEnd = noop;
+    console.time = noop;
+    console.timeEnd = noop;
     
-    // Keep console.error for critical issues
-    // You can also disable it if needed: console.error = () => {};
+    // Keep console.error for critical issues only
+    // Uncomment next line to disable errors too:
+    // console.error = noop;
   }
 }
 

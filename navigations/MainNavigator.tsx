@@ -68,34 +68,24 @@ export default function MainNavigator() {
 
   // TODO: Replace console.log with proper logging service
   // TODO: Add proper state validation and error handling
-  console.log('🧭 MainNavigator - Render state:', {
-    selectedUser: selectedUser?.name || 'null',
-    isLoading,
-    isGuestMode,
-    isAuthenticated
-  });
+  // console removed
 
   // Refresh data when navigator comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🧭 MainNavigator - Navigator focused, checking state...');
+      // console removed
       // This will trigger re-renders of child screens when needed
     }, [])
   );
 
   // Automatic update when authentication state changes
   useEffect(() => {
-    console.log('🧭 MainNavigator - Auth state changed:', {
-      selectedUser: selectedUser?.name || 'null',
-      isLoading,
-      isGuestMode,
-      isAuthenticated
-    });
+    // console removed
   }, [selectedUser, isLoading, isGuestMode, isAuthenticated]);
 
   // Loading screen
   if (isLoading) {
-    console.log('🧭 MainNavigator - Showing loading screen');
+    // console removed
     return (
       <View style={styles.centeredScreen as any}>
         <ActivityIndicator size="large" color={colors.info} />
@@ -104,7 +94,7 @@ export default function MainNavigator() {
     );
   }
 
-  console.log('🧭 MainNavigator - Loading completed, rendering navigator');
+  // console removed
 
   // Determine initial route based on web mode and authentication state
   let initialRouteName: string;
@@ -112,15 +102,15 @@ export default function MainNavigator() {
   if (Platform.OS === 'web' && mode === 'site') {
     // Site mode: always start with landing page
     initialRouteName = 'LandingSiteScreen';
-    console.log('🧭 MainNavigator - Site mode: showing LandingSiteScreen as initial route');
+    // console removed
   } else {
     // App mode: determine based on authentication
     if (isAuthenticated || isGuestMode) {
       initialRouteName = 'HomeStack';
-      console.log('🧭 MainNavigator - App mode: user authenticated/guest, showing HomeStack');
+      // console removed
     } else {
       initialRouteName = 'LoginScreen';
-      console.log('🧭 MainNavigator - App mode: user not authenticated, showing LoginScreen');
+      // console removed
     }
   }
 

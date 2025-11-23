@@ -78,7 +78,7 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
           status: json.status,
           errorMessage: json.error_message
         });
-        console.warn("Google Places returned:", json.status, json.error_message);
+        // console removed
         setResults([]);
         return;
       }

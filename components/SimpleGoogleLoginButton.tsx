@@ -598,12 +598,6 @@ export default function SimpleGoogleLoginButton({
         <Text style={[styles.text, { fontSize: buttonFontSize }]}>
           {(() => {
             const buttonText = getButtonText() || getFallbackButtonText();
-            console.log('GoogleLogin Button Text:', { 
-              buttonText, 
-              authState, 
-              isTranslationReady,
-              fallbackText: getFallbackButtonText()
-            });
             return buttonText;
           })()}
         </Text>

@@ -47,13 +47,13 @@ export default function NotificationsScreen() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
 
-  console.log('🔔 NotificationsScreen - Component rendered, selectedUser:', selectedUser?.name || 'null');
+  // console removed
 
   const loadNotifications = useCallback(async () => {
-    console.log('🔔 NotificationsScreen - loadNotifications - selectedUser:', selectedUser?.name || 'null');
+    // console removed
     
     if (!selectedUser) {
-      console.log('🔔 NotificationsScreen - No selected user, cannot load notifications');
+      // console removed
       return;
     }
 
@@ -71,15 +71,15 @@ export default function NotificationsScreen() {
 
     useFocusEffect(
     useCallback(() => {
-      console.log('🔔 NotificationsScreen - Screen focused, loading notifications...');
-      console.log('🔔 NotificationsScreen - selectedUser in useFocusEffect:', selectedUser?.name || 'null');
+      // console removed
+      // console removed
       loadNotifications();
 
       // Subscribe to in-app notification events for real-time updates
       const unsubscribe = subscribeToNotificationEvents((notification) => {
         if (!selectedUser) return;
         if (notification.userId !== selectedUser.id) return;
-        console.log('🔔 NotificationsScreen - Realtime notification received');
+        // console removed
         // Prepend the new notification and update unread counter
         setNotifications((prev) => [notification, ...prev]);
         setUnreadCount((prev) => prev + (notification.read ? 0 : 1));
@@ -94,7 +94,7 @@ export default function NotificationsScreen() {
           const count = userNotifications.filter(n => !n.read).length;
           setUnreadCount(count);
         } catch (e) {
-          console.warn('⚠️ NotificationsScreen - polling error', e);
+          // console removed
         }
       }, 3000);
 

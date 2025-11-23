@@ -126,7 +126,7 @@ export default function UserProfileScreen() {
 
   // Reset state when userId changes
   useEffect(() => {
-    console.log('👤 UserProfileScreen - userId changed:', userId);
+    // console removed
     setIsFollowing(false);
     setFollowStats({ followersCount: 0, followingCount: 0, isFollowing: false });
     setUpdatedCounts({ followersCount: 0, followingCount: 0 });
@@ -137,7 +137,7 @@ export default function UserProfileScreen() {
     const loadFollowStats = async () => {
       if (user && selectedUser) {
         try {
-          console.log('👤 UserProfileScreen - Loading follow stats for user:', user.name);
+          // console removed
           const stats = await getFollowStats(user.id, selectedUser.id);
           const counts = await getUpdatedFollowCounts(user.id);
           setFollowStats(stats);
@@ -156,7 +156,7 @@ export default function UserProfileScreen() {
   useFocusEffect(
     React.useCallback(() => {
       const refreshFollowStats = async () => {
-        console.log('👤 UserProfileScreen - Screen focused, refreshing follow stats...');
+        // console removed
         if (user && selectedUser) {
           try {
             const stats = await getFollowStats(user.id, selectedUser.id);
@@ -236,7 +236,7 @@ export default function UserProfileScreen() {
     );
   }
 
-  console.log('👤 UserProfileScreen - Rendering profile for user:', user.name, 'userId:', userId);
+  // console removed
 
   return (
     <SafeAreaView style={styles.container}>

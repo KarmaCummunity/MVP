@@ -162,10 +162,10 @@ export default function NewChatScreen() {
       let conversationId: string;
       
       if (existingConvId) {
-        console.log('💬 Conversation already exists:', existingConvId);
+        // console removed
         conversationId = existingConvId;
       } else {
-        console.log('💬 Creating new conversation...');
+        // console removed
         conversationId = await createConversation([selectedUser.id, friend.id]);
         
         const welcomeMessage = {
@@ -179,7 +179,7 @@ export default function NewChatScreen() {
         };
         
         await sendMessage(welcomeMessage);
-        console.log('💬 Sent welcome message');
+        // console removed
       }
       
       (navigation as any).navigate('ChatDetailScreen', {

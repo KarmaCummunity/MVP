@@ -100,7 +100,7 @@ export class DatabaseService {
       }
       // Only log in development
       if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`✅ DatabaseService - Created ${collection} item:`, itemId);
+        // console removed
       }
     } catch (error) {
       // Errors are always logged (important for debugging)
@@ -146,12 +146,12 @@ export class DatabaseService {
       if (USE_BACKEND) {
         await restAdapter.update(collection, userId, itemId, data);
         if (typeof __DEV__ !== 'undefined' && __DEV__) {
-          console.log(`✅ DatabaseService - Updated ${collection} item:`, itemId);
+          // console removed
         }
       } else if (USE_FIRESTORE) {
         await firestoreAdapter.update(collection, userId, itemId, data);
         if (typeof __DEV__ !== 'undefined' && __DEV__) {
-          console.log(`✅ DatabaseService - Updated ${collection} item:`, itemId);
+          // console removed
         }
       } else {
         const existing = await this.read<T>(collection, userId, itemId);
@@ -159,7 +159,7 @@ export class DatabaseService {
           const updated = { ...existing, ...data };
           await this.create(collection, userId, itemId, updated);
           if (typeof __DEV__ !== 'undefined' && __DEV__) {
-            console.log(`✅ DatabaseService - Updated ${collection} item:`, itemId);
+            // console removed
           }
         }
       }
@@ -186,7 +186,7 @@ export class DatabaseService {
         await AsyncStorage.removeItem(key);
       }
       if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`✅ DatabaseService - Deleted ${collection} item:`, itemId);
+        // console removed
       }
     } catch (error) {
       if (typeof __DEV__ !== 'undefined' && __DEV__) {
@@ -297,17 +297,17 @@ export class DatabaseService {
             restAdapter.create(collection, userId, id, data)
           )
         );
-        console.log(`✅ DatabaseService - Batch created ${items.length} ${collection} items (Backend - parallel)`);
+        // console removed`);
       } else if (USE_FIRESTORE) {
         await firestoreAdapter.batchCreate(collection, userId, items);
-        console.log(`✅ DatabaseService - Batch created ${items.length} ${collection} items (Firestore)`);
+        // console removed`);
       } else {
         const keyValuePairs: [string, string][] = items.map(({ id, data }) => [
           getDBKey(collection, userId, id),
           JSON.stringify(data)
         ]);
         await AsyncStorage.multiSet(keyValuePairs);
-        console.log(`✅ DatabaseService - Batch created ${items.length} ${collection} items`);
+        // console removed
       }
     } catch (error) {
       console.error(`❌ DatabaseService - Batch create ${collection} error:`, error);
@@ -338,14 +338,14 @@ export class DatabaseService {
             restAdapter.delete(collection, userId, id)
           )
         );
-        console.log(`✅ DatabaseService - Batch deleted ${itemIds.length} ${collection} items (Backend - parallel)`);
+        // console removed`);
       } else if (USE_FIRESTORE) {
         await firestoreAdapter.batchDelete(collection, userId, itemIds);
-        console.log(`✅ DatabaseService - Batch deleted ${itemIds.length} ${collection} items (Firestore)`);
+        // console removed`);
       } else {
         const keys = itemIds.map(id => getDBKey(collection, userId, id));
         await AsyncStorage.multiRemove(keys);
-        console.log(`✅ DatabaseService - Batch deleted ${itemIds.length} ${collection} items`);
+        // console removed
       }
     } catch (error) {
       console.error(`❌ DatabaseService - Batch delete ${collection} error:`, error);
@@ -406,9 +406,9 @@ export class DatabaseService {
       // Use multiRemove for efficient batch deletion
       if (userKeys.length > 0) {
         await AsyncStorage.multiRemove(userKeys);
-        console.log(`✅ DatabaseService - Deleted ${userKeys.length} keys for user: ${userId}`);
+        // console removed
       } else {
-        console.log(`ℹ️  DatabaseService - No data found for user: ${userId}`);
+        // console removed
       }
     } catch (error) {
       console.error('❌ DatabaseService - Delete user data error:', error);
@@ -420,7 +420,7 @@ export class DatabaseService {
   static async clearAllData(): Promise<void> {
     try {
       await AsyncStorage.clear();
-      console.log('✅ DatabaseService - Cleared all data');
+      // console removed
     } catch (error) {
       console.error('❌ DatabaseService - Clear all data error:', error);
       throw error;
@@ -441,7 +441,7 @@ export class DatabaseService {
       if (keysToRemove.length > 0) {
         await AsyncStorage.multiRemove(keysToRemove);
       }
-      console.log('✅ DatabaseService - Cleared local collection keys:', keysToRemove.length);
+      // console removed
     } catch (error) {
       console.error('❌ DatabaseService - Clear local collections error:', error);
       throw error;
@@ -508,7 +508,7 @@ export class DatabaseService {
         })
       );
 
-      console.log(`✅ DatabaseService - Imported ${totalImported} items across ${collections.length} collections for user: ${userId}`);
+      // console removed
     } catch (error) {
       console.error('❌ DatabaseService - Import user data error:', error);
       throw error;
@@ -769,7 +769,7 @@ export const db = {
           metadata: { source: 'legacy-app', legacy_id: rideId },
         };
         
-        console.log('🚗 Creating ride with payload:', JSON.stringify(payload, null, 2));
+        // console removed);
         const res = await apiService.createRide(payload);
         if (!res.success) throw new Error(res.error || 'Failed to create ride');
         return;

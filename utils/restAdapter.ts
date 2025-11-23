@@ -27,7 +27,7 @@ export class RestAdapter {
     const isDev = typeof __DEV__ !== 'undefined' && __DEV__;
     if (isDev) {
       // eslint-disable-next-line no-console
-      console.log(`🌐 REST → ${method} ${url}`, init?.body ? { body: init?.body } : '');
+      // console removed
     }
     const res = await fetch(url, {
       headers: { 'Content-Type': 'application/json' },
@@ -37,7 +37,7 @@ export class RestAdapter {
     const ms = Date.now() - startedAt;
     if (isDev) {
       // eslint-disable-next-line no-console
-      console.log(`🌐 REST ← ${method} ${url} ${res.status} (${ms}ms)`);
+      // console removed`);
     }
     if (!res.ok) {
       const text = await res.text();

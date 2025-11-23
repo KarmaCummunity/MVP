@@ -49,7 +49,7 @@ export default function ChallengesHomeScreen() {
 
   const loadChallenges = async () => {
     if (!selectedUser?.id) {
-      console.warn('No user selected');
+      // console removed
       return;
     }
 

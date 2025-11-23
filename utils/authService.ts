@@ -44,14 +44,14 @@ export const getAuthInstance = () => {
       // Web: use browserLocalPersistence (localStorage)
       setPersistence(authInstance, browserLocalPersistence).catch((error) => {
         if (typeof __DEV__ !== 'undefined' && __DEV__) {
-          console.warn('Failed to set web auth persistence:', error);
+          // console removed
         }
       });
     } else {
       // React Native: Firebase automatically uses AsyncStorage
       // No need to set persistence explicitly - it's the default
       if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log('🔥 Firebase Auth - Using native AsyncStorage persistence (default)');
+        // console removed');
       }
     }
   }

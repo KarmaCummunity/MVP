@@ -41,7 +41,7 @@ const CategoryScreen: React.FC<Props> = ({ route, config: propConfig }) => {
 
   const handleToggleMode = () => setMode((prev) => !prev);
   const handleSelectMenuItem = (option: string) => {
-    console.log('Category menu selected:', option);
+    // console removed
   };
 
   const handleSearch = (
@@ -50,12 +50,7 @@ const CategoryScreen: React.FC<Props> = ({ route, config: propConfig }) => {
     sorts?: string[],
     results?: any[]
   ) => {
-    console.log('Category search:', {
-      query,
-      filters: filters ?? [],
-      sorts: sorts ?? [],
-      results: results ?? [],
-    });
+    // console removed
   };
 
   // Check links health in background

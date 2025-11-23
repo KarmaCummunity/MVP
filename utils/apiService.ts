@@ -182,7 +182,7 @@ class ApiService {
         ...options,
       };
 
-      console.log(`🌐 API Request: ${config.method || 'GET'} ${url}`);
+      // console removed
 
       const response = await fetch(url, config);
       const data = await response.json();
@@ -195,7 +195,7 @@ class ApiService {
         };
       }
 
-      console.log(`✅ API Response: ${endpoint}`, data);
+      // console removed
       return data;
     } catch (error) {
       console.error(`❌ API Network Error:`, error);

@@ -66,3 +66,4 @@ echo "✨ כל הבדיקות עברו בהצלחה!"
 echo "📦 אפשר להריץ: docker build -t kc-web:latest ."
 echo "או: npm run build:docker"
 
+

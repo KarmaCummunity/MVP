@@ -78,7 +78,7 @@ const SearchScreen = () => {
   // Refresh data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      console.log('🔍 SearchScreen - Screen focused, refreshing data...');
+      // console removed
       // Clear search results when returning to screen
       setSearchResults([]);
       setSearchQuery('');

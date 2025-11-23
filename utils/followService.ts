@@ -147,7 +147,7 @@ export const getFollowSuggestions = async (currentUserId: string, limit: number 
 export const resetFollowRelationships = async (): Promise<void> => {
   try {
     await DatabaseService.clearAllData();
-    console.log('✅ All follow relationships reset');
+    // console removed
   } catch (error) {
     console.error('❌ Reset follow relationships error:', error);
   }
@@ -156,7 +156,7 @@ export const resetFollowRelationships = async (): Promise<void> => {
 export const createSampleFollowData = async (): Promise<void> => {
   try {
     // Demo data creation removed
-    console.log('ℹ️ createSampleFollowData skipped (demo removed)');
+    // console removed');
   } catch (error) {
     console.error('❌ Create sample follow data error:', error);
   }
@@ -192,7 +192,7 @@ export const getPopularUsers = async (limit: number = 10): Promise<any[]> => {
 
 export const debugFollowRelationships = async (): Promise<void> => {
   try {
-    console.log('ℹ️ debugFollowRelationships skipped (demo users removed)');
+    // console removed');
   } catch (error) {
     console.error('❌ Debug follow relationships error:', error);
   }
@@ -201,7 +201,7 @@ export const debugFollowRelationships = async (): Promise<void> => {
 
 export const comprehensiveSystemCheck = async (): Promise<void> => {
   try {
-    console.log('ℹ️ comprehensiveSystemCheck skipped (demo users removed)');
+    // console removed');
   } catch (error) {
     console.error('❌ Comprehensive system check error:', error);
   }
@@ -233,7 +233,7 @@ export const updateFollowCounts = async (userId: string): Promise<void> => {
     };
     
     await db.updateUser(userId, userData);
-    console.log('✅ Updated follow counts for user:', userId, userData);
+    // console removed
   } catch (error) {
     console.error('❌ Update follow counts error:', error);
   }

@@ -346,7 +346,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
       try {
         await restAdapter.create('users', userData.id, userData.id, userData);
       } catch (error) {
-        console.log('Saving user on server failed (non-critical):', error);
+        // console removed:', error);
       }
 
       await saveRecentEmail(email);
@@ -401,7 +401,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
           try {
             await restAdapter.create('users', userData.id, userData.id, userData);
           } catch (error) {
-            console.log('Saving user on server failed (non-critical):', error);
+            // console removed:', error);
           }
 
           await saveRecentEmail(email);

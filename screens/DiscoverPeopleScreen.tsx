@@ -56,7 +56,7 @@ export default function DiscoverPeopleScreen() {
   // Refresh data when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🔍 DiscoverPeopleScreen - Screen focused, refreshing data...');
+      // console removed
       loadUsers();
       // Force re-render by updating refresh key
       setRefreshKey(prev => prev + 1);
@@ -262,7 +262,7 @@ export default function DiscoverPeopleScreen() {
           <View style={[styles.webScrollContent, { paddingBottom: bottomPadding }]}
             onLayout={(e) => {
               const h = e.nativeEvent.layout.height;
-              console.log('🧭 DiscoverPeopleScreen[WEB] content layout height:', h, 'window:', SCREEN_HEIGHT);
+              // console removed
             }}
           >
             <FlatList

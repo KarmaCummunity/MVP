@@ -13,7 +13,7 @@ const parseJWT = (token: string) => {
     const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
     return payload;
   } catch (error) {
-    console.error('❌ Failed to parse JWT:', error);
+    // JWT parsing failed
     return null;
   }
 };
@@ -44,16 +44,11 @@ export default function OAuthRedirect() {
     setIsProcessing(true);
     
     try {
-      console.log('🔄 OAuth redirect: Starting session completion');
+      // console removed
       
       // Extract token from URL
       const urlParams = extractTokenFromURL();
-      console.log('🔄 OAuth redirect: URL params extracted:', {
-        hasIdToken: !!urlParams?.idToken,
-        hasError: !!urlParams?.error,
-        state: urlParams?.state,
-        tokenLength: urlParams?.idToken?.length
-      });
+      // console removed
         
       if (urlParams?.error) {
         throw new Error(`OAuth error: ${urlParams.error}`);
@@ -64,12 +59,7 @@ export default function OAuthRedirect() {
         
         // Parse the JWT token
         const profile = parseJWT(urlParams.idToken);
-        console.log('🔄 OAuth redirect: JWT parsed:', {
-          hasProfile: !!profile,
-          email: profile?.email,
-          name: profile?.name,
-          sub: profile?.sub
-        });
+        // console removed
           
         if (profile) {
           setMessage('שומר נתוני משתמש...');
@@ -110,7 +100,7 @@ export default function OAuthRedirect() {
           ]);
           await AsyncStorage.removeItem('oauth_in_progress');
           
-          console.log('✅ OAuth redirect: User data stored in AsyncStorage');
+          // console removed
           
           setStatus('success');
           setMessage(`שלום ${profile.name || profile.email}!`);
@@ -118,7 +108,7 @@ export default function OAuthRedirect() {
           
           // Complete the expo-auth-session flow
           const result = WebBrowser.maybeCompleteAuthSession();
-          console.log('🔄 OAuth redirect: maybeCompleteAuthSession result:', result);
+          // console removed
           
           // Notify parent window if in popup
           if (typeof window !== 'undefined' && window.opener) {
@@ -134,11 +124,11 @@ export default function OAuthRedirect() {
         }
       } else {
         // No token found - complete session anyway
-        console.log('⚠️ OAuth redirect: No token in URL, completing session');
+        // console removed
         setMessage('מחפש נתוני אימות...');
         
         const result = WebBrowser.maybeCompleteAuthSession();
-        console.log('🔄 OAuth redirect: maybeCompleteAuthSession result:', result);
+        // console removed
         
         setStatus('success');
         setMessage('האימות הושלם!');
@@ -147,12 +137,12 @@ export default function OAuthRedirect() {
       
       // Always redirect to home after processing
       setTimeout(() => {
-        console.log('🔄 OAuth redirect: Redirecting to home');
+        // console removed
         router.replace('/');
       }, status === 'success' ? 2000 : 1500);
       
     } catch (error) {
-      console.error('❌ OAuth redirect error:', error);
+      // OAuth redirect error
       setStatus('error');
       setMessage('שגיאה בהתחברות');
       setDetails(error instanceof Error ? error.message : String(error));
@@ -247,27 +237,4 @@ export default function OAuthRedirect() {
   );
 }
 
-// Log page load for debugging (only in development)
-if (typeof window !== 'undefined' && typeof __DEV__ !== 'undefined' && __DEV__) {
-  console.log('🔄 OAuth redirect page loaded:', {
-    url: window.location.href,
-    search: window.location.search,
-    hash: window.location.hash ? window.location.hash.substring(0, 100) + '...' : '',
-    timestamp: new Date().toISOString(),
-    userAgent: navigator.userAgent
-  });
-  
-  // Also check if we have the token
-  const params = extractTokenFromURL();
-  if (params?.idToken) {
-    console.log('🎉 OAuth redirect: Google ID token found in URL!', {
-      tokenLength: params.idToken.length,
-      hasState: !!params.state
-    });
-  } else {
-    console.log('⚠️ OAuth redirect: No Google ID token found in URL', {
-      hasHash: !!window.location.hash,
-      hasSearch: !!window.location.search
-    });
-  }
-}// Force update Wed Sep  3 22:44:11 EEST 2025
+// Force update for production

@@ -1,4 +1,5 @@
 const DEFAULT_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://kc-mvp-server-production.up.railway.app';
+const DEFAULT_WEB_URL = process.env.EXPO_PUBLIC_WEB_URL || 'https://karma-community-kc.com';
 
 module.exports = {
   expo: {

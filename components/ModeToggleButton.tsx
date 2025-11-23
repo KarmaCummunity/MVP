@@ -12,7 +12,7 @@ interface ModeToggleButtonProps {
 
 const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({ mode, onToggle }) => {
   const { t } = useTranslation(['common']);
-  // console.log("Toggling mode" + mode);
+  // // console removed
   return (
     <TouchableOpacity style={localStyles.modeToggleWrapper} onPress={onToggle}>
       <View style={localStyles.modeToggleBackground}>

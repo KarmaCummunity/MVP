@@ -975,7 +975,7 @@ const FinalCTASection = () => (
 );
 
 const LandingSiteScreen: React.FC = () => {
-  console.log('LandingSiteScreen - Component rendered');
+  // console removed
   
   const [stats, setStats] = useState<LandingStats>({
     siteVisits: 0,
