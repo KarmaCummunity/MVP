@@ -1,0 +1,77 @@
+name: ci
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 20
+  CI: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  quality:
+    name: Check (${{ matrix.task }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [lint, typecheck, test:ci]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ${{ matrix.task }}
+        run: npm run ${{ matrix.task }}
+
+  build_web:
+    name: Build Web Export
+    needs: quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Cache Expo artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.expo
+            ~/.cache/expo
+          key: ${{ runner.os }}-expo-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static web bundle
+        env:
+          EXPO_NO_COMMAND_TIMEOUT: 1
+          EXPO_NONINTERACTIVE: 1
+        run: npm run build:web

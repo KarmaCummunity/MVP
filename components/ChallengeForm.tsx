@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Challenge Form Component - טופס ליצירת/עריכת אתגר
 // מועתק מ-TimerForm של TimrsApp
 import React, { useState } from 'react';

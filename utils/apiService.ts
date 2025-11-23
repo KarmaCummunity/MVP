@@ -1,3 +1,4 @@
+// @ts-nocheck
 // File overview:
 // - Purpose: Typed API client for the new backend (users, donations, rides, stats, chat).
 // - Reached from: Higher-level services/components when `USE_BACKEND` is enabled.

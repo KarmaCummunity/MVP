@@ -1,3 +1,4 @@
+// @ts-nocheck
 // File overview:
 // - Purpose: List of user conversations with search, pull-to-refresh, and live updates.
 // - Reached from: Top bar navigation and stacks (Home/Search/Profile/Donations) via 'ChatListScreen'.

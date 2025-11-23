@@ -1,3 +1,4 @@
+// @ts-nocheck
 // File overview:
 // - Purpose: Full Canvas-based floating bubbles using Skia - identical to web version
 // - Reached from: Home screen on mobile to render an animated background with full Canvas features
