@@ -39,6 +39,8 @@ import { I18nManager } from 'react-native';
 import MainNavigator from './navigations/MainNavigator';
 // Ensure tslib default interop for certain vendor bundles
 import './polyfills/tslib-default';
+// Disable console logs in production for better performance
+import './utils/disableConsoleLogs';
 import colors from './globals/colors';
 import { useWebMode } from './stores/webModeStore';
 import { useAppLoading } from './stores/appLoadingStore';
@@ -102,6 +104,9 @@ function AppContent() {
     markAppReady,
     getCriticalError 
   } = useAppLoading();
+  
+  // Must call all hooks before any conditional returns
+  const { mode } = useWebMode();
   
   // Initialize stores on mount (run only once)
   useEffect(() => {
@@ -258,6 +263,12 @@ function AppContent() {
     );
   }
 
+  // Memoize container style to prevent unnecessary re-renders
+  const containerStyle = React.useMemo(() => ({
+    flex: 1,
+    paddingTop: Platform.OS === 'web' && mode === 'app' ? 48 : 0 // Space for toggle button in app mode
+  }), [mode]);
+
   if (!isAppReady) {
     return (
       <View style={loadingStyles.container}>
@@ -266,14 +277,6 @@ function AppContent() {
       </View>
     );
   }
-
-  const { mode } = useWebMode();
-  
-  // Memoize container style to prevent unnecessary re-renders
-  const containerStyle = React.useMemo(() => ({
-    flex: 1,
-    paddingTop: Platform.OS === 'web' && mode === 'app' ? 48 : 0 // Space for toggle button in app mode
-  }), [mode]);
 
   return (
     <NavigationContainer

@@ -1196,23 +1196,10 @@ const LandingSiteScreen: React.FC = () => {
     };
   }, []);
 
-  // Auto-refresh stats every second for real-time updates
-  // רענון אוטומטי של סטטיסטיקות כל שניה לעדכונים בזמן אמת
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        logger.debug('LandingSite', 'Auto-refreshing stats');
-        await loadStats(true); // forceRefresh: true to bypass cache
-      } catch (error) {
-        logger.error('LandingSite', 'Auto-refresh failed', { error });
-      }
-    }, 1000); // Refresh every second / רענון כל שניה
-    
-    return () => {
-      logger.info('LandingSite', 'Clearing auto-refresh interval');
-      clearInterval(interval);
-    };
-  }, [loadStats]);
+  // NOTE: Auto-refresh removed - using smart polling instead (lines 1081-1124)
+  // הערה: רענון אוטומטי הוסר - משתמשים ב-smart polling במקום (שורות 1081-1124)
+  // The smart polling checks version hash every second and only reloads if data changed
+  // ה-smart polling בודק גרסה כל שניה וטוען מחדש רק אם הנתונים השתנו
 
   // Scroll Spy - Track which section is currently in view
   useEffect(() => {

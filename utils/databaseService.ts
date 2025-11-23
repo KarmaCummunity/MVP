@@ -98,9 +98,15 @@ export class DatabaseService {
         const key = getDBKey(collection, userId, itemId);
         await AsyncStorage.setItem(key, JSON.stringify(data));
       }
-      console.log(`✅ DatabaseService - Created ${collection} item:`, itemId);
+      // Only log in development
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.log(`✅ DatabaseService - Created ${collection} item:`, itemId);
+      }
     } catch (error) {
-      console.error(`❌ DatabaseService - Create ${collection} error:`, error);
+      // Errors are always logged (important for debugging)
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.error(`❌ DatabaseService - Create ${collection} error:`, error);
+      }
       throw error;
     }
   }
@@ -122,7 +128,10 @@ export class DatabaseService {
         return item ? JSON.parse(item) : null;
       }
     } catch (error) {
-      console.error(`❌ DatabaseService - Read ${collection} error:`, error);
+      // Errors are always logged (important for debugging)
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.error(`❌ DatabaseService - Read ${collection} error:`, error);
+      }
       return null;
     }
   }
@@ -136,20 +145,28 @@ export class DatabaseService {
     try {
       if (USE_BACKEND) {
         await restAdapter.update(collection, userId, itemId, data);
-        console.log(`✅ DatabaseService - Updated ${collection} item:`, itemId);
+        if (typeof __DEV__ !== 'undefined' && __DEV__) {
+          console.log(`✅ DatabaseService - Updated ${collection} item:`, itemId);
+        }
       } else if (USE_FIRESTORE) {
         await firestoreAdapter.update(collection, userId, itemId, data);
-        console.log(`✅ DatabaseService - Updated ${collection} item:`, itemId);
+        if (typeof __DEV__ !== 'undefined' && __DEV__) {
+          console.log(`✅ DatabaseService - Updated ${collection} item:`, itemId);
+        }
       } else {
         const existing = await this.read<T>(collection, userId, itemId);
         if (existing) {
           const updated = { ...existing, ...data };
           await this.create(collection, userId, itemId, updated);
-          console.log(`✅ DatabaseService - Updated ${collection} item:`, itemId);
+          if (typeof __DEV__ !== 'undefined' && __DEV__) {
+            console.log(`✅ DatabaseService - Updated ${collection} item:`, itemId);
+          }
         }
       }
     } catch (error) {
-      console.error(`❌ DatabaseService - Update ${collection} error:`, error);
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.error(`❌ DatabaseService - Update ${collection} error:`, error);
+      }
       throw error;
     }
   }
@@ -168,9 +185,13 @@ export class DatabaseService {
         const key = getDBKey(collection, userId, itemId);
         await AsyncStorage.removeItem(key);
       }
-      console.log(`✅ DatabaseService - Deleted ${collection} item:`, itemId);
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.log(`✅ DatabaseService - Deleted ${collection} item:`, itemId);
+      }
     } catch (error) {
-      console.error(`❌ DatabaseService - Delete ${collection} error:`, error);
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.error(`❌ DatabaseService - Delete ${collection} error:`, error);
+      }
       throw error;
     }
   }
@@ -206,7 +227,9 @@ export class DatabaseService {
           });
       }
     } catch (error) {
-      console.error(`❌ DatabaseService - List ${collection} error:`, error);
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.error(`❌ DatabaseService - List ${collection} error:`, error);
+      }
       return [];
     }
   }

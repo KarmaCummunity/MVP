@@ -247,8 +247,8 @@ export default function OAuthRedirect() {
   );
 }
 
-// Log page load for debugging
-if (typeof window !== 'undefined') {
+// Log page load for debugging (only in development)
+if (typeof window !== 'undefined' && typeof __DEV__ !== 'undefined' && __DEV__) {
   console.log('🔄 OAuth redirect page loaded:', {
     url: window.location.href,
     search: window.location.search,

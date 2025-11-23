@@ -13,7 +13,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "build:web": "EXPO_PUBLIC_API_BASE_URL=https://kc-mvp-server-production.up.railway.app expo export --platform web",
+    "build:web": "NODE_ENV=production EXPO_PUBLIC_API_BASE_URL=https://kc-mvp-server-production.up.railway.app expo export --platform web --minify",
     "build:web:local": "EXPO_PUBLIC_API_BASE_URL=http://localhost:3001 expo export:web",
     "build:docker": "docker build -t kc-web:latest --build-arg EXPO_PUBLIC_API_BASE_URL=https://kc-mvp-server-production.up.railway.app .",
     "clean": "rm -rf node_modules .expo dist",
