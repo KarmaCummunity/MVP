@@ -40,7 +40,7 @@ import BookmarksScreen from "../screens/BookmarksScreen";
 import UserProfileScreen from "../screens/UserProfileScreen";
 import FollowersScreen from "../screens/FollowersScreen";
 import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
-import LoginScreen from "../screens/LoginScreen";
+import LoginScreenNew from "../screens/LoginScreenNew";
 import { useUser } from '../stores/userStore';
 import colors from '../globals/colors';
 import styles from '../globals/styles';
@@ -103,16 +103,16 @@ export default function MainNavigator() {
     // Site mode: always start with landing page
     initialRouteName = 'LandingSiteScreen';
     // console removed
-  } else {
-    // App mode: determine based on authentication
-    if (isAuthenticated || isGuestMode) {
-      initialRouteName = 'HomeStack';
-      // console removed
     } else {
-      initialRouteName = 'LoginScreen';
-      // console removed
+      // App mode: determine based on authentication
+      if (isAuthenticated || isGuestMode) {
+        initialRouteName = 'HomeStack';
+        // console removed
+      } else {
+        initialRouteName = 'LoginScreenNew';
+        // console removed
+      }
     }
-  }
 
   return (
     <Stack.Navigator 
@@ -124,12 +124,12 @@ export default function MainNavigator() {
       {Platform.OS === 'web' ? (
         <Stack.Screen name="LandingSiteScreen" component={LandingSiteScreen} />
       ) : null}
-      <Stack.Screen name="LoginScreen" component={LoginScreen} />
+      <Stack.Screen name="LoginScreenNew" component={LoginScreenNew} />
       <Stack.Screen name="HomeStack" component={BottomNavigator} />
       <Stack.Screen name="NewChatScreen" component={NewChatScreen} />
       <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
-      {/* InactiveScreen removed - redirect to LoginScreen */}
-      <Stack.Screen name="InactiveScreen" component={LoginScreen} />
+      {/* InactiveScreen removed - redirect to LoginScreenNew */}
+      <Stack.Screen name="InactiveScreen" component={LoginScreenNew} />
       <Stack.Screen name="WebViewScreen" component={WebViewScreen} />
       <Stack.Screen
         name="PostsReelsScreen"

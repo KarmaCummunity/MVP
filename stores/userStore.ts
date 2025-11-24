@@ -120,6 +120,11 @@ export const useUserStore = create<UserState>((set, get) => ({
     try {
       // console removed
       if (principal.role === 'guest' || !principal.user) {
+        // Persist guest mode to AsyncStorage
+        await AsyncStorage.setItem('guest_mode', 'true');
+        await AsyncStorage.setItem('auth_mode', 'guest');
+        await AsyncStorage.removeItem('current_user'); // Clear any existing user
+        
         set({
           selectedUser: null,
           isAuthenticated: true,
@@ -136,6 +141,12 @@ export const useUserStore = create<UserState>((set, get) => ({
       } catch (e) {
         // console removed:', e);
       }
+      
+      // Persist real auth to AsyncStorage
+      await AsyncStorage.setItem('current_user', JSON.stringify(enriched));
+      await AsyncStorage.setItem('auth_mode', 'real');
+      await AsyncStorage.setItem('guest_mode', 'false');
+      
       set({
         selectedUser: enriched,
         isAuthenticated: true,
@@ -146,6 +157,13 @@ export const useUserStore = create<UserState>((set, get) => ({
       console.error('Error in setCurrentPrincipal:', error);
       // Fallbacks
       if (principal.role === 'guest' || !principal.user) {
+        try {
+          await AsyncStorage.setItem('guest_mode', 'true');
+          await AsyncStorage.setItem('auth_mode', 'guest');
+          await AsyncStorage.removeItem('current_user');
+        } catch (e) {
+          // Ignore storage errors in fallback
+        }
         set({
           selectedUser: null,
           isAuthenticated: true,
@@ -153,6 +171,13 @@ export const useUserStore = create<UserState>((set, get) => ({
           authMode: 'guest',
         });
       } else {
+        try {
+          await AsyncStorage.setItem('current_user', JSON.stringify(principal.user));
+          await AsyncStorage.setItem('auth_mode', 'real');
+          await AsyncStorage.setItem('guest_mode', 'false');
+        } catch (e) {
+          // Ignore storage errors in fallback
+        }
         set({
           selectedUser: principal.user,
           isAuthenticated: true,

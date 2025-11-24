@@ -6,7 +6,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Alert,
-
+  ScrollView,
   TextInput,
   Platform,
   Linking,

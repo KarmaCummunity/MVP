@@ -306,6 +306,7 @@
       "art": { "title": "Art", "subtitle": "Creation and sharing", "description": "Artistic creation and workshops" },
       "sports": { "title": "Sports", "subtitle": "Active lifestyle", "description": "Sports and activity" },
       "items": { "title": "Items", "subtitle": "Objects", "description": "Donations of items" },
+      "challenges": { "title": "Challenges", "subtitle": "Personal challenges", "description": "Challenges app - manage timers and personal challenges" },
       "dreams": { "title": "Make-A-Wish", "subtitle": "Create magical moments", "description": "Fulfilling wishes for children, teens and adults – experiences, meetings and surprises" },
       "fertility": { "title": "Fertility", "subtitle": "Support on the path to parenthood", "description": "Support and assistance in the fertility journey: guidance, treatment funding, community and emotional support" },
       "jobs": { "title": "Jobs", "subtitle": "Employment for the community", "description": "Help finding work, matching positions and partnerships with employers for the community" },

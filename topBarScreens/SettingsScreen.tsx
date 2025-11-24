@@ -70,7 +70,7 @@ export default function SettingsScreen() {
     // If user is no longer authenticated, go to login screen
     if (!isAuthenticated && !isGuestMode) {
       // console removed
-      navigation.navigate('LoginScreen' as never);
+      navigation.navigate('LoginScreenNew' as never);
     }
   }, [isAuthenticated, isGuestMode, selectedUser, navigation]);
 
@@ -107,7 +107,7 @@ export default function SettingsScreen() {
         // console removed
         setTimeout(() => {
           // console removed
-          navigation.navigate('LoginScreen' as never);
+          navigation.navigate('LoginScreenNew' as never);
         }, 100);
       });
       return;
@@ -129,7 +129,7 @@ export default function SettingsScreen() {
           // Wait a bit to ensure state is updated
           setTimeout(() => {
             // console removed
-            navigation.navigate('LoginScreen' as never);
+            navigation.navigate('LoginScreenNew' as never);
             // console removed
           }, 100);
         });
@@ -163,7 +163,7 @@ export default function SettingsScreen() {
                 // Short delay to ensure state is updated before navigation
                 setTimeout(() => {
                   // console removed
-                  navigation.navigate('LoginScreen' as never);
+                  navigation.navigate('LoginScreenNew' as never);
                   // console removed
                 }, 100);
               },

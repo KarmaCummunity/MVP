@@ -418,7 +418,7 @@ export default function ProfileScreen() {
                     style={styles.menuItem}
                     onPress={() => {
                       setShowMenu(false);
-                      navigation.navigate('LoginScreen' as never);
+                      navigation.navigate('LoginScreenNew' as never);
                     }}
                   >
                       <Ionicons name="log-in-outline" size={scaleSize(20)} color={colors.textPrimary} />
@@ -729,7 +729,7 @@ export default function ProfileScreen() {
                     style={styles.menuItem}
                     onPress={() => {
                       setShowMenu(false);
-                      navigation.navigate('LoginScreen' as never);
+                      navigation.navigate('LoginScreenNew' as never);
                     }}
                   >
                       <Ionicons name="log-in-outline" size={scaleSize(20)} color={colors.textPrimary} />

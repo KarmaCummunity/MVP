@@ -216,9 +216,27 @@ export default function SimpleGoogleLoginButton({
   })();
 
   // Configure redirect URI
+  // IMPORTANT: This URI must be added to Google Cloud Console > OAuth 2.0 Client > Authorized redirect URIs
   const redirectUri = Platform.OS === 'web' 
-    ? `${typeof window !== 'undefined' ? window.location.origin : 'https://karma-community-kc.com'}/oauthredirect`
+    ? (() => {
+        if (typeof window !== 'undefined') {
+          // Use actual origin for localhost development
+          const origin = window.location.origin;
+          logger.debug('GoogleLogin', 'Using redirect URI from window.location', { origin });
+          return `${origin}/oauthredirect`;
+        }
+        return 'https://karma-community-kc.com/oauthredirect';
+      })()
     : makeRedirectUri({ scheme: 'com.navesarussi1.KarmaCommunity', path: 'oauthredirect' });
+  
+  // Log redirect URI for debugging (helps identify what needs to be added to Google Console)
+  useEffect(() => {
+    logger.info('GoogleLogin', 'Redirect URI configured', { 
+      redirectUri, 
+      platform: Platform.OS,
+      note: 'If you see redirect_uri_mismatch error, add this exact URI to Google Cloud Console'
+    });
+  }, [redirectUri]);
 
   // OAuth configuration
   const oauthConfig = {
@@ -264,6 +282,9 @@ export default function SimpleGoogleLoginButton({
         
         // Clean up
         await AsyncStorage.multiRemove(['oauth_success_flag', 'google_auth_user', 'google_auth_token']);
+        
+        // Small delay to ensure state is updated and MainNavigator re-renders
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         // Navigate
         navigation.replace('HomeStack');
@@ -406,6 +427,9 @@ export default function SimpleGoogleLoginButton({
             if (onSuccess) onSuccess(userData);
           }
 
+          // Small delay to ensure state is updated and MainNavigator re-renders
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
           // Navigate to home
           navigation.replace('HomeStack');
           setAuthState('success');
@@ -598,7 +622,10 @@ export default function SimpleGoogleLoginButton({
         <Text style={[styles.text, { fontSize: buttonFontSize }]}>
           {(() => {
             const buttonText = getButtonText() || getFallbackButtonText();
-            return buttonText;
+            // Ensure we always return a valid string, never undefined or empty
+            return buttonText && typeof buttonText === 'string' && buttonText.trim() !== '' 
+              ? buttonText 
+              : 'התחבר/הרשם עם גוגל';
           })()}
         </Text>
       </View>

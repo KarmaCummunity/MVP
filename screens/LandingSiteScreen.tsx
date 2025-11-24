@@ -1809,7 +1809,7 @@ const styles = StyleSheet.create({
     top: isMobileWeb ? 60 : 100,
     width: isMobileWeb ? '14%' : '10%',
     maxHeight: isMobileWeb ? '70vh' as any : (isWeb ? '80vh' as any : 600),
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)', // Only background is transparent
     borderRadius: isMobileWeb ? 12 : 20,
     borderWidth: 1,
     borderColor: '#E6EEF9',
@@ -1857,8 +1857,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFBFF',
   },
   menuTitle: {
-    fontWeight: '800',
-    color: colors.textPrimary,
+    fontWeight: '900', // Extra bold for prominence
+    color: '#1a1a1a', // Strong, prominent dark text
     letterSpacing: -0.3,
   },
   menuMinimizeButton: {
@@ -1883,14 +1883,14 @@ const styles = StyleSheet.create({
     marginLeft: SCREEN_WIDTH * 0.002, // 0.2% of screen width
   },
   menuItemText: {
-    fontWeight: '600',
-    color: colors.textSecondary,
+    fontWeight: '800', // Bold text for prominence
+    color: '#1a1a1a', // Strong, prominent dark text
     flex: 1,
     textAlign: 'right',
   },
   menuItemTextActive: {
     color: colors.info,
-    fontWeight: '700',
+    fontWeight: '900', // Extra bold for active state
   },
   // New Styles
   decoCircle1: {
