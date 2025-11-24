@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   Image,
   Alert,
-  ScrollView,
+
   TextInput,
   Platform,
   Modal,
@@ -100,9 +100,9 @@ export default function MoneyScreen({
   const { isRealAuth } = useUser();
   const { t } = useTranslation(['donations','common']);
   // Debug log for MoneyScreen
-  // // console removed
-  // // console removed
-  // // console removed, null, 2));
+  // console.log('💰 MoneyScreen - Component rendered');
+  // console.log('💰 MoneyScreen - Navigation object:', navigation);
+  // console.log('💰 MoneyScreen - Navigation state:', JSON.stringify(navigation.getState(), null, 2));
   const [selectedRecipient, setSelectedRecipient] = useState<string>('');
   const [amount, setAmount] = useState<string>('50');
   const [mode, setMode] = useState(true); // false = seeker (needs help), true = offerer (wants to donate)
@@ -204,7 +204,7 @@ export default function MoneyScreen({
   // Refresh data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      // console removed
+      console.log('💰 MoneyScreen - Screen focused, refreshing data...');
       // Reset form when returning to screen
       setAmount('');
       setSelectedRecipient('');
@@ -440,7 +440,12 @@ export default function MoneyScreen({
 
   // Function to handle search results from HeaderComp
   const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
-    // console removed
+    console.log('💰 MoneyScreen - Search received:', { 
+      query, 
+      filters: filters || [], 
+      sorts: sorts || [], 
+      resultsCount: results?.length || 0 
+    });
     
     // Update state with search results
     setSearchQuery(query);
@@ -502,7 +507,7 @@ export default function MoneyScreen({
 
   const handleToggleMode = useCallback(() => {
     setMode(!mode);
-    // console removed
+    console.log('Mode toggled:', !mode ? 'נזקק' : 'תורם');
   }, [mode]);
 
   const handleSelectMenuItem = useCallback((option: string) => {

@@ -75,7 +75,7 @@ export default function BookmarksScreen() {
   // Refresh data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      // console removed
+      console.log('🔖 BookmarksScreen - Screen focused, refreshing bookmarks...');
       loadBookmarks();
       // Force re-render by updating refresh key
       setRefreshKey(prev => prev + 1);
@@ -103,7 +103,7 @@ export default function BookmarksScreen() {
             try {
               await removeBookmark(selectedUser.id, bookmark.postId);
               setBookmarks(prev => prev.filter(b => b.id !== bookmark.id));
-              // console removed
+              console.log('✅ Bookmark removed');
             } catch (error) {
               console.error('❌ Remove bookmark error:', error);
               Alert.alert(t('common:errorTitle'), t('bookmarks:removeError'));
@@ -127,7 +127,7 @@ export default function BookmarksScreen() {
           style: 'destructive',
           onPress: () => {
             setBookmarks([]);
-            // console removed
+            console.log('✅ All bookmarks cleared');
           }
         }
       ]

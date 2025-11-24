@@ -130,7 +130,7 @@ const SENSITIVE_PATTERNS = [
  * // Retrieve data
  * const result = await SecureStorage.getItem('auth_token');
  * if (result.success) {
- *   // console removed
+ *   console.log('Token:', result.data);
  * }
  * 
  * // Remove data
@@ -158,7 +158,7 @@ class SecureStorageClass {
    * });
    * 
    * if (result.success) {
-   *   // console removed
+   *   console.log('Token stored securely');
    * } else {
    *   console.error('Storage failed:', result.error);
    * }
@@ -260,9 +260,9 @@ class SecureStorageClass {
    * const result = await SecureStorage.getItem('access_token');
    * if (result.success && result.data) {
    *   const token = result.data;
-   *   // console removed
+   *   console.log('Retrieved token:', token);
    * } else {
-   *   // console removed
+   *   console.log('No token found or error:', result.error);
    * }
    * ```
    */
@@ -859,12 +859,12 @@ export default SecureStorage;
  * // Retrieve with error handling
  * const result = await getAuthToken('access');
  * if (result.success) {
- *   // console removed
+ *   console.log('Token:', result.data);
  * } else {
  *   console.error('No token:', result.error);
  * }
  * 
  * // Cleanup expired items
  * const cleaned = await SecureStorage.cleanup();
- * // console removed
+ * console.log('Cleaned items:', cleaned.data);
  */

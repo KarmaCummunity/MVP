@@ -184,7 +184,7 @@ export default function ChatDetailScreen() {
         fileData,
       });
 
-      // console removed
+      console.log('✅ File message sent');
 
     } catch (error) {
       console.error('❌ Send file error:', error);

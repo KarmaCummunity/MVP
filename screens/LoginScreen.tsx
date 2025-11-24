@@ -798,7 +798,7 @@ const createLoginScreenStyles = () => {
       padding: isDesktopWeb ? 40 : isTablet ? 32 : 20,
       position: 'relative',
       ...(isDesktopWeb && {
-        maxWidth: 1000,
+        maxWidth: 600,
         alignSelf: 'center',
         width: '100%',
       }),

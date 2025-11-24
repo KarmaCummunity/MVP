@@ -139,7 +139,7 @@ const UI_CONFIG = {
  * ```tsx
  * <SecureGoogleAuthButton
  *   onSuccess={(user) => {
- *     // console removed
+ *     console.log('User authenticated:', user.email);
  *   }}
  *   onError={(error) => {
  *     console.error('Auth failed:', error);
@@ -214,32 +214,13 @@ export default function SecureGoogleAuthButton({
    * Configure redirect URI based on platform
    * Web: Uses current domain with /oauthredirect path
    * Mobile: Uses custom scheme for deep linking
-   * 
-   * IMPORTANT: This URI must be added to Google Cloud Console > OAuth 2.0 Client > Authorized redirect URIs
    */
   const redirectUri = Platform.OS === 'web' 
-    ? (() => {
-        if (typeof window !== 'undefined') {
-          // Use actual origin for localhost development
-          const origin = window.location.origin;
-          logger.debug('SecureGoogleAuthButton', 'Using redirect URI from window.location', { origin });
-          return `${origin}/oauthredirect`;
-        }
-        return 'https://karma-community-kc.com/oauthredirect';
-      })()
+    ? `${typeof window !== 'undefined' ? window.location.origin : 'https://karma-community-kc.com'}/oauthredirect`
     : makeRedirectUri({ 
         scheme: 'com.navesarussi1.KarmaCommunity', 
         path: 'oauthredirect' 
       });
-  
-  // Log redirect URI for debugging (helps identify what needs to be added to Google Console)
-  useEffect(() => {
-    logger.info('SecureGoogleAuthButton', 'Redirect URI configured', { 
-      redirectUri, 
-      platform: Platform.OS,
-      note: 'If you see redirect_uri_mismatch error, add this exact URI to Google Cloud Console'
-    });
-  }, [redirectUri]);
 
   /**
    * OAuth request configuration
@@ -302,8 +283,6 @@ export default function SecureGoogleAuthButton({
             
             // Navigate to home if auto-navigate is enabled
             if (autoNavigate) {
-              // Small delay to ensure state is updated and MainNavigator re-renders
-              await new Promise(resolve => setTimeout(resolve, 100));
               navigation.replace('HomeStack');
               return;
             }

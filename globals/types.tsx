@@ -139,7 +139,7 @@ export interface TrumpScreenProps {
 export type RootStackParamList = {
   HomeStack: NavigatorScreenParams<BottomTabNavigatorParamList>;
   FirstScreen: undefined;
-  LoginScreenNew: undefined;
+  LoginScreen: undefined;
   LandingSiteScreen: undefined;
   SettingsScreen: undefined;
   ChatListScreen: undefined;

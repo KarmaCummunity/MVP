@@ -45,7 +45,7 @@ export function getFirebase() {
       enableIndexedDbPersistence(db);
     } catch (e) {
       // May fail in Chrome/multiple tabs — non-blocking
-      // console removed?.message);
+      console.warn('Firestore persistence not enabled:', (e as any)?.message);
     }
   }
   if (!storage) {

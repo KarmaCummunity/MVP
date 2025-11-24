@@ -86,16 +86,15 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [authMode, setAuthMode] = useState<AuthMode>('guest');
   const [resetHomeScreenTrigger, setResetHomeScreenTrigger] = useState(0);
 
-  // Check authentication status on app start (run only once)
+  // Check authentication status on app start
   useEffect(() => {
-    // console removed
+    console.log('🔐 UserContext - useEffect - Starting auth check');
     checkAuthStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Firebase Auth State Listener - automatically detects when user logs in/out (run only once)
+  // Firebase Auth State Listener - automatically detects when user logs in/out
   useEffect(() => {
-    // console removed
+    console.log('🔥 UserContext - Setting up Firebase Auth listener');
     let unsubscribe: (() => void) | undefined;
     
     try {
@@ -103,11 +102,16 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       const auth = getAuth(app);
       
       unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-        // console removed
+        console.log('🔥 Firebase Auth State Changed:', {
+          hasUser: !!firebaseUser,
+          email: firebaseUser?.email,
+          uid: firebaseUser?.uid,
+          emailVerified: firebaseUser?.emailVerified
+        });
 
         if (firebaseUser) {
           // Firebase user is logged in - restore/create session
-          // console removed
+          console.log('🔥 Firebase user detected, restoring session');
           
           // Create or restore user data
           const nowIso = new Date().toISOString();
@@ -144,12 +148,12 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           setIsGuestMode(false);
           setAuthMode('real');
           
-          // console removed
+          console.log('🔥 Firebase session restored successfully');
         } else {
           // No Firebase user - only clear if we had a Firebase user before
           const firebaseUserId = await AsyncStorage.getItem('firebase_user_id');
           if (firebaseUserId) {
-            // console removed
+            console.log('🔥 Firebase user logged out, clearing session');
             await AsyncStorage.multiRemove(['current_user', 'auth_mode', 'firebase_user_id']);
             setSelectedUserState(null);
             setIsAuthenticated(false);
@@ -159,20 +163,19 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         }
       });
       
-      // console removed
+      console.log('🔥 Firebase Auth listener set up successfully');
     } catch (error) {
       console.error('🔥 Error setting up Firebase Auth listener:', error);
     }
 
     // Cleanup function
     return () => {
-      // console removed
+      console.log('🔥 Cleaning up Firebase Auth listener');
       if (unsubscribe) {
         unsubscribe();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on mount
+  }, []);
 
   const computeRole = (user: User | null, mode: AuthMode): Role => {
     if (mode === 'guest' || !user) return 'guest';
@@ -182,23 +185,23 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      // console removed
+      console.log('🔐 UserContext - checkAuthStatus - Starting auth check');
       setIsLoading(true);
       
       // First, check for successful OAuth authentication
-      // console removed
+      console.log('🔐 UserContext - checkAuthStatus - Checking for OAuth success');
       const oauthSuccess = await AsyncStorage.getItem('oauth_success_flag');
       const userData = await AsyncStorage.getItem('google_auth_user');
       const token = await AsyncStorage.getItem('google_auth_token');
       
       if (oauthSuccess && userData && token) {
         try {
-          // console removed
+          console.log('🔐 UserContext - checkAuthStatus - Found OAuth success data, processing');
           const parsedUserData = JSON.parse(userData);
           
           // Validate the user data
           if (parsedUserData && parsedUserData.id && parsedUserData.email) {
-            // console removed
+            console.log('🔐 UserContext - checkAuthStatus - Setting authenticated user from OAuth');
             
             // Enrich user with org roles if applicable
             const enrichedUser = await enrichUserWithOrgRoles(parsedUserData);
@@ -211,10 +214,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
             // Clean up OAuth success flags since we've processed them
             await AsyncStorage.multiRemove(['oauth_success_flag', 'google_auth_user', 'google_auth_token']);
             
-            // console removed
+            console.log('🔐 UserContext - checkAuthStatus - OAuth authentication restored successfully');
             return; // Exit early - user is authenticated
           } else {
-            // console removed
+            console.warn('🔐 UserContext - checkAuthStatus - Invalid OAuth user data found');
           }
         } catch (parseError) {
           console.error('🔐 UserContext - checkAuthStatus - Error parsing OAuth user data:', parseError);
@@ -222,7 +225,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       }
       
       // Check for persistent user session (if implemented in the future)
-      // console removed
+      console.log('🔐 UserContext - checkAuthStatus - Checking for persistent session');
       const persistedUser = await AsyncStorage.getItem('current_user');
       const guestMode = await AsyncStorage.getItem('guest_mode');
       const authModeStored = await AsyncStorage.getItem('auth_mode');
@@ -231,13 +234,13 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         try {
           const parsedUser = JSON.parse(persistedUser);
           if (parsedUser && parsedUser.id) {
-            // console removed
+            console.log('🔐 UserContext - checkAuthStatus - Restoring persisted user session');
             const enrichedUser = await enrichUserWithOrgRoles(parsedUser);
             setSelectedUserState(enrichedUser);
             setIsAuthenticated(true);
             setIsGuestMode(guestMode === 'true');
             setAuthMode((authModeStored as AuthMode) || 'real');
-            // console removed
+            console.log('🔐 UserContext - checkAuthStatus - Persisted session restored successfully');
             return; // Exit early - user is authenticated
           }
         } catch (parseError) {
@@ -246,7 +249,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       }
       
       // No valid authentication found - clear any invalid data and set unauthenticated state
-      // console removed
+      console.log('🔐 UserContext - checkAuthStatus - No valid authentication found, clearing data');
       await AsyncStorage.multiRemove([
         'current_user',
         'guest_mode',
@@ -257,7 +260,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         'google_auth_token'
       ]);
       
-      // console removed
+      console.log('🔐 UserContext - checkAuthStatus - Setting unauthenticated state');
       setIsAuthenticated(false);
       setIsGuestMode(false);
       setSelectedUserState(null);
@@ -271,7 +274,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       setSelectedUserState(null);
       setAuthMode('guest');
     } finally {
-      // console removed
+      console.log('🔐 UserContext - checkAuthStatus - Auth check completed');
       setIsLoading(false);
     }
   };
@@ -279,7 +282,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   // New simplified setter: sets current principal using role model
   const setCurrentPrincipal = async (principal: { user: User | null; role: Role }) => {
     try {
-      // console removed
+      console.log('🔐 UserContext - setCurrentPrincipal:', { user: principal.user?.name || 'null', role: principal.role });
       if (principal.role === 'guest' || !principal.user) {
         setSelectedUserState(null);
         setIsAuthenticated(true);
@@ -293,7 +296,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         const { DatabaseService } = await import('../utils/databaseService');
         await DatabaseService.clearLocalCollections();
       } catch (e) {
-        // console removed:', e);
+        console.log('⚠️ Failed to clear local collections on real auth (non-fatal):', e);
       }
       setSelectedUserState(enriched);
       setIsAuthenticated(true);
@@ -318,11 +321,11 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   const setSelectedUserWithMode = async (user: User | null, mode: AuthMode) => {
     try {
-      // console removed
+      console.log('🔐 UserContext - setSelectedUserWithMode:', { user: user?.name || 'null', mode });
       // Bridge to new API
       const role = computeRole(user, mode);
       await setCurrentPrincipal({ user, role });
-      // console removed
+      console.log('🔐 UserContext - setSelectedUserWithMode - bridged to setCurrentPrincipal');
     } catch (error) {
       console.error('Error setting user:', error);
       const role = computeRole(user, mode);
@@ -371,14 +374,14 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       }
       return user;
     } catch (err) {
-      // console removed', err);
+      console.log('🔐 UserContext - enrichUserWithOrgRoles - skipped (no backend or no data)', err);
       return user;
     }
   };
 
   const signOut = async () => {
     try {
-      // console removed
+      console.log('🔐 UserContext - signOut - Starting sign out process');
       setIsLoading(true);
       
       // Sign out from Firebase Auth
@@ -386,12 +389,12 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         const { app } = getFirebase();
         const auth = getAuth(app);
         await auth.signOut();
-        // console removed
+        console.log('🔥 Firebase - User signed out successfully');
       } catch (firebaseError) {
-        // console removed:', firebaseError);
+        console.warn('🔥 Firebase - Sign out error (non-fatal):', firebaseError);
       }
       
-      // console removed
+      console.log('🔐 UserContext - signOut - Removing all auth data from AsyncStorage');
       await AsyncStorage.multiRemove([
         'current_user',
         'guest_mode',
@@ -403,19 +406,19 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         'google_auth_token'
       ]);
       
-      // console removed
+      console.log('🔐 UserContext - signOut - Setting user state to null');
       setSelectedUserState(null);
       
-      // console removed
+      console.log('🔐 UserContext - signOut - Setting isAuthenticated to false');
       setIsAuthenticated(false);
       
-      // console removed
+      console.log('🔐 UserContext - signOut - Setting isGuestMode to false');
       setIsGuestMode(false);
       
-      // console removed
+      console.log('🔐 UserContext - signOut - Setting authMode to guest');
       setAuthMode('guest');
       
-      // console removed
+      console.log('🔐 UserContext - signOut - Sign out completed successfully');
     } catch (error) {
       console.error('🔐 UserContext - signOut - Error during sign out:', error);
       setSelectedUserState(null);
@@ -423,18 +426,18 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       setIsGuestMode(false);
       setAuthMode('guest');
     } finally {
-      // console removed
+      console.log('🔐 UserContext - signOut - Setting isLoading to false');
       setIsLoading(false);
     }
   };
 
   const setGuestMode = async () => {
     try {
-      // console removed');
+      console.log('🔐 UserContext - setGuestMode - Starting (session only)');
       setIsLoading(true);
       
       // DO NOT SAVE TO AsyncStorage - session only
-      // console removed
+      console.log('🔐 UserContext - setGuestMode - Setting guest mode for session only');
       
       // Update state for current session only
       setSelectedUserState(null);
@@ -442,7 +445,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       setIsGuestMode(true);
       setIsAuthenticated(true);
       
-      // console removed');
+      console.log('🔐 UserContext - setGuestMode - Guest mode set successfully (session only)');
     } catch (error) {
       console.error('🔐 UserContext - setGuestMode - Error:', error);
       setSelectedUserState(null);
@@ -451,17 +454,17 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       setIsAuthenticated(true);
     } finally {
       setIsLoading(false);
-      // console removed
+      console.log('🔐 UserContext - setGuestMode - Completed');
     }
   };
 
   const setDemoUser = async () => {
     // Demo mode removed – keep API for backward compatibility, but no-op
-    // console removed');
+    console.log('🔐 UserContext - setDemoUser called (no-op, demo removed)');
   };
 
   const resetHomeScreen = () => {
-    // console removed
+    console.log('🏠 UserContext - resetHomeScreen called');
     setResetHomeScreenTrigger(prev => prev + 1);
   };
 

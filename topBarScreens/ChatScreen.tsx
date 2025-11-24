@@ -11,10 +11,10 @@ function ChatScreen({ navigation }: { navigation: NavigationProp<ParamListBase> 
   // Refresh data when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      // console removed
+      console.log('💬 ChatScreen - Screen focused, refreshing data...');
       // Force re-render by updating a timestamp
       const refreshTimestamp = Date.now();
-      // console removed
+      console.log('ChatScreen refreshed at:', refreshTimestamp);
     }, [])
   );
 

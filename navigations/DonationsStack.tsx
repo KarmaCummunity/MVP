@@ -54,7 +54,7 @@ export default function DonationsStack() {
   // Refresh data when navigator comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      // console removed
+      console.log('💰 DonationsStack - Navigator focused, checking state...');
       // This will trigger re-renders of child screens when needed
     }, [])
   );

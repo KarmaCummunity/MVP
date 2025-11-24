@@ -12,4 +12,3 @@ echo "   Dev server will start on http://localhost:8081"
 echo ""
 npx expo start --web --clear --port 8081
 
-
