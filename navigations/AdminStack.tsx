@@ -11,6 +11,7 @@ import AdminMoneyScreen from "../screens/AdminMoneyScreen";
 import AdminPeopleScreen from "../screens/AdminPeopleScreen";
 import AdminReviewScreen from "../screens/AdminReviewScreen";
 import AdminTasksScreen from "../screens/AdminTasksScreen";
+import ChallengesHomeScreen from "../screens/ChallengesHomeScreen";
 import TopBarNavigator from "./TopBarNavigator";
 import { AdminStackParamList } from "../globals/types";
 
@@ -19,7 +20,7 @@ const Stack = createStackNavigator<AdminStackParamList>();
 export default function AdminStack() {
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🛡️ AdminStack - Navigator focused');
+      // console removed
     }, [])
   );
 
@@ -42,6 +43,7 @@ export default function AdminStack() {
       <Stack.Screen name="AdminPeople" component={AdminPeopleScreen} />
       <Stack.Screen name="AdminReview" component={AdminReviewScreen} />
       <Stack.Screen name="AdminTasks" component={AdminTasksScreen} />
+      <Stack.Screen name="Challenges" component={ChallengesHomeScreen} />
     </Stack.Navigator>
   );
 }

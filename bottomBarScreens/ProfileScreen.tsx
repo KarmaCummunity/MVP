@@ -189,7 +189,7 @@ export default function ProfileScreen() {
   useFocusEffect(
     React.useCallback(() => {
       const refreshStats = async () => {
-        console.log('👤 ProfileScreen - Screen focused, refreshing stats...');
+        // console removed
         await updateUserStats();
         
         // Force re-render by updating a timestamp
@@ -291,7 +291,7 @@ export default function ProfileScreen() {
             style={[styles.webScrollContent, { paddingBottom: tabBarHeight + scaleSize(24) }]}
             onLayout={(e) => {
               const h = e.nativeEvent.layout.height;
-              console.log('🧭 ProfileScreen[WEB] content layout height:', h, 'window:', SCREEN_HEIGHT);
+              // console removed
             }}
           >
         {/* Completion Banner */}
@@ -418,7 +418,7 @@ export default function ProfileScreen() {
                     style={styles.menuItem}
                     onPress={() => {
                       setShowMenu(false);
-                      navigation.navigate('LoginScreen' as never);
+                      navigation.navigate('LoginScreenNew' as never);
                     }}
                   >
                       <Ionicons name="log-in-outline" size={scaleSize(20)} color={colors.textPrimary} />
@@ -729,7 +729,7 @@ export default function ProfileScreen() {
                     style={styles.menuItem}
                     onPress={() => {
                       setShowMenu(false);
-                      navigation.navigate('LoginScreen' as never);
+                      navigation.navigate('LoginScreenNew' as never);
                     }}
                   >
                       <Ionicons name="log-in-outline" size={scaleSize(20)} color={colors.textPrimary} />

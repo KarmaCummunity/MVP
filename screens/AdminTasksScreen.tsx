@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Modal, Dimensions, ScrollView } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { Ionicons } from '@expo/vector-icons';
 import apiService, { ApiResponse } from '../utils/apiService';
 import { useUser } from '../stores/userStore';
+import { scaleSize, responsiveSpacing, getResponsiveModalStyles, getScreenInfo } from '../globals/responsive';
 
 type TaskStatus = 'open' | 'in_progress' | 'done' | 'archived';
 type TaskPriority = 'low' | 'medium' | 'high';
@@ -47,6 +48,15 @@ export default function AdminTasksScreen() {
   const [filterStatus, setFilterStatus] = useState<TaskStatus | ''>('');
   const [filterPriority, setFilterPriority] = useState<TaskPriority | ''>('');
   const [filterCategory, setFilterCategory] = useState<string | ''>('');
+  const [screenDimensions, setScreenDimensions] = useState(Dimensions.get('window'));
+
+  // Track screen size changes for responsive layout
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener('change', ({ window }) => {
+      setScreenDimensions(window);
+    });
+    return () => subscription?.remove();
+  }, []);
 
   const sortedTasks = useMemo(() => {
     const priorityOrder: Record<TaskPriority, number> = { high: 0, medium: 1, low: 2 };
@@ -241,11 +251,20 @@ export default function AdminTasksScreen() {
           onSubmitEditing={fetchTasks}
         />
         <TouchableOpacity style={styles.refreshBtn} onPress={fetchTasks}>
-          <Ionicons name="search-outline" size={22} color="#fff" />
+          <Ionicons name="search-outline" size={scaleSize(20)} color="#fff" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.addButton} onPress={() => { resetForm(); setShowForm(true); }}>
+          <Ionicons name="add" size={scaleSize(22)} color="#fff" />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.chipsRow}>
+      {/* Filters - Now wrapped with ScrollView for mobile */}
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chipsScrollContent}
+        style={styles.chipsRow}
+      >
         <FilterChip label="סטטוס" value={filterStatus} setValue={setFilterStatus} options={[
           { value: '', label: 'הכל' },
           { value: 'open', label: 'פתוחה' },
@@ -266,10 +285,7 @@ export default function AdminTasksScreen() {
           { value: 'operations', label: 'תפעול' },
           { value: 'design', label: 'עיצוב' },
         ]} />
-        <TouchableOpacity style={styles.addButton} onPress={() => { resetForm(); setShowForm(true); }}>
-          <Ionicons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      </ScrollView>
 
       {loading ? (
         <View style={styles.loader}>
@@ -294,64 +310,70 @@ export default function AdminTasksScreen() {
 
       <Modal visible={showForm} animationType="slide" transparent onRequestClose={() => setShowForm(false)}>
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>{(formData as any)._editingId ? 'עריכת משימה' : 'משימה חדשה'}</Text>
-            <TextInput style={styles.modalInput} placeholder="כותרת" value={formData.title} onChangeText={(v) => setFormData({ ...formData, title: v })} />
-            <TextInput style={[styles.modalInput, { height: 80 }]} placeholder="תיאור" multiline value={formData.description} onChangeText={(v) => setFormData({ ...formData, description: v })} />
-            <View style={styles.row2}>
-              <PickerField
-                label="עדיפות"
-                value={formData.priority}
-                onChange={(v) => setFormData({ ...formData, priority: v as TaskPriority })}
-                options={[
-                  { value: 'high', label: 'גבוהה' },
-                  { value: 'medium', label: 'בינונית' },
-                  { value: 'low', label: 'נמוכה' },
-                ]}
-              />
-              <PickerField
-                label="סטטוס"
-                value={formData.status}
-                onChange={(v) => setFormData({ ...formData, status: v as TaskStatus })}
-                options={[
-                  { value: 'open', label: 'פתוחה' },
-                  { value: 'in_progress', label: 'בתהליך' },
-                  { value: 'done', label: 'בוצעה' },
-                  { value: 'archived', label: 'בארכיון' },
-                ]}
-              />
-            </View>
-            <View style={styles.row2}>
-              <PickerField
-                label="קטגוריה"
-                value={formData.category}
-                onChange={(v) => setFormData({ ...formData, category: v })}
-                options={[
-                  { value: 'development', label: 'פיתוח' },
-                  { value: 'marketing', label: 'שיווק' },
-                  { value: 'operations', label: 'תפעול' },
-                  { value: 'design', label: 'עיצוב' },
-                ]}
-              />
-              <TextInput style={styles.modalInput} placeholder="תאריך יעד (YYYY-MM-DD)" value={formData.due_date} onChangeText={(v) => setFormData({ ...formData, due_date: v })} />
-            </View>
-            <TextInput style={styles.modalInput} placeholder="מוקצים (אימיילים מופרדים בפסיק)" value={formData.assigneesEmails} onChangeText={(v) => setFormData({ ...formData, assigneesEmails: v })} />
-            <TextInput style={styles.modalInput} placeholder="תגיות (מופרדות בפסיק)" value={formData.tagsText} onChangeText={(v) => setFormData({ ...formData, tagsText: v })} />
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={[styles.modalBtn, styles.modalCancel]} onPress={() => { setShowForm(false); resetForm(); }}>
-                <Text style={styles.modalBtnText}>ביטול</Text>
-              </TouchableOpacity>
-              {(formData as any)._editingId ? (
-                <TouchableOpacity style={[styles.modalBtn, styles.modalSave]} onPress={saveEdit} disabled={creating}>
-                  {creating ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>שמירה</Text>}
+          <ScrollView 
+            contentContainerStyle={styles.modalScrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={[styles.modalCard, { width: screenDimensions.width < 768 ? '90%' : '70%', maxWidth: 600 }]}>
+              <Text style={styles.modalTitle}>{(formData as any)._editingId ? 'עריכת משימה' : 'משימה חדשה'}</Text>
+              <TextInput style={styles.modalInput} placeholder="כותרת" value={formData.title} onChangeText={(v) => setFormData({ ...formData, title: v })} />
+              <TextInput style={[styles.modalInput, { height: 80 }]} placeholder="תיאור" multiline value={formData.description} onChangeText={(v) => setFormData({ ...formData, description: v })} />
+              <View style={styles.row2}>
+                <PickerField
+                  label="עדיפות"
+                  value={formData.priority}
+                  onChange={(v) => setFormData({ ...formData, priority: v as TaskPriority })}
+                  options={[
+                    { value: 'high', label: 'גבוהה' },
+                    { value: 'medium', label: 'בינונית' },
+                    { value: 'low', label: 'נמוכה' },
+                  ]}
+                />
+                <PickerField
+                  label="סטטוס"
+                  value={formData.status}
+                  onChange={(v) => setFormData({ ...formData, status: v as TaskStatus })}
+                  options={[
+                    { value: 'open', label: 'פתוחה' },
+                    { value: 'in_progress', label: 'בתהליך' },
+                    { value: 'done', label: 'בוצעה' },
+                    { value: 'archived', label: 'בארכיון' },
+                  ]}
+                />
+              </View>
+              <View style={styles.row2}>
+                <PickerField
+                  label="קטגוריה"
+                  value={formData.category}
+                  onChange={(v) => setFormData({ ...formData, category: v })}
+                  options={[
+                    { value: 'development', label: 'פיתוח' },
+                    { value: 'marketing', label: 'שיווק' },
+                    { value: 'operations', label: 'תפעול' },
+                    { value: 'design', label: 'עיצוב' },
+                  ]}
+                />
+                <TextInput style={styles.modalInput} placeholder="תאריך יעד (YYYY-MM-DD)" value={formData.due_date} onChangeText={(v) => setFormData({ ...formData, due_date: v })} />
+              </View>
+              <TextInput style={styles.modalInput} placeholder="מוקצים (אימיילים מופרדים בפסיק)" value={formData.assigneesEmails} onChangeText={(v) => setFormData({ ...formData, assigneesEmails: v })} />
+              <TextInput style={styles.modalInput} placeholder="תגיות (מופרדות בפסיק)" value={formData.tagsText} onChangeText={(v) => setFormData({ ...formData, tagsText: v })} />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={[styles.modalBtn, styles.modalCancel]} onPress={() => { setShowForm(false); resetForm(); }}>
+                  <Text style={styles.modalBtnText}>ביטול</Text>
                 </TouchableOpacity>
-              ) : (
-                <TouchableOpacity style={[styles.modalBtn, styles.modalSave]} onPress={createTask} disabled={creating || !formData.title.trim()}>
-                  {creating ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>יצירה</Text>}
-                </TouchableOpacity>
-              )}
+                {(formData as any)._editingId ? (
+                  <TouchableOpacity style={[styles.modalBtn, styles.modalSave]} onPress={saveEdit} disabled={creating}>
+                    {creating ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>שמירה</Text>}
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity style={[styles.modalBtn, styles.modalSave]} onPress={createTask} disabled={creating || !formData.title.trim()}>
+                    {creating ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>יצירה</Text>}
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
     </View>
@@ -379,8 +401,8 @@ function PickerField({ label, value, onChange, options }: { label: string; value
 
 function FilterChip<T extends string>({ label, value, setValue, options }: { label: string; value: T | ''; setValue: (v: T | '') => void; options: { value: T | ''; label: string }[] }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-      <Text style={{ color: colors.textSecondary }}>{label}:</Text>
+    <View style={{ marginRight: 12, marginBottom: 8 }}>
+      <Text style={{ color: colors.textSecondary, marginBottom: 4, fontSize: scaleSize(12) }}>{label}:</Text>
       <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
         {options.map((opt) => (
           <TouchableOpacity key={`${label}-${String(opt.value)}`} onPress={() => setValue(opt.value)} style={[styles.chip, value === opt.value && styles.chipActive]}>
@@ -396,13 +418,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundSecondary,
-    padding: LAYOUT_CONSTANTS.SPACING.LG,
+    padding: responsiveSpacing(12, 16, 20),
   },
   header: {
-    fontSize: FontSizes.heading2,
+    fontSize: scaleSize(FontSizes.heading2),
     fontWeight: 'bold',
     color: colors.textPrimary,
-    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
+    marginBottom: responsiveSpacing(12, 14, 16),
     textAlign: 'right',
   },
   filtersRow: {
@@ -413,36 +435,38 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    height: 48,
+    height: scaleSize(44),
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
-    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
+    paddingHorizontal: responsiveSpacing(12, 14, 16),
     backgroundColor: colors.backgroundPrimary,
     color: colors.textPrimary,
     borderWidth: 1,
     borderColor: colors.border,
+    fontSize: scaleSize(FontSizes.medium),
   },
   refreshBtn: {
-    height: 48,
-    width: 48,
+    height: scaleSize(44),
+    width: scaleSize(44),
     borderRadius: 12,
     backgroundColor: colors.blue,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chipsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: LAYOUT_CONSTANTS.SPACING.SM,
-    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
-  },
   addButton: {
-    height: 48,
-    width: 48,
+    height: scaleSize(44),
+    width: scaleSize(44),
     borderRadius: 12,
     backgroundColor: colors.green,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  chipsRow: {
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
+  },
+  chipsScrollContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 4,
   },
   listContent: {
     paddingBottom: LAYOUT_CONSTANTS.SPACING.XL,
@@ -456,7 +480,7 @@ const styles = StyleSheet.create({
   taskItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: LAYOUT_CONSTANTS.SPACING.MD,
+    padding: responsiveSpacing(12, 14, 16),
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
     backgroundColor: colors.backgroundPrimary,
     borderWidth: 1,
@@ -472,7 +496,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   taskTitle: {
-    fontSize: FontSizes.large,
+    fontSize: scaleSize(FontSizes.large),
     color: colors.textPrimary,
     fontWeight: '600',
     marginBottom: 6,
@@ -486,30 +510,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: 8,
+    flexWrap: 'wrap',
   },
   actionsRow: {
     marginTop: 8,
     flexDirection: 'row-reverse',
     gap: 12,
+    flexWrap: 'wrap',
   },
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    paddingVertical: 4,
   },
   actionText: {
     color: colors.textPrimary,
+    fontSize: scaleSize(FontSizes.small),
   },
   badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: scaleSize(8),
+    paddingVertical: scaleSize(4),
     borderRadius: 999,
     backgroundColor: colors.backgroundSecondary,
     borderWidth: 1,
     borderColor: colors.border,
   },
   badgeText: {
-    fontSize: FontSizes.small,
+    fontSize: scaleSize(FontSizes.small),
     color: colors.textSecondary,
   },
   priority_high: {
@@ -528,7 +556,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.errorLight,
     borderColor: colors.error,
     borderWidth: 1,
-    padding: 12,
+    padding: responsiveSpacing(10, 12, 14),
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -536,7 +564,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: colors.error,
-    fontSize: FontSizes.medium,
+    fontSize: scaleSize(FontSizes.medium),
     textAlign: 'center',
   },
   retryBtn: {
@@ -548,16 +576,17 @@ const styles = StyleSheet.create({
   retryText: {
     color: '#fff',
     fontWeight: '600',
+    fontSize: scaleSize(FontSizes.small),
   },
   emptyText: {
     textAlign: 'center',
     color: colors.textSecondary,
-    fontSize: FontSizes.medium,
+    fontSize: scaleSize(FontSizes.medium),
     marginTop: LAYOUT_CONSTANTS.SPACING.LG,
   },
   chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: scaleSize(10),
+    paddingVertical: scaleSize(6),
     borderRadius: 999,
     backgroundColor: colors.backgroundPrimary,
     borderWidth: 1,
@@ -569,7 +598,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     color: colors.textSecondary,
-    fontSize: FontSizes.small,
+    fontSize: scaleSize(FontSizes.small),
   },
   chipTextActive: {
     color: colors.textPrimary,
@@ -577,34 +606,41 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
+    padding: responsiveSpacing(16, 24, 32),
+  },
+  modalScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
   },
   modalCard: {
-    width: '100%',
     borderRadius: 16,
     backgroundColor: colors.backgroundPrimary,
-    padding: 16,
+    padding: responsiveSpacing(16, 20, 24),
+    maxHeight: '90%',
   },
   modalTitle: {
-    fontSize: FontSizes.heading3,
+    fontSize: scaleSize(FontSizes.heading3),
     fontWeight: 'bold',
     color: colors.textPrimary,
     marginBottom: 12,
     textAlign: 'right',
   },
   modalInput: {
-    height: 44,
+    height: scaleSize(44),
     borderRadius: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: responsiveSpacing(10, 12, 14),
     backgroundColor: colors.backgroundSecondary,
     color: colors.textPrimary,
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: 10,
     textAlign: 'right',
+    fontSize: scaleSize(FontSizes.medium),
   },
   row2: {
     flexDirection: 'row',
@@ -615,19 +651,21 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: 6,
     textAlign: 'right',
+    fontSize: scaleSize(FontSizes.small),
   },
   pickerBox: {
-    height: 44,
+    height: scaleSize(44),
     borderRadius: 10,
     backgroundColor: colors.backgroundSecondary,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: 12,
+    paddingHorizontal: responsiveSpacing(10, 12, 14),
     justifyContent: 'center',
   },
   pickerValue: {
     color: colors.textPrimary,
     textAlign: 'right',
+    fontSize: scaleSize(FontSizes.medium),
   },
   pickerOptions: {
     flexDirection: 'row',
@@ -643,7 +681,7 @@ const styles = StyleSheet.create({
   },
   modalBtn: {
     flex: 1,
-    height: 44,
+    height: scaleSize(44),
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -659,6 +697,7 @@ const styles = StyleSheet.create({
   modalBtnText: {
     color: '#fff',
     fontWeight: '600',
+    fontSize: scaleSize(FontSizes.medium),
   },
 });
 

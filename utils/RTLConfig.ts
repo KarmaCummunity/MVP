@@ -19,7 +19,7 @@ export const setupRTL = (): void => {
     
     // For Android, you might need to restart the app after enabling RTL
     if (Platform.OS === 'android') {
-      // console.log('RTL changed. Please restart the app for changes to take effect.');
+      // // console removed
     }
   }
 };

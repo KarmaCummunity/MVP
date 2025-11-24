@@ -101,7 +101,7 @@ const enrichUserWithOrgRoles = async (user: User): Promise<User> => {
     }
     return user;
   } catch (err) {
-    console.log('🔐 userStore - enrichUserWithOrgRoles - skipped (no backend or no data)', err);
+    // console removed', err);
     return user;
   }
 };
@@ -118,8 +118,13 @@ export const useUserStore = create<UserState>((set, get) => ({
   // Actions
   setCurrentPrincipal: async (principal: { user: User | null; role: Role }) => {
     try {
-      console.log('🔐 userStore - setCurrentPrincipal:', { user: principal.user?.name || 'null', role: principal.role });
+      // console removed
       if (principal.role === 'guest' || !principal.user) {
+        // Persist guest mode to AsyncStorage
+        await AsyncStorage.setItem('guest_mode', 'true');
+        await AsyncStorage.setItem('auth_mode', 'guest');
+        await AsyncStorage.removeItem('current_user'); // Clear any existing user
+        
         set({
           selectedUser: null,
           isAuthenticated: true,
@@ -134,8 +139,14 @@ export const useUserStore = create<UserState>((set, get) => ({
         const { DatabaseService } = await import('../utils/databaseService');
         await DatabaseService.clearLocalCollections();
       } catch (e) {
-        console.log('⚠️ Failed to clear local collections on real auth (non-fatal):', e);
+        // console removed:', e);
       }
+      
+      // Persist real auth to AsyncStorage
+      await AsyncStorage.setItem('current_user', JSON.stringify(enriched));
+      await AsyncStorage.setItem('auth_mode', 'real');
+      await AsyncStorage.setItem('guest_mode', 'false');
+      
       set({
         selectedUser: enriched,
         isAuthenticated: true,
@@ -146,6 +157,13 @@ export const useUserStore = create<UserState>((set, get) => ({
       console.error('Error in setCurrentPrincipal:', error);
       // Fallbacks
       if (principal.role === 'guest' || !principal.user) {
+        try {
+          await AsyncStorage.setItem('guest_mode', 'true');
+          await AsyncStorage.setItem('auth_mode', 'guest');
+          await AsyncStorage.removeItem('current_user');
+        } catch (e) {
+          // Ignore storage errors in fallback
+        }
         set({
           selectedUser: null,
           isAuthenticated: true,
@@ -153,6 +171,13 @@ export const useUserStore = create<UserState>((set, get) => ({
           authMode: 'guest',
         });
       } else {
+        try {
+          await AsyncStorage.setItem('current_user', JSON.stringify(principal.user));
+          await AsyncStorage.setItem('auth_mode', 'real');
+          await AsyncStorage.setItem('guest_mode', 'false');
+        } catch (e) {
+          // Ignore storage errors in fallback
+        }
         set({
           selectedUser: principal.user,
           isAuthenticated: true,
@@ -165,10 +190,10 @@ export const useUserStore = create<UserState>((set, get) => ({
   
   setSelectedUserWithMode: async (user: User | null, mode: AuthMode) => {
     try {
-      console.log('🔐 userStore - setSelectedUserWithMode:', { user: user?.name || 'null', mode });
+      // console removed
       const role = computeRole(user, mode);
       await get().setCurrentPrincipal({ user, role });
-      console.log('🔐 userStore - setSelectedUserWithMode - completed');
+      // console removed
     } catch (error) {
       console.error('Error setting user:', error);
       const role = computeRole(user, mode);
@@ -182,23 +207,23 @@ export const useUserStore = create<UserState>((set, get) => ({
   
   checkAuthStatus: async () => {
     try {
-      console.log('🔐 userStore - checkAuthStatus - Starting auth check');
+      // console removed
       set({ isLoading: true });
       
       // First, check for successful OAuth authentication
-      console.log('🔐 userStore - checkAuthStatus - Checking for OAuth success');
+      // console removed
       const oauthSuccess = await AsyncStorage.getItem('oauth_success_flag');
       const userData = await AsyncStorage.getItem('google_auth_user');
       const token = await AsyncStorage.getItem('google_auth_token');
       
       if (oauthSuccess && userData && token) {
         try {
-          console.log('🔐 userStore - checkAuthStatus - Found OAuth success data, processing');
+          // console removed
           const parsedUserData = JSON.parse(userData);
           
           // Validate the user data
           if (parsedUserData && parsedUserData.id && parsedUserData.email) {
-            console.log('🔐 userStore - checkAuthStatus - Setting authenticated user from OAuth');
+            // console removed
             
             // Enrich user with org roles if applicable
             const enrichedUser = await enrichUserWithOrgRoles(parsedUserData);
@@ -213,11 +238,11 @@ export const useUserStore = create<UserState>((set, get) => ({
             // Clean up OAuth success flags since we've processed them
             await AsyncStorage.multiRemove(['oauth_success_flag', 'google_auth_user', 'google_auth_token']);
             
-            console.log('🔐 userStore - checkAuthStatus - OAuth authentication restored successfully');
+            // console removed
             set({ isLoading: false });
             return; // Exit early - user is authenticated
           } else {
-            console.warn('🔐 userStore - checkAuthStatus - Invalid OAuth user data found');
+            // console removed
           }
         } catch (parseError) {
           console.error('🔐 userStore - checkAuthStatus - Error parsing OAuth user data:', parseError);
@@ -225,7 +250,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       }
       
       // Check for persistent user session
-      console.log('🔐 userStore - checkAuthStatus - Checking for persistent session');
+      // console removed
       const persistedUser = await AsyncStorage.getItem('current_user');
       const guestMode = await AsyncStorage.getItem('guest_mode');
       const authModeStored = await AsyncStorage.getItem('auth_mode');
@@ -234,7 +259,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         try {
           const parsedUser = JSON.parse(persistedUser);
           if (parsedUser && parsedUser.id) {
-            console.log('🔐 userStore - checkAuthStatus - Restoring persisted user session');
+            // console removed
             const enrichedUser = await enrichUserWithOrgRoles(parsedUser);
             set({
               selectedUser: enrichedUser,
@@ -242,7 +267,7 @@ export const useUserStore = create<UserState>((set, get) => ({
               isGuestMode: guestMode === 'true',
               authMode: (authModeStored as AuthMode) || 'real',
             });
-            console.log('🔐 userStore - checkAuthStatus - Persisted session restored successfully');
+            // console removed
             set({ isLoading: false });
             return; // Exit early - user is authenticated
           }
@@ -252,7 +277,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       }
       
       // No valid authentication found - clear any invalid data and set unauthenticated state
-      console.log('🔐 userStore - checkAuthStatus - No valid authentication found, clearing data');
+      // console removed
       await AsyncStorage.multiRemove([
         'current_user',
         'guest_mode',
@@ -263,7 +288,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         'google_auth_token'
       ]);
       
-      console.log('🔐 userStore - checkAuthStatus - Setting unauthenticated state');
+      // console removed
       set({
         isAuthenticated: false,
         isGuestMode: false,
@@ -287,7 +312,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   
   signOut: async () => {
     try {
-      console.log('🔐 userStore - signOut - Starting sign out process');
+      // console removed
       set({ isLoading: true });
       
       // Sign out from Firebase Auth
@@ -295,12 +320,12 @@ export const useUserStore = create<UserState>((set, get) => ({
         const { app } = getFirebase();
         const auth = getAuth(app);
         await auth.signOut();
-        console.log('🔥 Firebase - User signed out successfully');
+        // console removed
       } catch (firebaseError) {
-        console.warn('🔥 Firebase - Sign out error (non-fatal):', firebaseError);
+        // console removed:', firebaseError);
       }
       
-      console.log('🔐 userStore - signOut - Removing all auth data from AsyncStorage');
+      // console removed
       await AsyncStorage.multiRemove([
         'current_user',
         'guest_mode',
@@ -312,7 +337,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         'google_auth_token'
       ]);
       
-      console.log('🔐 userStore - signOut - Setting user state to null');
+      // console removed
       set({
         selectedUser: null,
         isAuthenticated: false,
@@ -321,7 +346,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         isLoading: false,
       });
       
-      console.log('🔐 userStore - signOut - Sign out completed successfully');
+      // console removed
     } catch (error) {
       console.error('🔐 userStore - signOut - Error during sign out:', error);
       set({
@@ -336,11 +361,11 @@ export const useUserStore = create<UserState>((set, get) => ({
   
   setGuestMode: async () => {
     try {
-      console.log('🔐 userStore - setGuestMode - Starting (session only)');
+      // console removed');
       set({ isLoading: true });
       
       // DO NOT SAVE TO AsyncStorage - session only
-      console.log('🔐 userStore - setGuestMode - Setting guest mode for session only');
+      // console removed
       
       // Update state for current session only
       set({
@@ -351,7 +376,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         isLoading: false,
       });
       
-      console.log('🔐 userStore - setGuestMode - Guest mode set successfully (session only)');
+      // console removed');
     } catch (error) {
       console.error('🔐 userStore - setGuestMode - Error:', error);
       set({
@@ -366,37 +391,32 @@ export const useUserStore = create<UserState>((set, get) => ({
   
   setDemoUser: async () => {
     // Demo mode removed – keep API for backward compatibility, but no-op
-    console.log('🔐 userStore - setDemoUser called (no-op, demo removed)');
+    // console removed');
   },
   
   resetHomeScreen: () => {
-    console.log('🏠 userStore - resetHomeScreen called');
+    // console removed
     set((state) => ({ resetHomeScreenTrigger: state.resetHomeScreenTrigger + 1 }));
   },
   
   initialize: async () => {
-    console.log('🔐 userStore - initialize - Starting initialization');
+    // console removed
     
     // Check auth status
     await get().checkAuthStatus();
     
     // Setup Firebase Auth State Listener
-    console.log('🔥 userStore - Setting up Firebase Auth listener');
+    // console removed
     try {
       const { app } = getFirebase();
       const auth = getAuth(app);
       
       onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-        console.log('🔥 Firebase Auth State Changed:', {
-          hasUser: !!firebaseUser,
-          email: firebaseUser?.email,
-          uid: firebaseUser?.uid,
-          emailVerified: firebaseUser?.emailVerified
-        });
+        // console removed
 
         if (firebaseUser) {
           // Firebase user is logged in - restore/create session
-          console.log('🔥 Firebase user detected, restoring session');
+          // console removed
           
           // Create or restore user data
           const nowIso = new Date().toISOString();
@@ -435,12 +455,12 @@ export const useUserStore = create<UserState>((set, get) => ({
             authMode: 'real',
           });
           
-          console.log('🔥 Firebase session restored successfully');
+          // console removed
         } else {
           // No Firebase user - only clear if we had a Firebase user before
           const firebaseUserId = await AsyncStorage.getItem('firebase_user_id');
           if (firebaseUserId) {
-            console.log('🔥 Firebase user logged out, clearing session');
+            // console removed
             await AsyncStorage.multiRemove(['current_user', 'auth_mode', 'firebase_user_id']);
             set({
               selectedUser: null,
@@ -452,7 +472,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         }
       });
       
-      console.log('🔥 Firebase Auth listener set up successfully');
+      // console removed
     } catch (error) {
       console.error('🔥 Error setting up Firebase Auth listener:', error);
     }

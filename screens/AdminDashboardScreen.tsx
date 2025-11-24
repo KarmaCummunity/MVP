@@ -45,6 +45,14 @@ const adminButtons: AdminButton[] = [
     route: 'AdminTasks',
   },
   {
+    id: 'challenges',
+    title: 'האתגרים שלי',
+    icon: 'trophy',
+    color: '#FFA726',
+    bgColor: '#FFF3E0',
+    route: 'Challenges',
+  },
+  {
     id: 'people',
     title: 'אנשים',
     icon: 'people-outline',

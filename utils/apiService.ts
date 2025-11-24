@@ -76,6 +76,75 @@ class ApiService {
     });
   }
 
+  // Challenges APIs
+  async getChallenges(userId: string): Promise<ApiResponse> {
+    return this.request(`/api/challenges?userId=${userId}`);
+  }
+
+  async getChallenge(id: string, userId: string): Promise<ApiResponse> {
+    return this.request(`/api/challenges/${id}?userId=${userId}`);
+  }
+
+  async createChallenge(challengeData: any): Promise<ApiResponse> {
+    return this.request('/api/challenges', {
+      method: 'POST',
+      body: JSON.stringify(challengeData),
+    });
+  }
+
+  async updateChallenge(id: string, userId: string, updateData: any): Promise<ApiResponse> {
+    return this.request(`/api/challenges/${id}?userId=${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
+  }
+
+  async deleteChallenge(id: string, userId: string): Promise<ApiResponse> {
+    return this.request(`/api/challenges/${id}?userId=${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async restoreChallenge(id: string, userId: string): Promise<ApiResponse> {
+    return this.request(`/api/challenges/restore/${id}?userId=${userId}`, {
+      method: 'POST',
+    });
+  }
+
+  async getDeletedChallenges(userId: string): Promise<ApiResponse> {
+    return this.request(`/api/challenges/history/deleted?userId=${userId}`);
+  }
+
+  async createResetLog(resetLogData: any): Promise<ApiResponse> {
+    return this.request('/api/challenges/reset-logs', {
+      method: 'POST',
+      body: JSON.stringify(resetLogData),
+    });
+  }
+
+  async getResetLogs(userId: string, challengeId?: string): Promise<ApiResponse> {
+    let url = `/api/challenges/reset-logs/all?userId=${userId}`;
+    if (challengeId) {
+      url += `&challengeId=${challengeId}`;
+    }
+    return this.request(url);
+  }
+
+  async createRecordBreak(recordBreakData: any): Promise<ApiResponse> {
+    return this.request('/api/challenges/record-breaks', {
+      method: 'POST',
+      body: JSON.stringify(recordBreakData),
+    });
+  }
+
+  async getRecordBreaks(userId: string, challengeId?: string): Promise<ApiResponse> {
+    let url = `/api/challenges/record-breaks/all?userId=${userId}`;
+    if (challengeId) {
+      url += `&challengeId=${challengeId}`;
+    }
+    return this.request(url);
+  }
+
   private normalizeEndpoint(endpoint: string): string {
     if (!endpoint) {
       return '/';
@@ -113,7 +182,7 @@ class ApiService {
         ...options,
       };
 
-      console.log(`🌐 API Request: ${config.method || 'GET'} ${url}`);
+      // console removed
 
       const response = await fetch(url, config);
       const data = await response.json();
@@ -126,7 +195,7 @@ class ApiService {
         };
       }
 
-      console.log(`✅ API Response: ${endpoint}`, data);
+      // console removed
       return data;
     } catch (error) {
       console.error(`❌ API Network Error:`, error);
@@ -169,6 +238,21 @@ class ApiService {
 
   async getUserActivities(userId: string, limit = 50): Promise<ApiResponse> {
     return this.request(`/api/users/${userId}/activities?limit=${limit}`);
+  }
+
+  async getUsers(filters: {
+    city?: string;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        params.append(key, value.toString());
+      }
+    });
+    return this.request(`/api/users${params.toString() ? `?${params.toString()}` : ''}`);
   }
 
   async followUser(userId: string, followerId: string): Promise<ApiResponse> {
@@ -430,6 +514,159 @@ class ApiService {
 
   async searchMessages(query: string, userId: string): Promise<ApiResponse> {
     return this.request(`/api/chat/search?q=${encodeURIComponent(query)}&user_id=${userId}`);
+  }
+
+  // Items APIs
+  async getItems(filters: {
+    category?: string;
+    condition?: string;
+    status?: string;
+    city?: string;
+    min_price?: number;
+    max_price?: number;
+    search?: string;
+    owner_id?: string;
+    sort_by?: string;
+    sort_order?: 'asc' | 'desc';
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        params.append(key, value.toString());
+      }
+    });
+    
+    return this.request(`/api/items?${params.toString()}`);
+  }
+
+  async getItemById(itemId: string): Promise<ApiResponse> {
+    return this.request(`/api/items/${itemId}`);
+  }
+
+  async createItem(itemData: {
+    owner_id: string;
+    title: string;
+    description?: string;
+    category: string;
+    condition?: string;
+    location?: {
+      city?: string;
+      address?: string;
+      coordinates?: { lat: number; lng: number };
+    };
+    price?: number;
+    images?: string[];
+    tags?: string[];
+    quantity?: number;
+    delivery_method?: string;
+    metadata?: Record<string, unknown>;
+    expires_at?: string;
+  }): Promise<ApiResponse> {
+    return this.request('/api/items', {
+      method: 'POST',
+      body: JSON.stringify(itemData),
+    });
+  }
+
+  async updateItem(itemId: string, updateData: Partial<{
+    title: string;
+    description: string;
+    category: string;
+    condition: string;
+    location: {
+      city?: string;
+      address?: string;
+      coordinates?: { lat: number; lng: number };
+    };
+    price: number;
+    images: string[];
+    tags: string[];
+    quantity: number;
+    status: string;
+    delivery_method: string;
+    metadata: Record<string, unknown>;
+    expires_at: string;
+  }>): Promise<ApiResponse> {
+    return this.request(`/api/items/${itemId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
+  }
+
+  async deleteItem(itemId: string): Promise<ApiResponse> {
+    return this.request(`/api/items/${itemId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getUserItems(userId: string, filters?: {
+    category?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, value.toString());
+        }
+      });
+    }
+    const qs = params.toString();
+    return this.request(`/api/items/user/${userId}${qs ? `?${qs}` : ''}`);
+  }
+
+  // Item Requests APIs
+  async createItemRequest(requestData: {
+    item_id: string;
+    requester_id: string;
+    message?: string;
+    proposed_time?: string;
+    delivery_method?: string;
+    meeting_location?: {
+      address?: string;
+      city?: string;
+      coordinates?: { lat: number; lng: number };
+    };
+  }): Promise<ApiResponse> {
+    return this.request('/api/items/requests', {
+      method: 'POST',
+      body: JSON.stringify(requestData),
+    });
+  }
+
+  async getItemRequests(filters: {
+    itemId?: string;
+    userId?: string;
+    role?: 'owner' | 'requester';
+  } = {}): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        params.append(key, value.toString());
+      }
+    });
+    const qs = params.toString();
+    return this.request(`/api/items/requests${qs ? `?${qs}` : ''}`);
+  }
+
+  async updateItemRequest(
+    requestId: string,
+    userId: string,
+    updateData: {
+      status?: 'pending' | 'approved' | 'rejected' | 'scheduled' | 'completed' | 'cancelled';
+      message?: string;
+      proposed_time?: string;
+      owner_response?: string;
+    }
+  ): Promise<ApiResponse> {
+    return this.request(`/api/items/requests/${requestId}?userId=${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
   }
 
   // Legacy API fallback

@@ -474,20 +474,20 @@ export const runAuthDiagnostics = async (config?: any): Promise<AuthTestSuite> =
   const testSuite = await AuthenticationTester.runAuthTests(config);
   
   // Log results
-  console.group('🔐 Authentication Test Results');
-  console.log(`Platform: ${testSuite.platform}`);
-  console.log(`Timestamp: ${testSuite.timestamp}`);
-  console.log(`Summary: ${testSuite.summary.passed}/${testSuite.summary.total} passed, ${testSuite.summary.failed} failed, ${testSuite.summary.warnings} warnings`);
+  // console removed
+  // console removed
+  // console removed
+  // console removed
   
   testSuite.results.forEach(result => {
     const icon = result.status === 'pass' ? '✅' : result.status === 'fail' ? '❌' : '⚠️';
-    console.log(`${icon} ${result.test}: ${result.message}`);
+    // console removed
     if (result.details) {
-      console.log('   Details:', result.details);
+      // console removed
     }
   });
   
-  console.groupEnd();
+  // console removed
   
   // Alert if critical issues found
   const criticalFailures = testSuite.results.filter(r => 

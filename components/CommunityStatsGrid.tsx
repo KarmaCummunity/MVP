@@ -57,7 +57,7 @@ const CommunityStatsGrid: React.FC<CommunityStatsGridProps> = ({ onSelect }) => 
     const loadStats = async (forceRefresh = false) => {
       if (!mounted) return;
       
-      console.log(`[CommunityStatsGrid] Loading stats, forceRefresh: ${forceRefresh}`);
+      // console removed
       setLoading(true);
       
       try {
@@ -65,18 +65,18 @@ const CommunityStatsGrid: React.FC<CommunityStatsGridProps> = ({ onSelect }) => 
         
         if (USE_BACKEND && isRealAuth) {
           // Use enhanced backend service for real users
-          console.log('[CommunityStatsGrid] Fetching from backend with forceRefresh:', forceRefresh);
+          // console removed
           stats = await EnhancedStatsService.getCommunityStats({}, forceRefresh);
-          console.log('[CommunityStatsGrid] Stats received from backend:', Object.keys(stats).length, 'keys');
+          // console removed.length, 'keys');
         } else {
           // Use legacy local stats for guests or if backend unavailable
-          console.log('[CommunityStatsGrid] Using local stats (no backend or not authenticated)');
+          // console removed');
           stats = await getGlobalStats();
         }
         
         if (mounted) {
           setStatsState(stats);
-          console.log('[CommunityStatsGrid] Stats state updated');
+          // console removed
         }
       } catch (error) {
         console.error('[CommunityStatsGrid] Failed to load community stats:', error);

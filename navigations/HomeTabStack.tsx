@@ -47,7 +47,7 @@ export default function HomeTabStack(): React.ReactElement {
   
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🏠 HomeTabStack - focused');
+      // console removed
     }, [])
   );
 

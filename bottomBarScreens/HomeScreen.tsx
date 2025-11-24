@@ -177,7 +177,7 @@ export default function HomeScreen() {
   // No logical difference between guest/user modes other than the header banner
   useEffect(() => {
     if (isGuestMode) {
-      console.log('🏠 HomeScreen - Guest mode active (header banner only)');
+      // console removed');
     }
   }, [isGuestMode]);
   const [hideTopBar, setHideTopBar] = useState(false); // Top bar hiding state
@@ -192,7 +192,7 @@ export default function HomeScreen() {
   // Refresh data when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🏠 HomeScreen - Screen focused, refreshing data...');
+      // console removed
       // Force re-render by updating refresh key
       setRefreshKey(prev => prev + 1);
     }, [])
@@ -207,13 +207,13 @@ export default function HomeScreen() {
 
   // Listen to resetHomeScreenTrigger from context
   useEffect(() => {
-    console.log('🏠 HomeScreen - resetHomeScreenTrigger changed, resetting showPosts');
+    // console removed
     setShowPosts(false);
   }, [resetHomeScreenTrigger]);
 
   // Update hideTopBar and showPosts in route params
   useEffect(() => {
-    console.log('🏠 HomeScreen - Updating route params with hideTopBar:', hideTopBar, 'showPosts:', showPosts);
+    // console removed
     (navigation as any).setParams({ hideTopBar, showPosts });
   }, [hideTopBar, showPosts, navigation]);
 
@@ -328,7 +328,7 @@ export default function HomeScreen() {
         // Posts screen
           <PostsReelsScreen 
             onScroll={(hide) => {
-              console.log('🏠 HomeScreen - Setting hideTopBar:', hide);
+              // console removed
               setHideTopBar(hide);
             }}
             hideTopBar={hideTopBar}

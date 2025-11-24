@@ -35,7 +35,7 @@ const Stack = createStackNavigator<SearchTabStackParamList>();
 export default function SearchTabStack(): React.ReactElement {
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🔎 SearchTabStack - focused');
+      // console removed
     }, [])
   );
 

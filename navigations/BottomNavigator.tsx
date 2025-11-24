@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
  * @returns {React.FC} A React component rendering the Bottom Tab Navigator.
  */
 export default function BottomNavigator(): React.ReactElement {
-  console.log('📱 BottomNavigator - Component rendered');
+  // console removed
   const { isGuestMode, resetHomeScreen, isAdmin } = useUser();
   const { mode } = useWebMode();
   const navigation = useNavigation();
@@ -158,7 +158,7 @@ export default function BottomNavigator(): React.ReactElement {
   // Refresh data when navigator comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('📱 BottomNavigator - Navigator focused, checking state...');
+      // console removed
       // This will trigger re-renders of child screens when needed
     }, [])
   );
@@ -247,7 +247,7 @@ export default function BottomNavigator(): React.ReactElement {
           component={HomeTabStack}
           listeners={({ navigation, route }) => ({
             tabPress: (e) => {
-              console.log('🏠 HomeScreen - Tab button pressed (even if already on home screen)');
+              // console removed');
               resetHomeScreen();
             },
           })}
