@@ -1,6 +1,6 @@
 /**
- * Ultra-simple Google OAuth button
- * No Firebase, no Expo, just plain OAuth2
+ * Simple Google OAuth2 Login Button
+ * Direct OAuth implementation without third-party libraries
  */
 
 import React, { useState, useEffect } from 'react';
@@ -11,19 +11,24 @@ import { useUser } from '../stores/userStore';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const CLIENT_ID = '430191522654-o70t2qnqc4bvpvmbpak7unog7pvp9c95.apps.googleusercontent.com';
+const CLIENT_ID = '286954674840-vnmcbs34glmvv2hd9a5bp9oe1qjqaa5v.apps.googleusercontent.com';
 
-// Parse JWT token
+/**
+ * Parse JWT token to extract user profile
+ */
 const parseJWT = (token: string) => {
   try {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
-      '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-    ).join(''));
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
     return JSON.parse(jsonPayload);
   } catch (error) {
-    console.error('Failed to parse JWT:', error);
+    console.error('Failed to parse JWT token:', error);
     return null;
   }
 };
@@ -34,19 +39,19 @@ export default function SimpleDirectGoogleButton() {
   const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(false);
 
-  // Check URL hash on mount for returning OAuth
+  /**
+   * Check for OAuth redirect result on component mount
+   */
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
 
-    const checkHash = async () => {
+    const processOAuthRedirect = async () => {
       const hash = window.location.hash;
       
       if (hash && hash.includes('id_token=')) {
-        console.log('🎉 Found OAuth token in URL!');
         setLoading(true);
         
         try {
-          // Extract token
           const params = new URLSearchParams(hash.substring(1));
           const idToken = params.get('id_token');
           
@@ -54,16 +59,13 @@ export default function SimpleDirectGoogleButton() {
             throw new Error('No ID token found');
           }
 
-          console.log('🔍 Parsing token...');
           const profile = parseJWT(idToken);
           
           if (!profile) {
             throw new Error('Failed to parse token');
           }
 
-          console.log('✅ Profile:', profile);
-
-          // Create user data
+          // Create user data from Google profile
           const userData = {
             id: profile.sub,
             name: profile.name || profile.email?.split('@')[0] || 'User',
@@ -91,45 +93,39 @@ export default function SimpleDirectGoogleButton() {
             }
           };
 
-          console.log('💾 Saving user...');
-          
-          // Update user store
+          // Update user store and persist to storage
           await setSelectedUserWithMode(userData, 'real');
-          
-          // Store in AsyncStorage for persistence
           await AsyncStorage.setItem('current_user', JSON.stringify(userData));
           await AsyncStorage.setItem('auth_mode', 'real');
 
-          console.log('🎉 Success! Navigating...');
-          
-          // Clean URL
+          // Clean URL hash
           window.history.replaceState({}, document.title, window.location.pathname);
           
-          // Navigate to home
+          // Navigate to home screen
           setTimeout(() => {
             navigation.replace('HomeStack');
           }, 500);
 
         } catch (error) {
-          console.error('❌ OAuth error:', error);
+          console.error('OAuth authentication error:', error);
           setLoading(false);
-          // Clean URL even on error
           window.history.replaceState({}, document.title, window.location.pathname);
         }
       }
     };
 
-    checkHash();
-  }, []);
+    processOAuthRedirect();
+  }, [setSelectedUserWithMode, navigation]);
 
+  /**
+   * Initiate Google OAuth flow
+   */
   const handleLogin = () => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
       alert('Google login is only available on web');
       return;
     }
 
-    console.log('🚀 Starting Google OAuth...');
-    
     const redirectUri = window.location.origin + window.location.pathname;
     const nonce = Math.random().toString(36).substring(7);
     
@@ -144,10 +140,7 @@ export default function SimpleDirectGoogleButton() {
 
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
     
-    console.log('📍 Redirect URI:', redirectUri);
-    console.log('🔗 Auth URL:', authUrl);
-    
-    // Redirect to Google
+    // Redirect to Google OAuth
     window.location.href = authUrl;
   };
 
