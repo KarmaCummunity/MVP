@@ -30,8 +30,6 @@ import {
   getFollowStats 
 } from '../utils/followService';
 import { useUser } from '../stores/userStore';
-import { apiService } from '../utils/apiService';
-import { USE_BACKEND } from '../utils/dbConfig';
 
 import { getScreenInfo, isLandscape } from '../globals/responsive';
 
@@ -58,7 +56,7 @@ export default function DiscoverPeopleScreen() {
   // Refresh data when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      // console removed
+      console.log('🔍 DiscoverPeopleScreen - Screen focused, refreshing data...');
       loadUsers();
       // Force re-render by updating refresh key
       setRefreshKey(prev => prev + 1);
@@ -68,103 +66,28 @@ export default function DiscoverPeopleScreen() {
   const loadUsers = async () => {
     setLoading(true);
     try {
-      if (USE_BACKEND) {
-        // Fetch all users from backend for both tabs
-        const response = await apiService.getUsers({ limit: 100, offset: 0 });
-        
-        if (response.success && response.data && Array.isArray(response.data)) {
-          const allUsers = response.data
-            .filter((user: any) => user.id !== selectedUser?.id)
-            .map((user: any) => ({
-              id: user.id,
-              name: user.name || 'ללא שם',
-              avatar: user.avatar_url || '',
-              bio: user.bio || '',
-              karmaPoints: user.karma_points || 0,
-              followersCount: 0,
-              completedTasks: 0,
-              isActive: user.last_active ? new Date(user.last_active) > new Date(Date.now() - 15 * 60 * 1000) : false,
-              roles: [],
-            }));
-          
-          // Set suggestions to all users (excluding current user)
-          setSuggestions(allUsers as any);
-          
-          // Set popular users sorted by karma points
-          const sortedByKarma = [...allUsers].sort((a, b) => (b.karmaPoints || 0) - (a.karmaPoints || 0));
-          setPopularUsers(sortedByKarma as any);
-          
-          // Load follow stats for all users (in batches to avoid too many requests)
-          const stats: Record<string, { isFollowing: boolean }> = {};
-          if (selectedUser) {
-            // Load stats for first 50 users to avoid too many requests
-            const usersToCheck = allUsers.slice(0, 50);
-            for (const user of usersToCheck) {
-              try {
-                const userStats = await getFollowStats(user.id, selectedUser.id);
-                stats[user.id] = { isFollowing: userStats.isFollowing };
-              } catch (err) {
-                stats[user.id] = { isFollowing: false };
-              }
-            }
-            // Set default false for remaining users
-            allUsers.slice(50).forEach(user => {
-              stats[user.id] = { isFollowing: false };
-            });
-          }
-          setFollowStats(stats);
-        } else {
-          console.warn('⚠️ DiscoverPeopleScreen - Backend response failed, using fallback');
-          // Fallback to old method if backend fails
-          if (selectedUser) {
-            const userSuggestions = await getFollowSuggestions(selectedUser.id, 20);
-            setSuggestions(userSuggestions as any);
-            
-            const popular = await getPopularUsers(20);
-            setPopularUsers(popular as any);
-            
-            // Load follow stats for fallback users
-            const allUsersToCheck = [...userSuggestions, ...popular];
-            const stats: Record<string, { isFollowing: boolean }> = {};
-            for (const user of allUsersToCheck) {
-              try {
-                const userStats = await getFollowStats(user.id, selectedUser.id);
-                stats[user.id] = { isFollowing: userStats.isFollowing };
-              } catch (err) {
-                stats[user.id] = { isFollowing: false };
-              }
-            }
-            setFollowStats(stats);
-          } else {
-            setSuggestions([]);
-            setPopularUsers([]);
-          }
-        }
+      if (selectedUser) {
+        const userSuggestions = await getFollowSuggestions(selectedUser.id, 20);
+        setSuggestions(userSuggestions as any);
       } else {
-        // Non-backend mode: use existing logic
-        if (selectedUser) {
-          const userSuggestions = await getFollowSuggestions(selectedUser.id, 20);
-          setSuggestions(userSuggestions as any);
-        } else {
-          setSuggestions([]);
-        }
-        
-        const popular = await getPopularUsers(20);
-        setPopularUsers(popular as any);
-        
-        // Load follow stats for all users
-        const allUsersToCheck = [...(suggestions as any[]), ...(popular as any[])];
-        const stats: Record<string, { isFollowing: boolean }> = {};
-        
-        for (const user of allUsersToCheck) {
-          if (selectedUser) {
-            const userStats = await getFollowStats(user.id, selectedUser.id);
-            stats[user.id] = { isFollowing: userStats.isFollowing };
-          }
-        }
-        
-        setFollowStats(stats);
+        setSuggestions([]);
       }
+      
+      const popular = await getPopularUsers(20);
+      setPopularUsers(popular as any);
+      
+      // Load follow stats for all users
+      const allUsersToCheck = [...(suggestions as any[]), ...(popular as any[])];
+      const stats: Record<string, { isFollowing: boolean }> = {};
+      
+      for (const user of allUsersToCheck) {
+        if (selectedUser) {
+          const userStats = await getFollowStats(user.id, selectedUser.id);
+          stats[user.id] = { isFollowing: userStats.isFollowing };
+        }
+      }
+      
+      setFollowStats(stats);
     } catch (error) {
       console.error('Error loading users:', error);
       Alert.alert('שגיאה', 'שגיאה בטעינת המשתמשים');
@@ -339,7 +262,7 @@ export default function DiscoverPeopleScreen() {
           <View style={[styles.webScrollContent, { paddingBottom: bottomPadding }]}
             onLayout={(e) => {
               const h = e.nativeEvent.layout.height;
-              // console removed
+              console.log('🧭 DiscoverPeopleScreen[WEB] content layout height:', h, 'window:', SCREEN_HEIGHT);
             }}
           >
             <FlatList

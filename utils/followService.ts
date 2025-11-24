@@ -1,7 +1,5 @@
 import { sendFollowNotification } from './notificationService';
 import { db, DB_COLLECTIONS, DatabaseService } from './databaseService';
-import { apiService } from './apiService';
-import { USE_BACKEND } from './dbConfig';
 
 export interface FollowRelationship {
   followerId: string;
@@ -138,24 +136,7 @@ export const getFollowing = async (userId: string): Promise<any[]> => {
 
 export const getFollowSuggestions = async (currentUserId: string, limit: number = 10): Promise<any[]> => {
   try {
-    if (USE_BACKEND) {
-      // Fetch users from backend, excluding current user
-      const response = await apiService.getUsers({ limit, offset: 0 });
-      if (response.success && response.data) {
-        // Filter out current user and map to expected format
-        return response.data
-          .filter((user: any) => user.id !== currentUserId)
-          .map((user: any) => ({
-            id: user.id,
-            name: user.name,
-            avatar: user.avatar_url || '',
-            bio: '',
-            karmaPoints: user.karma_points || 0,
-            followersCount: 0,
-            isActive: user.last_active ? new Date(user.last_active) > new Date(Date.now() - 15 * 60 * 1000) : false,
-          }));
-      }
-    }
+    // TODO: Implement real suggestion logic against backend
     return [];
   } catch (error) {
     console.error('❌ Get follow suggestions error:', error);
@@ -166,7 +147,7 @@ export const getFollowSuggestions = async (currentUserId: string, limit: number 
 export const resetFollowRelationships = async (): Promise<void> => {
   try {
     await DatabaseService.clearAllData();
-    // console removed
+    console.log('✅ All follow relationships reset');
   } catch (error) {
     console.error('❌ Reset follow relationships error:', error);
   }
@@ -175,7 +156,7 @@ export const resetFollowRelationships = async (): Promise<void> => {
 export const createSampleFollowData = async (): Promise<void> => {
   try {
     // Demo data creation removed
-    // console removed');
+    console.log('ℹ️ createSampleFollowData skipped (demo removed)');
   } catch (error) {
     console.error('❌ Create sample follow data error:', error);
   }
@@ -200,24 +181,7 @@ export const getFollowHistory = async (userId: string): Promise<FollowRelationsh
 
 export const getPopularUsers = async (limit: number = 10): Promise<any[]> => {
   try {
-    if (USE_BACKEND) {
-      // Fetch users from backend, sorted by karma points (popular users)
-      const response = await apiService.getUsers({ limit, offset: 0 });
-      if (response.success && response.data) {
-        // Sort by karma points and map to expected format
-        return response.data
-          .sort((a: any, b: any) => (b.karma_points || 0) - (a.karma_points || 0))
-          .map((user: any) => ({
-            id: user.id,
-            name: user.name,
-            avatar: user.avatar_url || '',
-            bio: user.bio || '',
-            karmaPoints: user.karma_points || 0,
-            followersCount: 0,
-            isActive: user.last_active ? new Date(user.last_active) > new Date(Date.now() - 15 * 60 * 1000) : false,
-          }));
-      }
-    }
+    // TODO: Implement popular users query against backend
     return [];
   } catch (error) {
     console.error('❌ Get popular users error:', error);
@@ -228,7 +192,7 @@ export const getPopularUsers = async (limit: number = 10): Promise<any[]> => {
 
 export const debugFollowRelationships = async (): Promise<void> => {
   try {
-    // console removed');
+    console.log('ℹ️ debugFollowRelationships skipped (demo users removed)');
   } catch (error) {
     console.error('❌ Debug follow relationships error:', error);
   }
@@ -237,7 +201,7 @@ export const debugFollowRelationships = async (): Promise<void> => {
 
 export const comprehensiveSystemCheck = async (): Promise<void> => {
   try {
-    // console removed');
+    console.log('ℹ️ comprehensiveSystemCheck skipped (demo users removed)');
   } catch (error) {
     console.error('❌ Comprehensive system check error:', error);
   }
@@ -269,7 +233,7 @@ export const updateFollowCounts = async (userId: string): Promise<void> => {
     };
     
     await db.updateUser(userId, userData);
-    // console removed
+    console.log('✅ Updated follow counts for user:', userId, userData);
   } catch (error) {
     console.error('❌ Update follow counts error:', error);
   }

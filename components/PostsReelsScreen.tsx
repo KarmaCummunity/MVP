@@ -237,7 +237,7 @@ interface PostsReelsScreenProps {
 
 export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTopBar = false }: PostsReelsScreenProps) {
   const navigation = useNavigation();
-  // console removed
+  console.log('📱 PostsReelsScreen - hideTopBar prop:', hideTopBar);
   const insets = useSafeAreaInsets();
   const { selectedUser, isRealAuth } = useUser();
   const [realFeed, setRealFeed] = useState<Item[]>([]);
@@ -323,7 +323,7 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
   );
   
   const animatedStyle = useAnimatedStyle(() => {
-    // console removed
+    console.log('📱 PostsReelsScreen - animatedStyle - hideTopBar:', hideTopBar);
     return {
       flex: 1,
       paddingTop: hideTopBar ? insets.top : 0,
@@ -346,13 +346,13 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
     const offsetY = event.nativeEvent.contentOffset.y;
     const isScrollingUp = offsetY < lastOffsetY;
     
-    // console removed
+    console.log('📱 PostsReelsScreen - Scroll offset:', offsetY, 'Last offset:', lastOffsetY, 'Scrolling up:', isScrollingUp);
     
     if (isScrollingUp) {
-      // console removed');
+      console.log('📱 PostsReelsScreen - Showing top bar (scrolling up)');
       onScroll?.(false);
     } else if (offsetY > 20) {
-      // console removed
+      console.log('📱 PostsReelsScreen - Hiding top bar');
       onScroll?.(true);
     }
     

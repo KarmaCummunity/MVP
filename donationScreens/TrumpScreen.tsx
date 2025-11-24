@@ -6,7 +6,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Alert,
-  ScrollView,
+
   TextInput,
   Platform,
   Linking,
@@ -29,8 +29,8 @@ export default function TrumpScreen({
   navigation: NavigationProp<ParamListBase>;
 }) {
   // Debug log for TrumpScreen
-  // console removed
-  // console removed
+  console.log('🚗 TrumpScreen - Component rendered');
+  console.log('🚗 TrumpScreen - Navigation object:', navigation);
   
   const [mode, setMode] = useState(true); // false = seeker (needs ride), true = offerer (offers ride)
   const { t } = useTranslation(['donations','common','trump']);
@@ -55,7 +55,7 @@ export default function TrumpScreen({
   // Refresh data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      // console removed
+      console.log('🚗 TrumpScreen - Screen focused, refreshing data...');
       // Reset form when returning to screen
       setFromLocation('');
       setToLocation('');
@@ -255,7 +255,12 @@ export default function TrumpScreen({
 
 
   const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
-    // console removed
+    console.log('🚗 TrumpScreen - Search received:', { 
+      query, 
+      filters: filters || [], 
+      sorts: sorts || [], 
+      resultsCount: results?.length || 0 
+    });
     
     // Update state with search results
     setSearchQuery(query);
@@ -450,11 +455,11 @@ export default function TrumpScreen({
 
   const handleToggleMode = useCallback(() => {
     setMode(!mode);
-    // console removed
+    console.log('Mode toggled:', !mode ? 'seeker' : 'offerer');
   }, [mode]);
 
   const handleSelectMenuItem = useCallback((option: string) => {
-    // console removed
+    console.log('Menu option selected:', option);
     Alert.alert(t('trump:menu.title') as string, t('trump:menu.selected', { option }) as string);
   }, []);
 

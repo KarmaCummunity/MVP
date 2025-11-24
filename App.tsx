@@ -39,12 +39,10 @@ import { I18nManager } from 'react-native';
 import MainNavigator from './navigations/MainNavigator';
 // Ensure tslib default interop for certain vendor bundles
 import './polyfills/tslib-default';
-// Disable console logs in production for better performance
-import './utils/disableConsoleLogs';
 import colors from './globals/colors';
 import { useWebMode } from './stores/webModeStore';
 import { useAppLoading } from './stores/appLoadingStore';
-import WebModeToggle from './components/WebModeToggle';
+import WebModeToggleOverlay from './components/WebModeToggleOverlay';
 import { FontSizes } from "./globals/constants";
 import { logger } from './utils/loggerService';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -105,10 +103,7 @@ function AppContent() {
     getCriticalError 
   } = useAppLoading();
   
-  // Must call all hooks before any conditional returns
-  const { mode } = useWebMode();
-  
-  // Initialize stores on mount (run only once)
+  // Initialize stores on mount
   useEffect(() => {
     const initializeStores = async () => {
       try {
@@ -132,55 +127,44 @@ function AppContent() {
     
     // Initialize immediately - no delay needed
     initializeStores();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on mount
+  }, []);
 
   logger.info('App', 'App component mounted');
   
-  // Setup notification response listener (iOS + Android) (run only once)
-  // MEMORY LEAK FIX: Properly cleanup subscription on unmount
+  // TODO: Move notification setup to dedicated notification service/hook
+  // TODO: Add proper error handling for notification permission failures
+  // TODO: Test notification handling on all platforms (iOS/Android/Web)
+  // Setup notification response listener (iOS + Android)
   useEffect(() => {
     if (!notificationService) return;
 
-    let subscription: any = null;
-    
-    try {
-      subscription = notificationService.setupNotificationResponseListener((response) => {
-        try {
-          logger.info('App', 'Notification clicked', { response });
-          const data = response?.notification?.request?.content?.data || {};
-          const type = data?.type;
-          const conversationId = data?.conversationId;
+    const subscription = notificationService.setupNotificationResponseListener((response) => {
+      try {
+        logger.info('App', 'Notification clicked', { response });
+        const data = response?.notification?.request?.content?.data || {};
+        const type = data?.type;
+        const conversationId = data?.conversationId;
 
-          if (navigationRef.current?.isReady()) {
-            if (type === 'message' && conversationId) {
-              navigationRef.current.navigate('ChatDetailScreen', { conversationId });
-            } else {
-              navigationRef.current.navigate('NotificationsScreen');
-            }
+        if (navigationRef.current?.isReady()) {
+          if (type === 'message' && conversationId) {
+            navigationRef.current.navigate('ChatDetailScreen', { conversationId });
+          } else {
+            navigationRef.current.navigate('NotificationsScreen');
           }
-        } catch (err) {
-          logger.warn('App', 'Failed to handle notification response', { error: err });
         }
-      });
-    } catch (err) {
-      logger.error('App', 'Failed to setup notification listener', { error: err });
-    }
+      } catch (err) {
+        logger.warn('App', 'Failed to handle notification response', { error: err });
+      }
+    });
 
-    // CLEANUP: Remove subscription when component unmounts
     return () => {
       if (subscription && typeof subscription.remove === 'function') {
-        try {
-          subscription.remove();
-          logger.debug('App', 'Notification subscription cleaned up');
-        } catch (err) {
-          logger.warn('App', 'Error cleaning up notification subscription', { error: err });
-        }
+        subscription.remove();
       }
     };
-  }, []); // Run only once on mount
+  }, []);
 
-  // Fast initial setup to show the UI as quickly as possible (run only once)
+  // Fast initial setup to show the UI as quickly as possible
   useEffect(() => {
     const showUiQuickly = async () => {
       try {
@@ -195,13 +179,10 @@ function AppContent() {
     };
     
     showUiQuickly();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on mount
+  }, [markAppReady, setError]);
 
-  // Load heavy resources in the background after the UI is visible (run only once when app is ready)
+  // Load heavy resources in the background after the UI is visible
   useEffect(() => {
-    if (!isAppReady) return;
-    
     const loadBackgroundResources = async () => {
       logger.info('App', 'Starting background resource loading');
 
@@ -249,9 +230,10 @@ function AppContent() {
       }
     };
 
-    loadBackgroundResources();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAppReady]); // Run only once when app is ready
+    if (isAppReady) {
+      loadBackgroundResources();
+    }
+  }, [isAppReady, setLoading, setError]);
 
 
 
@@ -272,12 +254,6 @@ function AppContent() {
     );
   }
 
-  // Memoize container style to prevent unnecessary re-renders
-  const containerStyle = React.useMemo(() => ({
-    flex: 1,
-    paddingTop: Platform.OS === 'web' && mode === 'app' ? 48 : 0 // Space for toggle button in app mode
-  }), [mode]);
-
   if (!isAppReady) {
     return (
       <View style={loadingStyles.container}>
@@ -287,18 +263,32 @@ function AppContent() {
     );
   }
 
+  const AppNavigationRoot: React.FC = () => {
+    const { mode } = useWebMode();
+    
+    // Add top padding in app mode to make room for toggle button
+    const containerStyle = {
+      flex: 1,
+      paddingTop: Platform.OS === 'web' && mode === 'app' ? 48 : 0 // Space for toggle button in app mode
+    };
+    
+    return (
+      <NavigationContainer
+        key={`nav-${mode}`}
+        ref={navigationRef}
+        children={
+          <View style={containerStyle}>
+            <MainNavigator />
+            <WebModeToggleOverlay />
+            <StatusBar style="auto" />
+          </View>
+        }
+      />
+    );
+  };
+
   return (
-    <NavigationContainer
-      key={`nav-${mode}`}
-      ref={navigationRef}
-      children={
-        <View style={containerStyle}>
-          <MainNavigator />
-          <WebModeToggle />
-          <StatusBar style="auto" />
-        </View>
-      }
-    />
+    <AppNavigationRoot />
   );
 }
 

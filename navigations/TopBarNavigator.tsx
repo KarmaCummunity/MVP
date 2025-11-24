@@ -49,17 +49,17 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
     return findActiveRoute(state.routes, state.index || 0);
   });
   
-  // console removed
+  console.log('🔝 TopBarNavigator - Component rendered, route name:', route.name, 'isGuestMode:', isGuestMode);
   
   // Refresh data when navigator comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      // console removed
-      // console removed
+      console.log('🔝 TopBarNavigator - Navigator focused, checking state...');
+      console.log('🔝 TopBarNavigator - Current route on focus:', route.name);
     }, [route.name])
   );
 
-  ////// console removed
+  ////console.log('🔝 TopBarNavigator - hideTopBar prop:', hideTopBar);
 
   const shouldHideTopBar = hideTopBar || (route?.params as any)?.hideTopBar === true;
 
@@ -70,17 +70,17 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
 
 
   const animatedStyle = useAnimatedStyle(() => {
-    //// console removed
+    //console.log('🔝 TopBarNavigator - translateY value:', translateY.value);
     return {
       transform: [{ translateY: translateY.value }],
     };
   });
 
   // Debug logs
-  //// console removed
-  //// console removed
-  //// console removed
-  //// console removed);
+  //console.log('🔍 TopBarNavigator - Current route name:', route.name);
+  //console.log('🔍 TopBarNavigator - Route params:', route.params);
+  //console.log('🔍 TopBarNavigator - Route key:', route.key);
+  //console.log('🔍 TopBarNavigator - Full route object:', JSON.stringify(route, null, 2));
 
   // Map route names to titles using translations
   const routeTitles: Record<string, string> = {

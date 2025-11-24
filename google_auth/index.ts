@@ -126,7 +126,7 @@ export type {
  * 
  * useEffect(() => {
  *   initializeGoogleAuth().then(() => {
- *     // console removed
+ *     console.log('Google Auth initialized');
  *   });
  * }, []);
  * ```
@@ -169,7 +169,7 @@ export const initializeGoogleAuth = async (): Promise<{
  * ```typescript
  * const { isAuthenticated, user } = getAuthStatus();
  * if (isAuthenticated) {
- *   // console removed
+ *   console.log('User logged in:', user.email);
  * }
  * ```
  */
@@ -218,7 +218,7 @@ export const logoutUser = async (): Promise<void> => {
  * @example
  * ```typescript
  * const health = await checkAuthHealth();
- * // console removed
+ * console.log('Auth system health:', health);
  * ```
  */
 export const checkAuthHealth = async (): Promise<{

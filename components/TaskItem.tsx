@@ -7,7 +7,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { Task } from '../globals/types';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
-import { scaleSize, responsiveSpacing } from '../globals/responsive';
 
 interface TaskItemProps {
   task: Task;
@@ -122,7 +121,7 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
           
           {/* Priority Badge */}
           <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(task.priority) + '20' }]}>
-            <Ionicons name={getPriorityIcon(task.priority) as any} size={scaleSize(12)} color={getPriorityColor(task.priority)} />
+            <Ionicons name={getPriorityIcon(task.priority) as any} size={12} color={getPriorityColor(task.priority)} />
             <Text style={[styles.priorityText, { color: getPriorityColor(task.priority) }]}>
               {task.priority}
             </Text>
@@ -133,7 +132,7 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
         <View style={styles.metaContainer}>
           {task.dueDate && (
             <View style={styles.metaItem}>
-              <Ionicons name="calendar-outline" size={scaleSize(14)} color={colors.textSecondary} />
+              <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
               <Text style={[styles.metaText, task.completed && styles.completedText]}>
                 {formatDate(task.dueDate)}
               </Text>
@@ -142,7 +141,7 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
           
           {task.category && (
             <View style={styles.metaItem}>
-              <Ionicons name="folder-outline" size={scaleSize(14)} color={colors.textSecondary} />
+              <Ionicons name="folder-outline" size={14} color={colors.textSecondary} />
               <Text style={[styles.metaText, task.completed && styles.completedText]}>
                 {task.category}
               </Text>
@@ -151,7 +150,7 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
 
           {task.location && (
             <View style={styles.metaItem}>
-              <Ionicons name="location-outline" size={scaleSize(14)} color={colors.textSecondary} />
+              <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
               <Text style={[styles.metaText, task.completed && styles.completedText]}>
                 {task.location}
               </Text>
@@ -193,14 +192,14 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
             onPress={handleEditPress} 
             style={[styles.actionButton, styles.editButton]}
           >
-            <Ionicons name="create-outline" size={scaleSize(18)} color={colors.pink} />
+            <Ionicons name="create-outline" size={18} color={colors.pink} />
           </TouchableOpacity>
           
           <TouchableOpacity 
             onPress={handleDeletePress} 
             style={[styles.actionButton, styles.deleteButton]}
           >
-            <Ionicons name="trash-outline" size={scaleSize(18)} color={colors.error} />
+            <Ionicons name="trash-outline" size={18} color={colors.error} />
           </TouchableOpacity>
         </View>
       </View>
@@ -213,7 +212,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: colors.backgroundPrimary,
     borderRadius: 12,
-    marginBottom: responsiveSpacing(10, 12, 14),
+    marginBottom: 12,
     shadowColor: colors.shadowLight,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -226,38 +225,38 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundSecondary,
   },
   priorityIndicator: {
-    width: scaleSize(4),
+    width: 4,
     height: '100%',
   },
   contentContainer: {
     flex: 1,
-    padding: responsiveSpacing(12, 14, 16),
+    padding: 15,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: scaleSize(8),
+    marginBottom: 8,
   },
   titleContainer: {
     flex: 1,
-    marginRight: scaleSize(8),
+    marginRight: 10,
   },
   title: {
-    fontSize: scaleSize(FontSizes.body),
+    fontSize: FontSizes.body,
     fontWeight: '600',
     color: colors.textPrimary,
-    marginBottom: scaleSize(4),
-    lineHeight: scaleSize(20),
+    marginBottom: 4,
+    lineHeight: 20,
   },
   completedTitle: {
     textDecorationLine: 'line-through',
     color: colors.textSecondary,
   },
   description: {
-    fontSize: scaleSize(FontSizes.body),
+    fontSize: FontSizes.body,
     color: colors.textSecondary,
-    lineHeight: scaleSize(18),
+    lineHeight: 18,
   },
   completedText: {
     color: colors.textSecondary,
@@ -265,31 +264,31 @@ const styles = StyleSheet.create({
   priorityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: scaleSize(8),
-    paddingVertical: scaleSize(4),
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 12,
-    marginLeft: scaleSize(6),
+    marginLeft: 8,
   },
   priorityText: {
-    fontSize: scaleSize(FontSizes.small),
+    fontSize: FontSizes.small,
     fontWeight: '600',
-    marginLeft: scaleSize(4),
+    marginLeft: 4,
   },
   metaContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: scaleSize(8),
+    marginBottom: 8,
   },
   metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: scaleSize(12),
-    marginBottom: scaleSize(4),
+    marginRight: 15,
+    marginBottom: 4,
   },
   metaText: {
-    fontSize: scaleSize(FontSizes.small),
+    fontSize: FontSizes.small,
     color: colors.textSecondary,
-    marginLeft: scaleSize(4),
+    marginLeft: 4,
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -297,31 +296,31 @@ const styles = StyleSheet.create({
   },
   tag: {
     backgroundColor: colors.backgroundSecondary,
-    paddingHorizontal: scaleSize(8),
-    paddingVertical: scaleSize(4),
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 10,
-    marginRight: scaleSize(6),
-    marginBottom: scaleSize(4),
+    marginRight: 6,
+    marginBottom: 4,
   },
   tagText: {
-    fontSize: scaleSize(FontSizes.caption),
+    fontSize: FontSizes.caption,
     color: colors.textSecondary,
     fontWeight: '500',
   },
   actionsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: responsiveSpacing(12, 14, 16),
+    padding: 15,
     paddingLeft: 0,
   },
   actionButtons: {
     flexDirection: 'row',
-    marginLeft: scaleSize(12),
+    marginLeft: 15,
   },
   actionButton: {
-    padding: scaleSize(8),
+    padding: 8,
     borderRadius: 8,
-    marginLeft: scaleSize(6),
+    marginLeft: 8,
   },
   editButton: {
     backgroundColor: colors.pink + '10',

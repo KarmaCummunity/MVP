@@ -118,7 +118,7 @@ export default function TimeScreen({
   // Refresh data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      // console removed
+      console.log('⏰ TimeScreen - Screen focused, refreshing data...');
       // Reset form when returning to screen
       setSelectedTask(null);
       // Force re-render by updating refresh key
@@ -155,7 +155,7 @@ export default function TimeScreen({
   ];
 
   const handleVolunteerPress = (opportunity: any) => {
-    // console removed
+    console.log('Volunteer opportunity pressed:', opportunity.title);
     Alert.alert(
       'הצטרפות להתנדבות',
       `האם תרצה להצטרף להתנדבות "${opportunity.title}"?`,
@@ -176,7 +176,7 @@ export default function TimeScreen({
   };
 
   const handleEmergencyLink = async () => {
-    // console removed
+    console.log('Emergency volunteer link pressed');
     const url = 'https://www.volunteer.gov.il';
     try {
       const supported = await Linking.canOpenURL(url);
@@ -193,7 +193,12 @@ export default function TimeScreen({
 
   // Function to handle search results from HeaderComp
   const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
-    // console removed
+    console.log('⏰ TimeScreen - Search received:', { 
+      query, 
+      filters: filters || [], 
+      sorts: sorts || [], 
+      resultsCount: results?.length || 0 
+    });
     
     // Update state with search results
     setSearchQuery(query);
@@ -234,8 +239,8 @@ export default function TimeScreen({
       <HeaderComp
         mode={true}
         menuOptions={['הגדרות', 'עזרה', 'צור קשר']}
-        onToggleMode={() => {}}
-        onSelectMenuItem={(option: string) => {}}
+        onToggleMode={() => console.log('Mode toggled')}
+        onSelectMenuItem={(option: string) => console.log('Menu selected:', option)}
         title=""
         placeholder="חפש הזדמנויות התנדבות..."
         filterOptions={timeFilterOptions}

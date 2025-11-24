@@ -306,7 +306,6 @@
       "art": { "title": "Art", "subtitle": "Creation and sharing", "description": "Artistic creation and workshops" },
       "sports": { "title": "Sports", "subtitle": "Active lifestyle", "description": "Sports and activity" },
       "items": { "title": "Items", "subtitle": "Objects", "description": "Donations of items" },
-      "challenges": { "title": "Challenges", "subtitle": "Personal challenges", "description": "Challenges app - manage timers and personal challenges" },
       "dreams": { "title": "Make-A-Wish", "subtitle": "Create magical moments", "description": "Fulfilling wishes for children, teens and adults – experiences, meetings and surprises" },
       "fertility": { "title": "Fertility", "subtitle": "Support on the path to parenthood", "description": "Support and assistance in the fertility journey: guidance, treatment funding, community and emotional support" },
       "jobs": { "title": "Jobs", "subtitle": "Employment for the community", "description": "Help finding work, matching positions and partnerships with employers for the community" },
@@ -802,12 +801,6 @@
     "manifesto": { "title": "Manifesto", "subtitle": "Why and what for", "paragraph": { "1": "In an era of noise, ads and interests — we choose community. A community that values action, solidarity and good spirit.", "2": "Together we can connect needs to abilities, hearts to hands. Good is infrastructure, not a product.", "3": "We commit to transparency, human dignity and a safe digital space. Together we build infrastructure that empowers community action — everywhere." } },
     "moreTestimonials": { "title": "More stories from the field", "item1": "I met neighbors through KC, and suddenly there's a building community. Small things that make change. — Ilan, Petah Tikva", "item2": "As a small org we got massive exposure to quality volunteers. The dashboard saved us hours. — Yad LaLev NGO", "item3": "Gave a few hours a week, got a huge sense of meaning and new friends. — Sivan, Ramat Gan" },
     "moreFaq": { "title": "More questions", "q1": "How is privacy preserved?", "a1": "We minimize data collection and give users control over visibility and exposure.", "q2": "Are there ads?", "a2": "No. The platform is ad-free and focuses solely on community content.", "q3": "How do I report an issue?", "a3": "There's a built-in reporting mechanism on every post/chat. You can also contact us directly via WhatsApp." },
-    "webMode": {
-      "toggle": {
-        "site": "Site",
-        "app": "App"
-      }
-    },
     "footer": { "text": "© {{year}} KarmaCommunity — Built with love." }
   }
 }

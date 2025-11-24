@@ -217,7 +217,7 @@ export class EnhancedStatsService {
     try {
       if (USE_BACKEND) {
         // Activity tracking is handled automatically in the backend
-        // console removed
+        console.log(`📊 Activity tracked: ${activityType} for user ${userId}`);
         return;
       }
 
