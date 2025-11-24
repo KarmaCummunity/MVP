@@ -33,9 +33,9 @@ class LoggerService {
   private saveTimer: NodeJS.Timeout | null = null;
   private isInitialized = false;
   
-  // Production-friendly: Higher log level in production, disable console completely
-  private logLevel: LogLevel = isProduction ? 'error' : 'debug';
-  private enableConsoleOutput = isDevelopment; // Only in development
+  // Production-friendly: Higher log level in production
+  private logLevel: LogLevel = isProduction ? 'warn' : 'debug';
+  private enableConsoleOutput = !isProduction;
   private enableStorage = true;
 
   constructor() {

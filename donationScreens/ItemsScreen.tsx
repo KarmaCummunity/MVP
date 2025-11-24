@@ -9,8 +9,6 @@ import { Ionicons as Icon } from '@expo/vector-icons';
 import { db } from '../utils/databaseService';
 import { useUser } from '../stores/userStore';
 import { biDiTextAlign, rowDirection, isLandscape, marginStartEnd } from '../globals/responsive';
-import { apiService } from '../utils/apiService';
-import { USE_BACKEND } from '../utils/dbConfig';
 
 type ItemType = 'furniture' | 'clothes' | 'general';
 
@@ -101,81 +99,15 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
     const load = async () => {
       try {
         const uid = selectedUser?.id || 'guest';
-        
-        if (USE_BACKEND && selectedUser?.id) {
-          // Use real API
-          const response = await apiService.getItems({
-            category: itemType === 'general' ? undefined : itemType,
-            status: 'available',
-            limit: 100,
-          });
-          
-          if (response.success && response.data) {
-            const apiItems: DonationItem[] = (Array.isArray(response.data) ? response.data : []).map((item: any) => ({
-              id: item.id || String(Date.now()),
-              ownerId: item.owner_id || uid,
-              title: item.title || '',
-              description: item.description,
-              category: (item.category || 'general') as ItemType,
-              condition: item.condition,
-              location: item.location?.city || item.location,
-              price: item.price ?? 0,
-              images: item.images || [],
-              rating: 5,
-              timestamp: item.created_at || new Date().toISOString(),
-              tags: item.tags || [],
-              qty: item.quantity || 1,
-            }));
-            
-            setAllItems(apiItems);
-            setFilteredItems(apiItems);
-            
-            // Load user's own items
-            const myItemsResponse = await apiService.getUserItems(uid, {
-              category: itemType === 'general' ? undefined : itemType,
-            });
-            
-            if (myItemsResponse.success && myItemsResponse.data) {
-              const myItems: DonationItem[] = (Array.isArray(myItemsResponse.data) ? myItemsResponse.data : []).map((item: any) => ({
-                id: item.id || String(Date.now()),
-                ownerId: item.owner_id || uid,
-                title: item.title || '',
-                description: item.description,
-                category: (item.category || 'general') as ItemType,
-                condition: item.condition,
-                location: item.location?.city || item.location,
-                price: item.price ?? 0,
-                images: item.images || [],
-                rating: 5,
-                timestamp: item.created_at || new Date().toISOString(),
-                tags: item.tags || [],
-                qty: item.quantity || 1,
-              }));
-              setRecentMine(myItems);
-            } else {
-              setRecentMine([]);
-            }
-          } else {
-            // Fallback to dummy items if API fails
-            const forType = dummyItems.filter(i => itemType === 'general' ? true : i.category === itemType);
-            setAllItems(forType);
-            setFilteredItems(forType);
-            setRecentMine([]);
-          }
-        } else {
-          // Fallback to local storage
-          const my = (await db.listDonations(uid)) as DonationItem[];
-          const merged: DonationItem[] = [...dummyItems, ...my];
-          const forType: DonationItem[] = merged.filter(i => itemType === 'general' ? true : i.category === itemType);
-          setAllItems(forType);
-          setFilteredItems(forType);
-          setRecentMine(my.filter(i => itemType === 'general' ? true : i.category === itemType));
-        }
-      } catch (e) {
-        console.error('Error loading items:', e);
-        const forType = dummyItems.filter(i => itemType === 'general' ? true : i.category === itemType);
+        const my = (await db.listDonations(uid)) as DonationItem[];
+        const merged: DonationItem[] = [...dummyItems, ...my];
+        const forType: DonationItem[] = merged.filter(i => itemType === 'general' ? true : i.category === itemType);
         setAllItems(forType);
         setFilteredItems(forType);
+        setRecentMine(my.filter(i => itemType === 'general' ? true : i.category === itemType));
+      } catch (e) {
+        setAllItems(dummyItems.filter(i => itemType === 'general' ? true : i.category === itemType));
+        setFilteredItems(dummyItems.filter(i => itemType === 'general' ? true : i.category === itemType));
         setRecentMine([]);
       }
     };
@@ -228,79 +160,11 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
     return filtered;
   }, [allItems, searchQuery, selectedFilters, selectedSorts]);
 
-  const handleSearch = async (query: string, filters: string[] = [], sorts: string[] = [], _results?: any[]) => {
+  const handleSearch = (query: string, filters: string[] = [], sorts: string[] = [], _results?: any[]) => {
     setSearchQuery(query);
     setSelectedFilters(filters);
     setSelectedSorts(sorts);
-    
-    // If using backend and have a query, search on server
-    if (USE_BACKEND && query.trim() && selectedUser?.id) {
-      try {
-        // Map filters to API format
-        const apiFilters: any = {
-          category: itemType === 'general' ? undefined : itemType,
-          status: 'available',
-          search: query,
-          limit: 100,
-        };
-        
-        // Map condition filters
-        const conditionFilter = filters.find(f => ['כמו חדש', 'משומש', 'לחלפים'].includes(f));
-        if (conditionFilter === 'כמו חדש') apiFilters.condition = 'like_new';
-        else if (conditionFilter === 'משומש') apiFilters.condition = 'used';
-        else if (conditionFilter === 'לחלפים') apiFilters.condition = 'for_parts';
-        
-        // Map price filter
-        if (filters.includes('בחינם')) {
-          apiFilters.max_price = 0;
-        }
-        
-        // Map sort
-        const selectedSort = sorts[0];
-        if (selectedSort === 'אלפביתי') {
-          apiFilters.sort_by = 'title';
-          apiFilters.sort_order = 'asc';
-        } else if (selectedSort === 'לפי תאריך') {
-          apiFilters.sort_by = 'created_at';
-          apiFilters.sort_order = 'desc';
-        } else if (selectedSort === 'לפי מחיר') {
-          apiFilters.sort_by = 'price';
-          apiFilters.sort_order = 'asc';
-        }
-        
-        const response = await apiService.getItems(apiFilters);
-        
-        if (response.success && response.data) {
-          const apiItems: DonationItem[] = (Array.isArray(response.data) ? response.data : []).map((item: any) => ({
-            id: item.id || String(Date.now()),
-            ownerId: item.owner_id || selectedUser.id,
-            title: item.title || '',
-            description: item.description,
-            category: (item.category || 'general') as ItemType,
-            condition: item.condition,
-            location: item.location?.city || item.location,
-            price: item.price ?? 0,
-            images: item.images || [],
-            rating: 5,
-            timestamp: item.created_at || new Date().toISOString(),
-            tags: item.tags || [],
-            qty: item.quantity || 1,
-          }));
-          
-          setFilteredItems(apiItems);
-        } else {
-          // Fallback to client-side filtering
-          setFilteredItems(getFilteredItems());
-        }
-      } catch (e) {
-        console.error('Error searching items:', e);
-        // Fallback to client-side filtering
-        setFilteredItems(getFilteredItems());
-      }
-    } else {
-      // Client-side filtering
-      setFilteredItems(getFilteredItems());
-    }
+    setFilteredItems(getFilteredItems());
   };
 
   const handleCreateItem = async () => {
@@ -310,92 +174,34 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         titleInputRef.current?.focus();
         return;
       }
-      const uid = selectedUser?.id;
-      if (!uid) {
-        Alert.alert('שגיאה', 'נא להתחבר כדי לפרסם פריט');
-        return;
-      }
-      
-      const itemData = {
-        owner_id: uid,
+      const uid = selectedUser?.id || 'guest';
+      const id = `${Date.now()}`;
+      const item: DonationItem = {
+        id,
+        ownerId: uid,
         title: title.trim(),
         description: description.trim() || undefined,
         category: itemType,
-        condition: condition || undefined,
-        location: location ? { city: location } : undefined,
+        condition: (condition || undefined) as any,
+        location: location || undefined,
         price: Number(price) || 0,
         images: [],
+        rating: 5,
+        timestamp: new Date().toISOString(),
         tags: selectedFilters,
-        quantity: qty,
+        qty,
       };
-      
-      if (USE_BACKEND && uid) {
-        // Use real API
-        const response = await apiService.createItem(itemData);
-        
-        if (response.success && response.data) {
-          const newItem: DonationItem = {
-            id: response.data.id || String(Date.now()),
-            ownerId: uid,
-            title: response.data.title || title.trim(),
-            description: response.data.description,
-            category: (response.data.category || itemType) as ItemType,
-            condition: response.data.condition,
-            location: response.data.location?.city || location || undefined,
-            price: response.data.price ?? (Number(price) || 0),
-            images: response.data.images || [],
-            rating: 5,
-            timestamp: response.data.created_at || new Date().toISOString(),
-            tags: response.data.tags || selectedFilters,
-            qty: response.data.quantity || qty,
-          };
-          
-          setFilteredItems(prev => [newItem, ...prev]);
-          setAllItems(prev => [newItem, ...prev]);
-          setRecentMine(prev => [newItem, ...prev]);
-          
-          setTitle('');
-          setDescription('');
-          setPrice('0');
-          setLocation('');
-          setQty(1);
-          setCondition('');
-          Alert.alert('הצלחה', 'הפריט פורסם ונשמר בשרת');
-        } else {
-          Alert.alert('שגיאה', response.error || 'נכשל לשמור את הפריט');
-        }
-      } else {
-        // Fallback to local storage
-        const id = `${Date.now()}`;
-        const item: DonationItem = {
-          id,
-          ownerId: uid,
-          title: title.trim(),
-          description: description.trim() || undefined,
-          category: itemType,
-          condition: (condition || undefined) as any,
-          location: location || undefined,
-          price: Number(price) || 0,
-          images: [],
-          rating: 5,
-          timestamp: new Date().toISOString(),
-          tags: selectedFilters,
-          qty,
-        };
-        await db.createDonation(uid, id, item);
-        setFilteredItems(prev => [item, ...prev]);
-        setRecentMine(prev => [item, ...prev]);
-        
-        setTitle('');
-        setDescription('');
-        setPrice('0');
-        setLocation('');
-        setQty(1);
-        setCondition('');
-        Alert.alert('הצלחה', 'הפריט פורסם ונשמר במסד הנתונים המקומי');
-      }
+      await db.createDonation(uid, id, item);
+      setFilteredItems(prev => [item, ...prev]);
+      setRecentMine(prev => [item, ...prev]);
+      setTitle('');
+      setDescription('');
+      setPrice('0');
+      setLocation('');
+      setQty(1);
+      setCondition('');
+      Alert.alert('הצלחה', 'הפריט פורסם ונשמר במסד הנתונים');
     } catch (e) {
-      console.error('Error creating item:', e);
       Alert.alert('שגיאה', 'נכשל לשמור את הפריט');
     }
   };

@@ -20,12 +20,12 @@ const GuestModeNotice: React.FC<GuestModeNoticeProps> = ({
   const { t } = useTranslation(['common']);
 
   const handleLoginPress = async () => {
-    // console removed
+    console.log('🔐 GuestModeNotice - Login button pressed, performing sign out');
     try {
       await signOut();
-      // console removed
+      console.log('🔐 GuestModeNotice - Sign out completed');
       setTimeout(() => {
-        // console removed
+        console.log('🔐 GuestModeNotice - Navigating to LoginScreen');
         navigation.navigate('LoginScreen');
       }, 100);
     } catch (error) {

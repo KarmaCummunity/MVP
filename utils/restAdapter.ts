@@ -23,29 +23,21 @@ export class RestAdapter {
     const url = `${this.baseUrl}${path}`;
     const method = (init?.method || 'GET').toUpperCase();
     const startedAt = Date.now();
-    // Console logs only in development mode
-    const isDev = typeof __DEV__ !== 'undefined' && __DEV__;
-    if (isDev) {
-      // eslint-disable-next-line no-console
-      // console removed
-    }
+    // High-signal client log for production debugging
+    // eslint-disable-next-line no-console
+    console.log(`🌐 REST → ${method} ${url}`, init?.body ? { body: init?.body } : '');
     const res = await fetch(url, {
       headers: { 'Content-Type': 'application/json' },
       mode: 'cors',
       ...init,
     });
     const ms = Date.now() - startedAt;
-    if (isDev) {
-      // eslint-disable-next-line no-console
-      // console removed`);
-    }
+    // eslint-disable-next-line no-console
+    console.log(`🌐 REST ← ${method} ${url} ${res.status} (${ms}ms)`);
     if (!res.ok) {
       const text = await res.text();
-      // Only log errors (important for debugging even in production)
-      if (isDev) {
-        // eslint-disable-next-line no-console
-        console.error(`❌ REST ${method} ${url} -> HTTP ${res.status}:`, text);
-      }
+      // eslint-disable-next-line no-console
+      console.error(`❌ REST ${method} ${url} -> HTTP ${res.status}:`, text);
       throw new Error(`HTTP ${res.status}: ${text}`);
     }
     if (res.status === 204) return undefined as unknown as T;
@@ -68,10 +60,7 @@ export class RestAdapter {
     try {
       return JSON.parse(text) as T;
     } catch (error) {
-      const isDev = typeof __DEV__ !== 'undefined' && __DEV__;
-      if (isDev) {
-        console.error(`❌ JSON Parse Error for ${method} ${url}:`, error, 'Response text:', text);
-      }
+      console.error(`❌ JSON Parse Error for ${method} ${url}:`, error, 'Response text:', text);
       return {} as unknown as T;
     }
   }

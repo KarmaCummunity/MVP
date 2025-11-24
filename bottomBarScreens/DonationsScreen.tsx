@@ -36,7 +36,6 @@ import {
   Platform,
   Dimensions,
   FlatList,
-  Linking,
 } from 'react-native';
 import ScrollContainer from '../components/ScrollContainer';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -51,7 +50,7 @@ import { useUser } from '../stores/userStore';
 import GuestModeNotice from '../components/GuestModeNotice';
 import DonationStatsFooter from '../components/DonationStatsFooter';
 import { useTranslation } from 'react-i18next';
-import { getScreenInfo, isLandscape, scaleSize, responsiveSpacing, responsiveFontSize, responsiveWidth, vw } from '../globals/responsive';
+import { getScreenInfo, isLandscape, scaleSize } from '../globals/responsive';
 import stylesGlobal, { createShadowStyle } from '../globals/styles';
 import { restAdapter } from '../utils/restAdapter';
 import { enhancedDB, EnhancedDatabaseService } from '../utils/enhancedDatabaseService';
@@ -80,21 +79,15 @@ const POPULAR_FALLBACK: string[] = ['money', 'trump', 'furniture']; // כסף, �
 // TODO: Add internationalization for category names and descriptions
 // TODO: Create proper category icon management system
 // TODO: Add category access control and permissions
-// Primary categories - main and important
-const PRIMARY_CATEGORIES = [
+const BASE_CATEGORIES = [
   { id: 'money',      icon: 'card-outline',        color: colors.green, bgColor: colors.successLight, screen: 'MoneyScreen' },
-  { id: 'items',      icon: 'cube-outline',        color: colors.green, bgColor: colors.successLight, screen: 'ItemsScreen' },
   { id: 'trump',      icon: 'car-outline',         color: colors.blue,    bgColor: colors.infoLight,    screen: 'TrumpScreen' },
   { id: 'knowledge',  icon: 'school-outline',      color: colors.blue, bgColor: colors.infoLight, screen: 'KnowledgeScreen' },
-] as const;
-
-// Secondary categories - under construction
-const SECONDARY_CATEGORIES = [
   { id: 'time',       icon: 'time-outline',        color: colors.pink,  bgColor: colors.pinkLight, screen: 'TimeScreen' },
-  { id: 'challenges', icon: 'trophy-outline',      color: colors.warning, bgColor: colors.warningLight, screen: null, externalApp: 'timrsapp' },
   { id: 'food',       icon: 'restaurant-outline',  color: colors.green, bgColor: colors.successLight, screen: 'FoodScreen' },
   { id: 'clothes',    icon: 'shirt-outline',       color: colors.pink,    bgColor: colors.pinkLight,    screen: 'ClothesScreen' },
   { id: 'books',      icon: 'library-outline',     color: colors.blue, bgColor: colors.infoLight, screen: 'BooksScreen' },
+  { id: 'items',      icon: 'cube-outline',        color: colors.green, bgColor: colors.successLight, screen: 'ItemsScreen' },
   { id: 'furniture',  icon: 'bed-outline',         color: colors.pink, bgColor: colors.pinkLight, screen: 'FurnitureScreen' },
   { id: 'medical',    icon: 'medical-outline',     color: colors.error,   bgColor: colors.errorLight,   screen: 'MedicalScreen' },
   { id: 'animals',    icon: 'paw-outline',         color: colors.green, bgColor: colors.successLight, screen: 'AnimalsScreen' },
@@ -120,9 +113,6 @@ const SECONDARY_CATEGORIES = [
   { id: 'languages',   icon: 'language-outline',   color: colors.blue,    bgColor: colors.infoLight,    screen: 'LanguagesScreen' },
 ] as const;
 
-// Combined categories for backward compatibility
-const BASE_CATEGORIES = [...PRIMARY_CATEGORIES, ...SECONDARY_CATEGORIES] as const;
-
 type CategoryId = typeof BASE_CATEGORIES[number]['id'];
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -141,138 +131,63 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
   const [recentCategoryIds, setRecentCategoryIds] = useState<string[]>([]);
   const [popularCategoryIds, setPopularCategoryIds] = useState<string[]>([]);
 
-  const screenInfo = getScreenInfo();
-  const { isTablet, isDesktop, isLargeDesktop, isMobile, isSmallPhone, width: screenWidth } = screenInfo;
+  const { isTablet, isDesktop } = getScreenInfo();
   const landscape = isLandscape();
-  
-  // Enhanced responsive calculations
-  const isMobileWebView = Platform.OS === 'web' && screenWidth <= 768;
-  const isSmallScreen = isMobile || isSmallPhone || screenWidth < 375;
-  const isMediumScreen = !isSmallScreen && !isTablet && !isDesktop;
-  
-  // Calculate available height for better responsive sizing
+  // Better mobile web responsive columns
+  const isMobileWebView = Platform.OS === 'web' && SCREEN_WIDTH <= 768;
+  const recentColumns = isMobileWebView ? 3 : isDesktop ? 6 : isTablet || landscape ? 5 : 4;
+  const allColumns = isMobileWebView ? 3 : isDesktop ? 5 : isTablet || landscape ? 4 : 3;
+  const recentCardWidth = `${(100 / recentColumns) - 2}%` as const;
+  const allCardWidth = `${(100 / allColumns) - 2}%` as const;
+  const baseCategoryIconSize = scaleSize(26);
+  const baseCategoryIconOuter = scaleSize(35);
+  // Precise sizing so 3 cards fit almost fully across the section width on all screens
+  const sectionHorizontalMargins = LAYOUT_CONSTANTS.SPACING.SM * 2; // left + right
+  const sectionHorizontalPaddings = LAYOUT_CONSTANTS.SPACING.MD * 2; // left + right
+  let gridGap = LAYOUT_CONSTANTS.SPACING.XS; // gap between items (will be scaled later)
+  const sectionInnerWidth = SCREEN_WIDTH - sectionHorizontalMargins - sectionHorizontalPaddings;
+  let threeColCardWidthPx = Math.max(100, Math.floor((sectionInnerWidth - gridGap * 2) / 4));
+  let ITEM_FULL_WIDTH = threeColCardWidthPx + gridGap; // used for snapping and getItemLayout
+  const baseHeroTitleSize = scaleSize(isTablet || isDesktop ? 18 : 16);
+  const baseHeroSubtitleSize = scaleSize(isTablet || isDesktop ? 13 : 12);
+  const baseOtherTitleSize = scaleSize(isTablet || isDesktop ? 16 : 14);
+  const baseOtherSubtitleSize = scaleSize(isTablet || isDesktop ? 12 : 11);
+  const othersMaxHeight = Math.max(scaleSize(220), Math.min(SCREEN_HEIGHT * 0.45, scaleSize(480)));
+
+  // Simplified responsive sizing for mobile web
   const availableHeight = SCREEN_HEIGHT - (insets?.top ?? 0) - (insets?.bottom ?? 0) - (tabBarHeight ?? 0) - (headerHeight ?? 0);
   
-  // Responsive grid columns - optimized for each screen size
-  const getPrimaryColumns = () => {
-    if (isLargeDesktop) return 4;
-    if (isDesktop) return 4;
-    if (isTablet && landscape) return 4;
-    if (isTablet) return 4;
-    if (isMobileWebView) return 2;
-    if (landscape) return 4;
-    return 2; // Mobile portrait - 2 columns for better visibility
-  };
+  // For mobile web, use simplified scaling
+  let sizeScale = 1;
+  let paddingScale = 1;
   
-  const primaryColumns = getPrimaryColumns();
+  if (isMobileWebView) {
+    // Mobile web gets smaller, more compact layout
+    sizeScale = 0.9;
+    paddingScale = 0.8;
+  } else if (availableHeight < 600) {
+    // Very small screens get more aggressive scaling
+    const rawScale = Math.max(0.65, Math.min(1.35, availableHeight / 800));
+    sizeScale = rawScale;
+    paddingScale = rawScale;
+  }
   
-  // Responsive spacing using helper functions
-  const sectionHorizontalMargin = responsiveSpacing(
-    LAYOUT_CONSTANTS.SPACING.SM,  // mobile
-    LAYOUT_CONSTANTS.SPACING.MD,  // tablet
-    LAYOUT_CONSTANTS.SPACING.LG   // desktop
-  );
-  
-  const sectionHorizontalPadding = responsiveSpacing(
-    LAYOUT_CONSTANTS.SPACING.MD,  // mobile
-    LAYOUT_CONSTANTS.SPACING.LG,  // tablet
-    LAYOUT_CONSTANTS.SPACING.XL   // desktop
-  );
-  
-  // Calculate card width dynamically based on columns and available space
-  const sectionInnerWidth = screenWidth - (sectionHorizontalMargin * 2) - (sectionHorizontalPadding * 2);
-  const gridGap = responsiveSpacing(
-    LAYOUT_CONSTANTS.SPACING.SM,  // mobile
-    LAYOUT_CONSTANTS.SPACING.MD,  // tablet
-    LAYOUT_CONSTANTS.SPACING.MD   // desktop
-  );
-  
-  // Card width calculation - ensures cards fit nicely with proper spacing
-  const primaryCardWidth = Math.max(
-    isSmallScreen ? 140 : 160,
-    Math.floor((sectionInnerWidth - (gridGap * (primaryColumns - 1))) / primaryColumns)
-  );
-  
-  // Horizontal scroll card width - optimized for different screens
-  const getHorizontalCardWidth = () => {
-    if (isSmallScreen) return 120;
-    if (isTablet) return 160;
-    if (isDesktop || isLargeDesktop) return 180;
-    return 140; // default
-  };
-  const horizontalCardWidth = getHorizontalCardWidth();
-  
-  // Responsive icon sizing
-  const categoryIconSize = responsiveFontSize(
-    24,  // mobile
-    28,  // tablet
-    32   // desktop
-  );
-  
-  const categoryIconOuter = responsiveFontSize(
-    40,  // mobile
-    48,  // tablet
-    56   // desktop
-  );
-  
-  // Responsive typography
-  const heroTitleSize = responsiveFontSize(
-    16,  // mobile
-    18,  // tablet
-    20   // desktop
-  );
-  
-  const heroSubtitleSize = responsiveFontSize(
-    12,  // mobile
-    13,  // tablet
-    14   // desktop
-  );
-  
-  const otherTitleSize = responsiveFontSize(
-    14,  // mobile
-    16,  // tablet
-    18   // desktop
-  );
-  
-  const otherSubtitleSize = responsiveFontSize(
-    11,  // mobile
-    12,  // tablet
-    13   // desktop
-  );
-  
-  // Responsive padding
-  const cardVerticalPad = responsiveSpacing(
-    LAYOUT_CONSTANTS.SPACING.MD,  // mobile
-    LAYOUT_CONSTANTS.SPACING.LG,  // tablet
-    LAYOUT_CONSTANTS.SPACING.LG    // desktop
-  );
-  
-  const cardHorizontalPad = responsiveSpacing(
-    LAYOUT_CONSTANTS.SPACING.SM,  // mobile
-    LAYOUT_CONSTANTS.SPACING.MD,  // tablet
-    LAYOUT_CONSTANTS.SPACING.MD   // desktop
-  );
-  
-  const sectionVerticalPad = responsiveSpacing(
-    LAYOUT_CONSTANTS.SPACING.MD,  // mobile
-    LAYOUT_CONSTANTS.SPACING.LG,  // tablet
-    LAYOUT_CONSTANTS.SPACING.XL    // desktop
-  );
-  
-  const sectionTitleFontSize = responsiveFontSize(
-    FontSizes.heading3,  // mobile
-    FontSizes.heading2,  // tablet
-    FontSizes.heading2   // desktop
-  );
-  
-  const sectionTitleMarginBottom = responsiveSpacing(
-    LAYOUT_CONSTANTS.SPACING.MD,  // mobile
-    LAYOUT_CONSTANTS.SPACING.LG,  // tablet
-    LAYOUT_CONSTANTS.SPACING.LG    // desktop
-  );
-  
-  // Compact mode for very small screens
-  const isCompact = availableHeight < 600 || isSmallScreen;
+  const isCompact = sizeScale < 0.98;
+
+  const categoryIconSize = Math.max(18, Math.round(baseCategoryIconSize * sizeScale));
+  const categoryIconOuter = Math.max(28, Math.round(baseCategoryIconOuter * sizeScale));
+  const heroTitleSize = Math.max(12, Math.round(baseHeroTitleSize * sizeScale));
+  const heroSubtitleSize = Math.max(10, Math.round(baseHeroSubtitleSize * sizeScale));
+  const otherTitleSize = Math.max(11, Math.round(baseOtherTitleSize * sizeScale));
+  const otherSubtitleSize = Math.max(9, Math.round(baseOtherSubtitleSize * sizeScale));
+  const sectionTitleMarginBottom = Math.max(LAYOUT_CONSTANTS.SPACING.XS, Math.round(LAYOUT_CONSTANTS.SPACING.MD * paddingScale));
+  const cardVerticalPad = Math.max(LAYOUT_CONSTANTS.SPACING.XS, Math.round(LAYOUT_CONSTANTS.SPACING.MD * paddingScale));
+  const sectionVerticalPad = Math.max(LAYOUT_CONSTANTS.SPACING.XS, Math.round(LAYOUT_CONSTANTS.SPACING.SM * paddingScale));
+  const sectionTitleFontSize = Math.max(14, Math.round(FontSizes.heading2 * sizeScale));
+
+  // Scale gaps and card width to consume remaining width nicely
+  gridGap = Math.max(2, Math.round(LAYOUT_CONSTANTS.SPACING.XS * paddingScale));
+  threeColCardWidthPx = Math.max(100, Math.floor((sectionInnerWidth - gridGap * 2) / 4));
 
   // Simplified horizontal scroll for "All" section
   const allScrollViewRef = useRef<ScrollView | null>(null);
@@ -376,7 +291,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
     }
   };
 
-  const handleCategoryPress = async (category: { id: CategoryId; screen?: string; externalApp?: string }) => {
+  const handleCategoryPress = (category: { id: CategoryId; screen?: string }) => {
     setSelectedCategory(category.id);
     // עדכון "בשבילך" - הוסף את הקטגוריה שנלחצה לראש הרשימה
     setRecentCategoryIds((prev) => {
@@ -393,47 +308,8 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
     logger.info('DonationsScreen', 'Category pressed', {
       id: category.id,
       title: getCategoryText(category.id).title,
-      screen: category.screen,
-      externalApp: category.externalApp
+      screen: category.screen
     });
-
-    // Handle external app (TimrsApp for challenges)
-    if (category.externalApp === 'timrsapp') {
-      try {
-        const timrsScheme = 'timrsapp://';
-        const canOpen = await Linking.canOpenURL(timrsScheme);
-        
-        if (canOpen) {
-          await Linking.openURL(timrsScheme);
-          logger.info('DonationsScreen', 'Opened TimrsApp successfully');
-        } else {
-          // Fallback: try with package name
-          const packageUrl = Platform.OS === 'android' 
-            ? 'intent://#Intent;scheme=timrsapp;package=com.timrsapp;end'
-            : 'com.timrsapp://';
-          
-          try {
-            await Linking.openURL(packageUrl);
-            logger.info('DonationsScreen', 'Opened TimrsApp via package name');
-          } catch (fallbackError) {
-            logger.warn('DonationsScreen', 'Failed to open TimrsApp', { error: fallbackError });
-            Alert.alert(
-              'אפליקציית האתגרים',
-              'אפליקציית האתגרים לא מותקנת במכשיר. אנא התקן את האפליקציה כדי להשתמש בקטגוריה זו.',
-              [{ text: t('common:confirm'), style: 'default' }]
-            );
-          }
-        }
-      } catch (error) {
-        logger.error('DonationsScreen', 'Failed to open TimrsApp', { error });
-        Alert.alert(
-          'שגיאה',
-          'לא ניתן לפתוח את אפליקציית האתגרים. אנא ודא שהאפליקציה מותקנת במכשיר.',
-          [{ text: t('common:confirm'), style: 'default' }]
-        );
-      }
-      return;
-    }
 
     if (category.screen) {
       (navigation as any).navigate(category.screen);
@@ -517,58 +393,42 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
       {isGuestMode && <GuestModeNotice showLoginButton={false} />}
       
       <ScrollContainer style={styles.scrollContainer} contentStyle={styles.scrollContent}>
-      {/* Primary Categories - Main and Important */}
-      <View style={[styles.categoriesSection, { 
-        paddingVertical: sectionVerticalPad,
-        marginHorizontal: sectionHorizontalMargin,
-        paddingHorizontal: sectionHorizontalPadding,
-      }]}>
-        <View style={[styles.categoriesGrid, { 
-          flexDirection: 'row', 
-          gap: gridGap, 
-          flexWrap: 'wrap',
-          justifyContent: primaryColumns === 2 ? 'space-around' : 'center',
-        }]}>
-          {PRIMARY_CATEGORIES.map((category) => {
+      {/* Popular (Top 3) */}
+      <View style={[styles.categoriesSection, { paddingVertical: sectionVerticalPad }]}>
+        <Text style={[styles.sectionTitle, { marginBottom: sectionTitleMarginBottom, fontSize: sectionTitleFontSize }]}>{t('donations:popular')}</Text>
+        <View style={[styles.categoriesGrid, { flexDirection: 'row', gap: gridGap }]}>
+          {popularCategories.slice(0, 3).map((category) => {
             const { title, subtitle } = getCategoryText(category.id);
             return (
               <TouchableOpacity
-                key={`primary-${category.id}`}
+                key={`popular-${category.id}`}
                 style={[
                   styles.categoryCard,
                   {
-                    backgroundColor: category.bgColor,
-                    width: primaryCardWidth,
+                    backgroundColor: category.bgColor, // השתמש בצבע הרקע של הקטגוריה
+                    width: threeColCardWidthPx,
                     paddingVertical: cardVerticalPad,
-                    paddingHorizontal: cardHorizontalPad,
                   },
-                  selectedCategory === category.id && styles.categoryCardActive,
                 ]}
-                onPress={() => handleCategoryPress(category as any)}
-                accessibilityRole="button"
-                accessibilityLabel={`${title} - ${subtitle}`}
-                accessibilityHint={t('donations:categoryAccessibilityHint', 'לחץ לפתיחת קטגוריה')}
+                onPress={() => handleCategoryPress(category)}
               >
                 <View
                   style={[
                     styles.categoryIcon,
                     {
-                      backgroundColor: category.color,
+                      backgroundColor: category.color, // השתמש בצבע הקטגוריה
                       width: categoryIconOuter,
                       height: categoryIconOuter,
                       borderRadius: categoryIconOuter / 2,
                     },
-                    selectedCategory === category.id && styles.categoryIconSelected,
                   ]}
-                  accessibilityRole="image"
-                  accessibilityLabel={`${title} icon`}
                 >
                   <Ionicons name={category.icon as any} size={categoryIconSize} color="white" />
                 </View>
-                <Text style={[styles.categoryTitle, { fontSize: heroTitleSize }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
+                 <Text style={[styles.categoryTitle, { fontSize: heroTitleSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
                   {title}
                 </Text>
-                <Text style={[styles.categorySubtitle, { fontSize: heroSubtitleSize }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
+                 <Text style={[styles.categorySubtitle, { fontSize: heroSubtitleSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
                   {subtitle}
                 </Text>
               </TouchableOpacity>
@@ -577,20 +437,57 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
         </View>
       </View>
 
-      {/* Secondary Categories - Under Construction */}
-      <View style={[styles.categoriesSection, { 
-        paddingVertical: sectionVerticalPad,
-        marginHorizontal: sectionHorizontalMargin,
-        paddingHorizontal: sectionHorizontalPadding,
-      }]}>
-        <View style={styles.sectionTitleContainer}>
-          <Text style={[styles.sectionTitle, { marginBottom: sectionTitleMarginBottom, fontSize: sectionTitleFontSize }]}>
-            {t('donations:underConstruction', 'בבניה')}
-          </Text>
-          <View style={styles.underConstructionBadge}>
-            <Ionicons name="construct-outline" size={responsiveFontSize(12, 14, 16)} color={colors.warning} />
-          </View>
+      {/* For You (Last 3) */}
+      <View style={[styles.categoriesSection, { paddingVertical: sectionVerticalPad }]}>
+        <Text style={[styles.sectionTitle, { marginBottom: sectionTitleMarginBottom, fontSize: sectionTitleFontSize }]}>{t('donations:forYou')}</Text>
+        <View style={[styles.categoriesGrid, { flexDirection: 'row', gap: gridGap }]}>
+          {recentCategories.map((category) => {
+            const { title, subtitle } = getCategoryText(category.id);
+            return (
+              <TouchableOpacity
+                key={`recent-${category.id}`}
+                style={[
+                  styles.categoryCard,
+                  {
+                    backgroundColor: category.bgColor, // השתמש בצבע הרקע של הקטגוריה
+                    width: threeColCardWidthPx,
+                    paddingVertical: cardVerticalPad,
+                  },
+                ]}
+                onPress={() => handleCategoryPress(category)}
+              >
+                <View style={styles.categoryIconWrapper}>
+                  <View
+                    style={[
+                      styles.categoryIcon,
+                      {
+                        backgroundColor: category.color, // השתמש בצבע הקטגוריה
+                        width: categoryIconOuter,
+                        height: categoryIconOuter,
+                        borderRadius: categoryIconOuter / 2,
+                      },
+                    ]}
+                  >
+                    <Ionicons name={category.icon as any} size={categoryIconSize} color="white" />
+                  </View>
+                </View>
+                <View style={styles.categoryTitleRow}>
+                  <Text style={[styles.categoryTitle, { fontSize: heroTitleSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
+                    {title}
+                  </Text>
+                 </View>
+                 <Text style={[styles.categorySubtitle, { fontSize: heroSubtitleSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
+                  {subtitle}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
+      </View>
+          
+      {/* All - Horizontal scroll (improved) */}
+      <View style={[styles.categoriesSection, { paddingVertical: sectionVerticalPad }]}>
+        <Text style={[styles.sectionTitle, { marginBottom: sectionTitleMarginBottom, fontSize: sectionTitleFontSize }]}>{t('donations:all')}</Text>
         <View style={styles.horizontalScrollContainer}>
           <ScrollView
             ref={allScrollViewRef}
@@ -608,33 +505,25 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
             onScrollEndDrag={() => logger.debug('DonationsScreen', 'Horizontal scroll ended')}
             onScroll={() => logger.debug('DonationsScreen', 'Horizontal scrolling')}
             scrollEventThrottle={100}
-            {...(Platform.OS === 'web' && {
-              style: [styles.horizontalScrollView, { scrollBehavior: 'smooth' as any }],
-            })}
           >
-            {SECONDARY_CATEGORIES.map((category, index) => {
+            {otherCategories.map((category, index) => {
               const { title, subtitle } = getCategoryText(category.id as CategoryId);
-              logger.debug('DonationsScreen', 'Rendering secondary category', { index, categoryId: category.id, title });
+              logger.debug('DonationsScreen', 'Rendering "All" category', { index, categoryId: category.id, title });
               return (
                 <TouchableOpacity
-                  key={`secondary-${category.id}`}
+                  key={`all-${category.id}`}
                   onPress={() => {
-                    logger.info('DonationsScreen', 'Category pressed in secondary section', { categoryId: category.id, title });
+                    logger.info('DonationsScreen', 'Category pressed in "All"', { categoryId: category.id, title });
                     handleCategoryPress(category as any);
                   }}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${title} - ${subtitle}`}
-                  accessibilityHint={t('donations:categoryAccessibilityHint', 'לחץ לפתיחת קטגוריה')}
                   style={[
                     styles.categoryCardHorizontal,
                     {
                       backgroundColor: category.bgColor,
-                      width: horizontalCardWidth,
-                      marginRight: index === SECONDARY_CATEGORIES.length - 1 ? 0 : gridGap,
+                      width: threeColCardWidthPx,
+                      marginRight: index === otherCategories.length - 1 ? 0 : gridGap,
                       paddingVertical: cardVerticalPad,
-                      paddingHorizontal: cardHorizontalPad,
                     },
-                    selectedCategory === category.id && styles.categoryCardActive,
                   ]}
                 >
                   <View
@@ -646,17 +535,14 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                         height: categoryIconOuter,
                         borderRadius: categoryIconOuter / 2,
                       },
-                      selectedCategory === category.id && styles.categoryIconSelected,
                     ]}
-                    accessibilityRole="image"
-                    accessibilityLabel={`${title} icon`}
                   >
                     <Ionicons name={category.icon as any} size={categoryIconSize} color="white" />
                   </View>
-                  <Text style={[styles.categoryTitle, { fontSize: otherTitleSize }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
+                  <Text style={[styles.categoryTitle, { fontSize: otherTitleSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
                     {title}
                   </Text>
-                  <Text style={[styles.categorySubtitle, { fontSize: otherSubtitleSize }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
+                  <Text style={[styles.categorySubtitle, { fontSize: otherSubtitleSize }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
                     {subtitle}
                   </Text>
                 </TouchableOpacity>
@@ -696,17 +582,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundSecondary, // עודכן לכחול בהיר
-    ...(Platform.OS === 'web' && {
-      minHeight: '100vh' as any,
-    } as any),
   },
   scrollContainer: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: responsiveSpacing(40, 50, 60), // Responsive bottom padding
-    paddingTop: responsiveSpacing(LAYOUT_CONSTANTS.SPACING.SM, LAYOUT_CONSTANTS.SPACING.MD, LAYOUT_CONSTANTS.SPACING.LG), // Responsive top padding
-    paddingHorizontal: responsiveSpacing(0, LAYOUT_CONSTANTS.SPACING.XS, LAYOUT_CONSTANTS.SPACING.SM), // Responsive horizontal padding
+    paddingBottom: 20,
   },
   // Web-specific scroll wrappers
   webScrollContainer: {
@@ -783,11 +664,8 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.heading2,
     fontWeight: '800', // פונט עבה יותר
     color: colors.pink, // צבע ורוד מהלוגו החדש
-    marginBottom: LAYOUT_CONSTANTS.SPACING.LG, // More margin for better spacing
-    marginTop: LAYOUT_CONSTANTS.SPACING.XS, // Small top margin
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
     textAlign: 'center', // מרכוז הכותרת
-    letterSpacing: 0.5, // Better letter spacing
-    lineHeight: Math.round(FontSizes.heading2 * 1.4), // Better line height
   },
   quickActionsContainer: {
     flexDirection: 'row',
@@ -809,32 +687,26 @@ const styles = StyleSheet.create({
   },
   categoriesSection: {
     backgroundColor: colors.backgroundPrimary, // רקע לבן נקי לקטגוריות
-    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE + 4, // עיגול גדול יותר
-    borderWidth: 1.5,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE, // עיגול גדול יותר
+    borderWidth: 1,
     borderColor: colors.borderSecondary, // גבול עדין
-    marginTop: LAYOUT_CONSTANTS.SPACING.MD,
-    marginBottom: LAYOUT_CONSTANTS.SPACING.LG, // Better spacing
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
+    marginBottom: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.SM : LAYOUT_CONSTANTS.SPACING.MD, // Less margin on web
+    marginHorizontal: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.XS : LAYOUT_CONSTANTS.SPACING.SM, // Less margin on web
     alignItems: 'center',
-    paddingVertical: LAYOUT_CONSTANTS.SPACING.LG, // Will be overridden by inline style
-    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD, // Will be overridden by inline style
-    ...createShadowStyle(colors.shadowColored, { width: 0, height: 6 }, 0.2, 12), // Enhanced shadow for depth
+    paddingVertical: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.MD : LAYOUT_CONSTANTS.SPACING.LG, // Less padding on web
+    paddingHorizontal: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.SM : LAYOUT_CONSTANTS.SPACING.MD, // Less padding on web
+    ...createShadowStyle(colors.shadowColored, { width: 0, height: 4 }, 0.15, 8), // צל צבעוני
   },
   categoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center', // Center items for better visual balance
-    alignItems: 'center',
-    gap: LAYOUT_CONSTANTS.SPACING.MD, // Will be overridden by inline style
-    width: '100%',
+    justifyContent: 'space-between',
+    gap: LAYOUT_CONSTANTS.SPACING.SM,
   },
   horizontalScrollContainer: {
-    minHeight: 140, // Minimum height for mobile
-    height: 'auto', // Auto height for better responsiveness
+    height: Math.max(120, scaleSize(140)), // גובה קבוע
     width: '100%',
-    paddingVertical: LAYOUT_CONSTANTS.SPACING.XS, // Small vertical padding
-    ...(Platform.OS === 'web' && {
-      minHeight: '160px' as any,
-    } as any),
   },
   horizontalScrollView: {
     flex: 1,
@@ -848,8 +720,7 @@ const styles = StyleSheet.create({
   horizontalScrollContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM, // More padding
-    paddingRight: LAYOUT_CONSTANTS.SPACING.MD, // Extra right padding for last item
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
     height: '100%',
   },
   horizontalList: {
@@ -882,39 +753,27 @@ const styles = StyleSheet.create({
     gap: LAYOUT_CONSTANTS.SPACING.SM,
   },
   categoryCard: {
-    minWidth: 140, // Minimum width for touch targets
-    maxWidth: 200, // Maximum width for large screens
-    paddingVertical: LAYOUT_CONSTANTS.SPACING.MD, // Will be overridden by inline style
-    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM, // Will be overridden by inline style
-    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE, // More rounded for modern look
+    width: '31.5%',
+    paddingVertical: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.SM : LAYOUT_CONSTANTS.SPACING.MD, // Less padding on web
+    paddingHorizontal: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.XS : LAYOUT_CONSTANTS.SPACING.SM, // Less padding on web
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM, // עיגול יותר מעוגל
     alignItems: 'center',
-    justifyContent: 'center',
-    ...createShadowStyle(colors.shadowColored, { width: 0, height: 4 }, 0.18, 8), // Enhanced shadow for depth
+    ...createShadowStyle(colors.shadowColored, { width: 0, height: 2 }, 0.12, 4), // צל צבעוני
     backgroundColor: colors.backgroundPrimary, // רקע לבן נקי
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.borderSecondary, // גבול עדין יותר
-    ...(Platform.OS === 'web' && {
-      transition: 'all 0.3s ease' as any,
-      cursor: 'pointer' as any,
-    } as any),
   },
   categoryCardHorizontal: {
-    minWidth: 120, // Minimum width for touch targets
-    maxWidth: 200, // Maximum width for large screens
-    paddingVertical: LAYOUT_CONSTANTS.SPACING.MD, // Will be overridden by inline style
-    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM, // Will be overridden by inline style
-    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE, // More rounded
+    width: Platform.OS === 'web' ? scaleSize(120) : scaleSize(140), // Smaller on web
+    paddingVertical: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.SM : LAYOUT_CONSTANTS.SPACING.MD, // Less padding on web
+    paddingHorizontal: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.XS : LAYOUT_CONSTANTS.SPACING.SM, // Less padding on web
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM, // עיגול יותר מעוגל
     alignItems: 'center',
-    justifyContent: 'center',
-    ...createShadowStyle(colors.shadowColored, { width: 0, height: 4 }, 0.18, 8), // Enhanced shadow
+    ...createShadowStyle(colors.shadowColored, { width: 0, height: 2 }, 0.12, 4), // צל צבעוני
     backgroundColor: colors.backgroundPrimary, // רקע לבן נקי
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.borderSecondary, // גבול עדין יותר
-    marginRight: LAYOUT_CONSTANTS.SPACING.MD, // More spacing between cards
-    ...(Platform.OS === 'web' && {
-      transition: 'all 0.3s ease' as any,
-      cursor: 'pointer' as any,
-    } as any),
+    marginRight: LAYOUT_CONSTANTS.SPACING.XS,
   },
   activeCategoryCard: {
     width: '45%',
@@ -931,31 +790,14 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.categoryIconBackground,
   },
-  categoryCardActive: {
-    borderWidth: 2,
-    borderColor: colors.pink,
-    ...createShadowStyle(colors.shadowColored, { width: 0, height: 6 }, 0.25, 10),
-    ...(Platform.OS === 'web' && {
-      transform: 'translateY(-3px)' as any,
-    } as any),
-  },
   categoryIcon: {
-    minWidth: 36, // Minimum for small screens
-    minHeight: 36,
+    width: scaleSize(35),
+    height: scaleSize(35),
+    borderRadius: scaleSize(35) / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: LAYOUT_CONSTANTS.SPACING.MD, // מרווח גדול יותר מתחת לאיקון
-    ...createShadowStyle(colors.shadowMedium, { width: 0, height: 3 }, 0.35, 6), // Enhanced shadow for icon
-    ...(Platform.OS === 'web' && {
-      transition: 'all 0.3s ease' as any,
-    } as any),
-  },
-  categoryIconSelected: {
-    transform: [{ scale: 1.1 }],
-    ...createShadowStyle(colors.shadowColored, { width: 0, height: 4 }, 0.4, 8),
-    ...(Platform.OS === 'web' && {
-      transform: 'scale(1.1)' as any,
-    } as any),
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM, // מרווח גדול יותר מתחת לאיקון
+    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.3, 4), // צל לאיקון
   },
   categoryIconWrapper: {
     position: 'relative',
@@ -979,8 +821,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     textAlign: 'center',
     marginTop: LAYOUT_CONSTANTS.SPACING.XS, // מרווח קטן מעל הכותרת
-    letterSpacing: 0.2, // Better letter spacing for readability
-    lineHeight: Math.round(FontSizes.medium * 1.3), // Better line height
   },
   categoryTitleRow: {
     flexDirection: 'row',
@@ -992,9 +832,6 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.small,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginTop: LAYOUT_CONSTANTS.SPACING.XS / 2, // Small margin for better spacing
-    lineHeight: Math.round(FontSizes.small * 1.4), // Better line height
-    opacity: 0.85, // Slightly softer for hierarchy
   },
   categoryDescription: {
     fontSize: FontSizes.small,
@@ -1055,24 +892,6 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.small,
     color: colors.textSecondary,
     textAlign: 'center',
-  },
-  sectionTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
-    gap: LAYOUT_CONSTANTS.SPACING.XS,
-    flexWrap: 'wrap', // Allow wrapping on small screens
-    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XS, // Small padding for very small screens
-  },
-  underConstructionBadge: {
-    backgroundColor: colors.warningLight,
-    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
-    paddingHorizontal: responsiveSpacing(LAYOUT_CONSTANTS.SPACING.XS, LAYOUT_CONSTANTS.SPACING.SM, LAYOUT_CONSTANTS.SPACING.SM),
-    paddingVertical: responsiveSpacing(LAYOUT_CONSTANTS.SPACING.XS / 2, LAYOUT_CONSTANTS.SPACING.XS, LAYOUT_CONSTANTS.SPACING.XS),
-    borderWidth: 1,
-    borderColor: colors.warning,
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.1, 2),
   },
 
 });

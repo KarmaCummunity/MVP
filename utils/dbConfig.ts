@@ -198,13 +198,23 @@ export const validateConfig = (): boolean => {
     const isAbsoluteUrl = /^https?:\/\//i.test(apiUrl);
 
     if (!isRelativeUrl && !isAbsoluteUrl) {
-      // console removed
+      console.warn('⚠️ Invalid API URL:', apiUrl);
       return false;
     }
 
     if (IS_PRODUCTION && isRelativeUrl) {
-      // console removed
+      console.warn('⚠️ API base URL resolves to current origin in production. Make sure your hosting layer proxies /api to the backend or set EXPO_PUBLIC_API_BASE_URL explicitly.');
     }
+    
+    console.log('✅ Configuration validated successfully');
+    console.log('🔧 Config:', {
+      useBackend: USE_BACKEND,
+      apiUrl: isRelativeUrl ? '(current origin)' : apiUrl,
+      environment: IS_PRODUCTION ? 'production' : 'development',
+      features: Object.entries(FEATURE_FLAGS)
+        .filter(([_, enabled]) => enabled)
+        .map(([feature]) => feature)
+    });
     
     return true;
   } catch (error) {

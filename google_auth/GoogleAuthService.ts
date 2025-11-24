@@ -281,7 +281,7 @@ class GoogleAuthService {
    * ```typescript
    * try {
    *   await GoogleAuthService.getInstance().initialize();
-   *   // console removed
+   *   console.log('Auth service ready');
    * } catch (error) {
    *   console.error('Failed to initialize auth service:', error);
    * }
@@ -359,7 +359,7 @@ class GoogleAuthService {
    * ```typescript
    * const result = await authService.authenticateWithGoogle(googleIdToken);
    * if (result.success) {
-   *   // console removed
+   *   console.log('User authenticated:', result.data.user);
    * } else {
    *   console.error('Authentication failed:', result.error);
    * }

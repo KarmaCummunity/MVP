@@ -40,7 +40,7 @@ import BookmarksScreen from "../screens/BookmarksScreen";
 import UserProfileScreen from "../screens/UserProfileScreen";
 import FollowersScreen from "../screens/FollowersScreen";
 import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
-import LoginScreenNew from "../screens/LoginScreenNew";
+import LoginScreen from "../screens/LoginScreen";
 import { useUser } from '../stores/userStore';
 import colors from '../globals/colors';
 import styles from '../globals/styles';
@@ -68,24 +68,34 @@ export default function MainNavigator() {
 
   // TODO: Replace console.log with proper logging service
   // TODO: Add proper state validation and error handling
-  // console removed
+  console.log('🧭 MainNavigator - Render state:', {
+    selectedUser: selectedUser?.name || 'null',
+    isLoading,
+    isGuestMode,
+    isAuthenticated
+  });
 
   // Refresh data when navigator comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      // console removed
+      console.log('🧭 MainNavigator - Navigator focused, checking state...');
       // This will trigger re-renders of child screens when needed
     }, [])
   );
 
   // Automatic update when authentication state changes
   useEffect(() => {
-    // console removed
+    console.log('🧭 MainNavigator - Auth state changed:', {
+      selectedUser: selectedUser?.name || 'null',
+      isLoading,
+      isGuestMode,
+      isAuthenticated
+    });
   }, [selectedUser, isLoading, isGuestMode, isAuthenticated]);
 
   // Loading screen
   if (isLoading) {
-    // console removed
+    console.log('🧭 MainNavigator - Showing loading screen');
     return (
       <View style={styles.centeredScreen as any}>
         <ActivityIndicator size="large" color={colors.info} />
@@ -94,7 +104,7 @@ export default function MainNavigator() {
     );
   }
 
-  // console removed
+  console.log('🧭 MainNavigator - Loading completed, rendering navigator');
 
   // Determine initial route based on web mode and authentication state
   let initialRouteName: string;
@@ -102,17 +112,17 @@ export default function MainNavigator() {
   if (Platform.OS === 'web' && mode === 'site') {
     // Site mode: always start with landing page
     initialRouteName = 'LandingSiteScreen';
-    // console removed
+    console.log('🧭 MainNavigator - Site mode: showing LandingSiteScreen as initial route');
+  } else {
+    // App mode: determine based on authentication
+    if (isAuthenticated || isGuestMode) {
+      initialRouteName = 'HomeStack';
+      console.log('🧭 MainNavigator - App mode: user authenticated/guest, showing HomeStack');
     } else {
-      // App mode: determine based on authentication
-      if (isAuthenticated || isGuestMode) {
-        initialRouteName = 'HomeStack';
-        // console removed
-      } else {
-        initialRouteName = 'LoginScreenNew';
-        // console removed
-      }
+      initialRouteName = 'LoginScreen';
+      console.log('🧭 MainNavigator - App mode: user not authenticated, showing LoginScreen');
     }
+  }
 
   return (
     <Stack.Navigator 
@@ -124,12 +134,12 @@ export default function MainNavigator() {
       {Platform.OS === 'web' ? (
         <Stack.Screen name="LandingSiteScreen" component={LandingSiteScreen} />
       ) : null}
-      <Stack.Screen name="LoginScreenNew" component={LoginScreenNew} />
+      <Stack.Screen name="LoginScreen" component={LoginScreen} />
       <Stack.Screen name="HomeStack" component={BottomNavigator} />
       <Stack.Screen name="NewChatScreen" component={NewChatScreen} />
       <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
-      {/* InactiveScreen removed - redirect to LoginScreenNew */}
-      <Stack.Screen name="InactiveScreen" component={LoginScreenNew} />
+      {/* InactiveScreen removed - redirect to LoginScreen */}
+      <Stack.Screen name="InactiveScreen" component={LoginScreen} />
       <Stack.Screen name="WebViewScreen" component={WebViewScreen} />
       <Stack.Screen
         name="PostsReelsScreen"

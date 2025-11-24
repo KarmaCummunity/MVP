@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Animated,
   ScrollView,
-  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import colors from "../globals/colors";
@@ -21,7 +20,7 @@ interface MenuCompProps {
 }
 
 const MenuComp: React.FC<MenuCompProps> = ({ options, onSelectOption }) => {
-  const [isVisible, setIsVisible] = useState<boolean>(false); // Default closed
+  const [isVisible, setIsVisible] = useState<boolean>(false);
 
   // Animated values for scale and opacity
   const scaleAnim = useRef(new Animated.Value(0.01)).current;
@@ -139,37 +138,35 @@ const localStyles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.3)", // Lighter, more elegant overlay
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "flex-start",
     alignItems: "flex-start",
   },
   modalContent: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)", // Slightly transparent, elegant white
+    backgroundColor: colors.menuBackground,
     position: "absolute",
     // Dynamic styles applied in JSX for responsive sizing
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
     borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.08)", // Very subtle border
+    borderColor: colors.menuBorder,
   },
   menuOption: {
-    paddingHorizontal: responsiveSpacing(24, 28, 32),
-    paddingVertical: responsiveSpacing(16, 18, 20),
+    paddingHorizontal: responsiveSpacing(20, 24, 28),
+    paddingVertical: responsiveSpacing(12, 14, 16),
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(0, 0, 0, 0.06)", // Very subtle separator
+    borderBottomColor: colors.menuBorder,
     width: "100%",
     alignSelf: "flex-end", // Align text to the right for rtl layout
   },
   menuOptionText: {
     fontSize: responsiveFontSize(FontSizes.body, 16, 18),
-    fontWeight: "900", // Bold text for better prominence
     textAlign: "right", // Text alignment for rtl
     writingDirection: "rtl", // Explicit rtl text direction
-    color: "#1a1a1a", // Strong, prominent dark text
-    letterSpacing: 0.3, // Slight letter spacing for modern look
+    color: colors.menuText,
   },
 });
 
