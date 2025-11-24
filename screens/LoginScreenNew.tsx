@@ -43,7 +43,7 @@ import {
   checkEmailExists,
 } from '../utils/customAuthService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import SimpleGoogleLoginButton from '../components/SimpleGoogleLoginButton';
+import SimpleDirectGoogleButton from '../components/SimpleDirectGoogleButton';
 import { useTranslation } from 'react-i18next';
 import i18n from '../app/i18n';
 import ScrollContainer from '../components/ScrollContainer';
@@ -564,7 +564,7 @@ export default function LoginScreenNew() {
                   <Text style={styles.cardTitle}>{t('auth:googleCta') || 'התחבר/הרשם עם גוגל'}</Text>
                 </View>
                 <View style={styles.cardContent}>
-                  <SimpleGoogleLoginButton />
+                  <SimpleDirectGoogleButton />
                 </View>
               </Animated.View>
 

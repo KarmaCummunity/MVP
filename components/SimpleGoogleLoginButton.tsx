@@ -470,7 +470,7 @@ export default function SimpleGoogleLoginButton({
 
   // Handle button press
   const handlePress = useCallback(async () => {
-    if (!isGoogleAvailable || !promptAsync || authState === 'authenticating') {
+    if (!isGoogleAvailable || authState === 'authenticating') {
       return;
     }
 
@@ -483,11 +483,28 @@ export default function SimpleGoogleLoginButton({
       logger.info('GoogleLogin', 'Starting OAuth flow');
       
       if (Platform.OS === 'web') {
-        await promptAsync({ 
-          windowName: '_self'
+        // Direct OAuth for web (more reliable than expo-auth-session)
+        const nonce = Math.random().toString(36).substring(7);
+        const params = new URLSearchParams({
+          client_id: webClientId,
+          redirect_uri: redirectUri,
+          response_type: 'id_token',
+          scope: 'openid profile email',
+          nonce: nonce,
         });
+        
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+        logger.info('GoogleLogin', 'Opening Google OAuth', { authUrl: authUrl.substring(0, 100) + '...' });
+        
+        // Navigate to Google OAuth
+        window.location.href = authUrl;
       } else {
-        await promptAsync();
+        // Use expo-auth-session for mobile
+        if (promptAsync) {
+          await promptAsync();
+        } else {
+          throw new Error('OAuth not available');
+        }
       }
       
     } catch (error) {
@@ -501,7 +518,7 @@ export default function SimpleGoogleLoginButton({
         'Failed to start Google authentication. Please try again.'
       );
     }
-  }, [isGoogleAvailable, promptAsync, authState, redirectUri]);
+  }, [isGoogleAvailable, webClientId, redirectUri, promptAsync, authState]);
 
   // Get button text based on state
   const getButtonText = () => {

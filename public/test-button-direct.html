@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>בדיקת כפתור Google - ישיר</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .button {
+            background: #4285F4;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 20px;
+        }
+        .button:hover {
+            background: #357ae8;
+        }
+        .log {
+            text-align: right;
+            background: #f4f4f4;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 3px;
+        }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>🔍 בדיקת כפתור Google ישיר</h1>
+    
+    <p>זה אמור לעבוד <strong>בדיוק</strong> כמו הכפתור באפליקציה</p>
+    
+    <button class="button" onclick="testGoogleLogin()">
+        🔐 התחבר/הרשם עם גוגל
+    </button>
+    
+    <div class="log" id="log"></div>
+
+    <script>
+        const clientId = '430191522654-o70t2qnqc4bvpvmbpak7unog7pvp9c95.apps.googleusercontent.com';
+        const redirectUri = 'http://localhost:8081/oauthredirect';
+        
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const item = document.createElement('div');
+            item.className = 'log-item ' + type;
+            item.innerHTML = `<strong>${time}:</strong> ${message}`;
+            log.insertBefore(item, log.firstChild);
+        }
+
+        function testGoogleLogin() {
+            addLog('🚀 לוחץ על כפתור Google...', 'info');
+            
+            try {
+                const nonce = Math.random().toString(36).substring(7);
+                addLog('📝 יוצר nonce: ' + nonce, 'info');
+                
+                const params = new URLSearchParams({
+                    client_id: clientId,
+                    redirect_uri: redirectUri,
+                    response_type: 'id_token',
+                    scope: 'openid profile email',
+                    nonce: nonce,
+                });
+                
+                const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+                addLog('🔗 URL: ' + authUrl.substring(0, 100) + '...', 'info');
+                
+                addLog('✅ מעביר לגוגל...', 'success');
+                addLog('אם זה עובד כאן אבל לא באפליקציה - יש בעיה בקוד של האפליקציה', 'info');
+                
+                // Redirect
+                setTimeout(() => {
+                    window.location.href = authUrl;
+                }, 500);
+                
+            } catch (error) {
+                addLog('❌ שגיאה: ' + error.message, 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        // Check if we came back from OAuth
+        if (window.location.hash) {
+            addLog('✅ חזרנו מ-Google!', 'success');
+            addLog('Hash: ' + window.location.hash.substring(0, 100) + '...', 'success');
+            
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const idToken = hashParams.get('id_token');
+            
+            if (idToken) {
+                addLog('🎉 קיבלנו ID Token!', 'success');
+                addLog('Token length: ' + idToken.length, 'success');
+                
+                // Parse JWT
+                try {
+                    const payload = JSON.parse(atob(idToken.split('.')[1]));
+                    addLog('👤 שם: ' + payload.name, 'success');
+                    addLog('📧 אימייל: ' + payload.email, 'success');
+                    addLog('🖼️ תמונה: ' + payload.picture, 'success');
+                } catch (e) {
+                    addLog('⚠️ לא הצלחתי לפענח את ה-token', 'error');
+                }
+            }
+        }
+
+        addLog('📋 Client ID: ' + clientId.substring(0, 30) + '...', 'info');
+        addLog('📍 Redirect URI: ' + redirectUri, 'info');
+        addLog('✅ מוכן לבדיקה!', 'success');
+    </script>
+</body>
+</html>
+

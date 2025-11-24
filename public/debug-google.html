@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Google OAuth</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .box {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #4285F4;
+            margin-top: 0;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .warning { background: #fff3cd; color: #856404; }
+        button {
+            background: #4285F4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #357ae8; }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            direction: ltr;
+            text-align: left;
+            font-size: 12px;
+        }
+        .step { margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Google OAuth Debug Tool</h1>
+
+    <div class="box">
+        <h2>1️⃣ תצורה בסיסית</h2>
+        <div id="basic-config"></div>
+    </div>
+
+    <div class="box">
+        <h2>2️⃣ בדיקת Google OAuth ידנית</h2>
+        <p>בדיקה ישירה של Google OAuth (בלי Expo)</p>
+        <button onclick="testDirectGoogleOAuth()">נסה התחברות ישירה עם Google</button>
+        <div id="direct-oauth-result"></div>
+    </div>
+
+    <div class="box">
+        <h2>3️⃣ בדיקת Redirect URI</h2>
+        <div id="redirect-check"></div>
+        <button onclick="testRedirect()">בדוק Redirect</button>
+        <div id="redirect-result"></div>
+    </div>
+
+    <div class="box">
+        <h2>4️⃣ לוג בזמן אמת</h2>
+        <button onclick="clearLog()">נקה לוג</button>
+        <div id="realtime-log" style="max-height: 300px; overflow-y: auto;"></div>
+    </div>
+
+    <div class="box">
+        <h2>5️⃣ פתח את האפליקציה</h2>
+        <button onclick="window.open('http://localhost:8081', '_blank')">פתח אפליקציה</button>
+        <p class="warning">לאחר שתלחץ על "התחבר עם גוגל" באפליקציה, חזור לכאן ותראה את הלוגים</p>
+    </div>
+
+    <script>
+        const clientId = '430191522654-o70t2qnqc4bvpvmbpak7unog7pvp9c95.apps.googleusercontent.com';
+        const redirectUri = window.location.origin + '/oauthredirect';
+        const log = [];
+
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            log.push({ timestamp, message, type });
+            updateLogDisplay();
+        }
+
+        function updateLogDisplay() {
+            const logDiv = document.getElementById('realtime-log');
+            logDiv.innerHTML = log.map(entry => 
+                `<div class="status ${entry.type}"><strong>${entry.timestamp}:</strong> ${entry.message}</div>`
+            ).join('');
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            log.length = 0;
+            updateLogDisplay();
+        }
+
+        // Basic config check
+        document.getElementById('basic-config').innerHTML = `
+            <div class="status success">
+                ✅ <strong>Client ID:</strong><br>
+                <code>${clientId}</code>
+            </div>
+            <div class="status success">
+                ✅ <strong>Redirect URI:</strong><br>
+                <code>${redirectUri}</code>
+            </div>
+        `;
+
+        // Redirect check
+        document.getElementById('redirect-check').innerHTML = `
+            <p><strong>Redirect URIs שצריכים להיות ב-Google Console:</strong></p>
+            <pre>http://localhost:8081/oauthredirect
+http://localhost:19006/oauthredirect
+http://127.0.0.1:8081/oauthredirect
+https://karma-community-kc.com/oauthredirect</pre>
+            <p class="warning">⚠️ אם לא הוספת את אלה, זו הסיבה שזה לא עובד!</p>
+        `;
+
+        function testRedirect() {
+            const result = document.getElementById('redirect-result');
+            result.innerHTML = '<div class="status info">בודק...</div>';
+            
+            fetch('/oauthredirect')
+                .then(response => {
+                    if (response.ok) {
+                        result.innerHTML = '<div class="status success">✅ הדף /oauthredirect קיים!</div>';
+                    } else if (response.status === 404) {
+                        result.innerHTML = '<div class="status error">❌ הדף /oauthredirect לא קיים! זו בעיה.</div>';
+                    } else {
+                        result.innerHTML = `<div class="status warning">⚠️ סטטוס: ${response.status}</div>`;
+                    }
+                })
+                .catch(error => {
+                    result.innerHTML = `<div class="status error">❌ שגיאה: ${error.message}</div>`;
+                });
+        }
+
+        function testDirectGoogleOAuth() {
+            addLog('מתחיל בדיקת OAuth ישירה', 'info');
+            const result = document.getElementById('direct-oauth-result');
+            result.innerHTML = '<div class="status info">פותח חלון Google OAuth...</div>';
+
+            // Build OAuth URL
+            const params = new URLSearchParams({
+                client_id: clientId,
+                redirect_uri: redirectUri,
+                response_type: 'id_token',
+                scope: 'openid profile email',
+                nonce: Math.random().toString(36).substring(7),
+            });
+
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+            
+            addLog('URL: ' + authUrl, 'info');
+            addLog('אם תופיע שגיאת redirect_uri_mismatch, צריך להוסיף את ה-URI ל-Google Console', 'warning');
+
+            // Open in new window
+            const width = 500;
+            const height = 600;
+            const left = window.screen.width / 2 - width / 2;
+            const top = window.screen.height / 2 - height / 2;
+            
+            const popup = window.open(
+                authUrl,
+                'GoogleOAuth',
+                `width=${width},height=${height},top=${top},left=${left}`
+            );
+
+            if (!popup) {
+                result.innerHTML = '<div class="status error">❌ החלון נחסם! אפשר חלונות קופצים (popup)</div>';
+                addLog('חלון נחסם על ידי דפדפן', 'error');
+            } else {
+                result.innerHTML = '<div class="status info">✅ חלון נפתח! מחכה לתוצאה...</div>';
+                addLog('חלון Google OAuth נפתח בהצלחה', 'success');
+                
+                // Listen for messages from popup
+                window.addEventListener('message', function(event) {
+                    if (event.origin !== window.location.origin) return;
+                    
+                    addLog('התקבלה תשובה מ-OAuth: ' + JSON.stringify(event.data), 'success');
+                    result.innerHTML = `
+                        <div class="status success">
+                            ✅ OAuth הצליח!
+                            <pre>${JSON.stringify(event.data, null, 2)}</pre>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        // Auto-run redirect check
+        setTimeout(testRedirect, 500);
+
+        // Listen for errors
+        window.addEventListener('error', function(event) {
+            addLog('שגיאה JavaScript: ' + event.error?.message, 'error');
+        });
+
+        addLog('דף בדיקה נטען בהצלחה', 'success');
+    </script>
+</body>
+</html>
+

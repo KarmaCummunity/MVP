@@ -3,6 +3,7 @@ import { View, Text, ActivityIndicator, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useUser } from '../stores/userStore';
 
 // JWT parsing utility
 const parseJWT = (token: string) => {
@@ -34,6 +35,7 @@ const extractTokenFromURL = () => {
 
 export default function OAuthRedirect() {
   const router = useRouter();
+  const { setSelectedUserWithMode } = useUser();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [message, setMessage] = useState('מעבד את התחברות עם Google...');
   const [details, setDetails] = useState<string>('');
@@ -44,11 +46,13 @@ export default function OAuthRedirect() {
     setIsProcessing(true);
     
     try {
-      // console removed
+      console.log('🔍 [OAuth] Starting authentication process');
+      console.log('🔍 [OAuth] Current URL:', window.location.href);
+      console.log('🔍 [OAuth] Hash:', window.location.hash);
       
       // Extract token from URL
       const urlParams = extractTokenFromURL();
-      // console removed
+      console.log('🔍 [OAuth] Extracted params:', urlParams);
         
       if (urlParams?.error) {
         throw new Error(`OAuth error: ${urlParams.error}`);
@@ -62,6 +66,7 @@ export default function OAuthRedirect() {
         // console removed
           
         if (profile) {
+          console.log('✅ [OAuth] Profile parsed successfully:', profile);
           setMessage('שומר נתוני משתמש...');
           
           // Create user data
@@ -100,11 +105,19 @@ export default function OAuthRedirect() {
           ]);
           await AsyncStorage.removeItem('oauth_in_progress');
           
-          // console removed
+          // **CRITICAL FIX**: Update UserStore directly instead of relying on AsyncStorage polling
+          console.log('💾 [OAuth] Updating UserStore with:', userData);
+          try {
+            await setSelectedUserWithMode(userData, 'real');
+            console.log('✅ [OAuth] UserStore updated successfully!');
+          } catch (error) {
+            console.error('❌ [OAuth] Failed to update UserStore:', error);
+          }
           
           setStatus('success');
           setMessage(`שלום ${profile.name || profile.email}!`);
           setDetails('התחברות הושלמה בהצלחה. מעביר לעמוד הבית...');
+          console.log('🎉 [OAuth] Authentication successful!');
           
           // Complete the expo-auth-session flow
           const result = WebBrowser.maybeCompleteAuthSession();
@@ -137,9 +150,14 @@ export default function OAuthRedirect() {
       
       // Always redirect to home after processing
       setTimeout(() => {
-        // console removed
-        router.replace('/');
-      }, status === 'success' ? 2000 : 1500);
+        console.log('🔄 [OAuth] Redirecting to home...');
+        // Force reload to ensure the app picks up the stored auth data
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
+        } else {
+          router.replace('/');
+        }
+      }, status === 'success' ? 1500 : 1500);
       
     } catch (error) {
       // OAuth redirect error
