@@ -126,7 +126,8 @@ export default function SimpleDirectGoogleButton() {
       return;
     }
 
-    const redirectUri = window.location.origin + window.location.pathname;
+    // Use root URL as redirect URI
+    const redirectUri = window.location.origin + '/';
     const nonce = Math.random().toString(36).substring(7);
     
     const params = new URLSearchParams({
