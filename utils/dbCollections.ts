@@ -25,4 +25,3 @@ export const DB_COLLECTIONS = {
 
 export type DBCollectionValue = typeof DB_COLLECTIONS[keyof typeof DB_COLLECTIONS];
 
-

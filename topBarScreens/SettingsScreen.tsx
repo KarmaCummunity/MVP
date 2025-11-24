@@ -42,7 +42,6 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../app/i18n';
 import { I18nManager, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import BugReportModal from '../components/BugReportModal';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -54,12 +53,11 @@ export default function SettingsScreen() {
   const { t } = useTranslation(['settings','common']);
   const [currentLang, setCurrentLang] = useState(i18n.language || 'he');
   const [showLangModal, setShowLangModal] = useState(false);
-  const [showBugReportModal, setShowBugReportModal] = useState(false);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      // console removed
+      console.log('⚙️ SettingsScreen - Screen focused, refreshing data...');
       // Force re-render by updating refresh key
       setRefreshKey(prev => prev + 1);
     }, [])
@@ -67,27 +65,31 @@ export default function SettingsScreen() {
 
   // Listen for authentication state changes
   useEffect(() => {
-    // console removed
+    console.log('⚙️ SettingsScreen - Auth state changed:', {
+      isAuthenticated,
+      isGuestMode,
+      selectedUser: selectedUser?.name || 'null'
+    });
     
     // If user is no longer authenticated, go to login screen
     if (!isAuthenticated && !isGuestMode) {
-      // console removed
-      navigation.navigate('LoginScreenNew' as never);
+      console.log('⚙️ SettingsScreen - User logged out, navigating to LoginScreen');
+      navigation.navigate('LoginScreen' as never);
     }
   }, [isAuthenticated, isGuestMode, selectedUser, navigation]);
 
   // Debug logs for development
-  // console removed
-  // console removed
-  // console removed
+  console.log('⚙️ SettingsScreen - Rendered with isGuestMode:', isGuestMode);
+  console.log('⚙️ SettingsScreen - Platform:', Platform.OS);
+  console.log('⚙️ SettingsScreen - Screen dimensions:', { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
 
   const handleBackPress = () => {
-    // console removed
+    console.log('⚙️ SettingsScreen - Back pressed');
     navigation.goBack();
   };
 
   const handleAboutPress = () => {
-    // console removed
+    console.log('⚙️ SettingsScreen - About pressed');
     navigation.navigate('AboutKarmaCommunityScreen' as never);
   };
 
@@ -98,18 +100,18 @@ export default function SettingsScreen() {
    * - משתמש מחובר: הצגת התראה לפני היציאה (פעולה מסוכנת)
    */
   const handleLogoutPress = () => {
-    // console removed
-    // console removed
-    // console removed
+    console.log('⚙️ 14SettingsScreen - Logout pressed');
+    console.log('⚙️ SettingsScreen - Platform:', Platform.OS);
+    console.log('⚙️ SettingsScreen - isGuestMode:', isGuestMode);
     
     // Guest mode - direct logout without warning as it's not dangerous
     if (isGuestMode) {
-      // console removed
+      console.log('⚙️ SettingsScreen - Guest mode detected, direct logout without confirmation');
       signOut().then(() => {
-        // console removed
+        console.log('⚙️ SettingsScreen - Guest logout completed');
         setTimeout(() => {
-          // console removed
-          navigation.navigate('LoginScreenNew' as never);
+          console.log('⚙️ SettingsScreen - Navigating to LoginScreen after guest logout');
+          navigation.navigate('LoginScreen' as never);
         }, 100);
       });
       return;
@@ -118,29 +120,29 @@ export default function SettingsScreen() {
     // Authenticated user - show warning as this is a dangerous action
     if (Platform.OS === 'web') {
       // Use browser confirmation dialog for web
-      // console removed
+      console.log('⚙️ SettingsScreen - Using browser confirm for web');
       const confirmed = window.confirm(t('settings:logoutMessage'));
-      // console removed
+      console.log('⚙️ SettingsScreen - Browser confirm result:', confirmed);
       
       if (confirmed) {
-        // console removed
-        // console removed via browser');
+        console.log('⚙️ SettingsScreen - Logout confirmed via browser');
+        console.log('⚙️ SettingsScreen - Calling signOut() via browser');
         signOut().then(() => {
-          // console removed completed via browser');
+          console.log('⚙️ SettingsScreen - signOut() completed via browser');
           
           // Wait a bit to ensure state is updated
           setTimeout(() => {
-            // console removed
-            navigation.navigate('LoginScreenNew' as never);
-            // console removed
+            console.log('⚙️ SettingsScreen - Navigating to LoginScreen via browser after delay');
+            navigation.navigate('LoginScreen' as never);
+            console.log('⚙️ SettingsScreen - Navigation to LoginScreen completed via browser');
           }, 100);
         });
       } else {
-        // console removed
+        console.log('⚙️ SettingsScreen - Logout cancelled via browser');
       }
     } else {
       // Use React Native Alert for mobile platforms
-      // console removed
+      console.log('⚙️ SettingsScreen - Using React Native Alert for mobile');
       try {
         Alert.alert(
           t('settings:logoutTitle'),
@@ -150,39 +152,39 @@ export default function SettingsScreen() {
               text: t('common:cancel'),
               style: 'cancel',
               onPress: () => {
-                // console removed
+                console.log('⚙️ SettingsScreen - Cancel pressed');
               },
             },
             {
               text: t('settings:logoutConfirm'),
               style: 'destructive',
               onPress: async () => {
-                // console removed
-                // console removed');
+                console.log('⚙️ SettingsScreen - Logout confirmed');
+                console.log('⚙️ SettingsScreen - Calling signOut()');
                 await signOut();
-                // console removed completed');
+                console.log('⚙️ SettingsScreen - signOut() completed');
                 
                 // Short delay to ensure state is updated before navigation
                 setTimeout(() => {
-                  // console removed
-                  navigation.navigate('LoginScreenNew' as never);
-                  // console removed
+                  console.log('⚙️ SettingsScreen - Navigating to LoginScreen after delay');
+                  navigation.navigate('LoginScreen' as never);
+                  console.log('⚙️ SettingsScreen - Navigation to LoginScreen completed');
                 }, 100);
               },
             },
           ]
         );
-        // console removed
+        console.log('⚙️ SettingsScreen - Alert.alert called successfully');
       } catch (error) {
         console.error('⚙️ SettingsScreen - Error showing alert:', error);
       }
     }
     
-    // console removed
+    console.log('⚙️ 13SettingsScreen - Logout pressed');
   };
 
   const handleNotificationsPress = () => {
-    // console removed
+    console.log('⚙️ SettingsScreen - Notifications pressed');
     if (Platform.OS === 'web') {
       alert(t('settings:notificationsComingSoon'));
     } else {
@@ -191,7 +193,7 @@ export default function SettingsScreen() {
   };
 
   const handlePrivacyPress = () => {
-    // console removed
+    console.log('⚙️ SettingsScreen - Privacy pressed');
     if (Platform.OS === 'web') {
       alert(t('settings:privacyComingSoon'));
     } else {
@@ -200,7 +202,7 @@ export default function SettingsScreen() {
   };
 
   const handleThemePress = () => {
-    // console removed
+    console.log('⚙️ SettingsScreen - Theme pressed');
     if (Platform.OS === 'web') {
       alert(t('settings:themeComingSoon'));
     } else {
@@ -227,17 +229,13 @@ export default function SettingsScreen() {
     setShowLangModal(true);
   };
 
-  const handleBugReportPress = () => {
-    setShowBugReportModal(true);
-  };
-
   const handleClearCachePress = () => {
-    // console removed
+    console.log('⚙️ SettingsScreen - Clear cache pressed');
     
     if (Platform.OS === 'web') {
       const confirmed = window.confirm(t('settings:clearCacheConfirm'));
       if (confirmed) {
-        // console removed
+        console.log('⚙️ SettingsScreen - Cache cleared');
         alert(t('settings:cacheCleared'));
       }
     } else {
@@ -253,7 +251,7 @@ export default function SettingsScreen() {
             text: t('settings:clear'),
             style: 'destructive',
             onPress: () => {
-              // console removed
+              console.log('⚙️ SettingsScreen - Cache cleared');
               Alert.alert(t('common:done'), t('settings:cacheCleared'));
             },
           },
@@ -264,16 +262,16 @@ export default function SettingsScreen() {
 
   // Test function for scroll functionality (development only)
   const handleScrollTest = () => {
-    // console removed
+    console.log('🧪 SettingsScreen - Testing scroll functionality');
     if (scrollViewRef.current) {
-      // console removed
+      console.log('🧪 SettingsScreen - ScrollView ref exists, attempting to scroll');
       scrollViewRef.current.scrollTo({ y: 200, animated: true });
       setTimeout(() => {
-        // console removed
+        console.log('🧪 SettingsScreen - Scrolling back to top');
         scrollViewRef.current?.scrollTo({ y: 0, animated: true });
       }, 2000);
     } else {
-      // console removed
+      console.log('🧪 SettingsScreen - ScrollView ref is null!');
     }
   };
 
@@ -345,9 +343,6 @@ export default function SettingsScreen() {
           </View>
         </View>
       </Modal>
-
-      {/* Bug Report Modal */}
-      <BugReportModal visible={showBugReportModal} onClose={() => setShowBugReportModal(false)} />
 
       {/* User Info Section - Only for logged in users */}
       {!isGuestMode && selectedUser && (
@@ -432,13 +427,6 @@ export default function SettingsScreen() {
                 subtitle={t('settings:aboutDesc')}
                 onPress={handleAboutPress}
               />
-              
-              <SettingsItem
-                icon="bug-outline"
-                title={t('settings:reportBug')}
-                subtitle={t('settings:reportBugDesc')}
-                onPress={handleBugReportPress}
-              />
             </View>
 
             {/* Logout Section - different behavior for guest mode and authenticated user */}
@@ -467,27 +455,27 @@ export default function SettingsScreen() {
           keyboardShouldPersistTaps="handled"
           onScroll={(event) => {
             const offsetY = event.nativeEvent.contentOffset.y;
-            // // console removed
+            // console.log('📜 SettingsScreen - Layout measurement:', event.nativeEvent.layoutMeasurement);
           }}
           onScrollBeginDrag={() => {
-            // console removed
+            console.log('📜 SettingsScreen - Scroll begin drag detected!');
           }}
           onScrollEndDrag={() => {
-            // console removed
+            console.log('📜 SettingsScreen - Scroll end drag detected!');
           }}
           onMomentumScrollBegin={() => {
-            // console removed
+            console.log('📜 SettingsScreen - Momentum scroll begin!');
           }}
           onMomentumScrollEnd={() => {
-            // console removed
+            console.log('📜 SettingsScreen - Momentum scroll end!');
           }}
           onContentSizeChange={(contentWidth, contentHeight) => {
-            // console removed
-            // console removed
-            // console removed
+            console.log('📜 SettingsScreen - Content size changed:', { contentWidth, contentHeight });
+            console.log('📜 SettingsScreen - Screen height:', SCREEN_HEIGHT);
+            console.log('📜 SettingsScreen - Should scroll:', contentHeight > SCREEN_HEIGHT);
           }}
           onLayout={(event) => {
-            // console removed
+            console.log('📜 SettingsScreen - ScrollView layout:', event.nativeEvent.layout);
           }}
           scrollEventThrottle={16}
         >
@@ -571,13 +559,6 @@ export default function SettingsScreen() {
             title={t('settings:about')}
             subtitle={t('settings:aboutDesc')}
             onPress={handleAboutPress}
-          />
-          
-          <SettingsItem
-            icon="bug-outline"
-            title={t('settings:reportBug')}
-            subtitle={t('settings:reportBugDesc')}
-            onPress={handleBugReportPress}
           />
         </View>
 

@@ -29,8 +29,6 @@ import GuestModeNotice from '../components/GuestModeNotice';
 import { Pressable, Modal, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { scaleSize } from '../globals/responsive';
-import { apiService } from '../utils/apiService';
-import { USE_BACKEND } from '../utils/dbConfig';
 
 // Empty arrays - replace with real data from API
 const donations: any[] = [];
@@ -80,7 +78,7 @@ const SearchScreen = () => {
   // Refresh data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      // console removed
+      console.log('🔍 SearchScreen - Screen focused, refreshing data...');
       // Clear search results when returning to screen
       setSearchResults([]);
       setSearchQuery('');
@@ -102,39 +100,12 @@ const SearchScreen = () => {
   ];
 
   // Search over real data and fake data depending on auth mode
-  const performSearch = async (query: string, category: string = 'All') => {
+  const performSearch = (query: string, category: string = 'All') => {
     setIsSearching(true);
     
-    try {
+    // Simulate API delay
+    setTimeout(() => {
       let results: SearchResult[] = [];
-      
-      // Search items from backend
-      if (USE_BACKEND && isRealAuth && (category === 'All' || category === 'donations')) {
-        try {
-          // Search items
-          const itemsResponse = await apiService.getItems({
-            search: query,
-            status: 'available',
-            limit: 20,
-          });
-          
-          if (itemsResponse.success && itemsResponse.data) {
-            const items = Array.isArray(itemsResponse.data) ? itemsResponse.data : [];
-            const itemResults = items.map((item: any) => ({
-              id: item.id || String(Math.random()),
-              type: 'donation' as const,
-              title: item.title || 'פריט',
-              description: item.description || '',
-              image: item.images?.[0],
-              category: item.category || t('search:typeLabels.donation'),
-              location: item.location?.city || item.location || undefined,
-            }));
-            results.push(...itemResults);
-          }
-        } catch (e) {
-          console.error('Error searching items:', e);
-        }
-      }
       
       // Real: donations from backend
       if (category === 'All' || category === 'donations') {
@@ -210,11 +181,7 @@ const SearchScreen = () => {
       
       setSearchResults(results);
       setIsSearching(false);
-    } catch (error) {
-      console.error('Search error:', error);
-      setSearchResults([]);
-      setIsSearching(false);
-    }
+    }, 500);
   };
 
   const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {

@@ -975,7 +975,7 @@ const FinalCTASection = () => (
 );
 
 const LandingSiteScreen: React.FC = () => {
-  // console removed
+  console.log('LandingSiteScreen - Component rendered');
   
   const [stats, setStats] = useState<LandingStats>({
     siteVisits: 0,
@@ -1196,10 +1196,23 @@ const LandingSiteScreen: React.FC = () => {
     };
   }, []);
 
-  // NOTE: Auto-refresh removed - using smart polling instead (lines 1081-1124)
-  // הערה: רענון אוטומטי הוסר - משתמשים ב-smart polling במקום (שורות 1081-1124)
-  // The smart polling checks version hash every second and only reloads if data changed
-  // ה-smart polling בודק גרסה כל שניה וטוען מחדש רק אם הנתונים השתנו
+  // Auto-refresh stats every second for real-time updates
+  // רענון אוטומטי של סטטיסטיקות כל שניה לעדכונים בזמן אמת
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        logger.debug('LandingSite', 'Auto-refreshing stats');
+        await loadStats(true); // forceRefresh: true to bypass cache
+      } catch (error) {
+        logger.error('LandingSite', 'Auto-refresh failed', { error });
+      }
+    }, 1000); // Refresh every second / רענון כל שניה
+    
+    return () => {
+      logger.info('LandingSite', 'Clearing auto-refresh interval');
+      clearInterval(interval);
+    };
+  }, [loadStats]);
 
   // Scroll Spy - Track which section is currently in view
   useEffect(() => {
@@ -1809,7 +1822,7 @@ const styles = StyleSheet.create({
     top: isMobileWeb ? 60 : 100,
     width: isMobileWeb ? '14%' : '10%',
     maxHeight: isMobileWeb ? '70vh' as any : (isWeb ? '80vh' as any : 600),
-    backgroundColor: 'rgba(255, 255, 255, 0.5)', // Only background is transparent
+    backgroundColor: '#FFFFFF',
     borderRadius: isMobileWeb ? 12 : 20,
     borderWidth: 1,
     borderColor: '#E6EEF9',
@@ -1857,8 +1870,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFBFF',
   },
   menuTitle: {
-    fontWeight: '900', // Extra bold for prominence
-    color: '#1a1a1a', // Strong, prominent dark text
+    fontWeight: '800',
+    color: colors.textPrimary,
     letterSpacing: -0.3,
   },
   menuMinimizeButton: {
@@ -1883,14 +1896,14 @@ const styles = StyleSheet.create({
     marginLeft: SCREEN_WIDTH * 0.002, // 0.2% of screen width
   },
   menuItemText: {
-    fontWeight: '800', // Bold text for prominence
-    color: '#1a1a1a', // Strong, prominent dark text
+    fontWeight: '600',
+    color: colors.textSecondary,
     flex: 1,
     textAlign: 'right',
   },
   menuItemTextActive: {
     color: colors.info,
-    fontWeight: '900', // Extra bold for active state
+    fontWeight: '700',
   },
   // New Styles
   decoCircle1: {

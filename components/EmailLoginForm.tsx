@@ -33,11 +33,6 @@ import {
   sendVerification as fbSendVerification, 
   sendPasswordReset 
 } from '../utils/authService';
-import {
-  registerWithEmail,
-  loginWithEmail,
-  checkEmailExists,
-} from '../utils/customAuthService';
 import { restAdapter } from '../utils/restAdapter';
 
 // TypeScript Interfaces
@@ -221,37 +216,17 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
   const isKnownEmail = async (email: string): Promise<boolean> => {
     const lower = email.trim().toLowerCase();
     try {
-      // Check database first (primary authentication method)
-      const exists = await checkEmailExists(lower);
-      if (exists) {
-        return true;
-      }
+      const methods = await getSignInMethods(lower);
+      const hasPasswordProvider = Array.isArray(methods) && 
+        methods.some(m => m && m.toLowerCase().includes('password'));
       
-      // Check cache as fallback
+      if (hasPasswordProvider) return true;
+
       const cacheRaw = await AsyncStorage.getItem(KNOWN_EMAILS_KEY);
       const cache = cacheRaw ? JSON.parse(cacheRaw) : [];
-      if (Array.isArray(cache) && cache.includes(lower)) {
-        return true;
-      }
-
-      // Also check Firebase Auth for backward compatibility
-      try {
-        const methods = await getSignInMethods(lower);
-        const hasPasswordProvider = Array.isArray(methods) && 
-          methods.some(m => m && m.toLowerCase().includes('password'));
-        if (hasPasswordProvider) {
-          return true;
-        }
-      } catch (fbError) {
-        // Ignore Firebase errors - we're using custom auth now
-        console.warn('Firebase check failed (using custom auth):', fbError);
-      }
-
-      return false;
+      return Array.isArray(cache) && cache.includes(lower);
     } catch (error) {
       console.error('Error checking known email:', error);
-      
-      // On error, check cache as fallback
       const cacheRaw = await AsyncStorage.getItem(KNOWN_EMAILS_KEY);
       const cache = cacheRaw ? JSON.parse(cacheRaw) : [];
       return Array.isArray(cache) && cache.includes(lower);
@@ -345,37 +320,41 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
    */
   const handleExistingUserLogin = async (email: string, nowIso: string) => {
     try {
-      const customUser = await loginWithEmail(email, formState.passwordValue);
+      const fbUser = await fbSignInWithEmail(email, formState.passwordValue);
       
-      // Ensure user data has all required fields
       const userData = {
-        id: customUser.id || email,
-        name: customUser.name || email.split('@')[0],
-        email: customUser.email || email,
-        phone: customUser.phone || '+9720000000',
-        avatar: customUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(customUser.name || email.split('@')[0])}&background=random`,
-        bio: customUser.bio || '',
-        karmaPoints: customUser.karmaPoints || 0,
-        joinDate: customUser.joinDate || nowIso,
-        isActive: customUser.isActive !== undefined ? customUser.isActive : true,
-        lastActive: customUser.lastActive || nowIso,
-        location: customUser.location || { city: t('common:labels.countryIsrael') as string, country: 'IL' },
-        interests: customUser.interests || [],
-        roles: customUser.roles || ['user'],
-        postsCount: customUser.postsCount || 0,
-        followersCount: customUser.followersCount || 0,
-        followingCount: customUser.followingCount || 0,
-        notifications: customUser.notifications || [],
-        settings: customUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+        id: fbUser.uid,
+        name: fbUser.displayName || email.split('@')[0],
+        email: fbUser.email || email,
+        phone: fbUser.phoneNumber || '+9720000000',
+        avatar: fbUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+        bio: '',
+        karmaPoints: 0,
+        joinDate: nowIso,
+        isActive: true,
+        lastActive: nowIso,
+        location: { city: t('common:labels.countryIsrael') as string, country: 'IL' },
+        interests: [],
+        roles: ['user'],
+        postsCount: 0,
+        followersCount: 0,
+        followingCount: 0,
+        notifications: [],
+        settings: { language: 'he', darkMode: false, notificationsEnabled: true },
       };
+
+      try {
+        await restAdapter.create('users', userData.id, userData.id, userData);
+      } catch (error) {
+        console.log('Saving user on server failed (non-critical):', error);
+      }
 
       await saveRecentEmail(email);
       onLoginSuccess(userData);
     } catch (error: any) {
-      // Display the error message (already in Hebrew from customAuthService)
       setFormState(prev => ({
         ...prev,
-        statusMessage: error?.message || (t('auth:email.invalidPassword') as string),
+        statusMessage: t('auth:email.invalidPassword') as string,
         statusColor: '#C62828',
         isBusy: false,
       }));
@@ -387,88 +366,61 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
    */
   const handleNewUserRegistration = async (email: string, nowIso: string) => {
     try {
-      const customUser = await registerWithEmail(email, formState.passwordValue);
-      
-      // Show success message for new registration
+      const fbUser = await fbSignUpWithEmail(email, formState.passwordValue);
+      await fbSendVerification(fbUser);
       Alert.alert(
-        t('auth:email.registrationSuccess') as string || 'הרשמה הושלמה בהצלחה',
-        t('auth:email.welcomeMessage') as string || 'ברוך הבא! החשבון שלך נוצר בהצלחה'
+        t('auth:email.verifyTitle') as string, 
+        t('auth:email.verifySent') as string
       );
-      
-      // Ensure user data has all required fields
-      const userData = {
-        id: customUser.id || email,
-        name: customUser.name || email.split('@')[0],
-        email: customUser.email || email,
-        phone: customUser.phone || '+9720000000',
-        avatar: customUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(customUser.name || email.split('@')[0])}&background=random`,
-        bio: customUser.bio || '',
-        karmaPoints: customUser.karmaPoints || 0,
-        joinDate: customUser.joinDate || nowIso,
-        isActive: customUser.isActive !== undefined ? customUser.isActive : true,
-        lastActive: customUser.lastActive || nowIso,
-        location: customUser.location || { city: t('common:labels.countryIsrael') as string, country: 'IL' },
-        interests: customUser.interests || [],
-        roles: customUser.roles || ['user'],
-        postsCount: customUser.postsCount || 0,
-        followersCount: customUser.followersCount || 0,
-        followingCount: customUser.followingCount || 0,
-        notifications: customUser.notifications || [],
-        settings: customUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
-      };
-
-      await saveRecentEmail(email);
-      onLoginSuccess(userData);
     } catch (error: any) {
-      // Check if it's an email-already-in-use error
-      const errorMessage = error?.message || '';
-      if (errorMessage.includes('כבר רשום') || errorMessage.includes('already registered')) {
+      if (String(error?.code || '').includes('auth/email-already-in-use')) {
         // Try to sign in instead
         try {
-          const customUser = await loginWithEmail(email, formState.passwordValue);
+          const fbUser = await fbSignInWithEmail(email, formState.passwordValue);
           const userData = {
-            id: customUser.id || email,
-            name: customUser.name || email.split('@')[0],
-            email: customUser.email || email,
-            phone: customUser.phone || '+9720000000',
-            avatar: customUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(customUser.name || email.split('@')[0])}&background=random`,
-            bio: customUser.bio || '',
-            karmaPoints: customUser.karmaPoints || 0,
-            joinDate: customUser.joinDate || nowIso,
-            isActive: customUser.isActive !== undefined ? customUser.isActive : true,
-            lastActive: customUser.lastActive || nowIso,
-            location: customUser.location || { city: t('common:labels.countryIsrael') as string, country: 'IL' },
-            interests: customUser.interests || [],
-            roles: customUser.roles || ['user'],
-            postsCount: customUser.postsCount || 0,
-            followersCount: customUser.followersCount || 0,
-            followingCount: customUser.followingCount || 0,
-            notifications: customUser.notifications || [],
-            settings: customUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+            id: fbUser.uid,
+            name: fbUser.displayName || email.split('@')[0],
+            email: fbUser.email || email,
+            phone: fbUser.phoneNumber || '+9720000000',
+            avatar: fbUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+            bio: '',
+            karmaPoints: 0,
+            joinDate: nowIso,
+            isActive: true,
+            lastActive: nowIso,
+            location: { city: t('common:labels.countryIsrael') as string, country: 'IL' },
+            interests: [],
+            roles: ['user'],
+            postsCount: 0,
+            followersCount: 0,
+            followingCount: 0,
+            notifications: [],
+            settings: { language: 'he', darkMode: false, notificationsEnabled: true },
           };
+
+          try {
+            await restAdapter.create('users', userData.id, userData.id, userData);
+          } catch (error) {
+            console.log('Saving user on server failed (non-critical):', error);
+          }
 
           await saveRecentEmail(email);
           onLoginSuccess(userData);
-        } catch (signinError: any) {
+        } catch (signinError) {
           setFormState(prev => ({
             ...prev,
-            statusMessage: signinError?.message || (t('auth:email.invalidPassword') as string),
+            statusMessage: t('auth:email.invalidPassword') as string,
             statusColor: '#C62828',
             isBusy: false,
           }));
         }
       } else {
-        // Display error message
-        setFormState(prev => ({
-          ...prev,
-          statusMessage: errorMessage || (t('auth:email.signupFailed') as string),
-          statusColor: '#C62828',
-          isBusy: false,
-        }));
+        console.error('Sign up failed:', error);
         Alert.alert(
           t('common:error') as string, 
-          errorMessage || (t('auth:email.signupFailed') as string)
+          t('auth:email.signupFailed') as string
         );
+        setFormState(prev => ({ ...prev, isBusy: false }));
       }
     }
   };

@@ -57,7 +57,7 @@ export default function FollowersScreen() {
   useFocusEffect(
     React.useCallback(() => {
       const refreshUsers = async () => {
-        // console removed
+        console.log('👥 FollowersScreen - Screen focused, refreshing data...');
         await loadUsers();
         // Force re-render by updating refresh key
         setRefreshKey(prev => prev + 1);

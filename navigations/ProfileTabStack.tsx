@@ -29,7 +29,7 @@ const Stack = createStackNavigator<ProfileTabStackParamList>();
 export default function ProfileTabStack(): React.ReactElement {
   useFocusEffect(
     React.useCallback(() => {
-      // console removed
+      console.log('👤 ProfileTabStack - focused');
     }, [])
   );
 

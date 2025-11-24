@@ -7,7 +7,7 @@
 // - First-time web visitors always start with 'site' mode (landing page)
 // - Navigation automatically handled by MainNavigator based on current mode
 // - 'app' mode for mobile platforms by default (no site mode on native)
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, useRef } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
 
 export type WebMode = 'site' | 'app';
@@ -25,13 +25,10 @@ const WebModeContext = createContext<WebModeContextValue | undefined>(undefined)
 
 export const WebModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [mode, setModeState] = useState<WebMode>(DEFAULT_MODE);
-  const isInitializedRef = useRef(false);
 
-  // Initialize from localStorage on web (run only once)
+  // Initialize from localStorage on web
   useEffect(() => {
-    if (Platform.OS !== 'web' || isInitializedRef.current) return;
-    isInitializedRef.current = true;
-    
+    if (Platform.OS !== 'web') return;
     try {
       const stored = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) : null;
       if (stored === 'site' || stored === 'app') {
@@ -47,31 +44,17 @@ export const WebModeProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const setMode = useCallback((next: WebMode) => {
     setModeState(next);
     if (Platform.OS === 'web') {
-      try { 
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem(STORAGE_KEY, next);
-        }
-      } catch (_) {
-        // Ignore localStorage errors
-      }
+      try { window.localStorage.setItem(STORAGE_KEY, next); } catch (_) {}
     }
   }, []);
 
   const toggleMode = useCallback(() => {
-    setModeState((prev) => {
-      const newMode = prev === 'site' ? 'app' : 'site';
-      if (Platform.OS === 'web') {
-        try { 
-          if (typeof window !== 'undefined') {
-            window.localStorage.setItem(STORAGE_KEY, newMode);
-          }
-        } catch (_) {
-          // Ignore localStorage errors
-        }
-      }
-      return newMode;
-    });
-  }, []);
+    setModeState((prev) => (prev === 'site' ? 'app' : 'site'));
+    if (Platform.OS === 'web') {
+      const newMode = mode === 'site' ? 'app' : 'site';
+      try { window.localStorage.setItem(STORAGE_KEY, newMode); } catch (_) {}
+    }
+  }, [mode]);
 
   const value = useMemo(() => ({ mode, setMode, toggleMode }), [mode, setMode, toggleMode]);
 
