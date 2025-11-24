@@ -30,6 +30,8 @@ import { UserPreview as CharacterType } from '../globals/types';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { Ionicons as Icon } from '@expo/vector-icons';
+import { apiService } from '../utils/apiService';
+import { USE_BACKEND } from '../utils/dbConfig';
 
 type FilterType = 'all' | 'online' | 'highKarma' | 'recentFollowers';
 type SortType = 'name' | 'karma' | 'followers' | 'recent';
@@ -61,27 +63,65 @@ export default function NewChatScreen() {
     try {
       setIsLoading(true);
       
-      const following = await getFollowing(selectedUser.id);
-      
-      const followers = await getFollowers(selectedUser.id);
-      
-      const allFriends = [...following, ...followers];
-      
-      const uniqueFriends = allFriends.filter((friend, index, self) => 
-        index === self.findIndex(f => f.id === friend.id)
-      );
-      
       const conversations = await getAllConversations(selectedUser.id);
       const existingUserIds = conversations.flatMap(conv => 
         conv.participants.filter(id => id !== selectedUser.id)
       );
       setExistingConversations(existingUserIds);
       
-      if (uniqueFriends.length === 0) {
-        const suggestions = await getFollowSuggestions(selectedUser.id, 10);
-        setFriends(suggestions);
+      // If using backend, always fetch users from backend
+      if (USE_BACKEND) {
+        const searchTerm = searchQuery.trim();
+        const response = await apiService.getUsers({ 
+          search: searchTerm || undefined,
+          limit: 100, // Get more users to show all available
+          offset: 0 
+        });
+        
+        console.log('🔍 NewChatScreen - getUsers response:', {
+          success: response.success,
+          dataLength: response.data?.length,
+          error: response.error,
+        });
+        
+        if (response.success && response.data && Array.isArray(response.data)) {
+          // Map backend users to expected format
+          const backendUsers = response.data
+            .filter((user: any) => user.id !== selectedUser.id)
+            .map((user: any) => ({
+              id: user.id,
+              name: user.name || 'ללא שם',
+              avatar: user.avatar_url || '',
+              bio: user.bio || '',
+              karmaPoints: user.karma_points || 0,
+              followersCount: 0,
+              isActive: user.last_active ? new Date(user.last_active) > new Date(Date.now() - 15 * 60 * 1000) : false,
+            }));
+          
+          console.log('✅ NewChatScreen - Mapped users:', backendUsers.length);
+          setFriends(backendUsers);
+        } else {
+          console.warn('⚠️ NewChatScreen - Backend response failed or empty, trying suggestions');
+          // Fallback to suggestions if backend fails
+          const suggestions = await getFollowSuggestions(selectedUser.id, 10);
+          setFriends(suggestions);
+        }
       } else {
-        setFriends(uniqueFriends);
+        // Non-backend mode: use existing logic with following/followers
+        const following = await getFollowing(selectedUser.id);
+        const followers = await getFollowers(selectedUser.id);
+        const allFriends = [...following, ...followers];
+        
+        const uniqueFriends = allFriends.filter((friend, index, self) => 
+          index === self.findIndex(f => f.id === friend.id)
+        );
+        
+        if (uniqueFriends.length === 0) {
+          const suggestions = await getFollowSuggestions(selectedUser.id, 10);
+          setFriends(suggestions);
+        } else {
+          setFriends(uniqueFriends);
+        }
       }
       
     } catch (error) {
@@ -91,7 +131,7 @@ export default function NewChatScreen() {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [selectedUser]);
+  }, [selectedUser, searchQuery]);
 
   const applyFilters = useCallback((friendsList: CharacterType[]) => {
     let filtered = [...friendsList];

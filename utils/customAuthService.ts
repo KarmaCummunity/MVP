@@ -144,7 +144,7 @@ export async function loginWithEmail(
         throw new Error('אימייל או סיסמה שגויים');
       }
       if (result.error.includes('cannot login with password')) {
-        throw new Error('חשבון זה לא יכול להתחבר עם סיסמה. אנא פנה לתמיכה');
+        throw new Error('חשבון זה נוצר באמצעות Google. אנא התחבר עם Google במקום סיסמה');
       }
       throw new Error(result.error);
     }

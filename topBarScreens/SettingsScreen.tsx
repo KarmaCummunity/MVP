@@ -42,6 +42,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../app/i18n';
 import { I18nManager, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import BugReportModal from '../components/BugReportModal';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -53,6 +54,7 @@ export default function SettingsScreen() {
   const { t } = useTranslation(['settings','common']);
   const [currentLang, setCurrentLang] = useState(i18n.language || 'he');
   const [showLangModal, setShowLangModal] = useState(false);
+  const [showBugReportModal, setShowBugReportModal] = useState(false);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -225,6 +227,10 @@ export default function SettingsScreen() {
     setShowLangModal(true);
   };
 
+  const handleBugReportPress = () => {
+    setShowBugReportModal(true);
+  };
+
   const handleClearCachePress = () => {
     // console removed
     
@@ -340,6 +346,9 @@ export default function SettingsScreen() {
         </View>
       </Modal>
 
+      {/* Bug Report Modal */}
+      <BugReportModal visible={showBugReportModal} onClose={() => setShowBugReportModal(false)} />
+
       {/* User Info Section - Only for logged in users */}
       {!isGuestMode && selectedUser && (
         <View style={styles.userSection}>
@@ -422,6 +431,13 @@ export default function SettingsScreen() {
                 title={t('settings:about')}
                 subtitle={t('settings:aboutDesc')}
                 onPress={handleAboutPress}
+              />
+              
+              <SettingsItem
+                icon="bug-outline"
+                title={t('settings:reportBug')}
+                subtitle={t('settings:reportBugDesc')}
+                onPress={handleBugReportPress}
               />
             </View>
 
@@ -555,6 +571,13 @@ export default function SettingsScreen() {
             title={t('settings:about')}
             subtitle={t('settings:aboutDesc')}
             onPress={handleAboutPress}
+          />
+          
+          <SettingsItem
+            icon="bug-outline"
+            title={t('settings:reportBug')}
+            subtitle={t('settings:reportBugDesc')}
+            onPress={handleBugReportPress}
           />
         </View>
 

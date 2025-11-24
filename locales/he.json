@@ -683,7 +683,19 @@
     "orgDashboardTitle": "לוח בקרה לארגון",
     "orgDashboardSubtitle": "ניהול ארגון מאושר",
     "adminApprovalsTitle": "אישורי ארגונים",
-    "adminApprovalsSubtitle": "ניהול בקשות ארגונים"
+    "adminApprovalsSubtitle": "ניהול בקשות ארגונים",
+    "reportBug": "דווח על באג",
+    "reportBugDesc": "דווח על בעיה או באג שנתקלת בו",
+    "bugReportTitle": "דיווח על באג",
+    "bugReportSubtitle": "תיאור הבאג או הבעיה",
+    "bugTitle": "כותרת הבאג",
+    "bugTitlePlaceholder": "לדוגמה: בעיה בהתחברות",
+    "bugDescription": "תיאור מפורט",
+    "bugDescriptionPlaceholder": "תאר את הבעיה בפירוט: מה קרה? מתי זה קרה? איך לשחזר את הבעיה?",
+    "bugReportSuccess": "הדיווח נשלח בהצלחה! תודה על עזרתך",
+    "bugReportError": "שגיאה בשליחת הדיווח. נסה שוב מאוחר יותר",
+    "sendReport": "שלח דיווח",
+    "reporting": "שולח..."
   },
   "landing": {
     "appName": "KarmaCommunity",
