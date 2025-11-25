@@ -7,7 +7,7 @@
 import React from 'react';
 import styles from '../globals/styles'; // your styles file
 import { Ionicons as Icon } from '@expo/vector-icons';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, StyleProp, ViewStyle, TextStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { useRoute, useFocusEffect, useNavigationState } from '@react-navigation/native';
@@ -17,6 +17,7 @@ import { useUser } from '../stores/userStore';
 import logger from '../utils/logger';
 import { rowDirection } from '../globals/responsive';
 import { useTranslation } from 'react-i18next';
+import AboutButton from '../components/AboutButton';
 
 
 interface TopBarNavigatorProps {
@@ -164,34 +165,44 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
   return (
     <SafeAreaView edges={['top']} style={{ backgroundColor: 'transparent' }}>
       <Animated.View
-        style={[styles.container_top_bar, animatedStyle]}
+        style={[styles.container_top_bar as StyleProp<ViewStyle>, animatedStyle]}
         onLayout={(e) => setMeasuredHeight(e.nativeEvent.layout.height)}
       >
 
-      <View style={styles.topBarIconsRow}>
-        <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={styles.topBarIconButton}>
+      <View style={styles.topBarIconsRow as StyleProp<ViewStyle>}>
+        <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={styles.topBarIconButton as StyleProp<ViewStyle>}>
           <Icon name="settings-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('NotificationsScreen')} style={styles.topBarIconButton}>
+        <TouchableOpacity onPress={() => navigation.navigate('NotificationsScreen')} style={styles.topBarIconButton as StyleProp<ViewStyle>}>
           <Icon name="notifications-circle-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
       </View>
 
       {/* Title */}
-      <View style={styles.topBarTitleContainer}>
-        <Text style={styles.topBarTitle}>{title}</Text>
+      <View style={styles.topBarTitleContainer as StyleProp<ViewStyle>}>
+        <Text style={styles.topBarTitle as StyleProp<TextStyle>}>{title}</Text>
       </View>
       {/* Left Icons Group: Notifications + Settings */}
-            {/* Right Icons Group: Chat OR About (guest) */}
-            <View style={styles.topBarIconsRow}>
+      
+      {/* Right Icons Group: Chat + About (for authenticated users) OR About only (for guests) */}
+      {/* 
+        About button is now available in both guest and authenticated modes:
+        - Guest mode: Shows only About button (replaces Chat button)
+        - Authenticated mode: Shows both Chat and About buttons
+        This provides consistent access to About information across all user states.
+      */}
+      <View style={styles.topBarIconsRow as StyleProp<ViewStyle>}>
         {isGuestMode ? (
-          <TouchableOpacity onPress={() => navigation.navigate('AboutKarmaCommunityScreen')} style={styles.topBarIconButton}>
-            <Icon name="information-circle-outline" size={24} color={colors.topNavIcon} />
-          </TouchableOpacity>
+          // Guest mode: Show only About button
+          <AboutButton style={styles.topBarIconButton as StyleProp<ViewStyle>} />
         ) : (
-          <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={styles.topBarIconButton}>
-            <Icon name="chatbubbles-outline" size={24} color={colors.topNavIcon} />
-          </TouchableOpacity>
+          // Authenticated mode: Show both Chat and About buttons
+          <>
+            <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={styles.topBarIconButton as StyleProp<ViewStyle>}>
+              <Icon name="chatbubbles-outline" size={24} color={colors.topNavIcon} />
+            </TouchableOpacity>
+            <AboutButton style={styles.topBarIconButton as StyleProp<ViewStyle>} />
+          </>
         )}
       </View>
       </Animated.View>

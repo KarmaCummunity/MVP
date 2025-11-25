@@ -42,6 +42,7 @@ import './polyfills/tslib-default';
 import colors from './globals/colors';
 import { useWebMode } from './stores/webModeStore';
 import { useAppLoading } from './stores/appLoadingStore';
+import { useUser } from './stores/userStore';
 import WebModeToggleOverlay from './components/WebModeToggleOverlay';
 import { FontSizes } from "./globals/constants";
 import { logger } from './utils/loggerService';
@@ -265,11 +266,23 @@ function AppContent() {
 
   const AppNavigationRoot: React.FC = () => {
     const { mode } = useWebMode();
+    const { isAuthenticated, isGuestMode, selectedUser } = useUser();
     
-    // Add top padding in app mode to make room for toggle button
+    /**
+     * Determine if web mode toggle button should be visible
+     * Toggle is hidden for authenticated users (users who created an account)
+     * Toggle is shown for guest users and non-authenticated users
+     */
+    const shouldShowToggle = !(isAuthenticated && !isGuestMode && selectedUser);
+    
+    /**
+     * Add top padding in app mode to make room for toggle button
+     * Only add padding if toggle button is visible (not for authenticated users)
+     * This prevents unnecessary spacing when the toggle is hidden
+     */
     const containerStyle = {
       flex: 1,
-      paddingTop: Platform.OS === 'web' && mode === 'app' ? 48 : 0 // Space for toggle button in app mode
+      paddingTop: Platform.OS === 'web' && mode === 'app' && shouldShowToggle ? 48 : 0 // Space for toggle button in app mode
     };
     
     return (

@@ -20,7 +20,7 @@
 // TODO: Add proper loading states for all async operations
 // TODO: Implement proper accessibility for drag gestures and animations
 // TODO: Add unit tests for complex gesture and animation logic
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { 
   View, 
   StyleSheet, 
@@ -59,6 +59,7 @@ import { useTranslation } from 'react-i18next';
 import CommunityStatsPanel from "../components/CommunityStatsPanel";
 import PostsReelsScreen from "../components/PostsReelsScreen";
 import { useUser } from "../stores/userStore";
+import { shouldAutoOpenAboutScreen, markAboutScreenSeen } from "../utils/profileUtils";
 import GuestModeNotice from "../components/GuestModeNotice";
 import CommunityStatsGrid from "../components/CommunityStatsGrid";
 import StatDetailsModal, { StatDetails } from "../components/StatDetailsModal";
@@ -154,12 +155,13 @@ export default function HomeScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const isFocused = useIsFocused();
   const navigation = useNavigation();
-  const { selectedUser, setSelectedUser, isGuestMode, resetHomeScreenTrigger, isRealAuth } = useUser();
+  const { selectedUser, setSelectedUser, isGuestMode, resetHomeScreenTrigger, isRealAuth, isAuthenticated } = useUser();
   const [showPosts, setShowPosts] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedStat, setSelectedStat] = useState<StatDetails | null>(null);
   const [isStatModalVisible, setIsStatModalVisible] = useState(false);
   const [NativeBubblesComponent, setNativeBubblesComponent] = useState<React.ComponentType | null>(null);
+  const hasCheckedAboutAutoOpen = useRef(false);
   
   // Dynamically load FloatingBubblesSkia only on Native platforms to avoid Web bundle issues
   useEffect(() => {
@@ -188,6 +190,55 @@ export default function HomeScreen() {
   const panelHeight = useSharedValue(0);
   const panelStartHeight = useSharedValue(0);
   const HALF_THRESHOLD = SCREEN_HEIGHT * 0.5;
+
+  /**
+   * Auto-open About screen for new users with incomplete profiles
+   * 
+   * This effect checks if the About screen should be automatically opened when:
+   * - User is authenticated (not guest mode)
+   * - User profile is incomplete (missing avatar, full name, or address)
+   * - User hasn't seen the About screen yet
+   * 
+   * Once the profile is completed, the auto-open is permanently disabled for that user.
+   * The check only runs once per session to avoid multiple opens.
+   */
+  useEffect(() => {
+    const checkAndOpenAbout = async () => {
+      // Only check once per session to prevent multiple opens
+      if (hasCheckedAboutAutoOpen.current) {
+        return;
+      }
+      
+      // Wait a bit for navigation to settle before checking
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Check if About screen should auto-open
+      const shouldOpen = await shouldAutoOpenAboutScreen(
+        selectedUser,
+        isGuestMode,
+        isAuthenticated
+      );
+      
+      if (shouldOpen) {
+        console.log('🏠 HomeScreen - Auto-opening About screen for new user');
+        hasCheckedAboutAutoOpen.current = true;
+        // Mark as seen immediately to prevent multiple opens
+        await markAboutScreenSeen();
+        // Navigate to About screen after a short delay
+        setTimeout(() => {
+          (navigation as any).navigate('AboutKarmaCommunityScreen');
+        }, 500);
+      } else {
+        // Mark as checked even if not opening to prevent re-checking
+        hasCheckedAboutAutoOpen.current = true;
+      }
+    };
+    
+    // Only check if user is authenticated and not in guest mode
+    if (isAuthenticated && !isGuestMode && selectedUser) {
+      checkAndOpenAbout();
+    }
+  }, [selectedUser, isGuestMode, isAuthenticated, navigation]);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
