@@ -90,7 +90,7 @@ export default function SettingsScreen() {
 
   const handleAboutPress = () => {
     console.log('⚙️ SettingsScreen - About pressed');
-    navigation.navigate('AboutKarmaCommunityScreen' as never);
+    navigation.navigate('LandingSiteScreen' as never);
   };
 
     /**
