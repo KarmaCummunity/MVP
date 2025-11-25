@@ -487,7 +487,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
           
       {/* All - Horizontal scroll (improved) */}
       <View style={[styles.categoriesSection, { paddingVertical: sectionVerticalPad }]}>
-        <Text style={[styles.sectionTitle, { marginBottom: sectionTitleMarginBottom, fontSize: sectionTitleFontSize }]}>{t('donations:all')}</Text>
+        <Text style={[styles.sectionTitle, { marginBottom: sectionTitleMarginBottom, fontSize: sectionTitleFontSize }]}>מסכים בבניה, כרגע מכילים קישורים רלוונטים</Text>
         <View style={styles.horizontalScrollContainer}>
           <ScrollView
             ref={allScrollViewRef}
