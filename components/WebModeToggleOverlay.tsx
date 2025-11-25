@@ -7,6 +7,11 @@
 // - In site mode: centered at top of screen over landing page content
 // - Seamless switching between site mode (landing page) and app mode (login/home)
 // - Enhanced styling for better visibility and user experience
+// 
+// VISIBILITY LOGIC:
+// - Toggle button is HIDDEN for authenticated users (users who created an account)
+// - Toggle button is SHOWN for guest users and non-authenticated users
+// - This provides a cleaner UI for logged-in users who don't need to switch modes
 import React from 'react';
 import { Platform, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
@@ -18,8 +23,14 @@ import { FontSizes } from '../globals/constants';
 const WebModeToggleOverlay: React.FC = () => {
   if (Platform.OS !== 'web') return null as any;
   const { mode, setMode } = useWebMode();
-  const { isAuthenticated, isGuestMode } = useUser();
+  const { isAuthenticated, isGuestMode, selectedUser } = useUser();
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
+
+  // Hide toggle button if user is authenticated (not guest mode)
+  // Show only for guests or non-authenticated users
+  if (isAuthenticated && !isGuestMode && selectedUser) {
+    return null as any;
+  }
 
   // Dynamic container style based on mode
   const containerStyle = mode === 'app' ? styles.containerApp : styles.containerSite;
