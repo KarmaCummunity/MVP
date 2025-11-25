@@ -125,7 +125,7 @@
     "unknownUser": "משתמש לא ידוע",
     "noChats": "אין שיחות",
     "startNewOrClearSearch": "התחל שיחה חדשה או נקה חיפוש",
-    "loadConversationsError": "שגיאה בטעינת השיחות",
+    "loadConversationsError": "שגיאה בטעינת השיחות"
   },
   "home": {
     "title": "בית",
@@ -414,7 +414,7 @@
       "availableRides": "טרמפים זמינים",
       "noCost": "ללא עלות",
       "groupMembers": "חברי קבוצות"
-    },
+    }
   },
   "profile": {
     "title": "פרופיל",
@@ -443,7 +443,7 @@
       "history": "היסטוריה",
       "activityHistory": "היסטוריית פעילות",
       "favorites": "מועדפים",
-      "yourFavorites": "המועדפים שלך",
+      "yourFavorites": "המועדפים שלך"
     },
     "menu": {
       "bookmarks": "מועדפים",
@@ -453,7 +453,7 @@
       "settings": "הגדרות",
       "help": "עזרה",
       "login": "התחברות",
-      "switchUser": "שנה משתמש",
+      "switchUser": "שנה משתמש"
     },
     "activity": "פעילות",
     "history": "היסטוריה",
