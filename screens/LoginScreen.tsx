@@ -34,7 +34,7 @@ import { restAdapter } from '../utils/restAdapter';
 import { getSignInMethods, signInWithEmail as fbSignInWithEmail, signUpWithEmail as fbSignUpWithEmail, sendVerification as fbSendVerification, isEmailVerified as fbIsEmailVerified, sendPasswordReset } from '../utils/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import SimpleGoogleLoginButton from '../components/SimpleGoogleLoginButton';
+import FirebaseGoogleButton from '../components/FirebaseGoogleButton';
 import { useTranslation } from 'react-i18next';
 import i18n from '../app/i18n';
 import ScrollContainer from '../components/ScrollContainer';
@@ -456,7 +456,7 @@ export default function LoginScreen() {
           </View>
           
           <View style={styles.buttonsContainer}>
-            <SimpleGoogleLoginButton />
+            <FirebaseGoogleButton />
             
 
 
