@@ -62,7 +62,7 @@ export default function AboutButton({
       onPress();
     } else {
       // Navigate to About screen by default
-      navigation.navigate('AboutKarmaCommunityScreen' as never);
+      navigation.navigate('LandingSiteScreen' as never);
     }
   };
 
