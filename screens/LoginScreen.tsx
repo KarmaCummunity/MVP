@@ -439,7 +439,7 @@ export default function LoginScreen() {
         {/* Background Logo */}
         <View style={styles.backgroundLogoContainer} pointerEvents="none">
           <Image 
-            source={require('../assets/images/logo.png')} 
+            source={require('../assets/images/pink_logo.png')} 
             style={styles.backgroundLogo} 
             resizeMode="contain"
           />

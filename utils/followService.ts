@@ -1,5 +1,7 @@
 import { sendFollowNotification } from './notificationService';
 import { db, DB_COLLECTIONS, DatabaseService } from './databaseService';
+import { apiService } from './apiService';
+import { USE_BACKEND } from './dbConfig';
 
 export interface FollowRelationship {
   followerId: string;
@@ -136,7 +138,27 @@ export const getFollowing = async (userId: string): Promise<any[]> => {
 
 export const getFollowSuggestions = async (currentUserId: string, limit: number = 10): Promise<any[]> => {
   try {
-    // TODO: Implement real suggestion logic against backend
+    if (USE_BACKEND) {
+      // Get active users from backend, excluding current user
+      const response = await apiService.getUsers({ limit, offset: 0 });
+      if (response.success && response.data) {
+        // Filter out current user and map to UserPreview format
+        const users = (response.data as any[])
+          .filter((user: any) => user.id !== currentUserId)
+          .map((user: any) => ({
+            id: user.id,
+            name: user.name || 'ללא שם',
+            avatar: user.avatar_url || 'https://i.pravatar.cc/150?img=1',
+            bio: user.bio || '',
+            karmaPoints: user.karma_points || 0,
+            completedTasks: 0, // TODO: Get from backend if available
+            roles: ['user'], // TODO: Get from backend if available
+            isVerified: false, // TODO: Get from backend if available
+            isActive: true, // Users from backend are active by default
+          }));
+        return users.slice(0, limit);
+      }
+    }
     return [];
   } catch (error) {
     console.error('❌ Get follow suggestions error:', error);
@@ -181,7 +203,26 @@ export const getFollowHistory = async (userId: string): Promise<FollowRelationsh
 
 export const getPopularUsers = async (limit: number = 10): Promise<any[]> => {
   try {
-    // TODO: Implement popular users query against backend
+    if (USE_BACKEND) {
+      // Get popular users from backend (sorted by karma_points and last_active)
+      const response = await apiService.getUsers({ limit, offset: 0 });
+      if (response.success && response.data) {
+        // Map to UserPreview format
+        const users = (response.data as any[])
+          .map((user: any) => ({
+            id: user.id,
+            name: user.name || 'ללא שם',
+            avatar: user.avatar_url || 'https://i.pravatar.cc/150?img=1',
+            bio: user.bio || '',
+            karmaPoints: user.karma_points || 0,
+            completedTasks: 0, // TODO: Get from backend if available
+            roles: ['user'], // TODO: Get from backend if available
+            isVerified: false, // TODO: Get from backend if available
+            isActive: true, // Users from backend are active by default
+          }));
+        return users.slice(0, limit);
+      }
+    }
     return [];
   } catch (error) {
     console.error('❌ Get popular users error:', error);

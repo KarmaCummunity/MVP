@@ -2,6 +2,7 @@
 // Web-only marketing landing page for KarmaCommunity
 import React, { useEffect, useState, useRef, Suspense, lazy, useCallback } from 'react';
 import { Platform, View, Text, StyleSheet, Image, TouchableOpacity, Linking, Dimensions, ActivityIndicator, ScrollView, Animated, Modal, FlatList } from 'react-native';
+import { WebView } from 'react-native-webview';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +12,9 @@ import ScreenWrapper from '../components/ScreenWrapper';
 import { EnhancedStatsService } from '../utils/statsService';
 import { apiService } from '../utils/apiService';
 import { USE_BACKEND } from '../utils/dbConfig';
+import { useWebMode } from '../stores/webModeStore';
+import { useNavigation } from '@react-navigation/native';
+import { useUser } from '../stores/userStore';
 
 interface LandingStats {
   siteVisits: number;
@@ -168,10 +172,19 @@ type LazySectionProps = {
 };
 
 const LazySection: React.FC<LazySectionProps> = ({ section: SectionComponent, ...props }) => {
-  const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef(null);
+  // On web, load immediately to ensure DOM elements exist for navigation
+  // ב-web, טעינה מיידית כדי להבטיח שאלמנטי DOM קיימים לניווט
+  const [isVisible, setIsVisible] = useState(isWeb);
+  const ref = useRef<View>(null);
 
   useEffect(() => {
+    // On web, sections are loaded immediately, so no need for lazy loading
+    // ב-web, הסעיפים נטענים מיד, אז אין צורך ב-lazy loading
+    if (isWeb) {
+      return;
+    }
+
+    // For native, use lazy loading
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -185,12 +198,12 @@ const LazySection: React.FC<LazySectionProps> = ({ section: SectionComponent, ..
     );
 
     if (ref.current) {
-      observer.observe(ref.current);
+      observer.observe(ref.current as any);
     }
 
     return () => {
       if (ref.current) {
-        observer.unobserve(ref.current);
+        observer.unobserve(ref.current as any);
       }
     };
   }, []);
@@ -207,7 +220,7 @@ const LazySection: React.FC<LazySectionProps> = ({ section: SectionComponent, ..
 };
 
 
-const HeroSection = () => {
+const HeroSection: React.FC<{ onDonate: () => void }> = ({ onDonate }) => {
   const heroAnimation = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(heroAnimation, {
@@ -235,9 +248,10 @@ const HeroSection = () => {
               }]
             }
           ]}>
+
             <Text style={styles.welcomeTitle}>המקום בו טוב קורה</Text>
             <View style={styles.logoContainer}>
-              <Image source={require('../assets/images/logo.png')} style={styles.logo} resizeMode="contain" />
+              <Image source={require('../assets/images/pink_logo.png')} style={styles.logo} resizeMode="contain" />
               <View style={styles.logoGlow} />
             </View>
             <Text style={styles.title}>Karma Community</Text>
@@ -268,16 +282,26 @@ const HeroSection = () => {
           <Ionicons name="logo-whatsapp" color="#fff" size={isMobileWeb ? 14 : 18} /><Text style={styles.contactButtonText}>שלחו לי ווטסאפ </Text>
         </TouchableOpacity>
             </View>
+                  {/* Donation Button */}
+                  <TouchableOpacity 
+            style={styles.donationCtaButton} 
+            onPress={onDonate}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="heart" size={isMobileWeb ? 18 : 24} color="#fff" />
+            <Text style={styles.donationCtaButtonText}>תרמו לנו</Text>
+          </TouchableOpacity>
           </Animated.View>
         </View>
       </View>
   );
 }
 
-const VisionSection = () => (
+const VisionSection: React.FC<{ onGoToApp: () => void }> = ({ onGoToApp }) => (
     <Section id="section-vision" title="החזון שלנו" subtitle="הקיבוץ הקפיטליסטי" style={styles.sectionAltBackground}>
       <Text style={styles.paragraph}>
-        <Text style={styles.emphasis}>קיבוץ דגיטלי בעולם קפיטליסטי.</Text>רשת חברתית לאיחוד, ריכוז, הגנשה, והפצת פילנתרופיה ועשייה חברתית מכל הסוגים ולכל האנשים
+        <Text style={styles.emphasis}>קיבוץ דגיטלי בעולם קפיטליסטי. </Text>רשת חברתית לאיחוד, ריכוז, הגנשה, והפצת פילנתרופיה ועשייה חברתית מכל הסוגים ולכל האנשים.
+        {"\n\n"}
         <Text style={styles.emphasis}>כרגע אנחנו בתהליך הקמה.</Text> כל מה שרשום בהמשך הוא חלק מהחזון שאנחנו רוצים לבנות, וכרגע אנחנו מזמינים אתכם לעזור לבנות את זה.
       </Text>
       <Text style={styles.paragraph}>
@@ -313,6 +337,18 @@ const VisionSection = () => (
           <Ionicons name="globe" size={isMobileWeb ? 20 : 28} color={colors.success} />
           <Text style={styles.visionHighlightText}>שינוי עולמי אמיתי</Text>
         </View>
+      </View>
+      
+      {/* CTA Button - Join Us */}
+      <View style={styles.ctaRow}>
+        <TouchableOpacity 
+          style={styles.primaryCta} 
+          onPress={onGoToApp}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="people-outline" size={isMobileWeb ? 16 : 22} color="#fff" style={styles.ctaIcon} />
+          <Text style={styles.primaryCtaText}>הצטרפו אלינו</Text>
+        </TouchableOpacity>
       </View>
     </Section>
 );
@@ -525,7 +561,70 @@ const StatsDetailModal: React.FC<{
   );
 };
 
-const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean }> = ({stats, isLoadingStats}) => {
+// Donation Modal Component
+const DonationModal: React.FC<{
+  visible: boolean;
+  onClose: () => void;
+}> = ({ visible, onClose }) => {
+  const handleWhatsApp = () => {
+    logger.info('DonationModal', 'Click - whatsapp');
+    Linking.openURL('https://wa.me/972528616878');
+  };
+
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="fade"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.donationModalContainer}>
+          <View style={styles.donationModalHeader}>
+            <View style={styles.donationModalTitleRow}>
+              <Ionicons name="heart" size={isMobileWeb ? 32 : 40} color={colors.pink} />
+              <View style={styles.donationModalTitleContainer}>
+                <Text style={styles.donationModalTitle}>תרמו לנו</Text>
+                <Text style={styles.donationModalSubtitle}>כל תרומה עוזרת לנו לגדול</Text>
+              </View>
+            </View>
+            <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
+              <Ionicons name="close" size={isMobileWeb ? 24 : 32} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.donationModalContent}>
+            <View style={styles.donationMessageContainer}>
+              <Ionicons name="information-circle" size={isMobileWeb ? 24 : 32} color={colors.info} />
+              <Text style={styles.donationMessageText}>
+                מוזמנים להעביר למספר 0528616878 לנוה המייסד בביט/פייבוקס
+              </Text>
+            </View>
+
+            <View style={styles.donationButtonsContainer}>
+              <TouchableOpacity 
+                style={[styles.donationButton, styles.donationButtonWhatsApp]} 
+                onPress={handleWhatsApp}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="logo-whatsapp" size={isMobileWeb ? 20 : 28} color="#fff" />
+                <Text style={styles.donationButtonText}>ווטסאפ</Text>
+              </TouchableOpacity>
+
+            </View>
+
+            <Text style={styles.donationNoteText}>
+              תודה על התמיכה שלכם! כל תרומה עוזרת לנו להמשיך ולפתח את הקהילה.
+            </Text>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onGoToApp: () => void }> = ({stats, isLoadingStats, onGoToApp}) => {
   const [selectedStat, setSelectedStat] = useState<{
     type: string;
     title: string;
@@ -638,6 +737,18 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean }> =
           </TouchableOpacity>
         </View>
       )}
+      
+      {/* CTA Button - Go to App */}
+      <View style={styles.ctaRow}>
+        <TouchableOpacity 
+          style={styles.primaryCta} 
+          onPress={onGoToApp}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="phone-portrait-outline" size={isMobileWeb ? 16 : 22} color="#fff" style={styles.ctaIcon} />
+          <Text style={styles.primaryCtaText}>עבור לאפליקציה</Text>
+        </TouchableOpacity>
+      </View>
     </Section>
   );
 };
@@ -754,10 +865,10 @@ const HowItWorksSection = () => (
     </Section>
 );
 
-const WhoIsItForSection = () => (
+const WhoIsItForSection: React.FC<{ onDonate: () => void }> = ({ onDonate }) => (
     <Section id="section-who" title="למי זה מתאים?" subtitle="לכולם. באמת." style={styles.sectionAltBackground}>
       <Text style={styles.paragraph}>
-        <Text style={styles.emphasis}>KarmaCommunity מיועדת לכולם.</Text> עשירים ועניים, מרכז ופריפריה, לא משנה דת, גזע, מין, לאום ואפילו לא מיקום פיזי. כל אחד יכול לתת וכל אחד יכול לקבל.
+        <Text style={styles.emphasis}>קהילת קארמה מיועדת לכולם.</Text> עשירים ועניים, מרכז ופריפריה, לא משנה דת, גזע, מין, לאום ואפילו לא מיקום פיזי. כל אחד יכול לתת וכל אחד יכול לקבל.
       </Text>
       <View style={styles.whoContent}>
         <View style={styles.whoMainCard}>
@@ -771,7 +882,18 @@ const WhoIsItForSection = () => (
             <View style={styles.iconBulletRow}><Ionicons name="time-outline" size={isMobileWeb ? 14 : 18} color={colors.orange} /><Text style={styles.iconBulletText}>התנדבות וסיוע נקודתי</Text></View>
             <View style={styles.iconBulletRow}><Ionicons name="school-outline" size={isMobileWeb ? 14 : 18} color={colors.info} /><Text style={styles.iconBulletText}>שיתוף ידע ושיעורי עזר</Text></View>
             <View style={styles.iconBulletRow}><Ionicons name="heart-outline" size={isMobileWeb ? 14 : 18} color={colors.pink} /><Text style={styles.iconBulletText}>יצירת קשרים אנושיים אמיתיים</Text></View>
+            <View style={styles.iconBulletRow}><Ionicons name="people-outline" size={isMobileWeb ? 14 : 18} color={colors.green} /><Text style={styles.iconBulletText}>כמובן כולם מוזמנים להתנדב ולתרום גם לקהילה עצמה ולהיות חלק מהמייסדים</Text></View>
           </View>
+          
+          {/* Donation Button */}
+          <TouchableOpacity 
+            style={styles.donationCtaButton} 
+            onPress={onDonate}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="heart" size={isMobileWeb ? 18 : 24} color="#fff" />
+            <Text style={styles.donationCtaButtonText}>תרמו לנו</Text>
+          </TouchableOpacity>
         </View>
         
         <View style={styles.whoFutureCard}>
@@ -826,22 +948,83 @@ const ValuesSection = () => {
 
 const RoadmapSection = () => {
   const roadmapSteps = [
-    { time: 'Q4 2024', label: 'בטא סגורה לעמותות וארגונים מקומיים' },
-    { time: 'Q1 2025', label: 'פתיחת חיבורי קהילה בכל הארץ' },
-    { time: 'Q2 2025', label: 'דשבורד מתקדם לניהול מתנדבים ותרומות' },
-    { time: 'Q3 2025', label: 'שיתופי פעולה עם עיריות וגורמי רווחה' },
+    { 
+      time: 'Q1 2026', 
+      label: 'הוצאת גרסה ראשונה לאפלקציה לandroid וios',
+      icon: 'phone-portrait-outline',
+      color: colors.info
+    },
+    { 
+      time: 'Q2 2026', 
+      label: 'פיצירים מתקדמים לשיתוף מידע עם שאר העמותות וקבוצות הוואטספ והפייסבוק',
+      icon: 'share-social-outline',
+      color: colors.pink
+    },
+    { 
+      time: 'Q3 2026', 
+      label: 'שיתופי פעולה עם עיריות וגורמי רווחה',
+      icon: 'business-outline',
+      color: colors.accent
+    },
+    { 
+      time: 'Q4 2026', 
+      label: 'יציאה לחו״ל כפלטפורמה בינלאומית',
+      icon: 'globe-outline',
+      color: colors.success
+    },
+  ];
+
+  const logoEvolution = [
+    { image: require('../assets/images/landingScreen/kc_log_evo/logo-0.jpeg'), label: 'התחלה' },
+    { image: require('../assets/images/landingScreen/kc_log_evo/logo-1.jpeg'), label: 'פיתוח' },
+    { image: require('../assets/images/landingScreen/kc_log_evo/logo-2.jpeg'), label: 'שיפור' },
+    { image: require('../assets/images/landingScreen/kc_log_evo/logo-3.jpeg'), label: 'עדכון' },
+    { image: require('../assets/images/landingScreen/kc_log_evo/logo-4.png'), label: 'עכשיו' },
   ];
 
   return (
     <Section id="section-roadmap" title="מפת הדרכים שלנו" subtitle="התוכנית להרחבת האימפקט של הקהילה">
-      <View style={styles.roadmap}>
-        {roadmapSteps.map((step) => (
-          <View key={step.label} style={styles.roadItem}>
-            <Text style={styles.roadTime}>{step.time}</Text>
-            <Text style={styles.roadLabel}>{step.label}</Text>
+      <View style={styles.roadmapContainer}>
+        {roadmapSteps.map((step, index) => (
+          <View key={step.label} style={styles.roadmapItemWrapper}>
+            <View style={styles.roadmapItem}>
+              <View style={[styles.roadmapIconContainer, { backgroundColor: step.color + '15' }]}>
+                <Ionicons 
+                  name={step.icon as any} 
+                  size={isMobileWeb ? 24 : 32} 
+                  color={step.color} 
+                />
+              </View>
+              <View style={styles.roadmapContent}>
+                <View style={[styles.roadmapTimeBadge, { backgroundColor: step.color }]}>
+                  <Text style={styles.roadmapTimeText}>{step.time}</Text>
+                </View>
+                <Text style={styles.roadmapLabel}>{step.label}</Text>
+              </View>
+            </View>
+            {index < roadmapSteps.length - 1 && (
+              <View style={styles.roadmapConnector}>
+                <View style={[styles.roadmapConnectorLine, { borderColor: step.color + '40' }]} />
+              </View>
+            )}
           </View>
         ))}
       </View>
+      
+      {/* Logo Evolution Section */}
+      <View style={styles.logoEvolutionContainer}>
+        <Text style={styles.logoEvolutionTitle}>איך הדברים מתפתחים</Text>
+        <Text style={styles.logoEvolutionSubtitle}>הלוגו שלנו עבר כמה גרסאות בדרך לכאן</Text>
+        <View style={styles.logoEvolutionGrid}>
+          {logoEvolution.map((logo, index) => (
+            <View key={index} style={styles.logoEvolutionItem}>
+              <Image source={logo.image} style={styles.logoEvolutionImage} resizeMode="contain" />
+              <Text style={styles.logoEvolutionLabel}>{logo.label}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+      
       <View style={styles.brandStrip}>
         <Ionicons name="rocket-outline" size={isMobileWeb ? 18 : 24} color={colors.info} />
         <Text style={styles.trustText}>מתקדמים יחד עם הקהילה – כל פידבק משפיע על סדר העדיפויות שלנו.</Text>
@@ -850,7 +1033,7 @@ const RoadmapSection = () => {
   );
 };
 
-const AboutSection = () => (
+const AboutSection: React.FC = () => (
     <Section id="section-about" title="קהילה אחת. מטרה אחת." subtitle="הסיפור של קהילת קארמה">
       <Text style={styles.paragraph}>
         בעולם מלא ברעש, אנחנו מאמינים בכוח השקט של עשיית הטוב. קהילת קארמה נולדה מתוך צורך פשוט: לחבר בין אנשים. בין אלה שצריכים עזרה, לבין אלה שיכולים ורוצים להושיט יד. ראינו את הכפילויות, את חוסר האמון ואת המאמצים המפוזרים, והחלטנו ליצור פלטפורמה אחת שמאחדת את כולם.
@@ -865,6 +1048,22 @@ const AboutSection = () => (
       <Text style={styles.paragraph}>
         קהילת קארמה היא הדרך שלי להפוך את הטוב לנגיש יותר, ליצור פלטפורמה שמחברת בין אנשים שרוצים לעזור לאנשים שצריכים עזרה. אני מאמין בכוח של קהילה לשנות מציאות, ואשמח שתצטרפו אליי למסע הזה.
       </Text>
+      
+      {/* WhatsApp CTA Button */}
+      <View style={styles.ctaRow}>
+        <TouchableOpacity 
+          style={[styles.contactButton, { backgroundColor: '#25D366' }]} 
+          onPress={() => { 
+            logger.info('LandingSite', 'Click - whatsapp from founder section'); 
+            Linking.openURL('https://wa.me/972528616878'); 
+          }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="logo-whatsapp" color="#fff" size={isMobileWeb ? 14 : 18} />
+          <Text style={styles.contactButtonText}>שלחו לי ווטסאפ</Text>
+        </TouchableOpacity>
+      </View>
+      
       <View style={styles.githubLinkContainer}>
         <TouchableOpacity 
           style={styles.githubLinkButton}
@@ -881,67 +1080,215 @@ const AboutSection = () => (
     </Section>
 );
 
-const TestimonialsSection = () => (
-    <Section title="מה הקהילה שלנו מספרת" subtitle="סיפורים אמיתיים מהשטח" style={styles.sectionAltBackground}>
-      <View style={styles.testimonials}>
-        <View style={styles.testimonialCard}>
-          <Text style={styles.testimonialText}>"מצאתי מתנדב שתיקן לי את הדלת תוך יום! מדהים שיש קהילה שעוזרת כל כך מהר."</Text>
-          <Text style={styles.testimonialUser}>— דנה, תל אביב</Text>
-        </View>
-        <View style={styles.testimonialCard}>
-          <Text style={styles.testimonialText}>"תרמנו רהיטים דרך האפליקציה למשפחה מהעיר שלנו. הכל היה פשוט ושקוף."</Text>
-          <Text style={styles.testimonialUser}>— עידו, חיפה</Text>
-        </View>
-        <View style={styles.testimonialCard}>
-          <Text style={styles.testimonialText}>"כארגון קטן, קיבלנו חשיפה אדירה למתנדבים איכותיים. הדשבורד חסך לנו שעות."</Text>
-          <Text style={styles.testimonialUser}>— עמותת יד ללב</Text>
-        </View>
-      </View>
-    </Section>
-);
-
 const GallerySection = () => (
-    <Section title="רגעים מהקהילה" subtitle="תמונות ששוות אלף מילים (תמונות להמחשה בלבד)">
+    <Section title="רגעים מהקהילה" subtitle="תמונות ששוות אלף מילים">
       <View style={styles.galleryGrid}>
-        <Image source={require('../assets/images/android-chrome-512x512.png')} style={styles.galleryImage} />
-        <Image source={require('../assets/images/apple-touch-icon.png')} style={styles.galleryImage} />
-        <Image source={require('../assets/images/logo.png')} style={styles.galleryImage} />
+        <Image source={require('../assets/images/landingScreen/found-money.png')} style={styles.galleryImage} resizeMode="cover" />
+        <Image source={require('../assets/images/landingScreen/together.png')} style={styles.galleryImage} resizeMode="cover" />
+        <Image source={require('../assets/images/landingScreen/toy_donation.png')} style={styles.galleryImage} resizeMode="cover" />
       </View>
     </Section>
 );
 
 const PartnersSection = () => (
-    <Section title="ביחד יוצרים שינוי" subtitle="גאים לשתף פעולה עם ארגונים שחולקים את החזון שלנו" style={styles.sectionAltBackground}>
-      <View style={styles.partnersRow}>
-        <Image source={require('../assets/images/Jgive_Logo.png')} style={styles.partnerLogo} />
-        {/* Add more partner logos here */}
+  <Section title="ביחד יוצרים שינוי" subtitle="גאים לשתף פעולה עם ארגונים שחולקים את החזון שלנו" style={styles.sectionAltBackground}>
+    <View style={styles.partnersContainer}>
+      <View style={styles.partnerCard}>
+        <Image source={require('../assets/images/landingScreen/jgive-logo.png')} style={styles.partnerLogo} resizeMode="contain" />
       </View>
-    </Section>
+    </View>
+  </Section>
 );
 
-const FAQSection = () => (
-    <Section id="section-faq" title="שאלות ותשובות">
-      <View style={styles.faqItem}>
-        <Text style={styles.faqQ}>האם השימוש באפליקציה עולה כסף?</Text>
-        <Text style={styles.faqA}>לא. קהילת קארמה היא מיזם ללא מטרות רווח, והשימוש בה יהיה תמיד בחינם, לכולם.</Text>
+const InstagramSection = () => {
+  const [webViewKey, setWebViewKey] = useState(0);
+
+  return (
+    <Section id="section-instagram" title="עקבו אחרינו באינסטגרם" subtitle="תמונות וסרטונים מהקהילה שלנו" style={styles.sectionAltBackground}>
+      <View style={styles.instagramContainer}>
+        {isWeb ? (
+          <View style={styles.instagramWebViewContainer}>
+            <WebView
+              key={webViewKey}
+              source={{ uri: 'https://www.instagram.com/karma_community_/' }}
+              style={styles.instagramWebView}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              startInLoadingState={true}
+              renderLoading={() => (
+                <View style={styles.instagramLoadingContainer}>
+                  <ActivityIndicator size="large" color={colors.pink} />
+                  <Text style={styles.instagramLoadingText}>טוען אינסטגרם...</Text>
+                </View>
+              )}
+              onError={() => {
+                logger.error('LandingSite', 'Instagram WebView error');
+                setWebViewKey(prev => prev + 1); // Retry
+              }}
+            />
+          </View>
+        ) : (
+          <View style={styles.instagramFallback}>
+            <Ionicons name="logo-instagram" size={isMobileWeb ? 48 : 64} color={colors.pink} />
+            <Text style={styles.instagramFallbackText}>
+              עקבו אחרינו באינסטגרם
+            </Text>
+            <TouchableOpacity 
+              style={[styles.contactButton, { backgroundColor: '#E4405F' }]} 
+              onPress={() => { 
+                logger.info('LandingSite', 'Click - instagram from section'); 
+                Linking.openURL('https://www.instagram.com/karma_community_/'); 
+              }}
+            >
+              <Ionicons name="logo-instagram" color="#fff" size={isMobileWeb ? 14 : 18} />
+              <Text style={styles.contactButtonText}>פתח באינסטגרם</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
-      <View style={styles.faqItem}>
-        <Text style={styles.faqQ}>איך אפשר לתרום או להתנדב?</Text>
-        <Text style={styles.faqA}>הדרך הטובה ביותר היא להוריד את האפליקציה, להצטרף לקהילה ולהתחיל להגיב לבקשות שעולות. בנוסף, תמיד אפשר ליצור איתנו קשר ישירות.</Text>
+    </Section>
+  );
+};
+
+
+
+const FAQItem: React.FC<{ question: string; answer: string; icon?: string }> = ({ question, answer, icon }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const animatedHeight = useRef(new Animated.Value(0)).current;
+  const animatedRotation = useRef(new Animated.Value(0)).current;
+
+  const toggleExpanded = () => {
+    const toValue = isExpanded ? 0 : 1;
+    Animated.parallel([
+      Animated.timing(animatedHeight, {
+        toValue,
+        duration: 300,
+        useNativeDriver: false,
+      }),
+      Animated.timing(animatedRotation, {
+        toValue,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    setIsExpanded(!isExpanded);
+  };
+
+  const contentHeight = animatedHeight.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 200], // Max height for answer
+  });
+
+  const rotateInterpolate = animatedRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
+
+  return (
+    <View style={styles.faqCard}>
+      <TouchableOpacity 
+        style={styles.faqQuestionRow} 
+        onPress={toggleExpanded}
+        activeOpacity={0.7}
+      >
+        <View style={styles.faqQuestionContent}>
+          {icon && (
+            <Ionicons 
+              name={icon as any} 
+              size={isMobileWeb ? 20 : 24} 
+              color={colors.info} 
+              style={styles.faqIcon}
+            />
+          )}
+          <Text style={styles.faqQ}>{question}</Text>
       </View>
-      <View style={styles.faqItem}>
-        <Text style={styles.faqQ}>האם האפליקציה זמינה גם לאנדרואיד וגם ל-iOS?</Text>
-        <Text style={styles.faqA}>בהחלט. האפליקציה זמינה להורדה בחנויות של אפל וגוגל, וקיימת גם גרסת Web מלאה.</Text>
+        <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
+          <Ionicons 
+            name="chevron-down-outline" 
+            size={isMobileWeb ? 20 : 24} 
+            color={colors.info} 
+          />
+        </Animated.View>
+      </TouchableOpacity>
+      <Animated.View style={[styles.faqAnswerContainer, { maxHeight: contentHeight, opacity: animatedHeight }]}>
+        <Text style={styles.faqA}>{answer}</Text>
+      </Animated.View>
       </View>
-       <View style={styles.faqItem}>
-        <Text style={styles.faqQ}>האם יש פרסומות?</Text>
-        <Text style={styles.faqA}>ממש לא. הפלטפורמה נקייה לחלוטין מפרסומות ומקדשת תוכן קהילתי בלבד.</Text>
+  );
+};
+
+const FAQSection = () => {
+  const faqData = [
+    {
+      question: 'האם השימוש באפליקציה עולה כסף?',
+      answer: 'לא. קהילת קארמה היא מיזם ללא מטרות רווח, והשימוש בה יהיה תמיד בחינם, לכולם. אנחנו מאמינים שעזרה הדדית צריכה להיות נגישה לכולם, ללא כל עלות.',
+      icon: 'cash-outline',
+    },
+    {
+      question: 'איך אפשר לתרום או להתנדב?',
+      answer: 'הדרך הטובה ביותר היא להוריד את האפליקציה, להצטרף לקהילה ולהתחיל להגיב לבקשות שעולות. בנוסף, תמיד אפשר ליצור איתנו קשר ישירות דרך ווטסאפ, מייל או לקבוצת הווטסאפ שלנו. כל עזרה מוערכת!',
+      icon: 'heart-outline',
+    },
+    {
+      question: 'האם האפליקציה זמינה גם לאנדרואיד וגם ל-iOS?',
+      answer: 'האפליקציה נמצאת כרגע בתהליך בנייה. בינתיים, יש לנו אתר Web זמין לשימוש שניתן לגשת אליו מכל דפדפן, גם הוא בתהליך בנייה והתפתחות מתמשכת. אנו עובדים על גרסאות לאנדרואיד ו-iOS שיושקו בעתיד.',
+      icon: 'phone-portrait-outline',
+    },
+    {
+      question: 'האם יש פרסומות?',
+      answer: 'ממש לא. הפלטפורמה נקייה לחלוטין מפרסומות ומקדשת תוכן קהילתי בלבד. אנחנו מחויבים לשמור על חוויית משתמש נקייה וממוקדת בקהילה, ללא הסחות דעת מסחריות.',
+      icon: 'ban-outline',
+    },
+    {
+      question: 'איך מתחילים להשתמש באפליקציה?',
+      answer: 'פשוט מאוד! הורידו את האפליקציה, הירשמו עם כמה פרטים בסיסיים (או השתמשו במצב אורח), ומיד תוכלו להתחיל לפרסם בקשות או הצעות, או לדפדף ולגלות מה קורה בקהילה סביבכם.',
+      icon: 'play-circle-outline',
+    },
+    {
+      question: 'מה זה אומר "קיבוץ דיגיטלי"?',
+      answer: 'זה החזון שלנו - ליצור קהילה דיגיטלית שמתפקדת כמו קיבוץ: שיתוף, עזרה הדדית, אחריות משותפת, אבל בעולם המודרני והדיגיטלי. כל אחד יכול לתת וכל אחד יכול לקבל, בלי בירוקרטיה ובלי עמלות.',
+      icon: 'people-circle-outline',
+    },
+    {
+      question: 'איך אתם מבטיחים אבטחה ופרטיות?',
+      answer: 'אנחנו לוקחים את האבטחה והפרטיות ברצינות רבה. כל המידע מוצפן, אנחנו לא משתפים מידע עם צדדים שלישיים, ויש לנו מערכת אימות משתמשים. בנוסף, כל המשתמשים יכולים לשלוט בפרטיות שלהם ולהחליט מה לחשוף.',
+      icon: 'shield-checkmark-outline',
+    },
+    {
+      question: 'מה ההבדל בין Karma Community לבין פלטפורמות אחרות?',
+      answer: 'ההבדל העיקרי הוא שאנחנו ללא מטרות רווח, ללא פרסומות, וממוקדים 100% בקהילה ובעזרה הדדית. אנחנו לא מוכרים מידע, לא מנסים להרוויח כסף מהמשתמשים, וכל מה שאנחנו עושים הוא למען הקהילה.',
+      icon: 'star-outline',
+    },
+    {
+      question: 'איך אפשר לעזור בפיתוח האפליקציה?',
+      answer: 'אנחנו תמיד שמחים לעזרה! אפשר לעזור בקוד (הכל פתוח בגיטהאב), בעיצוב, בתוכן, בבדיקות, או פשוט להיות חלק מהקהילה ולשתף פידבק. צרו איתנו קשר דרך ווטסאפ או מייל ונשמח לספר לכם איך אפשר לעזור.',
+      icon: 'code-working-outline',
+    },
+    {
+      question: 'מה קורה אם יש בעיה טכנית?',
+      answer: 'אם נתקלתם בבעיה טכנית, אנחנו כאן לעזור! צרו איתנו קשר דרך ווטסאפ, מייל, או דרך קבוצת הווטסאפ שלנו. נשתדל לענות מהר ככל האפשר ולפתור את הבעיה. הפידבק שלכם חשוב לנו מאוד!',
+      icon: 'help-circle-outline',
+    },
+  ];
+
+  return (
+    <Section id="section-faq" title="שאלות ותשובות" subtitle="כל מה שרציתם לדעת על Karma Community">
+      <View style={styles.faqContainer}>
+        {faqData.map((item, index) => (
+          <FAQItem 
+            key={index}
+            question={item.question}
+            answer={item.answer}
+            icon={item.icon}
+          />
+        ))}
       </View>
     </Section>
 );
+};
 
 const ContactSection = () => (
-    <Section id="section-contact" title="דברו איתנו" subtitle="נשמח לשמוע מכם, לקבל פידבק או לחבר אתכם לקהילה" style={styles.sectionAltBackground}>
+    <Section id="section-contact" title="דברו איתנו והצטרפו לקהילה שעושה טוב" subtitle="נשמח לשמוע מכם, לקבל פידבק או או ביקורת וכמובן לחבר אתכם לקהילה" style={styles.sectionAltBackground}>
       <View style={styles.contactRow}>
         <TouchableOpacity style={[styles.contactButton, { backgroundColor: '#25D366' }]} onPress={() => { logger.info('LandingSite', 'Click - whatsapp direct'); Linking.openURL('https://wa.me/972528616878'); }}>
           <Ionicons name="logo-whatsapp" color="#fff" size={isMobileWeb ? 14 : 18} /><Text style={styles.contactButtonText}>שלחו לי ווטסאפ</Text>
@@ -959,23 +1306,14 @@ const ContactSection = () => (
     </Section>
 );
 
-const FinalCTASection = () => (
-    <Section title="הצטרפו לקהילה שעושה טוב" subtitle="כל אחד יכול להשפיע. בואו נבנה את זה יחד." style={styles.sectionAltBackground}>
-      <View style={styles.ctaRow}>
-        <TouchableOpacity 
-          style={styles.secondaryCta} 
-          onPress={() => { logger.info('LandingSite', 'CTA click - contact email'); Linking.openURL('mailto:navesarussi1@gmail.com'); }}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="mail-outline" size={isMobileWeb ? 16 : 22} color={colors.info} style={styles.ctaIcon} />
-          <Text style={styles.secondaryCtaText}>צרו קשר</Text>
-        </TouchableOpacity>
-      </View>
-    </Section>
-);
+    {/* <Section title="הצטרפו לקהילה שעושה טוב" subtitle="כל אחד יכול להשפיע. בואו נבנה את זה יחד." style={styles.sectionAltBackground}> */}
 
 const LandingSiteScreen: React.FC = () => {
   console.log('LandingSiteScreen - Component rendered');
+  
+  const { setMode } = useWebMode();
+  const navigation = useNavigation<any>();
+  const { isAuthenticated, isGuestMode } = useUser();
   
   const [stats, setStats] = useState<LandingStats>({
     siteVisits: 0,
@@ -988,10 +1326,29 @@ const LandingSiteScreen: React.FC = () => {
   });
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const [statsVersion, setStatsVersion] = useState<string>('');
+  const statsVersionRef = useRef<string>(''); // Use ref instead of state to prevent unnecessary re-renders
+  const [showDonationModal, setShowDonationModal] = useState(false);
   const scrollViewRef = useRef<ScrollView | null>(null);
   const scrollSpyObserverRef = useRef<IntersectionObserver | null>(null);
   const observedElementsRef = useRef<Set<HTMLElement>>(new Set());
+  
+  // Handle navigation to app mode
+  const handleGoToApp = () => {
+    logger.info('LandingSiteScreen', 'Navigate to app mode', { isAuthenticated, isGuestMode });
+    setMode('app');
+    // Navigate based on authentication status
+    if (isAuthenticated || isGuestMode) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'HomeStack' }],
+      });
+    } else {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'LoginScreen' }],
+      });
+    }
+  };
   
   // Handle navigation from floating menu
   const handleNavigate = (sectionId: string) => {
@@ -1003,31 +1360,41 @@ const LandingSiteScreen: React.FC = () => {
     
     // For web, use DOM scrolling
     if (isWeb) {
-      try {
-        const element = getSectionElement(sectionId);
-        logger.info('LandingSiteScreen', `Found element for ${sectionId}:`, {
-          found: !!element,
-          elementId: element?.id || element?.getAttribute?.('data-nativeid') || null,
-        });
-        
-        if (element) {
-          element.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start',
+      const scrollToSection = (retryCount = 0) => {
+        try {
+          const element = getSectionElement(sectionId);
+          logger.info('LandingSiteScreen', `Found element for ${sectionId}:`, {
+            found: !!element,
+            elementId: element?.id || element?.getAttribute?.('data-nativeid') || null,
+            retryCount,
           });
-          setActiveSection(sectionId);
-          logger.info('LandingSiteScreen', `Scrolled to section: ${sectionId}`);
-        } else if (sectionId === 'top') {
-          // Scroll to top if no specific section
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          setActiveSection(sectionId);
-          logger.info('LandingSiteScreen', 'Scrolled to top via window.scrollTo');
-        } else {
-          logger.warn('LandingSiteScreen', `Section not found: ${sectionId}`);
+          
+          if (element) {
+            element.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'start',
+            });
+            setActiveSection(sectionId);
+            logger.info('LandingSiteScreen', `Scrolled to section: ${sectionId}`);
+          } else if (sectionId === 'top') {
+            // Scroll to top if no specific section
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setActiveSection(sectionId);
+            logger.info('LandingSiteScreen', 'Scrolled to top via window.scrollTo');
+          } else if (retryCount < 10) {
+            // Retry if element not found yet (DOM might still be rendering)
+            // ניסיון חוזר אם האלמנט עדיין לא נמצא (DOM עדיין יכול להיות בתהליך רינדור)
+            setTimeout(() => scrollToSection(retryCount + 1), 100);
+            logger.info('LandingSiteScreen', `Retrying to find section: ${sectionId}, attempt ${retryCount + 1}`);
+          } else {
+            logger.warn('LandingSiteScreen', `Section not found after ${retryCount} retries: ${sectionId}`);
+          }
+        } catch (error) {
+          logger.error('LandingSiteScreen', 'Error scrolling to section', { error, sectionId });
         }
-      } catch (error) {
-        logger.error('LandingSiteScreen', 'Error scrolling to section', { error, sectionId });
-      }
+      };
+      
+      scrollToSection();
     } else {
       // For native, use ScrollView ref
       if (sectionId === 'top' && scrollViewRef.current) {
@@ -1084,7 +1451,7 @@ const LandingSiteScreen: React.FC = () => {
       return;
     }
 
-    logger.info('LandingSite', 'Setting up smart polling (checks every second)');
+    logger.info('LandingSite', 'Setting up smart polling (checks every 30 seconds)');
     
     const checkForUpdates = async () => {
       try {
@@ -1092,36 +1459,42 @@ const LandingSiteScreen: React.FC = () => {
         const response = await apiService.getCommunityStatsVersion();
         if (response.success && response.version) {
           const newVersion = response.version;
+          const currentVersion = statsVersionRef.current;
           
-          // Only reload if version changed
-          if (statsVersion && newVersion !== statsVersion) {
+          // Only reload if version actually changed
+          if (currentVersion && newVersion !== currentVersion) {
             logger.info('LandingSite', 'Stats version changed, reloading...', {
-              oldVersion: statsVersion,
+              oldVersion: currentVersion,
               newVersion: newVersion
             });
             await loadStats(true); // Force refresh to get latest data
+            // Update version ref only after successful reload
+            statsVersionRef.current = newVersion;
+          } else if (!currentVersion) {
+            // First time - set initial version without reloading (stats already loaded on mount)
+            statsVersionRef.current = newVersion;
+            logger.info('LandingSite', 'Initial stats version set', { version: newVersion });
           }
-          
-          // Update version for next check
-          setStatsVersion(newVersion);
+          // If version didn't change, do nothing - no re-render needed
         }
       } catch (error) {
         logger.error('LandingSite', 'Failed to check stats version', { error });
       }
     };
 
-    // Check immediately on mount
+    // Check immediately on mount (but don't reload if stats already loaded)
     checkForUpdates();
     
-    // Set up interval to check for updates every second
-    const pollInterval = setInterval(checkForUpdates, 1000);
+    // Set up interval to check for updates every 30 seconds (reduced from 5 seconds to prevent excessive checks)
+    // Only reloads if version actually changed in database
+    const pollInterval = setInterval(checkForUpdates, 30000);
 
     // Cleanup interval on unmount
     return () => {
       logger.info('LandingSite', 'Clearing smart polling interval');
       clearInterval(pollInterval);
     };
-  }, [loadStats, statsVersion]);
+  }, [loadStats]); // Removed statsVersion from dependencies to prevent re-renders
 
   useEffect(() => {
     logger.info('LandingSite', 'useEffect triggered - Landing page mounted', { isWeb, USE_BACKEND });
@@ -1196,23 +1569,6 @@ const LandingSiteScreen: React.FC = () => {
     };
   }, []);
 
-  // Auto-refresh stats every second for real-time updates
-  // רענון אוטומטי של סטטיסטיקות כל שניה לעדכונים בזמן אמת
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        logger.debug('LandingSite', 'Auto-refreshing stats');
-        await loadStats(true); // forceRefresh: true to bypass cache
-      } catch (error) {
-        logger.error('LandingSite', 'Auto-refresh failed', { error });
-      }
-    }, 1000); // Refresh every second / רענון כל שניה
-    
-    return () => {
-      logger.info('LandingSite', 'Clearing auto-refresh interval');
-      clearInterval(interval);
-    };
-  }, [loadStats]);
 
   // Scroll Spy - Track which section is currently in view
   useEffect(() => {
@@ -1247,7 +1603,7 @@ const LandingSiteScreen: React.FC = () => {
     observedElements.clear();
     scrollSpyObserverRef.current = observer;
 
-    const observeSection = (id: string) => {
+    const observeSection = (id: string, retryCount = 0) => {
       const element = getSectionElement(id);
       if (element) {
         if (!observedElements.has(element)) {
@@ -1257,14 +1613,23 @@ const LandingSiteScreen: React.FC = () => {
         }
         return true;
       }
+      
+      // Retry if element not found yet (DOM might still be rendering)
+      // ניסיון חוזר אם האלמנט עדיין לא נמצא (DOM עדיין יכול להיות בתהליך רינדור)
+      if (retryCount < 20) {
+        setTimeout(() => observeSection(id, retryCount + 1), 100);
+        if (retryCount === 0) {
+          logger.info('ScrollSpy', `Section not found yet: ${id}, will retry`);
+        }
+      } else {
+        logger.warn('ScrollSpy', `Section not found after ${retryCount} retries: ${id}`);
+      }
       return false;
     };
 
     // Observe all sections initially
     sectionIds.forEach((id) => {
-      if (!observeSection(id)) {
-        logger.warn('ScrollSpy', `Section not found: ${id}, will retry on DOM updates`);
-      }
+      observeSection(id);
     });
 
     let mutationObserver: MutationObserver | null = null;
@@ -1290,28 +1655,32 @@ const LandingSiteScreen: React.FC = () => {
       {/* Floating Navigation Menu */}
       {showFloatingMenu && <FloatingMenu onNavigate={handleNavigate} activeSection={activeSection} />}
       
+      {/* Donation Modal */}
+      <DonationModal 
+        visible={showDonationModal} 
+        onClose={() => setShowDonationModal(false)} 
+      />
+      
       <ScrollContainer
         scrollRef={scrollViewRef}
         style={styles.scrollContainer}
         contentStyle={styles.content}
         onContentSizeChange={(w, h) => logger.info('LandingSite', 'Content size changed', { width: w, height: h })}
       >
-        <HeroSection />
-        <StatsSection stats={stats} isLoadingStats={isLoadingStats} />
-        <LazySection section={VisionSection} />
+        <HeroSection onDonate={() => setShowDonationModal(true)} />
+        <StatsSection stats={stats} isLoadingStats={isLoadingStats} onGoToApp={handleGoToApp} />
+        <LazySection section={VisionSection} onGoToApp={handleGoToApp} />
         <LazySection section={ProblemsSection} />
         <LazySection section={FeaturesSection} />
         <LazySection section={AboutSection} />
+        <LazySection section={GallerySection} />
+        <LazySection section={PartnersSection} />
         <LazySection section={HowItWorksSection} />
-        <LazySection section={WhoIsItForSection} />
+        <LazySection section={WhoIsItForSection} onDonate={() => setShowDonationModal(true)} />
         <LazySection section={ValuesSection} />
         <LazySection section={RoadmapSection} />
         <LazySection section={ContactSection} />
         <LazySection section={FAQSection} />
-        <LazySection section={TestimonialsSection} />
-        <LazySection section={GallerySection} />
-        <LazySection section={PartnersSection} />
-        <LazySection section={FinalCTASection} />
 
       <View style={styles.footer}> 
         <Text style={styles.footerText}>© {new Date().getFullYear()} Karma Community — נבנה באהבה ובתמיכת הקהילה.</Text>
@@ -1566,9 +1935,60 @@ const styles = StyleSheet.create({
   },
   linksRow: { flexDirection: 'row', gap: isMobileWeb ? 12 : 24, marginTop: isMobileWeb ? 10 : 16, alignSelf: 'center', flexWrap: 'wrap', justifyContent: 'center' },
   link: { color: '#2563EB', fontWeight: '700', fontSize: isMobileWeb ? 14 : 20, padding: isMobileWeb ? 6 : 8 },
-  faqItem: { marginTop: isMobileWeb ? 12 : 20, paddingHorizontal: isMobileWeb ? 12 : 20, maxWidth: isMobileWeb ? '95%' : '90%', alignSelf: 'center' },
-  faqQ: { fontWeight: '800', color: colors.textPrimary, fontSize: isMobileWeb ? 15 : 20, marginBottom: isMobileWeb ? 6 : 8 },
-  faqA: { color: colors.textSecondary, fontSize: isMobileWeb ? 13 : 18, lineHeight: isMobileWeb ? 18 : 26 },
+  faqContainer: {
+    width: '100%',
+    maxWidth: isTablet ? 900 : '100%',
+    alignSelf: 'center',
+    gap: isMobileWeb ? 12 : 16,
+    marginTop: isMobileWeb ? 12 : 20,
+  },
+  faqCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: isMobileWeb ? 12 : 16,
+    borderWidth: 1,
+    borderColor: '#E6EEF9',
+    marginBottom: isMobileWeb ? 8 : 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  faqQuestionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: isMobileWeb ? 16 : 20,
+    backgroundColor: '#FAFBFF',
+  },
+  faqQuestionContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: isMobileWeb ? 10 : 14,
+  },
+  faqIcon: {
+    marginRight: isMobileWeb ? 4 : 6,
+  },
+  faqQ: { 
+    flex: 1,
+    fontWeight: '800', 
+    color: colors.textPrimary, 
+    fontSize: isMobileWeb ? 15 : 18, 
+    lineHeight: isMobileWeb ? 22 : 26,
+  },
+  faqAnswerContainer: {
+    paddingHorizontal: isMobileWeb ? 16 : 20,
+    paddingBottom: isMobileWeb ? 16 : 20,
+    overflow: 'hidden',
+  },
+  faqA: { 
+    color: colors.textSecondary, 
+    fontSize: isMobileWeb ? 14 : 16, 
+    lineHeight: isMobileWeb ? 20 : 24,
+    fontWeight: '400',
+  },
   iconBullets: { marginTop: isMobileWeb ? 10 : 16, gap: isMobileWeb ? 10 : 16, width: '100%', maxWidth: isMobileWeb ? '95%' : '90%', alignSelf: 'center' },
   iconBulletRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: isMobileWeb ? 10 : 16, justifyContent: 'center', paddingVertical: isMobileWeb ? 2 : 4 },
   iconBulletText: { color: colors.textPrimary, fontSize: isMobileWeb ? 13 : 18, textAlign: 'center', flex: 1 },
@@ -1628,10 +2048,131 @@ const styles = StyleSheet.create({
     fontWeight: '700', 
     fontSize: isMobileWeb ? 12 : 18,
   },
-  roadmap: { flexDirection: 'row', gap: isMobileWeb ? 8 : 16, justifyContent: 'center', marginTop: isMobileWeb ? 6 : 8, flexWrap: 'wrap' },
-  roadItem: { paddingHorizontal: isMobileWeb ? 12 : 16, paddingVertical: isMobileWeb ? 8 : 10, borderRadius: isMobileWeb ? 8 : 10, borderWidth: 1, borderColor: '#E6EEF9', backgroundColor: '#FBFDFF' },
-  roadTime: { fontWeight: '800', color: colors.info, textAlign: 'center', fontSize: isMobileWeb ? 12 : 16 },
-  roadLabel: { color: colors.textPrimary, textAlign: 'center', fontSize: isMobileWeb ? 12 : 16 },
+  roadmapContainer: {
+    marginTop: isMobileWeb ? 24 : 32,
+    width: '100%',
+    maxWidth: isTablet ? 1000 : '100%',
+    alignSelf: 'center',
+    direction: 'rtl',
+  },
+  roadmapItemWrapper: {
+    width: '100%',
+    marginBottom: isMobileWeb ? 0 : 0,
+  },
+  roadmapItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFFFFF',
+    borderRadius: isMobileWeb ? 16 : 20,
+    padding: isMobileWeb ? 16 : 24,
+    marginBottom: isMobileWeb ? 20 : 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F0F4F8',
+    direction: 'rtl',
+  },
+  roadmapIconContainer: {
+    width: isMobileWeb ? 48 : 64,
+    height: isMobileWeb ? 48 : 64,
+    borderRadius: isMobileWeb ? 24 : 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: isMobileWeb ? 12 : 16,
+    flexShrink: 0,
+  },
+  roadmapContent: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+  },
+  roadmapTimeBadge: {
+    paddingHorizontal: isMobileWeb ? 12 : 16,
+    paddingVertical: isMobileWeb ? 6 : 8,
+    borderRadius: isMobileWeb ? 8 : 12,
+    alignSelf: 'flex-end',
+    marginBottom: isMobileWeb ? 8 : 12,
+  },
+  roadmapTimeText: {
+    color: '#FFFFFF',
+    fontWeight: '900',
+    fontSize: isMobileWeb ? 14 : 16,
+    letterSpacing: 0.5,
+  },
+  roadmapLabel: {
+    color: colors.textPrimary,
+    fontSize: isMobileWeb ? 16 : 20,
+    lineHeight: isMobileWeb ? 24 : 30,
+    fontWeight: '700',
+    textAlign: 'right',
+  },
+  roadmapConnector: {
+    position: 'absolute',
+    right: isMobileWeb ? 24 : 32,
+    top: isMobileWeb ? 64 : 88,
+    height: isMobileWeb ? 20 : 24,
+    width: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 0,
+  },
+  roadmapConnectorLine: {
+    width: 2,
+    height: '100%',
+    borderLeftWidth: 2,
+    borderStyle: 'dashed',
+  },
+  logoEvolutionContainer: {
+    marginTop: isMobileWeb ? 32 : 48,
+    width: '100%',
+    alignItems: 'center',
+  },
+  logoEvolutionTitle: {
+    fontSize: isMobileWeb ? 20 : 28,
+    fontWeight: '900',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: isMobileWeb ? 8 : 12,
+  },
+  logoEvolutionSubtitle: {
+    fontSize: isMobileWeb ? 14 : 18,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: isMobileWeb ? 20 : 28,
+    fontWeight: '500',
+  },
+  logoEvolutionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: isMobileWeb ? 12 : 20,
+    width: '100%',
+    maxWidth: isTablet ? 800 : '100%',
+  },
+  logoEvolutionItem: {
+    alignItems: 'center',
+    gap: isMobileWeb ? 8 : 12,
+    flex: 1,
+    minWidth: isMobileWeb ? 100 : 140,
+    maxWidth: isMobileWeb ? 120 : 160,
+  },
+  logoEvolutionImage: {
+    width: isMobileWeb ? 80 : 120,
+    height: isMobileWeb ? 80 : 120,
+    borderRadius: isMobileWeb ? 12 : 16,
+    borderWidth: 2,
+    borderColor: '#E6EEF9',
+    backgroundColor: '#FFFFFF',
+  },
+  logoEvolutionLabel: {
+    fontSize: isMobileWeb ? 12 : 14,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
   brandStrip: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: isMobileWeb ? 8 : 10, paddingVertical: isMobileWeb ? 12 : 16 },
   brandIcon: { width: isMobileWeb ? 30 : 40, height: isMobileWeb ? 30 : 40, opacity: 0.9 },
   contactRow: { flexDirection: 'row', flexWrap: 'wrap', gap: isMobileWeb ? 10 : 20, justifyContent: 'center', marginTop: isMobileWeb ? 16 : 24, width: '100%' },
@@ -1776,6 +2317,12 @@ const styles = StyleSheet.create({
     borderColor: '#E6EEF9',
     backgroundColor: '#FAFBFF'
   },
+  partnersContainer: {
+    width: '100%',
+    maxWidth: isTablet ? 800 : '100%',
+    alignSelf: 'center',
+    marginTop: isMobileWeb ? 12 : 20,
+  },
   partnersRow: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -1784,11 +2331,98 @@ const styles = StyleSheet.create({
     marginTop: isMobileWeb ? 12 : 20,
     flexWrap: 'wrap'
   },
+  partnerCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: isMobileWeb ? 16 : 24,
+    padding: isMobileWeb ? 24 : 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E6EEF9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    maxWidth: isMobileWeb ? '100%' : 400,
+    alignSelf: 'center',
+  },
   partnerLogo: { 
-    height: isMobileWeb ? 40 : 60, 
-    width: isMobileWeb ? 100 : 150,
-    resizeMode: 'contain', 
-    opacity: 0.8 
+    height: isMobileWeb ? 50 : 70, 
+    width: isMobileWeb ? 120 : 180,
+    marginBottom: isMobileWeb ? 12 : 16,
+  },
+  partnerName: {
+    fontSize: isMobileWeb ? 18 : 24,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    marginBottom: isMobileWeb ? 8 : 12,
+  },
+  partnerDescription: {
+    fontSize: isMobileWeb ? 14 : 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: isMobileWeb ? 20 : 24,
+  },
+  instagramContainer: {
+    width: '100%',
+    maxWidth: isTablet ? 900 : '100%',
+    alignSelf: 'center',
+    marginTop: isMobileWeb ? 12 : 20,
+    borderRadius: isMobileWeb ? 12 : 16,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E6EEF9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  instagramEmbedContainer: {
+    width: '100%',
+    height: isMobileWeb ? 500 : 600,
+    borderRadius: isMobileWeb ? 12 : 16,
+    overflow: 'hidden',
+  },
+  instagramWebViewContainer: {
+    width: '100%',
+    height: isMobileWeb ? 500 : 600,
+    borderRadius: isMobileWeb ? 12 : 16,
+    overflow: 'hidden',
+  },
+  instagramWebView: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  instagramLoadingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    gap: isMobileWeb ? 12 : 16,
+  },
+  instagramLoadingText: {
+    fontSize: isMobileWeb ? 14 : 18,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  instagramFallback: {
+    padding: isMobileWeb ? 40 : 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: isMobileWeb ? 16 : 24,
+  },
+  instagramFallbackText: {
+    fontSize: isMobileWeb ? 16 : 20,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   trustList: { gap: isMobileWeb ? 6 : 10, marginTop: isMobileWeb ? 6 : 8, alignItems: 'center' },
   trustRow: { flexDirection: 'row-reverse', gap: isMobileWeb ? 6 : 8, alignItems: 'center' },
@@ -1820,6 +2454,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: isMobileWeb ? 8 : 20,
     top: isMobileWeb ? 60 : 100,
+    minWidth: 120,
     width: isMobileWeb ? '14%' : '10%',
     maxHeight: isMobileWeb ? '70vh' as any : (isWeb ? '80vh' as any : 600),
     backgroundColor: '#FFFFFF',
@@ -1840,7 +2475,7 @@ const styles = StyleSheet.create({
     top: isMobileWeb ? 60 : 100,
     width: isMobileWeb ? SCREEN_WIDTH * 0.05 : SCREEN_WIDTH * 0.03, // 5% for mobile, 3% for desktop
     height: isMobileWeb ? SCREEN_WIDTH * 0.05 : SCREEN_WIDTH * 0.03,
-    backgroundColor: '#FFFFFF',
+    // backgroundColor: '#FFFFFF',
     borderRadius: isMobileWeb ? SCREEN_WIDTH * 0.025 : SCREEN_WIDTH * 0.015,
     borderWidth: 1,
     borderColor: '#E6EEF9',
@@ -2292,6 +2927,161 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     lineHeight: isMobileWeb ? 20 : 26,
     fontWeight: '500',
+  },
+  // Donation Modal Styles
+  donationModalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: isMobileWeb ? 20 : 28,
+    width: '100%',
+    maxWidth: isTablet ? 500 : (isMobileWeb ? '90%' : 450),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 15,
+    overflow: 'hidden',
+  },
+  donationModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: isMobileWeb ? 20 : 28,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E6EEF9',
+    backgroundColor: '#F2F7FF',
+  },
+  donationModalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: isMobileWeb ? 12 : 16,
+    flex: 1,
+  },
+  donationModalTitleContainer: {
+    flex: 1,
+  },
+  donationModalTitle: {
+    fontSize: isMobileWeb ? 20 : 28,
+    fontWeight: '900',
+    color: colors.textPrimary,
+    marginBottom: isMobileWeb ? 4 : 6,
+  },
+  donationModalSubtitle: {
+    fontSize: isMobileWeb ? 14 : 18,
+    fontWeight: '500',
+    color: colors.textSecondary,
+  },
+  donationModalContent: {
+    padding: isMobileWeb ? 20 : 28,
+  },
+  donationMessageContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: isMobileWeb ? 12 : 16,
+    backgroundColor: '#F2F7FF',
+    borderRadius: isMobileWeb ? 12 : 16,
+    padding: isMobileWeb ? 16 : 20,
+    marginBottom: isMobileWeb ? 20 : 24,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.info,
+  },
+  donationMessageText: {
+    flex: 1,
+    fontSize: isMobileWeb ? 15 : 18,
+    color: colors.textPrimary,
+    lineHeight: isMobileWeb ? 22 : 26,
+    fontWeight: '600',
+  },
+  donationButtonsContainer: {
+    flexDirection: 'row',
+    gap: isMobileWeb ? 10 : 16,
+    marginBottom: isMobileWeb ? 16 : 20,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  donationButton: {
+    flex: 1,
+    minWidth: isMobileWeb ? 100 : 120,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: isMobileWeb ? 8 : 12,
+    paddingVertical: isMobileWeb ? 14 : 18,
+    paddingHorizontal: isMobileWeb ? 16 : 20,
+    borderRadius: isMobileWeb ? 12 : 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  donationButtonWhatsApp: {
+    backgroundColor: '#25D366',
+  },
+  donationButtonBit: {
+    backgroundColor: colors.info,
+  },
+  donationButtonPayBox: {
+    backgroundColor: '#4A90E2',
+  },
+  donationButtonText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: isMobileWeb ? 14 : 18,
+    letterSpacing: 0.3,
+  },
+  donationNoteText: {
+    fontSize: isMobileWeb ? 13 : 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: isMobileWeb ? 18 : 24,
+    fontWeight: '400',
+    fontStyle: 'italic',
+  },
+  donationCtaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: isMobileWeb ? 8 : 12,
+    backgroundColor: colors.pink,
+    paddingVertical: isMobileWeb ? 14 : 18,
+    paddingHorizontal: isMobileWeb ? 24 : 32,
+    borderRadius: isMobileWeb ? 12 : 16,
+    marginTop: isMobileWeb ? 20 : 28,
+    shadowColor: colors.pink,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  donationCtaButtonText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: isMobileWeb ? 16 : 20,
+    letterSpacing: 0.3,
+  },
+  donationCtaButtonTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: isMobileWeb ? 8 : 12,
+    backgroundColor: colors.pink,
+    paddingVertical: isMobileWeb ? 12 : 18,
+    paddingHorizontal: isMobileWeb ? 16 : 28,
+    borderRadius: isMobileWeb ? 12 : 16,
+    minWidth: isMobileWeb ? 140 : 200,
+    marginBottom: isMobileWeb ? 16 : 20,
+    alignSelf: 'center',
+    shadowColor: colors.pink,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  donationCtaButtonTextTop: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: isMobileWeb ? 13 : 18,
+    letterSpacing: 0.3,
   },
 });
 

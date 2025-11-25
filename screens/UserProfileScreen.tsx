@@ -11,7 +11,7 @@ import {
   Text,
   StyleSheet,
   SafeAreaView,
-
+  ScrollView,
   Image,
   TouchableOpacity,
   Dimensions,
@@ -26,6 +26,9 @@ import { FontSizes } from '../globals/constants';
 import { getFollowStats, followUser, unfollowUser, getUpdatedFollowCounts } from '../utils/followService';
 import { useUser } from '../stores/userStore';
 import ScrollContainer from '../components/ScrollContainer';
+import { apiService } from '../utils/apiService';
+import { USE_BACKEND } from '../utils/dbConfig';
+import { UserPreview as CharacterType } from '../globals/types';
 
 // --- Type Definitions ---
 type TabRoute = {
@@ -113,16 +116,69 @@ export default function UserProfileScreen() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followStats, setFollowStats] = useState({ followersCount: 0, followingCount: 0, isFollowing: false });
   const [updatedCounts, setUpdatedCounts] = useState({ followersCount: 0, followingCount: 0 });
+  const [user, setUser] = useState<CharacterType | null>(characterData || null);
+  const [loading, setLoading] = useState(!characterData);
   const [routes] = useState<TabRoute[]>([
     { key: 'posts', title: 'פוסטים' },
     { key: 'reels', title: 'רילס' },
     { key: 'tagged', title: 'תיוגים' },
   ]);
 
-  // Find character data - use passed characterData or search in allUsers
-  const character = characterData || allUsers.find(char => char.id === userId);
-  // Use character data only (no fallback to old users)
-  const user = character;
+  // Load user data from backend if not provided
+  useEffect(() => {
+    const loadUser = async () => {
+      if (!characterData && userId && USE_BACKEND) {
+        try {
+          setLoading(true);
+          const response = await apiService.getUserById(userId);
+          if (response.success && response.data) {
+            const userData = response.data as any;
+            // Map backend user data to CharacterType format
+            const mappedUser: CharacterType = {
+              id: userData.id,
+              name: userData.name || userName || 'ללא שם',
+              avatar: userData.avatar_url || userData.avatar || 'https://i.pravatar.cc/150?img=1',
+              bio: userData.bio || '',
+              karmaPoints: userData.karma_points || 0,
+              completedTasks: 0,
+              roles: userData.roles || ['user'],
+              isVerified: userData.is_verified || false,
+              location: userData.city ? {
+                city: userData.city,
+                country: userData.country || 'ישראל'
+              } : { city: 'ישראל', country: 'IL' },
+              joinDate: userData.join_date || userData.created_at || new Date().toISOString(),
+              interests: userData.interests || [],
+            };
+            setUser(mappedUser);
+          }
+        } catch (error) {
+          console.error('❌ Load user error:', error);
+          // Fallback to basic user data
+          setUser({
+            id: userId,
+            name: userName || 'ללא שם',
+            avatar: 'https://i.pravatar.cc/150?img=1',
+            bio: '',
+            karmaPoints: 0,
+            completedTasks: 0,
+            roles: ['user'],
+            isVerified: false,
+            location: { city: 'ישראל', country: 'IL' },
+            joinDate: new Date().toISOString(),
+            interests: [],
+          });
+        } finally {
+          setLoading(false);
+        }
+      } else if (characterData) {
+        setUser(characterData);
+        setLoading(false);
+      }
+    };
+    
+    loadUser();
+  }, [userId, userName, characterData]);
 
   // Reset state when userId changes
   useEffect(() => {
@@ -135,7 +191,7 @@ export default function UserProfileScreen() {
   // Load follow stats
   useEffect(() => {
     const loadFollowStats = async () => {
-      if (user && selectedUser) {
+      if (user && selectedUser && user.id) {
         try {
           console.log('👤 UserProfileScreen - Loading follow stats for user:', user.name);
           const stats = await getFollowStats(user.id, selectedUser.id);
@@ -157,7 +213,7 @@ export default function UserProfileScreen() {
     React.useCallback(() => {
       const refreshFollowStats = async () => {
         console.log('👤 UserProfileScreen - Screen focused, refreshing follow stats...');
-        if (user && selectedUser) {
+        if (user && selectedUser && user.id) {
           try {
             const stats = await getFollowStats(user.id, selectedUser.id);
             const counts = await getUpdatedFollowCounts(user.id);
@@ -224,6 +280,17 @@ export default function UserProfileScreen() {
     />
   );
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Ionicons name="hourglass-outline" size={60} color={colors.textSecondary} />
+          <Text style={styles.errorText}>טוען...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
@@ -236,7 +303,7 @@ export default function UserProfileScreen() {
     );
   }
 
-  console.log('👤 UserProfileScreen - Rendering profile for user:', user.name, 'userId:', userId);
+  console.log('👤 UserProfileScreen - Rendering profile for user:', user?.name || userName, 'userId:', userId);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -249,7 +316,7 @@ export default function UserProfileScreen() {
           >
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.username}>{user.name}</Text>
+          <Text style={styles.username}>{user?.name || userName || 'ללא שם'}</Text>
           <TouchableOpacity 
             style={styles.headerIcon}
             onPress={() => Alert.alert('אפשרויות', 'פתיחת אפשרויות')}
@@ -261,22 +328,24 @@ export default function UserProfileScreen() {
         {/* Profile Info */}
         <View style={styles.profileInfo}>
           <Image
-            source={{ uri: user.avatar }}
+            source={{ uri: user?.avatar || 'https://i.pravatar.cc/150?img=1' }}
             style={styles.profilePicture}
           />
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{user.postsCount || 0}</Text>
+              <Text style={styles.statNumber}>{(user as any)?.postsCount || 0}</Text>
               <Text style={styles.statLabel}>פוסטים</Text>
             </View>
             <TouchableOpacity 
               style={styles.statItem}
               onPress={() => {
-                (navigation as any).navigate('FollowersScreen', {
-                  userId: user.id,
-                  type: 'followers',
-                  title: 'עוקבים'
-                });
+                if (user?.id) {
+                  (navigation as any).navigate('FollowersScreen', {
+                    userId: user.id,
+                    type: 'followers',
+                    title: 'עוקבים'
+                  });
+                }
               }}
             >
               <Text style={styles.statNumber}>{updatedCounts.followersCount}</Text>
@@ -285,11 +354,13 @@ export default function UserProfileScreen() {
             <TouchableOpacity 
               style={styles.statItem}
               onPress={() => {
-                (navigation as any).navigate('FollowersScreen', {
-                  userId: user.id,
-                  type: 'following',
-                  title: 'עוקב אחרי'
-                });
+                if (user?.id) {
+                  (navigation as any).navigate('FollowersScreen', {
+                    userId: user.id,
+                    type: 'following',
+                    title: 'עוקב אחרי'
+                  });
+                }
               }}
             >
               <Text style={styles.statNumber}>{updatedCounts.followingCount}</Text>
@@ -300,21 +371,25 @@ export default function UserProfileScreen() {
 
         {/* User Details */}
         <View style={styles.userDetails}>
-          <Text style={styles.displayName}>{user.name}</Text>
-          <Text style={styles.bio}>{user.bio}</Text>
-          <Text style={styles.location}>
-            <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
-            {' '}{user.location.city}, {user.location.country}
-          </Text>
-          <Text style={styles.joinDate}>
-            הצטרף ב-{new Date(user.joinDate).toLocaleDateString('he-IL')}
-          </Text>
+          <Text style={styles.displayName}>{user?.name || userName || 'ללא שם'}</Text>
+          {user?.bio && <Text style={styles.bio}>{user.bio}</Text>}
+          {user?.location && user.location.city && (
+            <Text style={styles.location}>
+              <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
+              {' '}{user.location.city}{user.location.country ? `, ${user.location.country}` : ''}
+            </Text>
+          )}
+          {user?.joinDate && (
+            <Text style={styles.joinDate}>
+              הצטרף ב-{new Date(user.joinDate).toLocaleDateString('he-IL')}
+            </Text>
+          )}
           
           {/* Character-specific details */}
-          {character && (
+          {user && (
             <View style={styles.characterDetails}>
               {/* Verification badge */}
-              {character.isVerified && (
+              {user.isVerified && (
                 <View style={styles.verificationBadge}>
                   <Ionicons name="checkmark-circle" size={16} color={colors.info} />
                   <Text style={styles.verifiedText}>מאומת</Text>
@@ -322,38 +397,44 @@ export default function UserProfileScreen() {
               )}
               
               {/* Roles */}
-              <View style={styles.rolesContainer}>
-                {character.roles.map((role, index) => (
-                  <View key={index} style={styles.roleTag}>
-                    <Text style={styles.roleText}>{getRoleDisplayName(role)}</Text>
-                  </View>
-                ))}
-              </View>
-              
-              {/* Interests */}
-              <View style={styles.interestsContainer}>
-                <Text style={styles.sectionTitle}>תחומי עניין:</Text>
-                <View style={styles.interestsList}>
-                  {character.interests.slice(0, 4).map((interest, index) => (
-                    <Text key={index} style={styles.interestTag}>#{interest}</Text>
+              {user.roles && user.roles.length > 0 && (
+                <View style={styles.rolesContainer}>
+                  {user.roles.map((role, index) => (
+                    <View key={index} style={styles.roleTag}>
+                      <Text style={styles.roleText}>{getRoleDisplayName(role)}</Text>
+                    </View>
                   ))}
                 </View>
-              </View>
+              )}
+              
+              {/* Interests */}
+              {user.interests && user.interests.length > 0 && (
+                <View style={styles.interestsContainer}>
+                  <Text style={styles.sectionTitle}>תחומי עניין:</Text>
+                  <View style={styles.interestsList}>
+                    {user.interests.slice(0, 4).map((interest, index) => (
+                      <Text key={index} style={styles.interestTag}>#{interest}</Text>
+                    ))}
+                  </View>
+                </View>
+              )}
               
               {/* Activity stats */}
               <View style={styles.activityStats}>
                 <View style={styles.activityItem}>
                   <Ionicons name="checkmark-done" size={16} color={colors.success} />
-                  <Text style={styles.activityText}>{character.completedTasks} משימות הושלמו</Text>
+                  <Text style={styles.activityText}>{user.completedTasks || 0} משימות הושלמו</Text>
                 </View>
-                <View style={styles.activityItem}>
-                  <Ionicons name="heart" size={16} color={colors.error} />
-                  <Text style={styles.activityText}>{character.totalDonations} תרומות</Text>
-                </View>
-                {character.receivedDonations > 0 && (
+                {(user as any).totalDonations !== undefined && (
+                  <View style={styles.activityItem}>
+                    <Ionicons name="heart" size={16} color={colors.error} />
+                    <Text style={styles.activityText}>{(user as any).totalDonations} תרומות</Text>
+                  </View>
+                )}
+                {(user as any).receivedDonations > 0 && (
                   <View style={styles.activityItem}>
                     <Ionicons name="gift" size={16} color={colors.warning} />
-                    <Text style={styles.activityText}>{character.receivedDonations} עזרות שהתקבלו</Text>
+                    <Text style={styles.activityText}>{(user as any).receivedDonations} עזרות שהתקבלו</Text>
                   </View>
                 )}
               </View>
@@ -363,7 +444,7 @@ export default function UserProfileScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          {selectedUser && selectedUser.id !== user.id && (
+          {selectedUser && user && selectedUser.id !== user.id && (
             <TouchableOpacity 
               style={[
                 styles.followButton,
@@ -376,24 +457,29 @@ export default function UserProfileScreen() {
                 }
 
                 try {
+                  if (!user?.id) {
+                    Alert.alert('שגיאה', 'משתמש לא נמצא');
+                    return;
+                  }
+                  
                   if (isFollowing) {
                     const success = await unfollowUser(selectedUser.id, user.id);
-                                      if (success) {
-                    setIsFollowing(false);
-                    const newCounts = await getUpdatedFollowCounts(user.id);
-                    setUpdatedCounts(newCounts);
-                    setFollowStats(prev => ({ ...prev, isFollowing: false }));
-                    Alert.alert('ביטול עקיבה', 'ביטלת את העקיבה בהצלחה');
-                  }
+                    if (success) {
+                      setIsFollowing(false);
+                      const newCounts = await getUpdatedFollowCounts(user.id);
+                      setUpdatedCounts(newCounts);
+                      setFollowStats(prev => ({ ...prev, isFollowing: false }));
+                      Alert.alert('ביטול עקיבה', 'ביטלת את העקיבה בהצלחה');
+                    }
                   } else {
                     const success = await followUser(selectedUser.id, user.id);
                     if (success) {
-                    setIsFollowing(true);
-                    const newCounts = await getUpdatedFollowCounts(user.id);
-                    setUpdatedCounts(newCounts);
-                    setFollowStats(prev => ({ ...prev, isFollowing: true }));
-                    Alert.alert('עקיבה', 'התחלת לעקוב בהצלחה');
-                  }
+                      setIsFollowing(true);
+                      const newCounts = await getUpdatedFollowCounts(user.id);
+                      setUpdatedCounts(newCounts);
+                      setFollowStats(prev => ({ ...prev, isFollowing: true }));
+                      Alert.alert('עקיבה', 'התחלת לעקוב בהצלחה');
+                    }
                   }
                 } catch (error) {
                   console.error('❌ Follow/Unfollow error:', error);
@@ -410,28 +496,32 @@ export default function UserProfileScreen() {
             </TouchableOpacity>
           )}
           
-                     <TouchableOpacity 
-             style={styles.messageButton}
-             onPress={() => {
-               (navigation as any).navigate('ChatDetailScreen', {
-                 conversationId: `conv_${userId}`,
-                 otherUserId: userId,
-                 otherUserName: user.name,
-               });
-             }}
-           >
-            <Ionicons name="chatbubble-outline" size={20} color={colors.textPrimary} />
-            <Text style={styles.messageButtonText}>הודעה</Text>
-          </TouchableOpacity>
+          {user && (
+            <TouchableOpacity 
+              style={styles.messageButton}
+              onPress={() => {
+                (navigation as any).navigate('ChatDetailScreen', {
+                  conversationId: `conv_${userId}`,
+                  otherUserId: userId,
+                  otherUserName: user.name || userName || 'ללא שם',
+                });
+              }}
+            >
+              <Ionicons name="chatbubble-outline" size={20} color={colors.textPrimary} />
+              <Text style={styles.messageButtonText}>הודעה</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Karma Points */}
-        <View style={styles.karmaSection}>
-          <View style={styles.karmaItem}>
-            <Ionicons name="star" size={20} color={colors.orange} />
-            <Text style={styles.karmaText}>נקודות קארמה: {user.karmaPoints}</Text>
+        {user && (
+          <View style={styles.karmaSection}>
+            <View style={styles.karmaItem}>
+              <Ionicons name="star" size={20} color={colors.orange} />
+              <Text style={styles.karmaText}>נקודות קארמה: {user.karmaPoints || 0}</Text>
+            </View>
           </View>
-        </View>
+        )}
         
 
 

@@ -6,13 +6,13 @@ export default {
     slug: "karma-community",
     version: "1.9.5",
     orientation: "portrait",
-    icon: "./assets/images/logo.png",
+    icon: "./assets/images/pink_logo.png",
     scheme: "karma-community",
     userInterfaceStyle: "automatic",
     // שמירה על primaryColor שהיה ב-app.json
     primaryColor: "#FF69B4",
     splash: {
-      image: "./assets/images/logo.png",
+      image: "./assets/images/pink_logo.png",
       resizeMode: "contain",
       backgroundColor: "#F0F8FF"
     },
@@ -35,7 +35,7 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/images/logo.png",
+        foregroundImage: "./assets/images/pink_logo.png",
         backgroundColor: "#F0F8FF"
       },
       package: "com.navesarussi1.KarmaCommunity",
@@ -90,7 +90,7 @@ export default {
       [
         "expo-notifications",
         {
-          icon: "./assets/images/logo.png",
+          icon: "./assets/images/pink_logo.png",
           color: "#FF69B4",
           mode: "production",
           androidMode: "default",

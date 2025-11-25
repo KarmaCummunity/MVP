@@ -156,6 +156,22 @@ class ApiService {
     return this.request(`/api/users/${userId}`);
   }
 
+  async getUsers(filters: {
+    city?: string;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        params.append(key, value.toString());
+      }
+    });
+    
+    return this.request(`/api/users?${params.toString()}`);
+  }
+
   async updateUser(userId: string, updateData: any): Promise<ApiResponse> {
     return this.request(`/api/users/${userId}`, {
       method: 'PUT',

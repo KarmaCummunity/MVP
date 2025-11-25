@@ -90,7 +90,9 @@ export default function ChatListScreen() {
     if (!searchQuery.trim()) return sorted;
     const q = searchQuery.trim().toLowerCase();
     return sorted.filter(conv => {
+      if (!conv.participants || !Array.isArray(conv.participants)) return false;
       const otherId = conv.participants.find(id => id !== selectedUser.id);
+      if (!otherId) return false;
       const other = combinedUsers.find(u => u.id === otherId);
       return other?.name?.toLowerCase().includes(q);
     });
@@ -128,45 +130,51 @@ export default function ChatListScreen() {
         contentStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        {filteredSortedConversations.map(item => {
-          const otherId = item.participants.find(id => id !== selectedUser?.id);
-          let chattingUser = combinedUsers.find(u => u.id === otherId);
-          if (!chattingUser) {
-            // Fallback user if not present in any static dataset
-           chattingUser = {
-              id: otherId || 'unknown',
-              name: t('chat:unknownUser'),
-             avatar: '',
-              isOnline: false,
-              lastSeen: new Date().toISOString(),
-              status: '',
+        {filteredSortedConversations
+          .filter(item => item.participants && Array.isArray(item.participants) && item.participants.length > 0)
+          .map(item => {
+            const otherId = item.participants!.find(id => id !== selectedUser?.id);
+            if (!otherId) {
+              return null;
+            }
+            let chattingUser = combinedUsers.find(u => u.id === otherId);
+            if (!chattingUser) {
+              // Fallback user if not present in any static dataset
+              chattingUser = {
+                id: otherId || 'unknown',
+                name: t('chat:unknownUser'),
+                avatar: '',
+                isOnline: false,
+                lastSeen: new Date().toISOString(),
+                status: '',
+              };
+            }
+            const chatUser: ChatUser = {
+              id: chattingUser.id,
+              name: chattingUser.name,
+              avatar: chattingUser.avatar,
+              isOnline: Boolean((chattingUser as any).isOnline),
+              lastSeen: (chattingUser as any).lastActive || new Date().toISOString(),
+              status: (chattingUser as any).bio || '',
             };
-          }
-          const chatUser: ChatUser = {
-            id: chattingUser.id,
-            name: chattingUser.name,
-            avatar: chattingUser.avatar,
-            isOnline: Boolean((chattingUser as any).isOnline),
-            lastSeen: (chattingUser as any).lastActive || new Date().toISOString(),
-            status: (chattingUser as any).bio || '',
-          };
-          const chatConversation = {
-            id: item.id,
-            userId: otherId || '',
-            messages: [],
-            lastMessageTimestamp: item.lastMessageTime,
-            lastMessageText: item.lastMessageText,
-            unreadCount: item.unreadCount,
-          };
-          return (
-            <ChatListItem
-              key={item.id}
-              conversation={chatConversation}
-              user={chatUser}
-              onPress={() => handlePressChat(item.id, chatUser.id, chatUser.name, chatUser.avatar)}
-            />
-          );
-        })}
+            const chatConversation = {
+              id: item.id,
+              userId: otherId || '',
+              messages: [],
+              lastMessageTimestamp: item.lastMessageTime,
+              lastMessageText: item.lastMessageText,
+              unreadCount: item.unreadCount,
+            };
+            return (
+              <ChatListItem
+                key={item.id}
+                conversation={chatConversation}
+                user={chatUser}
+                onPress={() => handlePressChat(item.id, chatUser.id, chatUser.name, chatUser.avatar || '')}
+              />
+            );
+          })
+          .filter(Boolean)}
         {filteredSortedConversations.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateTitle}>{t('chat:noChats')}</Text>
