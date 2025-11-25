@@ -948,10 +948,30 @@ const ValuesSection = () => {
 
 const RoadmapSection = () => {
   const roadmapSteps = [
-    { time: 'Q4 2024', label: 'בטא סגורה לעמותות וארגונים מקומיים' },
-    { time: 'Q1 2025', label: 'פתיחת חיבורי קהילה בכל הארץ' },
-    { time: 'Q2 2025', label: 'דשבורד מתקדם לניהול מתנדבים ותרומות' },
-    { time: 'Q3 2025', label: 'שיתופי פעולה עם עיריות וגורמי רווחה' },
+    { 
+      time: 'Q1 2026', 
+      label: 'הוצאת גרסה ראשונה לאפלקציה לandroid וios',
+      icon: 'phone-portrait-outline',
+      color: colors.info
+    },
+    { 
+      time: 'Q2 2026', 
+      label: 'פיצירים מתקדמים לשיתוף מידע עם שאר העמותות וקבוצות הוואטספ והפייסבוק',
+      icon: 'share-social-outline',
+      color: colors.pink
+    },
+    { 
+      time: 'Q3 2026', 
+      label: 'שיתופי פעולה עם עיריות וגורמי רווחה',
+      icon: 'business-outline',
+      color: colors.accent
+    },
+    { 
+      time: 'Q4 2026', 
+      label: 'יציאה לחו״ל כפלטפורמה בינלאומית',
+      icon: 'globe-outline',
+      color: colors.success
+    },
   ];
 
   const logoEvolution = [
@@ -964,11 +984,29 @@ const RoadmapSection = () => {
 
   return (
     <Section id="section-roadmap" title="מפת הדרכים שלנו" subtitle="התוכנית להרחבת האימפקט של הקהילה">
-      <View style={styles.roadmap}>
-        {roadmapSteps.map((step) => (
-          <View key={step.label} style={styles.roadItem}>
-            <Text style={styles.roadTime}>{step.time}</Text>
-            <Text style={styles.roadLabel}>{step.label}</Text>
+      <View style={styles.roadmapContainer}>
+        {roadmapSteps.map((step, index) => (
+          <View key={step.label} style={styles.roadmapItemWrapper}>
+            <View style={styles.roadmapItem}>
+              <View style={[styles.roadmapIconContainer, { backgroundColor: step.color + '15' }]}>
+                <Ionicons 
+                  name={step.icon as any} 
+                  size={isMobileWeb ? 24 : 32} 
+                  color={step.color} 
+                />
+              </View>
+              <View style={styles.roadmapContent}>
+                <View style={[styles.roadmapTimeBadge, { backgroundColor: step.color }]}>
+                  <Text style={styles.roadmapTimeText}>{step.time}</Text>
+                </View>
+                <Text style={styles.roadmapLabel}>{step.label}</Text>
+              </View>
+            </View>
+            {index < roadmapSteps.length - 1 && (
+              <View style={styles.roadmapConnector}>
+                <View style={[styles.roadmapConnectorLine, { borderColor: step.color + '40' }]} />
+              </View>
+            )}
           </View>
         ))}
       </View>
@@ -1193,7 +1231,7 @@ const FAQSection = () => {
     },
     {
       question: 'האם האפליקציה זמינה גם לאנדרואיד וגם ל-iOS?',
-      answer: 'בהחלט. האפליקציה זמינה להורדה בחנויות של אפל (App Store) וגוגל (Google Play), וקיימת גם גרסת Web מלאה שניתן לגשת אליה מכל דפדפן. כל הפלטפורמות תומכות בכל התכונות.',
+      answer: 'האפליקציה נמצאת כרגע בתהליך בנייה. בינתיים, יש לנו אתר Web זמין לשימוש שניתן לגשת אליו מכל דפדפן, גם הוא בתהליך בנייה והתפתחות מתמשכת. אנו עובדים על גרסאות לאנדרואיד ו-iOS שיושקו בעתיד.',
       icon: 'phone-portrait-outline',
     },
     {
@@ -2004,10 +2042,83 @@ const styles = StyleSheet.create({
     fontWeight: '700', 
     fontSize: isMobileWeb ? 12 : 18,
   },
-  roadmap: { flexDirection: 'row', gap: isMobileWeb ? 8 : 16, justifyContent: 'center', marginTop: isMobileWeb ? 6 : 8, flexWrap: 'wrap' },
-  roadItem: { paddingHorizontal: isMobileWeb ? 12 : 16, paddingVertical: isMobileWeb ? 8 : 10, borderRadius: isMobileWeb ? 8 : 10, borderWidth: 1, borderColor: '#E6EEF9', backgroundColor: '#FBFDFF' },
-  roadTime: { fontWeight: '800', color: colors.info, textAlign: 'center', fontSize: isMobileWeb ? 12 : 16 },
-  roadLabel: { color: colors.textPrimary, textAlign: 'center', fontSize: isMobileWeb ? 12 : 16 },
+  roadmapContainer: {
+    marginTop: isMobileWeb ? 24 : 32,
+    width: '100%',
+    maxWidth: isTablet ? 1000 : '100%',
+    alignSelf: 'center',
+    direction: 'rtl',
+  },
+  roadmapItemWrapper: {
+    width: '100%',
+    marginBottom: isMobileWeb ? 0 : 0,
+  },
+  roadmapItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFFFFF',
+    borderRadius: isMobileWeb ? 16 : 20,
+    padding: isMobileWeb ? 16 : 24,
+    marginBottom: isMobileWeb ? 20 : 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F0F4F8',
+    direction: 'rtl',
+  },
+  roadmapIconContainer: {
+    width: isMobileWeb ? 48 : 64,
+    height: isMobileWeb ? 48 : 64,
+    borderRadius: isMobileWeb ? 24 : 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: isMobileWeb ? 12 : 16,
+    flexShrink: 0,
+  },
+  roadmapContent: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+  },
+  roadmapTimeBadge: {
+    paddingHorizontal: isMobileWeb ? 12 : 16,
+    paddingVertical: isMobileWeb ? 6 : 8,
+    borderRadius: isMobileWeb ? 8 : 12,
+    alignSelf: 'flex-end',
+    marginBottom: isMobileWeb ? 8 : 12,
+  },
+  roadmapTimeText: {
+    color: '#FFFFFF',
+    fontWeight: '900',
+    fontSize: isMobileWeb ? 14 : 16,
+    letterSpacing: 0.5,
+  },
+  roadmapLabel: {
+    color: colors.textPrimary,
+    fontSize: isMobileWeb ? 16 : 20,
+    lineHeight: isMobileWeb ? 24 : 30,
+    fontWeight: '700',
+    textAlign: 'right',
+  },
+  roadmapConnector: {
+    position: 'absolute',
+    right: isMobileWeb ? 24 : 32,
+    top: isMobileWeb ? 64 : 88,
+    height: isMobileWeb ? 20 : 24,
+    width: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 0,
+  },
+  roadmapConnectorLine: {
+    width: 2,
+    height: '100%',
+    borderLeftWidth: 2,
+    borderStyle: 'dashed',
+  },
   logoEvolutionContainer: {
     marginTop: isMobileWeb ? 32 : 48,
     width: '100%',
