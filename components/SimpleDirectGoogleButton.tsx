@@ -47,8 +47,10 @@ export default function SimpleDirectGoogleButton() {
 
     const processOAuthRedirect = async () => {
       const hash = window.location.hash;
+      console.log('🔍 [OAuth] Checking hash:', hash);
       
       if (hash && hash.includes('id_token=')) {
+        console.log('✅ [OAuth] Found id_token in hash!');
         setLoading(true);
         
         try {
@@ -60,6 +62,7 @@ export default function SimpleDirectGoogleButton() {
           }
 
           const profile = parseJWT(idToken);
+          console.log('👤 [OAuth] Profile:', profile);
           
           if (!profile) {
             throw new Error('Failed to parse token');
@@ -94,14 +97,17 @@ export default function SimpleDirectGoogleButton() {
           };
 
           // Update user store and persist to storage
+          console.log('💾 [OAuth] Saving user...', userData);
           await setSelectedUserWithMode(userData, 'real');
           await AsyncStorage.setItem('current_user', JSON.stringify(userData));
           await AsyncStorage.setItem('auth_mode', 'real');
+          console.log('✅ [OAuth] User saved!');
 
           // Clean URL hash
           window.history.replaceState({}, document.title, window.location.pathname);
           
           // Navigate to home screen
+          console.log('🏠 [OAuth] Navigating to HomeStack...');
           setTimeout(() => {
             navigation.replace('HomeStack');
           }, 500);
@@ -118,7 +124,7 @@ export default function SimpleDirectGoogleButton() {
   }, [setSelectedUserWithMode, navigation]);
 
   /**
-   * Initiate Google OAuth flow
+   * Initiate Google OAuth flow with POPUP (no redirect!)
    */
   const handleLogin = () => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
@@ -126,8 +132,10 @@ export default function SimpleDirectGoogleButton() {
       return;
     }
 
-    // Use root URL as redirect URI
-    const redirectUri = window.location.origin + '/';
+    setLoading(true);
+    
+    // Create a popup-friendly redirect URI
+    const redirectUri = window.location.origin + '/oauth-callback.html';
     const nonce = Math.random().toString(36).substring(7);
     
     const params = new URLSearchParams({
@@ -141,8 +149,56 @@ export default function SimpleDirectGoogleButton() {
 
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
     
-    // Redirect to Google OAuth
-    window.location.href = authUrl;
+    // Open in POPUP
+    const popup = window.open(authUrl, 'Google Login', 'width=500,height=600');
+    
+    // Listen for message from popup
+    const messageHandler = async (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
+        console.log('✅ Received auth from popup!', event.data);
+        window.removeEventListener('message', messageHandler);
+        
+        const { profile } = event.data;
+        
+        const userData = {
+          id: profile.sub,
+          name: profile.name || profile.email?.split('@')[0] || 'User',
+          email: profile.email || '',
+          avatar: profile.picture || 'https://i.pravatar.cc/150?img=1',
+          phone: '+972500000000',
+          bio: '',
+          karmaPoints: 0,
+          joinDate: new Date().toISOString(),
+          isActive: true,
+          lastActive: new Date().toISOString(),
+          location: { city: 'ישראל', country: 'IL' },
+          interests: [],
+          roles: ['user'],
+          postsCount: 0,
+          followersCount: 0,
+          followingCount: 0,
+          notifications: [
+            { type: 'system', text: 'ברוך הבא לקרמה קומיוניטי!', date: new Date().toISOString() }
+          ],
+          settings: {
+            language: 'he',
+            darkMode: false,
+            notificationsEnabled: true
+          }
+        };
+        
+        await setSelectedUserWithMode(userData, 'real');
+        await AsyncStorage.setItem('current_user', JSON.stringify(userData));
+        await AsyncStorage.setItem('auth_mode', 'real');
+        
+        popup?.close();
+        navigation.replace('HomeStack');
+      }
+    };
+    
+    window.addEventListener('message', messageHandler);
   };
 
   return (
