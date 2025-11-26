@@ -18,6 +18,7 @@ import logger from '../utils/logger';
 import { rowDirection } from '../globals/responsive';
 import { useTranslation } from 'react-i18next';
 import AboutButton from '../components/AboutButton';
+import { useUnreadNotificationsCount } from '../hooks/useUnreadNotificationsCount';
 
 
 interface TopBarNavigatorProps {
@@ -31,6 +32,7 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
   
   const route = useRoute();
   const { isGuestMode } = useUser();
+  const unreadCount = useUnreadNotificationsCount();
   const translateY = useSharedValue(0);
   const [measuredHeight, setMeasuredHeight] = React.useState(56);
   
@@ -85,6 +87,7 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
 
   // Map route names to titles using translations
   const routeTitles: Record<string, string> = {
+    SearchTab: t('common:search'),
     SearchScreen: t('common:search'),
     DonationsTab: t('donations:title'),
     DonationsScreen: t('donations:title'),
@@ -174,7 +177,16 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
           <Icon name="settings-outline" size={24} color={colors.topNavIcon} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate('NotificationsScreen')} style={styles.topBarIconButton as StyleProp<ViewStyle>}>
-          <Icon name="notifications-circle-outline" size={24} color={colors.topNavIcon} />
+          <View style={{ position: 'relative' }}>
+            <Icon name="notifications-circle-outline" size={24} color={colors.topNavIcon} />
+            {unreadCount > 0 && (
+              <View style={(styles as any).notificationBadge as StyleProp<ViewStyle>}>
+                <Text style={(styles as any).notificationBadgeText as StyleProp<TextStyle>}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
       </View>
 

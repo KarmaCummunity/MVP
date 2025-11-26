@@ -159,7 +159,11 @@ export type RootStackParamList = {
   WebViewScreen: undefined;
   PostsReelsScreen: undefined; // ADD THIS LINE - this was probably missing
   BookmarksScreen: undefined;
-  UserProfileScreen: undefined;
+  UserProfileScreen: {
+    userId: string;
+    userName: string;
+    userAvatar?: string;
+  };
   FollowersScreen: {
     userId: string;
     type: 'followers' | 'following';
@@ -177,7 +181,7 @@ export type RootStackParamList = {
 export type BottomTabNavigatorParamList = {
   DonationsTab: undefined; // Renamed to avoid nested name collision with DonationsStack's DonationsScreen
   HomeScreen: undefined; // This is the HomeScreen with the drag handle
-  SearchScreen: undefined;
+  SearchTab: undefined; // Renamed to avoid nested name collision with SearchTabStack's SearchScreen
   ProfileScreen: undefined;
   AdminTab: undefined; // Admin management tab (only visible to admins)
   SettingsScreen: undefined;

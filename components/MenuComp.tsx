@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import colors from "../globals/colors";
 import { FontSizes } from "../globals/constants";
 import { getResponsiveMenuStyles, responsiveFontSize, responsiveSpacing } from "../globals/responsive";
+import { createShadowStyle } from "../globals/styles";
 
 // Define the props that the MenuComp component will accept
 interface MenuCompProps {
@@ -145,10 +146,7 @@ const localStyles = StyleSheet.create({
     backgroundColor: colors.menuBackground,
     position: "absolute",
     // Dynamic styles applied in JSX for responsive sizing
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    ...createShadowStyle("#000", { width: 0, height: 2 }, 0.25, 3.84),
     elevation: 5,
     borderWidth: 1,
     borderColor: colors.menuBorder,

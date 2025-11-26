@@ -421,7 +421,7 @@ export class EnhancedDatabaseService {
       if (!forceRefresh) {
         const cached = await this.getCache('community_stats', cacheKey);
         if (cached) {
-          logger.debug('EnhancedDatabaseService', 'Community stats cache hit', { cacheKey });
+          // Cache hit - no need to log (reduces excessive logging)
           return cached as Record<string, unknown>; // Type assertion for cached data
         }
       } else {

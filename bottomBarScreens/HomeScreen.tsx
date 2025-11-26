@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
     marginBottom: LAYOUT_CONSTANTS.SPACING.LG,
   },
 
-     statCard: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'white', borderRadius: 12, padding: 16, margin: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4 },
+     statCard: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'white', borderRadius: 12, padding: 16, margin: 8, ...createShadowStyle('#000', { width: 0, height: 0 }, 0.1, 4) },
   statContent: {
     flex: 1,
     marginRight: LAYOUT_CONSTANTS.SPACING.MD,

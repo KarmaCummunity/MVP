@@ -233,19 +233,22 @@ export default function ChatListScreen() {
               return null;
             }
             
-            // Get user from loaded profiles, or create fallback
-            let chattingUser = usersMap.get(otherId);
+            // Get user from loaded profiles - only show if we have valid user data
+            const chattingUser = usersMap.get(otherId);
+            
+            // Don't show items without valid user data
             if (!chattingUser) {
-              // Fallback user if not loaded yet (will be loaded by useEffect)
-              chattingUser = {
-                id: otherId || 'unknown',
-                name: t('chat:unknownUser'),
-                avatar: '',
-                isOnline: false,
-                lastSeen: new Date().toISOString(),
-                status: '',
-              };
+              return null;
             }
+            
+            // Check if user has valid name (not "unknown user" or empty)
+            const unknownUserText = t('chat:unknownUser');
+            if (!chattingUser.name || 
+                chattingUser.name === unknownUserText || 
+                chattingUser.name.trim() === '') {
+              return null;
+            }
+            
             const chatUser: ChatUser = {
               id: chattingUser.id,
               name: chattingUser.name,

@@ -32,6 +32,29 @@ import { FontSizes, LAYOUT_CONSTANTS } from "./constants";
 // TODO: Implement proper cross-platform style optimization
 
 
+// Helper function to convert color string to rgba string
+const colorToRgba = (color: string, opacity: number): string => {
+  // If color is already rgba/rgb, extract RGB values
+  if (color.startsWith('rgba(')) {
+    const matches = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (matches) {
+      return `rgba(${matches[1]}, ${matches[2]}, ${matches[3]}, ${opacity})`;
+    }
+  }
+  
+  // If color is hex (#RRGGBB or #RGB)
+  if (color.startsWith('#')) {
+    const hex = color.slice(1);
+    const r = parseInt(hex.length === 3 ? hex[0] + hex[0] : hex.slice(0, 2), 16);
+    const g = parseInt(hex.length === 3 ? hex[1] + hex[1] : hex.slice(2, 4), 16);
+    const b = parseInt(hex.length === 3 ? hex[2] + hex[2] : hex.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+  }
+  
+  // Fallback to black with opacity
+  return `rgba(0, 0, 0, ${opacity})`;
+};
+
 // Helper function to create shadow styles that work on both web and mobile
 // TODO: Extract this utility function to separate utilities file
 // TODO: Replace 'any' types with proper TypeScript interfaces
@@ -45,8 +68,9 @@ export const createShadowStyle = (
   shadowRadius: number
 ) => {
   if (Platform.OS === 'web') {
+    const rgbaColor = colorToRgba(shadowColor, shadowOpacity);
     return {
-      boxShadow: `${shadowOffset.width}px ${shadowOffset.height}px ${shadowRadius}px rgba(0, 0, 0, ${shadowOpacity})`,
+      boxShadow: `${shadowOffset.width}px ${shadowOffset.height}px ${shadowRadius}px ${rgbaColor}`,
     } as any; // TODO: Replace any with proper web style type
   }
   return {
@@ -711,6 +735,33 @@ export const styles = StyleSheet.create({
    */
   topBarTitleContainer: {
     alignItems: 'center',
+  },
+  /**
+   * Badge indicator for unread notifications count on top bar icon.
+   */
+  notificationBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: colors.error,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.white,
+    ...LAYOUT_CONSTANTS.SHADOW.LIGHT,
+  },
+  /**
+   * Text inside the notification badge.
+   */
+  notificationBadgeText: {
+    color: colors.white,
+    fontSize: FontSizes.extraSmall,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 

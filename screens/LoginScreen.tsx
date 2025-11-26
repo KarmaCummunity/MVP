@@ -28,6 +28,7 @@ import {
   I18nManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { createShadowStyle } from '../globals/styles';
 import { useUser } from '../stores/userStore';
 import { db } from '../utils/databaseService';
 import { restAdapter } from '../utils/restAdapter';
@@ -892,10 +893,7 @@ const createLoginScreenStyles = () => {
       right: isDesktopWeb ? -6 : isTablet ? -5.5 : -5,
       backgroundColor: '#FFFFFF',
       borderRadius: isDesktopWeb ? 14 : isTablet ? 13 : 12,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.2,
-      shadowRadius: 2,
+      ...createShadowStyle('#000', { width: 0, height: 1 }, 0.2, 2),
       elevation: 2,
     },
     // 🔥 buttonsContainer - מרכז את כל הכפתורים
@@ -922,10 +920,7 @@ const createLoginScreenStyles = () => {
       paddingHorizontal: buttonPaddingH,
       paddingVertical: buttonPaddingV,
       alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
+      ...createShadowStyle('#000', { width: 0, height: 2 }, 0.1, 4),
       elevation: 3,
       width: '100%', // Full width instead of centered
       marginVertical: 0, // Remove vertical margin, use gap in container instead

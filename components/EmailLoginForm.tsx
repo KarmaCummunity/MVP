@@ -34,6 +34,7 @@ import {
   sendPasswordReset 
 } from '../utils/authService';
 import { restAdapter } from '../utils/restAdapter';
+import { createShadowStyle } from '../globals/styles';
 
 // TypeScript Interfaces
 interface EmailLoginFormProps {
@@ -601,10 +602,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...createShadowStyle('#000', { width: 0, height: 2 }, 0.1, 4),
     elevation: 3,
     width: '100%',
     marginVertical: 6,

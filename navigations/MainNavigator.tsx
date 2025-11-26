@@ -128,7 +128,16 @@ export default function MainNavigator() {
     <Stack.Navigator 
       key={`stack-${mode}-${isAuthenticated}-${isGuestMode}`}
       id={undefined}
-      screenOptions={{ headerShown: false }}
+      detachInactiveScreens={true}
+      screenOptions={{ 
+        headerShown: false,
+        // Fix for aria-hidden warning: prevent focus on inactive screens
+        // detachInactiveScreens already handles this, but we keep cardStyle for web compatibility
+        cardStyle: Platform.OS === 'web' ? { 
+          // On web, ensure inactive screens don't interfere with focus
+          // This prevents elements in hidden screens from receiving focus
+        } : undefined,
+      }}
       initialRouteName={initialRouteName as any}
     >
       {Platform.OS === 'web' ? (

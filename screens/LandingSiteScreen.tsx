@@ -122,47 +122,56 @@ const FloatingMenu: React.FC<{
   }
 
   return (
-    <View style={styles.floatingMenu}>
-      <TouchableOpacity 
+    <>
+      {/* Overlay שקוף שסוגר את התפריט כאשר לוחצים עליו */}
+      <TouchableOpacity
+        style={styles.menuOverlay}
+        activeOpacity={1}
         onPress={() => setIsMinimized(true)}
-        style={styles.menuHeader}
-        activeOpacity={0.7}
-      >
-        <Text style={[styles.menuTitle, { fontSize: menuSizes.titleSize }]}>תפריט ניווט</Text>
-        <Ionicons name="chevron-forward-outline" size={menuSizes.iconSize * 0.9} color={colors.textSecondary} />
-      </TouchableOpacity>
-      <ScrollView style={styles.menuItems} showsVerticalScrollIndicator={false}>
-        {menuItems.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            style={[
-              styles.menuItem,
-              { paddingVertical: menuSizes.padding, paddingHorizontal: menuSizes.padding * 1.5 },
-              activeSection === item.id && styles.menuItemActive,
-            ]}
-            onPress={() => {
-              onNavigate(item.id);
-              logger.info('FloatingMenu', `Navigate to ${item.id}`);
-            }}
-            activeOpacity={0.7}
-          >
-            <Ionicons 
-              name={item.icon as any} 
-              size={menuSizes.iconSize} 
-              color={activeSection === item.id ? colors.info : colors.textSecondary} 
-              style={styles.menuItemIcon}
-            />
-            <Text style={[
-              styles.menuItemText,
-              { fontSize: menuSizes.fontSize },
-              activeSection === item.id && styles.menuItemTextActive,
-            ]}>
-              {item.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
+      />
+      {/* התפריט הפתוח */}
+      <View style={styles.floatingMenu}>
+        <TouchableOpacity 
+          onPress={() => setIsMinimized(true)}
+          style={styles.menuHeader}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.menuTitle, { fontSize: menuSizes.titleSize }]}>תפריט ניווט</Text>
+          <Ionicons name="chevron-forward-outline" size={menuSizes.iconSize * 0.9} color={colors.textSecondary} />
+        </TouchableOpacity>
+        <ScrollView style={styles.menuItems} showsVerticalScrollIndicator={false}>
+          {menuItems.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[
+                styles.menuItem,
+                { paddingVertical: menuSizes.padding, paddingHorizontal: menuSizes.padding * 1.5 },
+                activeSection === item.id && styles.menuItemActive,
+              ]}
+              onPress={() => {
+                onNavigate(item.id);
+                logger.info('FloatingMenu', `Navigate to ${item.id}`);
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons 
+                name={item.icon as any} 
+                size={menuSizes.iconSize} 
+                color={activeSection === item.id ? colors.info : colors.textSecondary} 
+                style={styles.menuItemIcon}
+              />
+              <Text style={[
+                styles.menuItemText,
+                { fontSize: menuSizes.fontSize },
+                activeSection === item.id && styles.menuItemTextActive,
+              ]}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    </>
   );
 };
 
@@ -300,9 +309,9 @@ const HeroSection: React.FC<{ onDonate: () => void }> = ({ onDonate }) => {
 const VisionSection: React.FC<{ onGoToApp: () => void }> = ({ onGoToApp }) => (
     <Section id="section-vision" title="החזון שלנו" subtitle="הקיבוץ הקפיטליסטי" style={styles.sectionAltBackground}>
       <Text style={styles.paragraph}>
-        <Text style={styles.emphasis}>קיבוץ דגיטלי בעולם קפיטליסטי. </Text>רשת חברתית לאיחוד, ריכוז, הגנשה, והפצת פילנתרופיה ועשייה חברתית מכל הסוגים ולכל האנשים.
+        <Text style={styles.emphasis}>קיבוץ דגיטלי בעולם קפיטליסטי. </Text>רשת חברתית לאיחוד, ריכוז, הנגשה, והפצת פילנתרופיה ועשייה חברתית מכל הסוגים ולכל האנשים.
         {"\n\n"}
-        <Text style={styles.emphasis}>כרגע אנחנו בתהליך הקמה.</Text> כל מה שרשום בהמשך הוא חלק מהחזון שאנחנו רוצים לבנות, וכרגע אנחנו מזמינים אתכם לעזור לבנות את זה.
+        <Text style={styles.emphasis}>כרגע אנחנו בתהליך הקמה.</Text> כל מה שרשום בהמשך הוא חלק מהחזון שאנחנו רוצים לבנות, וכרגע אנחנו מזמינים אתכם לעזור לנו לבנות את זה.
       </Text>
       <Text style={styles.paragraph}>
         אנחנו מזמינים אתכם להצטרף אלינו לשנות את העולם וליצור שינוי חברתי אמיתי. להיות חלק ממשהו גדול, מוסרי ברמה הכי גבוהה, טכנולוגי, חברתי ועוד מלא דברים טובים.
@@ -760,7 +769,7 @@ const ProblemsSection = () => (
           <Ionicons name="copy-outline" size={isMobileWeb ? 24 : 32} color={colors.orange} style={styles.problemIcon} />
           <Text style={styles.problemTitle}>כפילות, פיזור וחוסר אמינות</Text>
           <Text style={styles.problemText}>
-            היום יש כל כך הרבה פלטפורמות, קבוצות וואטסאפ, ועמותות שמנסות לעזור. כל אחד עובד לבד, יש כפילויות, חוסר תיאום, וקשה לדעת למי אפשר לסמוך. 
+            היום יש כל כך הרבה פלטפורמות, קבוצות וואטסאפ, ועמותות שמנסות לעזור. כל אחד עובד לבד, יש כפילויות, חוסר תיאום, וקשה לדעת על מי אפשר לסמוך. 
             Karma Community מאחדת את כל זה למקום אחד, שקוף ואמין.
           </Text>
         </View>
@@ -802,7 +811,7 @@ const FeaturesSection = () => (
 const HowItWorksSection = () => (
     <Section id="section-how" title="איך זה עובד?" subtitle="תהליך פשוט וברור שמחבר בין אנשים">
       <Text style={styles.paragraph}>
-        KarmaCommunity בנויה על עקרון פשוט: כל אחד יכול לתת וכל אחד יכול לקבל. התהליך שלנו נועד להיות פשוט, שקוף וידידותי.
+        קהילת קארמה בנויה על עקרון פשוט: כל אחד יכול לתת וכל אחד יכול לקבל. התהליך שלנו נועד להיות פשוט, שקוף וידידותי.
       </Text>
       <View style={styles.stepsRow}>
         <View style={styles.stepCard}>
@@ -2450,6 +2459,15 @@ const styles = StyleSheet.create({
     fontSize: isMobileWeb ? 12 : 16,
   },
   // Floating Menu Styles
+  menuOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    zIndex: 999, // מתחת לתפריט אבל מעל התוכן
+  },
   floatingMenu: {
     position: 'absolute',
     right: isMobileWeb ? 8 : 20,

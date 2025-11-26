@@ -6,6 +6,7 @@
 // - Params: Category screens typically have no required params; navigation is by route name.
 // - External deps: react-navigation stack, TopBarNavigator, category screens in `donationScreens/`.
 import React from "react";
+import { Platform } from "react-native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { useFocusEffect } from "@react-navigation/native";
 import DonationsScreen from "../bottomBarScreens/DonationsScreen";
@@ -66,6 +67,7 @@ export default function DonationsStack() {
     <Stack.Navigator
       id={undefined}
       initialRouteName="DonationsScreen"
+      detachInactiveScreens={true}
       screenOptions={({ navigation, route }) => ({
         headerShown: true,
         header: () => (
@@ -74,6 +76,12 @@ export default function DonationsStack() {
             hideTopBar={(route?.params as any)?.hideTopBar === true}
           />
         ),
+        // Fix for aria-hidden warning: prevent focus on inactive screens
+        // detachInactiveScreens already handles this, but we keep cardStyle for web compatibility
+        cardStyle: Platform.OS === 'web' ? { 
+          // On web, ensure inactive screens don't interfere with focus
+          // This prevents elements in hidden screens from receiving focus
+        } : undefined,
       })}
     >
       <Stack.Screen name="DonationsScreen" component={DonationsScreen} />

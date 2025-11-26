@@ -86,7 +86,7 @@ const FloatingBubblesSkia = () => {
 
   const MIN_LABEL_RADIUS_FOR_STATS = 36;
   const MAX_LABEL_RADIUS_FOR_STATS = 140;
-  const REFRESH_MS = 5000;
+  const REFRESH_MS = 60000; // Refresh every 60 seconds - stats don't change frequently
 
   // Clock for animations
   const clock = useClockValue();

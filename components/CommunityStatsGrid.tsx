@@ -52,7 +52,7 @@ const CommunityStatsGrid: React.FC<CommunityStatsGridProps> = ({ onSelect }) => 
 
   useEffect(() => {
     let mounted = true;
-    const POLLING_INTERVAL = 5000; // 5 seconds
+    const POLLING_INTERVAL = 60000; // 60 seconds - stats don't change frequently
     
     const loadStats = async (forceRefresh = false) => {
       if (!mounted) return;
@@ -92,7 +92,7 @@ const CommunityStatsGrid: React.FC<CommunityStatsGridProps> = ({ onSelect }) => 
     // Initial load
     loadStats();
     
-    // Auto-refresh every 5 seconds
+    // Auto-refresh every 60 seconds
     const intervalId = setInterval(() => {
       loadStats(true); // Force refresh from server
     }, POLLING_INTERVAL);

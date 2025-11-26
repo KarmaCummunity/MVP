@@ -84,7 +84,7 @@ export default function TimeInput({
           style={{
             ...styles.input,
             fontSize: 12,
-            direction: "rtl",
+            ...(Platform.OS === 'web' ? { direction: "rtl" } : { writingDirection: "rtl" }),
             appearance: 'auto',
             WebkitAppearance: "none",
             MozAppearance: "none",

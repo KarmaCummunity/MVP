@@ -1,11 +1,12 @@
 // File overview:
 // - Purpose: Stack navigator for the Search tab.
-// - Reached from: `BottomNavigator` -> Tab 'SearchScreen'.
+// - Reached from: `BottomNavigator` -> Tab 'SearchTab'.
 // - Provides: Routes for Search, UserProfile, Followers, DiscoverPeople, ChatList, Notifications, About, Settings.
 // - Header: Replaces default header with `TopBarNavigator`.
 // - Params of interest: Optional `userId` for profile/followers; no initial params for Search.
 // - External deps: react-navigation stack, TopBarNavigator, shared screens.
 import React from 'react';
+import { Platform } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -47,9 +48,16 @@ export default function SearchTabStack(): React.ReactElement {
     <Stack.Navigator
       id={undefined}
       initialRouteName="SearchScreen"
+      detachInactiveScreens={true}
       screenOptions={({ navigation }) => ({
         headerShown: true,
         header: () => <TopBarNavigator navigation={navigation as any} />,
+        // Fix for aria-hidden warning: prevent focus on inactive screens
+        // detachInactiveScreens already handles this, but we keep cardStyle for web compatibility
+        cardStyle: Platform.OS === 'web' ? { 
+          // On web, ensure inactive screens don't interfere with focus
+          // This prevents elements in hidden screens from receiving focus
+        } : undefined,
       })}
     >
       <Stack.Screen name="SearchScreen" component={SearchScreen} />

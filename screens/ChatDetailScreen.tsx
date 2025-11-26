@@ -22,9 +22,10 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
-import { ParamListBase } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect, NavigationProp } from '@react-navigation/native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import ChatMessageBubble from '../components/ChatMessageBubble';
+import { RootStackParamList } from '../globals/types';
 import { useUser } from '../stores/userStore';
 import { getMessages, sendMessage, markMessagesAsRead, Message, subscribeToMessages } from '../utils/chatService';
 import { pickImage, pickVideo, takePhoto, pickDocument, validateFile, FileData } from '../utils/fileService';
@@ -43,12 +44,13 @@ type ChatDetailRouteParams = {
 };
 
 export default function ChatDetailScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<Record<string, ChatDetailRouteParams>, string>>();
   const routeParams = route.params || {};
   const { conversationId: initialConversationId, userName: initialUserName, userAvatar: initialUserAvatar, otherUserId } = routeParams;
   const { selectedUser } = useUser();
   const { t } = useTranslation(['chat']);
+  const tabBarHeight = useBottomTabBarHeight() || 0;
   const [conversationId, setConversationId] = useState(initialConversationId);
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -234,10 +236,13 @@ export default function ChatDetailScreen() {
       // We'll reload messages to get the updated conversation
       await loadMessages();
 
+      // Extract the actual message ID (handle both string and object return types)
+      const actualMessageId = typeof messageId === 'string' ? messageId : messageId.messageId;
+      
       // Update the temp message with the real message ID and status
       setMessages(prev => prev.map(msg => 
         msg.id === tempMessageId 
-          ? { ...msg, id: messageId, status: 'sent' as const }
+          ? { ...msg, id: actualMessageId, status: 'sent' as const }
           : msg
       ));
 
@@ -398,14 +403,14 @@ export default function ChatDetailScreen() {
             data={messages}
             keyExtractor={(item) => item.id}
             renderItem={renderMessage}
-            contentContainerStyle={styles.messagesContainer}
+            contentContainerStyle={[styles.messagesContainer, { paddingBottom: tabBarHeight + 80 }]}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
             onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
             showsVerticalScrollIndicator={false}
           />
         )}
 
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { marginBottom: tabBarHeight + 10 }]}>
           <TouchableOpacity onPress={() => setShowMediaOptions(!showMediaOptions)}>
             <Icon name="add-circle-outline" size={24} color={colors.primary} style={styles.icon} />
           </TouchableOpacity>
@@ -433,7 +438,7 @@ export default function ChatDetailScreen() {
         </View>
 
         {showMediaOptions && (
-          <View style={styles.mediaOptionsContainer}>
+          <View style={[styles.mediaOptionsContainer, { marginBottom: tabBarHeight + 10 }]}>
             <TouchableOpacity style={styles.mediaOption} onPress={handleTakePhoto}>
               <Icon name="camera" size={24} color={colors.primary} />
               <Text style={styles.mediaOptionText}>צלם תמונה</Text>
@@ -524,12 +529,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: 15,
-    paddingVertical: 10,
     paddingBottom: Platform.OS === 'android' ? 20 : 10, 
     backgroundColor: colors.backgroundPrimary,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    marginBottom: 10,
   },
   icon: {
     paddingHorizontal: 5,
@@ -543,7 +546,7 @@ const styles = StyleSheet.create({
     paddingVertical: Platform.OS === 'ios' ? 10 : 8,
     marginHorizontal: 8,
     fontSize: FontSizes.body,
-    maxHeight: 120,
+    maxHeight: "80%",
     textAlign: 'right',
     color: colors.textPrimary,
   },

@@ -320,7 +320,7 @@ function AppContent() {
 
     // Mobile width constant - iPhone 14 Pro Max width (428px) or iPhone 11 width (414px)
     // Using 428px as it's a common modern phone width
-    const MOBILE_MAX_WIDTH = 628;
+    const MOBILE_MAX_WIDTH = 1628;
 
     // Wrapper style for web to limit width and center content
     const webWrapperStyle = Platform.OS === 'web' ? {

@@ -29,6 +29,7 @@ import ScrollContainer from '../components/ScrollContainer';
 import { apiService } from '../utils/apiService';
 import { USE_BACKEND } from '../utils/dbConfig';
 import { UserPreview as CharacterType } from '../globals/types';
+import { createConversation, conversationExists } from '../utils/chatService';
 
 // --- Type Definitions ---
 type TabRoute = {
@@ -523,13 +524,34 @@ export default function UserProfileScreen() {
           {user && (
             <TouchableOpacity 
               style={styles.messageButton}
-              onPress={() => {
-                (navigation as any).navigate('ChatDetailScreen', {
-                  conversationId: `conv_${userId}`,
-                  otherUserId: userId,
-                  userName: user.name || userName || 'ללא שם',
-                  userAvatar: user.avatar || 'https://i.pravatar.cc/150?img=1',
-                });
+              onPress={async () => {
+                if (!selectedUser) {
+                  Alert.alert('שגיאה', 'יש לבחור יוזר תחילה');
+                  return;
+                }
+
+                try {
+                  const existingConvId = await conversationExists(selectedUser.id, userId);
+                  let conversationId: string;
+                  
+                  if (existingConvId) {
+                    console.log('💬 Conversation already exists:', existingConvId);
+                    conversationId = existingConvId;
+                  } else {
+                    console.log('💬 Creating new conversation...');
+                    conversationId = await createConversation([selectedUser.id, userId]);
+                  }
+                  
+                  (navigation as any).navigate('ChatDetailScreen', {
+                    conversationId,
+                    otherUserId: userId,
+                    userName: user.name || userName || 'ללא שם',
+                    userAvatar: user.avatar || 'https://i.pravatar.cc/150?img=1',
+                  });
+                } catch (error) {
+                  console.error('❌ Create chat error:', error);
+                  Alert.alert('שגיאה', 'שגיאה ביצירת השיחה');
+                }
               }}
             >
               <Ionicons name="chatbubble-outline" size={20} color={colors.textPrimary} />

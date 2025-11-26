@@ -763,9 +763,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
   },
   modernOtherGrid: {
+    
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'flex-start', // יישור להתחלה עם gap
+    justifyContent: 'center', // יישור לאמצע
     alignItems: 'flex-start',
   },
   modernSmallCard: {

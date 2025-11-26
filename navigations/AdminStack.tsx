@@ -4,6 +4,7 @@
 // - Provides: Admin dashboard and management screens.
 // - Header: Uses `TopBarNavigator`; can be hidden per-screen with route param `hideTopBar`.
 import React from "react";
+import { Platform } from "react-native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { useFocusEffect } from "@react-navigation/native";
 import AdminDashboardScreen from "../screens/AdminDashboardScreen";
@@ -27,6 +28,7 @@ export default function AdminStack() {
     <Stack.Navigator
       id={undefined}
       initialRouteName="AdminDashboard"
+      detachInactiveScreens={true}
       screenOptions={({ navigation, route }) => ({
         headerShown: true,
         header: () => (
@@ -35,6 +37,12 @@ export default function AdminStack() {
             hideTopBar={(route?.params as any)?.hideTopBar === true}
           />
         ),
+        // Fix for aria-hidden warning: prevent focus on inactive screens
+        // detachInactiveScreens already handles this, but we keep cardStyle for web compatibility
+        cardStyle: Platform.OS === 'web' ? { 
+          // On web, ensure inactive screens don't interfere with focus
+          // This prevents elements in hidden screens from receiving focus
+        } : undefined,
       })}
     >
       <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />

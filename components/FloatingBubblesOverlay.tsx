@@ -75,7 +75,7 @@ const FloatingBubbles = () => {
   const BOTTOM_SAFE_ZONE_PX = 96; // שמירת אזור הכפתור בתחתית
   const MIN_LABEL_RADIUS_FOR_STATS = 36; // מציגים סטטיסטיקה רק בבועות גדולות יחסית
   const MAX_LABEL_RADIUS_FOR_STATS = 140; // רדיוס מקסימלי לבועה עם סטטיסטיקה
-  const REFRESH_MS = 5000; // רענון נתונים כל 5 שניות
+  const REFRESH_MS = 60000; // רענון נתונים כל 60 שניות - סטטיסטיקות לא משתנות בתדירות גבוהה
 
   // Order and labels for mapping stats to bubbles - all 40+ stats
   const statKeys: Array<keyof CommunityStats> = [

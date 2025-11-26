@@ -6,6 +6,7 @@
 // - Params of interest: `hideTopBar`, `showPosts` passed by HomeScreen to control header and content.
 // - External deps: react-navigation stack, TopBarNavigator wrapper.
 import React from 'react';
+import { Platform } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -64,6 +65,7 @@ export default function HomeTabStack(): React.ReactElement {
     <Stack.Navigator
       id={undefined}
       initialRouteName={initialRouteName as keyof HomeTabStackParamList}
+      detachInactiveScreens={true}
       screenOptions={({ navigation, route }) => ({
         headerShown: true,
         header: () => (
@@ -73,6 +75,12 @@ export default function HomeTabStack(): React.ReactElement {
             showPosts={(route?.params as any)?.showPosts === true}
           />
         ),
+        // Fix for aria-hidden warning: prevent focus on inactive screens
+        // detachInactiveScreens already handles this, but we keep cardStyle for web compatibility
+        cardStyle: Platform.OS === 'web' ? { 
+          // On web, ensure inactive screens don't interfere with focus
+          // This prevents elements in hidden screens from receiving focus
+        } : undefined,
       })}
     >
       <Stack.Screen name="HomeMain" component={HomeScreen} />

@@ -13,6 +13,7 @@ import { useUser } from '../stores/userStore';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../utils/config.constants';
+import { createShadowStyle } from '../globals/styles';
 
 export default function FirebaseGoogleButton() {
   const { t } = useTranslation(['auth']);
@@ -223,10 +224,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...createShadowStyle('#000', { width: 0, height: 2 }, 0.1, 4),
     elevation: 3,
     width: '100%',
   },

@@ -44,7 +44,7 @@ import { useWebMode } from "../stores/webModeStore";
 export type BottomTabNavigatorParamList = {
   DonationsTab: undefined;
   HomeScreen: undefined;
-  SearchScreen: undefined;
+  SearchTab: undefined;
   ProfileScreen: undefined;
   AdminTab: undefined;
   SettingsScreen: undefined;
@@ -175,7 +175,7 @@ export default function BottomNavigator(): React.ReactElement {
     switch (routeName) {
       case "HomeScreen":
         return focused ? "home" : "home-outline";
-      case "SearchScreen":
+      case "SearchTab":
         return focused ? "search" : "search-outline";
       case "DonationsTab":
         return focused ? "heart" : "heart-outline";
@@ -240,7 +240,7 @@ export default function BottomNavigator(): React.ReactElement {
       >
         {!isGuestMode && <Tab.Screen name="ProfileScreen" component={ProfileTabStack} />}
         <Tab.Screen name="DonationsTab" component={DonationsStack} />
-        <Tab.Screen name="SearchScreen" component={SearchTabStack} />
+        <Tab.Screen name="SearchTab" component={SearchTabStack} />
         {isAdmin && <Tab.Screen name="AdminTab" component={AdminStack} />}
         <Tab.Screen 
           name="HomeScreen" 
