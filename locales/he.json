@@ -35,7 +35,12 @@
     "genericTryAgain": "אירעה שגיאה. נסו שוב.",
     "labels": {
       "countryIsrael": "ישראל"
-    }
+    },
+    "newChat": "שיחה חדשה",
+    "chat": "שיחה",
+    "favorites": "מועדפים",
+    "posts": "פוסטים",
+    "inactive": "לא פעיל"
   },
   "search": {
     "sortTitle": "מיון",
@@ -103,6 +108,7 @@
     "sendError": "שגיאה בשליחת התגובה"
   },
   "chat": {
+    "title": "צ׳אטים",
     "loadError": "שגיאה בטעינת ההודעות",
     "sendError": "שגיאה בשליחת ההודעה",
     "fileInvalid": "הקובץ אינו תקין",
@@ -257,6 +263,8 @@
   },
   "donations": {
     "title": "הקהילה במעשים",
+    "searchCharitiesForHelp": "חפש עמותות",
+    "searchCharitiesForDonation": "חפש עמותות",
     "forYou": "בשבילך",
     "popular": "פופולריים",
     "all": "הכל",
@@ -459,6 +467,7 @@
     "history": "היסטוריה",
     "favorites": "מועדפים",
     "discoverPeople": "גלה אנשים",
+    "discover": "גלה אנשים",
     "notifications": "התראות",
     "highlights": { "new": "חדש", "highlightIndex": "היילייט {{index}}" },
     "users": {
@@ -668,6 +677,12 @@
     "clearCacheConfirm": "האם אתה בטוח שברצונך לנקות את המטמון?",
     "clear": "נקה",
     "cacheCleared": "המטמון נוקה בהצלחה",
+    "resetLocalData": "איפוס נתונים מקומיים",
+    "resetLocalDataDesc": "מחיקת כל הנתונים השמורים במכשיר",
+    "resetLocalDataTitle": "איפוס נתונים מקומיים",
+    "resetLocalDataMessage": "פעולה זו תמחק את כל הנתונים השמורים במכשיר (צ'אטים, הודעות, העדפות וכו'). האם אתה בטוח?",
+    "resetLocalDataConfirm": "איפוס",
+    "resetLocalDataSuccess": "כל הנתונים המקומיים נמחקו בהצלחה",
     "aboutSection": "מידע",
     "about": "אודות קארמה קהילה",
     "aboutDesc": "גרסה, תנאי שימוש ועוד",

@@ -260,6 +260,7 @@ export default function SettingsScreen() {
     }
   };
 
+
   // Test function for scroll functionality (development only)
   const handleScrollTest = () => {
     console.log('🧪 SettingsScreen - Testing scroll functionality');

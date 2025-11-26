@@ -52,17 +52,17 @@ import ErrorBoundary from './components/ErrorBoundary';
 // Initialize notifications only on supported platforms
 type NotificationService = {
   setupNotificationResponseListener: (
-    callback: (response: { 
-      notification: { 
-        request: { 
-          content: { 
-            data?: { 
-              type?: string; 
-              conversationId?: string; 
-            } 
-          } 
-        } 
-      } 
+    callback: (response: {
+      notification: {
+        request: {
+          content: {
+            data?: {
+              type?: string;
+              conversationId?: string;
+            }
+          }
+        }
+      }
     }) => void
   ) => { remove?: () => void } | null;
 } | null;
@@ -77,7 +77,7 @@ if (Platform.OS !== 'web') {
 }
 
 // Complete auth session results as early as possible (important for Web OAuth flows)
-try { WebBrowser.maybeCompleteAuthSession(); } catch {}
+try { WebBrowser.maybeCompleteAuthSession(); } catch { }
 
 SplashScreen.preventAutoHideAsync();
 
@@ -86,52 +86,53 @@ SplashScreen.preventAutoHideAsync();
 
 function AppContent() {
   const { t } = useTranslation(['common']);
+  const { selectedUser } = useUser();
   // Define proper navigation param list type
   type RootParamList = {
     ChatDetailScreen: { conversationId: string };
     NotificationsScreen: undefined;
     [key: string]: any; // Allow other routes for now
   };
-  
+
   const navigationRef = useRef<NavigationContainerRef<RootParamList>>(null);
-  
+
   // Use centralized loading state instead of local state
-  const { 
-    state: { isAppReady }, 
-    setLoading, 
-    setError, 
+  const {
+    state: { isAppReady },
+    setLoading,
+    setError,
     markAppReady,
-    getCriticalError 
+    getCriticalError
   } = useAppLoading();
-  
+
   // Initialize stores on mount
   useEffect(() => {
     const initializeStores = async () => {
       try {
         logger.info('App', 'Initializing Zustand stores');
-        
+
         // Initialize web mode store (reads from localStorage synchronously on creation)
         if (Platform.OS === 'web') {
           const { useWebModeStore } = await import('./stores/webModeStore');
           useWebModeStore.getState().initialize();
         }
-        
+
         // Initialize user store
         const { useUserStore } = await import('./stores/userStore');
         await useUserStore.getState().initialize();
-        
+
         logger.info('App', 'Zustand stores initialized');
       } catch (error) {
         logger.error('App', 'Failed to initialize stores', { error });
       }
     };
-    
+
     // Initialize immediately - no delay needed
     initializeStores();
   }, []);
 
   logger.info('App', 'App component mounted');
-  
+
   // TODO: Move notification setup to dedicated notification service/hook
   // TODO: Add proper error handling for notification permission failures
   // TODO: Test notification handling on all platforms (iOS/Android/Web)
@@ -165,6 +166,38 @@ function AppContent() {
     };
   }, []);
 
+  // Start global notification listener for the current user
+  useEffect(() => {
+    if (!selectedUser) return;
+
+    // Dynamically import to avoid circular dependencies if any, or just use the required module
+    // We can use the notificationService variable we already required at the top if it's available
+    // But startNotificationListener is a named export, so we might need to require it specifically or import it at top
+
+    // Since we are in App.tsx and it's already using require for notificationService, let's use that pattern or import at top.
+    // However, startNotificationListener is a new export. Let's add it to the require at the top or just import it if we can.
+    // The file uses `import` for other things, so let's add an import at the top.
+
+    // Actually, I'll add the import at the top in a separate edit, and here just use it.
+    // Wait, I can't add import at top easily with replace_file_content if I'm editing the middle.
+    // I will use `require` here to be safe and consistent with the conditional logic at the top of App.tsx
+
+    let cleanupListener: (() => void) | undefined;
+
+    if (Platform.OS !== 'web') {
+      try {
+        const { startNotificationListener } = require('./utils/notificationService');
+        cleanupListener = startNotificationListener(selectedUser.id);
+      } catch (e) {
+        logger.warn('App', 'Failed to start notification listener', { error: e });
+      }
+    }
+
+    return () => {
+      if (cleanupListener) cleanupListener();
+    };
+  }, [selectedUser?.id]); // React to user changes
+
   // Fast initial setup to show the UI as quickly as possible
   useEffect(() => {
     const showUiQuickly = async () => {
@@ -178,7 +211,7 @@ function AppContent() {
         setError('app', e instanceof Error ? e : new Error('Unknown error during fast setup'));
       }
     };
-    
+
     showUiQuickly();
   }, [markAppReady, setError]);
 
@@ -214,7 +247,7 @@ function AppContent() {
       } finally {
         setLoading('language', false);
       }
-      
+
       // Loading fonts
       try {
         setLoading('fonts', true);
@@ -258,8 +291,8 @@ function AppContent() {
   if (!isAppReady) {
     return (
       <View style={loadingStyles.container}>
-          <ActivityIndicator size="large" color={colors.info}/>
-          <Text style={loadingStyles.loadingText}>{t('common:loading')}</Text>
+        <ActivityIndicator size="large" color={colors.info} />
+        <Text style={loadingStyles.loadingText}>{t('common:loading')}</Text>
       </View>
     );
   }
@@ -267,14 +300,14 @@ function AppContent() {
   const AppNavigationRoot: React.FC = () => {
     const { mode } = useWebMode();
     const { isAuthenticated, isGuestMode, selectedUser } = useUser();
-    
+
     /**
      * Determine if web mode toggle button should be visible
      * Toggle is hidden for authenticated users (users who created an account)
      * Toggle is shown for guest users and non-authenticated users
      */
     const shouldShowToggle = !(isAuthenticated && !isGuestMode && selectedUser);
-    
+
     /**
      * Add top padding in app mode to make room for toggle button
      * Only add padding if toggle button is visible (not for authenticated users)
@@ -284,29 +317,29 @@ function AppContent() {
       flex: 1,
       paddingTop: Platform.OS === 'web' && mode === 'app' && shouldShowToggle ? 48 : 0 // Space for toggle button in app mode
     };
-    
+
     // Mobile width constant - iPhone 14 Pro Max width (428px) or iPhone 11 width (414px)
     // Using 428px as it's a common modern phone width
     const MOBILE_MAX_WIDTH = 628;
-    
+
     // Wrapper style for web to limit width and center content
     const webWrapperStyle = Platform.OS === 'web' ? {
       width: '100%' as const,
       maxWidth: MOBILE_MAX_WIDTH,
       alignSelf: 'center' as const,
       flex: 1,
-      backgroundColor: colors.backgroundPrimary,
+      backgroundColor: colors.black,
     } : {};
-    
+
     // Background color for web wrapper - matches HTML background (#F0F8FF)
     const webBackgroundColor = Platform.OS === 'web' ? '#F0F8FF' : undefined;
-    
+
     return (
       <NavigationContainer
         key={`nav-${mode}`}
         ref={navigationRef}
         children={
-          <View style={Platform.OS === 'web' ? { flex: 1, alignItems: 'center', backgroundColor: webBackgroundColor } : { flex: 1 }}>
+          <View style={Platform.OS === 'web' ? { flex: 1, alignItems: 'center', backgroundColor: colors.black } : { flex: 1 }}>
             <View style={[containerStyle, webWrapperStyle]}>
               <MainNavigator />
               <WebModeToggleOverlay />
@@ -326,7 +359,7 @@ function AppContent() {
 // Main App component (no providers needed with Zustand)
 export default function App() {
   return (
-    <ErrorBoundary 
+    <ErrorBoundary
       onError={(error, errorInfo) => {
         logger.error('App', 'React component tree crashed', {
           error: {
@@ -354,7 +387,7 @@ const loadingStyles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.black,
   },
   loadingText: {
     marginTop: 10,

@@ -39,6 +39,7 @@ const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({ mode, onToggle }) =
 
 const localStyles = StyleSheet.create({
   modeToggleWrapper: {
+    maxWidth: '20%',
     borderRadius: 999,
     overflow: 'hidden',
     width: '40%', 

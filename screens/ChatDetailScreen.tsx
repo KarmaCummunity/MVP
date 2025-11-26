@@ -22,12 +22,14 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { ParamListBase } from '@react-navigation/native';
 import ChatMessageBubble from '../components/ChatMessageBubble';
 import { useUser } from '../stores/userStore';
 import { getMessages, sendMessage, markMessagesAsRead, Message, subscribeToMessages } from '../utils/chatService';
 import { pickImage, pickVideo, takePhoto, pickDocument, validateFile, FileData } from '../utils/fileService';
+import { apiService } from '../utils/apiService';
+import { USE_BACKEND } from '../utils/config.constants';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { Ionicons as Icon } from '@expo/vector-icons';
@@ -43,15 +45,57 @@ type ChatDetailRouteParams = {
 export default function ChatDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<Record<string, ChatDetailRouteParams>, string>>();
-  const { conversationId, userName, userAvatar, otherUserId } = route.params;
+  const routeParams = route.params || {};
+  const { conversationId: initialConversationId, userName: initialUserName, userAvatar: initialUserAvatar, otherUserId } = routeParams;
   const { selectedUser } = useUser();
   const { t } = useTranslation(['chat']);
+  const [conversationId, setConversationId] = useState(initialConversationId);
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [showMediaOptions, setShowMediaOptions] = useState(false);
+  const [userName, setUserName] = useState(initialUserName);
+  const [userAvatar, setUserAvatar] = useState(initialUserAvatar);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+
+  // Load user profile for the other user
+  const loadUserProfile = useCallback(async () => {
+    if (!USE_BACKEND || !otherUserId || isLoadingProfile) return;
+    
+    setIsLoadingProfile(true);
+    try {
+      const response = await apiService.getUserById(otherUserId);
+      if (response.success && response.data) {
+        const userData = response.data;
+        // Only update if we got valid data and the initial name was "unknown user"
+        const newName = userData.name || initialUserName || t('chat:unknownUser');
+        const newAvatar = userData.avatar_url || userData.avatar || initialUserAvatar || '';
+        
+        // Always update, but prioritize loaded data
+        setUserName(newName);
+        setUserAvatar(newAvatar);
+      } else {
+        // If user not found, keep initial values but log warning
+        console.warn('User not found:', otherUserId);
+        if (initialUserName && initialUserName !== t('chat:unknownUser')) {
+          // Keep the initial name if it's not "unknown user"
+          setUserName(initialUserName);
+          setUserAvatar(initialUserAvatar);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load user profile:', error);
+      // Keep the initial values if loading fails, but only if they're not "unknown user"
+      if (initialUserName && initialUserName !== t('chat:unknownUser')) {
+        setUserName(initialUserName);
+        setUserAvatar(initialUserAvatar);
+      }
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  }, [otherUserId, initialUserName, initialUserAvatar, t]);
 
   const loadMessages = useCallback(async () => {
     try {
@@ -69,6 +113,38 @@ export default function ChatDetailScreen() {
       setIsLoading(false);
     }
   }, [conversationId, selectedUser]);
+
+  // Update state when screen comes into focus (e.g., when returning from profile)
+  useFocusEffect(
+    React.useCallback(() => {
+      const params = route.params;
+      if (params) {
+        // Update userName if provided and different
+        if (params.userName) {
+          setUserName(prev => params.userName !== prev ? params.userName : prev);
+        }
+        // Update userAvatar if provided and different
+        if (params.userAvatar) {
+          setUserAvatar(prev => params.userAvatar !== prev ? params.userAvatar : prev);
+        }
+        // Update conversationId if provided and different
+        if (params.conversationId) {
+          setConversationId(prev => params.conversationId !== prev ? params.conversationId : prev);
+        }
+      }
+    }, [route.params])
+  );
+
+  // Load user profile on mount - prioritize loading if initial name is "unknown user"
+  useEffect(() => {
+    // If initial name is "unknown user", load immediately
+    if (initialUserName === t('chat:unknownUser') || !initialUserName) {
+      loadUserProfile();
+    } else {
+      // Otherwise, still try to load to get latest data, but don't block
+      loadUserProfile();
+    }
+  }, [loadUserProfile, initialUserName, t]);
 
   // Real-time subscription
   useEffect(() => {
@@ -91,7 +167,7 @@ export default function ChatDetailScreen() {
         unsubscribe();
       }
     };
-  }, [conversationId, selectedUser]);
+  }, [conversationId, selectedUser, loadMessages]);
 
   const generateFakeResponse = async () => {
     const responses = [
@@ -121,41 +197,62 @@ export default function ChatDetailScreen() {
   const handleSendMessage = async () => {
     if (inputText.trim() === '' || !selectedUser || isSending) return;
 
+    const messageText = inputText.trim();
+    const tempMessageId = `temp_${Date.now()}`;
+    
+    // Add message to local state immediately with "sending" status
+    const tempMessage: Message = {
+      id: tempMessageId,
+      conversationId,
+      senderId: selectedUser.id,
+      text: messageText,
+      timestamp: new Date().toISOString(),
+      read: false,
+      type: 'text',
+      status: 'sending',
+    };
+
+    setMessages(prev => [...prev, tempMessage]);
+    setInputText('');
+    setIsSending(true);
+
     try {
-      setIsSending(true);
-      const messageText = inputText.trim();
-      setInputText('');
-
-      // Add message to local state immediately with "sending" status
-      const tempMessage: Message = {
-        id: `temp_${Date.now()}`,
-        conversationId,
-        senderId: selectedUser.id,
-        text: messageText,
-        timestamp: new Date().toISOString(),
-        read: false,
-        type: 'text',
-        status: 'sending',
-      };
-
-      setMessages(prev => [...prev, tempMessage]);
-
-      // Send the message
-      await sendMessage({
-        conversationId,
+      // Send the message with fallback participants in case conversation not found
+      // Note: sendMessage may update conversationId if backend creates new conversation
+      let currentConversationId = conversationId;
+      const messageId = await sendMessage({
+        conversationId: currentConversationId,
         senderId: selectedUser.id,
         text: messageText,
         timestamp: new Date().toISOString(),
         read: false,
         type: 'text',
         status: 'sent',
-      });
+      }, [selectedUser.id, otherUserId]); // Provide fallback participants
+
+      // Check if conversation was updated (backend may have created new UUID)
+      // We'll reload messages to get the updated conversation
+      await loadMessages();
+
+      // Update the temp message with the real message ID and status
+      setMessages(prev => prev.map(msg => 
+        msg.id === tempMessageId 
+          ? { ...msg, id: messageId, status: 'sent' as const }
+          : msg
+      ));
 
     } catch (error) {
       console.error('❌ Send message error:', error);
-      Alert.alert('שגיאה', 'שגיאה בשליחת ההודעה');
-      // Restore the text if sending failed
-      setInputText(inputText);
+      
+      // Remove the temp message and restore the text
+      setMessages(prev => prev.filter(msg => msg.id !== tempMessageId));
+      setInputText(messageText);
+      
+      Alert.alert(
+        'שגיאה', 
+        'שגיאה בשליחת ההודעה. אנא נסה שוב.',
+        [{ text: 'אישור', style: 'default' }]
+      );
     } finally {
       setIsSending(false);
     }
@@ -260,12 +357,31 @@ export default function ChatDetailScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
           <Icon name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <View style={styles.headerUserInfo}>
-          <Image source={{ uri: userAvatar }} style={styles.headerAvatar} />
+        <TouchableOpacity 
+          onPress={() => {
+            navigation.navigate('UserProfileScreen', {
+              userId: otherUserId,
+              userName: userName,
+              userAvatar: userAvatar,
+            });
+          }}
+          style={styles.headerUserInfo}
+          activeOpacity={0.7}
+        >
+          <Image source={{ uri: userAvatar || 'https://i.pravatar.cc/150?img=1' }} style={styles.headerAvatar} />
           <Text style={styles.headerTitle}>{userName}</Text>
-        </View>
-        <TouchableOpacity onPress={() => Alert.alert('מידע נוסף', `מידע על ${userName}`)} style={styles.headerButton}>
-          <Icon name="information-circle-outline" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <TouchableOpacity 
+          onPress={() => {
+            navigation.navigate('UserProfileScreen', {
+              userId: otherUserId,
+              userName: userName,
+              userAvatar: userAvatar,
+            });
+          }} 
+          style={styles.headerButton}
+        >
+          <Icon name="person-circle-outline" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
@@ -364,10 +480,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+    borderWidth: 2,
+    borderColor: colors.primary,
   },
   headerTitle: {
     fontSize: FontSizes.medium,
@@ -411,6 +529,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundPrimary,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    marginBottom: 10,
   },
   icon: {
     paddingHorizontal: 5,

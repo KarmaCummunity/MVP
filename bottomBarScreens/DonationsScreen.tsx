@@ -289,32 +289,25 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
         {/* סעיף שני - כל הקטגוריות הנוספות */}
         <View style={[styles.modernSection, { padding: sectionPadding }]}>
           <Text style={styles.modernSectionTitle}>
-            מסכים בבניה, כרגע 11111 קישורים רלוונטים
+            מסכים בבניה, כרגע מכילים קישורים רלוונטים
           </Text>
           <View style={[styles.modernOtherGrid, { gap: otherCategoriesGap }]}>
             {otherCategories.map((category) => {
               const { title, subtitle } = getCategoryText(category.id as CategoryId);
-              // חישוב רוחב responsive לכרטיס קטן
-              const smallCardWidth = Platform.OS === 'web'
-                ? isDesktopScreen
-                  ? '100%'
-                  : isTabletScreen
-                    ? '22%'
-                    : '30%'
-                : isTabletScreen || landscapeMode
-                  ? '22%'
-                  : '30%';
+              // חישוב רוחב responsive לכרטיס קטן - 3 בשורה
+              const smallCardWidth = "25%";
               return (
                 <TouchableOpacity
                   key={`other-${category.id}`}
                   style={[
                     styles.modernSmallCard,
                     {
-                      gap: cardGap * 0.7,
                       width: smallCardWidth,
                       minWidth: smallCardWidth,
                       maxWidth: smallCardWidth,
                       backgroundColor: category.bgColor || '#FFFFFF', // רקע צבעוני לפי קטגוריה
+                      paddingVertical: responsiveSpacing(12, 14, 16),
+                      paddingHorizontal: responsiveSpacing(8, 10, 12),
                     },
                   ]}
                   onPress={() => handleCategoryPress(category as any)}
@@ -322,36 +315,29 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                 >
                   <View
                     style={[
-                      styles.modernSmallIconContainer,
+                      styles.modernSmallIcon,
                       {
-                        backgroundColor: category.color + '15',
-                        width: iconSize * 0.8,
-                        height: iconSize * 0.8,
+                        backgroundColor: category.color,
+                        width: iconInnerSize * 0.7,
+                        height: iconInnerSize * 0.7,
+                        marginBottom: responsiveSpacing(6, 8, 10),
+                        ...createShadowStyle(category.color, { width: 0, height: 2 }, 0.25, 6),
                       },
                     ]}
                   >
-                    <View
-                      style={[
-                        styles.modernSmallIcon,
-                        {
-                          backgroundColor: category.color,
-                          width: iconInnerSize * 0.75,
-                          height: iconInnerSize * 0.75,
-                          ...createShadowStyle(category.color, { width: 0, height: 2 }, 0.25, 6),
-                        },
-                      ]}
-                    >
-                      <Ionicons 
-                        name={category.icon as any} 
-                        size={iconInnerSize * 0.45} 
-                        color="white" 
-                      />
-                    </View>
+                    <Ionicons 
+                      name={category.icon as any} 
+                      size={iconInnerSize * 0.4} 
+                      color="white" 
+                    />
                   </View>
                   <Text 
                     style={[
                       styles.modernSmallCardTitle,
-                      { color: category.color } // כותרת בצבע הקטגוריה
+                      { 
+                        color: category.color,
+                        marginBottom: responsiveSpacing(2, 3, 4),
+                      }
                     ]} 
                     numberOfLines={1}
                   >
@@ -360,7 +346,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                   <Text 
                     style={[
                       styles.modernSmallCardSubtitle,
-                      { color: category.color + 'AA' } // כותרת משנית עם שקיפות
+                      { color: category.color + 'AA' }
                     ]} 
                     numberOfLines={1}
                   >
@@ -404,6 +390,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundSecondary, // עודכן לכחול בהיר
   },
   scrollContainer: {
+    backgroundColor: colors.backgroundSecondary_2, // עודכן לכחול בהיר
     flex: 1,
   },
   scrollContent: {
@@ -778,15 +765,14 @@ const styles = StyleSheet.create({
   modernOtherGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center', // יישור למרכז
-    alignItems: 'center',
+    justifyContent: 'flex-start', // יישור להתחלה עם gap
+    alignItems: 'flex-start',
   },
   modernSmallCard: {
     // backgroundColor מוגדר באופן דינמי בקומפוננטה לפי category.bgColor
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
-    padding: LAYOUT_CONSTANTS.SPACING.MD,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     borderWidth: 1.5,
     borderColor: '#E5E7EB',
     ...createShadowStyle(colors.shadowLight, { width: 0, height: 3 }, 0.1, 10),
@@ -795,7 +781,7 @@ const styles = StyleSheet.create({
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
+    // marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
   modernSmallIcon: {
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
@@ -807,12 +793,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
     textAlign: 'center',
-    marginBottom: LAYOUT_CONSTANTS.SPACING.XS / 2,
+    width: '100%',
   },
   modernSmallCardSubtitle: {
     fontSize: FontSizes.caption,
     color: colors.textSecondary,
     textAlign: 'center',
+    width: '100%',
   },
 
 });

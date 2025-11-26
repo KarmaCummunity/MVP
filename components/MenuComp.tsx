@@ -133,8 +133,7 @@ const MenuComp: React.FC<MenuCompProps> = ({ options, onSelectOption }) => {
 
 const localStyles = StyleSheet.create({
   menuIconPlacement: {
-    padding: responsiveSpacing(10, 12, 14),
-    marginBottom: responsiveSpacing(5, 6, 7),
+    padding: 5,
   },
   modalOverlay: {
     flex: 1,

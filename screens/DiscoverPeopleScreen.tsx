@@ -66,25 +66,44 @@ export default function DiscoverPeopleScreen() {
   const loadUsers = async () => {
     setLoading(true);
     try {
-      if (selectedUser) {
-        const userSuggestions = await getFollowSuggestions(selectedUser.id, 20);
-        setSuggestions(userSuggestions as any);
-      } else {
+      if (!selectedUser) {
         setSuggestions([]);
+        setPopularUsers([]);
+        setLoading(false);
+        return;
       }
+
+      const currentUserId = String(selectedUser.id).trim();
       
-      const popular = await getPopularUsers(20);
-      setPopularUsers(popular as any);
+      let filteredSuggestions: any[] = [];
+      const userSuggestions = await getFollowSuggestions(currentUserId, 20);
+      // Filter out current user from suggestions - use strict string comparison
+      filteredSuggestions = (userSuggestions as any[]).filter(
+        (user) => {
+          const userId = String(user.id || '').trim();
+          return userId !== currentUserId && userId !== '';
+        }
+      );
+      setSuggestions(filteredSuggestions);
       
-      // Load follow stats for all users
-      const allUsersToCheck = [...(suggestions as any[]), ...(popular as any[])];
+      // Get popular users excluding current user
+      const popular = await getPopularUsers(20, currentUserId);
+      // Additional filter as safety measure - use strict string comparison
+      const filteredPopular = (popular as any[]).filter(
+        (user) => {
+          const userId = String(user.id || '').trim();
+          return userId !== currentUserId && userId !== '';
+        }
+      );
+      setPopularUsers(filteredPopular);
+      
+      // Load follow stats for all users (use filtered lists)
+      const allUsersToCheck = [...filteredSuggestions, ...filteredPopular];
       const stats: Record<string, { isFollowing: boolean }> = {};
       
       for (const user of allUsersToCheck) {
-        if (selectedUser) {
-          const userStats = await getFollowStats(user.id, selectedUser.id);
-          stats[user.id] = { isFollowing: userStats.isFollowing };
-        }
+        const userStats = await getFollowStats(user.id, currentUserId);
+        stats[user.id] = { isFollowing: userStats.isFollowing };
       }
       
       setFollowStats(stats);
@@ -238,7 +257,15 @@ export default function DiscoverPeopleScreen() {
     </View>
   );
 
-  const currentData = activeTab === 'suggestions' ? suggestions : popularUsers;
+  // Filter out current user from displayed data (double-check to ensure current user is never shown)
+  const rawData = activeTab === 'suggestions' ? suggestions : popularUsers;
+  const currentData = selectedUser 
+    ? rawData.filter((user) => {
+        const userId = String(user.id || '').trim();
+        const currentUserId = String(selectedUser.id || '').trim();
+        return userId !== currentUserId && userId !== '';
+      })
+    : rawData;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -250,12 +277,11 @@ export default function DiscoverPeopleScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>גלה אנשים</Text>
         <View style={styles.headerSpacer} />
-      </View>
-
       {/* Tab Bar */}
       {renderTabBar()}
+      </View>
+
 
       {Platform.OS === 'web' ? (
         <View style={styles.webScrollContainer}>
@@ -340,6 +366,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundSecondary,
     marginHorizontal: 16,
     marginVertical: 12,
+    minWidth: 200,
     borderRadius: 8,
     padding: 4,
   },

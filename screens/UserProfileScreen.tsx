@@ -151,28 +151,52 @@ export default function UserProfileScreen() {
               interests: userData.interests || [],
             };
             setUser(mappedUser);
+          } else {
+            // User not found - set user to null to show error message
+            console.warn('User not found:', userId);
+            setUser(null);
           }
         } catch (error) {
           console.error('❌ Load user error:', error);
-          // Fallback to basic user data
-          setUser({
-            id: userId,
-            name: userName || 'ללא שם',
-            avatar: 'https://i.pravatar.cc/150?img=1',
-            bio: '',
-            karmaPoints: 0,
-            completedTasks: 0,
-            roles: ['user'],
-            isVerified: false,
-            location: { city: 'ישראל', country: 'IL' },
-            joinDate: new Date().toISOString(),
-            interests: [],
-          });
+          // Only set fallback if we have userName, otherwise show error
+          if (userName && userName !== 'משתמש לא ידוע') {
+            setUser({
+              id: userId,
+              name: userName || 'ללא שם',
+              avatar: 'https://i.pravatar.cc/150?img=1',
+              bio: '',
+              karmaPoints: 0,
+              completedTasks: 0,
+              roles: ['user'],
+              isVerified: false,
+              location: { city: 'ישראל', country: 'IL' },
+              joinDate: new Date().toISOString(),
+              interests: [],
+            });
+          } else {
+            setUser(null);
+          }
         } finally {
           setLoading(false);
         }
       } else if (characterData) {
         setUser(characterData);
+        setLoading(false);
+      } else if (!USE_BACKEND && userId && userName) {
+        // Fallback for non-backend mode
+        setUser({
+          id: userId,
+          name: userName || 'ללא שם',
+          avatar: 'https://i.pravatar.cc/150?img=1',
+          bio: '',
+          karmaPoints: 0,
+          completedTasks: 0,
+          roles: ['user'],
+          isVerified: false,
+          location: { city: 'ישראל', country: 'IL' },
+          joinDate: new Date().toISOString(),
+          interests: [],
+        });
         setLoading(false);
       }
     };
@@ -503,7 +527,8 @@ export default function UserProfileScreen() {
                 (navigation as any).navigate('ChatDetailScreen', {
                   conversationId: `conv_${userId}`,
                   otherUserId: userId,
-                  otherUserName: user.name || userName || 'ללא שם',
+                  userName: user.name || userName || 'ללא שם',
+                  userAvatar: user.avatar || 'https://i.pravatar.cc/150?img=1',
                 });
               }}
             >

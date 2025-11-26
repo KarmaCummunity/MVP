@@ -257,7 +257,6 @@ export default function NewChatScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
           <Icon name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>שיחה חדשה</Text>
         <TouchableOpacity 
           onPress={() => (navigation as any).navigate('DiscoverPeopleScreen')}
           style={styles.headerButton}

@@ -12,16 +12,24 @@ import { useFocusEffect } from '@react-navigation/native';
 import ProfileScreen from '../bottomBarScreens/ProfileScreen';
 import SettingsScreen from '../topBarScreens/SettingsScreen';
 import ChatListScreen from '../topBarScreens/ChatListScreen';
+import ChatDetailScreen from '../screens/ChatDetailScreen';
+import NewChatScreen from '../screens/NewChatScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AboutKarmaCommunityScreen from '../topBarScreens/AboutKarmaCommunityScreen';
+import DiscoverPeopleScreen from '../screens/DiscoverPeopleScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
 import TopBarNavigator from './TopBarNavigator';
 
 type ProfileTabStackParamList = {
   ProfileScreen: undefined;
   SettingsScreen: undefined;
   ChatListScreen: undefined;
+  ChatDetailScreen: { chatId?: string } | undefined;
+  NewChatScreen: undefined;
   NotificationsScreen: undefined;
   AboutKarmaCommunityScreen: undefined;
+  DiscoverPeopleScreen: undefined;
+  EditProfileScreen: undefined;
 };
 
 const Stack = createStackNavigator<ProfileTabStackParamList>();
@@ -45,8 +53,12 @@ export default function ProfileTabStack(): React.ReactElement {
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
       <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
       <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
+      <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
+      <Stack.Screen name="NewChatScreen" component={NewChatScreen} />
       <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
       <Stack.Screen name="AboutKarmaCommunityScreen" component={AboutKarmaCommunityScreen} />
+      <Stack.Screen name="DiscoverPeopleScreen" component={DiscoverPeopleScreen} />
+      <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} />
     </Stack.Navigator>
   );
 }

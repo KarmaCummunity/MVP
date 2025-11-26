@@ -42,9 +42,12 @@ import MentalHealthScreen from "../donationScreens/MentalHealthScreen";
 import GoldenAgeScreen from "../donationScreens/GoldenAgeScreen";
 import LanguagesScreen from "../donationScreens/LanguagesScreen";
 import ChatListScreen from "../topBarScreens/ChatListScreen";
+import ChatDetailScreen from "../screens/ChatDetailScreen";
+import NewChatScreen from "../screens/NewChatScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 import AboutKarmaCommunityScreen from "../topBarScreens/AboutKarmaCommunityScreen";
 import SettingsScreen from "../topBarScreens/SettingsScreen";
+import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
 import TopBarNavigator from "./TopBarNavigator";
 import { DonationsStackParamList } from "../globals/types";
 
@@ -108,9 +111,12 @@ export default function DonationsStack() {
       <Stack.Screen name="ArtScreen" component={ArtScreen} />
       <Stack.Screen name="SportsScreen" component={SportsScreen} />
       <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
+      <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
+      <Stack.Screen name="NewChatScreen" component={NewChatScreen} />
       <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
       <Stack.Screen name="AboutKarmaCommunityScreen" component={AboutKarmaCommunityScreen} />
       <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
+      <Stack.Screen name="DiscoverPeopleScreen" component={DiscoverPeopleScreen} />
     </Stack.Navigator>
   );
 }

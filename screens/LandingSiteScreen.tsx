@@ -2454,7 +2454,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: isMobileWeb ? 8 : 20,
     top: isMobileWeb ? 60 : 100,
-    minWidth: 120,
+    minWidth: 150,
     width: isMobileWeb ? '14%' : '10%',
     maxHeight: isMobileWeb ? '70vh' as any : (isWeb ? '80vh' as any : 600),
     backgroundColor: '#FFFFFF',

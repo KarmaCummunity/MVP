@@ -48,9 +48,12 @@ export type DonationsStackParamList = {
   CategoryScreen: undefined;
   // Top bar accessible screens that are also used inside the Donations stack
   ChatListScreen: undefined;
+  ChatDetailScreen: { chatId?: string } | undefined;
+  NewChatScreen: undefined;
   NotificationsScreen: undefined;
   AboutKarmaCommunityScreen: undefined;
   SettingsScreen: undefined;
+  DiscoverPeopleScreen: undefined;
   // Category screens
   FoodScreen: undefined;
   ClothesScreen: undefined;

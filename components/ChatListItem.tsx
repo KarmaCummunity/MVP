@@ -7,6 +7,7 @@ interface ChatUser {
   id: string;
   name: string;
   avatar?: string;
+  isOnline?: boolean;
 }
 
 interface ChatConversation {
@@ -17,6 +18,8 @@ interface ChatConversation {
     timestamp: string;
     senderId: string;
   };
+  lastMessageText?: string;
+  lastMessageTimestamp: string;
   unreadCount?: number;
 }
 import colors from '../globals/colors'; // Assuming you have a Colors file

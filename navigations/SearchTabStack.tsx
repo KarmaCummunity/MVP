@@ -14,6 +14,8 @@ import UserProfileScreen from '../screens/UserProfileScreen';
 import FollowersScreen from '../screens/FollowersScreen';
 import DiscoverPeopleScreen from '../screens/DiscoverPeopleScreen';
 import ChatListScreen from '../topBarScreens/ChatListScreen';
+import ChatDetailScreen from '../screens/ChatDetailScreen';
+import NewChatScreen from '../screens/NewChatScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AboutKarmaCommunityScreen from '../topBarScreens/AboutKarmaCommunityScreen';
 import SettingsScreen from '../topBarScreens/SettingsScreen';
@@ -25,6 +27,8 @@ type SearchTabStackParamList = {
   FollowersScreen: { userId?: string } | undefined;
   DiscoverPeopleScreen: undefined;
   ChatListScreen: undefined;
+  ChatDetailScreen: { chatId?: string } | undefined;
+  NewChatScreen: undefined;
   NotificationsScreen: undefined;
   AboutKarmaCommunityScreen: undefined;
   SettingsScreen: undefined;
@@ -53,6 +57,8 @@ export default function SearchTabStack(): React.ReactElement {
       <Stack.Screen name="FollowersScreen" component={FollowersScreen} />
       <Stack.Screen name="DiscoverPeopleScreen" component={DiscoverPeopleScreen} />
       <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
+      <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
+      <Stack.Screen name="NewChatScreen" component={NewChatScreen} />
       <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
       <Stack.Screen name="AboutKarmaCommunityScreen" component={AboutKarmaCommunityScreen} />
       <Stack.Screen name="SettingsScreen" component={SettingsScreen} />

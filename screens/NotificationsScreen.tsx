@@ -41,7 +41,7 @@ import ScreenWrapper from '../components/ScreenWrapper';
 export default function NotificationsScreen() {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { selectedUser } = useUser();
-  const { t } = useTranslation(['notifications','common']);
+  const { t } = useTranslation(['notifications', 'common']);
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -51,7 +51,7 @@ export default function NotificationsScreen() {
 
   const loadNotifications = useCallback(async () => {
     console.log('🔔 NotificationsScreen - loadNotifications - selectedUser:', selectedUser?.name || 'null');
-    
+
     if (!selectedUser) {
       console.log('🔔 NotificationsScreen - No selected user, cannot load notifications');
       return;
@@ -60,7 +60,7 @@ export default function NotificationsScreen() {
     try {
       const userNotifications = await getNotifications(selectedUser.id);
       setNotifications(userNotifications);
-      
+
       const count = await getUnreadNotificationCount(selectedUser.id);
       setUnreadCount(count);
     } catch (error) {
@@ -69,7 +69,7 @@ export default function NotificationsScreen() {
     }
   }, [selectedUser]);
 
-    useFocusEffect(
+  useFocusEffect(
     useCallback(() => {
       console.log('🔔 NotificationsScreen - Screen focused, loading notifications...');
       console.log('🔔 NotificationsScreen - selectedUser in useFocusEffect:', selectedUser?.name || 'null');
@@ -146,29 +146,44 @@ export default function NotificationsScreen() {
   };
 
   const handleClearAllNotifications = async () => {
+    console.log('🔔 Clear all pressed');
     if (!selectedUser) return;
 
-    Alert.alert(
-      t('notifications:clearAllTitle'),
-      t('notifications:clearAllMessage'),
-      [
-        { text: t('common:cancel'), style: 'cancel' },
-        {
-          text: t('common:delete'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await clearAllNotifications(selectedUser.id);
-              await loadNotifications();
-              Alert.alert(t('notifications:clearAllDoneTitle'), t('notifications:clearAllDoneBody'));
-            } catch (error) {
-              console.error('❌ Clear all notifications error:', error);
-              Alert.alert(t('common:errorTitle'), t('notifications:clearAllError'));
-            }
+    if (notifications.length === 0) {
+      console.log('ℹ️ No notifications to clear');
+      return;
+    }
+
+    const performClear = async () => {
+      try {
+        await clearAllNotifications(selectedUser.id);
+        await loadNotifications();
+        // Optional: Show success message or just let the list clear
+        // Alert.alert(t('notifications:clearAllDoneTitle'), t('notifications:clearAllDoneBody'));
+      } catch (error) {
+        console.error('❌ Clear all notifications error:', error);
+        Alert.alert(t('common:errorTitle'), t('notifications:clearAllError'));
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(t('notifications:clearAllMessage'))) {
+        await performClear();
+      }
+    } else {
+      Alert.alert(
+        t('notifications:clearAllTitle'),
+        t('notifications:clearAllMessage'),
+        [
+          { text: t('common:cancel'), style: 'cancel' },
+          {
+            text: t('common:delete'),
+            style: 'destructive',
+            onPress: performClear,
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const getNotificationIcon = (type: NotificationData['type']) => {
@@ -283,39 +298,39 @@ export default function NotificationsScreen() {
   return (
     <>
       <ScreenWrapper navigation={navigation} style={styles.safeArea}>
-      {/* Additional header actions for notifications */}
-      <View style={styles.additionalHeaderSection}>
-        {unreadCount > 0 && (
-          <TouchableOpacity onPress={handleMarkAllAsRead} style={styles.headerButton}>
-            <Icon name="checkmark-done" size={24} color={colors.primary} />
-          </TouchableOpacity>
-        )}
-        {notifications.length > 0 && (
-          <TouchableOpacity onPress={handleClearAllNotifications} style={styles.headerButton}>
-            <Icon name="trash-outline" size={24} color={colors.error} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {unreadCount > 0 && (
-        <View style={styles.unreadBadge}>
-          <Text style={styles.unreadBadgeText}>{t('notifications:unreadBadge', { count: unreadCount })}</Text>
+        {/* Additional header actions for notifications */}
+        <View style={styles.additionalHeaderSection}>
+          {unreadCount > 0 && (
+            <TouchableOpacity onPress={handleMarkAllAsRead} style={styles.headerButton}>
+              <Icon name="checkmark-done" size={24} color={colors.primary} />
+            </TouchableOpacity>
+          )}
+          {notifications.length > 0 && (
+            <TouchableOpacity onPress={handleClearAllNotifications} style={styles.headerButton}>
+              <Icon name="trash-outline" size={24} color={colors.error} />
+            </TouchableOpacity>
+          )}
         </View>
-      )}
 
-      <FlatList
-        data={notifications}
-        keyExtractor={(item) => item.id}
-        renderItem={renderNotification}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={renderEmptyState}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-        }
-        showsVerticalScrollIndicator={false}
-      />
-    </ScreenWrapper>
-  </>
+        {unreadCount > 0 && (
+          <View style={styles.unreadBadge}>
+            <Text style={styles.unreadBadgeText}>{t('notifications:unreadBadge', { count: unreadCount })}</Text>
+          </View>
+        )}
+
+        <FlatList
+          data={notifications}
+          keyExtractor={(item) => item.id}
+          renderItem={renderNotification}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={renderEmptyState}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      </ScreenWrapper>
+    </>
   );
 }
 
@@ -352,8 +367,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
