@@ -39,6 +39,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../app/i18n';
 import ScrollContainer from '../components/ScrollContainer';
 import { getScreenInfo, scaleSize } from '../globals/responsive';
+import { APP_VERSION } from '../globals/constants';
 
 export default function LoginScreen() {
   
@@ -77,7 +78,7 @@ export default function LoginScreen() {
 
   // Language menu state
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
-
+  
   const applyLanguage = async (lang: 'he' | 'en') => {
     try {
       await AsyncStorage.setItem('app_language', lang);
@@ -429,38 +430,60 @@ export default function LoginScreen() {
       >
         <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
         <ScrollContainer
-          contentStyle={{ flexGrow: 1 }}
+          contentStyle={{ flexGrow: 1, paddingBottom: 0 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'interactive'}
           contentInsetAdjustmentBehavior="always"
         >
       
       <View style={styles.container}>
-        {/* Background Logo */}
-        <View style={styles.backgroundLogoContainer} pointerEvents="none">
-          <Image 
-            source={require('../assets/images/pink_logo.png')} 
-            style={styles.backgroundLogo} 
-            resizeMode="contain"
-          />
-        </View>
-        
         {/* Header Section */}
          <View style={styles.headerSection}>
+          {/* Mode Toggle Button */}
+          <View style={styles.topButtonsContainer}>            
+            {/* Language switcher */}
+            <View pointerEvents="box-none" style={styles.languageButtonContainer}>
+              <TouchableOpacity
+                style={styles.languageButton}
+                activeOpacity={0.8}
+                onPress={() => setLanguageMenuOpen((prev) => !prev)}
+              >
+                <Ionicons name="globe-outline" size={22} color="#333" />
+              </TouchableOpacity>
+              {languageMenuOpen && (
+                <View style={styles.languageMenu}>
+                  <TouchableOpacity
+                    style={styles.languageMenuItem}
+                    onPress={() => applyLanguage('he')}
+                  >
+                    <Text style={styles.languageMenuText}>{t('common:languages.he')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.languageMenuItem}
+                    onPress={() => applyLanguage('en')}
+                  >
+                    <Text style={styles.languageMenuText}>{t('common:languages.en')}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </View>
+          
           <Text style={styles.title}>{t('auth:title') || t('common:welcomeShort')}</Text>
           <Text style={styles.subtitle}>{t('auth:subtitle') || ''}</Text>
           
-          {/* Version Number */}
-          <View style={styles.versionContainer}>
-            <Text style={styles.versionText}>v1.9.0</Text>
+          {/* Logo */}
+          <View style={styles.logoContainer}>
+            <Image 
+              source={require('../assets/images/pink_logo.png')} 
+              style={styles.logo} 
+              resizeMode="contain"
+            />
           </View>
           
           <View style={styles.buttonsContainer}>
             <FirebaseGoogleButton />
-            
-
-
-
+          
             {/* Email Register/Login CTA - collapsible with input + status line */}
             <View 
               style={styles.orgLoginContainer}
@@ -484,12 +507,7 @@ export default function LoginScreen() {
                 <View 
                   style={[
                     styles.orgExpandedRow,
-                    (isDesktopWeb || isTablet) && {
-                      alignSelf: 'center',
-                      minWidth: buttonMinWidth,
-                      maxWidth: expandedRowMaxWidth,
-                    },
-                    !isDesktopWeb && !isTablet && {
+                    {
                       width: '100%',
                     },
                   ]}
@@ -631,12 +649,7 @@ export default function LoginScreen() {
                 <View 
                   style={[
                     styles.orgExpandedRow,
-                    (isDesktopWeb || isTablet) && {
-                      alignSelf: 'center',
-                      minWidth: buttonMinWidth,
-                      maxWidth: expandedRowMaxWidth,
-                    },
-                    !isDesktopWeb && !isTablet && {
+                    {
                       width: '100%',
                     },
                   ]}
@@ -705,35 +718,12 @@ export default function LoginScreen() {
         {/* Footer Section */}
         <View style={styles.footerSection}>
           <Text style={styles.infoText}>{t('common:freeAppNotice')}</Text>
+          <View style={styles.versionContainer}>
+            <Text style={styles.versionText}>v{APP_VERSION}</Text>
+          </View>
         </View>
       </View>
         </ScrollContainer>
-        {/* Language switcher (top-right) */}
-        <View pointerEvents="box-none" style={styles.languageFabContainer}>
-          <TouchableOpacity
-            style={styles.languageFab}
-            activeOpacity={0.8}
-            onPress={() => setLanguageMenuOpen((prev) => !prev)}
-          >
-            <Ionicons name="globe-outline" size={22} color="#333" />
-          </TouchableOpacity>
-          {languageMenuOpen && (
-            <View style={styles.languageMenu}>
-              <TouchableOpacity
-                style={styles.languageMenuItem}
-                onPress={() => applyLanguage('he')}
-              >
-                <Text style={styles.languageMenuText}>{t('common:languages.he')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.languageMenuItem}
-                onPress={() => applyLanguage('en')}
-              >
-                <Text style={styles.languageMenuText}>{t('common:languages.en')}</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -795,52 +785,53 @@ const createLoginScreenStyles = () => {
     },
     container: {
       flex: 1,
-      padding: isDesktopWeb ? 40 : isTablet ? 32 : 20,
+      paddingTop: isDesktopWeb ? 20 : isTablet ? 20 : 20,
+      paddingHorizontal: isDesktopWeb ? 40 : isTablet ? 32 : 20,
       position: 'relative',
-      ...(isDesktopWeb && {
-        maxWidth: 600,
-        alignSelf: 'center',
-        width: '100%',
-      }),
-    },
-    backgroundLogoContainer: {
-      position: 'absolute',
-      top: isDesktopWeb ? 40 : isTablet ? 30 : Platform.OS === 'web' ? 30 : 50,
-      left: 0,
-      right: 0,
-      height: isDesktopWeb ? '35%' : Platform.OS === 'web' ? '40%' : '50%',
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#E3F2FD',
-      opacity: 0.4,
-    },
-    backgroundLogo: {
-      width: isDesktopWeb ? '100%' : Platform.OS === 'web' ? '120%' : '145%',
-      height: isDesktopWeb ? '100%' : Platform.OS === 'web' ? '120%' : '145%',
-    },
-    headerSection: {
-      marginBottom: isDesktopWeb ? 40 : isTablet ? 35 : 30,
-      alignItems: 'center',
-      zIndex: 1,
       width: '100%',
+      justifyContent: 'space-between',
     },
-    footerSection: {
-      marginTop: isDesktopWeb ? 30 : isTablet ? 25 : 20,
+    topButtonsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      width: '100%',
+      marginBottom: isDesktopWeb ? 20 : isTablet ? 18 : 16,
+      paddingHorizontal: isDesktopWeb ? 0 : isTablet ? 0 : 0,
     },
-    languageFabContainer: {
-      position: 'absolute',
-      top: isDesktopWeb ? 16 : isTablet ? 14 : 12,
-      right: isDesktopWeb ? 20 : isTablet ? 18 : 16,
-      alignItems: 'flex-end',
+    languageButtonContainer: {
+      alignItems: 'flex-start',
       zIndex: 20,
     },
-    languageFab: {
+    languageButton: {
       width: isDesktopWeb ? 40 : isTablet ? 38 : 36,
       height: isDesktopWeb ? 40 : isTablet ? 38 : 36,
       borderRadius: isDesktopWeb ? 20 : isTablet ? 19 : 18,
       backgroundColor: 'transparent',
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    logoContainer: {
+      width: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: isDesktopWeb ? 30 : isTablet ? 25 : 20,
+      marginTop: isDesktopWeb ? 20 : isTablet ? 18 : 16,
+    },
+    logo: {
+      width: isDesktopWeb ? 280 : isTablet ? 250 : 220,
+      height: isDesktopWeb ? 280 : isTablet ? 250 : 220,
+    },
+    headerSection: {
+      // marginBottom: isDesktopWeb ? 40 : isTablet ? 35 : 30,
+      alignItems: 'center',
+      zIndex: 1,
+      width: '100%',
+      // paddingTop: isDesktopWeb ? 20 : isTablet ? 16 : 12,
+    },
+    footerSection: {
+      marginBottom: isDesktopWeb ? 8 : isTablet ? 7 : 6,
+      marginTop: isDesktopWeb ? 20 : isTablet ? 18 : 16,
     },
     languageMenu: {
       backgroundColor: '#FFFFFF',
@@ -861,7 +852,7 @@ const createLoginScreenStyles = () => {
       textAlign: 'right',
     },
     title: {
-      marginTop: isDesktopWeb ? 20 : isTablet ? 15 : Platform.OS === 'web' ? 10 : 20,
+      marginTop: 0,
       fontSize: isDesktopWeb ? 42 : isTablet ? 36 : scaleSize(32),
       fontWeight: 'bold',
       color: '#2C2C2C',
@@ -872,7 +863,7 @@ const createLoginScreenStyles = () => {
       fontSize: isDesktopWeb ? 20 : isTablet ? 18 : scaleSize(16),
       color: '#444444',
       textAlign: 'center',
-      marginBottom: isDesktopWeb ? 50 : isTablet ? 45 : Platform.OS === 'web' ? 40 : 100,
+      marginBottom: isDesktopWeb ? 20 : isTablet ? 18 : 16,
       fontWeight: '600',
       paddingHorizontal: isDesktopWeb ? 20 : 0,
     },
@@ -909,9 +900,11 @@ const createLoginScreenStyles = () => {
     },
     // 🔥 buttonsContainer - מרכז את כל הכפתורים
     buttonsContainer: {
+      marginTop: isDesktopWeb ? 40 : isTablet ? 40 : 30,
       marginBottom: isDesktopWeb ? 30 : isTablet ? 25 : 20,
       width: '100%',
-      alignItems: 'center', // Center all buttons instead of stretch
+      alignItems: 'stretch', // Stretch buttons to full width
+      gap: isDesktopWeb ? 16 : isTablet ? 14 : 12, // Equal spacing between buttons
     },
     disabledButton: {
       backgroundColor: '#CCCCCC',
@@ -934,11 +927,9 @@ const createLoginScreenStyles = () => {
       shadowOpacity: 0.1,
       shadowRadius: 4,
       elevation: 3,
-      alignSelf: 'center', // Center button instead of full width
-      marginVertical: buttonMarginVertical,
-      marginBottom: isDesktopWeb ? 28 : isTablet ? 25 : 22,
-      minWidth: buttonMinWidth,
-      maxWidth: buttonMaxWidth,
+      width: '100%', // Full width instead of centered
+      marginVertical: 0, // Remove vertical margin, use gap in container instead
+      marginBottom: 0, // Remove bottom margin, use gap in container instead
     },
     // 🔥 guestButtonText - ללא width: '100%'
     guestButtonText: {
@@ -966,9 +957,11 @@ const createLoginScreenStyles = () => {
     },
     // 🔥 orgLoginContainer - מרכז את הכפתורים
     orgLoginContainer: {
-      marginVertical: isDesktopWeb ? 4 : isTablet ? 3.5 : 3,
-      alignItems: 'center', // Center container
-      width: '100%',
+      alignSelf: 'center',
+      marginTop: "1%",
+      // alignItems: 'stretch', // Stretch to full width
+      width: '80%',
+      height:'50%',
     },
     // 🔥 orgButton - ללא width: '100%'
     orgButton: {
@@ -978,7 +971,7 @@ const createLoginScreenStyles = () => {
     // 🔥 emailButton - ללא width: '100%'
     emailButton: {
       borderColor: '#4C7EFF',
-      marginTop: isDesktopWeb ? 16 : isTablet ? 14 : 12,
+      marginTop: 0, // Remove top margin, use gap in container instead
       // Removed width: '100%' - button will use guestButton styles
     },
     // 🔥 orgExpandedRow - responsive, מותאם לכפתורים
@@ -1036,9 +1029,7 @@ const createLoginScreenStyles = () => {
       marginTop: suggestionsBoxMargin,
       marginBottom: suggestionsBoxMargin,
       overflow: 'hidden',
-      alignSelf: 'center', // Center suggestions box
-      minWidth: buttonMinWidth,
-      maxWidth: suggestionsBoxMaxWidth,
+      width: '100%', // Full width instead of centered
     },
     suggestionItem: {
       paddingVertical: isDesktopWeb ? 10 : isTablet ? 9 : 8,
@@ -1071,9 +1062,7 @@ const createLoginScreenStyles = () => {
       flexDirection: 'row',
       alignItems: 'flex-end',
       justifyContent: 'flex-start',
-      alignSelf: 'center', // Center status row
-      minWidth: buttonMinWidth,
-      maxWidth: statusRowMaxWidth,
+      width: '100%', // Full width instead of centered
     },
     emailStatusText: {
       fontSize: statusRowFontSize,
@@ -1110,11 +1099,11 @@ const createLoginScreenStyles = () => {
     },
     // Version styles
     versionContainer: {
-      marginBottom: isDesktopWeb ? 24 : isTablet ? 22 : 20,
+      marginTop: isDesktopWeb ? 12 : isTablet ? 10 : 8,
       alignItems: 'center',
     },
     versionText: {
-      fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
+      fontSize: isDesktopWeb ? 14 : isTablet ? 13 : scaleSize(12),
       color: '#888888',
       textAlign: 'center',
       fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',

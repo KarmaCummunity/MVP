@@ -1009,6 +1009,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 6,
+    zIndex: 1000,
   },
   fabButtonText: {
     color: 'white',

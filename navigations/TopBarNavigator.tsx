@@ -87,8 +87,9 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
   const routeTitles: Record<string, string> = {
     SearchScreen: t('common:search'),
     DonationsTab: t('donations:title'),
+    DonationsScreen: t('donations:title'),
     ProfileScreen: t('profile:title'),
-    LandingSiteScreen: 'Karma Community',
+    LandingSiteScreen: 'אודות הקהילה',
 
     MoneyScreen: t('donations:categories.money.title'),
     TrumpScreen: t('donations:categories.trump.title'),

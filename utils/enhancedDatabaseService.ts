@@ -446,15 +446,27 @@ export class EnhancedDatabaseService {
       const response = await apiService.getCommunityStats(apiFilters);
       
       if (response.success && response.data) {
-        await this.setCache('community_stats', cacheKey, response.data);
-        logger.info('EnhancedDatabaseService', 'Community stats fetched from backend', { cacheKey, forceRefresh });
-        return response.data as Record<string, unknown>;
+        // Check if data is not empty
+        const hasData = Object.keys(response.data).length > 0;
+        if (hasData) {
+          await this.setCache('community_stats', cacheKey, response.data);
+          logger.info('EnhancedDatabaseService', 'Community stats fetched from backend', { cacheKey, forceRefresh });
+          return response.data as Record<string, unknown>;
+        } else {
+          logger.warn('EnhancedDatabaseService', 'Backend returned empty stats data', { cacheKey, forceRefresh });
+          // Throw error to trigger retry or fallback
+          throw new Error('Backend returned empty stats data');
+        }
       }
 
-      return {} as Record<string, unknown>;
+      // If response was not successful, throw error to trigger retry
+      logger.warn('EnhancedDatabaseService', 'Backend request failed', { cacheKey, forceRefresh, error: response.error });
+      throw new Error(response.error || 'Failed to fetch community stats from backend');
     } catch (error) {
       logger.error('EnhancedDatabaseService', 'Get community stats error', { error });
-      return {} as Record<string, unknown>;
+      // שינוי: זריקת שגיאה במקום החזרת אובייקט ריק כדי שהקוד יוכל לטפל בשגיאה
+      // Change: Throw error instead of returning empty object so code can handle the error
+      throw error instanceof Error ? error : new Error('Failed to fetch community stats');
     }
   }
 

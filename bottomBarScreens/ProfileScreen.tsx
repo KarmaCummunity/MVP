@@ -129,35 +129,33 @@ export default function ProfileScreen() {
   // Function to update user statistics
   const updateUserStats = async () => {
     try {
-      const currentUserStats = await getFollowStats(selectedUser?.id || currentUser.id, selectedUser?.id || currentUser.id);
-      const character = selectedUser || allUsers.find(u => u.id === currentUser.id);
+      if (!selectedUser?.id) {
+        console.warn('⚠️ No user selected, skipping stats update');
+        return;
+      }
+      const currentUserStats = await getFollowStats(selectedUser.id, selectedUser.id);
       
       setUserStats({
-        posts: character?.postsCount || 24,
+        posts: selectedUser?.postsCount || 0,
         followers: currentUserStats.followersCount,
         following: currentUserStats.followingCount,
-        karmaPoints: character?.karmaPoints || currentUser.karmaPoints,
-        completedTasks: (character as any)?.completedTasks || 0,
-        totalDonations: (character as any)?.totalDonations || 0,
+        karmaPoints: selectedUser?.karmaPoints || 0,
+        completedTasks: (selectedUser as any)?.completedTasks || 0,
+        totalDonations: (selectedUser as any)?.totalDonations || 0,
       });
     } catch (error) {
       console.error('❌ Update user stats error:', error);
     }
   };
 
-  // Function to select a random user
+  // Function to select a random user (demo mode only - disabled)
   const selectRandomUser = () => {
     if (isRealAuth) {
       Alert.alert(t('common:errorTitle'), t('profile:alerts.disabledOnRealAuth'));
       return;
     }
-    if (allUsers.length > 0) {
-      const randomIndex = Math.floor(Math.random() * allUsers.length);
-      const randomUser = allUsers[randomIndex];
-      setSelectedUserWithMode(randomUser as any, 'demo');
-      setShowMenu(false);
-      Alert.alert(t('profile:alerts.newUser'), t('profile:alerts.selectedUser', { name: randomUser.name }));
-    }
+    // Demo mode removed - this function is no longer available
+    Alert.alert(t('common:errorTitle'), t('profile:alerts.disabledOnRealAuth'));
   };
 
   // Function to create sample follow data
@@ -166,8 +164,12 @@ export default function ProfileScreen() {
       Alert.alert(t('common:errorTitle'), t('profile:alerts.disabledOnRealAuth'));
       return;
     }
+    if (!selectedUser?.id) {
+      Alert.alert(t('common:errorTitle'), t('profile:alerts.noUserSelected'));
+      return;
+    }
     await createSampleFollowData();
-    await createSampleChatData(selectedUser?.id || currentUser.id);
+    await createSampleChatData(selectedUser.id);
     updateUserStats();
     Alert.alert(t('profile:alerts.sampleDataTitle'), t('profile:alerts.sampleDataCreated'));
   };
@@ -278,10 +280,8 @@ export default function ProfileScreen() {
     }
   ];
 
-  // Derived display values to avoid דמה במצב התחברות אמיתי
-  const avatarSource = isRealAuth
-    ? (selectedUser?.avatar ? { uri: selectedUser.avatar } : defaultLogo)
-    : ({ uri: selectedUser?.avatar || currentUser.avatar } as any);
+  // Derived display values
+  const avatarSource = selectedUser?.avatar ? { uri: selectedUser.avatar } : defaultLogo;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -316,8 +316,9 @@ export default function ProfileScreen() {
             <TouchableOpacity 
               style={styles.statItem}
               onPress={() => {
+                if (!selectedUser?.id) return;
                 (navigation as any).navigate('FollowersScreen', {
-                  userId: selectedUser?.id || currentUser.id,
+                  userId: selectedUser.id,
                   type: 'followers',
                   title: t('profile:followersTitle')
                 });
@@ -329,8 +330,9 @@ export default function ProfileScreen() {
             <TouchableOpacity 
               style={styles.statItem}
               onPress={() => {
+                if (!selectedUser?.id) return;
                 (navigation as any).navigate('FollowersScreen', {
-                  userId: selectedUser?.id || currentUser.id,
+                  userId: selectedUser.id,
                   type: 'following',
                   title: t('profile:followingTitle')
                 });
@@ -377,7 +379,7 @@ export default function ProfileScreen() {
                       Alert.alert(t('profile:alerts.shareProfile'), t('profile:alerts.shareProfileDesc'));
                     }}
                   >
-                      <Ionicons name="share-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Ionicons name="share-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.shareProfile')}</Text>
                   </TouchableOpacity>
                   
@@ -388,7 +390,7 @@ export default function ProfileScreen() {
                       (navigation as any).navigate('EditProfileScreen');
                     }}
                   >
-                      <Ionicons name="create-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Ionicons name="create-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.editProfile')}</Text>
                   </TouchableOpacity>
                   
@@ -399,7 +401,7 @@ export default function ProfileScreen() {
                       Alert.alert(t('profile:alerts.settings'), t('profile:alerts.openSettings'));
                     }}
                   >
-                      <Ionicons name="settings-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Ionicons name="settings-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.settings')}</Text>
                   </TouchableOpacity>
                   
@@ -410,7 +412,7 @@ export default function ProfileScreen() {
                       Alert.alert(t('profile:alerts.help'), t('profile:alerts.openHelp'));
                     }}
                   >
-                      <Ionicons name="help-circle-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Ionicons name="help-circle-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.help')}</Text>
                   </TouchableOpacity>
                   
@@ -421,7 +423,7 @@ export default function ProfileScreen() {
                       navigation.navigate('LoginScreen' as never);
                     }}
                   >
-                      <Ionicons name="log-in-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Ionicons name="log-in-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.login')}</Text>
                   </TouchableOpacity>
                   
@@ -439,7 +441,7 @@ export default function ProfileScreen() {
                         style={styles.menuItem}
                         onPress={handleCreateSampleData}
                       >
-                          <Ionicons name="add-circle-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                        <Ionicons name="add-circle-outline" size={scaleSize(20)} color={colors.textPrimary} />
                         <Text style={styles.menuItemText}>{t('profile:menu.createSampleData')}</Text>
                       </TouchableOpacity>
                     </>
@@ -452,14 +454,14 @@ export default function ProfileScreen() {
 
         {/* Bio Section */}
         <View style={styles.bioSection}>
-          <Text style={styles.fullName}>{(isRealAuth ? (selectedUser?.name || '') : (selectedUser?.name || currentUser.name))}</Text>
-          {!!(isRealAuth ? selectedUser?.bio : (selectedUser?.bio || currentUser.bio)) && (
-            <Text style={styles.bioText}>{isRealAuth ? selectedUser?.bio : (selectedUser?.bio || currentUser.bio)}</Text>
+          <Text style={styles.fullName}>{selectedUser?.name || ''}</Text>
+          {!!selectedUser?.bio && (
+            <Text style={styles.bioText}>{selectedUser.bio}</Text>
           )}
-          {!!(isRealAuth ? (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city) : (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || currentUser.location)) && (
+          {!!(typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city) && (
             <Text style={styles.locationText}>
               <Ionicons name="location-outline" size={scaleSize(14)} color={colors.textSecondary} />{' '}
-              {isRealAuth ? (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || '') : (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || currentUser.location)}
+              {typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || ''}
             </Text>
           )}
           
@@ -627,8 +629,9 @@ export default function ProfileScreen() {
             <TouchableOpacity 
               style={styles.statItem}
               onPress={() => {
+                if (!selectedUser?.id) return;
                 (navigation as any).navigate('FollowersScreen', {
-                  userId: selectedUser?.id || currentUser.id,
+                  userId: selectedUser.id,
                   type: 'followers',
                   title: t('profile:followersTitle')
                 });
@@ -640,8 +643,9 @@ export default function ProfileScreen() {
             <TouchableOpacity 
               style={styles.statItem}
               onPress={() => {
+                if (!selectedUser?.id) return;
                 (navigation as any).navigate('FollowersScreen', {
-                  userId: selectedUser?.id || currentUser.id,
+                  userId: selectedUser.id,
                   type: 'following',
                   title: t('profile:followingTitle')
                 });
@@ -688,7 +692,7 @@ export default function ProfileScreen() {
                       Alert.alert(t('profile:alerts.shareProfile'), t('profile:alerts.shareProfileDesc'));
                     }}
                   >
-                      <Ionicons name="share-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Ionicons name="share-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.shareProfile')}</Text>
                   </TouchableOpacity>
                   
@@ -699,7 +703,7 @@ export default function ProfileScreen() {
                       (navigation as any).navigate('EditProfileScreen');
                     }}
                   >
-                      <Ionicons name="create-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Ionicons name="create-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.editProfile')}</Text>
                   </TouchableOpacity>
                   
@@ -710,7 +714,7 @@ export default function ProfileScreen() {
                       Alert.alert(t('profile:alerts.settings'), t('profile:alerts.openSettings'));
                     }}
                   >
-                      <Ionicons name="settings-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Ionicons name="settings-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.settings')}</Text>
                   </TouchableOpacity>
                   
@@ -721,7 +725,7 @@ export default function ProfileScreen() {
                       Alert.alert(t('profile:alerts.help'), t('profile:alerts.openHelp'));
                     }}
                   >
-                      <Ionicons name="help-circle-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Ionicons name="help-circle-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.help')}</Text>
                   </TouchableOpacity>
                   
@@ -732,7 +736,7 @@ export default function ProfileScreen() {
                       navigation.navigate('LoginScreen' as never);
                     }}
                   >
-                      <Ionicons name="log-in-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Ionicons name="log-in-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.login')}</Text>
                   </TouchableOpacity>
                   
@@ -740,7 +744,7 @@ export default function ProfileScreen() {
                     style={styles.menuItem}
                     onPress={selectRandomUser}
                   >
-                      <Ionicons name="shuffle-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Ionicons name="shuffle-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.switchUser')}</Text>
                   </TouchableOpacity>
                   
@@ -748,7 +752,7 @@ export default function ProfileScreen() {
                     style={styles.menuItem}
                     onPress={handleCreateSampleData}
                   >
-                      <Ionicons name="add-circle-outline" size={scaleSize(20)} color={colors.textPrimary} />
+                    <Ionicons name="add-circle-outline" size={scaleSize(20)} color={colors.textPrimary} />
                     <Text style={styles.menuItemText}>{t('profile:menu.createSampleData')}</Text>
                   </TouchableOpacity>
                 </View>
@@ -759,14 +763,14 @@ export default function ProfileScreen() {
 
         {/* Bio Section */}
         <View style={styles.bioSection}>
-          <Text style={styles.fullName}>{(isRealAuth ? (selectedUser?.name || '') : (selectedUser?.name || currentUser.name))}</Text>
-          {!!(isRealAuth ? selectedUser?.bio : (selectedUser?.bio || currentUser.bio)) && (
-            <Text style={styles.bioText}>{isRealAuth ? selectedUser?.bio : (selectedUser?.bio || currentUser.bio)}</Text>
+          <Text style={styles.fullName}>{selectedUser?.name || ''}</Text>
+          {!!selectedUser?.bio && (
+            <Text style={styles.bioText}>{selectedUser.bio}</Text>
           )}
-          {!!(isRealAuth ? (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city) : (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || currentUser.location)) && (
+          {!!(typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city) && (
             <Text style={styles.locationText}>
               <Ionicons name="location-outline" size={scaleSize(14)} color={colors.textSecondary} />{' '}
-              {isRealAuth ? (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || '') : (typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || currentUser.location)}
+              {typeof selectedUser?.location === 'string' ? selectedUser?.location : selectedUser?.location?.city || ''}
             </Text>
           )}
           

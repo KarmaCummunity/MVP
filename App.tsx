@@ -285,15 +285,33 @@ function AppContent() {
       paddingTop: Platform.OS === 'web' && mode === 'app' && shouldShowToggle ? 48 : 0 // Space for toggle button in app mode
     };
     
+    // Mobile width constant - iPhone 14 Pro Max width (428px) or iPhone 11 width (414px)
+    // Using 428px as it's a common modern phone width
+    const MOBILE_MAX_WIDTH = 628;
+    
+    // Wrapper style for web to limit width and center content
+    const webWrapperStyle = Platform.OS === 'web' ? {
+      width: '100%' as const,
+      maxWidth: MOBILE_MAX_WIDTH,
+      alignSelf: 'center' as const,
+      flex: 1,
+      backgroundColor: colors.backgroundPrimary,
+    } : {};
+    
+    // Background color for web wrapper - matches HTML background (#F0F8FF)
+    const webBackgroundColor = Platform.OS === 'web' ? '#F0F8FF' : undefined;
+    
     return (
       <NavigationContainer
         key={`nav-${mode}`}
         ref={navigationRef}
         children={
-          <View style={containerStyle}>
-            <MainNavigator />
-            <WebModeToggleOverlay />
-            <StatusBar style="auto" />
+          <View style={Platform.OS === 'web' ? { flex: 1, alignItems: 'center', backgroundColor: webBackgroundColor } : { flex: 1 }}>
+            <View style={[containerStyle, webWrapperStyle]}>
+              <MainNavigator />
+              <WebModeToggleOverlay />
+              <StatusBar style="auto" />
+            </View>
           </View>
         }
       />

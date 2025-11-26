@@ -185,8 +185,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    alignSelf: 'center',
-    minWidth: 250,
+    width: '100%',
   },
   buttonDisabled: {
     opacity: 0.6,

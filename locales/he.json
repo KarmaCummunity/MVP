@@ -516,6 +516,7 @@
     }
   },
   "notifications": {
+    "title": "התראות",
     "loadError": "שגיאה בטעינת ההתראות",
     "markAllDoneTitle": "הושלם",
     "markAllDoneBody": "כל ההתראות סומנו כנקראו",

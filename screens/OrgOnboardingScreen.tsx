@@ -211,8 +211,7 @@ const styles = StyleSheet.create({
   webScrollContent: {
     padding: 16,
     paddingBottom: 80,
-    maxWidth: 900,
-    alignSelf: 'center',
+    width: '100%',
     minHeight: '100%',
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },

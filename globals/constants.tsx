@@ -274,3 +274,8 @@ export const VALIDATION = {
   PHONE_REGEX: /^[\+]?[1-9][\d]{0,15}$/,
 };
 
+// App version - synced with package.json
+// IMPORTANT: Update this value whenever package.json version changes
+// TODO: Consider creating a build script to auto-sync this with package.json
+export const APP_VERSION = '2.0.0';
+
