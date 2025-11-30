@@ -32,6 +32,8 @@ import { createShadowStyle } from '../globals/styles';
 import { useUser } from '../stores/userStore';
 import { db } from '../utils/databaseService';
 import { restAdapter } from '../utils/restAdapter';
+import { navigationQueue } from '../utils/navigationQueue';
+import { checkNavigationGuards } from '../utils/navigationGuards';
 import { getSignInMethods, signInWithEmail as fbSignInWithEmail, signUpWithEmail as fbSignUpWithEmail, sendVerification as fbSendVerification, isEmailVerified as fbIsEmailVerified, sendPasswordReset } from '../utils/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -44,7 +46,7 @@ import { APP_VERSION } from '../globals/constants';
 
 export default function LoginScreen() {
   
-  const { setCurrentPrincipal } = useUser(); // new API to set user identity and role
+  const { setCurrentPrincipal, isAuthenticated, isGuestMode } = useUser(); // new API to set user identity and role
   const { t } = useTranslation(['auth', 'common', 'settings']); // translations for the login screen
   
   // Get responsive values for dynamic styles in JSX
@@ -101,17 +103,37 @@ export default function LoginScreen() {
   const handleGuestMode = async () => {
     try {
       await setCurrentPrincipal({ user: null as any, role: 'guest' });
-      // Force immediate navigation to home
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'HomeStack' }],
-      });
+      
+      // Check guards before navigation
+      // After setCurrentPrincipal, user is authenticated as guest
+      const guardContext = {
+        isAuthenticated: true,
+        isGuestMode: true,
+        isAdmin: false,
+      };
+
+      const guardResult = await checkNavigationGuards(
+        {
+          type: 'reset',
+          index: 0,
+          routes: [{ name: 'HomeStack' }],
+        },
+        guardContext
+      );
+
+      if (!guardResult.allowed) {
+        // If guard blocks, try redirect if provided
+        if (guardResult.redirectTo) {
+          await navigationQueue.reset(0, [{ name: guardResult.redirectTo }], 2);
+        }
+        return;
+      }
+
+      // Use navigation queue with high priority (2) for auth changes
+      await navigationQueue.reset(0, [{ name: 'HomeStack' }], 2);
     } catch (error) {
       // Even if there's an error, try to navigate (fallback)
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'HomeStack' }],
-      });
+      await navigationQueue.reset(0, [{ name: 'HomeStack' }], 2);
     }
   };
 

@@ -56,6 +56,7 @@ import OrgDashboardScreen from '../screens/OrgDashboardScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import LandingSiteScreen from '../screens/LandingSiteScreen';
 import { useWebMode } from '../stores/webModeStore';
+import { logger } from '../utils/loggerService';
 
 import { RootStackParamList } from '../globals/types';
 
@@ -68,36 +69,28 @@ export default function MainNavigator() {
   const initialRouteNameRef = useRef<string | null>(null);
   const hasInitializedRef = useRef(false);
 
-  // TODO: Replace console.log with proper logging service
-  // TODO: Add proper state validation and error handling
-  console.log('🧭 MainNavigator - Render state:', {
-    selectedUser: selectedUser?.name || 'null',
-    isLoading,
-    isGuestMode,
-    isAuthenticated
-  });
+  // Log render state for debugging
+  useEffect(() => {
+    logger.debug('MainNavigator', 'Render state', {
+      selectedUser: selectedUser?.name || 'null',
+      isLoading,
+      isGuestMode,
+      isAuthenticated,
+      mode,
+    });
+  }, [selectedUser, isLoading, isGuestMode, isAuthenticated, mode]);
 
   // Refresh data when navigator comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🧭 MainNavigator - Navigator focused, checking state...');
+      logger.debug('MainNavigator', 'Navigator focused');
       // This will trigger re-renders of child screens when needed
     }, [])
   );
 
-  // Automatic update when authentication state changes
-  useEffect(() => {
-    console.log('🧭 MainNavigator - Auth state changed:', {
-      selectedUser: selectedUser?.name || 'null',
-      isLoading,
-      isGuestMode,
-      isAuthenticated
-    });
-  }, [selectedUser, isLoading, isGuestMode, isAuthenticated]);
-
   // Loading screen
   if (isLoading) {
-    console.log('🧭 MainNavigator - Showing loading screen');
+    logger.debug('MainNavigator', 'Showing loading screen');
     return (
       <View style={styles.centeredScreen as any}>
         <ActivityIndicator size="large" color={colors.info} />
@@ -106,8 +99,6 @@ export default function MainNavigator() {
     );
   }
 
-  console.log('🧭 MainNavigator - Loading completed, rendering navigator');
-
   // Determine initial route - only set once to prevent resets on auth state changes
   // This prevents the navigator from resetting when auth state updates
   useEffect(() => {
@@ -115,15 +106,15 @@ export default function MainNavigator() {
       if (Platform.OS === 'web' && mode === 'site') {
         // Site mode: always start with landing page
         initialRouteNameRef.current = 'LandingSiteScreen';
-        console.log('🧭 MainNavigator - Site mode: showing LandingSiteScreen as initial route');
+        logger.debug('MainNavigator', 'Site mode: showing LandingSiteScreen as initial route');
       } else {
         // App mode: determine based on authentication
         if (isAuthenticated || isGuestMode) {
           initialRouteNameRef.current = 'HomeStack';
-          console.log('🧭 MainNavigator - App mode: user authenticated/guest, showing HomeStack');
+          logger.debug('MainNavigator', 'App mode: user authenticated/guest, showing HomeStack');
         } else {
           initialRouteNameRef.current = 'LoginScreen';
-          console.log('🧭 MainNavigator - App mode: user not authenticated, showing LoginScreen');
+          logger.debug('MainNavigator', 'App mode: user not authenticated, showing LoginScreen');
         }
       }
       hasInitializedRef.current = true;

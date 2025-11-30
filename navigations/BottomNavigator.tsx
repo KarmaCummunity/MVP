@@ -39,6 +39,7 @@ import { vw, getScreenInfo, isLandscape } from "../globals/responsive";
 import { LAYOUT_CONSTANTS } from "../globals/constants";
 import { useUser } from "../stores/userStore";
 import { useWebMode } from "../stores/webModeStore";
+import { logger } from "../utils/loggerService";
 
 // Define the type for your bottom tab navigator's route names and their parameters.
 export type BottomTabNavigatorParamList = {
@@ -150,15 +151,23 @@ const styles = StyleSheet.create({
  * @returns {React.FC} A React component rendering the Bottom Tab Navigator.
  */
 export default function BottomNavigator(): React.ReactElement {
-  console.log('📱 BottomNavigator - Component rendered');
   const { isGuestMode, resetHomeScreen, isAdmin } = useUser();
   const { mode } = useWebMode();
   const navigation = useNavigation();
   
+  // Log render for debugging
+  React.useEffect(() => {
+    logger.debug('BottomNavigator', 'Component rendered', {
+      isGuestMode,
+      isAdmin,
+      mode,
+    });
+  }, [isGuestMode, isAdmin, mode]);
+  
   // Refresh data when navigator comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('📱 BottomNavigator - Navigator focused, checking state...');
+      logger.debug('BottomNavigator', 'Navigator focused');
       // This will trigger re-renders of child screens when needed
     }, [])
   );
@@ -247,7 +256,7 @@ export default function BottomNavigator(): React.ReactElement {
           component={HomeTabStack}
           listeners={({ navigation, route }) => ({
             tabPress: (e) => {
-              console.log('🏠 HomeScreen - Tab button pressed (even if already on home screen)');
+              logger.debug('BottomNavigator', 'HomeScreen tab pressed');
               resetHomeScreen();
             },
           })}

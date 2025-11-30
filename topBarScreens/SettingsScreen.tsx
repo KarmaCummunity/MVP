@@ -36,6 +36,7 @@ import colors from '../globals/colors';
 import { biDiTextAlign, rowDirection, getScreenInfo, scaleSize } from '../globals/responsive';
 import { FontSizes } from '../globals/constants';
 import { useUser } from '../stores/userStore';
+import { useWebMode } from '../stores/webModeStore';
 import GuestModeNotice from '../components/GuestModeNotice';
 import ScreenWrapper from '../components/ScreenWrapper';
 import { useTranslation } from 'react-i18next';
@@ -43,12 +44,16 @@ import i18n from '../app/i18n';
 import { I18nManager, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useScrollPositionWithHandler } from '../hooks/useScrollPosition';
+import { navigationQueue } from '../utils/navigationQueue';
+import { checkNavigationGuards } from '../utils/navigationGuards';
+import { logger } from '../utils/loggerService';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function SettingsScreen() {
   const navigation = useNavigation();
   const { signOut, isGuestMode, selectedUser, isAuthenticated } = useUser();
+  const { mode } = useWebMode();
   const { ref: scrollRef, onScroll } = useScrollPositionWithHandler('SettingsScreen', {
     enabled: true,
   });
@@ -72,15 +77,42 @@ export default function SettingsScreen() {
     console.log('⚙️ SettingsScreen - Auth state changed:', {
       isAuthenticated,
       isGuestMode,
-      selectedUser: selectedUser?.name || 'null'
+      selectedUser: selectedUser?.name || 'null',
+      mode
     });
     
-    // If user is no longer authenticated, go to login screen
+    // If user is no longer authenticated, navigate based on web mode
     if (!isAuthenticated && !isGuestMode) {
-      console.log('⚙️ SettingsScreen - User logged out, navigating to LoginScreen');
-      navigation.navigate('LoginScreen' as never);
+      const targetRoute = (Platform.OS === 'web' && mode === 'site') 
+        ? 'LandingSiteScreen' 
+        : 'LoginScreen';
+      
+      logger.debug('SettingsScreen', 'User logged out, navigating', { targetRoute, mode });
+      
+      // Check guards before navigation
+      const guardContext = {
+        isAuthenticated: false,
+        isGuestMode: false,
+        isAdmin: false,
+        mode,
+      };
+
+      checkNavigationGuards(
+        {
+          type: 'reset',
+          index: 0,
+          routes: [{ name: targetRoute }],
+        },
+        guardContext
+      ).then((guardResult) => {
+        if (!guardResult.allowed && guardResult.redirectTo) {
+          navigationQueue.reset(0, [{ name: guardResult.redirectTo }], 2);
+        } else {
+          navigationQueue.reset(0, [{ name: targetRoute }], 2);
+        }
+      });
     }
-  }, [isAuthenticated, isGuestMode, selectedUser, navigation]);
+  }, [isAuthenticated, isGuestMode, selectedUser, navigation, mode]);
 
   // Debug logs for development
   console.log('⚙️ SettingsScreen - Rendered with isGuestMode:', isGuestMode);
@@ -108,14 +140,45 @@ export default function SettingsScreen() {
     console.log('⚙️ SettingsScreen - Platform:', Platform.OS);
     console.log('⚙️ SettingsScreen - isGuestMode:', isGuestMode);
     
+    // Helper function to navigate after logout based on web mode
+    const navigateAfterLogout = async () => {
+      const targetRoute = (Platform.OS === 'web' && mode === 'site') 
+        ? 'LandingSiteScreen' 
+        : 'LoginScreen';
+      
+      logger.debug('SettingsScreen', 'Navigating after logout', { targetRoute, mode });
+      
+      // Check guards before navigation
+      const guardContext = {
+        isAuthenticated: false,
+        isGuestMode: false,
+        isAdmin: false,
+        mode,
+      };
+
+      const guardResult = await checkNavigationGuards(
+        {
+          type: 'reset',
+          index: 0,
+          routes: [{ name: targetRoute }],
+        },
+        guardContext
+      );
+
+      if (!guardResult.allowed && guardResult.redirectTo) {
+        await navigationQueue.reset(0, [{ name: guardResult.redirectTo }], 2);
+      } else {
+        await navigationQueue.reset(0, [{ name: targetRoute }], 2);
+      }
+    };
+
     // Guest mode - direct logout without warning as it's not dangerous
     if (isGuestMode) {
       console.log('⚙️ SettingsScreen - Guest mode detected, direct logout without confirmation');
       signOut().then(() => {
         console.log('⚙️ SettingsScreen - Guest logout completed');
         setTimeout(() => {
-          console.log('⚙️ SettingsScreen - Navigating to LoginScreen after guest logout');
-          navigation.navigate('LoginScreen' as never);
+          navigateAfterLogout();
         }, 100);
       });
       return;
@@ -136,9 +199,7 @@ export default function SettingsScreen() {
           
           // Wait a bit to ensure state is updated
           setTimeout(() => {
-            console.log('⚙️ SettingsScreen - Navigating to LoginScreen via browser after delay');
-            navigation.navigate('LoginScreen' as never);
-            console.log('⚙️ SettingsScreen - Navigation to LoginScreen completed via browser');
+            navigateAfterLogout();
           }, 100);
         });
       } else {
@@ -170,9 +231,7 @@ export default function SettingsScreen() {
                 
                 // Short delay to ensure state is updated before navigation
                 setTimeout(() => {
-                  console.log('⚙️ SettingsScreen - Navigating to LoginScreen after delay');
-                  navigation.navigate('LoginScreen' as never);
-                  console.log('⚙️ SettingsScreen - Navigation to LoginScreen completed');
+                  navigateAfterLogout();
                 }, 100);
               },
             },

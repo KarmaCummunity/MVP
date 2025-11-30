@@ -30,8 +30,9 @@ export default function AdminTasksScreen() {
   const [tasks, setTasks] = useState<AdminTask[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [newTitle, setNewTitle] = useState('');
   const [creating, setCreating] = useState<boolean>(false);
+  const [updating, setUpdating] = useState<string | null>(null); // Track which task is being updated
+  const [deleting, setDeleting] = useState<string | null>(null); // Track which task is being deleted
   const [showForm, setShowForm] = useState<boolean>(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -83,9 +84,24 @@ export default function AdminTasksScreen() {
     }
   }, [query, filterStatus, filterPriority, filterCategory]);
 
+  // Debounce search query - fetch immediately for filters, debounce for text search
   useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    
+    if (query) {
+      // Debounce text search
+      timeout = setTimeout(() => {
+        fetchTasks();
+      }, 500);
+    } else {
+      // Immediate fetch for filters
+      fetchTasks();
+    }
+    
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [query, filterStatus, filterPriority, filterCategory, fetchTasks]);
 
   const resetForm = () => {
     setFormData({
@@ -104,37 +120,68 @@ export default function AdminTasksScreen() {
   const createTask = async () => {
     if (!formData.title.trim()) return;
     setCreating(true);
-    const body = {
-      title: formData.title.trim(),
-      description: formData.description.trim() || undefined,
-      priority: formData.priority,
-      status: formData.status,
-      category: formData.category,
-      due_date: formData.due_date ? new Date(formData.due_date).toISOString() : undefined,
-      assigneesEmails: formData.assigneesEmails
-        ? formData.assigneesEmails.split(',').map((e) => e.trim()).filter(Boolean)
-        : [],
-      tags: formData.tagsText
-        ? formData.tagsText.split(',').map((t) => t.trim()).filter(Boolean)
-        : [],
-      created_by: selectedUser?.id || null,
-    };
-    const res: ApiResponse<AdminTask> = await apiService.createTask(body);
-    if (!res.success) {
-      setError(res.error || 'שגיאה ביצירת משימה');
-    } else if (res.data) {
-      setTasks((prev) => [res.data as AdminTask, ...prev]);
-      resetForm();
-      setShowForm(false);
+    setError(null);
+    try {
+      // Validate date if provided
+      let parsedDueDate = null;
+      if (formData.due_date.trim()) {
+        const date = new Date(formData.due_date);
+        if (isNaN(date.getTime())) {
+          setError('תאריך לא תקין - אנא השתמש בפורמט YYYY-MM-DD');
+          setCreating(false);
+          return;
+        }
+        parsedDueDate = date.toISOString();
+      }
+      
+      const body = {
+        title: formData.title.trim(),
+        description: formData.description.trim() || null,
+        priority: formData.priority,
+        status: formData.status,
+        category: formData.category || null,
+        due_date: parsedDueDate,
+        assigneesEmails: formData.assigneesEmails.trim()
+          ? formData.assigneesEmails.split(',').map((e) => e.trim()).filter(Boolean)
+          : [],
+        tags: formData.tagsText.trim()
+          ? formData.tagsText.split(',').map((t) => t.trim()).filter(Boolean)
+          : [],
+        created_by: selectedUser?.id || null,
+      };
+      const res: ApiResponse<AdminTask> = await apiService.createTask(body);
+      if (!res.success) {
+        setError(res.error || 'שגיאה ביצירת משימה');
+      } else if (res.data) {
+        // Refresh tasks from server to ensure consistency
+        await fetchTasks();
+        resetForm();
+        setShowForm(false);
+      }
+    } catch (err) {
+      console.error('Error creating task:', err);
+      setError('שגיאה ביצירת משימה - נסה שוב');
+    } finally {
+      setCreating(false);
     }
-    setCreating(false);
   };
 
   const toggleDone = async (task: AdminTask) => {
-    const nextStatus: TaskStatus = task.status === 'done' ? 'open' : 'done';
-    const res: ApiResponse<AdminTask> = await apiService.updateTask(task.id, { status: nextStatus });
-    if (res.success && res.data) {
-      setTasks((prev) => prev.map((t) => (t.id === task.id ? (res.data as AdminTask) : t)));
+    setUpdating(task.id);
+    setError(null);
+    try {
+      const nextStatus: TaskStatus = task.status === 'done' ? 'open' : 'done';
+      const res: ApiResponse<AdminTask> = await apiService.updateTask(task.id, { status: nextStatus });
+      if (res.success && res.data) {
+        setTasks((prev) => prev.map((t) => (t.id === task.id ? (res.data as AdminTask) : t)));
+      } else {
+        setError(res.error || 'שגיאה בעדכון סטטוס המשימה');
+      }
+    } catch (err) {
+      console.error('Error toggling task status:', err);
+      setError('שגיאה בעדכון סטטוס המשימה - נסה שוב');
+    } finally {
+      setUpdating(null);
     }
   };
 
@@ -142,8 +189,16 @@ export default function AdminTasksScreen() {
     const isDone = item.status === 'done';
     return (
       <View style={[styles.taskItem, isDone && styles.taskItemDone]}>
-        <TouchableOpacity style={styles.checkbox} onPress={() => toggleDone(item)}>
-          <Ionicons name={isDone ? 'checkbox' : 'square-outline'} size={24} color={isDone ? colors.green : colors.textSecondary} />
+        <TouchableOpacity 
+          style={styles.checkbox} 
+          onPress={() => toggleDone(item)}
+          disabled={updating === item.id}
+        >
+          {updating === item.id ? (
+            <ActivityIndicator size="small" color={colors.textSecondary} />
+          ) : (
+            <Ionicons name={isDone ? 'checkbox' : 'square-outline'} size={24} color={isDone ? colors.green : colors.textSecondary} />
+          )}
         </TouchableOpacity>
         <View style={styles.taskContent}>
           <Text style={[styles.taskTitle, isDone && styles.taskTitleDone]} numberOfLines={2}>
@@ -163,7 +218,7 @@ export default function AdminTasksScreen() {
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{item.status === 'open' ? 'פתוחה' : item.status === 'in_progress' ? 'בתהליך' : item.status === 'done' ? 'בוצעה' : 'בארכיון'}</Text>
             </View>
-            {!!item.assignees?.length && (
+            {Array.isArray(item.assignees) && item.assignees.length > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{item.assignees.length} מוקצים</Text>
               </View>
@@ -174,9 +229,19 @@ export default function AdminTasksScreen() {
               <Ionicons name="create-outline" size={18} color={colors.textPrimary} />
               <Text style={styles.actionText}>ערוך</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtn} onPress={() => deleteTask(item.id)}>
-              <Ionicons name="trash-outline" size={18} color={colors.error} />
-              <Text style={[styles.actionText, { color: colors.error }]}>מחק</Text>
+            <TouchableOpacity 
+              style={styles.actionBtn} 
+              onPress={() => deleteTask(item.id)}
+              disabled={deleting === item.id}
+            >
+              {deleting === item.id ? (
+                <ActivityIndicator size="small" color={colors.error} />
+              ) : (
+                <>
+                  <Ionicons name="trash-outline" size={18} color={colors.error} />
+                  <Text style={[styles.actionText, { color: colors.error }]}>מחק</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -185,6 +250,8 @@ export default function AdminTasksScreen() {
   };
 
   const openEdit = (task: AdminTask) => {
+    // Note: assigneesEmails will be empty when editing - user needs to re-enter emails
+    // This is a limitation - we'd need an API to get user emails by UUIDs
     setFormData({
       title: task.title || '',
       description: task.description || '',
@@ -192,7 +259,7 @@ export default function AdminTasksScreen() {
       status: task.status,
       category: task.category || 'development',
       due_date: task.due_date ? new Date(task.due_date).toISOString().slice(0, 10) : '',
-      assigneesEmails: '',
+      assigneesEmails: '', // Empty - user needs to re-enter if they want to change assignees
       tagsText: (task.tags || []).join(', '),
     });
     setEditingId(task.id);
@@ -201,35 +268,67 @@ export default function AdminTasksScreen() {
 
   const saveEdit = async () => {
     if (!editingId) return;
-    const body: any = {
-      title: formData.title.trim(),
-      description: formData.description.trim(),
-      priority: formData.priority,
-      status: formData.status,
-      category: formData.category,
-      due_date: formData.due_date ? new Date(formData.due_date).toISOString() : null,
-      tags: formData.tagsText ? formData.tagsText.split(',').map((t) => t.trim()).filter(Boolean) : [],
-    };
-    if (formData.assigneesEmails) {
-      body.assigneesEmails = formData.assigneesEmails.split(',').map((e) => e.trim()).filter(Boolean);
-    }
-    const res = await apiService.updateTask(editingId, body);
-    if (res.success && res.data) {
-      setTasks((prev) => prev.map((t) => (t.id === editingId ? (res.data as AdminTask) : t)));
-      setShowForm(false);
-      resetForm();
-      setEditingId(null);
-    } else {
-      setError(res.error || 'שגיאה בעדכון משימה');
+    setUpdating(editingId);
+    setError(null);
+    try {
+      // Validate date if provided
+      let parsedDueDate = null;
+      if (formData.due_date.trim()) {
+        const date = new Date(formData.due_date);
+        if (isNaN(date.getTime())) {
+          setError('תאריך לא תקין - אנא השתמש בפורמט YYYY-MM-DD');
+          setUpdating(null);
+          return;
+        }
+        parsedDueDate = date.toISOString();
+      }
+      
+      const body: any = {
+        title: formData.title.trim(),
+        description: formData.description.trim() || null,
+        priority: formData.priority,
+        status: formData.status,
+        category: formData.category || null,
+        due_date: parsedDueDate,
+        tags: formData.tagsText ? formData.tagsText.split(',').map((t) => t.trim()).filter(Boolean) : [],
+      };
+      if (formData.assigneesEmails.trim()) {
+        body.assigneesEmails = formData.assigneesEmails.split(',').map((e) => e.trim()).filter(Boolean);
+      }
+      const res = await apiService.updateTask(editingId, body);
+      if (res.success && res.data) {
+        // Refresh tasks from server to ensure consistency
+        await fetchTasks();
+        setShowForm(false);
+        resetForm();
+        setEditingId(null);
+      } else {
+        setError(res.error || 'שגיאה בעדכון משימה');
+      }
+    } catch (err) {
+      console.error('Error updating task:', err);
+      setError('שגיאה בעדכון משימה - נסה שוב');
+    } finally {
+      setUpdating(null);
     }
   };
 
   const deleteTask = async (taskId: string) => {
-    const res = await apiService.deleteTask(taskId);
-    if (res.success) {
-      setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    } else {
-      setError(res.error || 'שגיאה במחיקת משימה');
+    setDeleting(taskId);
+    setError(null);
+    try {
+      const res = await apiService.deleteTask(taskId);
+      if (res.success) {
+        // Refresh tasks from server to ensure consistency
+        await fetchTasks();
+      } else {
+        setError(res.error || 'שגיאה במחיקת משימה');
+      }
+    } catch (err) {
+      console.error('Error deleting task:', err);
+      setError('שגיאה במחיקת משימה - נסה שוב');
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -349,8 +448,8 @@ export default function AdminTasksScreen() {
                 <Text style={styles.modalBtnText}>ביטול</Text>
               </TouchableOpacity>
               {editingId ? (
-                <TouchableOpacity style={[styles.modalBtn, styles.modalSave]} onPress={saveEdit} disabled={creating}>
-                  {creating ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>שמירה</Text>}
+                <TouchableOpacity style={[styles.modalBtn, styles.modalSave]} onPress={saveEdit} disabled={updating === editingId}>
+                  {updating === editingId ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>שמירה</Text>}
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity style={[styles.modalBtn, styles.modalSave]} onPress={createTask} disabled={creating || !formData.title.trim()}>

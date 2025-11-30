@@ -31,7 +31,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../stores/userStore';
 import CommentsModal from './CommentsModal';
-import logger from '../utils/logger';
+import { logger } from '../utils/loggerService';
 import { isBookmarked, addBookmark, removeBookmark } from '../utils/bookmarksService';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';

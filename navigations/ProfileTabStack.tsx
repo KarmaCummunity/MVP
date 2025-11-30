@@ -20,6 +20,7 @@ import AboutKarmaCommunityScreen from '../topBarScreens/AboutKarmaCommunityScree
 import DiscoverPeopleScreen from '../screens/DiscoverPeopleScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import TopBarNavigator from './TopBarNavigator';
+import { logger } from '../utils/loggerService';
 
 type ProfileTabStackParamList = {
   ProfileScreen: undefined;
@@ -38,7 +39,7 @@ const Stack = createStackNavigator<ProfileTabStackParamList>();
 export default function ProfileTabStack(): React.ReactElement {
   useFocusEffect(
     React.useCallback(() => {
-      console.log('👤 ProfileTabStack - focused');
+      logger.debug('ProfileTabStack', 'Navigator focused');
     }, [])
   );
 

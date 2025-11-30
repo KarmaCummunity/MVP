@@ -21,6 +21,7 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 import AboutKarmaCommunityScreen from '../topBarScreens/AboutKarmaCommunityScreen';
 import SettingsScreen from '../topBarScreens/SettingsScreen';
 import TopBarNavigator from './TopBarNavigator';
+import { logger } from '../utils/loggerService';
 
 type SearchTabStackParamList = {
   SearchScreen: undefined;
@@ -40,7 +41,7 @@ const Stack = createStackNavigator<SearchTabStackParamList>();
 export default function SearchTabStack(): React.ReactElement {
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🔎 SearchTabStack - focused');
+      logger.debug('SearchTabStack', 'Navigator focused');
     }, [])
   );
 

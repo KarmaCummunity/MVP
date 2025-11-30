@@ -51,6 +51,7 @@ import SettingsScreen from "../topBarScreens/SettingsScreen";
 import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
 import TopBarNavigator from "./TopBarNavigator";
 import { DonationsStackParamList } from "../globals/types";
+import { logger } from "../utils/loggerService";
 
 const Stack = createStackNavigator<DonationsStackParamList>();
 
@@ -58,7 +59,7 @@ export default function DonationsStack() {
   // Refresh data when navigator comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('💰 DonationsStack - Navigator focused, checking state...');
+      logger.debug('DonationsStack', 'Navigator focused');
       // This will trigger re-renders of child screens when needed
     }, [])
   );

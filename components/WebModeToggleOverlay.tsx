@@ -19,11 +19,13 @@ import { useWebMode } from '../stores/webModeStore';
 import { useUser } from '../stores/userStore';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
+import { navigationQueue } from '../utils/navigationQueue';
+import { checkNavigationGuards, getGuardContext } from '../utils/navigationGuards';
 
 const WebModeToggleOverlay: React.FC = () => {
   if (Platform.OS !== 'web') return null as any;
   const { mode, setMode } = useWebMode();
-  const { isAuthenticated, isGuestMode, selectedUser } = useUser();
+  const { isAuthenticated, isGuestMode, selectedUser, isAdmin } = useUser();
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   // Hide toggle button if user is authenticated (not guest mode)
@@ -35,30 +37,51 @@ const WebModeToggleOverlay: React.FC = () => {
   // Dynamic container style based on mode
   const containerStyle = mode === 'app' ? styles.containerApp : styles.containerSite;
 
-  const handleToggle = () => {
-    if (mode === 'site') {
-      // Switch to app mode
-      setMode('app');
-      // Navigate to appropriate screen based on authentication
+  const handleToggle = async () => {
+    const newMode = mode === 'site' ? 'app' : 'site';
+    setMode(newMode);
+    
+    // Determine target route based on new mode and authentication
+    let targetRoute: string;
+    if (newMode === 'app') {
+      // Switch to app mode - navigate to appropriate screen based on authentication
       if (isAuthenticated || isGuestMode) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'HomeStack' }],
-        });
+        targetRoute = 'HomeStack';
       } else {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'LoginScreen' }],
-        });
+        targetRoute = 'LoginScreen';
       }
     } else {
-      // Switch to site mode
-      setMode('site');
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'LandingSiteScreen' }],
-      });
+      // Switch to site mode - navigate to landing page
+      targetRoute = 'LandingSiteScreen';
     }
+
+    // Check guards before navigation
+    const guardContext = {
+      isAuthenticated,
+      isGuestMode,
+      isAdmin,
+      mode: newMode,
+    };
+
+    const guardResult = await checkNavigationGuards(
+      {
+        type: 'reset',
+        index: 0,
+        routes: [{ name: targetRoute }],
+      },
+      guardContext
+    );
+
+    if (!guardResult.allowed) {
+      // If guard blocks, try redirect if provided
+      if (guardResult.redirectTo) {
+        await navigationQueue.reset(0, [{ name: guardResult.redirectTo }], 2);
+      }
+      return;
+    }
+
+    // Use navigation queue with high priority (2) for mode changes
+    await navigationQueue.reset(0, [{ name: targetRoute }], 2);
   };
 
   return (

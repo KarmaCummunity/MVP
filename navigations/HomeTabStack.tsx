@@ -27,6 +27,7 @@ import LandingSiteScreen from '../screens/LandingSiteScreen';
 
 import TopBarNavigator from './TopBarNavigator';
 import { useWebMode } from '../stores/webModeStore';
+import { logger } from '../utils/loggerService';
 
 type HomeTabStackParamList = {
   HomeMain: undefined;
@@ -52,7 +53,7 @@ export default function HomeTabStack(): React.ReactElement {
   
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🏠 HomeTabStack - focused');
+      logger.debug('HomeTabStack', 'Navigator focused');
     }, [])
   );
 

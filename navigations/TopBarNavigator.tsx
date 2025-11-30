@@ -14,7 +14,7 @@ import { useRoute, useFocusEffect, useNavigationState } from '@react-navigation/
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import colors from '../globals/colors';
 import { useUser } from '../stores/userStore';
-import logger from '../utils/logger';
+import { logger } from '../utils/loggerService';
 import { rowDirection } from '../globals/responsive';
 import { useTranslation } from 'react-i18next';
 import AboutButton from '../components/AboutButton';
@@ -52,13 +52,18 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
     return findActiveRoute(state.routes, state.index || 0);
   });
   
-  console.log('🔝 TopBarNavigator - Component rendered, route name:', route.name, 'isGuestMode:', isGuestMode);
+  // Log render for debugging
+  React.useEffect(() => {
+    logger.debug('TopBarNavigator', 'Component rendered', {
+      routeName: route.name,
+      isGuestMode,
+    });
+  }, [route.name, isGuestMode]);
   
   // Refresh data when navigator comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🔝 TopBarNavigator - Navigator focused, checking state...');
-      console.log('🔝 TopBarNavigator - Current route on focus:', route.name);
+      logger.debug('TopBarNavigator', 'Navigator focused', { routeName: route.name });
     }, [route.name])
   );
 

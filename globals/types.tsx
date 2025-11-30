@@ -211,6 +211,18 @@ export type AdminStackParamList = {
   AdminTasks: undefined;
   AdminPeople: undefined;
   AdminReview: undefined;
+  ChatListScreen: undefined;
+  ChatDetailScreen: {
+    conversationId: string;
+    userName: string;
+    userAvatar: string;
+    otherUserId: string;
+  };
+  NewChatScreen: undefined;
+  SettingsScreen: undefined;
+  NotificationsScreen: undefined;
+  AboutKarmaCommunityScreen: undefined;
+  LandingSiteScreen: undefined;
 };
 
 // --- Helper Types for Navigation Props ---

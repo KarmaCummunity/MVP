@@ -13,8 +13,10 @@ import { EnhancedStatsService } from '../utils/statsService';
 import { apiService } from '../utils/apiService';
 import { USE_BACKEND } from '../utils/dbConfig';
 import { useWebMode } from '../stores/webModeStore';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../stores/userStore';
+import { navigationQueue } from '../utils/navigationQueue';
+import { checkNavigationGuards } from '../utils/navigationGuards';
 
 interface LandingStats {
   siteVisits: number;
@@ -1322,7 +1324,7 @@ const LandingSiteScreen: React.FC = () => {
   
   const { setMode } = useWebMode();
   const navigation = useNavigation<any>();
-  const { isAuthenticated, isGuestMode } = useUser();
+  const { isAuthenticated, isGuestMode, isAdmin } = useUser();
   
   const [stats, setStats] = useState<LandingStats>({
     siteVisits: 0,
@@ -1341,22 +1343,53 @@ const LandingSiteScreen: React.FC = () => {
   const scrollSpyObserverRef = useRef<IntersectionObserver | null>(null);
   const observedElementsRef = useRef<Set<HTMLElement>>(new Set());
   
+  // Ensure top bar and bottom bar are visible when this screen is focused
+  // This fixes the issue where bars disappear when navigating from TopBar's AboutButton
+  useFocusEffect(
+    useCallback(() => {
+      console.log('🏠 LandingSiteScreen - Screen focused, ensuring bars are visible');
+      navigation.setParams({
+        hideTopBar: false,
+        hideBottomBar: false,
+      });
+    }, [navigation])
+  );
+  
   // Handle navigation to app mode
-  const handleGoToApp = () => {
+  const handleGoToApp = async () => {
     logger.info('LandingSiteScreen', 'Navigate to app mode', { isAuthenticated, isGuestMode });
     setMode('app');
-    // Navigate based on authentication status
-    if (isAuthenticated || isGuestMode) {
-      navigation.reset({
+    
+    // Determine target route based on authentication status
+    const targetRoute = (isAuthenticated || isGuestMode) ? 'HomeStack' : 'LoginScreen';
+    
+    // Check guards before navigation
+    const guardContext = {
+      isAuthenticated,
+      isGuestMode,
+      isAdmin,
+      mode: 'app' as const,
+    };
+
+    const guardResult = await checkNavigationGuards(
+      {
+        type: 'reset',
         index: 0,
-        routes: [{ name: 'HomeStack' }],
-      });
-    } else {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'LoginScreen' }],
-      });
+        routes: [{ name: targetRoute }],
+      },
+      guardContext
+    );
+
+    if (!guardResult.allowed) {
+      // If guard blocks, try redirect if provided
+      if (guardResult.redirectTo) {
+        await navigationQueue.reset(0, [{ name: guardResult.redirectTo }], 2);
+      }
+      return;
     }
+
+    // Use navigation queue with high priority (2) for mode changes
+    await navigationQueue.reset(0, [{ name: targetRoute }], 2);
   };
   
   // Handle navigation from floating menu

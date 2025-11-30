@@ -47,8 +47,10 @@ import WebModeToggleOverlay from './components/WebModeToggleOverlay';
 import { FontSizes } from "./globals/constants";
 import { logger } from './utils/loggerService';
 import ErrorBoundary from './components/ErrorBoundary';
-import { saveNavigationState, loadNavigationState } from './utils/navigationPersistence';
+import { saveNavigationState, loadNavigationState, clearNavigationState } from './utils/navigationPersistence';
 import { NavigationState } from '@react-navigation/native';
+import { navigationQueue } from './utils/navigationQueue';
+import { RootStackParamList } from './globals/types';
 // RTL is controlled via selected language in i18n and Settings
 
 // Initialize notifications only on supported platforms
@@ -89,14 +91,8 @@ SplashScreen.preventAutoHideAsync();
 function AppContent() {
   const { t } = useTranslation(['common']);
   const { selectedUser } = useUser();
-  // Define proper navigation param list type
-  type RootParamList = {
-    ChatDetailScreen: { conversationId: string };
-    NotificationsScreen: undefined;
-    [key: string]: any; // Allow other routes for now
-  };
-
-  const navigationRef = useRef<NavigationContainerRef<RootParamList>>(null);
+  
+  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
   // Initialize with null - will be loaded before NavigationContainer renders
   const [initialNavigationState, setInitialNavigationState] = React.useState<NavigationState | undefined>(undefined);
   const [isNavigationStateLoaded, setIsNavigationStateLoaded] = React.useState(false);
@@ -173,10 +169,18 @@ function AppContent() {
         const conversationId = data?.conversationId;
 
         if (navigationRef.current?.isReady()) {
+          // Use navigation queue for deep link navigation to ensure proper sequencing
           if (type === 'message' && conversationId) {
-            navigationRef.current.navigate('ChatDetailScreen', { conversationId });
+            // Navigate to ChatDetailScreen - note that it requires full params according to RootStackParamList
+            // For notifications, we'll need userName, userAvatar, and otherUserId
+            // For now, we'll navigate to NotificationsScreen if we don't have full params
+            navigationQueue.navigate('NotificationsScreen', undefined, 1).catch((error) => {
+              logger.warn('App', 'Failed to navigate to NotificationsScreen from notification', { error });
+            });
           } else {
-            navigationRef.current.navigate('NotificationsScreen');
+            navigationQueue.navigate('NotificationsScreen', undefined, 1).catch((error) => {
+              logger.warn('App', 'Failed to navigate to NotificationsScreen from notification', { error });
+            });
           }
         }
       } catch (err) {
@@ -397,16 +401,46 @@ function AppContent() {
       [mode, selectedUser?.id]
     );
 
+    // Initialize navigation queue with ref when container is ready
+    useEffect(() => {
+      if (navigationRef.current?.isReady()) {
+        navigationQueue.initialize(navigationRef.current);
+      }
+    }, []);
+
     // Update refs when mode or userId changes
     useEffect(() => {
+      const prevMode = prevModeRef.current;
+      const prevUserId = prevUserIdRef.current;
+      
+      // If mode or userId changed, clear old navigation state
+      if (prevMode !== mode || prevUserId !== selectedUser?.id) {
+        if (prevMode && prevUserId !== undefined) {
+          // Clear old state asynchronously (don't block)
+          clearNavigationState(prevMode, prevUserId).catch((error) => {
+            logger.warn('App', 'Failed to clear old navigation state', { error });
+          });
+        }
+      }
+      
       prevModeRef.current = mode;
       prevUserIdRef.current = selectedUser?.id || null;
     }, [mode, selectedUser?.id]);
 
     return (
-      <NavigationContainer
+      <NavigationContainer<RootStackParamList>
         key={navKey}
-        ref={navigationRef}
+        ref={(ref) => {
+          navigationRef.current = ref;
+          if (ref?.isReady()) {
+            navigationQueue.initialize(ref);
+          }
+        }}
+        onReady={() => {
+          if (navigationRef.current?.isReady()) {
+            navigationQueue.initialize(navigationRef.current);
+          }
+        }}
         initialState={initialState}
         onStateChange={handleNavigationStateChange}
         children={

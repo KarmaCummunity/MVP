@@ -158,6 +158,45 @@ class LoggerService {
     this.addLog('error', component, message, data);
   }
 
+  // Compatibility methods for legacy logger API
+  logScreenNavigation(fromScreen: string, toScreen: string, userId?: string) {
+    this.info('Navigation', 'Screen navigation', {
+      fromScreen,
+      toScreen,
+      userId,
+    });
+  }
+
+  logUserAction(action: string, screen: string, data?: any, userId?: string) {
+    this.info(screen, 'User action', {
+      action,
+      ...(typeof data === 'object' && data !== null ? data : { data }),
+      userId,
+    });
+  }
+
+  logError(error: any, context: string, screen?: string, userId?: string) {
+    this.error(screen || 'Error', 'Application error', {
+      context,
+      error: {
+        message: error?.message || String(error),
+        stack: error?.stack,
+        name: error?.name,
+      },
+      userId,
+    });
+  }
+
+  logApiCall(endpoint: string, method: string, status: number, duration: number, userId?: string) {
+    this.info('API', 'API call', {
+      endpoint,
+      method,
+      status,
+      duration,
+      userId,
+    });
+  }
+
   // Configuration methods
   setLogLevel(level: LogLevel) {
     this.logLevel = level;

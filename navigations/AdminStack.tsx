@@ -1,7 +1,7 @@
 // File overview:
-// - Purpose: Stack navigator for admin screens (dashboard, money management, people, review).
+// - Purpose: Stack navigator for admin screens (dashboard, money management, people, review) and top bar screens.
 // - Reached from: `BottomNavigator` -> Tab 'AdminTab' (only visible to admins).
-// - Provides: Admin dashboard and management screens.
+// - Provides: Admin dashboard and management screens, plus top bar screens (Settings, Notifications, About, Chat screens, LandingSiteScreen).
 // - Header: Uses `TopBarNavigator`; can be hidden per-screen with route param `hideTopBar`.
 import React from "react";
 import { Platform } from "react-native";
@@ -12,15 +12,23 @@ import AdminMoneyScreen from "../screens/AdminMoneyScreen";
 import AdminPeopleScreen from "../screens/AdminPeopleScreen";
 import AdminReviewScreen from "../screens/AdminReviewScreen";
 import AdminTasksScreen from "../screens/AdminTasksScreen";
+import ChatListScreen from "../topBarScreens/ChatListScreen";
+import ChatDetailScreen from "../screens/ChatDetailScreen";
+import NewChatScreen from "../screens/NewChatScreen";
+import SettingsScreen from "../topBarScreens/SettingsScreen";
+import NotificationsScreen from "../screens/NotificationsScreen";
+import AboutKarmaCommunityScreen from "../topBarScreens/AboutKarmaCommunityScreen";
+import LandingSiteScreen from "../screens/LandingSiteScreen";
 import TopBarNavigator from "./TopBarNavigator";
 import { AdminStackParamList } from "../globals/types";
+import { logger } from "../utils/loggerService";
 
 const Stack = createStackNavigator<AdminStackParamList>();
 
 export default function AdminStack() {
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🛡️ AdminStack - Navigator focused');
+      logger.debug('AdminStack', 'Navigator focused');
     }, [])
   );
 
@@ -50,6 +58,13 @@ export default function AdminStack() {
       <Stack.Screen name="AdminPeople" component={AdminPeopleScreen} />
       <Stack.Screen name="AdminReview" component={AdminReviewScreen} />
       <Stack.Screen name="AdminTasks" component={AdminTasksScreen} />
+      <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
+      <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
+      <Stack.Screen name="NewChatScreen" component={NewChatScreen} />
+      <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
+      <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
+      <Stack.Screen name="AboutKarmaCommunityScreen" component={AboutKarmaCommunityScreen} />
+      <Stack.Screen name="LandingSiteScreen" component={LandingSiteScreen} />
     </Stack.Navigator>
   );
 }

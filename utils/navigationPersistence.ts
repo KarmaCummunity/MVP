@@ -2,11 +2,14 @@
 // Utility for saving and loading React Navigation state
 // Supports both web (localStorage) and native (AsyncStorage)
 // Session-only persistence - state is cleared when app closes
+// Now includes validation and versioning
 
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationState } from '@react-navigation/native';
 import { logger } from './loggerService';
+import { validateNavigationState, cleanNavigationState, checkNavigationStateVersion } from './navigationStateValidator';
+import { CURRENT_NAVIGATION_STATE_VERSION } from '../types/navigation';
 
 const LOG_SOURCE = 'NavigationPersistence';
 
@@ -41,8 +44,45 @@ export const saveNavigationState = (
   // Debounce the save operation
   saveTimeout = setTimeout(() => {
     try {
+      // Validate state before saving
+      const validation = validateNavigationState(state);
+      if (!validation.valid) {
+        logger.warn(LOG_SOURCE, 'Navigation state validation failed, not saving', {
+          errors: validation.errors,
+          warnings: validation.warnings,
+        });
+        return;
+      }
+
+      // Check version compatibility
+      const versionCheck = checkNavigationStateVersion(state);
+      if (!versionCheck.compatible) {
+        logger.warn(LOG_SOURCE, 'Navigation state version incompatible, not saving', {
+          error: versionCheck.error,
+        });
+        return;
+      }
+
+      // Clean state before saving
+      const cleanedState = cleanNavigationState(state);
+      if (!cleanedState) {
+        logger.warn(LOG_SOURCE, 'Navigation state cleaning failed, not saving');
+        return;
+      }
+
+      // Add version to state metadata
+      const stateWithVersion = {
+        ...cleanedState,
+        _metadata: {
+          version: CURRENT_NAVIGATION_STATE_VERSION,
+          savedAt: new Date().toISOString(),
+          mode,
+          userId,
+        },
+      };
+
       const storageKey = getStorageKey(mode, userId, Platform.OS);
-      const stateString = JSON.stringify(state);
+      const stateString = JSON.stringify(stateWithVersion);
 
       if (Platform.OS === 'web') {
         // Web: synchronous localStorage
@@ -51,6 +91,7 @@ export const saveNavigationState = (
           logger.debug(LOG_SOURCE, 'Navigation state saved to localStorage', {
             key: storageKey,
             stateSize: stateString.length,
+            version: CURRENT_NAVIGATION_STATE_VERSION,
           });
         }
       } else {
@@ -61,6 +102,7 @@ export const saveNavigationState = (
         logger.debug(LOG_SOURCE, 'Navigation state saved to AsyncStorage', {
           key: storageKey,
           stateSize: stateString.length,
+          version: CURRENT_NAVIGATION_STATE_VERSION,
         });
       }
     } catch (error) {
@@ -96,13 +138,59 @@ export const loadNavigationState = async (
       return null;
     }
 
-    const state = JSON.parse(stateString) as NavigationState;
-    logger.debug(LOG_SOURCE, 'Navigation state loaded from storage', {
+    let state: NavigationState;
+    try {
+      state = JSON.parse(stateString) as NavigationState;
+    } catch (parseError) {
+      logger.error(LOG_SOURCE, 'Failed to parse navigation state', { error: parseError });
+      // Clear corrupted state
+      await clearNavigationState(mode, userId);
+      return null;
+    }
+
+    // Remove metadata if present (it's not part of NavigationState type)
+    if ((state as any)._metadata) {
+      const { _metadata, ...stateWithoutMetadata } = state as any;
+      state = stateWithoutMetadata as NavigationState;
+    }
+
+    // Validate loaded state
+    const validation = validateNavigationState(state);
+    if (!validation.valid) {
+      logger.warn(LOG_SOURCE, 'Loaded navigation state is invalid, clearing it', {
+        errors: validation.errors,
+        warnings: validation.warnings,
+      });
+      // Clear invalid state
+      await clearNavigationState(mode, userId);
+      return null;
+    }
+
+    // Check version compatibility
+    const versionCheck = checkNavigationStateVersion(state);
+    if (!versionCheck.compatible) {
+      logger.warn(LOG_SOURCE, 'Loaded navigation state version is incompatible, clearing it', {
+        error: versionCheck.error,
+      });
+      // Clear incompatible state
+      await clearNavigationState(mode, userId);
+      return null;
+    }
+
+    // Clean state before returning
+    const cleanedState = cleanNavigationState(state);
+    if (!cleanedState) {
+      logger.warn(LOG_SOURCE, 'Failed to clean loaded navigation state, clearing it');
+      await clearNavigationState(mode, userId);
+      return null;
+    }
+
+    logger.debug(LOG_SOURCE, 'Navigation state loaded and validated from storage', {
       key: storageKey,
       stateSize: stateString.length,
     });
 
-    return state;
+    return cleanedState;
   } catch (error) {
     logger.error(LOG_SOURCE, 'Error loading navigation state', { error });
     return null;

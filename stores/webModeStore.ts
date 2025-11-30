@@ -81,7 +81,11 @@ export const useWebModeStore = create<WebModeState>((set, get) => {
         if (stored === 'site' || stored === 'app') {
           set({ mode: stored });
         } else {
+          // Default to 'site' mode for new users (landing page)
           set({ mode: 'site' });
+          if (typeof window !== 'undefined') {
+            window.localStorage.setItem(STORAGE_KEY, 'site');
+          }
         }
       } catch (_) {
         set({ mode: 'site' });
