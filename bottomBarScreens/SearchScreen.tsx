@@ -46,6 +46,8 @@ interface SearchResult {
   category: string;
   location?: string;
   date?: string;
+  quantity?: number;
+  status?: string;
 }
 
 const SearchScreen = () => {
@@ -120,9 +122,11 @@ const SearchScreen = () => {
             type: 'donation' as const,
             title: String(d.title || d.name || 'תרומה'),
             description: String(d.description || ''),
-            image: d.image,
+            image: d.image_base64 || d.image,
             category: String(d.category || t('search:typeLabels.donation')),
-            location: d.location?.city || d.location || undefined,
+            location: d.city || d.location?.city || d.location || undefined,
+            quantity: d.quantity || 1,
+            status: d.status || 'available',
           }));
         results.push(...real);
       }
@@ -241,9 +245,11 @@ const SearchScreen = () => {
             </Text>
           </View>
         </View>
-        <Text style={styles.resultDescription} numberOfLines={2}>
-          {item.description}
-        </Text>
+        {item.description && (
+          <Text style={styles.resultDescription} numberOfLines={2}>
+            {item.description}
+          </Text>
+        )}
         <View style={styles.resultMeta}>
           <Text style={styles.resultCategory}>{item.category}</Text>
           {item.location && (
@@ -251,6 +257,21 @@ const SearchScreen = () => {
               <Ionicons name="location-outline" size={12} color={colors.textSecondary} />
               {' '}{item.location}
             </Text>
+          )}
+        </View>
+        <View style={styles.resultExtraInfo}>
+          {item.quantity !== undefined && (
+            <View style={styles.infoChip}>
+              <Ionicons name="cube-outline" size={14} color={colors.textSecondary} />
+              <Text style={styles.infoChipText}>כמות: {item.quantity}</Text>
+            </View>
+          )}
+          {item.status && (
+            <View style={[styles.infoChip, { backgroundColor: getStatusColor(item.status) + '20' }]}>
+              <Text style={[styles.infoChipText, { color: getStatusColor(item.status) }]}>
+                {getStatusLabel(item.status)}
+              </Text>
+            </View>
           )}
         </View>
       </View>
@@ -281,6 +302,24 @@ const SearchScreen = () => {
       case 'event': return t('search:typeLabels.event');
       case 'user': return t('search:typeLabels.user');
       default: return t('search:typeLabels.result');
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'available': return colors.success;
+      case 'reserved': return colors.warning;
+      case 'donated': return colors.textSecondary;
+      default: return colors.info;
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'available': return 'זמין';
+      case 'reserved': return 'שמור';
+      case 'donated': return 'נתרם';
+      default: return status;
     }
   };
 
@@ -752,6 +791,27 @@ const styles = StyleSheet.create({
   resultLocation: {
     fontSize: FontSizes.small,
     color: colors.textSecondary,
+  },
+  resultExtraInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: LAYOUT_CONSTANTS.SPACING.SM,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
+    flexWrap: 'wrap',
+  },
+  infoChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: LAYOUT_CONSTANTS.SPACING.XS,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.XS,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+  },
+  infoChipText: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+    fontWeight: '600',
   },
   loadingContainer: {
     alignItems: 'center',

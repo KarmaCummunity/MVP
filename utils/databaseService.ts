@@ -17,12 +17,13 @@
 // TODO: Add unit tests for all CRUD operations and edge cases
 // TODO: Implement proper migration system for data schema changes
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { USE_BACKEND, USE_FIRESTORE } from './config.constants';
+import { USE_BACKEND, USE_FIRESTORE, API_BASE_URL } from './config.constants';
 import { CACHE_CONFIG, OFFLINE_CONFIG, STORAGE_KEYS } from './dbConfig';
 import { apiService, ApiResponse } from './apiService';
 import { restAdapter } from './restAdapter';
 import { firestoreAdapter } from './firestoreAdapter';
 import { DB_COLLECTIONS } from './dbCollections';
+import axios from 'axios';
 
 export { DB_COLLECTIONS };
 let enhancedDbInstance: any = null;
@@ -775,6 +776,22 @@ export const db = {
   deleteDonation: (userId: string, donationId: string) =>
     DatabaseService.delete(DB_COLLECTIONS.DONATIONS, userId, donationId),
 
+  // Items (furniture, clothes, general items)
+  createItem: (userId: string, itemId: string, itemData: any) =>
+    DatabaseService.create(DB_COLLECTIONS.ITEMS, userId, itemId, itemData),
+
+  getItem: (userId: string, itemId: string) =>
+    DatabaseService.read(DB_COLLECTIONS.ITEMS, userId, itemId),
+
+  listItems: (userId: string) =>
+    DatabaseService.list(DB_COLLECTIONS.ITEMS, userId),
+
+  updateItem: (userId: string, itemId: string, itemData: Partial<any>) =>
+    DatabaseService.update(DB_COLLECTIONS.ITEMS, userId, itemId, itemData),
+
+  deleteItem: (userId: string, itemId: string) =>
+    DatabaseService.delete(DB_COLLECTIONS.ITEMS, userId, itemId),
+
   // Organizations
   createOrganization: (ownerUserId: string, orgId: string, orgData: any) =>
     DatabaseService.create(DB_COLLECTIONS.ORGANIZATIONS, ownerUserId, orgId, orgData),
@@ -800,6 +817,46 @@ export const db = {
 
   listOrgApplications: (ownerUserId: string) =>
     DatabaseService.list(DB_COLLECTIONS.ORG_APPLICATIONS, ownerUserId),
+
+  // ========================================
+  // Dedicated Items API (separate columns)
+  // ========================================
+  
+  createDedicatedItem: async (itemData: any) => {
+    console.log('📤 API: Creating dedicated item to:', `${API_BASE_URL}/api/dedicated-items`);
+    console.log('📦 Item data:', JSON.stringify(itemData, null, 2));
+    const response = await axios.post(`${API_BASE_URL}/api/dedicated-items`, itemData);
+    console.log('✅ API: Item created:', response.data);
+    return response.data;
+  },
+    
+  getDedicatedItemsByOwner: async (ownerId: string) => {
+    console.log('📥 API: Fetching items for owner:', ownerId);
+    const response = await axios.get(`${API_BASE_URL}/api/dedicated-items/owner/${ownerId}`);
+    console.log('✅ API: Received items:', response.data.length || 0);
+    return response.data;
+  },
+    
+  getDedicatedItemById: async (id: string) => {
+    console.log('📥 API: Fetching item by ID:', id);
+    const response = await axios.get(`${API_BASE_URL}/api/dedicated-items/${id}`);
+    console.log('✅ API: Item received');
+    return response.data;
+  },
+    
+  updateDedicatedItem: async (id: string, itemData: any) => {
+    console.log('✏️ API: Updating item:', id);
+    const response = await axios.put(`${API_BASE_URL}/api/dedicated-items/${id}`, itemData);
+    console.log('✅ API: Item updated');
+    return response.data;
+  },
+    
+  deleteDedicatedItem: async (id: string) => {
+    console.log('🗑️ API: Deleting item:', id);
+    const response = await axios.delete(`${API_BASE_URL}/api/dedicated-items/${id}`);
+    console.log('✅ API: Item deleted');
+    return response.data;
+  },
 };
 
 export default DatabaseService; 
