@@ -26,7 +26,7 @@
 // TODO: Remove hardcoded console.log statements - use proper logging
 // TODO: Add navigation error boundaries and fallback screens
 // TODO: Optimize navigation performance with lazy loading
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { View, ActivityIndicator, Text, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { createStackNavigator } from "@react-navigation/stack";
@@ -65,6 +65,8 @@ export default function MainNavigator() {
   const { selectedUser, isLoading, isGuestMode, isAuthenticated } = useUser();
   const { t } = useTranslation(['common','profile']);
   const { mode } = useWebMode();
+  const initialRouteNameRef = useRef<string | null>(null);
+  const hasInitializedRef = useRef(false);
 
   // TODO: Replace console.log with proper logging service
   // TODO: Add proper state validation and error handling
@@ -106,27 +108,78 @@ export default function MainNavigator() {
 
   console.log('🧭 MainNavigator - Loading completed, rendering navigator');
 
-  // Determine initial route based on web mode and authentication state
-  let initialRouteName: string;
-  
-  if (Platform.OS === 'web' && mode === 'site') {
-    // Site mode: always start with landing page
-    initialRouteName = 'LandingSiteScreen';
-    console.log('🧭 MainNavigator - Site mode: showing LandingSiteScreen as initial route');
-  } else {
-    // App mode: determine based on authentication
-    if (isAuthenticated || isGuestMode) {
-      initialRouteName = 'HomeStack';
-      console.log('🧭 MainNavigator - App mode: user authenticated/guest, showing HomeStack');
-    } else {
-      initialRouteName = 'LoginScreen';
-      console.log('🧭 MainNavigator - App mode: user not authenticated, showing LoginScreen');
+  // Determine initial route - only set once to prevent resets on auth state changes
+  // This prevents the navigator from resetting when auth state updates
+  useEffect(() => {
+    if (!hasInitializedRef.current && !isLoading) {
+      if (Platform.OS === 'web' && mode === 'site') {
+        // Site mode: always start with landing page
+        initialRouteNameRef.current = 'LandingSiteScreen';
+        console.log('🧭 MainNavigator - Site mode: showing LandingSiteScreen as initial route');
+      } else {
+        // App mode: determine based on authentication
+        if (isAuthenticated || isGuestMode) {
+          initialRouteNameRef.current = 'HomeStack';
+          console.log('🧭 MainNavigator - App mode: user authenticated/guest, showing HomeStack');
+        } else {
+          initialRouteNameRef.current = 'LoginScreen';
+          console.log('🧭 MainNavigator - App mode: user not authenticated, showing LoginScreen');
+        }
+      }
+      hasInitializedRef.current = true;
     }
-  }
+  }, [mode, isAuthenticated, isGuestMode, isLoading]);
+
+  // Reset initialization flag when mode changes (to allow new initial route for new mode)
+  useEffect(() => {
+    if (hasInitializedRef.current) {
+      // Mode changed - allow re-initialization for the new mode
+      const currentRoute = initialRouteNameRef.current;
+      if (Platform.OS === 'web' && mode === 'site') {
+        if (currentRoute !== 'LandingSiteScreen') {
+          hasInitializedRef.current = false;
+        }
+      } else {
+        if (isAuthenticated || isGuestMode) {
+          if (currentRoute !== 'HomeStack') {
+            hasInitializedRef.current = false;
+          }
+        } else {
+          if (currentRoute !== 'LoginScreen') {
+            hasInitializedRef.current = false;
+          }
+        }
+      }
+    }
+  }, [mode]);
+
+  // Get initial route name - only use if no initialState is provided by NavigationContainer
+  // If initialState exists, React Navigation will use it and ignore initialRouteName
+  const initialRouteName = useMemo(() => {
+    if (initialRouteNameRef.current) {
+      return initialRouteNameRef.current;
+    }
+    
+    // Fallback calculation (should only be used on first render when no saved state exists)
+    if (Platform.OS === 'web' && mode === 'site') {
+      return 'LandingSiteScreen';
+    } else {
+      if (isAuthenticated || isGuestMode) {
+        return 'HomeStack';
+      } else {
+        return 'LoginScreen';
+      }
+    }
+  }, []); // Empty deps - only calculate once
+
+  // Stack Navigator key - only change when mode changes, not on auth state changes
+  // This prevents unnecessary re-mounts when auth state updates after initialization
+  // We only re-mount when switching between site/app modes
+  const stackKey = useMemo(() => `stack-${mode}`, [mode]);
 
   return (
     <Stack.Navigator 
-      key={`stack-${mode}-${isAuthenticated}-${isGuestMode}`}
+      key={stackKey}
       id={undefined}
       detachInactiveScreens={true}
       screenOptions={{ 

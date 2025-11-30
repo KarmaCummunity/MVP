@@ -21,7 +21,7 @@
 // TODO: Add crash reporting integration (Sentry, Bugsnag)
 // TODO: Remove magic numbers for padding (48px) - use constants file
 // TODO: Add proper accessibility support throughout the app
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo, memo } from 'react';
 import { View, Text, ActivityIndicator, Platform, StyleSheet } from 'react-native';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import * as Font from 'expo-font';
@@ -47,6 +47,8 @@ import WebModeToggleOverlay from './components/WebModeToggleOverlay';
 import { FontSizes } from "./globals/constants";
 import { logger } from './utils/loggerService';
 import ErrorBoundary from './components/ErrorBoundary';
+import { saveNavigationState, loadNavigationState } from './utils/navigationPersistence';
+import { NavigationState } from '@react-navigation/native';
 // RTL is controlled via selected language in i18n and Settings
 
 // Initialize notifications only on supported platforms
@@ -95,6 +97,9 @@ function AppContent() {
   };
 
   const navigationRef = useRef<NavigationContainerRef<RootParamList>>(null);
+  // Initialize with null - will be loaded before NavigationContainer renders
+  const [initialNavigationState, setInitialNavigationState] = React.useState<NavigationState | undefined>(undefined);
+  const [isNavigationStateLoaded, setIsNavigationStateLoaded] = React.useState(false);
 
   // Use centralized loading state instead of local state
   const {
@@ -105,11 +110,12 @@ function AppContent() {
     getCriticalError
   } = useAppLoading();
 
-  // Initialize stores on mount
+  // Initialize stores and load navigation state on mount
+  // This must happen before NavigationContainer is rendered
   useEffect(() => {
-    const initializeStores = async () => {
+    const initializeStoresAndLoadState = async () => {
       try {
-        logger.info('App', 'Initializing Zustand stores');
+        logger.info('App', 'Initializing Zustand stores and loading navigation state');
 
         // Initialize web mode store (reads from localStorage synchronously on creation)
         if (Platform.OS === 'web') {
@@ -122,13 +128,32 @@ function AppContent() {
         await useUserStore.getState().initialize();
 
         logger.info('App', 'Zustand stores initialized');
+
+        // Load navigation state after stores are ready
+        const { useWebModeStore } = await import('./stores/webModeStore');
+        const mode = useWebModeStore.getState().mode;
+        const userId = useUserStore.getState().selectedUser?.id || null;
+        
+        const savedState = await loadNavigationState(mode, userId);
+        if (savedState) {
+          setInitialNavigationState(savedState);
+          logger.info('App', 'Navigation state loaded successfully', { 
+            mode, 
+            hasUserId: !!userId,
+            routeNames: savedState.routes?.map((r: any) => r.name) || []
+          });
+        } else {
+          logger.info('App', 'No saved navigation state found', { mode, hasUserId: !!userId });
+        }
+        setIsNavigationStateLoaded(true);
       } catch (error) {
-        logger.error('App', 'Failed to initialize stores', { error });
+        logger.error('App', 'Failed to initialize stores or load navigation state', { error });
+        setIsNavigationStateLoaded(true); // Continue even if loading fails
       }
     };
 
     // Initialize immediately - no delay needed
-    initializeStores();
+    initializeStoresAndLoadState();
   }, []);
 
   logger.info('App', 'App component mounted');
@@ -197,6 +222,7 @@ function AppContent() {
       if (cleanupListener) cleanupListener();
     };
   }, [selectedUser?.id]); // React to user changes
+
 
   // Fast initial setup to show the UI as quickly as possible
   useEffect(() => {
@@ -288,7 +314,9 @@ function AppContent() {
     );
   }
 
-  if (!isAppReady) {
+  // Don't render NavigationContainer until navigation state is loaded
+  // This ensures initialState is set before first render
+  if (!isAppReady || !isNavigationStateLoaded) {
     return (
       <View style={loadingStyles.container}>
         <ActivityIndicator size="large" color={colors.info} />
@@ -297,49 +325,92 @@ function AppContent() {
     );
   }
 
-  const AppNavigationRoot: React.FC = () => {
+  const AppNavigationRoot = memo(({ initialState }: { initialState: NavigationState | undefined }) => {
     const { mode } = useWebMode();
     const { isAuthenticated, isGuestMode, selectedUser } = useUser();
+    const prevModeRef = useRef<string>(mode);
+    const prevUserIdRef = useRef<string | null>(selectedUser?.id || null);
 
     /**
      * Determine if web mode toggle button should be visible
      * Toggle is hidden for authenticated users (users who created an account)
      * Toggle is shown for guest users and non-authenticated users
      */
-    const shouldShowToggle = !(isAuthenticated && !isGuestMode && selectedUser);
+    const shouldShowToggle = useMemo(
+      () => !(isAuthenticated && !isGuestMode && selectedUser),
+      [isAuthenticated, isGuestMode, selectedUser]
+    );
 
     /**
      * Add top padding in app mode to make room for toggle button
      * Only add padding if toggle button is visible (not for authenticated users)
      * This prevents unnecessary spacing when the toggle is hidden
      */
-    const containerStyle = {
+    const containerStyle = useMemo(() => ({
       flex: 1,
       paddingTop: Platform.OS === 'web' && mode === 'app' && shouldShowToggle ? 48 : 0 // Space for toggle button in app mode
-    };
+    }), [mode, shouldShowToggle]);
 
-    // Mobile width constant - iPhone 14 Pro Max width (428px) or iPhone 11 width (414px)
-    // Using 428px as it's a common modern phone width
-    const MOBILE_MAX_WIDTH = 1628;
-
-    // Wrapper style for web to limit width and center content
-    const webWrapperStyle = Platform.OS === 'web' ? {
+    // Wrapper style for web - full width without maxWidth constraint
+    const webWrapperStyle = useMemo(() => Platform.OS === 'web' ? {
       width: '100%' as const,
-      maxWidth: MOBILE_MAX_WIDTH,
-      alignSelf: 'center' as const,
       flex: 1,
-      backgroundColor: colors.black,
-    } : {};
+      backgroundColor: colors.backgroundSecondary,
+    } : {}, []);
 
-    // Background color for web wrapper - matches HTML background (#F0F8FF)
-    const webBackgroundColor = Platform.OS === 'web' ? '#F0F8FF' : undefined;
+    // Navigation container key - only change when mode actually changes (not on auth state changes)
+    // This prevents unnecessary re-mounts when auth state updates
+    const navKey = useMemo(() => `nav-${mode}`, [mode]);
+
+    // Save navigation state before unmount (when mode or user changes)
+    useEffect(() => {
+      return () => {
+        // Cleanup: save state before unmount
+        if (navigationRef.current?.isReady()) {
+          const currentState = navigationRef.current.getRootState();
+          if (currentState) {
+            saveNavigationState(currentState, prevModeRef.current, prevUserIdRef.current);
+            logger.debug('App', 'Navigation state saved before unmount', {
+              mode: prevModeRef.current,
+              hasUserId: !!prevUserIdRef.current,
+            });
+          }
+        }
+      };
+    }, []);
+
+    // Save navigation state when it changes
+    const handleNavigationStateChange = useCallback(
+      (state: NavigationState | undefined) => {
+        if (state) {
+          const currentRoute = state.routes?.[state.index || 0];
+          const routeName = currentRoute?.name || 'unknown';
+          logger.debug('App', 'Navigation state changed, saving...', {
+            routeName,
+            mode,
+            hasUserId: !!selectedUser?.id,
+            routesCount: state.routes?.length || 0,
+          });
+          saveNavigationState(state, mode, selectedUser?.id || null);
+        }
+      },
+      [mode, selectedUser?.id]
+    );
+
+    // Update refs when mode or userId changes
+    useEffect(() => {
+      prevModeRef.current = mode;
+      prevUserIdRef.current = selectedUser?.id || null;
+    }, [mode, selectedUser?.id]);
 
     return (
       <NavigationContainer
-        key={`nav-${mode}`}
+        key={navKey}
         ref={navigationRef}
+        initialState={initialState}
+        onStateChange={handleNavigationStateChange}
         children={
-          <View style={Platform.OS === 'web' ? { flex: 1, alignItems: 'center', backgroundColor: colors.black } : { flex: 1 }}>
+          <View style={Platform.OS === 'web' ? { flex: 1, backgroundColor: colors.black } : { flex: 1 }}>
             <View style={[containerStyle, webWrapperStyle]}>
               <MainNavigator />
               <WebModeToggleOverlay />
@@ -349,10 +420,10 @@ function AppContent() {
         }
       />
     );
-  };
+  });
 
   return (
-    <AppNavigationRoot />
+    <AppNavigationRoot initialState={initialNavigationState} />
   );
 }
 

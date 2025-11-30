@@ -244,9 +244,7 @@ export const getResponsiveContainerStyles = () => {
     padding: isLargeDesktop ? 48 : isDesktopWeb ? 40 : isTablet ? 32 : 20,
     paddingHorizontal: isLargeDesktop ? 48 : isDesktopWeb ? 40 : isTablet ? 32 : 20,
     paddingVertical: isLargeDesktop ? 48 : isDesktopWeb ? 40 : isTablet ? 32 : 20,
-    maxWidth: isLargeDesktop ? 1400 : isDesktopWeb ? 1200 : undefined,
-    alignSelf: isDesktopWeb ? 'center' as const : undefined,
-    width: isDesktopWeb ? '100%' : '100%',
+    width: '100%',
   };
 };
 

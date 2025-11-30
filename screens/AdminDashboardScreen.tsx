@@ -13,6 +13,7 @@ import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { AdminStackParamList } from '../globals/types';
 import { useUser } from '../stores/userStore';
+import { useScrollPositionWithHandler } from '../hooks/useScrollPosition';
 
 interface AdminDashboardScreenProps {
   navigation: NavigationProp<AdminStackParamList>;
@@ -64,6 +65,9 @@ const adminButtons: AdminButton[] = [
 
 export default function AdminDashboardScreen({ navigation }: AdminDashboardScreenProps) {
   const { selectedUser } = useUser();
+  const { ref: scrollRef, onScroll } = useScrollPositionWithHandler('AdminDashboardScreen', {
+    enabled: true,
+  });
 
   const handleButtonPress = (button: AdminButton) => {
     if (button.route === 'AdminDashboard') {
@@ -76,8 +80,11 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
       >
         <View style={styles.header}>
           <Text style={styles.welcomeText}>לוח בקרה</Text>

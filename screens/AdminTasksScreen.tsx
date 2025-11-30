@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Modal } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
@@ -47,6 +47,7 @@ export default function AdminTasksScreen() {
   const [filterStatus, setFilterStatus] = useState<TaskStatus | ''>('');
   const [filterPriority, setFilterPriority] = useState<TaskPriority | ''>('');
   const [filterCategory, setFilterCategory] = useState<string | ''>('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const sortedTasks = useMemo(() => {
     const priorityOrder: Record<TaskPriority, number> = { high: 0, medium: 1, low: 2 };
@@ -59,26 +60,32 @@ export default function AdminTasksScreen() {
     });
   }, [tasks]);
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const res: ApiResponse<AdminTask[]> = await apiService.getTasks({
-      q: query || undefined,
-      status: filterStatus || undefined,
-      priority: filterPriority || undefined,
-      category: filterCategory || undefined,
-    });
-    if (!res.success) {
-      setError(res.error || 'שגיאה בטעינת משימות');
-    } else {
-      setTasks(res.data || []);
+    try {
+      const res: ApiResponse<AdminTask[]> = await apiService.getTasks({
+        q: query || undefined,
+        status: filterStatus || undefined,
+        priority: filterPriority || undefined,
+        category: filterCategory || undefined,
+      });
+      if (!res.success) {
+        setError(res.error || 'שגיאה בטעינת משימות');
+      } else {
+        setTasks(res.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching tasks:', err);
+      setError('שגיאה בטעינת משימות - נסה שוב');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, [query, filterStatus, filterPriority, filterCategory]);
 
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [fetchTasks]);
 
   const resetForm = () => {
     setFormData({
@@ -91,6 +98,7 @@ export default function AdminTasksScreen() {
       assigneesEmails: '',
       tagsText: '',
     });
+    setEditingId(null);
   };
 
   const createTask = async () => {
@@ -187,12 +195,11 @@ export default function AdminTasksScreen() {
       assigneesEmails: '',
       tagsText: (task.tags || []).join(', '),
     });
-    (formData as any)._editingId = task.id;
+    setEditingId(task.id);
     setShowForm(true);
   };
 
   const saveEdit = async () => {
-    const editingId = (formData as any)._editingId;
     if (!editingId) return;
     const body: any = {
       title: formData.title.trim(),
@@ -211,7 +218,7 @@ export default function AdminTasksScreen() {
       setTasks((prev) => prev.map((t) => (t.id === editingId ? (res.data as AdminTask) : t)));
       setShowForm(false);
       resetForm();
-      delete (formData as any)._editingId;
+      setEditingId(null);
     } else {
       setError(res.error || 'שגיאה בעדכון משימה');
     }
@@ -295,7 +302,7 @@ export default function AdminTasksScreen() {
       <Modal visible={showForm} animationType="slide" transparent onRequestClose={() => setShowForm(false)}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>{(formData as any)._editingId ? 'עריכת משימה' : 'משימה חדשה'}</Text>
+            <Text style={styles.modalTitle}>{editingId ? 'עריכת משימה' : 'משימה חדשה'}</Text>
             <TextInput style={styles.modalInput} placeholder="כותרת" value={formData.title} onChangeText={(v) => setFormData({ ...formData, title: v })} />
             <TextInput style={[styles.modalInput, { height: 80 }]} placeholder="תיאור" multiline value={formData.description} onChangeText={(v) => setFormData({ ...formData, description: v })} />
             <View style={styles.row2}>
@@ -341,7 +348,7 @@ export default function AdminTasksScreen() {
               <TouchableOpacity style={[styles.modalBtn, styles.modalCancel]} onPress={() => { setShowForm(false); resetForm(); }}>
                 <Text style={styles.modalBtnText}>ביטול</Text>
               </TouchableOpacity>
-              {(formData as any)._editingId ? (
+              {editingId ? (
                 <TouchableOpacity style={[styles.modalBtn, styles.modalSave]} onPress={saveEdit} disabled={creating}>
                   {creating ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>שמירה</Text>}
                 </TouchableOpacity>

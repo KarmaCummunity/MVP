@@ -197,6 +197,7 @@ export default function NewChatScreen() {
 
   const renderFriend = ({ item }: { item: CharacterType }) => {
     const hasExistingChat = existingConversations.includes(item.id);
+    const avatarUri = item.avatar || 'https://i.pravatar.cc/150?img=1';
     
     return (
       <TouchableOpacity 
@@ -204,12 +205,15 @@ export default function NewChatScreen() {
         onPress={() => handleCreateChat(item)}
       >
         <View style={styles.avatarContainer}>
-          <Image source={{ uri: item.avatar }} style={styles.avatar} />
+          <Image 
+            source={{ uri: avatarUri }} 
+            style={styles.avatar}
+          />
           {item.isActive && <View style={styles.onlineIndicator} />}
         </View>
         <View style={styles.friendInfo}>
           <View style={styles.friendHeader}>
-            <Text style={styles.friendName}>{item.name}</Text>
+            <Text style={styles.friendName}>{item.name || 'ללא שם'}</Text>
             {hasExistingChat && (
               <View style={styles.existingChatBadge}>
                 <Text style={styles.existingChatText}>שיחה קיימת</Text>

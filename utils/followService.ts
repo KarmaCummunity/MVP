@@ -115,9 +115,71 @@ export const unfollowUser = async (followerId: string, followingId: string): Pro
 export const getFollowers = async (userId: string): Promise<any[]> => {
   try {
     const followers = await db.getFollowers(userId);
-    // TODO: Replace with real user fetch from backend
     const followerIds = (followers as any[]).map((rel: any) => rel.followerId);
-    return followerIds.map((id: string) => ({ id }));
+    
+    if (followerIds.length === 0) {
+      return [];
+    }
+
+    // Fetch full user data from backend for each follower
+    if (USE_BACKEND) {
+      try {
+        const userPromises = followerIds.map(async (id: string) => {
+          try {
+            const response = await apiService.getUserById(id);
+            if (response.success && response.data) {
+              const user = response.data;
+              return {
+                id: user.id || id,
+                name: user.name || 'ללא שם',
+                avatar: user.avatar_url || user.avatar || 'https://i.pravatar.cc/150?img=1',
+                bio: user.bio || '',
+                karmaPoints: user.karma_points || 0,
+                followersCount: user.followers_count || 0,
+                completedTasks: 0, // TODO: Get from backend if available
+                roles: user.roles || ['user'],
+                isVerified: false, // TODO: Get from backend if available
+                isActive: user.is_active !== false,
+              };
+            }
+          } catch (error) {
+            console.warn(`Failed to fetch follower ${id}:`, error);
+          }
+          // Fallback to minimal data if fetch fails
+          return {
+            id,
+            name: 'ללא שם',
+            avatar: 'https://i.pravatar.cc/150?img=1',
+            bio: '',
+            karmaPoints: 0,
+            followersCount: 0,
+            completedTasks: 0,
+            roles: ['user'],
+            isVerified: false,
+            isActive: false,
+          };
+        });
+
+        const users = await Promise.all(userPromises);
+        return users.filter(user => user !== null);
+      } catch (error) {
+        console.error('❌ Get followers from backend error:', error);
+      }
+    }
+
+    // Fallback: return minimal data with IDs only
+    return followerIds.map((id: string) => ({
+      id,
+      name: 'ללא שם',
+      avatar: 'https://i.pravatar.cc/150?img=1',
+      bio: '',
+      karmaPoints: 0,
+      followersCount: 0,
+      completedTasks: 0,
+      roles: ['user'],
+      isVerified: false,
+      isActive: false,
+    }));
   } catch (error) {
     console.error('❌ Get followers error:', error);
     return [];
@@ -127,9 +189,71 @@ export const getFollowers = async (userId: string): Promise<any[]> => {
 export const getFollowing = async (userId: string): Promise<any[]> => {
   try {
     const following = await db.getFollowing(userId);
-    // TODO: Replace with real user fetch from backend
     const followingIds = (following as any[]).map((rel: any) => rel.followingId);
-    return followingIds.map((id: string) => ({ id }));
+    
+    if (followingIds.length === 0) {
+      return [];
+    }
+
+    // Fetch full user data from backend for each following user
+    if (USE_BACKEND) {
+      try {
+        const userPromises = followingIds.map(async (id: string) => {
+          try {
+            const response = await apiService.getUserById(id);
+            if (response.success && response.data) {
+              const user = response.data;
+              return {
+                id: user.id || id,
+                name: user.name || 'ללא שם',
+                avatar: user.avatar_url || user.avatar || 'https://i.pravatar.cc/150?img=1',
+                bio: user.bio || '',
+                karmaPoints: user.karma_points || 0,
+                followersCount: user.followers_count || 0,
+                completedTasks: 0, // TODO: Get from backend if available
+                roles: user.roles || ['user'],
+                isVerified: false, // TODO: Get from backend if available
+                isActive: user.is_active !== false,
+              };
+            }
+          } catch (error) {
+            console.warn(`Failed to fetch following user ${id}:`, error);
+          }
+          // Fallback to minimal data if fetch fails
+          return {
+            id,
+            name: 'ללא שם',
+            avatar: 'https://i.pravatar.cc/150?img=1',
+            bio: '',
+            karmaPoints: 0,
+            followersCount: 0,
+            completedTasks: 0,
+            roles: ['user'],
+            isVerified: false,
+            isActive: false,
+          };
+        });
+
+        const users = await Promise.all(userPromises);
+        return users.filter(user => user !== null);
+      } catch (error) {
+        console.error('❌ Get following from backend error:', error);
+      }
+    }
+
+    // Fallback: return minimal data with IDs only
+    return followingIds.map((id: string) => ({
+      id,
+      name: 'ללא שם',
+      avatar: 'https://i.pravatar.cc/150?img=1',
+      bio: '',
+      karmaPoints: 0,
+      followersCount: 0,
+      completedTasks: 0,
+      roles: ['user'],
+      isVerified: false,
+      isActive: false,
+    }));
   } catch (error) {
     console.error('❌ Get following error:', error);
     return [];

@@ -29,6 +29,7 @@ import {
   unfollowUser,
   getFollowStats 
 } from '../utils/followService';
+import { createConversation, conversationExists } from '../utils/chatService';
 import { useUser } from '../stores/userStore';
 
 import { getScreenInfo, isLandscape } from '../globals/responsive';
@@ -149,6 +150,36 @@ export default function DiscoverPeopleScreen() {
     }
   };
 
+  const handleMessage = async (targetUser: CharacterType) => {
+    if (!selectedUser) {
+      Alert.alert('שגיאה', 'יש להתחבר תחילה');
+      return;
+    }
+
+    try {
+      const existingConvId = await conversationExists(selectedUser.id, targetUser.id);
+      let conversationId: string;
+      
+      if (existingConvId) {
+        console.log('💬 Conversation already exists:', existingConvId);
+        conversationId = existingConvId;
+      } else {
+        console.log('💬 Creating new conversation...');
+        conversationId = await createConversation([selectedUser.id, targetUser.id]);
+      }
+      
+      navigation.navigate('ChatDetailScreen' as any, {
+        conversationId,
+        otherUserId: targetUser.id,
+        userName: targetUser.name || 'ללא שם',
+        userAvatar: targetUser.avatar || 'https://i.pravatar.cc/150?img=1',
+      });
+    } catch (error) {
+      console.error('❌ Create chat error:', error);
+      Alert.alert('שגיאה', 'שגיאה ביצירת השיחה');
+    }
+  };
+
   const renderUserItem = ({ item }: { item: CharacterType }) => {
     const currentStats = followStats[item.id] || { isFollowing: false };
     const isCurrentUser = selectedUser?.id === item.id;
@@ -195,20 +226,29 @@ export default function DiscoverPeopleScreen() {
         </TouchableOpacity>
 
         {!isCurrentUser && (
-          <TouchableOpacity
-            style={[
-              styles.followButton,
-              currentStats.isFollowing && styles.followingButton
-            ]}
-            onPress={() => handleFollowToggle(item.id)}
-          >
-            <Text style={[
-              styles.followButtonText,
-              currentStats.isFollowing && styles.followingButtonText
-            ]}>
-              {currentStats.isFollowing ? 'עוקב' : 'עקוב'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity
+              style={[
+                styles.followButton,
+                currentStats.isFollowing && styles.followingButton
+              ]}
+              onPress={() => handleFollowToggle(item.id)}
+            >
+              <Text style={[
+                styles.followButtonText,
+                currentStats.isFollowing && styles.followingButtonText
+              ]}>
+                {currentStats.isFollowing ? 'עוקב' : 'עקוב'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.messageButton}
+              onPress={() => handleMessage(item)}
+            >
+              <Ionicons name="chatbubble-outline" size={16} color={colors.textPrimary} />
+              <Text style={styles.messageButtonText}>הודעה</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
     );
@@ -454,6 +494,11 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '500',
   },
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   followButton: {
     backgroundColor: colors.pink,
     paddingHorizontal: 16,
@@ -474,6 +519,22 @@ const styles = StyleSheet.create({
   },
   followingButtonText: {
     color: colors.textPrimary,
+  },
+  messageButton: {
+    backgroundColor: colors.backgroundSecondary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  messageButtonText: {
+    color: colors.textPrimary,
+    fontSize: FontSizes.small,
+    fontWeight: '600',
   },
   emptyState: {
     flex: 1,

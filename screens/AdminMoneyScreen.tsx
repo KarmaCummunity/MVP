@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   SafeAreaView,
-  FlatList,
   TouchableOpacity,
   Modal,
   TextInput,
@@ -12,6 +11,8 @@ import {
   ScrollView,
   Platform,
   Switch,
+  RefreshControl,
+  Dimensions,
 } from 'react-native';
 import { NavigationProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,7 @@ import { enhancedDB, wipeAllDataAdmin, DonationData } from '../utils/enhancedDat
 import { USE_BACKEND } from '../utils/dbConfig';
 import { useUser } from '../stores/userStore';
 import { logger } from '../utils/loggerService';
+import ScrollContainer from '../components/ScrollContainer';
 
 interface Donation {
   id: string;
@@ -499,7 +501,6 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>ניהול תרומות</Text>
-          
         </View>
 
         {isLoading && donationsList.length === 0 ? (
@@ -513,17 +514,36 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
             <Text style={styles.emptySubtext}>הוסף תרומה חדשה כדי להתחיל</Text>
           </View>
         ) : (
-          <FlatList
-            data={donationsList}
-            renderItem={renderDonationItem}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
-            refreshing={isLoading || isMutating}
-            onRefresh={loadDonations}
+          <ScrollContainer
+            contentStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
-          />
+            refreshControl={
+              <RefreshControl
+                refreshing={isLoading || isMutating}
+                onRefresh={loadDonations}
+                tintColor={colors.pink}
+              />
+            }
+          >
+            {donationsList.map((item) => (
+              <React.Fragment key={item.id}>
+                {renderDonationItem({ item })}
+              </React.Fragment>
+            ))}
+          </ScrollContainer>
         )}
       </View>
+
+      {/* Floating Add Donation Button - Always visible on top */}
+      <TouchableOpacity
+        style={styles.fabButton}
+        onPress={handleAddDonation}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={28} color="white" />
+        <Text style={styles.fabButtonText}>הוסף תרומה</Text>
+      </TouchableOpacity>
+
 
       {/* Add Donation Modal */}
       <Modal
@@ -740,15 +760,6 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
         </View>
       </Modal>
       
-      {/* Floating Add Donation Button */}
-      <TouchableOpacity
-        style={styles.fabButton}
-        onPress={handleAddDonation}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="add" size={28} color="white" />
-        <Text style={styles.fabButtonText}>הוסף תרומה</Text>
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -766,6 +777,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    alignSelf: 'center',
     marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
   },
   title: {
@@ -792,7 +804,7 @@ const styles = StyleSheet.create({
     marginLeft: LAYOUT_CONSTANTS.SPACING.SM,
   },
   listContent: {
-    paddingBottom: LAYOUT_CONSTANTS.SPACING.LG,
+    paddingBottom: 120, // מקום לכפתור FAB + מרווח נוסף
   },
   donationCard: {
     backgroundColor: colors.backgroundPrimary,
@@ -995,21 +1007,24 @@ const styles = StyleSheet.create({
   },
   fabButton: {
     position: 'absolute',
-    right: LAYOUT_CONSTANTS.SPACING.LG,
-    bottom: LAYOUT_CONSTANTS.SPACING.XL,
+    right: LAYOUT_CONSTANTS.SPACING.XL,
+    bottom: 200, // מרווח מה-bottom bar
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: LAYOUT_CONSTANTS.SPACING.XS,
     backgroundColor: colors.pink,
     paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
-    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.MD,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
     shadowColor: colors.shadowLight,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
-    elevation: 6,
+    elevation: 10,
+    opacity: 0.8,
     zIndex: 1000,
+    minWidth: 140,
   },
   fabButtonText: {
     color: 'white',

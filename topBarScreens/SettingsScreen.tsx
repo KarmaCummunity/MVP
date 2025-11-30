@@ -42,13 +42,17 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../app/i18n';
 import { I18nManager, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useScrollPositionWithHandler } from '../hooks/useScrollPosition';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function SettingsScreen() {
   const navigation = useNavigation();
   const { signOut, isGuestMode, selectedUser, isAuthenticated } = useUser();
-  const scrollViewRef = useRef<ScrollView | null>(null);
+  const { ref: scrollRef, onScroll } = useScrollPositionWithHandler('SettingsScreen', {
+    enabled: true,
+  });
+  const scrollViewRef = scrollRef;
   const [refreshKey, setRefreshKey] = useState(0);
   const { t } = useTranslation(['settings','common']);
   const [currentLang, setCurrentLang] = useState(i18n.language || 'he');
@@ -446,6 +450,7 @@ export default function SettingsScreen() {
       ) : (
         // Native: Standard ScrollView for iOS/Android
         <ScrollView 
+          ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={true}
@@ -455,6 +460,7 @@ export default function SettingsScreen() {
           nestedScrollEnabled={true}
           keyboardShouldPersistTaps="handled"
           onScroll={(event) => {
+            onScroll(event);
             const offsetY = event.nativeEvent.contentOffset.y;
             // console.log('📜 SettingsScreen - Layout measurement:', event.nativeEvent.layoutMeasurement);
           }}

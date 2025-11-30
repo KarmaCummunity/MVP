@@ -46,6 +46,7 @@ interface UserState {
   isGuestMode: boolean;
   authMode: AuthMode;
   resetHomeScreenTrigger: number;
+  isInitialized: boolean; // Flag to track if store has been initialized
   
   // Actions
   setSelectedUser: (user: User | null) => Promise<void>;
@@ -114,6 +115,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   isGuestMode: false,
   authMode: 'guest',
   resetHomeScreenTrigger: 0,
+  isInitialized: false,
   
   // Actions
   setCurrentPrincipal: async (principal: { user: User | null; role: Role }) => {
@@ -319,6 +321,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         isGuestMode: false,
         authMode: 'guest',
         isLoading: false,
+        isInitialized: true, // Keep initialized flag true after sign out
       });
       
       console.log('🔐 userStore - signOut - Sign out completed successfully');
@@ -380,6 +383,9 @@ export const useUserStore = create<UserState>((set, get) => ({
     // Check auth status
     await get().checkAuthStatus();
     
+    // Mark as initialized after checkAuthStatus completes
+    set({ isInitialized: true });
+    
     // Setup Firebase Auth State Listener
     console.log('🔥 userStore - Setting up Firebase Auth listener');
     try {
@@ -387,6 +393,14 @@ export const useUserStore = create<UserState>((set, get) => ({
       const auth = getAuth(app);
       
       onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+        const state = get();
+        
+        // Skip updates if store hasn't been initialized yet
+        if (!state.isInitialized) {
+          console.log('🔥 Firebase Auth State Changed - Skipping (not initialized yet)');
+          return;
+        }
+        
         console.log('🔥 Firebase Auth State Changed:', {
           hasUser: !!firebaseUser,
           email: firebaseUser?.email,
@@ -395,6 +409,15 @@ export const useUserStore = create<UserState>((set, get) => ({
         });
 
         if (firebaseUser) {
+          // Check if we already have this user loaded to prevent unnecessary updates
+          const currentState = get();
+          if (currentState.selectedUser?.id === firebaseUser.uid && 
+              currentState.isAuthenticated && 
+              currentState.authMode === 'real') {
+            console.log('🔥 Firebase Auth State Changed - User already loaded, skipping update');
+            return;
+          }
+          
           // Firebase user is logged in - restore/create session
           console.log('🔥 Firebase user detected, restoring session');
           
@@ -438,8 +461,11 @@ export const useUserStore = create<UserState>((set, get) => ({
           console.log('🔥 Firebase session restored successfully');
         } else {
           // No Firebase user - only clear if we had a Firebase user before
+          const currentState = get();
           const firebaseUserId = await AsyncStorage.getItem('firebase_user_id');
-          if (firebaseUserId) {
+          
+          // Only clear if we actually had a Firebase user and we're not in guest mode
+          if (firebaseUserId && currentState.authMode === 'real' && currentState.isAuthenticated) {
             console.log('🔥 Firebase user logged out, clearing session');
             await AsyncStorage.multiRemove(['current_user', 'auth_mode', 'firebase_user_id']);
             set({
@@ -448,6 +474,8 @@ export const useUserStore = create<UserState>((set, get) => ({
               isGuestMode: false,
               authMode: 'guest',
             });
+          } else {
+            console.log('🔥 Firebase Auth State Changed - No user, but not clearing (guest mode or no previous Firebase user)');
           }
         }
       });
