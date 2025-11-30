@@ -222,6 +222,7 @@ export type AdminStackParamList = {
   SettingsScreen: undefined;
   NotificationsScreen: undefined;
   AboutKarmaCommunityScreen: undefined;
+  DiscoverPeopleScreen: undefined;
   LandingSiteScreen: undefined;
 };
 

@@ -19,6 +19,7 @@ import SettingsScreen from "../topBarScreens/SettingsScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 import AboutKarmaCommunityScreen from "../topBarScreens/AboutKarmaCommunityScreen";
 import LandingSiteScreen from "../screens/LandingSiteScreen";
+import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
 import TopBarNavigator from "./TopBarNavigator";
 import { AdminStackParamList } from "../globals/types";
 import { logger } from "../utils/loggerService";
@@ -64,6 +65,7 @@ export default function AdminStack() {
       <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
       <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
       <Stack.Screen name="AboutKarmaCommunityScreen" component={AboutKarmaCommunityScreen} />
+      <Stack.Screen name="DiscoverPeopleScreen" component={DiscoverPeopleScreen} />
       <Stack.Screen name="LandingSiteScreen" component={LandingSiteScreen} />
     </Stack.Navigator>
   );
