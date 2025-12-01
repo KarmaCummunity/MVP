@@ -66,31 +66,31 @@ export class RestAdapter {
   }
 
   async create<T>(collection: string, userId: string, itemId: string, data: T): Promise<void> {
-    await this.http(`/api/${collection}`, {
+    await this.http(`/api/collections/${collection}`, {
       method: 'POST',
       body: JSON.stringify({ id: itemId, userId, data }),
     });
   }
 
   async read<T>(collection: string, userId: string, itemId: string): Promise<T | null> {
-    return this.http<T | null>(`/api/${collection}/${encodeURIComponent(userId)}/${encodeURIComponent(itemId)}`);
+    return this.http<T | null>(`/api/collections/${collection}/${encodeURIComponent(userId)}/${encodeURIComponent(itemId)}`);
   }
 
   async update<T>(collection: string, userId: string, itemId: string, data: Partial<T>): Promise<void> {
-    await this.http(`/api/${collection}/${encodeURIComponent(userId)}/${encodeURIComponent(itemId)}`, {
+    await this.http(`/api/collections/${collection}/${encodeURIComponent(userId)}/${encodeURIComponent(itemId)}`, {
       method: 'PUT',
       body: JSON.stringify({ data }),
     });
   }
 
   async delete(collection: string, userId: string, itemId: string): Promise<void> {
-    await this.http(`/api/${collection}/${encodeURIComponent(userId)}/${encodeURIComponent(itemId)}`, {
+    await this.http(`/api/collections/${collection}/${encodeURIComponent(userId)}/${encodeURIComponent(itemId)}`, {
       method: 'DELETE',
     });
   }
 
   async list<T>(collection: string, userId: string): Promise<T[]> {
-    return this.http<T[]>(`/api/${collection}?userId=${encodeURIComponent(userId)}`);
+    return this.http<T[]>(`/api/collections/${collection}?userId=${encodeURIComponent(userId)}`);
   }
 
   // Auth endpoints

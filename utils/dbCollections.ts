@@ -8,6 +8,7 @@ export const DB_COLLECTIONS = {
   NOTIFICATIONS: 'notifications',
   BOOKMARKS: 'bookmarks',
   DONATIONS: 'donations',
+  ITEMS: 'items',
   TASKS: 'tasks',
   SETTINGS: 'settings',
   MEDIA: 'media',
