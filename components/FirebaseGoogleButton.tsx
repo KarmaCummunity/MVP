@@ -218,7 +218,7 @@ export default function FirebaseGoogleButton() {
       // Use navigation queue with high priority (2) for auth changes
       await navigationQueue.replace('HomeStack', undefined, 2);
       logger.info('FirebaseGoogleButton', 'Google login success');
-      
+
       // Reset loading state after navigation
       setLoading(false);
 
@@ -237,8 +237,8 @@ export default function FirebaseGoogleButton() {
         errorMessage = 'הדפדפן חסם את חלון ההתחברות. אנא אפשר pop-ups.';
         logger.warn('FirebaseGoogleButton', 'Popup was blocked by browser');
       } else {
-        errorMessage = 'שגיאה בהתחברות. נסה שוב.';
-        logger.warn('FirebaseGoogleButton', 'Unknown error', { code: error.code });
+        errorMessage = error.message || 'שגיאה בהתחברות. נסה שוב.';
+        logger.warn('FirebaseGoogleButton', 'Login error', { code: error.code, message: error.message });
       }
 
       setError(errorMessage);
