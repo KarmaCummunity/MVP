@@ -27,7 +27,7 @@ type OrgApplication = {
 };
 
 export default function AdminOrgApprovalsScreen() {
-  const { t } = useTranslation(['auth','common']);
+  const { t } = useTranslation(['auth', 'common']);
   const { selectedUser } = useUser();
   const [items, setItems] = useState<OrgApplication[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -51,7 +51,7 @@ export default function AdminOrgApprovalsScreen() {
     load();
   }, [load]);
 
-  const updateStatus = async (app: OrgApplication, status: 'approved'|'rejected') => {
+  const updateStatus = async (app: OrgApplication, status: 'approved' | 'rejected') => {
     try {
       const owner = app._ownerPartition || app.contactEmail.toLowerCase();
       await db.updateOrgApplication(owner, app.id, { status, updatedAt: new Date().toISOString() });
@@ -116,7 +116,11 @@ export default function AdminOrgApprovalsScreen() {
   return (
     <FlatList
       style={styles.container}
-      contentContainerStyle={{ padding: 16 }}
+      contentContainerStyle={{
+        padding: 16,
+        flexGrow: 1,
+        minHeight: '150%' // Ensure content is always scrollable
+      }}
       data={items}
       keyExtractor={(it) => it.id}
       renderItem={renderItem}

@@ -80,9 +80,11 @@ export default function FirebaseGoogleButton() {
 
       logger.debug('FirebaseGoogleButton', 'Sending to server for verification', {
         apiUrl: API_BASE_URL,
+        firebaseUid: user.uid,
       });
 
-      // Send Google tokens to server
+      // Send Google tokens and Firebase UID to server
+      // Firebase UID is different from Google ID - we need to send it separately
       const response = await fetch(`${API_BASE_URL}/auth/google`, {
         method: 'POST',
         headers: {
@@ -92,6 +94,7 @@ export default function FirebaseGoogleButton() {
         body: JSON.stringify({
           idToken: googleIdToken,
           accessToken: googleAccessToken,
+          firebaseUid: user.uid, // Send Firebase UID (from Firebase Auth)
         }),
       });
 
@@ -157,6 +160,9 @@ export default function FirebaseGoogleButton() {
       await AsyncStorage.setItem('auth_mode', 'real');
       logger.debug('FirebaseGoogleButton', 'AsyncStorage updated');
 
+      // Give React time to update state and re-render before navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       logger.debug('FirebaseGoogleButton', 'Navigating to HomeStack');
 
       // Check guards before navigation
@@ -186,6 +192,9 @@ export default function FirebaseGoogleButton() {
       // Use navigation queue with high priority (2) for auth changes
       await navigationQueue.replace('HomeStack', undefined, 2);
       logger.info('FirebaseGoogleButton', 'Google login success');
+      
+      // Reset loading state after navigation
+      setLoading(false);
 
     } catch (error: any) {
       logger.error('FirebaseGoogleButton', 'Google login error', {

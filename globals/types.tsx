@@ -52,6 +52,7 @@ export type DonationsStackParamList = {
   NewChatScreen: undefined;
   NotificationsScreen: undefined;
   AboutKarmaCommunityScreen: undefined;
+  LandingSiteScreen: undefined;
   SettingsScreen: undefined;
   DiscoverPeopleScreen: undefined;
   // Category screens
@@ -246,6 +247,7 @@ export type BottomTabNavigationPropType<
 export interface UserPreview {
   id: string;
   name: string;
+  email?: string; // Added for filtering current user by email
   avatar?: string;
   bio?: string;
   karmaPoints?: number;
@@ -254,4 +256,10 @@ export interface UserPreview {
   roles?: string[];
   isVerified?: boolean;
   isActive?: boolean;
+  location?: {
+    city: string;
+    country: string;
+  };
+  joinDate?: string;
+  interests?: string[];
 }

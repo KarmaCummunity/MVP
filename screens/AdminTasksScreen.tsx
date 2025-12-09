@@ -87,7 +87,7 @@ export default function AdminTasksScreen() {
   // Debounce search query - fetch immediately for filters, debounce for text search
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout> | undefined;
-    
+
     if (query) {
       // Debounce text search
       timeout = setTimeout(() => {
@@ -97,7 +97,7 @@ export default function AdminTasksScreen() {
       // Immediate fetch for filters
       fetchTasks();
     }
-    
+
     return () => {
       if (timeout) clearTimeout(timeout);
     };
@@ -133,7 +133,7 @@ export default function AdminTasksScreen() {
         }
         parsedDueDate = date.toISOString();
       }
-      
+
       const body = {
         title: formData.title.trim(),
         description: formData.description.trim() || null,
@@ -189,8 +189,8 @@ export default function AdminTasksScreen() {
     const isDone = item.status === 'done';
     return (
       <View style={[styles.taskItem, isDone && styles.taskItemDone]}>
-        <TouchableOpacity 
-          style={styles.checkbox} 
+        <TouchableOpacity
+          style={styles.checkbox}
           onPress={() => toggleDone(item)}
           disabled={updating === item.id}
         >
@@ -229,8 +229,8 @@ export default function AdminTasksScreen() {
               <Ionicons name="create-outline" size={18} color={colors.textPrimary} />
               <Text style={styles.actionText}>ערוך</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.actionBtn} 
+            <TouchableOpacity
+              style={styles.actionBtn}
               onPress={() => deleteTask(item.id)}
               disabled={deleting === item.id}
             >
@@ -282,7 +282,7 @@ export default function AdminTasksScreen() {
         }
         parsedDueDate = date.toISOString();
       }
-      
+
       const body: any = {
         title: formData.title.trim(),
         description: formData.description.trim() || null,
@@ -372,9 +372,6 @@ export default function AdminTasksScreen() {
           { value: 'operations', label: 'תפעול' },
           { value: 'design', label: 'עיצוב' },
         ]} />
-        <TouchableOpacity style={styles.addButton} onPress={() => { resetForm(); setShowForm(true); }}>
-          <Ionicons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -460,6 +457,10 @@ export default function AdminTasksScreen() {
           </View>
         </View>
       </Modal>
+
+      <TouchableOpacity style={styles.addButton} onPress={() => { resetForm(); setShowForm(true); }}>
+        <Ionicons name="add" size={24} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -503,6 +504,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.backgroundSecondary,
     padding: LAYOUT_CONSTANTS.SPACING.LG,
+    position: 'relative',
   },
   header: {
     fontSize: FontSizes.heading2,
@@ -541,18 +543,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: LAYOUT_CONSTANTS.SPACING.SM,
     marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
+    flexWrap: 'wrap',
   },
   addButton: {
-    height: 48,
-    width: 48,
-    borderRadius: 12,
+    position: 'absolute',
+    right: LAYOUT_CONSTANTS.SPACING.LG,
+    bottom: 100,
+    height: 56,
+    width: 56,
+    borderRadius: 28,
     backgroundColor: colors.green,
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    zIndex: 1000,
   },
   listContent: {
     paddingBottom: LAYOUT_CONSTANTS.SPACING.XL,
     gap: LAYOUT_CONSTANTS.SPACING.SM,
+    flexGrow: 1,
+    minHeight: '150%', // Ensure content is always scrollable
   },
   loader: {
     flex: 1,

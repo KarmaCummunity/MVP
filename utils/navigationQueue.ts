@@ -2,7 +2,7 @@
 // Navigation queue manager - ensures navigation actions are executed sequentially
 // Prevents race conditions and navigation conflicts
 
-import { NavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainerRef, StackActions } from '@react-navigation/native';
 import { 
   QueuedNavigationAction, 
   NavigationQueueItem,
@@ -191,7 +191,10 @@ class NavigationQueue {
       throw new Error('Navigation ref not initialized');
     }
 
-    this.navigationRef.replace(action.routeName as never, action.params as never);
+    // Use StackActions.replace with dispatch since NavigationContainerRef doesn't have replace directly
+    this.navigationRef.dispatch(
+      StackActions.replace(action.routeName, action.params)
+    );
   }
 
   /**

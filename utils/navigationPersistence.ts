@@ -112,6 +112,33 @@ export const saveNavigationState = (
 };
 
 /**
+ * Recursively checks if navigation state contains UserProfileScreen as active route
+ * This helps prevent loading state that would lead to "user not found" screen
+ */
+const containsActiveUserProfileScreen = (state: NavigationState): boolean => {
+  if (!state || !state.routes || state.routes.length === 0) {
+    return false;
+  }
+
+  const activeRoute = state.routes[state.index || 0];
+  if (!activeRoute) {
+    return false;
+  }
+
+  // Check if current route is UserProfileScreen
+  if (activeRoute.name === 'UserProfileScreen') {
+    return true;
+  }
+
+  // Recursively check nested states
+  if (activeRoute.state) {
+    return containsActiveUserProfileScreen(activeRoute.state);
+  }
+
+  return false;
+};
+
+/**
  * Load navigation state from persistent storage
  * Returns null if no state is found or if there's an error
  */
@@ -149,9 +176,23 @@ export const loadNavigationState = async (
     }
 
     // Remove metadata if present (it's not part of NavigationState type)
-    if ((state as any)._metadata) {
+    const metadata = (state as any)._metadata;
+    if (metadata) {
       const { _metadata, ...stateWithoutMetadata } = state as any;
       state = stateWithoutMetadata as NavigationState;
+    }
+
+    // Check if state contains active UserProfileScreen - if so, don't load it
+    // This prevents opening "user not found" screen after data reset
+    if (containsActiveUserProfileScreen(state)) {
+      logger.warn(LOG_SOURCE, 'Navigation state contains active UserProfileScreen, clearing to prevent "user not found" screen', {
+        key: storageKey,
+        savedUserId: metadata?.userId,
+        currentUserId: userId,
+      });
+      // Clear state with active UserProfileScreen
+      await clearNavigationState(mode, userId);
+      return null;
     }
 
     // Validate loaded state

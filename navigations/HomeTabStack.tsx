@@ -5,10 +5,10 @@
 // - Screens: HomeMain (HomeScreen), ChatList, ChatDetail, Notifications, About, Settings, Bookmarks, UserProfile, Followers, PostsReels (modal), WebView.
 // - Params of interest: `hideTopBar`, `showPosts` passed by HomeScreen to control header and content.
 // - External deps: react-navigation stack, TopBarNavigator wrapper.
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, CommonActions } from '@react-navigation/native';
 
 import HomeScreen from '../bottomBarScreens/HomeScreen';
 import ChatListScreen from '../topBarScreens/ChatListScreen';
@@ -27,6 +27,7 @@ import LandingSiteScreen from '../screens/LandingSiteScreen';
 
 import TopBarNavigator from './TopBarNavigator';
 import { useWebMode } from '../stores/webModeStore';
+import { useUser } from '../stores/userStore';
 import { logger } from '../utils/loggerService';
 
 type HomeTabStackParamList = {
@@ -41,7 +42,7 @@ type HomeTabStackParamList = {
   BookmarksScreen: undefined;
   PostsReelsScreen: undefined;
   WebViewScreen: { url?: string } | undefined;
-  UserProfileScreen: { userId?: string } | undefined;
+  UserProfileScreen: { userId: string; userName: string; characterData?: any } | undefined;
   FollowersScreen: { userId?: string } | undefined;
   DiscoverPeopleScreen: undefined;
 };
@@ -50,21 +51,93 @@ const Stack = createStackNavigator<HomeTabStackParamList>();
 
 export default function HomeTabStack(): React.ReactElement {
   const { mode } = useWebMode();
+  const navigation = useNavigation();
+  const { resetHomeScreenTrigger } = useUser();
   
+  // Get the stack navigator reference - useNavigation() returns parent, so we need to get the stack itself
+  // We'll use a ref to store the stack navigator when it's available
+  const stackNavigatorRef = React.useRef<any>(null);
+
   useFocusEffect(
     React.useCallback(() => {
       logger.debug('HomeTabStack', 'Navigator focused');
+      // Navigation to HomeMain is handled by BottomNavigator when tab is pressed
+      // We don't need to handle it here to avoid navigation conflicts
     }, [])
   );
+
+  // Navigate to HomeMain when resetHomeScreenTrigger changes
+  // This is called when the home tab is pressed in BottomNavigator
+  useEffect(() => {
+    if (resetHomeScreenTrigger > 0) {
+      try {
+        // Get the current navigation state - navigation here is the HomeTabStack navigator itself
+        const state = (navigation as any).getState();
+        const currentRoute = state?.routes?.[state?.index || 0];
+        const currentRouteName = currentRoute?.name;
+        
+        logger.debug('HomeTabStack', 'resetHomeScreenTrigger activated', { 
+          resetHomeScreenTrigger,
+          currentRouteName,
+          mode
+        });
+        
+        // Only navigate if we're not already on HomeMain
+        if (currentRouteName !== 'HomeMain') {
+          logger.debug('HomeTabStack', 'Navigating to HomeMain due to resetHomeScreenTrigger', { 
+            resetHomeScreenTrigger,
+            currentRoute: currentRouteName,
+            mode
+          });
+          
+          // Use CommonActions.reset to reset the stack to HomeMain
+          // This ensures we pop all screens and go back to HomeMain
+          try {
+            (navigation as any).dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'HomeMain' }],
+              })
+            );
+            logger.debug('HomeTabStack', 'Successfully reset to HomeMain');
+          } catch (resetError) {
+            logger.error('HomeTabStack', 'Error resetting to HomeMain', { resetError });
+            // Fallback: try to navigate directly
+            try {
+              (navigation as any).navigate('HomeMain');
+            } catch (navError) {
+              logger.error('HomeTabStack', 'Fallback navigation also failed', { navError });
+            }
+          }
+        } else {
+          // Already on HomeMain - just log that we're refreshing
+          logger.debug('HomeTabStack', 'Already on HomeMain, trigger just refreshes the screen', { 
+            resetHomeScreenTrigger,
+            mode
+          });
+        }
+      } catch (error) {
+        logger.error('HomeTabStack', 'Error navigating to HomeMain', { error });
+        // Fallback: try to navigate directly to HomeMain
+        try {
+          (navigation as any).navigate('HomeMain');
+        } catch (fallbackError) {
+          logger.error('HomeTabStack', 'Fallback navigation also failed', { fallbackError });
+        }
+      }
+    }
+  }, [resetHomeScreenTrigger, navigation, mode]);
 
   // Determine initial route based on web mode
   const initialRouteName = (typeof window !== 'undefined' && mode === 'site') 
     ? "LandingSiteScreen" 
     : "HomeMain";
 
+  logger.debug('HomeTabStack', 'Rendering with initial route', { initialRouteName, mode });
+
   return (
     <Stack.Navigator
-      id={undefined}
+      id="HomeTabStack"
       initialRouteName={initialRouteName as keyof HomeTabStackParamList}
       detachInactiveScreens={true}
       screenOptions={({ navigation, route }) => ({

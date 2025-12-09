@@ -19,6 +19,7 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 import AboutKarmaCommunityScreen from '../topBarScreens/AboutKarmaCommunityScreen';
 import DiscoverPeopleScreen from '../screens/DiscoverPeopleScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
+import LandingSiteScreen from '../screens/LandingSiteScreen';
 import TopBarNavigator from './TopBarNavigator';
 import { logger } from '../utils/loggerService';
 
@@ -30,6 +31,7 @@ type ProfileTabStackParamList = {
   NewChatScreen: undefined;
   NotificationsScreen: undefined;
   AboutKarmaCommunityScreen: undefined;
+  LandingSiteScreen: undefined;
   DiscoverPeopleScreen: undefined;
   EditProfileScreen: undefined;
 };
@@ -66,6 +68,7 @@ export default function ProfileTabStack(): React.ReactElement {
       <Stack.Screen name="NewChatScreen" component={NewChatScreen} />
       <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
       <Stack.Screen name="AboutKarmaCommunityScreen" component={AboutKarmaCommunityScreen} />
+      <Stack.Screen name="LandingSiteScreen" component={LandingSiteScreen} />
       <Stack.Screen name="DiscoverPeopleScreen" component={DiscoverPeopleScreen} />
       <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} />
     </Stack.Navigator>

@@ -74,26 +74,47 @@ export default function DiscoverPeopleScreen() {
         return;
       }
 
-      const currentUserId = String(selectedUser.id).trim();
+      const currentUserId = String(selectedUser.id).trim().toLowerCase();
+      const currentUserEmail = selectedUser.email ? String(selectedUser.email).trim().toLowerCase() : '';
+      
+      console.log('🔍 DiscoverPeopleScreen - Filtering users. Current user ID:', currentUserId, 'Email:', currentUserEmail);
       
       let filteredSuggestions: any[] = [];
-      const userSuggestions = await getFollowSuggestions(currentUserId, 20);
-      // Filter out current user from suggestions - use strict string comparison
+      const userSuggestions = await getFollowSuggestions(currentUserId, 20, currentUserEmail);
+      // Filter out current user from suggestions - check both ID and email
       filteredSuggestions = (userSuggestions as any[]).filter(
         (user) => {
-          const userId = String(user.id || '').trim();
-          return userId !== currentUserId && userId !== '';
+          const userId = String(user.id || '').trim().toLowerCase();
+          const userEmail = user.email ? String(user.email).trim().toLowerCase() : '';
+          const isCurrentUser = userId === currentUserId || 
+                               (currentUserEmail && userEmail === currentUserEmail) ||
+                               userId === '';
+          
+          if (isCurrentUser) {
+            console.log('🚫 Filtered out current user from suggestions:', { userId, userEmail, name: user.name });
+          }
+          
+          return !isCurrentUser;
         }
       );
       setSuggestions(filteredSuggestions);
       
       // Get popular users excluding current user
-      const popular = await getPopularUsers(20, currentUserId);
-      // Additional filter as safety measure - use strict string comparison
+      const popular = await getPopularUsers(20, currentUserId, currentUserEmail);
+      // Additional filter as safety measure - check both ID and email
       const filteredPopular = (popular as any[]).filter(
         (user) => {
-          const userId = String(user.id || '').trim();
-          return userId !== currentUserId && userId !== '';
+          const userId = String(user.id || '').trim().toLowerCase();
+          const userEmail = user.email ? String(user.email).trim().toLowerCase() : '';
+          const isCurrentUser = userId === currentUserId || 
+                               (currentUserEmail && userEmail === currentUserEmail) ||
+                               userId === '';
+          
+          if (isCurrentUser) {
+            console.log('🚫 Filtered out current user from popular:', { userId, userEmail, name: user.name });
+          }
+          
+          return !isCurrentUser;
         }
       );
       setPopularUsers(filteredPopular);
@@ -181,8 +202,23 @@ export default function DiscoverPeopleScreen() {
   };
 
   const renderUserItem = ({ item }: { item: CharacterType }) => {
+    // Double-check: if this is the current user, don't render at all
+    if (!selectedUser) return null;
+    
+    const currentUserId = String(selectedUser.id).trim().toLowerCase();
+    const currentUserEmail = selectedUser.email ? String(selectedUser.email).trim().toLowerCase() : '';
+    const itemId = String(item.id || '').trim().toLowerCase();
+    const itemEmail = item.email ? String(item.email).trim().toLowerCase() : '';
+    const isCurrentUser = itemId === currentUserId || 
+                         (currentUserEmail && itemEmail === currentUserEmail) ||
+                         itemId === '';
+    
+    if (isCurrentUser) {
+      console.log('🚫 DiscoverPeopleScreen - renderUserItem: Skipping current user:', { itemId, itemEmail, name: item.name });
+      return null;
+    }
+
     const currentStats = followStats[item.id] || { isFollowing: false };
-    const isCurrentUser = selectedUser?.id === item.id;
 
     return (
       <View style={styles.userItem}>
@@ -225,31 +261,29 @@ export default function DiscoverPeopleScreen() {
           </View>
         </TouchableOpacity>
 
-        {!isCurrentUser && (
-          <View style={styles.actionsContainer}>
-            <TouchableOpacity
-              style={[
-                styles.followButton,
-                currentStats.isFollowing && styles.followingButton
-              ]}
-              onPress={() => handleFollowToggle(item.id)}
-            >
-              <Text style={[
-                styles.followButtonText,
-                currentStats.isFollowing && styles.followingButtonText
-              ]}>
-                {currentStats.isFollowing ? 'עוקב' : 'עקוב'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.messageButton}
-              onPress={() => handleMessage(item)}
-            >
-              <Ionicons name="chatbubble-outline" size={16} color={colors.textPrimary} />
-              <Text style={styles.messageButtonText}>הודעה</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity
+            style={[
+              styles.followButton,
+              currentStats.isFollowing && styles.followingButton
+            ]}
+            onPress={() => handleFollowToggle(item.id)}
+          >
+            <Text style={[
+              styles.followButtonText,
+              currentStats.isFollowing && styles.followingButtonText
+            ]}>
+              {currentStats.isFollowing ? 'עוקב' : 'עקוב'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.messageButton}
+            onPress={() => handleMessage(item)}
+          >
+            <Ionicons name="chatbubble-outline" size={16} color={colors.textPrimary} />
+            <Text style={styles.messageButtonText}>הודעה</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -301,9 +335,20 @@ export default function DiscoverPeopleScreen() {
   const rawData = activeTab === 'suggestions' ? suggestions : popularUsers;
   const currentData = selectedUser 
     ? rawData.filter((user) => {
-        const userId = String(user.id || '').trim();
-        const currentUserId = String(selectedUser.id || '').trim();
-        return userId !== currentUserId && userId !== '';
+        const userId = String(user.id || '').trim().toLowerCase();
+        const userEmail = user.email ? String(user.email).trim().toLowerCase() : '';
+        const currentUserId = String(selectedUser.id || '').trim().toLowerCase();
+        const currentUserEmail = selectedUser.email ? String(selectedUser.email).trim().toLowerCase() : '';
+        
+        const isCurrentUser = userId === currentUserId || 
+                             (currentUserEmail && userEmail === currentUserEmail) ||
+                             userId === '';
+        
+        if (isCurrentUser) {
+          console.log('🚫 Filtered out current user from display:', { userId, userEmail, name: user.name });
+        }
+        
+        return !isCurrentUser;
       })
     : rawData;
 

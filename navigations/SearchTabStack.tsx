@@ -20,6 +20,7 @@ import NewChatScreen from '../screens/NewChatScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AboutKarmaCommunityScreen from '../topBarScreens/AboutKarmaCommunityScreen';
 import SettingsScreen from '../topBarScreens/SettingsScreen';
+import LandingSiteScreen from '../screens/LandingSiteScreen';
 import TopBarNavigator from './TopBarNavigator';
 import { logger } from '../utils/loggerService';
 
@@ -33,6 +34,7 @@ type SearchTabStackParamList = {
   NewChatScreen: undefined;
   NotificationsScreen: undefined;
   AboutKarmaCommunityScreen: undefined;
+  LandingSiteScreen: undefined;
   SettingsScreen: undefined;
 };
 
@@ -70,6 +72,7 @@ export default function SearchTabStack(): React.ReactElement {
       <Stack.Screen name="NewChatScreen" component={NewChatScreen} />
       <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
       <Stack.Screen name="AboutKarmaCommunityScreen" component={AboutKarmaCommunityScreen} />
+      <Stack.Screen name="LandingSiteScreen" component={LandingSiteScreen} />
       <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
     </Stack.Navigator>
   );

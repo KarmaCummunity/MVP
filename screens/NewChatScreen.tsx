@@ -60,30 +60,60 @@ export default function NewChatScreen() {
 
     try {
       setIsLoading(true);
-      
+
+      const currentUserId = String(selectedUser.id).trim().toLowerCase();
+      const currentUserEmail = selectedUser.email ? String(selectedUser.email).trim().toLowerCase() : '';
+
       const following = await getFollowing(selectedUser.id);
-      
+
       const followers = await getFollowers(selectedUser.id);
-      
+
       const allFriends = [...following, ...followers];
-      
-      const uniqueFriends = allFriends.filter((friend, index, self) => 
+
+      // Filter out current user - check both ID and email (case-insensitive)
+      const uniqueFriends = allFriends.filter((friend, index, self) =>
         index === self.findIndex(f => f.id === friend.id)
-      );
-      
+      ).filter(friend => {
+        const friendId = String(friend.id || '').trim().toLowerCase();
+        const friendEmail = friend.email ? String(friend.email).trim().toLowerCase() : '';
+        const isCurrentUser = friendId === currentUserId || 
+                             (currentUserEmail && friendEmail === currentUserEmail) ||
+                             friendId === '';
+        
+        if (isCurrentUser) {
+          console.log('🚫 NewChatScreen - Filtered out current user:', { friendId, friendEmail, name: friend.name });
+        }
+        
+        return !isCurrentUser;
+      });
+
       const conversations = await getAllConversations(selectedUser.id);
-      const existingUserIds = conversations.flatMap(conv => 
+      const existingUserIds = conversations.flatMap(conv =>
         conv.participants.filter(id => id !== selectedUser.id)
       );
       setExistingConversations(existingUserIds);
-      
+
       if (uniqueFriends.length === 0) {
-        const suggestions = await getFollowSuggestions(selectedUser.id, 10);
-        setFriends(suggestions);
+        const suggestions = await getFollowSuggestions(selectedUser.id, 10, currentUserEmail);
+        // Additional filter as safety measure - check both ID and email
+        const filteredSuggestions = suggestions.filter(friend => {
+          const friendId = String(friend.id || '').trim().toLowerCase();
+          const friendEmail = friend.email ? String(friend.email).trim().toLowerCase() : '';
+          const isCurrentUser = friendId === currentUserId || 
+                               (currentUserEmail && friendEmail === currentUserEmail) ||
+                               friendId === '';
+          
+          if (isCurrentUser) {
+            console.log('🚫 NewChatScreen - Filtered out current user from suggestions:', { friendId, friendEmail, name: friend.name });
+          }
+          
+          return !isCurrentUser;
+        });
+        setFriends(filteredSuggestions);
       } else {
         setFriends(uniqueFriends);
       }
-      
+
     } catch (error) {
       console.error('❌ Load friends error:', error);
       Alert.alert('שגיאה', 'שגיאה בטעינת רשימת החברים');
@@ -94,8 +124,26 @@ export default function NewChatScreen() {
   }, [selectedUser]);
 
   const applyFilters = useCallback((friendsList: CharacterType[]) => {
-    let filtered = [...friendsList];
-    
+    if (!selectedUser) return friendsList;
+
+    const currentUserId = String(selectedUser.id).trim().toLowerCase();
+    const currentUserEmail = selectedUser.email ? String(selectedUser.email).trim().toLowerCase() : '';
+
+    // First, filter out current user (double-check to ensure current user is never shown)
+    let filtered = friendsList.filter(friend => {
+      const friendId = String(friend.id || '').trim().toLowerCase();
+      const friendEmail = friend.email ? String(friend.email).trim().toLowerCase() : '';
+      const isCurrentUser = friendId === currentUserId || 
+                           (currentUserEmail && friendEmail === currentUserEmail) ||
+                           friendId === '';
+      
+      if (isCurrentUser) {
+        console.log('🚫 NewChatScreen - Filtered out current user in applyFilters:', { friendId, friendEmail, name: friend.name });
+      }
+      
+      return !isCurrentUser;
+    });
+
     switch (activeFilter) {
       case 'online':
         filtered = filtered.filter(friend => friend.isActive);
@@ -107,14 +155,14 @@ export default function NewChatScreen() {
         filtered = filtered.filter(friend => (friend.followersCount ?? 0) > 0);
         break;
     }
-    
+
     if (searchQuery.trim() !== '') {
       filtered = filtered.filter(friend =>
         (friend.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (friend.bio || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    
+
     switch (sortBy) {
       case 'name':
         filtered.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'));
@@ -133,9 +181,9 @@ export default function NewChatScreen() {
         });
         break;
     }
-    
+
     return filtered;
-  }, [activeFilter, sortBy, searchQuery]);
+  }, [activeFilter, sortBy, searchQuery, selectedUser]);
 
   useEffect(() => {
     const filtered = applyFilters(friends);
@@ -160,14 +208,14 @@ export default function NewChatScreen() {
     try {
       const existingConvId = await conversationExists(selectedUser.id, friend.id);
       let conversationId: string;
-      
+
       if (existingConvId) {
         console.log('💬 Conversation already exists:', existingConvId);
         conversationId = existingConvId;
       } else {
         console.log('💬 Creating new conversation...');
         conversationId = await createConversation([selectedUser.id, friend.id]);
-        
+
         const welcomeMessage = {
           conversationId,
           senderId: selectedUser.id,
@@ -177,18 +225,18 @@ export default function NewChatScreen() {
           type: 'text' as const,
           status: 'sent' as const,
         };
-        
+
         await sendMessage(welcomeMessage);
         console.log('💬 Sent welcome message');
       }
-      
+
       (navigation as any).navigate('ChatDetailScreen', {
         conversationId,
         userName: friend.name,
         userAvatar: friend.avatar,
         otherUserId: friend.id,
       });
-      
+
     } catch (error) {
       console.error('❌ Create chat error:', error);
       Alert.alert('שגיאה', 'שגיאה ביצירת השיחה');
@@ -196,17 +244,33 @@ export default function NewChatScreen() {
   };
 
   const renderFriend = ({ item }: { item: CharacterType }) => {
+    // Double-check: if this is the current user, don't render at all
+    if (!selectedUser) return null;
+    
+    const currentUserId = String(selectedUser.id).trim().toLowerCase();
+    const currentUserEmail = selectedUser.email ? String(selectedUser.email).trim().toLowerCase() : '';
+    const itemId = String(item.id || '').trim().toLowerCase();
+    const itemEmail = item.email ? String(item.email).trim().toLowerCase() : '';
+    const isCurrentUser = itemId === currentUserId || 
+                         (currentUserEmail && itemEmail === currentUserEmail) ||
+                         itemId === '';
+    
+    if (isCurrentUser) {
+      console.log('🚫 NewChatScreen - renderFriend: Skipping current user:', { itemId, itemEmail, name: item.name });
+      return null;
+    }
+
     const hasExistingChat = existingConversations.includes(item.id);
     const avatarUri = item.avatar || 'https://i.pravatar.cc/150?img=1';
-    
+
     return (
-      <TouchableOpacity 
-        style={[styles.friendItem, hasExistingChat && styles.friendItemWithChat]} 
+      <TouchableOpacity
+        style={[styles.friendItem, hasExistingChat && styles.friendItemWithChat]}
         onPress={() => handleCreateChat(item)}
       >
         <View style={styles.avatarContainer}>
-          <Image 
-            source={{ uri: avatarUri }} 
+          <Image
+            source={{ uri: avatarUri }}
             style={styles.avatar}
           />
           {item.isActive && <View style={styles.onlineIndicator} />}
@@ -230,10 +294,10 @@ export default function NewChatScreen() {
             </Text>
           </View>
         </View>
-        <Icon 
-          name={hasExistingChat ? "chatbubble" : "chatbubble-outline"} 
-          size={24} 
-          color={hasExistingChat ? colors.success : colors.primary} 
+        <Icon
+          name={hasExistingChat ? "chatbubble" : "chatbubble-outline"}
+          size={24}
+          color={hasExistingChat ? colors.success : colors.primary}
         />
       </TouchableOpacity>
     );
@@ -246,7 +310,7 @@ export default function NewChatScreen() {
       <Text style={styles.emptyStateSubtitle}>
         התחל לעקוב אחרי אנשים כדי ליצור שיחות חדשות
       </Text>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.exploreButton}
         onPress={() => (navigation as any).navigate('DiscoverPeopleScreen')}
       >
@@ -261,7 +325,7 @@ export default function NewChatScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
           <Icon name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => (navigation as any).navigate('DiscoverPeopleScreen')}
           style={styles.headerButton}
         >
@@ -285,9 +349,9 @@ export default function NewChatScreen() {
             </TouchableOpacity>
           )}
         </View>
-        
-        <TouchableOpacity 
-          style={styles.filterButton} 
+
+        <TouchableOpacity
+          style={styles.filterButton}
           onPress={() => setShowFilters(!showFilters)}
         >
           <Icon name="funnel-outline" size={20} color={colors.primary} />
@@ -298,7 +362,7 @@ export default function NewChatScreen() {
       {showFilters && (
         <View style={styles.filtersContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.filterChip, activeFilter === 'all' && styles.filterChipActive]}
               onPress={() => setActiveFilter('all')}
             >
@@ -306,8 +370,8 @@ export default function NewChatScreen() {
                 הכל
               </Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[styles.filterChip, activeFilter === 'online' && styles.filterChipActive]}
               onPress={() => setActiveFilter('online')}
             >
@@ -315,8 +379,8 @@ export default function NewChatScreen() {
                 מחוברים
               </Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[styles.filterChip, activeFilter === 'highKarma' && styles.filterChipActive]}
               onPress={() => setActiveFilter('highKarma')}
             >
@@ -324,8 +388,8 @@ export default function NewChatScreen() {
                 קארמה גבוהה
               </Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[styles.filterChip, activeFilter === 'recentFollowers' && styles.filterChipActive]}
               onPress={() => setActiveFilter('recentFollowers')}
             >
@@ -334,11 +398,11 @@ export default function NewChatScreen() {
               </Text>
             </TouchableOpacity>
           </ScrollView>
-          
+
           <View style={styles.sortContainer}>
             <Text style={styles.sortLabel}>מיון:</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sortScrollView}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.sortChip, sortBy === 'name' && styles.sortChipActive]}
                 onPress={() => setSortBy('name')}
               >
@@ -346,8 +410,8 @@ export default function NewChatScreen() {
                   שם
                 </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={[styles.sortChip, sortBy === 'karma' && styles.sortChipActive]}
                 onPress={() => setSortBy('karma')}
               >
@@ -355,8 +419,8 @@ export default function NewChatScreen() {
                   קארמה
                 </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={[styles.sortChip, sortBy === 'followers' && styles.sortChipActive]}
                 onPress={() => setSortBy('followers')}
               >
@@ -364,8 +428,8 @@ export default function NewChatScreen() {
                   עוקבים
                 </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={[styles.sortChip, sortBy === 'recent' && styles.sortChipActive]}
                 onPress={() => setSortBy('recent')}
               >

@@ -260,25 +260,36 @@ export const getFollowing = async (userId: string): Promise<any[]> => {
   }
 };
 
-export const getFollowSuggestions = async (currentUserId: string, limit: number = 10): Promise<any[]> => {
+export const getFollowSuggestions = async (currentUserId: string, limit: number = 10, currentUserEmail?: string): Promise<any[]> => {
   try {
     if (USE_BACKEND) {
       // Get more users than needed to filter out current user and get enough results
       const fetchLimit = limit + 10;
       const response = await apiService.getUsers({ limit: fetchLimit, offset: 0 });
       if (response.success && response.data) {
-        // Filter out current user using strict string comparison
-        const excludeId = String(currentUserId).trim();
+        // Filter out current user using strict string comparison (case-insensitive)
+        const excludeId = String(currentUserId).trim().toLowerCase();
+        const excludeEmail = currentUserEmail ? String(currentUserEmail).trim().toLowerCase() : '';
         const users = (response.data as any[])
           .filter((user: any) => {
-            const userId = String(user.id || '').trim();
-            return userId !== excludeId && userId !== '';
+            const userId = String(user.id || '').trim().toLowerCase();
+            const userEmail = user.email ? String(user.email).trim().toLowerCase() : '';
+            const isCurrentUser = userId === excludeId || 
+                                 (excludeEmail && userEmail === excludeEmail) ||
+                                 userId === '';
+            
+            if (isCurrentUser) {
+              console.log('🚫 getFollowSuggestions - Filtered out current user:', { userId, userEmail, name: user.name });
+            }
+            
+            return !isCurrentUser;
           })
           .map((user: any) => ({
             id: user.id,
             name: user.name || 'ללא שם',
             avatar: user.avatar_url || 'https://i.pravatar.cc/150?img=1',
             bio: user.bio || '',
+            email: user.email || '', // Include email for additional filtering
             karmaPoints: user.karma_points || 0,
             completedTasks: 0, // TODO: Get from backend if available
             roles: ['user'], // TODO: Get from backend if available
@@ -330,7 +341,7 @@ export const getFollowHistory = async (userId: string): Promise<FollowRelationsh
   }
 };
 
-export const getPopularUsers = async (limit: number = 10, excludeUserId?: string): Promise<any[]> => {
+export const getPopularUsers = async (limit: number = 10, excludeUserId?: string, excludeUserEmail?: string): Promise<any[]> => {
   try {
     if (USE_BACKEND) {
       // Get more users than needed to account for filtering out current user
@@ -338,19 +349,30 @@ export const getPopularUsers = async (limit: number = 10, excludeUserId?: string
       // Get popular users from backend (sorted by karma_points and last_active)
       const response = await apiService.getUsers({ limit: fetchLimit, offset: 0 });
       if (response.success && response.data) {
-        // Map to UserPreview format and filter out current user if provided
-        const excludeId = excludeUserId ? String(excludeUserId).trim() : null;
+        // Map to UserPreview format and filter out current user if provided (case-insensitive)
+        const excludeId = excludeUserId ? String(excludeUserId).trim().toLowerCase() : null;
+        const excludeEmail = excludeUserEmail ? String(excludeUserEmail).trim().toLowerCase() : '';
         const users = (response.data as any[])
           .filter((user: any) => {
             if (!excludeId) return true;
-            const userId = String(user.id || '').trim();
-            return userId !== excludeId && userId !== '';
+            const userId = String(user.id || '').trim().toLowerCase();
+            const userEmail = user.email ? String(user.email).trim().toLowerCase() : '';
+            const isCurrentUser = userId === excludeId || 
+                                 (excludeEmail && userEmail === excludeEmail) ||
+                                 userId === '';
+            
+            if (isCurrentUser) {
+              console.log('🚫 getPopularUsers - Filtered out current user:', { userId, userEmail, name: user.name });
+            }
+            
+            return !isCurrentUser;
           })
           .map((user: any) => ({
             id: user.id,
             name: user.name || 'ללא שם',
             avatar: user.avatar_url || 'https://i.pravatar.cc/150?img=1',
             bio: user.bio || '',
+            email: user.email || '', // Include email for additional filtering
             karmaPoints: user.karma_points || 0,
             completedTasks: 0, // TODO: Get from backend if available
             roles: ['user'], // TODO: Get from backend if available

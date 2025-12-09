@@ -2095,7 +2095,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: isTablet ? 1000 : '100%',
     alignSelf: 'center',
-    direction: 'rtl',
+    writingDirection: 'rtl',
   },
   roadmapItemWrapper: {
     width: '100%',
@@ -2115,7 +2115,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderWidth: 1,
     borderColor: '#F0F4F8',
-    direction: 'rtl',
+    writingDirection: 'rtl',
   },
   roadmapIconContainer: {
     width: isMobileWeb ? 48 : 64,

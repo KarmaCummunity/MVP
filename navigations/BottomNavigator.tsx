@@ -23,12 +23,12 @@ import React from "react";
 import { Platform, Animated, Easing, View, StyleSheet } from "react-native";
 import { createBottomTabNavigator, BottomTabNavigationOptions } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, CommonActions } from "@react-navigation/native";
 import HomeTabStack from "./HomeTabStack";
 import SearchTabStack from "./SearchTabStack";
 import ProfileTabStack from "./ProfileTabStack";
 import DonationsStack from "./DonationsStack";
-import AdminStack from "./AdminStack"; 
+import AdminStack from "./AdminStack";
 import BookmarksScreen from "../screens/BookmarksScreen";
 import SettingsScreen from "../topBarScreens/SettingsScreen";
 import ChatListScreen from "../topBarScreens/ChatListScreen";
@@ -154,7 +154,7 @@ export default function BottomNavigator(): React.ReactElement {
   const { isGuestMode, resetHomeScreen, isAdmin } = useUser();
   const { mode } = useWebMode();
   const navigation = useNavigation();
-  
+
   // Log render for debugging
   React.useEffect(() => {
     logger.debug('BottomNavigator', 'Component rendered', {
@@ -163,7 +163,7 @@ export default function BottomNavigator(): React.ReactElement {
       mode,
     });
   }, [isGuestMode, isAdmin, mode]);
-  
+
   // Refresh data when navigator comes into focus
   useFocusEffect(
     React.useCallback(() => {
@@ -206,62 +206,104 @@ export default function BottomNavigator(): React.ReactElement {
   };
 
   return (
-      <Tab.Navigator
-        id={undefined}
-        initialRouteName="HomeScreen"
-        screenOptions={({ route }): BottomTabNavigationOptions => {
-          const activeParams = getActiveNestedParams(route as any) || {};
-          const hideBottomBar = activeParams.hideBottomBar === true;
-          const hideDueToSiteMode = (typeof window !== 'undefined' && mode === 'site');
-          const shouldHideTabBar = hideBottomBar || hideDueToSiteMode;
-          const { isTablet, isDesktop } = getScreenInfo();
-          const landscape = isLandscape();
-          const horizontalInset = isDesktop ? vw(20) : isTablet ? vw(10) : LAYOUT_CONSTANTS.SPACING.MD;
-          const barHeight = landscape ? 40 : (isDesktop ? 56 : isTablet ? 54 : 46);
-          return ({
-            headerShown: false,
-            tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number; }) => {
-              if (route.name === "DonationsTab") {
-                return focused ? (
-                  <Ionicons name="heart" size={size} color={color} />
-                ) : (
-                  <DonationsPulseIcon size={size} color={color} />
-                );
+    <Tab.Navigator
+      id={undefined}
+      initialRouteName="HomeScreen"
+      screenOptions={({ route }): BottomTabNavigationOptions => {
+        const activeParams = getActiveNestedParams(route as any) || {};
+        const hideBottomBar = activeParams.hideBottomBar === true;
+        const hideDueToSiteMode = (typeof window !== 'undefined' && mode === 'site');
+        const shouldHideTabBar = hideBottomBar || hideDueToSiteMode;
+        const { isTablet, isDesktop } = getScreenInfo();
+        const landscape = isLandscape();
+        const horizontalInset = isDesktop ? vw(20) : isTablet ? vw(10) : LAYOUT_CONSTANTS.SPACING.MD;
+        const barHeight = landscape ? 40 : (isDesktop ? 56 : isTablet ? 54 : 46);
+        return ({
+          headerShown: false,
+          tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number; }) => {
+            if (route.name === "DonationsTab") {
+              return focused ? (
+                <Ionicons name="heart" size={size} color={color} />
+              ) : (
+                <DonationsPulseIcon size={size} color={color} />
+              );
+            }
+            const iconName = getTabBarIconName(route.name, focused);
+            return <Ionicons name={iconName} size={size} color={color} />;
+          },
+          tabBarActiveTintColor: colors.bottomNavActive,
+          tabBarInactiveTintColor: colors.bottomNavInactive,
+          tabBarShowLabel: false,
+          tabBarStyle: {
+            position: "absolute",
+            left: horizontalInset,
+            right: horizontalInset,
+            borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.XLARGE,
+            elevation: LAYOUT_CONSTANTS.SHADOW.MEDIUM.elevation,
+            height: barHeight,
+            backgroundColor: colors.bottomNavBackground,
+            display: shouldHideTabBar ? 'none' as const : 'flex' as const,
+          },
+        });
+      }}
+    >
+      {!isGuestMode && <Tab.Screen name="ProfileScreen" component={ProfileTabStack} />}
+      <Tab.Screen name="DonationsTab" component={DonationsStack} />
+      <Tab.Screen name="SearchTab" component={SearchTabStack} />
+      {isAdmin && <Tab.Screen name="AdminTab" component={AdminStack} />}
+      <Tab.Screen
+        name="HomeScreen"
+        component={HomeTabStack}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            logger.debug('BottomNavigator', 'HomeScreen tab pressed');
+            try {
+              // Get current navigation state
+              const state = (navigation as any).getState();
+              const currentRoute = state?.routes?.[state?.index || 0];
+              const currentRouteName = currentRoute?.name;
+
+              logger.debug('BottomNavigator', 'Tab press check', { currentRouteName });
+
+              if (currentRouteName === 'HomeScreen') {
+                // Already on Home tab - check if we're on HomeMain inside the stack
+                const stackState = currentRoute?.state;
+                const stackRoute = stackState?.routes?.[stackState?.index || 0];
+                const innerRouteName = stackRoute?.name;
+                
+                logger.debug('BottomNavigator', 'Already on HomeScreen, checking inner route', { innerRouteName });
+                
+                if (innerRouteName === 'HomeMain') {
+                  // Already on HomeMain - just refresh without navigating
+                  // This prevents opening ChatListScreen or other screens
+                  logger.debug('BottomNavigator', 'Already on HomeMain, just refreshing');
+                  resetHomeScreen();
+                  // Don't navigate - just let the reset trigger refresh the screen
+                  e.preventDefault();
+                } else {
+                  // On a different screen inside HomeTabStack - reset to HomeMain
+                  logger.debug('BottomNavigator', 'On different screen in HomeTabStack, resetting to HomeMain', { 
+                    currentScreen: innerRouteName 
+                  });
+                  // Use resetHomeScreen trigger which will be handled by HomeTabStack
+                  // This is the most reliable way to reset the stack to HomeMain
+                  resetHomeScreen();
+                  e.preventDefault(); // Prevent default navigation since we handled it
+                }
+              } else {
+                // Switching tabs - just navigate
+                logger.debug('BottomNavigator', 'Switching to HomeScreen');
+                (navigation as any).navigate('HomeScreen');
               }
-              const iconName = getTabBarIconName(route.name, focused);
-              return <Ionicons name={iconName} size={size} color={color} />;
-            },
-            tabBarActiveTintColor: colors.bottomNavActive,
-            tabBarInactiveTintColor: colors.bottomNavInactive,
-            tabBarShowLabel: false,
-            tabBarStyle: {
-              position: "absolute",
-              left: horizontalInset,
-              right: horizontalInset,
-              borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.XLARGE,
-              elevation: LAYOUT_CONSTANTS.SHADOW.MEDIUM.elevation,
-              height: barHeight,
-              backgroundColor: colors.bottomNavBackground,
-              display: shouldHideTabBar ? 'none' as const : 'flex' as const,
-            },
-          });
-        }}
-      >
-        {!isGuestMode && <Tab.Screen name="ProfileScreen" component={ProfileTabStack} />}
-        <Tab.Screen name="DonationsTab" component={DonationsStack} />
-        <Tab.Screen name="SearchTab" component={SearchTabStack} />
-        {isAdmin && <Tab.Screen name="AdminTab" component={AdminStack} />}
-        <Tab.Screen 
-          name="HomeScreen" 
-          component={HomeTabStack}
-          listeners={({ navigation, route }) => ({
-            tabPress: (e) => {
-              logger.debug('BottomNavigator', 'HomeScreen tab pressed');
-              resetHomeScreen();
-            },
-          })}
-        />
-      
-      </Tab.Navigator>
+            } catch (error) {
+              logger.error('BottomNavigator', 'Error handling HomeScreen tab press', { error });
+              // Fallback: standard navigation
+              (navigation as any).navigate('HomeScreen');
+            }
+          },
+        })}
+      />
+
+    </Tab.Navigator>
   );
 }

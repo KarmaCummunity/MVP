@@ -121,6 +121,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: LAYOUT_CONSTANTS.SPACING.LG,
+    minHeight: '150%', // Ensure content is always scrollable
   },
   header: {
     alignItems: 'center',

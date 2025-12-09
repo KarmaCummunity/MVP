@@ -62,6 +62,7 @@ export default function SettingsScreen() {
   const { t } = useTranslation(['settings','common']);
   const [currentLang, setCurrentLang] = useState(i18n.language || 'he');
   const [showLangModal, setShowLangModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -140,38 +141,6 @@ export default function SettingsScreen() {
     console.log('⚙️ SettingsScreen - Platform:', Platform.OS);
     console.log('⚙️ SettingsScreen - isGuestMode:', isGuestMode);
     
-    // Helper function to navigate after logout based on web mode
-    const navigateAfterLogout = async () => {
-      const targetRoute = (Platform.OS === 'web' && mode === 'site') 
-        ? 'LandingSiteScreen' 
-        : 'LoginScreen';
-      
-      logger.debug('SettingsScreen', 'Navigating after logout', { targetRoute, mode });
-      
-      // Check guards before navigation
-      const guardContext = {
-        isAuthenticated: false,
-        isGuestMode: false,
-        isAdmin: false,
-        mode,
-      };
-
-      const guardResult = await checkNavigationGuards(
-        {
-          type: 'reset',
-          index: 0,
-          routes: [{ name: targetRoute }],
-        },
-        guardContext
-      );
-
-      if (!guardResult.allowed && guardResult.redirectTo) {
-        await navigationQueue.reset(0, [{ name: guardResult.redirectTo }], 2);
-      } else {
-        await navigationQueue.reset(0, [{ name: targetRoute }], 2);
-      }
-    };
-
     // Guest mode - direct logout without warning as it's not dangerous
     if (isGuestMode) {
       console.log('⚙️ SettingsScreen - Guest mode detected, direct logout without confirmation');
@@ -185,65 +154,61 @@ export default function SettingsScreen() {
     }
     
     // Authenticated user - show warning as this is a dangerous action
-    if (Platform.OS === 'web') {
-      // Use browser confirmation dialog for web
-      console.log('⚙️ SettingsScreen - Using browser confirm for web');
-      const confirmed = window.confirm(t('settings:logoutMessage'));
-      console.log('⚙️ SettingsScreen - Browser confirm result:', confirmed);
-      
-      if (confirmed) {
-        console.log('⚙️ SettingsScreen - Logout confirmed via browser');
-        console.log('⚙️ SettingsScreen - Calling signOut() via browser');
-        signOut().then(() => {
-          console.log('⚙️ SettingsScreen - signOut() completed via browser');
-          
-          // Wait a bit to ensure state is updated
-          setTimeout(() => {
-            navigateAfterLogout();
-          }, 100);
-        });
-      } else {
-        console.log('⚙️ SettingsScreen - Logout cancelled via browser');
-      }
-    } else {
-      // Use React Native Alert for mobile platforms
-      console.log('⚙️ SettingsScreen - Using React Native Alert for mobile');
-      try {
-        Alert.alert(
-          t('settings:logoutTitle'),
-          t('settings:logoutMessage'),
-          [
-            {
-              text: t('common:cancel'),
-              style: 'cancel',
-              onPress: () => {
-                console.log('⚙️ SettingsScreen - Cancel pressed');
-              },
-            },
-            {
-              text: t('settings:logoutConfirm'),
-              style: 'destructive',
-              onPress: async () => {
-                console.log('⚙️ SettingsScreen - Logout confirmed');
-                console.log('⚙️ SettingsScreen - Calling signOut()');
-                await signOut();
-                console.log('⚙️ SettingsScreen - signOut() completed');
-                
-                // Short delay to ensure state is updated before navigation
-                setTimeout(() => {
-                  navigateAfterLogout();
-                }, 100);
-              },
-            },
-          ]
-        );
-        console.log('⚙️ SettingsScreen - Alert.alert called successfully');
-      } catch (error) {
-        console.error('⚙️ SettingsScreen - Error showing alert:', error);
-      }
-    }
+    // Use Modal for both web and native for consistent behavior
+    console.log('⚙️ SettingsScreen - Showing logout confirmation modal');
+    setShowLogoutModal(true);
+  };
+
+  // Helper function to navigate after logout based on web mode
+  const navigateAfterLogout = async () => {
+    const targetRoute = (Platform.OS === 'web' && mode === 'site') 
+      ? 'LandingSiteScreen' 
+      : 'LoginScreen';
     
-    console.log('⚙️ 13SettingsScreen - Logout pressed');
+    logger.debug('SettingsScreen', 'Navigating after logout', { targetRoute, mode });
+    
+    // Check guards before navigation
+    const guardContext = {
+      isAuthenticated: false,
+      isGuestMode: false,
+      isAdmin: false,
+      mode,
+    };
+
+    const guardResult = await checkNavigationGuards(
+      {
+        type: 'reset',
+        index: 0,
+        routes: [{ name: targetRoute }],
+      },
+      guardContext
+    );
+
+    if (!guardResult.allowed && guardResult.redirectTo) {
+      await navigationQueue.reset(0, [{ name: guardResult.redirectTo }], 2);
+    } else {
+      await navigationQueue.reset(0, [{ name: targetRoute }], 2);
+    }
+  };
+
+  // Helper function to handle logout confirmation
+  const handleLogoutConfirm = async () => {
+    console.log('⚙️ SettingsScreen - Logout confirmed');
+    setShowLogoutModal(false);
+    console.log('⚙️ SettingsScreen - Calling signOut()');
+    await signOut();
+    console.log('⚙️ SettingsScreen - signOut() completed');
+    
+    // Short delay to ensure state is updated before navigation
+    setTimeout(() => {
+      navigateAfterLogout();
+    }, 100);
+  };
+
+  // Helper function to handle logout cancellation
+  const handleLogoutCancel = () => {
+    console.log('⚙️ SettingsScreen - Logout cancelled');
+    setShowLogoutModal(false);
   };
 
   const handleNotificationsPress = () => {
@@ -404,6 +369,30 @@ export default function SettingsScreen() {
             <TouchableOpacity style={[styles.modalOption, { marginTop: 8 }]} onPress={() => setShowLangModal(false)}>
               <Text style={[styles.modalOptionText, { color: colors.textSecondary }]}>{t('common:cancel')}</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Logout Confirmation Modal */}
+      <Modal visible={showLogoutModal} transparent animationType="fade" onRequestClose={handleLogoutCancel}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.logoutModalCard}>
+            <Text style={styles.logoutModalTitle}>{t('settings:logoutTitle')}</Text>
+            <Text style={styles.logoutModalMessage}>{t('settings:logoutMessage')}</Text>
+            <View style={styles.logoutModalButtons}>
+              <TouchableOpacity 
+                style={[styles.logoutModalButton, styles.logoutModalButtonCancel]} 
+                onPress={handleLogoutCancel}
+              >
+                <Text style={styles.logoutModalButtonTextCancel}>{t('common:cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.logoutModalButton, styles.logoutModalButtonConfirm]} 
+                onPress={handleLogoutConfirm}
+              >
+                <Text style={styles.logoutModalButtonTextConfirm}>{t('settings:logoutConfirm')}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -788,4 +777,56 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: FontSizes.medium, color: colors.textPrimary, textAlign: 'center', marginBottom: 8 },
   modalOption: { paddingVertical: 10 },
   modalOptionText: { fontSize: FontSizes.body, color: colors.textPrimary, textAlign: 'center' },
+  logoutModalCard: { 
+    backgroundColor: colors.background, 
+    width: 320, 
+    borderRadius: 16, 
+    padding: 24,
+    ...(Platform.OS === 'web' && {
+      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+    }),
+  },
+  logoutModalTitle: { 
+    fontSize: FontSizes.heading2, 
+    color: colors.textPrimary, 
+    textAlign: biDiTextAlign('center'), 
+    marginBottom: 12,
+    fontWeight: '700',
+  },
+  logoutModalMessage: { 
+    fontSize: FontSizes.body, 
+    color: colors.textSecondary, 
+    textAlign: biDiTextAlign('center'), 
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  logoutModalButtons: {
+    flexDirection: rowDirection('row'),
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  logoutModalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoutModalButtonCancel: {
+    backgroundColor: colors.backgroundSecondary,
+  },
+  logoutModalButtonConfirm: {
+    backgroundColor: colors.error,
+  },
+  logoutModalButtonTextCancel: {
+    fontSize: FontSizes.body,
+    color: colors.textPrimary,
+    fontWeight: '600',
+  },
+  logoutModalButtonTextConfirm: {
+    fontSize: FontSizes.body,
+    color: '#fff',
+    fontWeight: '600',
+  },
 });

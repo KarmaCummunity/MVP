@@ -30,6 +30,7 @@ import { apiService } from '../utils/apiService';
 import { USE_BACKEND } from '../utils/dbConfig';
 import { UserPreview as CharacterType } from '../globals/types';
 import { createConversation, conversationExists } from '../utils/chatService';
+import { logger } from '../utils/loggerService';
 
 // --- Type Definitions ---
 type TabRoute = {
@@ -57,30 +58,143 @@ const getRoleDisplayName = (role: string): string => {
 };
 
 // --- Tab Components ---
-const PostsRoute = () => (
-  <ScrollView contentContainerStyle={styles.tabContentContainer}>
-    <View style={styles.postsGrid}>
-      {Array.from({ length: 8 }).map((_, i) => (
-        <TouchableOpacity
-          key={i}
-          style={styles.postContainer}
-          onPress={() => Alert.alert('פוסט', `פוסט מספר ${i + 1}`)}
-        >
-          <Image
-            source={{ uri: `https://picsum.photos/300/300?random=${i + 100}` }}
-            style={styles.postImage}
-          />
-          <View style={styles.postOverlay}>
-            <View style={styles.postStats}>
-              <Ionicons name="heart" size={16} color={colors.white} />
-              <Text style={styles.postStatsText}>{Math.floor(Math.random() * 100) + 10}</Text>
+const PostsRoute = ({ userId }: { userId: string }) => {
+  const [posts, setPosts] = useState<any[]>([]);
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { db } = require('../utils/databaseService');
+
+  useEffect(() => {
+    const loadUserPosts = async () => {
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        console.log('📱 PostsRoute - Loading posts for userId:', userId);
+        
+        // Load posts from database
+        let userPosts: any[] = [];
+        try {
+          userPosts = await db.getUserPosts(userId) || [];
+          console.log('📱 PostsRoute - Loaded posts from DB:', userPosts.length);
+        } catch (error) {
+          console.error('Error loading posts from DB:', error);
+        }
+        
+        // Load items from API
+        const { USE_BACKEND, API_BASE_URL } = await import('../utils/dbConfig');
+        let userItems: any[] = [];
+        if (USE_BACKEND && API_BASE_URL) {
+          try {
+            const axios = (await import('axios')).default;
+            console.log('📱 PostsRoute - Loading items from API for owner_id:', userId);
+            const response = await axios.get(`${API_BASE_URL}/api/items-delivery/search`, {
+              params: {
+                owner_id: userId,
+                status: 'available',
+                limit: 50,
+              }
+            });
+            if (response.data?.success && Array.isArray(response.data.data)) {
+              userItems = response.data.data;
+              console.log('📱 PostsRoute - Loaded items from API:', userItems.length);
+            } else {
+              console.warn('📱 PostsRoute - API response not successful or not array:', response.data);
+            }
+          } catch (error) {
+            console.error('Error loading items from API:', error);
+          }
+        } else {
+          // Fallback to local database
+          try {
+            userItems = await db.getDedicatedItemsByOwner(userId) || [];
+            console.log('📱 PostsRoute - Loaded items from local DB:', userItems.length);
+          } catch (error) {
+            console.error('Error loading items from local DB:', error);
+          }
+        }
+
+        // Combine posts and items
+        const allPosts = [
+          ...(userPosts || []),
+          ...userItems.map((item: any) => ({
+            id: `item_${item.id}`,
+            title: item.title,
+            thumbnail: item.image_base64 
+              ? `data:image/jpeg;base64,${item.image_base64}` 
+              : '', // לא להציג תמונת placeholder כשאין תמונה
+            likes: 0,
+            type: 'item'
+          }))
+        ];
+
+        console.log('📱 PostsRoute - Total posts/items:', allPosts.length);
+        setPosts(allPosts);
+        setItems(userItems);
+      } catch (error) {
+        console.error('Error loading user posts:', error);
+        setPosts([]);
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserPosts();
+  }, [userId]);
+
+  if (loading) {
+    return (
+      <View style={styles.tabContentPlaceholder}>
+        <Text style={styles.placeholderText}>טוען פוסטים...</Text>
+      </View>
+    );
+  }
+
+  if (posts.length === 0) {
+    return (
+      <View style={styles.tabContentPlaceholder}>
+        <Ionicons name="images-outline" size={60} color={colors.textSecondary} />
+        <Text style={styles.placeholderText}>אין פוסטים עדיין</Text>
+        <Text style={styles.placeholderSubtext}>הפוסטים שלך יופיעו כאן</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView contentContainerStyle={styles.tabContentContainer}>
+      <View style={styles.postsGrid}>
+        {posts.map((post, i) => (
+          <TouchableOpacity
+            key={post.id || i}
+            style={styles.postContainer}
+            onPress={() => Alert.alert('פוסט', post.title || `פוסט מספר ${i + 1}`)}
+          >
+            {post.thumbnail || post.image ? (
+              <Image
+                source={{ uri: post.thumbnail || post.image }}
+                style={styles.postImage}
+              />
+            ) : (
+              <View style={[styles.postImage, { backgroundColor: colors.backgroundTertiary, justifyContent: 'center', alignItems: 'center' }]}>
+                <Ionicons name="image-outline" size={32} color={colors.textSecondary} />
+              </View>
+            )}
+            <View style={styles.postOverlay}>
+              <View style={styles.postStats}>
+                <Ionicons name="heart" size={16} color={colors.white} />
+                <Text style={styles.postStatsText}>{post.likes || 0}</Text>
+              </View>
             </View>
-          </View>
-        </TouchableOpacity>
-      ))}
-    </View>
-  </ScrollView>
-);
+          </TouchableOpacity>
+        ))}
+      </View>
+    </ScrollView>
+  );
+};
 
 const ReelsRoute = () => (
   <View style={styles.tabContentPlaceholder}>
@@ -102,16 +216,39 @@ const TaggedRoute = () => (
 export default function UserProfileScreen() {
   const route = useRoute();
   const navigation = useNavigation();
-  const { userId, userName, characterData } = route.params as UserProfileRouteParams;
+  const routeParams = route.params as UserProfileRouteParams | undefined;
+  const { userId, userName, characterData } = routeParams || { userId: undefined, userName: undefined, characterData: undefined };
   const { selectedUser } = useUser();
   
-  // Check if user is viewing their own profile
-  useEffect(() => {
-    if (selectedUser && selectedUser.id === userId) {
-      // Navigate to user's own profile screen
-      (navigation as any).navigate('Profile'); // Navigate to ProfileScreen instead
-    }
-  }, [selectedUser, userId, navigation]);
+  // If no userId is provided, show error immediately
+  if (!userId) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Ionicons name="person-outline" size={60} color={colors.textSecondary} />
+          <Text style={styles.errorText}>משתמש לא נמצא</Text>
+          <Text style={styles.errorSubtext}>userId לא סופק</Text>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+              } else {
+                (navigation as any).navigate('HomeStack');
+              }
+            }}
+          >
+            <Ionicons name="home" size={20} color={colors.white} />
+            <Text style={styles.backButtonText}>חזרה לעמוד הבית</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
+  // Note: Removed automatic navigation to Profile screen when viewing own profile
+  // This was causing the screen to get stuck in loading state
+  // Users can still view their own profile via UserProfileScreen
   
   const [index, setIndex] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -205,13 +342,44 @@ export default function UserProfileScreen() {
     loadUser();
   }, [userId, userName, characterData]);
 
-  // Reset state when userId changes
+  // Reset state when userId changes or when screen loses focus
   useEffect(() => {
     console.log('👤 UserProfileScreen - userId changed:', userId);
     setIsFollowing(false);
     setFollowStats({ followersCount: 0, followingCount: 0, isFollowing: false });
     setUpdatedCounts({ followersCount: 0, followingCount: 0 });
+    // Reset user and loading state when userId changes
+    if (!userId) {
+      setUser(null);
+      setLoading(false);
+    }
   }, [userId]);
+
+  // Reset state when screen loses focus (user navigates away)
+  useFocusEffect(
+    React.useCallback(() => {
+      // Screen is focused - load data if needed
+      console.log('👤 UserProfileScreen - Screen focused', { userId, userName });
+      return () => {
+        // Screen is losing focus - reset only error state to prevent showing stale error messages
+        // Don't reset user/loading as it might cause flickering when navigating back
+        console.log('👤 UserProfileScreen - Screen losing focus, resetting error state only');
+        
+        // Only reset error-related state if we're showing an error
+        // Check if user is null (which means we're showing "משתמש לא נמצא")
+        if (user === null && !loading) {
+          // We're showing an error - reset it so it doesn't persist when navigating back
+          setUser(null);
+          setLoading(true);
+        }
+        
+        // Always reset follow stats when losing focus to prevent stale data
+        setIsFollowing(false);
+        setFollowStats({ followersCount: 0, followingCount: 0, isFollowing: false });
+        setUpdatedCounts({ followersCount: 0, followingCount: 0 });
+      };
+    }, [userId, userName, user, loading])
+  );
 
   // Load follow stats
   useEffect(() => {
@@ -262,11 +430,18 @@ export default function UserProfileScreen() {
     }, [user, selectedUser])
   );
 
-  const renderScene = SceneMap({
-    posts: PostsRoute,
-    reels: ReelsRoute,
-    tagged: TaggedRoute,
-  });
+  const renderScene = ({ route: sceneRoute }: SceneRendererProps & { route: TabRoute }) => {
+    switch (sceneRoute.key) {
+      case 'posts':
+        return <PostsRoute userId={userId} />;
+      case 'reels':
+        return <ReelsRoute />;
+      case 'tagged':
+        return <TaggedRoute />;
+      default:
+        return null;
+    }
+  };
 
   const renderTabBar = (
     props: SceneRendererProps & { navigationState: NavigationState<TabRoute> }
@@ -323,6 +498,19 @@ export default function UserProfileScreen() {
           <Ionicons name="person-outline" size={60} color={colors.textSecondary} />
           <Text style={styles.errorText}>משתמש לא נמצא</Text>
           <Text style={styles.errorSubtext}>userId: {userId}</Text>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+              } else {
+                (navigation as any).navigate('HomeStack');
+              }
+            }}
+          >
+            <Ionicons name="home" size={20} color={colors.white} />
+            <Text style={styles.backButtonText}>חזרה לעמוד הבית</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -521,7 +709,7 @@ export default function UserProfileScreen() {
             </TouchableOpacity>
           )}
           
-          {user && (
+          {user && selectedUser && user.id !== selectedUser.id && (
             <TouchableOpacity 
               style={styles.messageButton}
               onPress={async () => {
@@ -606,6 +794,22 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.small,
     color: colors.textSecondary,
     marginTop: 8,
+    marginBottom: 24,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.pink,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 24,
+  },
+  backButtonText: {
+    color: colors.white,
+    fontSize: FontSizes.body,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   header: {
     flexDirection: 'row',

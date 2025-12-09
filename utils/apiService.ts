@@ -448,6 +448,69 @@ class ApiService {
     return this.request(`/api/chat/search?q=${encodeURIComponent(query)}&user_id=${userId}`);
   }
 
+  // Community Members APIs
+  async getCommunityMembers(filters: {
+    status?: 'active' | 'inactive';
+    search?: string;
+  } = {}): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && String(value).length > 0) {
+        params.append(key, String(value));
+      }
+    });
+    const qs = params.toString();
+    return this.request(`/api/community-members${qs ? `?${qs}` : ''}`);
+  }
+
+  async getCommunityMember(memberId: string): Promise<ApiResponse> {
+    return this.request(`/api/community-members/${memberId}`);
+  }
+
+  async createCommunityMember(memberData: {
+    name: string;
+    role: string;
+    description?: string;
+    contact_info?: {
+      email?: string;
+      phone?: string;
+      [key: string]: any;
+    };
+    status?: 'active' | 'inactive';
+    created_by?: string;
+  }): Promise<ApiResponse> {
+    return this.request('/api/community-members', {
+      method: 'POST',
+      body: JSON.stringify(memberData),
+    });
+  }
+
+  async updateCommunityMember(
+    memberId: string,
+    updateData: {
+      name?: string;
+      role?: string;
+      description?: string;
+      contact_info?: {
+        email?: string;
+        phone?: string;
+        [key: string]: any;
+      };
+      status?: 'active' | 'inactive';
+    }
+  ): Promise<ApiResponse> {
+    return this.request(`/api/community-members/${memberId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updateData),
+    });
+  }
+
+  async deleteCommunityMember(memberId: string): Promise<ApiResponse> {
+    return this.request(`/api/community-members/${memberId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Legacy API fallback
   async legacyRequest<T>(collection: string, userId: string, itemId?: string): Promise<T | null> {
     if (!USE_BACKEND) {

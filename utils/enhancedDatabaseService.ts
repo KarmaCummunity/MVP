@@ -23,6 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService, ApiResponse } from './apiService';
 import { USE_BACKEND, CACHE_CONFIG, OFFLINE_CONFIG, STORAGE_KEYS } from './dbConfig';
 import { DB_COLLECTIONS } from './dbCollections';
+import { db } from './databaseService';
 
 // TODO: Move all interfaces to proper types directory
 // TODO: Add comprehensive validation for all interface fields
@@ -338,7 +339,16 @@ export class EnhancedDatabaseService {
           ...donationData,
           created_at: new Date().toISOString(),
           status: 'active',
+          donor_id: donationData.donor_id || donationData.donorId,
         };
+        
+        // Create post from donation even in local mode
+        try {
+          await this.createPostFromDonation(donation);
+        } catch (postError) {
+          logger.error('EnhancedDatabaseService', 'Failed to create post from donation (local)', { error: postError });
+        }
+        
         logger.debug('EnhancedDatabaseService', 'Donation created locally (no backend)');
         return { success: true, data: donation };
       }
@@ -346,6 +356,17 @@ export class EnhancedDatabaseService {
       const response = await apiService.createDonation(donationData);
       
       if (response.success) {
+        // Create a post from the donation
+        try {
+          const donation = response.data;
+          if (donation && donation.donor_id) {
+            await this.createPostFromDonation(donation);
+          }
+        } catch (postError) {
+          logger.error('EnhancedDatabaseService', 'Failed to create post from donation', { error: postError });
+          // Don't fail the donation creation if post creation fails
+        }
+        
         // Clear relevant caches
         await this.clearCachePattern('donations_list');
         await this.clearCachePattern('user_donations');
@@ -725,6 +746,59 @@ export class EnhancedDatabaseService {
       logger.info('EnhancedDatabaseService', 'All cache cleared');
     } catch (error) {
       logger.error('EnhancedDatabaseService', 'Clear all cache error', { error });
+    }
+  }
+
+  /**
+   * Create a post from a donation
+   * This automatically creates a post when a donation is made
+   */
+  private async createPostFromDonation(donation: any): Promise<void> {
+    try {
+      if (!donation.donor_id) {
+        logger.warn('EnhancedDatabaseService', 'Cannot create post from donation - no donor_id');
+        return;
+      }
+
+      const postId = `post_${donation.id || Date.now().toString()}`;
+      const postTitle = donation.title || `תרומה ${donation.type === 'money' ? 'כספית' : donation.type === 'time' ? 'זמן' : donation.type === 'rides' ? 'טרמפ' : 'פריט'}`;
+      
+      let postDescription = '';
+      if (donation.type === 'money' && donation.amount) {
+        postDescription = `תרמתי ${donation.amount} ${donation.currency || '₪'} ${donation.category ? `לקטגוריה: ${donation.category}` : ''}`;
+      } else if (donation.type === 'time') {
+        postDescription = `תרמתי מזמני ${donation.description || ''}`;
+      } else if (donation.type === 'rides') {
+        postDescription = `הצעתי טרמפ ${donation.description || ''}`;
+      } else {
+        postDescription = donation.description || postTitle;
+      }
+
+      if (donation.description) {
+        postDescription += `\n\n${donation.description}`;
+      }
+
+      const postData = {
+        id: postId,
+        title: postTitle,
+        description: postDescription,
+        type: 'post',
+        thumbnail: donation.images && donation.images.length > 0 ? donation.images[0] : null,
+        image: donation.images && donation.images.length > 0 ? donation.images[0] : null,
+        likes: 0,
+        comments: 0,
+        isLiked: false,
+        timestamp: donation.created_at || new Date().toISOString(),
+        createdAt: donation.created_at || new Date().toISOString(),
+        donationId: donation.id,
+        donationType: donation.type,
+      };
+
+      await db.createPost(donation.donor_id, postId, postData);
+      logger.info('EnhancedDatabaseService', 'Post created from donation', { donationId: donation.id, postId });
+    } catch (error) {
+      logger.error('EnhancedDatabaseService', 'Error creating post from donation', { error, donationId: donation.id });
+      throw error;
     }
   }
 

@@ -591,12 +591,53 @@ export const markMessagesAsRead = async (conversationId: string, userId: string)
   try {
     logger.info('ChatService', 'Marking messages as read', { conversationId, userId });
     
+    // If backend is enabled, use backend API for read receipts
+    if (USE_BACKEND) {
+      try {
+        const response = await apiService.markAllMessagesAsRead(conversationId, userId);
+        
+        if (response.success) {
+          logger.info('ChatService', 'Messages marked as read on backend', { 
+            conversationId, 
+            markedCount: response.data?.marked_read || 0 
+          });
+          
+          // Update local cache - mark all messages as read
+          const messages = await getMessages(conversationId, userId);
+          for (const msg of messages) {
+            if (msg.conversationId === conversationId && msg.senderId !== userId && !msg.read) {
+              await DatabaseService.update(DB_COLLECTIONS.MESSAGES, userId, msg.id, { read: true });
+            }
+          }
+
+          // Update conversation unread count locally
+          const conversation = await getConversationById(conversationId, userId);
+          if (conversation) {
+            const updatedConversation = { ...conversation, unreadCount: 0 };
+            await db.createChat(userId, conversationId, updatedConversation);
+            logger.debug('ChatService', 'Conversation unread count reset to 0');
+          }
+          
+          return;
+        } else {
+          logger.warn('ChatService', 'Backend mark as read failed, falling back to local', { 
+            error: response.error 
+          });
+          // Fall through to local-only mode
+        }
+      } catch (backendError) {
+        logger.error('ChatService', 'Backend mark as read error, falling back to local', { error: backendError });
+        // Fall through to local-only mode
+      }
+    }
+    
+    // Local-only mode or backend failed
     const messages = await getMessages(conversationId, userId);
     logger.debug('ChatService', 'Found total messages', { count: messages.length });
     
     for (const msg of messages) {
       if (msg.conversationId === conversationId && msg.senderId !== userId && !msg.read) {
-        logger.debug('ChatService', 'Marking message as read', { messageId: msg.id });
+        logger.debug('ChatService', 'Marking message as read locally', { messageId: msg.id });
         await DatabaseService.update(DB_COLLECTIONS.MESSAGES, userId, msg.id, { read: true });
       }
     }

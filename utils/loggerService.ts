@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LOGS_KEY = 'app_debug_logs';
-const MAX_LOGS = 1000; // Keep last 1000 log entries
+const MAX_LOGS = 200; // Keep last 200 log entries (reduced from 1000 to prevent quota issues)
 const BATCH_SIZE = 50; // Save logs in batches to improve performance
 const SAVE_INTERVAL = 5000; // Save logs every 5 seconds
 
@@ -30,9 +30,9 @@ type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'none';
 class LoggerService {
   private logs: LogEntry[] = [];
   private pendingLogs: LogEntry[] = [];
-  private saveTimer: NodeJS.Timeout | null = null;
+  private saveTimer: number | null = null;
   private isInitialized = false;
-  
+
   // Production-friendly: Higher log level in production
   private logLevel: LogLevel = isProduction ? 'warn' : 'debug';
   private enableConsoleOutput = !isProduction;
@@ -53,35 +53,75 @@ class LoggerService {
 
   private async loadLogs() {
     if (!this.enableStorage) return;
-    
+
     try {
       const stored = await AsyncStorage.getItem(LOGS_KEY);
       if (stored) {
-        this.logs = JSON.parse(stored);
+        const parsedLogs = JSON.parse(stored);
+        // Keep only recent logs to prevent quota issues
+        this.logs = Array.isArray(parsedLogs) ? parsedLogs.slice(-MAX_LOGS) : [];
+
+        // If we had to trim logs, save the trimmed version
+        if (Array.isArray(parsedLogs) && parsedLogs.length > MAX_LOGS) {
+          await AsyncStorage.setItem(LOGS_KEY, JSON.stringify(this.logs));
+          if (this.enableConsoleOutput) {
+            console.log(`🗑️ Trimmed logs from ${parsedLogs.length} to ${this.logs.length} entries`);
+          }
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
+      // If we can't load logs (corrupted or quota exceeded), clear them
       if (this.enableConsoleOutput) {
-        console.error('Failed to load logs:', error);
+        console.warn('⚠️ Failed to load logs, clearing storage:', error?.message || error);
+      }
+      this.logs = [];
+      try {
+        await AsyncStorage.removeItem(LOGS_KEY);
+      } catch (e) {
+        // Ignore errors when removing
       }
     }
   }
 
   private async saveLogs() {
     if (!this.enableStorage || this.pendingLogs.length === 0) return;
-    
+
     try {
       // Add pending logs to main logs array
       this.logs = [...this.logs, ...this.pendingLogs];
       this.pendingLogs = [];
-      
+
       // Keep only the last MAX_LOGS entries
       if (this.logs.length > MAX_LOGS) {
         this.logs = this.logs.slice(-MAX_LOGS);
       }
-      
+
       await AsyncStorage.setItem(LOGS_KEY, JSON.stringify(this.logs));
-    } catch (error) {
-      if (this.enableConsoleOutput) {
+    } catch (error: any) {
+      // Handle QuotaExceededError by clearing old logs and retrying with fewer logs
+      if (error?.name === 'QuotaExceededError' || error?.message?.includes('quota')) {
+        try {
+          // Keep only the last 100 logs instead of MAX_LOGS
+          this.logs = this.logs.slice(-100);
+          await AsyncStorage.setItem(LOGS_KEY, JSON.stringify(this.logs));
+          if (this.enableConsoleOutput) {
+            console.warn('⚠️ Storage quota exceeded, cleared old logs and saved recent 100 entries');
+          }
+        } catch (retryError) {
+          // If still failing, disable storage and clear everything
+          this.enableStorage = false;
+          this.logs = [];
+          this.pendingLogs = [];
+          try {
+            await AsyncStorage.removeItem(LOGS_KEY);
+          } catch (e) {
+            // Ignore errors when removing
+          }
+          if (this.enableConsoleOutput) {
+            console.error('❌ Failed to save logs even after cleanup, storage disabled:', retryError);
+          }
+        }
+      } else if (this.enableConsoleOutput) {
         console.error('Failed to save logs:', error);
       }
     }
@@ -89,7 +129,7 @@ class LoggerService {
 
   private startBatchTimer() {
     if (this.saveTimer) clearInterval(this.saveTimer);
-    
+
     this.saveTimer = setInterval(() => {
       this.saveLogs();
     }, SAVE_INTERVAL);
@@ -103,7 +143,7 @@ class LoggerService {
   private addLog(level: 'info' | 'warn' | 'error' | 'debug', component: string, message: string, data?: Record<string, unknown>) {
     // Early return if log level is not enabled
     if (!this.shouldLog(level)) return;
-    
+
     const logEntry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
@@ -114,7 +154,7 @@ class LoggerService {
 
     // Add to pending logs for batching
     this.pendingLogs.push(logEntry);
-    
+
     // Force save if batch is full
     if (this.pendingLogs.length >= BATCH_SIZE) {
       this.saveLogs();
@@ -231,7 +271,7 @@ class LoggerService {
     if (Platform.OS === 'web') {
       // Force save pending logs before export
       await this.saveLogs();
-      
+
       const logsText = await this.exportLogs();
       const element = document.createElement('a');
       const file = new Blob([logsText], { type: 'text/plain' });
@@ -240,7 +280,7 @@ class LoggerService {
       document.body.appendChild(element);
       element.click();
       document.body.removeChild(element);
-      
+
       if (this.enableConsoleOutput) {
         console.log('📁 Logs downloaded');
       }
@@ -250,7 +290,7 @@ class LoggerService {
   async showLogs() {
     // Force save pending logs before showing
     await this.saveLogs();
-    
+
     const logsText = await this.exportLogs();
     if (this.enableConsoleOutput) {
       console.log('📋 Complete logs:');
