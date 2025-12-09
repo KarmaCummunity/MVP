@@ -133,7 +133,7 @@ const SearchScreen = () => {
       // Fake donations only for guest/demo
       if (!isRealAuth && (category === 'All' || category === 'donations')) {
         results.push(...donations
-          .filter(donation => 
+          .filter(donation =>
             donation.title.toLowerCase().includes(query.toLowerCase()) ||
             donation.description.toLowerCase().includes(query.toLowerCase())
           )
@@ -151,7 +151,7 @@ const SearchScreen = () => {
       
       if (!isRealAuth && (category === 'All' || category === 'events')) {
         results.push(...communityEvents
-          .filter(event => 
+          .filter(event =>
             event.title.toLowerCase().includes(query.toLowerCase()) ||
             event.description.toLowerCase().includes(query.toLowerCase())
           )
@@ -169,7 +169,7 @@ const SearchScreen = () => {
       
       if (!isRealAuth && (category === 'All' || category === 'users')) {
         results.push(...users
-          .filter(user => 
+          .filter(user =>
             user.name.toLowerCase().includes(query.toLowerCase())
           )
           .map(user => ({

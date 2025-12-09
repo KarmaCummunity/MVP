@@ -229,13 +229,13 @@ export default function KnowledgeScreen({
       
       // Filter by search query
       if (query.trim() !== "") {
-        filteredEducational = filteredEducational.filter(item => 
+        filteredEducational = filteredEducational.filter(item =>
           item.title.toLowerCase().includes(query.toLowerCase()) ||
           item.description.toLowerCase().includes(query.toLowerCase()) ||
           item.category.toLowerCase().includes(query.toLowerCase())
         );
         
-        filteredCommunity = filteredCommunity.filter(item => 
+        filteredCommunity = filteredCommunity.filter(item =>
           item.title.toLowerCase().includes(query.toLowerCase()) ||
           item.subject.toLowerCase().includes(query.toLowerCase()) ||
           item.description.toLowerCase().includes(query.toLowerCase()) ||

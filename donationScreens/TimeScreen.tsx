@@ -214,7 +214,7 @@ export default function TimeScreen({
       
       // Filter by search query
       if (query.trim() !== "") {
-        filtered = filtered.filter(opp => 
+        filtered = filtered.filter(opp =>
           opp.title.toLowerCase().includes(query.toLowerCase()) ||
           opp.organization.toLowerCase().includes(query.toLowerCase()) ||
           opp.description.toLowerCase().includes(query.toLowerCase()) ||

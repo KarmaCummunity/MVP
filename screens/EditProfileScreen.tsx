@@ -114,24 +114,24 @@ export default function EditProfileScreen() {
       </View>
 
       {/* Name */}
-      <View style={styles.fieldRow}> 
-        <View style={[styles.fieldGroup, { flex: 1 }]}> 
+      <View style={styles.fieldRow}>
+        <View style={[styles.fieldGroup, { flex: 1 }]}>
           <Text style={styles.label}>{t('profile:edit.firstName')}</Text>
           <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} placeholder={t('profile:edit.firstName')} />
         </View>
-        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}> 
+        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}>
           <Text style={styles.label}>{t('profile:edit.lastName')}</Text>
           <TextInput style={styles.input} value={lastName} onChangeText={setLastName} placeholder={t('profile:edit.lastName')} />
         </View>
       </View>
 
       {/* Contact */}
-      <View style={styles.fieldRow}> 
-        <View style={[styles.fieldGroup, { flex: 1 }]}> 
+      <View style={styles.fieldRow}>
+        <View style={[styles.fieldGroup, { flex: 1 }]}>
           <Text style={styles.label}>{t('profile:edit.email')}</Text>
           <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder={'email@example.com'} keyboardType="email-address" autoCapitalize="none" />
         </View>
-        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}> 
+        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}>
           <Text style={styles.label}>{t('profile:edit.phone')}</Text>
           <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder={'+9725XXXXXXXX'} keyboardType="phone-pad" />
         </View>
@@ -143,25 +143,25 @@ export default function EditProfileScreen() {
         <TextInput style={styles.input} value={avatar} onChangeText={setAvatar} placeholder={t('profile:banner.fields.avatar')} />
       </View>
       <View style={styles.fieldRow}>
-        <View style={[styles.fieldGroup, { flex: 1 }]}> 
+        <View style={[styles.fieldGroup, { flex: 1 }]}>
           <Text style={styles.label}>{t('profile:edit.city')}</Text>
           <TextInput style={styles.input} value={city} onChangeText={setCity} placeholder={t('profile:edit.city')} />
         </View>
-        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}> 
+        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}>
           <Text style={styles.label}>{t('profile:edit.country')}</Text>
           <TextInput style={styles.input} value={country} onChangeText={setCountry} placeholder={t('profile:edit.country')} />
         </View>
       </View>
       <View style={styles.fieldRow}>
-        <View style={[styles.fieldGroup, { flex: 1 }]}> 
+        <View style={[styles.fieldGroup, { flex: 1 }]}>
           <Text style={styles.label}>{t('profile:edit.street')}</Text>
           <TextInput style={styles.input} value={street} onChangeText={setStreet} placeholder={t('profile:edit.street')} />
         </View>
-        <View style={[styles.fieldGroup, { width: 120, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}> 
+        <View style={[styles.fieldGroup, { width: 120, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}>
           <Text style={styles.label}>{t('profile:edit.houseNumber')}</Text>
           <TextInput style={styles.input} value={houseNumber} onChangeText={setHouseNumber} placeholder={t('profile:edit.houseNumber')} />
         </View>
-        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}> 
+        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}>
           <Text style={styles.label}>{t('profile:edit.zipcode')}</Text>
           <TextInput style={styles.input} value={zipcode} onChangeText={setZipcode} placeholder={t('profile:edit.zipcode')} />
         </View>
@@ -169,11 +169,11 @@ export default function EditProfileScreen() {
 
       {/* Personal */}
       <View style={styles.fieldRow}>
-        <View style={[styles.fieldGroup, { flex: 1 }]}> 
+        <View style={[styles.fieldGroup, { flex: 1 }]}>
           <Text style={styles.label}>{t('profile:edit.gender')}</Text>
           <TextInput style={styles.input} value={gender} onChangeText={(v)=>setGender(v as any)} placeholder={t('profile:edit.genderPlaceholder')} />
         </View>
-        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}> 
+        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}>
           <Text style={styles.label}>{t('profile:edit.birthDate')}</Text>
           <TextInput style={styles.input} value={birthDate} onChangeText={setBirthDate} placeholder={t('profile:edit.birthDatePlaceholder')} />
         </View>
@@ -181,21 +181,21 @@ export default function EditProfileScreen() {
 
       {/* Social */}
       <View style={styles.fieldRow}>
-        <View style={[styles.fieldGroup, { flex: 1 }]}> 
+        <View style={[styles.fieldGroup, { flex: 1 }]}>
           <Text style={styles.label}>{t('profile:edit.website')}</Text>
           <TextInput style={styles.input} value={website} onChangeText={setWebsite} placeholder={'https://example.com'} autoCapitalize="none" />
         </View>
-        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}> 
+        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}>
           <Text style={styles.label}>{t('profile:edit.linkedin')}</Text>
           <TextInput style={styles.input} value={linkedin} onChangeText={setLinkedin} placeholder={'https://linkedin.com/in/...'} autoCapitalize="none" />
         </View>
       </View>
       <View style={styles.fieldRow}>
-        <View style={[styles.fieldGroup, { flex: 1 }]}> 
+        <View style={[styles.fieldGroup, { flex: 1 }]}>
           <Text style={styles.label}>{t('profile:edit.facebook')}</Text>
           <TextInput style={styles.input} value={facebook} onChangeText={setFacebook} placeholder={'https://facebook.com/...'} autoCapitalize="none" />
         </View>
-        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}> 
+        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}>
           <Text style={styles.label}>{t('profile:edit.instagram')}</Text>
           <TextInput style={styles.input} value={instagram} onChangeText={setInstagram} placeholder={'https://instagram.com/...'} autoCapitalize="none" />
         </View>
@@ -203,22 +203,22 @@ export default function EditProfileScreen() {
 
       {/* Preferences */}
       <View style={styles.fieldRow}>
-        <View style={[styles.fieldGroup, { flex: 1 }]}> 
+        <View style={[styles.fieldGroup, { flex: 1 }]}>
           <Text style={styles.label}>{t('profile:edit.preferredLanguage')}</Text>
           <TextInput style={styles.input} value={language} onChangeText={(v)=>setLanguage(v as any)} placeholder={t('profile:edit.preferredLanguagePlaceholder')} autoCapitalize="none" />
         </View>
-        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}> 
+        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}>
           <Text style={styles.label}>{t('profile:edit.interests')}</Text>
           <TextInput style={styles.input} value={interests} onChangeText={setInterests} placeholder={t('profile:edit.interestsPlaceholder')} />
         </View>
       </View>
 
       <View style={[styles.fieldRow]}>
-        <View style={[styles.fieldGroup, { flex: 1 }]}> 
+        <View style={[styles.fieldGroup, { flex: 1 }]}>
         <Text style={styles.label}>{t('profile:banner.fields.city')}</Text>
         <TextInput style={styles.input} value={city} onChangeText={setCity} placeholder={t('profile:banner.fields.city')} />
         </View>
-        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}> 
+        <View style={[styles.fieldGroup, { flex: 1, marginLeft: LAYOUT_CONSTANTS.SPACING.SM }]}>
         <Text style={styles.label}>{t('profile:banner.fields.country')}</Text>
         <TextInput style={styles.input} value={country} onChangeText={setCountry} placeholder={t('profile:banner.fields.country')} />
         </View>

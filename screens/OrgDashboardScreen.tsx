@@ -23,7 +23,7 @@ export default function OrgDashboardScreen() {
 
   if (!isOrgAdmin) {
     return (
-      <View style={styles.center}> 
+      <View style={styles.center}>
         <Text style={styles.body}>יישות זו מיועדת למנהלי ארגונים מאושרים</Text>
       </View>
     );

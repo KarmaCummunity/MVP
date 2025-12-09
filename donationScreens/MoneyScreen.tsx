@@ -843,7 +843,7 @@ export default function MoneyScreen({
             <Text style={localStyles.modalTitle}>קבלות ודוחות</Text>
             <Text style={localStyles.modalDescription}>ייצוא קבלות שנתיות, צפייה בסיכום חודשי והשוואת תרומות.</Text>
             <View style={localStyles.modalActionsRow}>
-              <TouchableOpacity style={localStyles.modalPrimaryButton} onPress={() => Alert.alert('קבלות', 'קובץ קבלות ירוכז כאן')}> 
+              <TouchableOpacity style={localStyles.modalPrimaryButton} onPress={() => Alert.alert('קבלות', 'קובץ קבלות ירוכז כאן')}>
                 <Text style={localStyles.modalPrimaryButtonText}>ייצא קבלות</Text>
               </TouchableOpacity>
               <TouchableOpacity style={localStyles.bitButton} onPress={() => Alert.alert('דוח חודשי', 'נסכם עבורך את החודש האחרון')}>

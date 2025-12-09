@@ -1724,7 +1724,7 @@ const LandingSiteScreen: React.FC = () => {
         <LazySection section={ContactSection} />
         <LazySection section={FAQSection} />
 
-      <View style={styles.footer}> 
+      <View style={styles.footer}>
         <Text style={styles.footerText}>© {new Date().getFullYear()} Karma Community — נבנה באהבה ובתמיכת הקהילה.</Text>
       </View>
       </ScrollContainer>

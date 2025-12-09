@@ -45,10 +45,10 @@ import { getScreenInfo, scaleSize } from '../globals/responsive';
 import { APP_VERSION } from '../globals/constants';
 
 export default function LoginScreen() {
-  
+
   const { setCurrentPrincipal, isAuthenticated, isGuestMode } = useUser(); // new API to set user identity and role
   const { t } = useTranslation(['auth', 'common', 'settings']); // translations for the login screen
-  
+
   // Get responsive values for dynamic styles in JSX
   const { width } = Dimensions.get('window');
   const { isTablet, isDesktop } = getScreenInfo();
@@ -56,7 +56,7 @@ export default function LoginScreen() {
   const buttonMinWidth = isDesktopWeb ? 280 : isTablet ? 240 : 200;
   const expandedRowMaxWidth = isDesktopWeb ? 400 : isTablet ? 360 : '100%';
   const navigation = useNavigation<any>();
- 
+
   // Org login UI state
   const [orgLoginOpen, setOrgLoginOpen] = useState(false);
   const [orgQuery, setOrgQuery] = useState('');
@@ -81,7 +81,7 @@ export default function LoginScreen() {
 
   // Language menu state
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
-  
+
   const applyLanguage = async (lang: 'he' | 'en') => {
     try {
       await AsyncStorage.setItem('app_language', lang);
@@ -103,7 +103,7 @@ export default function LoginScreen() {
   const handleGuestMode = async () => {
     try {
       await setCurrentPrincipal({ user: null as any, role: 'guest' });
-      
+
       // Check guards before navigation
       // After setCurrentPrincipal, user is authenticated as guest
       const guardContext = {
@@ -196,7 +196,7 @@ export default function LoginScreen() {
           const list = JSON.parse(knownRaw);
           if (Array.isArray(list)) setRecentEmails(list);
         }
-      } catch (_) {}
+      } catch (_) { }
     })();
   }, []);
 
@@ -208,7 +208,7 @@ export default function LoginScreen() {
       setRecentEmails(list);
       await AsyncStorage.setItem('recent_emails', JSON.stringify(list));
       await AsyncStorage.setItem(KNOWN_EMAILS_KEY, JSON.stringify(list));
-    } catch (_) {}
+    } catch (_) { }
   };
 
   const isKnownEmail = async (email: string): Promise<boolean> => {
@@ -251,12 +251,12 @@ export default function LoginScreen() {
   }, [orgQuery, orgLoginOpen, recentEmails]);
 
   const handleEmailContinue = async () => {
-      try {
-        const email = emailValue.trim().toLowerCase();
-        if (!email || !validateEmailFormat(email)) {
-          Alert.alert(t('common:error') as string, t('auth:email.invalidFormat') as string);
-          return;
-        }
+    try {
+      const email = emailValue.trim().toLowerCase();
+      if (!email || !validateEmailFormat(email)) {
+        Alert.alert(t('common:error') as string, t('auth:email.invalidFormat') as string);
+        return;
+      }
       setIsEmailBusy(true);
       const exists = await isKnownEmail(email);
       setEmailExists(exists);
@@ -270,23 +270,23 @@ export default function LoginScreen() {
       setEmailStep('password');
       setPasswordValue('');
     } catch (err) {
-        Alert.alert(t('common:error') as string, t('common:genericTryAgain') as string);
+      Alert.alert(t('common:error') as string, t('common:genericTryAgain') as string);
     } finally {
       setIsEmailBusy(false);
     }
   };
 
   const handleEmailSubmit = async () => {
-      try {
-        const email = emailValue.trim().toLowerCase();
-        if (!email || !validateEmailFormat(email)) {
-          Alert.alert(t('common:error') as string, t('auth:email.invalidFormat') as string);
-          return;
-        }
-        if (!passwordValue || passwordValue.length < 6) {
-          Alert.alert(t('common:error') as string, t('auth:email.passwordTooShort') as string);
-          return;
-        }
+    try {
+      const email = emailValue.trim().toLowerCase();
+      if (!email || !validateEmailFormat(email)) {
+        Alert.alert(t('common:error') as string, t('auth:email.invalidFormat') as string);
+        return;
+      }
+      if (!passwordValue || passwordValue.length < 6) {
+        Alert.alert(t('common:error') as string, t('auth:email.passwordTooShort') as string);
+        return;
+      }
       setIsEmailBusy(true);
 
       const exists = await isKnownEmail(email);
@@ -326,7 +326,7 @@ export default function LoginScreen() {
           await restAdapter.create('users', userData.id, userData.id, userData);
         } catch (e) {
         }
-          await setCurrentPrincipal({ user: userData as any, role: 'user' });
+        await setCurrentPrincipal({ user: userData as any, role: 'user' });
       } else {
         try {
           const fbUser = await fbSignUpWithEmail(email, passwordValue);
@@ -356,7 +356,7 @@ export default function LoginScreen() {
                 notifications: [],
                 settings: { language: 'he', darkMode: false, notificationsEnabled: true },
               } as any;
-              try { await restAdapter.create('users', userData.id, userData.id, userData); } catch (_) {}
+              try { await restAdapter.create('users', userData.id, userData.id, userData); } catch (_) { }
               await saveRecentEmail(email);
               await setCurrentPrincipal({ user: userData as any, role: 'user' });
             } catch (signinErr) {
@@ -376,12 +376,12 @@ export default function LoginScreen() {
   };
 
   const handleOrgConfirm = async () => {
-      try {
-        const query = orgQuery.trim();
-        if (!query) {
-          Alert.alert(t('common:error') as string, t('auth:org.enterNameOrEmail') as string);
-          return;
-        }
+    try {
+      const query = orgQuery.trim();
+      if (!query) {
+        Alert.alert(t('common:error') as string, t('auth:org.enterNameOrEmail') as string);
+        return;
+      }
       setIsCheckingOrg(true);
 
       // 1) Search by email (primary key), otherwise by name from admin queue
@@ -405,16 +405,16 @@ export default function LoginScreen() {
         const email = String(approved.contactEmail || (isEmail ? query : '')).toLowerCase();
         const orgUser = {
           id: `org_${approved.id}`,
-            name: approved.orgName || (t('auth:org.defaultName') as string),
+          name: approved.orgName || (t('auth:org.defaultName') as string),
           email: email || `org_${approved.id}@example.org`,
           phone: approved.contactPhone || '+9720000000',
           avatar: 'https://i.pravatar.cc/150?img=12',
-            bio: t('auth:org.defaultBio') as string,
+          bio: t('auth:org.defaultBio') as string,
           karmaPoints: 0,
           joinDate: new Date().toISOString(),
           isActive: true,
           lastActive: new Date().toISOString(),
-            location: { city: approved.city || (t('common:labels.countryIsrael') as string), country: 'IL' },
+          location: { city: approved.city || (t('common:labels.countryIsrael') as string), country: 'IL' },
           interests: [],
           roles: ['org_admin'],
           postsCount: 0,
@@ -436,7 +436,7 @@ export default function LoginScreen() {
       // 3) Not found — navigate to org onboarding screen
       navigation.navigate('OrgOnboardingScreen' as never);
     } catch (err) {
-        Alert.alert(t('common:error') as string, t('auth:org.checkFailed') as string);
+      Alert.alert(t('common:error') as string, t('auth:org.checkFailed') as string);
     } finally {
       setIsCheckingOrg(false);
     }
@@ -445,8 +445,8 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }} 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         accessible={true}
         accessibilityViewIsModal={false}
@@ -458,294 +458,294 @@ export default function LoginScreen() {
           keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'interactive'}
           contentInsetAdjustmentBehavior="always"
         >
-      
-      <View style={styles.container}>
-        {/* Header Section */}
-         <View style={styles.headerSection}>
-          {/* Mode Toggle Button */}
-          <View style={styles.topButtonsContainer}>            
-            {/* Language switcher */}
-            <View pointerEvents="box-none" style={styles.languageButtonContainer}>
-              <TouchableOpacity
-                style={styles.languageButton}
-                activeOpacity={0.8}
-                onPress={() => setLanguageMenuOpen((prev) => !prev)}
-              >
-                <Ionicons name="globe-outline" size={22} color="#333" />
-              </TouchableOpacity>
-              {languageMenuOpen && (
-                <View style={styles.languageMenu}>
-                  <TouchableOpacity
-                    style={styles.languageMenuItem}
-                    onPress={() => applyLanguage('he')}
-                  >
-                    <Text style={styles.languageMenuText}>{t('common:languages.he')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.languageMenuItem}
-                    onPress={() => applyLanguage('en')}
-                  >
-                    <Text style={styles.languageMenuText}>{t('common:languages.en')}</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          </View>
-          
-          <Text style={styles.title}>{t('auth:title') || t('common:welcomeShort')}</Text>
-          <Text style={styles.subtitle}>{t('auth:subtitle') || ''}</Text>
-          
-          {/* Logo */}
-          <View style={styles.logoContainer}>
-            <Image 
-              source={require('../assets/images/pink_logo.png')} 
-              style={styles.logo} 
-              resizeMode="contain"
-            />
-          </View>
-          
-          <View style={styles.buttonsContainer}>
-            <FirebaseGoogleButton />
-          
-            {/* Email Register/Login CTA - collapsible with input + status line */}
-            <View 
-              style={styles.orgLoginContainer}
-              accessible={true}
-              
-              importantForAccessibility="yes"
-            >
-              {!emailLoginOpen && (
-                <TouchableOpacity
-                  style={[styles.guestButton, styles.emailButton]}
-                  onPress={toggleEmailLogin}
-                  activeOpacity={0.85}
-                >
-                  <Text style={[styles.guestButtonText, { color: '#4C7EFF', fontWeight: '700' }]}>
-                    {t('auth:email.cta') }
-                  </Text>
-                </TouchableOpacity>
-              )}
 
-              {emailLoginOpen && (
-                <View 
-                  style={[
-                    styles.orgExpandedRow,
-                    {
-                      width: '100%',
-                    },
-                  ]}
+          <View style={styles.container}>
+            {/* Header Section */}
+            <View style={styles.headerSection}>
+              {/* Mode Toggle Button */}
+              <View style={styles.topButtonsContainer}>
+                {/* Language switcher */}
+                <View pointerEvents="box-none" style={styles.languageButtonContainer}>
+                  <TouchableOpacity
+                    style={styles.languageButton}
+                    activeOpacity={0.8}
+                    onPress={() => setLanguageMenuOpen((prev) => !prev)}
+                  >
+                    <Ionicons name="globe-outline" size={22} color="#333" />
+                  </TouchableOpacity>
+                  {languageMenuOpen && (
+                    <View style={styles.languageMenu}>
+                      <TouchableOpacity
+                        style={styles.languageMenuItem}
+                        onPress={() => applyLanguage('he')}
+                      >
+                        <Text style={styles.languageMenuText}>{t('common:languages.he')}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.languageMenuItem}
+                        onPress={() => applyLanguage('en')}
+                      >
+                        <Text style={styles.languageMenuText}>{t('common:languages.en')}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              <Text style={styles.title}>{t('auth:title') || t('common:welcomeShort')}</Text>
+              <Text style={styles.subtitle}>{t('auth:subtitle') || ''}</Text>
+
+              {/* Logo */}
+              <View style={styles.logoContainer}>
+                <Image
+                  source={require('../assets/images/pink_logo.png')}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
+              </View>
+
+              <View style={styles.buttonsContainer}>
+                <FirebaseGoogleButton />
+
+                {/* Email Register/Login CTA - collapsible with input + status line */}
+                <View
+                  style={styles.orgLoginContainer}
                   accessible={true}
-                  
+
                   importantForAccessibility="yes"
                 >
-                  <Animated.View style={[styles.orgMiniButton, { opacity: emailOpenAnim }] }>
-                    <TouchableOpacity onPress={toggleEmailLogin} activeOpacity={0.8}>
-                      <Ionicons name="mail-outline" size={20} color="#4C7EFF" />
+                  {!emailLoginOpen && (
+                    <TouchableOpacity
+                      style={[styles.guestButton, styles.emailButton]}
+                      onPress={toggleEmailLogin}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={[styles.guestButtonText, { color: '#4C7EFF', fontWeight: '700' }]}>
+                        {t('auth:email.cta')}
+                      </Text>
                     </TouchableOpacity>
-                  </Animated.View>
-                  {emailStep === 'email' ? (
-                    <TextInput
-                      style={styles.orgInput}
-                      placeholder={t('auth:email.placeholder')}
-                      placeholderTextColor="#B0B0B0"
-                      value={emailValue}
-                      textAlign="right"
-                      onChangeText={setEmailValue}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      autoComplete="email"
-                      textContentType="emailAddress"
-                      inputMode="email"
-                      keyboardType="email-address"
-                      returnKeyType="done"
-                      onSubmitEditing={handleEmailContinue}
+                  )}
+
+                  {emailLoginOpen && (
+                    <View
+                      style={[
+                        styles.orgExpandedRow,
+                        {
+                          width: '100%',
+                        },
+                      ]}
                       accessible={true}
-                      accessibilityLabel={t('auth:email.placeholder')}
-                      accessibilityHint={t('auth:email.accessibilityHint') || 'Enter your email address'}
+
                       importantForAccessibility="yes"
-                    />
-                  ) : (
-                    <View style={styles.inputWrapper}>
+                    >
+                      <Animated.View style={[styles.orgMiniButton, { opacity: emailOpenAnim }]}>
+                        <TouchableOpacity onPress={toggleEmailLogin} activeOpacity={0.8}>
+                          <Ionicons name="mail-outline" size={20} color="#4C7EFF" />
+                        </TouchableOpacity>
+                      </Animated.View>
+                      {emailStep === 'email' ? (
+                        <TextInput
+                          style={styles.orgInput}
+                          placeholder={t('auth:email.placeholder')}
+                          placeholderTextColor="#B0B0B0"
+                          value={emailValue}
+                          textAlign="right"
+                          onChangeText={setEmailValue}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          autoComplete="email"
+                          textContentType="emailAddress"
+                          inputMode="email"
+                          keyboardType="email-address"
+                          returnKeyType="done"
+                          onSubmitEditing={handleEmailContinue}
+                          accessible={true}
+                          accessibilityLabel={t('auth:email.placeholder')}
+                          accessibilityHint={t('auth:email.accessibilityHint') || 'Enter your email address'}
+                          importantForAccessibility="yes"
+                        />
+                      ) : (
+                        <View style={styles.inputWrapper}>
+                          <TextInput
+                            style={[styles.orgInput, { paddingRight: 40 }]}
+                            placeholder={t('auth:email.passwordPlaceholder')}
+                            placeholderTextColor="#B0B0B0"
+                            value={passwordValue}
+                            onChangeText={setPasswordValue}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            textAlign="right"
+                            secureTextEntry={!passwordVisible}
+                            returnKeyType="done"
+                            onSubmitEditing={handleEmailSubmit}
+                            accessible={true}
+                            accessibilityLabel={t('auth:email.passwordPlaceholder')}
+                            accessibilityHint={t('auth:email.passwordAccessibilityHint') || 'Enter your password'}
+                            importantForAccessibility="yes"
+                          />
+                          <TouchableOpacity onPress={() => setPasswordVisible(v => !v)} style={styles.eyeToggle}>
+                            <Ionicons name={passwordVisible ? 'eye-outline' : 'eye-off-outline'} size={20} color="#666" />
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                      {emailStep === 'email' ? (
+                        <TouchableOpacity
+                          style={[styles.orgActionButton, isEmailBusy && styles.disabledButton]}
+                          onPress={handleEmailContinue}
+                          disabled={isEmailBusy}
+                          activeOpacity={0.85}
+                        >
+                          <Text style={styles.orgActionButtonText}>{isEmailBusy ? t('auth:email.checking') : t('auth:email.continue')}</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity
+                          style={[styles.orgActionButton, isEmailBusy && styles.disabledButton]}
+                          onPress={handleEmailSubmit}
+                          disabled={isEmailBusy}
+                          activeOpacity={0.85}
+                        >
+                          <Text style={styles.orgActionButtonText}>{isEmailBusy ? t('auth:email.submitting') : t('auth:email.submit')}</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+
+                  {/* Suggestions dropdown */}
+                  {emailLoginOpen && emailStep === 'email' && emailSuggestions.length > 0 && (
+                    <View style={styles.suggestionsBox}>
+                      {emailSuggestions.map((sug) => (
+                        <TouchableOpacity key={sug} style={styles.suggestionItem} onPress={() => { setEmailValue(sug); setEmailSuggestions([]); }}>
+                          <Text style={styles.suggestionText}>{sug}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Status line under email block */}
+                  {emailStatusMessage && (
+                    <>
+                      <View style={styles.emailStatusRow}>
+                        <Text style={[styles.emailStatusText, { color: emailStatusColor }]}>
+                          {emailStatusMessage}
+                        </Text>
+                      </View>
+                      {emailStatusColor === '#C62828' && emailStep === 'password' && (
+                        <View style={styles.smallResetContainer}>
+                          <TouchableOpacity
+                            style={styles.smallResetButton}
+                            onPress={async () => {
+                              try {
+                                await sendPasswordReset(emailValue.trim().toLowerCase());
+                              } catch (_) { }
+                              Linking.openURL('https://mail.google.com/mail');
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.smallResetText}>{t('auth:email.resetPassword')}</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </>
+                  )}
+                </View>
+
+                {/* Enter Organization CTA - collapsible with input */}
+                <View
+                  style={styles.orgLoginContainer}
+                  accessible={true}
+
+                  importantForAccessibility="yes"
+                >
+                  {!orgLoginOpen && (
+                    <TouchableOpacity
+                      style={[styles.guestButton, styles.orgButton]}
+                      onPress={toggleOrgLogin}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={[styles.guestButtonText, { color: '#FF6B9D', fontWeight: '700' }]}>
+                        {t('auth:org.cta')}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {orgLoginOpen && (
+                    <View
+                      style={[
+                        styles.orgExpandedRow,
+                        {
+                          width: '100%',
+                        },
+                      ]}
+                      accessible={true}
+
+                      importantForAccessibility="yes"
+                    >
+                      <Animated.View style={[styles.orgMiniButton, { opacity: orgOpenAnim }]}>
+                        <TouchableOpacity onPress={toggleOrgLogin} activeOpacity={0.8}>
+                          <Ionicons name="business-outline" size={20} color="#FF6B9D" />
+                        </TouchableOpacity>
+                      </Animated.View>
                       <TextInput
-                        style={[styles.orgInput, { paddingRight: 40 }]}
-                        placeholder={t('auth:email.passwordPlaceholder')}
+                        style={styles.orgInput}
+                        placeholder={t('auth:org.placeholder')}
                         placeholderTextColor="#B0B0B0"
-                        value={passwordValue}
-                        onChangeText={setPasswordValue}
+                        value={orgQuery}
+                        onChangeText={setOrgQuery}
                         autoCapitalize="none"
                         autoCorrect={false}
                         textAlign="right"
-                        secureTextEntry={!passwordVisible}
+                        autoComplete="email"
+                        textContentType="emailAddress"
+                        inputMode="email"
                         returnKeyType="done"
-                        onSubmitEditing={handleEmailSubmit}
+                        onSubmitEditing={handleOrgConfirm}
                         accessible={true}
-                        accessibilityLabel={t('auth:email.passwordPlaceholder')}
-                        accessibilityHint={t('auth:email.passwordAccessibilityHint') || 'Enter your password'}
+                        accessibilityLabel={t('auth:org.placeholder')}
+                        accessibilityHint={t('auth:org.accessibilityHint') || 'Enter your organization email'}
                         importantForAccessibility="yes"
                       />
-                      <TouchableOpacity onPress={() => setPasswordVisible(v => !v)} style={styles.eyeToggle}>
-                        <Ionicons name={passwordVisible ? 'eye-outline' : 'eye-off-outline'} size={20} color="#666" />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                  {emailStep === 'email' ? (
-                    <TouchableOpacity
-                      style={[styles.orgActionButton, isEmailBusy && styles.disabledButton]}
-                      onPress={handleEmailContinue}
-                      disabled={isEmailBusy}
-                      activeOpacity={0.85}
-                    >
-                      <Text style={styles.orgActionButtonText}>{isEmailBusy ? t('auth:email.checking') : t('auth:email.continue')}</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={[styles.orgActionButton, isEmailBusy && styles.disabledButton]}
-                      onPress={handleEmailSubmit}
-                      disabled={isEmailBusy}
-                      activeOpacity={0.85}
-                    >
-                      <Text style={styles.orgActionButtonText}>{isEmailBusy ? t('auth:email.submitting') : t('auth:email.submit')}</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
-
-              {/* Suggestions dropdown */}
-              {emailLoginOpen && emailStep === 'email' && emailSuggestions.length > 0 && (
-                <View style={styles.suggestionsBox}>
-                  {emailSuggestions.map((sug) => (
-                    <TouchableOpacity key={sug} style={styles.suggestionItem} onPress={() => { setEmailValue(sug); setEmailSuggestions([]); }}>
-                      <Text style={styles.suggestionText}>{sug}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-
-              {/* Status line under email block */}
-              {emailStatusMessage && (
-                <>
-                  <View style={styles.emailStatusRow}>
-                    <Text style={[styles.emailStatusText, { color: emailStatusColor }]}>
-                      {emailStatusMessage}
-                    </Text>
-                  </View>
-                  {emailStatusColor === '#C62828' && emailStep === 'password' && (
-                    <View style={styles.smallResetContainer}>
                       <TouchableOpacity
-                        style={styles.smallResetButton}
-                        onPress={async () => {
-                          try {
-                            await sendPasswordReset(emailValue.trim().toLowerCase());
-                          } catch (_) {}
-                          Linking.openURL('https://mail.google.com/mail');
-                        }}
-                        activeOpacity={0.7}
+                        style={[styles.orgActionButton, isCheckingOrg && styles.disabledButton]}
+                        onPress={handleOrgConfirm}
+                        disabled={isCheckingOrg}
+                        activeOpacity={0.85}
                       >
-                        <Text style={styles.smallResetText}>{t('auth:email.resetPassword')}</Text>
+                        <Text style={styles.orgActionButtonText}>{isCheckingOrg ? t('auth:org.checking') : t('auth:org.continue')}</Text>
                       </TouchableOpacity>
                     </View>
                   )}
-                </>
-              )}
-            </View>
+                  {orgLoginOpen && orgEmailSuggestions.length > 0 && (
+                    <View style={styles.suggestionsBox}>
+                      {orgEmailSuggestions.map((sug) => (
+                        <TouchableOpacity key={sug} style={styles.suggestionItem} onPress={() => { setOrgQuery(sug); setOrgEmailSuggestions([]); }}>
+                          <Text style={styles.suggestionText}>{sug}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
 
-            {/* Enter Organization CTA - collapsible with input */}
-            <View 
-              style={styles.orgLoginContainer}
-              accessible={true}
-              
-              importantForAccessibility="yes"
-            >
-              {!orgLoginOpen && (
+
                 <TouchableOpacity
-                  style={[styles.guestButton, styles.orgButton]}
-                  onPress={toggleOrgLogin}
-                  activeOpacity={0.85}
+                  style={styles.guestButton}
+                  onPress={handleGuestMode}
+                  activeOpacity={0.8}
                 >
-                  <Text style={[styles.guestButtonText, { color: '#FF6B9D', fontWeight: '700' }]}>
-                    {t('auth:org.cta')}
-                  </Text>
+                  <Text style={styles.guestButtonText}>{t('auth:continueAsGuest')}</Text>
                 </TouchableOpacity>
-              )}
 
-              {orgLoginOpen && (
-                <View 
-                  style={[
-                    styles.orgExpandedRow,
-                    {
-                      width: '100%',
-                    },
-                  ]}
-                  accessible={true}
-                  
-                  importantForAccessibility="yes"
-                >
-                  <Animated.View style={[styles.orgMiniButton, { opacity: orgOpenAnim }] }>
-                    <TouchableOpacity onPress={toggleOrgLogin} activeOpacity={0.8}>
-                      <Ionicons name="business-outline" size={20} color="#FF6B9D" />
-                    </TouchableOpacity>
-                  </Animated.View>
-                  <TextInput
-                    style={styles.orgInput}
-                    placeholder={t('auth:org.placeholder')}
-                    placeholderTextColor="#B0B0B0"
-                    value={orgQuery}
-                    onChangeText={setOrgQuery}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    textAlign="right"
-                    autoComplete="email"
-                    textContentType="emailAddress"
-                    inputMode="email"
-                    returnKeyType="done"
-                    onSubmitEditing={handleOrgConfirm}
-                    accessible={true}
-                    accessibilityLabel={t('auth:org.placeholder')}
-                    accessibilityHint={t('auth:org.accessibilityHint') || 'Enter your organization email'}
-                    importantForAccessibility="yes"
-                  />
-                  <TouchableOpacity
-                    style={[styles.orgActionButton, isCheckingOrg && styles.disabledButton]}
-                    onPress={handleOrgConfirm}
-                    disabled={isCheckingOrg}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={styles.orgActionButtonText}>{isCheckingOrg ? t('auth:org.checking') : t('auth:org.continue')}</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-              {orgLoginOpen && orgEmailSuggestions.length > 0 && (
-                <View style={styles.suggestionsBox}>
-                  {orgEmailSuggestions.map((sug) => (
-                    <TouchableOpacity key={sug} style={styles.suggestionItem} onPress={() => { setOrgQuery(sug); setOrgEmailSuggestions([]); }}>
-                      <Text style={styles.suggestionText}>{sug}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
+              </View>
             </View>
 
 
-            <TouchableOpacity
-              style={styles.guestButton}
-              onPress={handleGuestMode}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.guestButtonText}>{t('auth:continueAsGuest')}</Text>
-            </TouchableOpacity>
-
+            {/* Footer Section */}
+            <View style={styles.footerSection}>
+              <Text style={styles.infoText}>{t('common:freeAppNotice')}</Text>
+              <View style={styles.versionContainer}>
+                <Text style={styles.versionText}>v{APP_VERSION}</Text>
+              </View>
+            </View>
           </View>
-        </View>
-
-
-        {/* Footer Section */}
-        <View style={styles.footerSection}>
-          <Text style={styles.infoText}>{t('common:freeAppNotice')}</Text>
-          <View style={styles.versionContainer}>
-            <Text style={styles.versionText}>v{APP_VERSION}</Text>
-          </View>
-        </View>
-      </View>
         </ScrollContainer>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -758,7 +758,7 @@ const createLoginScreenStyles = () => {
   const { isTablet, isDesktop } = getScreenInfo();
   const isDesktopWeb = Platform.OS === 'web' && width > 1024;
   const isMobileWeb = Platform.OS === 'web' && width <= 768;
-  
+
   // Responsive button values
   const buttonPaddingH = isDesktopWeb ? 32 : isTablet ? 28 : 24;
   const buttonPaddingV = isDesktopWeb ? 16 : isTablet ? 14 : 12;
@@ -768,34 +768,34 @@ const createLoginScreenStyles = () => {
   const buttonFontSize = isDesktopWeb ? 18 : isTablet ? 17 : scaleSize(16);
   const buttonMarginBottom = isDesktopWeb ? 16 : isTablet ? 14 : 12;
   const buttonMarginVertical = isDesktopWeb ? 8 : isTablet ? 7 : 6;
-  
+
   // Expanded row values
   const expandedRowMaxWidth = isDesktopWeb ? 400 : isTablet ? 360 : '100%';
   const expandedRowPadding = isDesktopWeb ? 8 : isTablet ? 7 : 6;
   const expandedRowGap = isDesktopWeb ? 10 : isTablet ? 9 : 8;
   const expandedRowBorderRadius = isDesktopWeb ? 14 : isTablet ? 13 : 12;
-  
+
   // Input values
   const inputPaddingH = isDesktopWeb ? 16 : isTablet ? 14 : 12;
   const inputPaddingV = isDesktopWeb ? 12 : isTablet ? 11 : 10;
   const inputFontSize = isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14);
   const inputBorderRadius = isDesktopWeb ? 12 : isTablet ? 11 : 10;
-  
+
   // Action button values
   const actionButtonPaddingH = isDesktopWeb ? 20 : isTablet ? 18 : 16;
   const actionButtonPaddingV = isDesktopWeb ? 14 : isTablet ? 13 : 12;
   const actionButtonFontSize = isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14);
   const actionButtonBorderRadius = isDesktopWeb ? 12 : isTablet ? 11 : 10;
-  
+
   // Mini button values
   const miniButtonSize = isDesktopWeb ? 44 : isTablet ? 42 : 40;
   const miniButtonBorderRadius = isDesktopWeb ? 11 : isTablet ? 10.5 : 10;
-  
+
   // Suggestions box values
   const suggestionsBoxMaxWidth = isDesktopWeb ? 400 : isTablet ? 360 : '100%';
   const suggestionsBoxBorderRadius = isDesktopWeb ? 12 : isTablet ? 11 : 10;
   const suggestionsBoxMargin = isDesktopWeb ? 8 : isTablet ? 7 : 6;
-  
+
   // Status row values
   const statusRowMaxWidth = isDesktopWeb ? 400 : isTablet ? 360 : '100%';
   const statusRowPadding = isDesktopWeb ? 8 : isTablet ? 7 : 6;
@@ -978,7 +978,7 @@ const createLoginScreenStyles = () => {
       marginTop: "1%",
       // alignItems: 'stretch', // Stretch to full width
       width: '80%',
-      height:'50%',
+      height: '50%',
     },
     // 🔥 orgButton - ללא width: '100%'
     orgButton: {

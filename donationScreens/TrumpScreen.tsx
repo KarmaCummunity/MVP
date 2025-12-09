@@ -10,11 +10,12 @@ import {
   TextInput,
   Platform,
   Linking,
+  ScrollView,
 } from 'react-native';
 import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';  
+import { FontSizes } from '../globals/constants';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import HeaderComp from '../components/HeaderComp';
 import DonationStatsFooter from '../components/DonationStatsFooter';
@@ -31,9 +32,9 @@ export default function TrumpScreen({
   // Debug log for TrumpScreen
   console.log('🚗 TrumpScreen - Component rendered');
   console.log('🚗 TrumpScreen - Navigation object:', navigation);
-  
+
   const [mode, setMode] = useState(true); // false = seeker (needs ride), true = offerer (offers ride)
-  const { t } = useTranslation(['donations','common','trump']);
+  const { t } = useTranslation(['donations', 'common', 'trump']);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [selectedSorts, setSelectedSorts] = useState<string[]>([]);
@@ -179,13 +180,13 @@ export default function TrumpScreen({
         }));
         setRecentRides(userRecent);
       } catch (e) {
-         if (!isRealAuth) {
-           setAllRides(dummyRides);
-           setFilteredRides(dummyRides);
-         } else {
-           setAllRides([]);
-           setFilteredRides([]);
-         }
+        if (!isRealAuth) {
+          setAllRides(dummyRides);
+          setFilteredRides(dummyRides);
+        } else {
+          setAllRides([]);
+          setFilteredRides([]);
+        }
         setRecentRides([]);
       }
     };
@@ -250,23 +251,23 @@ export default function TrumpScreen({
       type: "web",
       link: 'https://www.trempist.com/'
     },
-    
+
   ];
 
 
   const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
-    console.log('🚗 TrumpScreen - Search received:', { 
-      query, 
-      filters: filters || [], 
-      sorts: sorts || [], 
-      resultsCount: results?.length || 0 
+    console.log('🚗 TrumpScreen - Search received:', {
+      query,
+      filters: filters || [],
+      sorts: sorts || [],
+      resultsCount: results?.length || 0
     });
-    
+
     // Update state with search results
     setSearchQuery(query);
     setSelectedFilters(filters || []);
     setSelectedSorts(sorts || []);
-    
+
     const filtered = getFilteredRides();
     setFilteredRides(filtered);
   };
@@ -412,7 +413,7 @@ export default function TrumpScreen({
           } else {
             await Linking.openURL(fallback);
           }
-        } catch {}
+        } catch { }
       }
     } catch (e) {
       Alert.alert(t('common:errorTitle') as string, t('trump:errors.saveFailed') as string);
@@ -464,7 +465,7 @@ export default function TrumpScreen({
   }, []);
 
   const renderRideCard = ({ item }: { item: any }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={localStyles.rideCard}
       onPress={() => {
         if (mode) {
@@ -539,7 +540,7 @@ export default function TrumpScreen({
   );
 
   const renderGroupCard = ({ item }: { item: any }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={localStyles.groupButton}
       onPress={async () => {
         if (item.link && typeof item.link === 'string') {
@@ -578,7 +579,6 @@ export default function TrumpScreen({
                     placeholder={t('trump:ui.timePickerPlaceholder') as string}
                   />
                 </View>
-                <View>
                 <TouchableOpacity
                   onPress={() => {
                     const newVal = !immediateDeparture;
@@ -595,21 +595,20 @@ export default function TrumpScreen({
                     name={immediateDeparture ? 'checkbox' : 'square-outline'}
                     size={22}
                     color={colors.pink}
-                    />
+                  />
                   <Text style={localStyles.checkboxLabel}>{t('trump:ui.immediateDeparture')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setUseCurrentLocation(!useCurrentLocation)}
                   style={localStyles.checkbox}
-                  >
+                >
                   <Icon
                     name={useCurrentLocation ? 'checkbox' : 'square-outline'}
                     size={22}
                     color={colors.pink}
-                    />
+                  />
                   <Text style={localStyles.checkboxLabel}>{t('trump:ui.useCurrentLocation')}</Text>
                 </TouchableOpacity>
-                    </View>
               </View>
             </View>
           </View>
@@ -722,7 +721,7 @@ export default function TrumpScreen({
       )}
     </View>
   );
-  
+
   return (
     <SafeAreaView style={localStyles.safeArea}>
       <HeaderComp
@@ -764,20 +763,20 @@ export default function TrumpScreen({
             const freeRides = (filteredRides.length ? filteredRides : allRides).filter((r: any) => (r.price ?? 0) === 0).length;
             const totalGroupMembers = dummyGroups.reduce((s, g) => s + (g.members || 0), 0);
             return (
-                <DonationStatsFooter
-                  stats={[
-                    { label: t('trump:stats.availableRides'), value: totalRides, icon: 'car-outline' },
-                    { label: t('trump:stats.noCost'), value: freeRides, icon: 'pricetag-outline' },
-                    { label: t('trump:stats.groupMembers'), value: totalGroupMembers, icon: 'people-outline' },
-                  ]}
-                />
+              <DonationStatsFooter
+                stats={[
+                  { label: t('trump:stats.availableRides'), value: totalRides, icon: 'car-outline' },
+                  { label: t('trump:stats.noCost'), value: freeRides, icon: 'pricetag-outline' },
+                  { label: t('trump:stats.groupMembers'), value: totalGroupMembers, icon: 'people-outline' },
+                ]}
+              />
             );
           })()}
         </ScrollContainer>
       ) : (
         // Beneficiary (seeker) mode - two independent vertical scroll sections
-          <View style={[localStyles.container, localStyles.noOuterScrollContainer]}> 
-            <View style={localStyles.sectionsContainer}>
+        <View style={[localStyles.container, localStyles.noOuterScrollContainer]}>
+          <View style={localStyles.sectionsContainer}>
             {/* Rides section */}
             <View style={localStyles.sectionWithScroller}>
               <Text style={localStyles.sectionTitle}>
@@ -790,7 +789,7 @@ export default function TrumpScreen({
                 nestedScrollEnabled
                 keyboardShouldPersistTaps="handled"
               >
-                 {filteredRides.map((ride, idx) => (
+                {filteredRides.map((ride, idx) => (
                   <View key={`ride-${ride.id ?? idx}`} style={localStyles.rideCardWrapper}>
                     {renderRideCard({ item: ride })}
                   </View>
@@ -811,22 +810,22 @@ export default function TrumpScreen({
                 <View style={localStyles.groupsTwoCols}>
                   <View style={localStyles.groupColumn}>
                     <Text style={localStyles.groupColumnTitle}>{t('trump:groups.whatsapp')}</Text>
-                     {dummyGroups
+                    {dummyGroups
                       .filter(g => g.type === 'whatsapp')
                       .filter(g => !searchQuery || (g.name?.includes(searchQuery) ?? false))
                       .map((group) => (
-                         <View style={localStyles.groupLinkWrapper}>
+                        <View style={localStyles.groupLinkWrapper}>
                           {renderGroupCard({ item: group })}
                         </View>
                       ))}
                   </View>
                   <View style={localStyles.groupColumn}>
                     <Text style={localStyles.groupColumnTitle}>{t('trump:groups.facebook')}</Text>
-                     {dummyGroups
+                    {dummyGroups
                       .filter(g => g.type === 'facebook')
                       .filter(g => !searchQuery || (g.name?.includes(searchQuery) ?? false))
                       .map((group) => (
-                         <View style={localStyles.groupLinkWrapper}>
+                        <View style={localStyles.groupLinkWrapper}>
                           {renderGroupCard({ item: group })}
                         </View>
                       ))}
@@ -837,10 +836,10 @@ export default function TrumpScreen({
           </View>
           {/* Footer stats */}
           {(() => {
-          const totalRides = filteredRides.length || allRides.length;
-          const freeRides = (filteredRides.length ? filteredRides : allRides).filter((r: any) => (r.price ?? 0) === 0).length;
-          const totalGroupMembers = dummyGroups.reduce((s, g) => s + (g.members || 0), 0);
-          return (
+            const totalRides = filteredRides.length || allRides.length;
+            const freeRides = (filteredRides.length ? filteredRides : allRides).filter((r: any) => (r.price ?? 0) === 0).length;
+            const totalGroupMembers = dummyGroups.reduce((s, g) => s + (g.members || 0), 0);
+            return (
               <DonationStatsFooter
                 stats={[
                   { label: t('trump:stats.availableRides'), value: totalRides, icon: 'car-outline' },
@@ -848,7 +847,7 @@ export default function TrumpScreen({
                   { label: t('trump:stats.groupMembers'), value: totalGroupMembers, icon: 'people-outline' },
                 ]}
               />
-          );
+            );
           })()}
         </View>
       )}
@@ -857,356 +856,356 @@ export default function TrumpScreen({
 }
 
 const localStyles = StyleSheet.create({
-    safeArea: {
-      flex: 1,
-      backgroundColor: colors.backgroundSecondary_2,
-    },
-    container: {
-        flex: 1,
-        paddingHorizontal: 16,
-        paddingTop: 4,
-    },
-    scrollContent: {
-        paddingBottom: 100, // Bottom margin for screen
-    },
-    formContainer: {
-      padding: 5,
-      alignItems: 'center',
-      borderRadius: 15,
-      marginBottom: 15,
-    },
-    row: {
-      flexDirection: 'row-reverse',
-      gap: 10,
-      width: '100%',
-      paddingHorizontal: 8,
-    },
-    field: {
-      flex: 1,
-    },
-    fieldSmall: {
-      flex: 0.5,
-    },
-    timeRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: "15%",
-    },
-    checkbox: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      marginVertical: 3,
-      paddingHorizontal: 8,
-      paddingVertical: 6,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: colors.moneyFormBorder,
-      backgroundColor: colors.moneyInputBackground,
-      marginLeft: 8,
-    },
-    checkboxLabel: {
-      fontSize: FontSizes.small,
-      color: colors.textPrimary,
-      fontWeight: '600',
-    },
-    locationContainer: {
-        marginBottom: 20,
-    },
-    timeContainer: {
-        marginBottom: 20,
-    },
-    label: {
-        fontSize: FontSizes.medium,
-        fontWeight: '600',
-        color: colors.textPrimary,
-        marginBottom: 10,
-        textAlign: 'center',
-    },
-    input: {
-        backgroundColor: colors.moneyInputBackground,
-        borderRadius: 10,
-        padding: 15,
-        fontSize: FontSizes.body,
-        textAlign: 'right',
-        color: colors.textPrimary,
-        borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
-    },
-    inputWrapper: {
-        position: 'relative',
-        justifyContent: 'center',
-    },
-    inputWithAdornment: {
-        paddingRight: 36,
-    },
-    inputAdornment: {
-        position: 'absolute',
-        right: 12,
-        color: colors.textSecondary,
-        fontSize: FontSizes.body,
-    },
-    counterRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: colors.moneyInputBackground,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: colors.moneyFormBorder,
-      paddingHorizontal: 8,
-      paddingVertical: 6,
-    },
-    counterBtn: {
-      backgroundColor: colors.moneyFormBackground,
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 8,
-    },
-    counterText: {
-      fontSize: FontSizes.medium,
-      fontWeight: 'bold',
-      color: colors.textPrimary,
-    },
-    counterValue: {
-      fontSize: FontSizes.medium,
-      fontWeight: 'bold',
-      color: colors.textPrimary,
-      minWidth: 30,
-      textAlign: 'center',
-    },
-    offerButton: {
-        backgroundColor: colors.moneyButtonBackground,
-        padding: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    offerButtonText: {
-        color: colors.backgroundPrimary,
-        fontSize: FontSizes.medium,
-        fontWeight: 'bold',
-    },
-    section: {
-        marginBottom: 10,
-    },
-    sectionTitle: {
-        fontSize: FontSizes.body,
-        fontWeight: 'bold',
-        alignSelf: 'center',
-        color: colors.textPrimary,
-        textAlign: 'right',
-    },
-    // Container that disables outer scroll in seeker mode
-    noOuterScrollContainer: {
-        flex: 1,
-    },
-    sectionsContainer: {
-        flex: 1,
-        gap: 5,
-    },
-    sectionWithScroller: {
-        flex: 1,
-        backgroundColor: colors.moneyFormBackground,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
-        paddingVertical: 8,
-        paddingHorizontal: 8,
-    },
-    innerScroll: {
-        flex: 1,
-    },
-    // Ride Cards Styles
-    ridesGridContainer: {
-        // paddingHorizontal: 8,
-        // paddingVertical: 8,
-        // paddingBottom: 8,
-    },
-    rideCardWrapper: {
-        marginBottom: 8,
-        width: '100%',
-    },
-    rideCard: {
-        backgroundColor: colors.moneyCardBackground,
-        borderRadius: 10,
-        padding: 8,
-        borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
-    },
-    rideRow: {
-        flexDirection: 'row-reverse',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 4,
-    },
-    rideRowLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        flexShrink: 1,
-    },
-    rideRowRight: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    rideEmoji: {
-        fontSize: FontSizes.heading2,
-    },
-    rideRating: {
-        backgroundColor: colors.moneyStatusBackground,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 6,
-    },
-    ratingText: {
-        fontSize: FontSizes.small,
-        color: colors.moneyStatusText,
-        fontWeight: 'bold',
-    },
-    rideDriverName: {
-        fontSize: FontSizes.small,
-        fontWeight: 'bold',
-        color: colors.textPrimary,
-        textAlign: 'right',
-    },
-    rideRouteText: {
-        fontSize: FontSizes.small,
-        color: colors.textSecondary,
-        flex: 1,
-        textAlign: 'right',
-        marginLeft: 6,
-    },
-    rideSeats: {
-        fontSize: FontSizes.small,
-        color: colors.moneyHistoryAmount,
-        fontWeight: '600',
-    },
-    ridePrice: {
-        fontSize: FontSizes.small,
-        color: colors.moneyHistoryAmount,
-        fontWeight: '600',
-    },
-    // Recent Rides Styles
-    recentRidesContainer: {
-        paddingHorizontal: 8,
-        paddingVertical: 8,
-    },
-    recentRideCardWrapper: {
-        marginBottom: 8,
-        width: '100%',
-    },
-    recentRideDateCompact: {
-        fontSize: FontSizes.small,
-        color: colors.textSecondary,
-    },
-    restoreChip: {
-        backgroundColor: colors.moneyFormBackground,
-        borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
-        borderRadius: 999,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-    },
-    restoreChipText: {
-        fontSize: FontSizes.small,
-        color: colors.textPrimary,
-        fontWeight: '600',
-    },
-    // Groups Styles (compact two columns)
-    groupsContainer: {
-      paddingHorizontal: 8,
-      paddingVertical: 8,
-      paddingBottom: 8,
-    },
-    groupsTwoCols: {
-      flexDirection: 'row-reverse',
-      gap: 16,
-      paddingHorizontal: 16,
-    },
-    groupColumn: {
-      flex: 1,
-    },
-    groupColumnTitle: {
-      fontSize: FontSizes.body,
-      color: colors.textSecondary,
-      marginBottom: 6,
-      textAlign: 'right',
-    },
-    groupLinkWrapper: {
-      paddingVertical: 6,
-      borderBottomWidth: 0,
-    },
-    groupButton: {
-      backgroundColor: colors.moneyCardBackground,
-      borderWidth: 1,
-      borderColor: colors.moneyFormBorder,
-      borderRadius: 10,
-      padding: 10,
-    },
-    groupButtonHeader: {
-      flexDirection: 'row-reverse',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    groupButtonTitle: {
-      fontSize: FontSizes.body,
-      color: colors.textPrimary,
-      fontWeight: '600',
-      textAlign: 'right',
-      flex: 1,
-      marginLeft: 8,
-    },
-    groupButtonPill: {
-      borderWidth: 1,
-      borderColor: colors.headerBorder,
-      borderRadius: 999,
-      paddingHorizontal: 8,
-      paddingVertical: 2,
-      color: colors.textSecondary,
-      fontSize: FontSizes.caption,
-    },
-    // Search Help Styles
-    searchHelpContainer: {
-        alignItems: 'center',
-        paddingVertical: 20,
-    },
-    searchHelpTitle: {
-        fontSize: FontSizes.heading2,
-        fontWeight: 'bold',
-        color: colors.textPrimary,
-        marginBottom: 12,
-        textAlign: 'center',
-    },
-    searchHelpText: {
-        fontSize: FontSizes.body,
-        color: colors.textSecondary,
-        textAlign: 'center',
-        marginBottom: 20,
-        lineHeight: 24,
-    },
-    searchHelpTipsContainer: {
-        backgroundColor: colors.moneyInputBackground,
-        borderRadius: 12,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
-        width: '100%',
-    },
-    searchHelpTipsTitle: {
-        fontSize: FontSizes.body,
-        fontWeight: 'bold',
-        color: colors.textPrimary,
-        marginBottom: 10,
-        textAlign: 'right',
-    },
-    searchHelpTip: {
-        fontSize: FontSizes.body,
-        color: colors.textSecondary,
-        marginBottom: 6,
-        textAlign: 'right',
-        lineHeight: 20,
-    },
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.backgroundSecondary_2,
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+  },
+  scrollContent: {
+    paddingBottom: 100, // Bottom margin for screen
+  },
+  formContainer: {
+    padding: 5,
+    alignItems: 'center',
+    borderRadius: 15,
+    marginBottom: 15,
+  },
+  row: {
+    flexDirection: 'row-reverse',
+    gap: 10,
+    width: '100%',
+    paddingHorizontal: 8,
+  },
+  field: {
+    flex: 1,
+  },
+  fieldSmall: {
+    flex: 0.5,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: "15%",
+  },
+  checkbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginVertical: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.moneyFormBorder,
+    backgroundColor: colors.moneyInputBackground,
+    marginLeft: 8,
+  },
+  checkboxLabel: {
+    fontSize: FontSizes.small,
+    color: colors.textPrimary,
+    fontWeight: '600',
+  },
+  locationContainer: {
+    marginBottom: 20,
+  },
+  timeContainer: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: FontSizes.medium,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  input: {
+    backgroundColor: colors.moneyInputBackground,
+    borderRadius: 10,
+    padding: 15,
+    fontSize: FontSizes.body,
+    textAlign: 'right',
+    color: colors.textPrimary,
+    borderWidth: 1,
+    borderColor: colors.moneyFormBorder,
+  },
+  inputWrapper: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  inputWithAdornment: {
+    paddingRight: 36,
+  },
+  inputAdornment: {
+    position: 'absolute',
+    right: 12,
+    color: colors.textSecondary,
+    fontSize: FontSizes.body,
+  },
+  counterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.moneyInputBackground,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.moneyFormBorder,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  counterBtn: {
+    backgroundColor: colors.moneyFormBackground,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  counterText: {
+    fontSize: FontSizes.medium,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+  },
+  counterValue: {
+    fontSize: FontSizes.medium,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    minWidth: 30,
+    textAlign: 'center',
+  },
+  offerButton: {
+    backgroundColor: colors.moneyButtonBackground,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  offerButtonText: {
+    color: colors.backgroundPrimary,
+    fontSize: FontSizes.medium,
+    fontWeight: 'bold',
+  },
+  section: {
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontSize: FontSizes.body,
+    fontWeight: 'bold',
+    alignSelf: 'center',
+    color: colors.textPrimary,
+    textAlign: 'right',
+  },
+  // Container that disables outer scroll in seeker mode
+  noOuterScrollContainer: {
+    flex: 1,
+  },
+  sectionsContainer: {
+    flex: 1,
+    gap: 5,
+  },
+  sectionWithScroller: {
+    flex: 1,
+    backgroundColor: colors.moneyFormBackground,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.moneyFormBorder,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+  },
+  innerScroll: {
+    flex: 1,
+  },
+  // Ride Cards Styles
+  ridesGridContainer: {
+    // paddingHorizontal: 8,
+    // paddingVertical: 8,
+    // paddingBottom: 8,
+  },
+  rideCardWrapper: {
+    marginBottom: 8,
+    width: '100%',
+  },
+  rideCard: {
+    backgroundColor: colors.moneyCardBackground,
+    borderRadius: 10,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: colors.moneyFormBorder,
+  },
+  rideRow: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  rideRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 1,
+  },
+  rideRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  rideEmoji: {
+    fontSize: FontSizes.heading2,
+  },
+  rideRating: {
+    backgroundColor: colors.moneyStatusBackground,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  ratingText: {
+    fontSize: FontSizes.small,
+    color: colors.moneyStatusText,
+    fontWeight: 'bold',
+  },
+  rideDriverName: {
+    fontSize: FontSizes.small,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    textAlign: 'right',
+  },
+  rideRouteText: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: 6,
+  },
+  rideSeats: {
+    fontSize: FontSizes.small,
+    color: colors.moneyHistoryAmount,
+    fontWeight: '600',
+  },
+  ridePrice: {
+    fontSize: FontSizes.small,
+    color: colors.moneyHistoryAmount,
+    fontWeight: '600',
+  },
+  // Recent Rides Styles
+  recentRidesContainer: {
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  recentRideCardWrapper: {
+    marginBottom: 8,
+    width: '100%',
+  },
+  recentRideDateCompact: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+  },
+  restoreChip: {
+    backgroundColor: colors.moneyFormBackground,
+    borderWidth: 1,
+    borderColor: colors.moneyFormBorder,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  restoreChipText: {
+    fontSize: FontSizes.small,
+    color: colors.textPrimary,
+    fontWeight: '600',
+  },
+  // Groups Styles (compact two columns)
+  groupsContainer: {
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    paddingBottom: 8,
+  },
+  groupsTwoCols: {
+    flexDirection: 'row-reverse',
+    gap: 16,
+    paddingHorizontal: 16,
+  },
+  groupColumn: {
+    flex: 1,
+  },
+  groupColumnTitle: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+    marginBottom: 6,
+    textAlign: 'right',
+  },
+  groupLinkWrapper: {
+    paddingVertical: 6,
+    borderBottomWidth: 0,
+  },
+  groupButton: {
+    backgroundColor: colors.moneyCardBackground,
+    borderWidth: 1,
+    borderColor: colors.moneyFormBorder,
+    borderRadius: 10,
+    padding: 10,
+  },
+  groupButtonHeader: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  groupButtonTitle: {
+    fontSize: FontSizes.body,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    textAlign: 'right',
+    flex: 1,
+    marginLeft: 8,
+  },
+  groupButtonPill: {
+    borderWidth: 1,
+    borderColor: colors.headerBorder,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    color: colors.textSecondary,
+    fontSize: FontSizes.caption,
+  },
+  // Search Help Styles
+  searchHelpContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  searchHelpTitle: {
+    fontSize: FontSizes.heading2,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  searchHelpText: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 24,
+  },
+  searchHelpTipsContainer: {
+    backgroundColor: colors.moneyInputBackground,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.moneyFormBorder,
+    width: '100%',
+  },
+  searchHelpTipsTitle: {
+    fontSize: FontSizes.body,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: 10,
+    textAlign: 'right',
+  },
+  searchHelpTip: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+    marginBottom: 6,
+    textAlign: 'right',
+    lineHeight: 20,
+  },
 });
 

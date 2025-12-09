@@ -186,7 +186,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
       }));
       
       // סינון לפי קטגוריה
-      const forType = displayItems.filter(i => 
+      const forType = displayItems.filter(i =>
         itemType === 'general' ? true : i.category === itemType
       );
       

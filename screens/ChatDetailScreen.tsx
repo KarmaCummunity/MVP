@@ -240,7 +240,7 @@ export default function ChatDetailScreen() {
       const actualMessageId = typeof messageId === 'string' ? messageId : messageId.messageId;
       
       // Update the temp message with the real message ID and status
-      setMessages(prev => prev.map(msg => 
+      setMessages(prev => prev.map(msg =>
         msg.id === tempMessageId 
           ? { ...msg, id: actualMessageId, status: 'sent' as const }
           : msg

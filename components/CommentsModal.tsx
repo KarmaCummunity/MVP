@@ -109,7 +109,7 @@ export default function CommentsModal({
   };
 
   const handleLikeComment = (commentId: string) => {
-    setComments(prev => prev.map(comment => 
+    setComments(prev => prev.map(comment =>
       comment.id === commentId 
         ? { 
             ...comment, 

@@ -117,7 +117,7 @@ const CategoryScreen: React.FC<Props> = ({ route, config: propConfig }) => {
         styles.content,
         isLandscape() && { paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XL },
       ]} showsVerticalScrollIndicator={false}>
-        <View style={[styles.hero, { backgroundColor: config.bgColor, borderColor: config.color }]}> 
+        <View style={[styles.hero, { backgroundColor: config.bgColor, borderColor: config.color }]}>
           <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
           {!!subtitle && (
             <Text style={styles.subtitle}>{subtitle}</Text>
