@@ -294,7 +294,7 @@ const HeroSection: React.FC<{ onDonate: () => void }> = ({ onDonate }) => {
             }
           ]}>
 
-            <Text style={styles.welcomeTitle}>המקום בו טוב קורה</Text>
+            <Text style={styles.welcomeTitle}>המקום בו הטוב קורה</Text>
             <View style={styles.logoContainer}>
               <Image source={require('../assets/images/pink_logo.png')} style={styles.logo} resizeMode="contain" />
               <View style={styles.logoGlow} />

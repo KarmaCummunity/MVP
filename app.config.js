@@ -1,6 +1,6 @@
 const DEFAULT_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://kc-mvp-server-production.up.railway.app';
 
-export default {
+module.exports = {
   expo: {
     name: "KC - הקיבוץ הקפיטליסטי",
     slug: "karma-community",
@@ -87,6 +87,7 @@ export default {
     },
     plugins: [
       "expo-router",
+      "expo-secure-store",
       [
         "expo-notifications",
         {

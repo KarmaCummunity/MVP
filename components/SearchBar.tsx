@@ -33,6 +33,8 @@ interface SearchBarProps {
   onRemoveSortRequested?: (removeFn: () => void) => void;
   // Whether to render the selected filters/sorts row (false = parent will render it)
   renderSelectedRow?: boolean;
+  // Whether to hide the sort button (useful for offer mode)
+  hideSortButton?: boolean;
 }
 
 const SearchBar = ({ 
@@ -46,7 +48,8 @@ const SearchBar = ({
   onSortsChange,
   onRemoveFilterRequested,
   onRemoveSortRequested,
-  renderSelectedRow = true
+  renderSelectedRow = true,
+  hideSortButton = false
 }: SearchBarProps) => {
   const [searchText, setSearchText] = useState("");
   const { t } = useTranslation(['search','common']);
@@ -294,12 +297,14 @@ const SearchBar = ({
       {/* --- Main Search Bar Row --- */}
       <View style={[localStyles.searchBarContainer, { flexDirection: rowDirection('row-reverse') }]}>
         {/* Sort Button (opens sort modal) - Inside search bar, smaller */}
-        <TouchableOpacity
-          style={localStyles.buttonContainer}
-          onPress={() => setIsSortModalVisible(true)}
-        >
-          <Text style={localStyles.buttonText}>{t('search:sortTitle')}</Text>
-        </TouchableOpacity>
+        {!hideSortButton && (
+          <TouchableOpacity
+            style={localStyles.buttonContainer}
+            onPress={() => setIsSortModalVisible(true)}
+          >
+            <Text style={localStyles.buttonText}>{t('search:sortTitle')}</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Filter Button (opens filter modal) - Inside search bar, smaller */}
         <TouchableOpacity

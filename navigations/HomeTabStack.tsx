@@ -53,7 +53,7 @@ export default function HomeTabStack(): React.ReactElement {
   const { mode } = useWebMode();
   const navigation = useNavigation();
   const { resetHomeScreenTrigger, isAuthenticated, isGuestMode } = useUser();
-  
+
   // Get the stack navigator reference - useNavigation() returns parent, so we need to get the stack itself
   // We'll use a ref to store the stack navigator when it's available
   const stackNavigatorRef = React.useRef<any>(null);
@@ -75,43 +75,57 @@ export default function HomeTabStack(): React.ReactElement {
         const state = (navigation as any).getState();
         const currentRoute = state?.routes?.[state?.index || 0];
         const currentRouteName = currentRoute?.name;
-        
-        logger.debug('HomeTabStack', 'resetHomeScreenTrigger activated', { 
+
+        logger.debug('HomeTabStack', 'resetHomeScreenTrigger activated', {
           resetHomeScreenTrigger,
           currentRouteName,
           mode
         });
-        
+
+        // Check if we are physically at HomeMain by inspecting the nested stack state
+        // currentRouteName from getState() is 'HomeScreen' (the tab name), not the inner stack route
+        let isAtHomeMain = false;
+
+        // We need to check if the current active tab is HomeScreen
+        if (currentRouteName === 'HomeScreen') {
+          const stackState = currentRoute?.state;
+          // If stackState is undefined, it usually means no navigation has happened yet in this stack, 
+          // so we are at the initial route (HomeMain)
+          if (!stackState) {
+            isAtHomeMain = true;
+          } else {
+            // Check the current route in the stack
+            const stackRoute = stackState.routes?.[stackState.index || 0];
+            if (stackRoute?.name === 'HomeMain') {
+              isAtHomeMain = true;
+            }
+          }
+        }
+
+        logger.debug('HomeTabStack', 'Checking if at HomeMain', {
+          isAtHomeMain,
+          currentRouteName,
+          topRoute: currentRoute?.state?.routes?.[currentRoute?.state?.index || 0]?.name
+        });
+
         // Only navigate if we're not already on HomeMain
-        if (currentRouteName !== 'HomeMain') {
-          logger.debug('HomeTabStack', 'Navigating to HomeMain due to resetHomeScreenTrigger', { 
+        if (!isAtHomeMain) {
+          logger.debug('HomeTabStack', 'Navigating to HomeMain due to resetHomeScreenTrigger', {
             resetHomeScreenTrigger,
-            currentRoute: currentRouteName,
             mode
           });
-          
-          // Use CommonActions.reset to reset the stack to HomeMain
-          // This ensures we pop all screens and go back to HomeMain
+
+          // Use navigate('HomeMain') which will pop back to HomeMain if it's in the stack
+          // This avoids "Action RESET not handled" errors
           try {
-            (navigation as any).dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [{ name: 'HomeMain' }],
-              })
-            );
-            logger.debug('HomeTabStack', 'Successfully reset to HomeMain');
-          } catch (resetError) {
-            logger.error('HomeTabStack', 'Error resetting to HomeMain', { resetError });
-            // Fallback: try to navigate directly
-            try {
-              (navigation as any).navigate('HomeMain');
-            } catch (navError) {
-              logger.error('HomeTabStack', 'Fallback navigation also failed', { navError });
-            }
+            (navigation as any).navigate('HomeMain');
+            logger.debug('HomeTabStack', 'Successfully navigated to HomeMain');
+          } catch (navError) {
+            logger.error('HomeTabStack', 'Navigation to HomeMain failed', { navError });
           }
         } else {
           // Already on HomeMain - just log that we're refreshing
-          logger.debug('HomeTabStack', 'Already on HomeMain, trigger just refreshes the screen', { 
+          logger.debug('HomeTabStack', 'Already on HomeMain, trigger just refreshes the screen', {
             resetHomeScreenTrigger,
             mode
           });
@@ -129,8 +143,8 @@ export default function HomeTabStack(): React.ReactElement {
   }, [resetHomeScreenTrigger, navigation, mode]);
 
   // Determine initial route based on web mode
-  const initialRouteName = (typeof window !== 'undefined' && mode === 'site') 
-    ? "LandingSiteScreen" 
+  const initialRouteName = (typeof window !== 'undefined' && mode === 'site')
+    ? "LandingSiteScreen"
     : "HomeMain";
 
   logger.debug('HomeTabStack', 'Rendering with initial route', { initialRouteName, mode });
@@ -141,7 +155,7 @@ export default function HomeTabStack(): React.ReactElement {
     // Show top bar if user is authenticated (navigated from within app)
     const isLandingScreen = route.name === 'LandingSiteScreen';
     const shouldHideTopBarForLanding = isLandingScreen && !(isAuthenticated || isGuestMode);
-    
+
     return {
       headerShown: true,
       header: () => (
@@ -153,7 +167,7 @@ export default function HomeTabStack(): React.ReactElement {
       ),
       // Fix for aria-hidden warning: prevent focus on inactive screens
       // detachInactiveScreens already handles this, but we keep cardStyle for web compatibility
-      cardStyle: Platform.OS === 'web' ? { 
+      cardStyle: Platform.OS === 'web' ? {
         // On web, ensure inactive screens don't interfere with focus
         // This prevents elements in hidden screens from receiving focus
       } : undefined,

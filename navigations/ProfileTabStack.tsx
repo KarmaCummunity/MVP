@@ -34,6 +34,7 @@ type ProfileTabStackParamList = {
   LandingSiteScreen: undefined;
   DiscoverPeopleScreen: undefined;
   EditProfileScreen: undefined;
+  FollowersScreen: { userId: string; type: 'followers' | 'following'; title?: string };
 };
 
 const Stack = createStackNavigator<ProfileTabStackParamList>();
@@ -55,7 +56,7 @@ export default function ProfileTabStack(): React.ReactElement {
         header: () => <TopBarNavigator navigation={navigation as any} />,
         // Fix for aria-hidden warning: prevent focus on inactive screens
         // detachInactiveScreens already handles this, but we keep cardStyle for web compatibility
-        cardStyle: Platform.OS === 'web' ? { 
+        cardStyle: Platform.OS === 'web' ? {
           // On web, ensure inactive screens don't interfere with focus
           // This prevents elements in hidden screens from receiving focus
         } : undefined,
@@ -71,6 +72,7 @@ export default function ProfileTabStack(): React.ReactElement {
       <Stack.Screen name="LandingSiteScreen" component={LandingSiteScreen} />
       <Stack.Screen name="DiscoverPeopleScreen" component={DiscoverPeopleScreen} />
       <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} />
+      <Stack.Screen name="FollowersScreen" component={require('../screens/FollowersScreen').default} />
     </Stack.Navigator>
   );
 }

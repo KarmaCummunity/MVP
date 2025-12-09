@@ -22,6 +22,7 @@ export const DB_COLLECTIONS = {
   ORGANIZATIONS: 'organizations',
   ORG_APPLICATIONS: 'org_applications',
   ANALYTICS: 'analytics',
+  LINKS: 'links',
 } as const;
 
 export type DBCollectionValue = typeof DB_COLLECTIONS[keyof typeof DB_COLLECTIONS];
