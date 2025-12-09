@@ -1327,11 +1327,18 @@ const localStyles = StyleSheet.create({
       backgroundColor: colors.pink,
       borderWidth: 2,
       borderColor: '#9C1B5E',
-      shadowColor: '#000',
-      shadowOpacity: 0.08,
-      shadowRadius: 4,
-      shadowOffset: { width: 0, height: 2 },
       elevation: 2,
+      ...Platform.select({
+        web: {
+          boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.08)',
+        },
+        default: {
+          shadowColor: '#000',
+          shadowOpacity: 0.08,
+          shadowRadius: 4,
+          shadowOffset: { width: 0, height: 2 },
+        },
+      }),
     },
     sliderThumbInner: {
       width: 12,

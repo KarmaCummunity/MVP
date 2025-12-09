@@ -67,17 +67,19 @@ const LoginSidePanel: React.FC<LoginSidePanelProps> = ({
 
   // Animation effects
   useEffect(() => {
+    // useNativeDriver is not supported on Web
+    const useNativeDriver = Platform.OS !== 'web';
     if (visible) {
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 1,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver,
         }),
         Animated.timing(overlayAnim, {
           toValue: 1,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver,
         }),
       ]).start();
     } else {
@@ -85,12 +87,12 @@ const LoginSidePanel: React.FC<LoginSidePanelProps> = ({
         Animated.timing(slideAnim, {
           toValue: 0,
           duration: 250,
-          useNativeDriver: true,
+          useNativeDriver,
         }),
         Animated.timing(overlayAnim, {
           toValue: 0,
           duration: 250,
-          useNativeDriver: true,
+          useNativeDriver,
         }),
       ]).start();
     }
@@ -381,14 +383,21 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: colors.backgroundPrimary,
     zIndex: 1001,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: -2,
-      height: 0,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
     elevation: 10,
+    ...Platform.select({
+      web: {
+        boxShadow: '-2px 0px 10px rgba(0, 0, 0, 0.25)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: {
+          width: -2,
+          height: 0,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+      },
+    }),
   },
   header: {
     flexDirection: 'row',

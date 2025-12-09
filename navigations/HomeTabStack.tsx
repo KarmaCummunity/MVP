@@ -5,7 +5,7 @@
 // - Screens: HomeMain (HomeScreen), ChatList, ChatDetail, Notifications, About, Settings, Bookmarks, UserProfile, Followers, PostsReels (modal), WebView.
 // - Params of interest: `hideTopBar`, `showPosts` passed by HomeScreen to control header and content.
 // - External deps: react-navigation stack, TopBarNavigator wrapper.
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useFocusEffect, useNavigation, CommonActions } from '@react-navigation/native';
@@ -52,7 +52,7 @@ const Stack = createStackNavigator<HomeTabStackParamList>();
 export default function HomeTabStack(): React.ReactElement {
   const { mode } = useWebMode();
   const navigation = useNavigation();
-  const { resetHomeScreenTrigger } = useUser();
+  const { resetHomeScreenTrigger, isAuthenticated, isGuestMode } = useUser();
   
   // Get the stack navigator reference - useNavigation() returns parent, so we need to get the stack itself
   // We'll use a ref to store the stack navigator when it's available
@@ -135,27 +135,37 @@ export default function HomeTabStack(): React.ReactElement {
 
   logger.debug('HomeTabStack', 'Rendering with initial route', { initialRouteName, mode });
 
+  // Memoize screenOptions to ensure it updates when auth state changes
+  const screenOptions = useCallback(({ navigation, route }: any) => {
+    // For LandingSiteScreen, hide top bar if user is not authenticated (initial route in site mode)
+    // Show top bar if user is authenticated (navigated from within app)
+    const isLandingScreen = route.name === 'LandingSiteScreen';
+    const shouldHideTopBarForLanding = isLandingScreen && !(isAuthenticated || isGuestMode);
+    
+    return {
+      headerShown: true,
+      header: () => (
+        <TopBarNavigator
+          navigation={navigation as any}
+          hideTopBar={shouldHideTopBarForLanding || (route?.params as any)?.hideTopBar === true}
+          showPosts={(route?.params as any)?.showPosts === true}
+        />
+      ),
+      // Fix for aria-hidden warning: prevent focus on inactive screens
+      // detachInactiveScreens already handles this, but we keep cardStyle for web compatibility
+      cardStyle: Platform.OS === 'web' ? { 
+        // On web, ensure inactive screens don't interfere with focus
+        // This prevents elements in hidden screens from receiving focus
+      } : undefined,
+    };
+  }, [isAuthenticated, isGuestMode]);
+
   return (
     <Stack.Navigator
       id="HomeTabStack"
       initialRouteName={initialRouteName as keyof HomeTabStackParamList}
       detachInactiveScreens={true}
-      screenOptions={({ navigation, route }) => ({
-        headerShown: true,
-        header: () => (
-          <TopBarNavigator
-            navigation={navigation as any}
-            hideTopBar={(route?.params as any)?.hideTopBar === true}
-            showPosts={(route?.params as any)?.showPosts === true}
-          />
-        ),
-        // Fix for aria-hidden warning: prevent focus on inactive screens
-        // detachInactiveScreens already handles this, but we keep cardStyle for web compatibility
-        cardStyle: Platform.OS === 'web' ? { 
-          // On web, ensure inactive screens don't interfere with focus
-          // This prevents elements in hidden screens from receiving focus
-        } : undefined,
-      })}
+      screenOptions={screenOptions}
     >
       <Stack.Screen name="HomeMain" component={HomeScreen} />
       <Stack.Screen name="LandingSiteScreen" component={LandingSiteScreen} />

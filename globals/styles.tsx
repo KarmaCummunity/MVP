@@ -69,10 +69,12 @@ export const createShadowStyle = (
 ) => {
   if (Platform.OS === 'web') {
     const rgbaColor = colorToRgba(shadowColor, shadowOpacity);
+    // On web, only return boxShadow to avoid deprecated shadow* property warnings
     return {
       boxShadow: `${shadowOffset.width}px ${shadowOffset.height}px ${shadowRadius}px ${rgbaColor}`,
     } as any; // TODO: Replace any with proper web style type
   }
+  // On native platforms, use shadow* properties
   return {
     shadowColor,
     shadowOffset,
@@ -231,7 +233,18 @@ export const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 10,
-    ...createShadowStyle(colors.black, { width: 0, height: 2 }, 0.1, 3),
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
+      },
+      default: {
+        shadowColor: colors.black,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 3,
+      },
+    }),
   },
   /**
    * Text style for recent buttons.
@@ -273,7 +286,18 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
     margin: 10,
-    ...createShadowStyle(colors.black, { width: 0, height: 2 }, 0.1, 3),
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
+      },
+      default: {
+        shadowColor: colors.black,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 3,
+      },
+    }),
   },
   /**
    * Text style for category buttons, centered.
@@ -330,7 +354,18 @@ export const styles = StyleSheet.create({
     marginTop: -30,
     borderWidth: 4,
     borderColor: colors.legacyLightGray, // Match screen background color
-    ...createShadowStyle(colors.black, { width: 0, height: 4 }, 0.2, 5),
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 5px rgba(0, 0, 0, 0.2)',
+      },
+      default: {
+        shadowColor: colors.black,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+        elevation: 5,
+      },
+    }),
   },
   /**
    * Icon style for the center icon in the bottom navigation.
@@ -475,7 +510,18 @@ export const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 10,
     alignItems: 'center',
-    ...createShadowStyle(colors.black, { width: 0, height: 2 }, 0.1, 3),
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
+      },
+      default: {
+        shadowColor: colors.black,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 3,
+      },
+    }),
   },
   /**
    * Style for images within cards, circular and with left margin.

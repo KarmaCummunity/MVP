@@ -13,6 +13,7 @@ import {
   TouchableWithoutFeedback,
   GestureResponderEvent,
   StatusBar,
+  Platform,
 } from "react-native";
 import Animated, {
   useSharedValue,
@@ -445,11 +446,18 @@ const localStyles = StyleSheet.create({
     backgroundColor: colors.backgroundSecondary,
     borderBottomLeftRadius: 25,
     borderBottomRightRadius: 25,
-    shadowColor: colors.shadowMedium,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
     elevation: 5,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+      },
+      default: {
+        shadowColor: colors.shadowMedium,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+    }),
   },
   title: {
     fontSize: FontSizes.heading1,

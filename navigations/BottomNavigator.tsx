@@ -68,6 +68,8 @@ const DonationsPulseIcon: React.FC<{ color: string; size: number }> = ({ color, 
   const ring3 = React.useRef(new Animated.Value(0)).current;
 
   const runPulse = React.useCallback((anim: Animated.Value, delayMs: number) => {
+    // useNativeDriver is not supported on Web, so we check the platform
+    const useNativeDriver = Platform.OS !== 'web';
     return Animated.loop(
       Animated.sequence([
         Animated.delay(delayMs),
@@ -75,12 +77,12 @@ const DonationsPulseIcon: React.FC<{ color: string; size: number }> = ({ color, 
           toValue: 1,
           duration: 2000,
           easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
+          useNativeDriver,
         }),
         Animated.timing(anim, {
           toValue: 0,
           duration: 0,
-          useNativeDriver: true,
+          useNativeDriver,
         }),
       ])
     );
@@ -119,7 +121,6 @@ const DonationsPulseIcon: React.FC<{ color: string; size: number }> = ({ color, 
 
   return (
     <View style={[styles.pulseContainer, { width: containerSize, height: containerSize }]}
-      pointerEvents="none"
       accessibilityElementsHidden>
       <Animated.View style={[styles.ring, ringBaseStyle, ringStyleFrom(ring1)]} />
       <Animated.View style={[styles.ring, ringBaseStyle, ringStyleFrom(ring2)]} />
@@ -133,6 +134,7 @@ const styles = StyleSheet.create({
   pulseContainer: {
     alignItems: "center",
     justifyContent: "center",
+    pointerEvents: 'none',
   },
   ring: {
     position: "absolute",

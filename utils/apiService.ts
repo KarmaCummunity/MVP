@@ -116,23 +116,70 @@ class ApiService {
       console.log(`🌐 API Request: ${config.method || 'GET'} ${url}`);
 
       const response = await fetch(url, config);
-      const data = await response.json();
+      
+      // Handle cases where response might not be JSON (404 with HTML response)
+      let data: any;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          console.error(`❌ Failed to parse JSON response:`, jsonError);
+          data = { error: 'Invalid JSON response from server' };
+        }
+      } else {
+        // Non-JSON response (likely 404 HTML page)
+        const text = await response.text();
+        console.warn(`⚠️ Non-JSON response received:`, {
+          status: response.status,
+          contentType,
+          textPreview: text.substring(0, 200),
+        });
+        data = {
+          message: text.includes('Cannot') ? text : `Cannot ${config.method || 'GET'} ${endpoint}`,
+          error: 'Not Found',
+          statusCode: response.status,
+        };
+      }
 
       if (!response.ok) {
         console.error(`❌ API Error: ${response.status}`, data);
+        
+        // Provide more helpful error messages for common issues
+        if (response.status === 404) {
+          return {
+            success: false,
+            error: data.message || data.error || `Endpoint not found: ${endpoint}. Check if the server route is configured correctly.`,
+            details: `HTTP ${response.status}: ${data.statusCode ? `Status ${data.statusCode}` : 'Not Found'}`,
+          };
+        }
+        
         return {
           success: false,
-          error: data.message || data.error || 'Network error',
+          error: data.message || data.error || `HTTP ${response.status} error`,
+          details: response.statusText,
         };
       }
 
       console.log(`✅ API Response: ${endpoint}`, data);
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`❌ API Network Error:`, error);
+      
+      // Check if it's a network error or CORS error
+      const errorMessage = error.message || 'Unknown error';
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        return {
+          success: false,
+          error: 'Cannot connect to server. Please check your network connection and ensure the server is running.',
+          details: errorMessage,
+        };
+      }
+      
       return {
         success: false,
         error: 'Network error - please check your connection',
+        details: errorMessage,
       };
     }
   }

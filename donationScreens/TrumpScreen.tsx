@@ -666,7 +666,7 @@ export default function TrumpScreen({
                     returnKeyType="done"
                     blurOnSubmit={false}
                   />
-                  <Text pointerEvents="none" style={localStyles.inputAdornment}>₪</Text>
+                  <Text style={localStyles.inputAdornment}>₪</Text>
                 </View>
               )}
             </View>
@@ -944,6 +944,7 @@ const localStyles = StyleSheet.create({
     right: 12,
     color: colors.textSecondary,
     fontSize: FontSizes.body,
+    pointerEvents: 'none',
   },
   counterRow: {
     flexDirection: 'row',

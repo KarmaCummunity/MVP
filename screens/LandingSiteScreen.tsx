@@ -34,6 +34,40 @@ const isTablet = SCREEN_WIDTH > 768;
 const isMobileWeb = isWeb && SCREEN_WIDTH <= 768;
 const showFloatingMenu = isWeb; // Show on all web screens, including mobile
 
+// Helper function to create shadow styles with Platform.select to avoid deprecated warnings
+const createShadowStyle = (
+  shadowColor: string,
+  shadowOffset: { width: number; height: number },
+  shadowOpacity: number,
+  shadowRadius: number,
+  elevation: number = Math.max(1, Math.round(shadowRadius))
+) => {
+  const rgbaColor = shadowColor.startsWith('rgba') 
+    ? shadowColor 
+    : shadowColor.startsWith('#')
+    ? (() => {
+        const hex = shadowColor.slice(1);
+        const r = parseInt(hex.length === 3 ? hex[0] + hex[0] : hex.slice(0, 2), 16);
+        const g = parseInt(hex.length === 3 ? hex[1] + hex[1] : hex.slice(2, 4), 16);
+        const b = parseInt(hex.length === 3 ? hex[2] + hex[2] : hex.slice(4, 6), 16);
+        return `rgba(${r}, ${g}, ${b}, ${shadowOpacity})`;
+      })()
+    : `rgba(0, 0, 0, ${shadowOpacity})`;
+  
+  return Platform.select({
+    web: {
+      boxShadow: `${shadowOffset.width}px ${shadowOffset.height}px ${shadowRadius}px ${rgbaColor}`,
+    },
+    default: {
+      shadowColor,
+      shadowOffset,
+      shadowOpacity,
+      shadowRadius,
+      elevation,
+    },
+  });
+};
+
 const getSectionElement = (sectionId: string): HTMLElement | null => {
   if (!isWeb || typeof document === 'undefined') {
     return null;
@@ -269,7 +303,6 @@ const HeroSection: React.FC<{ onDonate: () => void }> = ({ onDonate }) => {
             <Text style={styles.subtitle}>רשת חברתית שמחברת בין אנשים שצריכים עזרה, לאנשים שרוצים לעזור. פשוט, שקוף ומהלב.</Text>
             
             <View style={styles.heroMottosContainer}>
-            
               <View style={styles.mottoItem}>
                 <Ionicons name="sparkles" size={isMobileWeb ? 18 : 24} color={colors.accent} style={styles.mottoItemIcon} />
                 <Text style={styles.mottoSubtitle}>השאריות של האחד יכול להיות האוצר של מישהו אחר</Text>
@@ -1170,6 +1203,8 @@ const FAQItem: React.FC<{ question: string; answer: string; icon?: string }> = (
 
   const toggleExpanded = () => {
     const toValue = isExpanded ? 0 : 1;
+    // useNativeDriver is not supported on Web
+    const useNativeDriver = Platform.OS !== 'web';
     Animated.parallel([
       Animated.timing(animatedHeight, {
         toValue,
@@ -1179,7 +1214,7 @@ const FAQItem: React.FC<{ question: string; answer: string; icon?: string }> = (
       Animated.timing(animatedRotation, {
         toValue,
         duration: 300,
-        useNativeDriver: true,
+        useNativeDriver,
       }),
     ]).start();
     setIsExpanded(!isExpanded);
@@ -1342,18 +1377,6 @@ const LandingSiteScreen: React.FC = () => {
   const scrollViewRef = useRef<ScrollView | null>(null);
   const scrollSpyObserverRef = useRef<IntersectionObserver | null>(null);
   const observedElementsRef = useRef<Set<HTMLElement>>(new Set());
-  
-  // Ensure top bar and bottom bar are visible when this screen is focused
-  // This fixes the issue where bars disappear when navigating from TopBar's AboutButton
-  useFocusEffect(
-    useCallback(() => {
-      console.log('🏠 LandingSiteScreen - Screen focused, ensuring bars are visible');
-      navigation.setParams({
-        hideTopBar: false,
-        hideBottomBar: false,
-      });
-    }, [navigation])
-  );
   
   // Handle navigation to app mode
   const handleGoToApp = async () => {
@@ -1829,9 +1852,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: isMobileWeb ? 24 : (isWeb ? 32 : 36),
     fontStyle: 'italic',
-    textShadowColor: 'rgba(0, 0, 0, 0.1)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    ...Platform.select({
+      web: {
+        textShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
+      },
+      default: {
+        textShadowColor: 'rgba(0, 0, 0, 0.1)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 2,
+      },
+    }),
     flex: 1,
   },
   ctaRow: { 
@@ -1854,10 +1884,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.info,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 12,
-    elevation: 8,
+    ...createShadowStyle(colors.info, { width: 0, height: 8 }, 0.15, 12, 8),
   },
   primaryCtaText: { 
     color: '#fff', 
@@ -1877,11 +1904,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...createShadowStyle('#000', { width: 0, height: 4 }, 0.1, 8, 4),
   },
   secondaryCtaText: { 
     color: colors.info, 
@@ -1940,11 +1963,7 @@ const styles = StyleSheet.create({
     padding: isMobileWeb ? 16 : 28, 
     alignItems: 'center', 
     margin: isMobileWeb ? 4 : 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 6,
+    ...createShadowStyle('#000', { width: 0, height: 6 }, 0.1, 16, 6),
   },
   featureEmoji: { 
     fontSize: isMobileWeb ? 32 : 48, 
@@ -1991,11 +2010,7 @@ const styles = StyleSheet.create({
     borderColor: '#E6EEF9',
     marginBottom: isMobileWeb ? 8 : 12,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    ...createShadowStyle('#000', { width: 0, height: 2 }, 0.05, 4, 2),
   },
   faqQuestionRow: {
     flexDirection: 'row',
@@ -2046,11 +2061,7 @@ const styles = StyleSheet.create({
     padding: isMobileWeb ? 16 : 28, 
     alignItems: 'center', 
     margin: isMobileWeb ? 4 : 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 6,
+    ...createShadowStyle('#000', { width: 0, height: 6 }, 0.1, 16, 6),
   },
   stepTitle: { 
     marginTop: isMobileWeb ? 10 : 16, 
@@ -2079,11 +2090,7 @@ const styles = StyleSheet.create({
     borderWidth: 2, 
     borderColor: colors.info, 
     margin: isMobileWeb ? 3 : 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    ...createShadowStyle('#000', { width: 0, height: 2 }, 0.05, 4, 2),
   },
   valuePillText: { 
     color: colors.info, 
@@ -2108,11 +2115,7 @@ const styles = StyleSheet.create({
     borderRadius: isMobileWeb ? 16 : 20,
     padding: isMobileWeb ? 16 : 24,
     marginBottom: isMobileWeb ? 20 : 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    ...createShadowStyle('#000', { width: 0, height: 4 }, 0.1, 12, 4),
     borderWidth: 1,
     borderColor: '#F0F4F8',
     writingDirection: 'rtl',
@@ -2227,11 +2230,7 @@ const styles = StyleSheet.create({
     borderRadius: isMobileWeb ? 12 : 16, 
     minWidth: isMobileWeb ? 140 : 200, 
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 6,
+    ...createShadowStyle('#000', { width: 0, height: 6 }, 0.25, 10, 6),
   },
   contactButtonText: { 
     color: '#fff', 
@@ -2274,11 +2273,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF', 
     alignItems: 'center', 
     margin: isMobileWeb ? 4 : 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 6,
+    ...createShadowStyle('#000', { width: 0, height: 6 }, 0.1, 16, 6),
   },
   statIcon: {
     marginBottom: isMobileWeb ? 8 : 12,
@@ -2323,11 +2318,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF', 
     padding: isMobileWeb ? 16 : 28, 
     margin: isMobileWeb ? 4 : 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 6,
+    ...createShadowStyle('#000', { width: 0, height: 6 }, 0.1, 16, 6),
   },
   testimonialText: { 
     color: colors.textPrimary, 
@@ -2381,11 +2372,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#E6EEF9',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...createShadowStyle('#000', { width: 0, height: 4 }, 0.1, 8, 4),
     maxWidth: isMobileWeb ? '100%' : 400,
     alignSelf: 'center',
   },
@@ -2416,11 +2403,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E6EEF9',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...createShadowStyle('#000', { width: 0, height: 4 }, 0.1, 8, 4),
   },
   instagramEmbedContainer: {
     width: '100%',
@@ -2480,11 +2463,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     justifyContent: 'center', 
     gap: isMobileWeb ? 4 : 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    ...createShadowStyle('#000', { width: 0, height: 2 }, 0.05, 6, 2),
   },
   categoryText: { 
     fontWeight: '700', 
@@ -2512,11 +2491,7 @@ const styles = StyleSheet.create({
     borderRadius: isMobileWeb ? 12 : 20,
     borderWidth: 1,
     borderColor: '#E6EEF9',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
+    ...createShadowStyle('#000', { width: 0, height: 8 }, 0.15, 20, 10),
     zIndex: 1000,
     overflow: 'hidden',
   },
@@ -2530,11 +2505,7 @@ const styles = StyleSheet.create({
     borderRadius: isMobileWeb ? SCREEN_WIDTH * 0.025 : SCREEN_WIDTH * 0.015,
     borderWidth: 1,
     borderColor: '#E6EEF9',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    ...createShadowStyle('#000', { width: 0, height: 4 }, 0.15, 12, 8),
     zIndex: 1000,
     alignItems: 'center',
     justifyContent: 'center',
@@ -2658,11 +2629,7 @@ const styles = StyleSheet.create({
     padding: isMobileWeb ? 20 : 32,
     borderWidth: 1,
     borderColor: '#E6EEF9',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    ...createShadowStyle('#000', { width: 0, height: 4 }, 0.1, 12, 4),
     marginBottom: isMobileWeb ? 12 : 16,
   },
   problemIcon: {
@@ -2695,11 +2662,7 @@ const styles = StyleSheet.create({
     padding: isMobileWeb ? 24 : 40,
     borderWidth: 2,
     borderColor: colors.info,
-    shadowColor: colors.info,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 8,
+    ...createShadowStyle(colors.info, { width: 0, height: 8 }, 0.15, 16, 8),
     alignItems: 'center',
     marginBottom: isMobileWeb ? 20 : 32,
   },
@@ -2747,11 +2710,7 @@ const styles = StyleSheet.create({
     padding: isMobileWeb ? 20 : 28,
     borderWidth: 2,
     borderColor: colors.info,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    ...createShadowStyle('#000', { width: 0, height: 4 }, 0.1, 12, 4),
     gap: isMobileWeb ? 12 : 16,
   },
   githubLinkTextContainer: {
@@ -2791,11 +2750,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: isMobileWeb ? 12 : 16,
-    shadowColor: colors.info,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 6,
+    ...createShadowStyle(colors.info, { width: 0, height: 6 }, 0.15, 16, 6),
   },
   mottoIcon: {
     marginBottom: isMobileWeb ? 4 : 8,
@@ -2820,11 +2775,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    ...createShadowStyle('#000', { width: 0, height: 2 }, 0.2, 4, 4),
   },
   stepNumber: {
     fontSize: isMobileWeb ? 16 : 20,
@@ -2854,11 +2805,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: isTablet ? 800 : (isMobileWeb ? '95%' : 600),
     maxHeight: '85%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 15,
+    ...createShadowStyle('#000', { width: 0, height: 10 }, 0.3, 20, 15),
     overflow: 'hidden',
   },
   modalHeader: {
@@ -2985,11 +2932,7 @@ const styles = StyleSheet.create({
     borderRadius: isMobileWeb ? 20 : 28,
     width: '100%',
     maxWidth: isTablet ? 500 : (isMobileWeb ? '90%' : 450),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 15,
+    ...createShadowStyle('#000', { width: 0, height: 10 }, 0.3, 20, 15),
     overflow: 'hidden',
   },
   donationModalHeader: {
@@ -3059,11 +3002,7 @@ const styles = StyleSheet.create({
     paddingVertical: isMobileWeb ? 14 : 18,
     paddingHorizontal: isMobileWeb ? 16 : 20,
     borderRadius: isMobileWeb ? 12 : 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    ...createShadowStyle('#000', { width: 0, height: 4 }, 0.2, 8, 4),
   },
   donationButtonWhatsApp: {
     backgroundColor: '#25D366',
@@ -3098,11 +3037,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: isMobileWeb ? 24 : 32,
     borderRadius: isMobileWeb ? 12 : 16,
     marginTop: isMobileWeb ? 20 : 28,
-    shadowColor: colors.pink,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
+    ...createShadowStyle(colors.pink, { width: 0, height: 6 }, 0.3, 12, 6),
   },
   donationCtaButtonText: {
     color: '#fff',
@@ -3122,11 +3057,7 @@ const styles = StyleSheet.create({
     minWidth: isMobileWeb ? 140 : 200,
     marginBottom: isMobileWeb ? 16 : 20,
     alignSelf: 'center',
-    shadowColor: colors.pink,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
+    ...createShadowStyle(colors.pink, { width: 0, height: 6 }, 0.3, 10, 6),
   },
   donationCtaButtonTextTop: {
     color: '#fff',

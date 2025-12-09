@@ -85,7 +85,7 @@ const WebModeToggleOverlay: React.FC = () => {
   };
 
   return (
-    <View pointerEvents="box-none" style={containerStyle}>
+    <View style={containerStyle}>
       <TouchableOpacity onPress={handleToggle} activeOpacity={0.9} style={styles.wrapper}>
         <View style={styles.background}>
           <View style={[styles.segment, mode === 'site' ? styles.selected : styles.unselected]}>
@@ -107,6 +107,7 @@ const styles = StyleSheet.create({
     top: 8,
     right: 16,
     zIndex: 1000,
+    pointerEvents: 'box-none',
   },
   // App mode: positioned at top-right corner, above app content and top bar (persistent across all screens)
   containerApp: {
@@ -114,6 +115,7 @@ const styles = StyleSheet.create({
     top: 8,
     right: 16,
     zIndex: 9999, // Higher z-index to stay above top bar
+    pointerEvents: 'box-none',
   },
   wrapper: {
     borderRadius: 999,
