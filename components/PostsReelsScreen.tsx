@@ -384,15 +384,13 @@ const PostReelItem = ({ item }: { item: Item }) => {
 };
 
 interface PostsReelsScreenProps {
-  navigation?: any; // Optional navigation prop from parent
   onScroll?: (hide: boolean) => void;
   hideTopBar?: boolean;
   showTopBar?: boolean;
 }
 
-export default function PostsReelsScreen({ navigation: navProp, onScroll, hideTopBar = false, showTopBar = false }: PostsReelsScreenProps) {
-  const navigationHook = useNavigation();
-  const navigation = navProp || navigationHook; // Use prop if provided, otherwise use hook
+export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTopBar = false }: PostsReelsScreenProps) {
+  const navigation = useNavigation();
   console.log('📱 PostsReelsScreen - hideTopBar prop:', hideTopBar);
   const { selectedUser, isRealAuth } = useUser();
   const [realFeed, setRealFeed] = useState<Item[]>([]);
@@ -523,19 +521,6 @@ export default function PostsReelsScreen({ navigation: navProp, onScroll, hideTo
         })
       );
 
-      // Load Rides
-      let ridesList: any[] = [];
-      try {
-        const allRides = await db.listRides(selectedUser.id, { includePast: true });
-        if (feedMode === 'friends') {
-          ridesList = allRides.filter((r: any) => userIds.includes(r.driverId));
-        } else {
-          ridesList = allRides;
-        }
-      } catch (e) {
-        console.error("Error loading rides for feed", e);
-      }
-
       // Load items (dedicated items) for the feed
       // In discovery mode, get all available items
       // In friends mode, get items from followed users
@@ -577,10 +562,8 @@ export default function PostsReelsScreen({ navigation: navProp, onScroll, hideTo
         // Continue without items if there's an error
       }
 
-      // Collect all owner IDs from items AND rides and load their user data
+      // Collect all owner IDs from items and load their user data
       const itemOwnerIds = new Set<string>();
-
-      // From Items
       itemsList.forEach((item: any) => {
         const ownerId = item.owner_id || item.ownerId;
         if (ownerId && !userIdToUser[ownerId]) {
@@ -588,15 +571,7 @@ export default function PostsReelsScreen({ navigation: navProp, onScroll, hideTo
         }
       });
 
-      // From Rides
-      ridesList.forEach((ride: any) => {
-        const driverId = ride.driverId || ride.driver_id;
-        if (driverId && !userIdToUser[driverId]) {
-          itemOwnerIds.add(driverId);
-        }
-      });
-
-      // Load user data for item owners and ride drivers that we don't have yet
+      // Load user data for item owners that we don't have yet
       if (itemOwnerIds.size > 0) {
         await Promise.all(
           Array.from(itemOwnerIds).map(async (uid) => {
@@ -653,18 +628,85 @@ export default function PostsReelsScreen({ navigation: navProp, onScroll, hideTo
             return;
           }
 
+          // Log what we get from API for debugging
+          logger.debug('PostsReelsScreen', 'Processing item from API', {
+            itemId: item.id,
+            ownerId,
+            ownerName: item.owner_name,
+            ownerAvatar: item.owner_avatar,
+            hasOwnerName: !!item.owner_name,
+            ownerNameType: typeof item.owner_name
+          });
+
           // Get or create user object
           let user = userIdToUser[ownerId];
 
-          // Determine final user name
-          let finalUserName: string | null = null;
+          // Update user with API data if available
           if (item.owner_name && item.owner_name.trim() && item.owner_name !== ownerId) {
-            finalUserName = item.owner_name;
-          } else if (user && user.name && user.name !== ownerId && user.name.trim()) {
-            finalUserName = user.name;
+            // API provided a valid name - use it
+            if (!user) {
+              user = {
+                id: ownerId,
+                name: item.owner_name,
+                avatar: item.owner_avatar || `https://i.pravatar.cc/150?u=${ownerId}`,
+                karmaPoints: 0
+              };
+              userIdToUser[ownerId] = user;
+            } else {
+              // Update existing user with API data
+              user.name = item.owner_name;
+              if (item.owner_avatar && item.owner_avatar.trim() && !item.owner_avatar.includes('pravatar')) {
+                user.avatar = item.owner_avatar;
+              }
+            }
+          } else if (!user) {
+            // No user data and no valid owner_name from API - create fallback
+            user = {
+              id: ownerId,
+              name: null, // Never use ID as name
+              avatar: item.owner_avatar || `https://i.pravatar.cc/150?u=${ownerId}`,
+              karmaPoints: 0
+            };
+            userIdToUser[ownerId] = user;
           }
 
-          const finalUserAvatar = (item.owner_avatar && item.owner_avatar.trim()) ? item.owner_avatar : (user?.avatar || `https://i.pravatar.cc/150?u=${ownerId}`);
+          // Determine final user name - MUST be the actual name, NOT the ID
+          // Priority: 1. owner_name from API (always prefer this), 2. user.name from cache, 3. null as last resort (never use ID)
+          let finalUserName: string | null;
+
+          if (item.owner_name && item.owner_name.trim() && item.owner_name !== ownerId) {
+            // API provided a valid name - ALWAYS use it
+            finalUserName = item.owner_name;
+          } else if (user && user.name && user.name !== ownerId && user.name.trim()) {
+            // Use cached user name if it's valid (not the ID)
+            finalUserName = user.name;
+          } else {
+            // No valid name available - use null instead of ID
+            logger.warn('PostsReelsScreen', 'No valid user name found, will display "משתמש"', {
+              itemId: item.id,
+              ownerId,
+              ownerName: item.owner_name,
+              cachedUserName: user?.name
+            });
+            finalUserName = null; // Never use ID as name - will display "משתמש" in UI
+          }
+
+          // Determine final user avatar
+          const finalUserAvatar = (item.owner_avatar && item.owner_avatar.trim() && !item.owner_avatar.includes('pravatar'))
+            ? item.owner_avatar
+            : (user && user.avatar && !user.avatar.includes('pravatar'))
+              ? user.avatar
+              : `https://i.pravatar.cc/150?u=${ownerId}`;
+
+          logger.debug('PostsReelsScreen', 'Final user data for feed item', {
+            itemId: item.id,
+            ownerId,
+            finalUserName,
+            finalUserAvatar,
+            ownerNameFromAPI: item.owner_name,
+            userNameFromCache: user?.name,
+            source: item.owner_name ? 'API' : (user?.name && user.name !== ownerId ? 'cache' : 'fallback')
+          });
 
           const feedItem: Item = {
             id: `item_${item.id}`,
@@ -673,10 +715,10 @@ export default function PostsReelsScreen({ navigation: navProp, onScroll, hideTo
             description: item.description || `קטגוריה: ${item.category || 'כללי'}`,
             thumbnail: item.image_base64 && item.image_base64.length > 100
               ? `data:image/jpeg;base64,${item.image_base64}`
-              : '',
+              : '', // לא להציג תמונת placeholder כשאין תמונה או אם ה-base64 פגום
             user: {
-              id: ownerId,
-              name: finalUserName,
+              id: ownerId, // Always use ownerId as the user id (for navigation to profile)
+              name: finalUserName && finalUserName !== ownerId ? finalUserName : null, // Never use ID as name
               avatar: finalUserAvatar,
               karmaPoints: user?.karmaPoints || 0,
             },
@@ -688,46 +730,6 @@ export default function PostsReelsScreen({ navigation: navProp, onScroll, hideTo
           merged.push(feedItem);
         } catch (error) {
           logger.error('PostsReelsScreen', 'Error converting item to feed item', { error, item });
-        }
-      });
-
-      // Add rides to feed
-      ridesList.forEach((ride: any) => {
-        try {
-          const driverId = ride.driverId || ride.driver_id || 'unknown';
-          let user = userIdToUser[driverId];
-
-          // Determine final user name for ride
-          let finalDriverName: string | null = null;
-          if (ride.driverName && ride.driverName !== driverId && ride.driverName !== 'Driver') {
-            finalDriverName = ride.driverName;
-          } else if (user && user.name && user.name !== driverId && user.name.trim()) {
-            finalDriverName = user.name;
-          }
-
-          // If still no name, and we have a user object, try getting it again? 
-          // (Logic handled by userIdToUser population above)
-
-          const feedItem: Item = {
-            id: `ride_${ride.id}`,
-            type: 'post',
-            title: `🚗 טרמפ: ${ride.from} ➝ ${ride.to}`,
-            description: `📅 ${ride.date} @ ${ride.time}\n💺 מושבים: ${ride.seats}\n💰 מחיר: ₪${ride.price}\n\n${ride.description || ''}`,
-            thumbnail: '', // Could be a map image or generic
-            user: {
-              id: driverId,
-              name: finalDriverName,
-              avatar: user?.avatar || `https://i.pravatar.cc/150?u=${driverId}`,
-              karmaPoints: 0
-            },
-            likes: 0,
-            comments: 0,
-            isLiked: false,
-            timestamp: ride.timestamp || new Date().toISOString()
-          };
-          merged.push(feedItem);
-        } catch (e) {
-          console.error('Error mapping ride to feed item', e);
         }
       });
 
@@ -827,13 +829,24 @@ export default function PostsReelsScreen({ navigation: navProp, onScroll, hideTo
         <TouchableOpacity
           style={styles.statsButton}
           onPress={() => {
-            logger.debug('PostsReelsScreen', 'Stats button pressed');
-            try {
-              navigation.navigate('CommunityStatsScreen');
-              logger.debug('PostsReelsScreen', 'Navigation to CommunityStatsScreen succeeded');
-            } catch (error) {
-              logger.error('PostsReelsScreen', 'Failed to navigate to CommunityStatsScreen', { error });
-              Alert.alert('שגיאה', 'לא ניתן לפתוח את מסך הסטטיסטיקות');
+            // Optimized navigation logic
+            const success = (navigation as any).navigate('CommunityStatsScreen');
+
+            if (!success) {
+              // Try referencing the stack directly
+              try {
+                (navigation as any).navigate('HomeTabStack', { screen: 'CommunityStatsScreen' });
+              } catch (e) {
+                // Try getting parent navigator
+                const parent = (navigation as any).getParent();
+                if (parent) {
+                  try {
+                    parent.navigate('CommunityStatsScreen');
+                  } catch (e2) {
+                    console.error("Navigation failed", e2);
+                  }
+                }
+              }
             }
           }}
           activeOpacity={0.8}

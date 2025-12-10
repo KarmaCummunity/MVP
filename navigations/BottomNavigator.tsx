@@ -44,7 +44,7 @@ import { logger } from "../utils/loggerService";
 // Define the type for your bottom tab navigator's route names and their parameters.
 export type BottomTabNavigatorParamList = {
   DonationsTab: undefined;
-  HomeScreen: { screen?: string } | undefined; // Allow nested navigation params
+  HomeScreen: undefined;
   SearchTab: undefined;
   ProfileScreen: undefined;
   AdminTab: undefined;
@@ -68,8 +68,6 @@ const DonationsPulseIcon: React.FC<{ color: string; size: number }> = ({ color, 
   const ring3 = React.useRef(new Animated.Value(0)).current;
 
   const runPulse = React.useCallback((anim: Animated.Value, delayMs: number) => {
-    // useNativeDriver is not supported on Web, so we check the platform
-    const useNativeDriver = Platform.OS !== 'web';
     return Animated.loop(
       Animated.sequence([
         Animated.delay(delayMs),
@@ -77,12 +75,12 @@ const DonationsPulseIcon: React.FC<{ color: string; size: number }> = ({ color, 
           toValue: 1,
           duration: 2000,
           easing: Easing.out(Easing.quad),
-          useNativeDriver,
+          useNativeDriver: true,
         }),
         Animated.timing(anim, {
           toValue: 0,
           duration: 0,
-          useNativeDriver,
+          useNativeDriver: true,
         }),
       ])
     );
@@ -121,6 +119,7 @@ const DonationsPulseIcon: React.FC<{ color: string; size: number }> = ({ color, 
 
   return (
     <View style={[styles.pulseContainer, { width: containerSize, height: containerSize }]}
+      pointerEvents="none"
       accessibilityElementsHidden>
       <Animated.View style={[styles.ring, ringBaseStyle, ringStyleFrom(ring1)]} />
       <Animated.View style={[styles.ring, ringBaseStyle, ringStyleFrom(ring2)]} />
@@ -134,7 +133,6 @@ const styles = StyleSheet.create({
   pulseContainer: {
     alignItems: "center",
     justifyContent: "center",
-    pointerEvents: 'none',
   },
   ring: {
     position: "absolute",
@@ -272,47 +270,35 @@ export default function BottomNavigator(): React.ReactElement {
                 const stackState = currentRoute?.state;
                 const stackRoute = stackState?.routes?.[stackState?.index || 0];
                 const innerRouteName = stackRoute?.name;
-
+                
                 logger.debug('BottomNavigator', 'Already on HomeScreen, checking inner route', { innerRouteName });
-
+                
                 if (innerRouteName === 'HomeMain') {
                   // Already on HomeMain - just refresh without navigating
+                  // This prevents opening ChatListScreen or other screens
                   logger.debug('BottomNavigator', 'Already on HomeMain, just refreshing');
                   resetHomeScreen();
+                  // Don't navigate - just let the reset trigger refresh the screen
                   e.preventDefault();
                 } else {
-                  // On a different screen inside HomeTabStack - navigate back to HomeMain
-                  logger.debug('BottomNavigator', 'On different screen in HomeTabStack, navigating to HomeMain', {
-                    currentScreen: innerRouteName
+                  // On a different screen inside HomeTabStack - reset to HomeMain
+                  logger.debug('BottomNavigator', 'On different screen in HomeTabStack, resetting to HomeMain', { 
+                    currentScreen: innerRouteName 
                   });
-                  e.preventDefault(); // Prevent default tab press
-
-                  // Navigate to HomeMain in the HomeTabStack
-                  navigation.navigate('HomeScreen', {
-                    screen: 'HomeMain',
-                  });
-
-                  // Also trigger reset for good measure
+                  // Use resetHomeScreen trigger which will be handled by HomeTabStack
+                  // This is the most reliable way to reset the stack to HomeMain
                   resetHomeScreen();
+                  e.preventDefault(); // Prevent default navigation since we handled it
                 }
               } else {
-                // Switching tabs - navigate to HomeMain directly
-                logger.debug('BottomNavigator', 'Switching to HomeScreen from another tab');
-                e.preventDefault();
-                navigation.navigate('HomeScreen', {
-                  screen: 'HomeMain',
-                });
+                // Switching tabs - just navigate
+                logger.debug('BottomNavigator', 'Switching to HomeScreen');
+                (navigation as any).navigate('HomeScreen');
               }
             } catch (error) {
               logger.error('BottomNavigator', 'Error handling HomeScreen tab press', { error });
-              // Fallback: navigate to HomeMain
-              try {
-                navigation.navigate('HomeScreen', {
-                  screen: 'HomeMain',
-                });
-              } catch (fallbackError) {
-                logger.error('BottomNavigator', 'Fallback navigation also failed', { fallbackError });
-              }
+              // Fallback: standard navigation
+              (navigation as any).navigate('HomeScreen');
             }
           },
         })}

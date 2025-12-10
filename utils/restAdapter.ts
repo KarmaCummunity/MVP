@@ -93,17 +93,6 @@ export class RestAdapter {
     return this.http<T[]>(`/api/collections/${collection}?userId=${encodeURIComponent(userId)}`);
   }
 
-  async listAll<T>(collection: string): Promise<T[]> {
-    const url = `/api/collections/${collection}?userId=all`;
-    console.log(`🔗 RestAdapter - listAll for ${collection}, URL: ${url}`);
-    const result = await this.http<T[]>(url);
-    console.log(`🔗 RestAdapter - listAll received ${Array.isArray(result) ? result.length : 'non-array'} items`);
-    if (Array.isArray(result) && result.length > 0) {
-      console.log(`🔗 RestAdapter - First item:`, JSON.stringify(result[0], null, 2));
-    }
-    return result;
-  }
-
   // Auth endpoints
   async checkEmail(email: string): Promise<{ exists: boolean }> {
     return this.http(`/auth/check-email?email=${encodeURIComponent(email)}`);

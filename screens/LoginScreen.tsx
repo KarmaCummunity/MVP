@@ -154,11 +154,9 @@ export default function LoginScreen() {
 
   const toggleOrgLogin = () => {
     const next = !orgLoginOpen;
-    // useNativeDriver is not supported on Web
-    const useNativeDriver = Platform.OS !== 'web';
     if (next && emailLoginOpen) {
       setEmailLoginOpen(false);
-      Animated.timing(emailOpenAnim, { toValue: 0, duration: 200, useNativeDriver }).start();
+      Animated.timing(emailOpenAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
       resetEmailState();
     }
     setOrgLoginOpen(next);
@@ -166,17 +164,15 @@ export default function LoginScreen() {
     Animated.timing(orgOpenAnim, {
       toValue: next ? 1 : 0,
       duration: 260,
-      useNativeDriver,
+      useNativeDriver: Platform.OS !== 'web',
     }).start();
   };
 
   const toggleEmailLogin = () => {
     const next = !emailLoginOpen;
-    // useNativeDriver is not supported on Web
-    const useNativeDriver = Platform.OS !== 'web';
     if (next && orgLoginOpen) {
       setOrgLoginOpen(false);
-      Animated.timing(orgOpenAnim, { toValue: 0, duration: 200, useNativeDriver }).start();
+      Animated.timing(orgOpenAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
       resetOrgState();
     }
     setEmailLoginOpen(next);
@@ -184,7 +180,7 @@ export default function LoginScreen() {
     Animated.timing(emailOpenAnim, {
       toValue: next ? 1 : 0,
       duration: 260,
-      useNativeDriver,
+      useNativeDriver: Platform.OS !== 'web',
     }).start();
   };
 
@@ -470,7 +466,7 @@ export default function LoginScreen() {
               {/* Mode Toggle Button */}
               <View style={styles.topButtonsContainer}>
                 {/* Language switcher */}
-                <View style={styles.languageButtonContainer}>
+                <View pointerEvents="box-none" style={styles.languageButtonContainer}>
                   <TouchableOpacity
                     style={styles.languageButton}
                     activeOpacity={0.8}
@@ -516,6 +512,7 @@ export default function LoginScreen() {
                 <View
                   style={styles.orgLoginContainer}
                   accessible={true}
+
                   importantForAccessibility="yes"
                 >
                   {!emailLoginOpen && (
@@ -539,6 +536,7 @@ export default function LoginScreen() {
                         },
                       ]}
                       accessible={true}
+
                       importantForAccessibility="yes"
                     >
                       <Animated.View style={[styles.orgMiniButton, { opacity: emailOpenAnim }]}>
@@ -656,6 +654,7 @@ export default function LoginScreen() {
                 <View
                   style={styles.orgLoginContainer}
                   accessible={true}
+
                   importantForAccessibility="yes"
                 >
                   {!orgLoginOpen && (
@@ -679,6 +678,7 @@ export default function LoginScreen() {
                         },
                       ]}
                       accessible={true}
+
                       importantForAccessibility="yes"
                     >
                       <Animated.View style={[styles.orgMiniButton, { opacity: orgOpenAnim }]}>
@@ -826,7 +826,6 @@ const createLoginScreenStyles = () => {
     languageButtonContainer: {
       alignItems: 'flex-start',
       zIndex: 20,
-      pointerEvents: 'box-none',
     },
     languageButton: {
       width: isDesktopWeb ? 40 : isTablet ? 38 : 36,

@@ -116,70 +116,23 @@ class ApiService {
       console.log(`🌐 API Request: ${config.method || 'GET'} ${url}`);
 
       const response = await fetch(url, config);
-
-      // Handle cases where response might not be JSON (404 with HTML response)
-      let data: any;
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        try {
-          data = await response.json();
-        } catch (jsonError) {
-          console.error(`❌ Failed to parse JSON response:`, jsonError);
-          data = { error: 'Invalid JSON response from server' };
-        }
-      } else {
-        // Non-JSON response (likely 404 HTML page)
-        const text = await response.text();
-        console.warn(`⚠️ Non-JSON response received:`, {
-          status: response.status,
-          contentType,
-          textPreview: text.substring(0, 200),
-        });
-        data = {
-          message: text.includes('Cannot') ? text : `Cannot ${config.method || 'GET'} ${endpoint}`,
-          error: 'Not Found',
-          statusCode: response.status,
-        };
-      }
+      const data = await response.json();
 
       if (!response.ok) {
         console.error(`❌ API Error: ${response.status}`, data);
-
-        // Provide more helpful error messages for common issues
-        if (response.status === 404) {
-          return {
-            success: false,
-            error: data.message || data.error || `Endpoint not found: ${endpoint}. Check if the server route is configured correctly.`,
-            details: `HTTP ${response.status}: ${data.statusCode ? `Status ${data.statusCode}` : 'Not Found'}`,
-          };
-        }
-
         return {
           success: false,
-          error: data.message || data.error || `HTTP ${response.status} error`,
-          details: response.statusText,
+          error: data.message || data.error || 'Network error',
         };
       }
 
       console.log(`✅ API Response: ${endpoint}`, data);
       return data;
-    } catch (error: any) {
+    } catch (error) {
       console.error(`❌ API Network Error:`, error);
-
-      // Check if it's a network error or CORS error
-      const errorMessage = error.message || 'Unknown error';
-      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
-        return {
-          success: false,
-          error: 'Cannot connect to server. Please check your network connection and ensure the server is running.',
-          details: errorMessage,
-        };
-      }
-
       return {
         success: false,
         error: 'Network error - please check your connection',
-        details: errorMessage,
       };
     }
   }
@@ -215,7 +168,7 @@ class ApiService {
         params.append(key, value.toString());
       }
     });
-
+    
     return this.request(`/api/users?${params.toString()}`);
   }
 
@@ -268,7 +221,7 @@ class ApiService {
         params.append(key, value.toString());
       }
     });
-
+    
     return this.request(`/api/donations?${params.toString()}`);
   }
 
@@ -312,7 +265,6 @@ class ApiService {
     status?: string;
     limit?: number;
     offset?: number;
-    include_past?: boolean;
   } = {}): Promise<ApiResponse> {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
@@ -320,7 +272,7 @@ class ApiService {
         params.append(key, value.toString());
       }
     });
-
+    
     return this.request(`/api/rides?${params.toString()}`);
   }
 
@@ -331,19 +283,8 @@ class ApiService {
     });
   }
 
-  async getUserRides(userId: string, type: 'driver' | 'passenger' = 'driver'): Promise<ApiResponse> {
-    return this.request(`/api/rides/user/${userId}?type=${type}`);
-  }
-
   async getRideById(rideId: string): Promise<ApiResponse> {
     return this.request(`/api/rides/${rideId}`);
-  }
-
-  async updateRide(rideId: string, updates: any): Promise<ApiResponse> {
-    return this.request(`/api/rides/${rideId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates),
-    });
   }
 
   async bookRide(rideId: string, bookingData: any): Promise<ApiResponse> {
@@ -385,7 +326,7 @@ class ApiService {
         }
       }
     });
-
+    
     return this.request(`/api/stats/community?${params.toString()}`);
   }
 
@@ -399,7 +340,7 @@ class ApiService {
     if (city) {
       params.append('city', city);
     }
-
+    
     return this.request(`/api/stats/community/trends?${params.toString()}`);
   }
 
@@ -577,10 +518,10 @@ class ApiService {
     }
 
     try {
-      const endpoint = itemId
+      const endpoint = itemId 
         ? `/api/items/${collection}/${userId}/${itemId}`
         : `/api/items/${collection}/${userId}`;
-
+        
       const response = await this.request<T>(endpoint);
       return response.success ? response.data || null : null;
     } catch (error) {

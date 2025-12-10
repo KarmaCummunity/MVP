@@ -35,8 +35,6 @@
     "web": "דף אינטרנט",
     "report": "דווח",
     "cannotOpenLink": "לא ניתן לפתוח את הקישור",
-    "save": "שמור",
-    "saving": "שומר...",
     "welcomeShort": "ברוכים הבאים!",
     "appName": "Karma Community",
     "freeAppNotice": "האפליקציה חינמית לחלוטין ללא מטרות רווח",
@@ -55,8 +53,6 @@
     "filterTitle": "סינון",
     "chooseFiltersTitle": "בחר אפשרויות סינון",
     "chooseSortsTitle": "בחר אפשרויות מיון",
-    "filterLabel": "סינון",
-    "sortLabel": "מיון",
     "filters": {
       "education": "חינוך",
       "health": "בריאות",
@@ -70,22 +66,6 @@
       "familiesInDistress": "משפחות במצוקה",
       "immigrants": "עולים חדשים",
       "community": "קהילה",
-      "noCost": "בלי השתתפות בהוצאות",
-      "womenOnly": "לנשים בלבד",
-      "menOnly": "לגברים בלבד",
-      "age18_25": "גילאי 18-25",
-      "age25_40": "גילאי 25-40",
-      "age40plus": "גיל 40+",
-      "noJunctions": "בלי צמתים",
-      "noBuses": "בלי אוטובוסים",
-      "noSmoking": "ללא עישון",
-      "withKids": "עם ילדים",
-      "withPets": "עם בעלי חיים",
-      "roomForGear": "מקום לציוד",
-      "highway6": "כביש 6",
-      "ac": "מזגן",
-      "music": "מוזיקה",
-      "accessibility": "נגישות",
       "בחינם": "בחינם",
       "כמו חדש": "כמו חדש",
       "משומש": "משומש",
@@ -168,7 +148,7 @@
     "ai": {
       "fabLabel": "AI",
       "title": "עוזר AI",
-      "placeholder": "חפשו כבר דבר: אנשים, תרומות, חפצים ",
+      "placeholder": "שאלו כל דבר: איפה למצוא תרומות, איך לפרסם, או ניווט באפליקציה.",
       "assistantReply": "קיבלתי! אחזור עם תשובה בהקדם."
     }
   },
@@ -579,6 +559,24 @@
     }
   },
   "trump": {
+    "filters": [
+      "בלי השתתפות בהוצאות",
+      "לפי מגדר: נשים בלבד",
+      "לפי מגדר: גברים בלבד",
+      "לפי גיל: 18-25",
+      "לפי גיל: 25-40",
+      "לפי גיל: 40+",
+      "בלי צמתים",
+      "בלי אוטובוסים",
+      "בלי עישון",
+      "עם ילדים",
+      "עם חיות",
+      "מקום לציוד",
+      "כביש 6",
+      "מזגן",
+      "מוסיקה",
+      "נגישות"
+    ],
     "sorts": [
       "אלפביתי",
       "לפי מיקום",
@@ -618,32 +616,16 @@
     },
     "success": {
       "title": "הצלחה",
-      "ridePublished": "הטרמפ פורסם בהצלחה!",
-      "linkSaved": "הקישור נשמר בהצלחה"
+      "ridePublished": "הטרמפ פורסם בהצלחה!"
     },
     "errors": {
       "fillDestination": "אנא הזן יעד",
       "fillFromOrCurrent": "אנא הזן נקודת יציאה או בחר שימוש במיקום הנוכחי",
       "saveFailed": "שמירת הטרמפ נכשלה",
-      "noGroupLink": "אין קישור לקבוצה",
-      "fillLink": "אנא הזן קישור",
-      "invalidLink": "הקישור אינו תקין"
+      "noGroupLink": "אין קישור לקבוצה"
     },
     "ui": {
       "timePickerPlaceholder": "שעת יציאה",
-      "leavingToday": "יוצאים היום",
-      "selectDate": "בחר תאריך",
-      "recurringRide": "נסיעה מחזורית",
-      "recurrenceConfigLabel": "תדירות מחזוריות",
-      "recurrenceFrequencyLabel": "כל כמה",
-      "recurrenceUnitLabel": "יחידת זמן",
-      "recurrenceDay": "יום",
-      "recurrenceDays": "ימים",
-      "recurrenceWeek": "שבוע",
-      "recurrenceWeeks": "שבועות",
-      "recurrenceMonth": "חודש",
-      "recurrenceMonths": "חודשים",
-      "recurrencePreview": "הנסיעה תתבצע כל {{frequency}} {{unit}}",
       "immediateDeparture": "יציאה מיידית",
       "useCurrentLocation": "שימוש במיקום הנוכחי",
       "fromPointLabel": "מוצא",
@@ -652,42 +634,14 @@
       "fuelContributionLabel": "השתתפות בדלק",
       "publishRide": "פרסום טרמפ",
       "yourHistoryTitle": "הנסיעות האחרונות שלך",
-      "yourRecentRides": "הנסיעות האחרונות שלך",
       "ridesAvailableTitle": "טרמפים זמינים",
       "ridesRecommendedTitle": "טרמפים מומלצים",
       "groupsTitle": "קבוצות",
       "searchPlaceholder": {
         "offer": "לאן? יעד...",
         "seek": "מצא טרמפ: יעד..."
-      },
-      "fromLocationLabel": "מאיפה?",
-      "otherLocation": "כתובת אחרת",
-      "noRecentRides": "טרם פרסמת טרמפים",
-      "whatsappGroups": "קבוצות טרמפים",
-      "searchResultsPrefix": "תוצאות ל",
-      "availableRides": "טרמפים זמינים",
-      "noRidesFoundTitle": "לא נמצאו טרמפים",
-      "noRidesFoundBody": "נסה לשנות את הסינון או חפש שוב מאוחר יותר",
-      "enterDepartureAddress": "הכנס כתובת יציאה"
+      }
     },
-    "filters": [
-      "noCost",
-      "womenOnly",
-      "menOnly",
-      "age18_25",
-      "age25_40",
-      "age40plus",
-      "noJunctions",
-      "noBuses",
-      "noSmoking",
-      "withKids",
-      "withPets",
-      "roomForGear",
-      "highway6",
-      "ac",
-      "music",
-      "accessibility"
-    ],
     "menu": {
       "history": "היסטוריה",
       "settings": "הגדרות",
@@ -711,16 +665,6 @@
       "availableRides": "טרמפים זמינים",
       "noCost": "ללא עלות",
       "groupMembers": "חברי קבוצות"
-    },
-    "addLink": {
-      "title": "הוסף קישור",
-      "linkType": "סוג קישור",
-      "group": "קבוצה",
-      "organization": "עמותה",
-      "url": "קישור",
-      "urlPlaceholder": "הזן קישור",
-      "description": "פירוט",
-      "descriptionPlaceholder": "הוסף פירוט (אופציונלי)"
     }
   },
   "profile": {

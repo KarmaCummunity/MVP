@@ -1,6 +1,6 @@
 // components/ChatMessageBubble.tsx
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
 import { Message } from '../utils/chatService'; // Use new Message type
 import { useTranslation } from 'react-i18next';
 import colors from '../globals/colors'; // Assuming you have a Colors file
@@ -145,18 +145,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     maxWidth: '75%',
     // Shadows
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
     elevation: 1,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 1px 1px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        shadowColor: colors.black,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 1,
-      },
-    }),
   },
   myBubble: {
     backgroundColor: colors.chatSent, // Your brand blue/purple

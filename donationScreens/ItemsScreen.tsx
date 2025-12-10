@@ -7,7 +7,6 @@ import { FontSizes } from '../globals/constants';
 import HeaderComp from '../components/HeaderComp';
 import DonationStatsFooter from '../components/DonationStatsFooter';
 import ScrollContainer from '../components/ScrollContainer';
-import AddLinkComponent from '../components/AddLinkComponent';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { db } from '../utils/databaseService';
 import { useUser } from '../stores/userStore';
@@ -672,14 +671,6 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
               ))}
             </View>
           </View>
-
-          {/* Groups Section */}
-          <View style={[localStyles.section, { marginTop: 30, paddingBottom: 20 }]}>
-            <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <Text style={localStyles.sectionTitle}>קבוצות ועמותות</Text>
-            </View>
-            <AddLinkComponent category="items" />
-          </View>
         </ScrollContainer>
       ) : (
         <>
@@ -712,14 +703,6 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
                 )}
               </ScrollView>
             </View>
-          </View>
-
-          {/* Groups Section */}
-          <View style={[localStyles.section, { marginTop: 30, paddingBottom: 20 }]}>
-            <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <Text style={localStyles.sectionTitle}>קבוצות ועמותות</Text>
-            </View>
-            <AddLinkComponent category="items" />
           </View>
 
           <View style={localStyles.section}>

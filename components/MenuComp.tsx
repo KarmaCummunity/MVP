@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Animated,
   ScrollView,
-  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import colors from "../globals/colors";
@@ -38,19 +37,17 @@ const MenuComp: React.FC<MenuCompProps> = ({ options, onSelectOption }) => {
   const closeMenu = () => setIsVisible(false);
 
   useEffect(() => {
-    // useNativeDriver is not supported on Web
-    const useNativeDriver = Platform.OS !== 'web';
     if (isVisible) {
       Animated.parallel([
         Animated.spring(scaleAnim, {
           toValue: 1,
           friction: 8,
-          useNativeDriver,
+          useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
           toValue: 1,
           duration: 200,
-          useNativeDriver,
+          useNativeDriver: true,
         }),
       ]).start();
     } else {
@@ -58,12 +55,12 @@ const MenuComp: React.FC<MenuCompProps> = ({ options, onSelectOption }) => {
         Animated.timing(scaleAnim, {
           toValue: 0.01,
           duration: 200,
-          useNativeDriver,
+          useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
           toValue: 0,
           duration: 200,
-          useNativeDriver,
+          useNativeDriver: true,
         }),
       ]).start();
     }

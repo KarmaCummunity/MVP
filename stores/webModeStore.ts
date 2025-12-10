@@ -27,19 +27,26 @@ const DEFAULT_MODE: WebMode = Platform.OS === 'web' ? 'site' : 'app';
 const STORAGE_KEY = 'kc_web_mode';
 
 export const useWebModeStore = create<WebModeState>((set, get) => {
-  // Initialize mode immediately to default
-  // DO NOT read from localStorage here synchronously - it causes hydration mismatches
-  // between server-rendered HTML (which sees default) and client-side (which sees stored value).
-  // The initialize() function will be called by App.tsx to load the stored preference.
+  // Initialize mode immediately if on web (synchronous)
   let initialMode = DEFAULT_MODE;
-
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (stored === 'site' || stored === 'app') {
+        initialMode = stored;
+      }
+    } catch (_) {
+      // Ignore localStorage errors
+    }
+  }
+  
   return {
     mode: initialMode,
-
+    
     setMode: (next: WebMode) => {
       set({ mode: next });
       if (Platform.OS === 'web') {
-        try {
+        try { 
           if (typeof window !== 'undefined') {
             window.localStorage.setItem(STORAGE_KEY, next);
           }
@@ -48,12 +55,12 @@ export const useWebModeStore = create<WebModeState>((set, get) => {
         }
       }
     },
-
+    
     toggleMode: () => {
       const newMode = get().mode === 'site' ? 'app' : 'site';
       set({ mode: newMode });
       if (Platform.OS === 'web') {
-        try {
+        try { 
           if (typeof window !== 'undefined') {
             window.localStorage.setItem(STORAGE_KEY, newMode);
           }
@@ -62,13 +69,13 @@ export const useWebModeStore = create<WebModeState>((set, get) => {
         }
       }
     },
-
+    
     initialize: () => {
       if (Platform.OS !== 'web') {
         set({ mode: 'app' });
         return;
       }
-
+      
       try {
         const stored = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) : null;
         if (stored === 'site' || stored === 'app') {

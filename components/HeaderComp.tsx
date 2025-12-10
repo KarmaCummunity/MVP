@@ -39,8 +39,6 @@ interface HeaderSectionProps {
   sortOptions: string[]; // Sort options specific to each screen
   searchData: any[]; // Data array to search through (charities, rides, etc.) - TODO: Replace any[] with proper types
   onSearch: (query: string, filters?: string[], sorts?: string[], results?: any[]) => void; // Search handler function - TODO: Improve typing
-  // Whether to hide the sort button (useful for offer mode)
-  hideSortButton?: boolean;
 }
 
 const HeaderComp: React.FC<HeaderSectionProps> = ({
@@ -53,7 +51,6 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
   sortOptions,
   searchData,
   onSearch,
-  hideSortButton = false,
 }) => {
   const { isGuestMode } = useUser();
   const { t } = useTranslation(['search', 'common']);
@@ -113,7 +110,6 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
           onRemoveFilterRequested={(fn) => { removeFilterRef.current = fn; }}
           onRemoveSortRequested={(fn) => { removeSortRef.current = fn; }}
           renderSelectedRow={false}
-          hideSortButton={hideSortButton}
         />
         <ModeToggleButton mode={mode} onToggle={onToggleMode} />
       </View>

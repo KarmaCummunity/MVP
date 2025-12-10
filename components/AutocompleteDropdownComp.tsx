@@ -16,7 +16,6 @@ import {
   StyleSheet,
   Modal,
   Keyboard,
-  Platform,
 } from "react-native";
 import { MaterialIcons as Icon } from '@expo/vector-icons';
 
@@ -151,18 +150,11 @@ const dropdownStyles = StyleSheet.create({
     borderColor: colors.dropdownBorder,
     paddingVertical: 12,
     paddingHorizontal: 15,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 3,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        shadowColor: colors.black,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-    }),
   },
   textInput: {
     flex: 1,

@@ -51,7 +51,6 @@ import { saveNavigationState, loadNavigationState, clearNavigationState } from '
 import { NavigationState } from '@react-navigation/native';
 import { navigationQueue } from './utils/navigationQueue';
 import { RootStackParamList } from './globals/types';
-import type { LinkingOptions } from '@react-navigation/native';
 // RTL is controlled via selected language in i18n and Settings
 
 // Initialize notifications only on supported platforms
@@ -428,61 +427,6 @@ function AppContent() {
       prevUserIdRef.current = selectedUser?.id || null;
     }, [mode, selectedUser?.id]);
 
-    // Deep linking configuration - only for web platform
-    const linkingConfig: LinkingOptions<RootStackParamList> | undefined = useMemo(() => {
-      if (Platform.OS !== 'web') {
-        return undefined; // No URL routing for mobile apps
-      }
-
-      return {
-        enabled: true,
-        prefixes: ['/'], // Base path for web
-        config: {
-          screens: {
-            // Main routes
-            LandingSiteScreen: '/',
-            LoginScreen: '/login',
-            HomeStack: {
-              screens: {
-                HomeScreen: {
-                  screens: {
-                    HomeMain: '/home',
-                  },
-                },
-                DonationsTab: '/donations',
-                SearchTab: '/search',
-                ProfileScreen: {
-                  screens: {
-                    ProfileScreen: '/my-profile', // User's own profile - URL will be updated manually to /profile/:userId in ProfileScreen component
-                  },
-                },
-                AdminTab: '/admin',
-              },
-            },
-            // Chat routes
-            ChatListScreen: '/chats',
-            NewChatScreen: '/chats/new',
-            ChatDetailScreen: '/chats/:conversationId',
-            // Other routes
-            NotificationsScreen: '/notifications',
-            SettingsScreen: '/settings',
-            BookmarksScreen: '/bookmarks',
-            UserProfileScreen: '/profile/:userId', // Unique URL for each user profile
-            FollowersScreen: '/profile/:userId/:type', // type: 'followers' | 'following'
-            DiscoverPeopleScreen: '/discover',
-            AboutKarmaCommunityScreen: '/about',
-            WebViewScreen: '/webview',
-            PostsReelsScreen: '/posts',
-            // Organization routes
-            OrgOnboardingScreen: '/org/onboarding',
-            AdminOrgApprovalsScreen: '/admin/org-approvals',
-            OrgDashboardScreen: '/org/dashboard',
-            EditProfileScreen: '/profile/edit',
-          },
-        },
-      };
-    }, []);
-
     return (
       <NavigationContainer<RootStackParamList>
         key={navKey}
@@ -497,7 +441,6 @@ function AppContent() {
             navigationQueue.initialize(navigationRef.current);
           }
         }}
-        linking={linkingConfig}
         initialState={initialState}
         onStateChange={handleNavigationStateChange}
         children={

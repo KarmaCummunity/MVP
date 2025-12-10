@@ -1,699 +1,845 @@
 // File overview:
-// - Purpose: Unified global search across donations, rides, users, and hashtags.
-// - Reached from: `SearchTabStack` initial route 'SearchScreen'.
-// - Provides: Real-time search with tabs for different entities, debounced input, and detailed result cards.
-// - Reads from: `enhancedDatabaseService`, `apiService`.
-
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
+// - Purpose: Unified search across donations, events, and users with filters, quick actions, and AI helper modal.
+// - Reached from: `SearchTabStack` initial route 'SearchScreen' via `BottomNavigator`.
+// - Provides: Local search over real data (donations from DB) + demo data (when not real auth), category filter tabs, popular/recent tags, result cards.
+// - Reads from context/services: `useUser()` (auth mode, selectedUser), `db.listDonations`, i18n strings for popular/recent.
+// - Route params: None; result taps currently show details via Alert, not deep-linking.
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  View, 
+  Text, 
+  ScrollView,
+  StyleSheet, 
+  TouchableOpacity, 
+  Image, 
   FlatList,
   Alert,
-  SafeAreaView,
-  ActivityIndicator,
-  TextInput,
-  LayoutAnimation,
-  Platform,
-  UIManager
+  SafeAreaView
 } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import SearchBar from '../components/SearchBar';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { useTranslation } from 'react-i18next';
+import ScrollContainer from '../components/ScrollContainer';
 import { useUser } from '../stores/userStore';
-import { enhancedDB } from '../utils/enhancedDatabaseService';
-import { apiService } from '../utils/apiService';
+import { db } from '../utils/databaseService';
+import GuestModeNotice from '../components/GuestModeNotice';
+import { Pressable, Modal, TextInput } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { scaleSize } from '../globals/responsive';
+
+// Empty arrays - replace with real data from API
+const donations: any[] = [];
+const communityEvents: any[] = [];
+const users: any[] = [];
+const categories: any[] = [];
 import { createShadowStyle } from '../globals/styles';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
-// Simple debounce implementation
-function debounce<T extends (...args: any[]) => void>(func: T, wait: number) {
-  let timeout: any;
-  return function (this: any, ...args: Parameters<T>) {
-    const context = this;
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(context, args), wait);
-  };
-}
-
-type SearchTab = 'All' | 'Rides' | 'Donations' | 'Users' | 'Hashtags';
 
 interface SearchResult {
   id: string;
-  type: 'ride' | 'donation' | 'user' | 'hashtag';
-  title: string;          // Ride: from->to, Donation: title, User: name
-  subtitle?: string;      // Ride: date/time, Donation: category, User: bio
-  description?: string;   // Ride: notes, Donation: description
-  image?: string;         // Avatar or Item image
-  meta?: string;          // Extra info (seats, location, etc.)
-  highlight?: boolean;
-  rawData: any;           // Original object for navigation/details
+  type: 'task' | 'donation' | 'event' | 'user';
+  title: string;
+  description: string;
+  image?: string;
+  category: string;
+  location?: string;
+  date?: string;
+  quantity?: number;
+  status?: string;
 }
 
 const SearchScreen = () => {
-  const navigation = useNavigation<any>();
   const tabBarHeight = useBottomTabBarHeight();
-  const { t } = useTranslation(['search', 'common', 'donations', 'trump']);
-  const { selectedUser } = useUser();
+  const { isGuestMode, isRealAuth, selectedUser } = useUser();
+  const { t } = useTranslation(['search','common']);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [realDonations, setRealDonations] = useState<any[]>([]);
+  // Load real data (donations) for the current user
+  useEffect(() => {
+    const loadReal = async () => {
+      try {
+        if (!selectedUser) { setRealDonations([]); return; }
+        const items = await db.listDonations(selectedUser.id);
+        setRealDonations(Array.isArray(items) ? items : []);
+      } catch (e) {
+        setRealDonations([]);
+      }
+    };
+    loadReal();
+  }, [selectedUser]);
 
-  const [query, setQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<SearchTab>('All');
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [isSearching, setIsSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false); // To show "start typing" vs "no results"
+  const [aiVisible, setAiVisible] = useState(false);
+  const [aiText, setAiText] = useState('');
+  const [aiHistory, setAiHistory] = useState<{ role: 'user' | 'assistant'; text: string }[]>([]);
 
-  const searchInputRef = useRef<TextInput>(null);
-
-  // Tabs configuration
-  const tabs: { id: SearchTab; label: string; icon: any }[] = [
-    { id: 'All', label: t('search:tabs.all'), icon: 'grid-outline' },
-    { id: 'Rides', label: t('trump:menu.history'), icon: 'car-sport-outline' }, // Using history label as approximation or custom
-    { id: 'Donations', label: t('search:tabs.donations'), icon: 'heart-outline' },
-    { id: 'Users', label: t('search:tabs.users'), icon: 'people-outline' },
-    { id: 'Hashtags', label: '#', icon: 'pricetag-outline' },
-  ];
-
-  // --- Search Logic ---
-
-  const performSearch = async (searchQuery: string, tab: SearchTab) => {
-    if (!searchQuery.trim()) {
-      setResults([]);
-      setHasSearched(false);
-      setIsSearching(false);
-      return;
-    }
-
-    setIsSearching(true);
-    setHasSearched(true);
-
-    // Slight delay to allow UI to update (spinner)
-    // await new Promise(r => setTimeout(r, 100));
-
-    try {
-      const promises: Promise<SearchResult[]>[] = [];
-      const qLower = searchQuery.toLowerCase();
-
-      // 1. Rides
-      if (tab === 'All' || tab === 'Rides') {
-        // Fetch rides - ideally backend supports search. If not, fetch active and filter.
-        // Assuming enahncedDatabaseService.getRides supports basic filters or we fetch all active.
-        promises.push(
-          enhancedDB.getRides({}).then(rides => {
-            return rides
-              .filter(r => {
-                // Client-side filter if backend didn't filter
-                const from = (r.from || '').toLowerCase();
-                const to = (r.to || '').toLowerCase();
-                return from.includes(qLower) || to.includes(qLower);
-              })
-              .map(r => ({
-                id: r.id,
-                type: 'ride' as const,
-                title: `${r.from} ←→ ${r.to}`,
-                subtitle: `${new Date((r.departure_time || r.date) as any).toLocaleDateString()} ${new Date((r.departure_time || r.time) as any).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-                description: r.description as string,
-                image: (r.driverImage as any) || undefined,
-                meta: `${r.available_seats} מושבים`,
-                rawData: r
-              }));
-          }).catch(e => {
-            console.warn('Search rides failed', e);
-            return [];
-          })
-        );
-      }
-
-      // 2. Donations
-      if (tab === 'All' || tab === 'Donations') {
-        promises.push(
-          enhancedDB.getDonations({ search: searchQuery }).then(donations => {
-            return donations.map(d => ({
-              id: d.id,
-              type: 'donation',
-              title: d.title,
-              subtitle: d.category,
-              description: d.description,
-              image: (d as any).image, // Assuming image property exists
-              meta: d.location || (d as any).city,
-              rawData: d
-            }));
-          }).catch(e => {
-            console.warn('Search donations failed', e);
-            return [];
-          })
-        );
-      }
-
-      // 3. Users
-      if (tab === 'All' || tab === 'Users') {
-        promises.push(
-          apiService.getUsers({ search: searchQuery }).then(res => {
-            if (!res.success || !res.data) return [];
-            // Assuming res.data.users or res.data is array
-            const users = Array.isArray(res.data) ? res.data : (res.data as any).users || [];
-            return users.map((u: any) => ({
-              id: u.id,
-              type: 'user',
-              title: u.name || t('search:typeLabels.user'),
-              subtitle: u.role || u.bio || t('search:userDefaultBio'),
-              image: u.avatar || u.image,
-              meta: 'חבר קהילה',
-              rawData: u
-            }));
-          }).catch(e => {
-            console.warn('Search users failed', e);
-            return [];
-          })
-        );
-      }
-
-      // 4. Hashtags (Mock implementation for now or extraction)
-      if (tab === 'All' || tab === 'Hashtags') {
-        // Logic: If query starts with #, strict search. 
-        // Else, maybe we search for tags that match the query?
-        // For MVP, we can simulate hashtag results if the query *looks* like a tag or if we want to show tags used in descriptions.
-        // Let's just return a generic result if query matches a pattern, or skip for now if no dedicated API.
-        if (searchQuery.startsWith('#') || tab === 'Hashtags') {
-          const cleanTag = searchQuery.replace('#', '');
-          if (cleanTag.length > 1) {
-            promises.push(Promise.resolve([{
-              id: `tag_${cleanTag}`,
-              type: 'hashtag',
-              title: `#${cleanTag}`,
-              subtitle: 'חפש פוסטים ותרומות עם תגית זו',
-              rawData: { tag: cleanTag }
-            }] as SearchResult[]));
-          }
-        }
-      }
-
-      // Execute all
-      const resultsArrays = await Promise.all(promises);
-      const flattened = resultsArrays.flat();
-
-      // Sort: Exact matches first? Or just simple shuffle/mix? 
-      // Let's sort Users > Donations > Rides for 'All'? Or shuffle.
-      // Simple sort by title match relevance
-      flattened.sort((a, b) => {
-        const aStarts = a.title.toLowerCase().startsWith(qLower);
-        const bStarts = b.title.toLowerCase().startsWith(qLower);
-        if (aStarts && !bStarts) return -1;
-        if (!aStarts && bStarts) return 1;
-        return 0;
-      });
-
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setResults(flattened);
-
-    } catch (err) {
-      console.error('Global search error:', err);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  // Debounce the search
-  const debouncedSearch = useCallback(
-    debounce((nextQuery: string, nextTab: SearchTab) => {
-      performSearch(nextQuery, nextTab);
-    }, 600),
-    []
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('🔍 SearchScreen - Screen focused, refreshing data...');
+      // Clear search results when returning to screen
+      setSearchResults([]);
+      setSearchQuery('');
+    }, [])
   );
 
-  useEffect(() => {
-    // Determine title for Rides tab if 'Rides' is selected (using translation fallback if 'trump' namespace incomplete)
-    // We already defined tabs array outside.
-  }, []);
+  // Popular searches (from i18n)
+  const popularSearches: string[] = t('search:popularSearches', { returnObjects: true }) as unknown as string[];
 
-  const handleTextChange = (text: string) => {
-    setQuery(text);
-    debouncedSearch(text, activeTab);
+  // Recent searches (from i18n)
+  const recentSearches: string[] = t('search:recentSearches', { returnObjects: true }) as unknown as string[];
+
+  // Filter tabs (from i18n)
+  const filterOptions = [
+    { id: 'All', label: t('search:tabs.all'), icon: 'grid-outline' },
+    { id: 'donations', label: t('search:tabs.donations'), icon: 'heart-outline' },
+    { id: 'events', label: t('search:tabs.events'), icon: 'calendar-outline' },
+    { id: 'users', label: t('search:tabs.users'), icon: 'people-outline' },
+  ];
+
+  // Search over real data and fake data depending on auth mode
+  const performSearch = (query: string, category: string = 'All') => {
+    setIsSearching(true);
+    
+    // Simulate API delay
+    setTimeout(() => {
+      let results: SearchResult[] = [];
+      
+      // Real: donations from backend
+      if (category === 'All' || category === 'donations') {
+        const real = realDonations
+          .filter((d: any) => {
+            const t = String(d?.title || d?.name || '').toLowerCase();
+            const desc = String(d?.description || '').toLowerCase();
+            return t.includes(query.toLowerCase()) || desc.includes(query.toLowerCase());
+          })
+          .map((d: any) => ({
+            id: String(d.id || d.itemId || d._id || Math.random()),
+            type: 'donation' as const,
+            title: String(d.title || d.name || 'תרומה'),
+            description: String(d.description || ''),
+            image: d.image_base64 || d.image,
+            category: String(d.category || t('search:typeLabels.donation')),
+            location: d.city || d.location?.city || d.location || undefined,
+            quantity: d.quantity || 1,
+            status: d.status || 'available',
+          }));
+        results.push(...real);
+      }
+      // Fake donations only for guest/demo
+      if (!isRealAuth && (category === 'All' || category === 'donations')) {
+        results.push(...donations
+          .filter(donation =>
+            donation.title.toLowerCase().includes(query.toLowerCase()) ||
+            donation.description.toLowerCase().includes(query.toLowerCase())
+          )
+          .map(donation => ({
+            id: donation.id,
+            type: 'donation' as const,
+            title: donation.title,
+            description: donation.description,
+            image: donation.image,
+            category: donation.category,
+            location: donation.location,
+          }))
+        );
+      }
+      
+      if (!isRealAuth && (category === 'All' || category === 'events')) {
+        results.push(...communityEvents
+          .filter(event =>
+            event.title.toLowerCase().includes(query.toLowerCase()) ||
+            event.description.toLowerCase().includes(query.toLowerCase())
+          )
+          .map(event => ({
+            id: event.id,
+            type: 'event' as const,
+            title: event.title,
+            description: event.description,
+            image: event.image,
+            category: event.category,
+            date: event.date,
+          }))
+        );
+      }
+      
+      if (!isRealAuth && (category === 'All' || category === 'users')) {
+        results.push(...users
+          .filter(user =>
+            user.name.toLowerCase().includes(query.toLowerCase())
+          )
+          .map(user => ({
+            id: user.id,
+            type: 'user' as const,
+            title: user.name,
+            description: user.bio || t('search:userDefaultBio'),
+            image: user.avatar,
+            category: t('search:typeLabels.user'),
+          }))
+        );
+      }
+      
+      setSearchResults(results);
+      setIsSearching(false);
+    }, 500);
   };
 
-  const handleTabChange = (newTab: SearchTab) => {
-    setActiveTab(newTab);
-    if (query.trim()) {
-      // Trigger immediate search (or fast debounce) on tab switch
-      setIsSearching(true); // show loader immediately
-      performSearch(query, newTab);
+  const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
+    setSearchQuery(query);
+    if (query.trim().length > 0) {
+      performSearch(query, selectedCategory);
+    } else {
+      setSearchResults([]);
+    }
+    // For now, SearchScreen handles its own filtering logic, so we ignore the other parameters
+    // In the future, this could be enhanced to use the provided filters and sorts
+  };
+
+  const handleCategoryFilter = (category: string) => {
+    setSelectedCategory(category);
+    if (searchQuery.trim().length > 0) {
+      performSearch(searchQuery, category);
     }
   };
 
-  // --- Render Helpers ---
-
-  const renderIconForType = (type: string) => {
-    switch (type) {
-      case 'ride': return 'car-sport';
-      case 'donation': return 'heart';
-      case 'user': return 'person';
-      case 'hashtag': return 'pricetag';
-      default: return 'search';
-    }
-  };
-
-  const renderColorForType = (type: string) => {
-    switch (type) {
-      case 'ride': return colors.info;
-      case 'donation': return colors.pink;
-      case 'user': return colors.warning;
-      case 'hashtag': return colors.textSecondary;
-      default: return colors.primary;
-    }
-  };
-
-  const handleResultPress = (item: SearchResult) => {
-    // TODO: Navigate to real details screens
+  const handleResultPress = (result: SearchResult) => {
     Alert.alert(
-      item.title,
-      `${item.description || ''}\n\n${item.subtitle || ''}`,
+      result.title,
+      `${result.description}\n\n${t('search:labels.category')}: ${result.category}${result.location ? `\n${t('search:labels.location')}: ${result.location}` : ''}${result.date ? `\n${t('search:labels.date')}: ${new Date(result.date).toLocaleDateString()}` : ''}`,
       [
-        { text: t('common:close'), style: 'cancel' },
-        {
-          text: t('common:moreDetails'),
-          onPress: () => console.log('Navigate to:', item.type, item.id)
-        }
+        { text: t('common:cancel'), style: 'cancel' },
+        { text: t('search:moreDetails'), onPress: () => Alert.alert(t('search:details'), t('search:openFullDetails')) }
       ]
     );
   };
 
-  const renderItem = ({ item }: { item: SearchResult }) => (
+  const handlePopularSearch = (search: string) => {
+    setSearchQuery(search);
+    performSearch(search);
+  };
+
+  const renderSearchResult = ({ item }: { item: SearchResult }) => (
     <TouchableOpacity
-      style={styles.resultCard}
+      style={styles.resultItem}
       onPress={() => handleResultPress(item)}
-      activeOpacity={0.7}
     >
-      {/* Icon or Image */}
-      <View style={styles.imageContainer}>
+      <View style={styles.resultImageContainer}>
         {item.image ? (
           <Image source={{ uri: item.image }} style={styles.resultImage} />
         ) : (
-          <View style={[styles.placeholderImage, { backgroundColor: renderColorForType(item.type) + '15' }]}>
-            <Ionicons name={renderIconForType(item.type) as any} size={24} color={renderColorForType(item.type)} />
-          </View>
-        )}
-        {/* Type Icon Badge (small overlay) */}
-        {!item.image && item.type !== 'hashtag' && (
-          <View style={styles.typeBadge}>
-            <Ionicons name={renderIconForType(item.type) as any} size={10} color={colors.white} />
+          <View style={[styles.resultImagePlaceholder, { backgroundColor: getTypeColor(item.type) + '20' }]}>
+            <Ionicons name={getTypeIcon(item.type)} size={24} color={getTypeColor(item.type)} />
           </View>
         )}
       </View>
-
       <View style={styles.resultContent}>
         <View style={styles.resultHeader}>
-          <Text style={styles.resultTitle} numberOfLines={1}>{item.title}</Text>
-          {item.meta && <Text style={styles.resultMeta}>{item.meta}</Text>}
+          <Text style={styles.resultTitle}>{item.title}</Text>
+          <View style={[styles.resultTypeBadge, { backgroundColor: getTypeColor(item.type) + '20' }]}>
+            <Text style={[styles.resultTypeText, { color: getTypeColor(item.type) }]}>
+              {getTypeLabel(item.type)}
+            </Text>
+          </View>
         </View>
-
-        {item.subtitle && (
-          <Text style={styles.resultSubtitle} numberOfLines={1}>
-            {item.subtitle}
-          </Text>
-        )}
-
         {item.description && (
           <Text style={styles.resultDescription} numberOfLines={2}>
             {item.description}
           </Text>
         )}
+        <View style={styles.resultMeta}>
+          <Text style={styles.resultCategory}>{item.category}</Text>
+          {item.location && (
+            <Text style={styles.resultLocation}>
+              <Ionicons name="location-outline" size={12} color={colors.textSecondary} />
+              {' '}{item.location}
+            </Text>
+          )}
+        </View>
+        <View style={styles.resultExtraInfo}>
+          {item.quantity !== undefined && (
+            <View style={styles.infoChip}>
+              <Ionicons name="cube-outline" size={14} color={colors.textSecondary} />
+              <Text style={styles.infoChipText}>כמות: {item.quantity}</Text>
+            </View>
+          )}
+          {item.status && (
+            <View style={[styles.infoChip, { backgroundColor: getStatusColor(item.status) + '20' }]}>
+              <Text style={[styles.infoChipText, { color: getStatusColor(item.status) }]}>
+                {getStatusLabel(item.status)}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
-
-      <Ionicons name="chevron-back" size={18} color={colors.textTertiary} style={{ transform: [{ scaleX: -1 }] }} />
     </TouchableOpacity>
   );
 
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'donation': return 'heart-outline';
+      case 'event': return 'calendar-outline';
+      case 'user': return 'person-outline';
+      default: return 'search-outline';
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'donation': return colors.error;
+      case 'event': return colors.success;
+      case 'user': return colors.info;
+      default: return colors.textSecondary;
+    }
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'donation': return t('search:typeLabels.donation');
+      case 'event': return t('search:typeLabels.event');
+      case 'user': return t('search:typeLabels.user');
+      default: return t('search:typeLabels.result');
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'available': return colors.success;
+      case 'reserved': return colors.warning;
+      case 'donated': return colors.textSecondary;
+      default: return colors.info;
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'available': return 'זמין';
+      case 'reserved': return 'שמור';
+      case 'donated': return 'נתרם';
+      default: return status;
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header & Search Bar */}
-      <View style={styles.header}>
-        <Text style={styles.screenTitle}>{t('common:search')}</Text>
-
-        <View style={styles.searchBarContainer}>
-          <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
-          <TextInput
-            ref={searchInputRef}
-            style={styles.searchInput}
-            placeholder={t('search:ai.placeholder') || "חפש הכל..."}
-            placeholderTextColor={colors.textTertiary}
-            value={query}
-            onChangeText={handleTextChange}
-            returnKeyType="search"
-            autoCapitalize="none"
-          />
-          {query.length > 0 && (
-            <TouchableOpacity onPress={() => handleTextChange('')} style={styles.clearButton}>
-              <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Categories / Tabs */}
-        <View style={styles.tabsContainer}>
-          <FlatList
-            horizontal
-            data={tabs}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.tabsContent}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => {
-              const isActive = activeTab === item.id;
-              return (
-                <TouchableOpacity
-                  style={[styles.tabItem, isActive && styles.activeTabItem]}
-                  onPress={() => handleTabChange(item.id)}
-                >
-                  <Ionicons
-                    name={item.icon}
-                    size={16}
-                    color={isActive ? colors.white : colors.textSecondary}
-                  />
-                  <Text style={[styles.tabText, isActive && styles.activeTabText]}>
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            }}
-          />
-        </View>
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <SearchBar onSearch={handleSearch} />
       </View>
 
-      {/* Content Area */}
-      <View style={styles.content}>
-        {isSearching ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={colors.pink} />
-            <Text style={styles.loadingText}>{t('search:searching')}</Text>
-          </View>
-        ) : !hasSearched && !query ? (
-          // Initial State
-          <View style={styles.initialStateContainer}>
-            <Ionicons name="search-outline" size={60} color={colors.border} />
-            <Text style={styles.initialStateText}>{t('search:tryChangingSearchTerms') || "התחל להקליד כדי לחפש..."}</Text>
+      {/* Filter Options */}
+      <View style={styles.filterContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {filterOptions.map((option) => (
+            <TouchableOpacity
+              key={option.id}
+              style={[
+                styles.filterButton,
+                selectedCategory === option.id && styles.filterButtonActive
+              ]}
+              onPress={() => handleCategoryFilter(option.id)}
+            >
+              <Ionicons 
+                name={option.icon as any} 
+                size={16} 
+                color={selectedCategory === option.id ? colors.white : colors.textSecondary} 
+              />
+              <Text style={[
+                styles.filterButtonText,
+                selectedCategory === option.id && styles.filterButtonTextActive
+              ]}>
+                {option.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
-            {/* Quick Suggestions / Recent (Optional placeholder logic) */}
-            <View style={styles.suggestions}>
-              <Text style={styles.suggestionsTitle}>{t('search:popularTitle')}</Text>
-              <View style={styles.tagsRow}>
-                {['תל אביב', 'ריהוט', 'מתנדבים'].map(tag => (
-                  <TouchableOpacity key={tag} style={styles.suggestionTag} onPress={() => handleTextChange(tag)}>
-                    <Text style={styles.suggestionText}>{tag}</Text>
+      <ScrollContainer 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentStyle={{ paddingBottom: tabBarHeight + LAYOUT_CONSTANTS.SPACING.XL }}
+      >
+        {/* Guest Mode Notice */}
+        
+        {searchQuery.trim().length === 0 ? (
+          // Default content when no search
+          <View style={styles.defaultContent}>
+            {/* Popular Searches */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t('search:popularTitle')}</Text>
+              <View style={styles.tagsContainer}>
+                {popularSearches.map((search, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.tag}
+                    onPress={() => handlePopularSearch(search)}
+                  >
+                    <Text style={styles.tagText}>{search}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
-          </View>
-        ) : results.length === 0 ? (
-          // No Results
-          <View style={styles.centerContainer}>
-            <Image
-              source={require('../assets/images/favicon.png')} // Fallback or use a generic "empty" asset if available
-              style={[styles.emptyImage, { opacity: 0.3, width: 60, height: 60, tintColor: colors.textSecondary }]}
-            />
-            <Text style={styles.noResultsText}>{t('search:noResultsFound')}</Text>
+
+            {/* Recent Searches */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t('search:recentTitle')}</Text>
+              <View style={styles.tagsContainer}>
+                {recentSearches.map((search, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.tag}
+                    onPress={() => handlePopularSearch(search)}
+                  >
+                    <Text style={styles.tagText}>{search}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Quick Actions */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t('search:quickActions.title')}</Text>
+              <View style={styles.quickActionsGrid}>
+                <TouchableOpacity
+                  style={styles.quickAction}
+                  onPress={() => Alert.alert(t('search:quickActions.urgentTasks'), t('search:quickActions.showUrgentTasks'))}
+                >
+                  <Ionicons name="flash-outline" size={24} color={colors.warning} />
+                  <Text style={styles.quickActionText}>{t('search:quickActions.urgentTasks')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.quickAction}
+                  onPress={() => Alert.alert(t('search:quickActions.upcomingEvents'), t('search:quickActions.showUpcomingEvents'))}
+                >
+                  <Ionicons name="calendar-outline" size={24} color={colors.success} />
+                  <Text style={styles.quickActionText}>{t('search:quickActions.upcomingEvents')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.quickAction}
+                  onPress={() => Alert.alert(t('search:quickActions.newDonations'), t('search:quickActions.showNewDonations'))}
+                >
+                  <Ionicons name="heart-outline" size={24} color={colors.error} />
+                  <Text style={styles.quickActionText}>{t('search:quickActions.newDonations')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.quickAction}
+                  onPress={() => Alert.alert(t('search:quickActions.activeVolunteers'), t('search:quickActions.showActiveVolunteers'))}
+                >
+                  <Ionicons name="people-outline" size={24} color={colors.secondary} />
+                  <Text style={styles.quickActionText}>{t('search:quickActions.activeVolunteers')}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         ) : (
-          // Results List
-          <FlatList
-            data={results}
-            renderItem={renderItem}
-            keyExtractor={(item) => `${item.type}_${item.id}`}
-            contentContainerStyle={[styles.listContent, { paddingBottom: tabBarHeight + 20 }]}
-            showsVerticalScrollIndicator={false}
-          />
+          // Search Results
+          <View style={styles.resultsContainer}>
+            {isSearching ? (
+              <View style={styles.loadingContainer}>
+                <Ionicons name="search" size={scaleSize(40)} color={colors.textSecondary} />
+                <Text style={styles.loadingText}>{t('search:searching')}</Text>
+              </View>
+            ) : searchResults.length > 0 ? (
+              <>
+                <Text style={styles.resultsTitle}>{t('search:resultsCount', { count: searchResults.length, query: searchQuery })}</Text>
+                <FlatList
+                  data={searchResults}
+                  renderItem={renderSearchResult}
+                  keyExtractor={(item) => item.id}
+                  scrollEnabled={false}
+                />
+              </>
+            ) : (
+              <View style={styles.noResultsContainer}>
+                <Ionicons name="search-outline" size={scaleSize(60)} color={colors.textSecondary} />
+                <Text style={styles.noResultsTitle}>{t('search:noResultsFound')}</Text>
+                <Text style={styles.noResultsText}>{t('search:tryChangingSearchTerms')}</Text>
+              </View>
+            )}
+          </View>
         )}
-      </View>
+      </ScrollContainer>
 
-      {/* AI Chat Button */}
-      <TouchableOpacity
-        style={styles.aiButton}
-        onPress={() => {
-          navigation.navigate('ChatDetailScreen', {
-            conversationId: 'ai_simulation',
-            userName: t('search:ai.title') || 'AI Assistant', // Use localized title
-            otherUserId: 'ai_bot',
-            userAvatar: 'https://cdn-icons-png.flaticon.com/512/4712/4712027.png'
-          });
-        }}
+      {/* Floating AI Assistant Button */}
+      <Pressable
+        onPress={() => setAiVisible(true)}
+        style={styles.fab}
       >
-        <Ionicons name="chatbubbles-outline" size={24} color={colors.white} />
-        <Text style={styles.aiButtonText}>AI</Text>
-      </TouchableOpacity>
+        <Ionicons name="sparkles-outline" size={scaleSize(22)} color={colors.white} />
+        <Text style={styles.fabText}>{t('search:ai.fabLabel')}</Text>
+      </Pressable>
+
+      {/* AI Assistant Modal*/}
+      <Modal animationType="slide" transparent visible={aiVisible} onRequestClose={() => setAiVisible(false)}>
+        <View style={styles.aiOverlay}>
+          <View style={styles.aiContainer}>
+            <View style={styles.aiHeader}>
+              <Text style={styles.aiTitle}>{t('search:ai.title')}</Text>
+              <Pressable onPress={() => setAiVisible(false)}>
+                <Ionicons name="close" size={scaleSize(22)} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+            <ScrollView style={styles.aiMessages} contentContainerStyle={{ paddingBottom: 10 }}>
+              {aiHistory.length === 0 ? (
+                <Text style={styles.aiPlaceholder}>{t('search:ai.placeholder')}</Text>
+              ) : (
+                aiHistory.map((m, idx) => (
+                  <View key={idx} style={[styles.aiBubble, m.role === 'user' ? styles.aiUser : styles.aiAssistant]}>
+                    <Text style={styles.aiBubbleText}>{m.text}</Text>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+            <View style={styles.aiInputRow}>
+              <TextInput
+                style={styles.aiInput}
+                value={aiText}
+                onChangeText={setAiText}
+                placeholder="איך אפשר לעזור?"
+                placeholderTextColor={colors.textSecondary}
+              />
+              <Pressable
+                style={styles.aiSend}
+                onPress={() => {
+                  if (!aiText.trim()) return;
+                  const userMsg = { role: 'user' as const, text: aiText.trim() };
+                  const assistantMsg = { role: 'assistant' as const, text: t('search:ai.assistantReply') };
+                  setAiHistory(prev => [...prev, userMsg, assistantMsg]);
+                  setAiText('');
+                }}
+              >
+                <Ionicons name="send" size={scaleSize(18)} color={colors.white} />
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
-    paddingTop: LAYOUT_CONSTANTS.SPACING.MD,
+  aiOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  aiContainer: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    borderTopRightRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    paddingTop: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
     paddingBottom: LAYOUT_CONSTANTS.SPACING.SM,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  aiHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: LAYOUT_CONSTANTS.SPACING.SM,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.backgroundTertiary,
+  },
+  aiTitle: {
+    fontSize: FontSizes.medium,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  aiMessages: {
+    maxHeight: scaleSize(260),
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
+  },
+  aiPlaceholder: {
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.LG,
+  },
+  aiBubble: {
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM + LAYOUT_CONSTANTS.SPACING.XS,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    marginVertical: LAYOUT_CONSTANTS.SPACING.XS,
+    maxWidth: '85%',
+  },
+  aiUser: {
+    backgroundColor: colors.pinkLight,
+    alignSelf: 'flex-end',
+  },
+  aiAssistant: {
+    backgroundColor: colors.backgroundSecondary,
+    alignSelf: 'flex-start',
+  },
+  aiBubbleText: {
+    color: colors.textPrimary,
+    fontSize: FontSizes.body,
+  },
+  aiInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: LAYOUT_CONSTANTS.SPACING.SM,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
+  },
+  aiInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    color: colors.textPrimary,
+    backgroundColor: colors.backgroundSecondary,
+  },
+  aiSend: {
+    backgroundColor: colors.secondary,
+    padding: LAYOUT_CONSTANTS.SPACING.SM,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+  },
+  fab: {
+    position: 'absolute',
+    left: LAYOUT_CONSTANTS.SPACING.LG,
+    bottom: scaleSize(50),
+    backgroundColor: colors.secondary,
+    borderRadius: scaleSize(22),
+    height: "auto",
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: LAYOUT_CONSTANTS.SPACING.XS,
+    ...createShadowStyle(colors.shadow, { width: 0, height: 2 }, 0.15, 4),
+  },
+  fabText: {
+    marginVertical: LAYOUT_CONSTANTS.SPACING.XS,
+    color: colors.white,
+    fontSize: FontSizes.small,
+    fontWeight: '700',
+  },
+  searchContainer: {
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.MD,
     backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  screenTitle: {
-    fontSize: FontSizes.heading2,
-    fontWeight: 'bold',
-    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
-    color: colors.textPrimary,
+  filterContainer: {
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    backgroundColor: colors.background,
   },
-  searchBarContainer: {
+  filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
     paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
-    height: scaleSize(44),
-    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    backgroundColor: colors.backgroundSecondary,
+    marginRight: LAYOUT_CONSTANTS.SPACING.SM,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  searchIcon: {
-    marginRight: LAYOUT_CONSTANTS.SPACING.SM,
+  filterButtonActive: {
+    backgroundColor: colors.secondary,
+    borderColor: colors.secondary,
   },
-  searchInput: {
-    flex: 1,
+  filterButtonText: {
     fontSize: FontSizes.body,
-    color: colors.textPrimary,
-    textAlign: 'right', // Hebrew support
-    height: '100%',
-  },
-  clearButton: {
-    padding: 4,
-  },
-  tabsContainer: {
-    marginBottom: 4,
-  },
-  tabsContent: {
-    gap: LAYOUT_CONSTANTS.SPACING.SM,
-    paddingVertical: 4,
-  },
-  tabItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    backgroundColor: colors.backgroundTertiary,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  activeTabItem: {
-    backgroundColor: colors.pink,
-    borderColor: colors.pink,
-  },
-  tabText: {
-    marginLeft: 6,
-    fontSize: FontSizes.small,
     color: colors.textSecondary,
-    fontWeight: '500',
+    marginLeft: LAYOUT_CONSTANTS.SPACING.XS + 2,
   },
-  activeTabText: {
+  filterButtonTextActive: {
     color: colors.white,
     fontWeight: '600',
   },
   content: {
     flex: 1,
-    backgroundColor: colors.background, // slightly different bg for content
   },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: LAYOUT_CONSTANTS.SPACING.XL,
+  defaultContent: {
+    padding: LAYOUT_CONSTANTS.SPACING.LG,
   },
-  loadingText: {
-    marginTop: LAYOUT_CONSTANTS.SPACING.MD,
-    color: colors.textSecondary,
-    fontSize: FontSizes.body,
+  section: {
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XL,
   },
-  initialStateContainer: {
-    flex: 1,
-    alignItems: 'center',
-    paddingTop: scaleSize(60),
-    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XL,
-  },
-  initialStateText: {
-    marginTop: LAYOUT_CONSTANTS.SPACING.MD,
+  sectionTitle: {
     fontSize: FontSizes.heading3,
-    color: colors.textTertiary,
-    textAlign: 'center',
-  },
-  suggestions: {
-    marginTop: scaleSize(40),
-    width: '100%',
-  },
-  suggestionsTitle: {
-    fontSize: FontSizes.body,
     fontWeight: 'bold',
-    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
-    color: colors.textPrimary,
     textAlign: 'left',
+    color: colors.textPrimary,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
   },
-  tagsRow: {
+  tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
   },
-  suggestionTag: {
-    backgroundColor: colors.background, // Fixed backgroundPrimary
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+  tag: {
+    backgroundColor: colors.backgroundSecondary,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    marginRight: LAYOUT_CONSTANTS.SPACING.SM,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
     borderWidth: 1,
     borderColor: colors.border,
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.05, 2),
   },
-  suggestionText: {
-    color: colors.textSecondary,
-    fontSize: FontSizes.small,
+  tagText: {
+    fontSize: FontSizes.body,
+    color: colors.textPrimary,
   },
-  emptyImage: {
-    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
-  },
-  noResultsText: {
-    fontSize: FontSizes.heading3,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  listContent: {
-    padding: LAYOUT_CONSTANTS.SPACING.LG,
-    gap: LAYOUT_CONSTANTS.SPACING.MD,
-  },
-  // Result Card
-  resultCard: {
+  quickActionsGrid: {
     flexDirection: 'row',
-    backgroundColor: colors.white,
-    padding: LAYOUT_CONSTANTS.SPACING.MD,
-    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  quickAction: {
+    width: '48%',
+    backgroundColor: colors.backgroundSecondary,
+    padding: LAYOUT_CONSTANTS.SPACING.LG,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
     alignItems: 'center',
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.08, 4),
+    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  imageContainer: {
-    position: 'relative',
+  quickActionText: {
+    fontSize: FontSizes.body,
+    color: colors.textPrimary,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
+    textAlign: 'center',
+  },
+  resultsContainer: {
+    padding: LAYOUT_CONSTANTS.SPACING.LG,
+  },
+  resultsTitle: {
+    fontSize: FontSizes.heading3,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.LG,
+  },
+  resultItem: {
+    flexDirection: 'row',
+    backgroundColor: colors.background,
+    padding: LAYOUT_CONSTANTS.SPACING.MD,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
+    ...createShadowStyle(colors.shadow, { width: 0, height: 1 }, 0.1, 2),
+  },
+  resultImageContainer: {
     marginRight: LAYOUT_CONSTANTS.SPACING.MD,
   },
   resultImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.backgroundTertiary,
+    width: scaleSize(50),
+    height: scaleSize(50),
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
   },
-  placeholderImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  resultImagePlaceholder: {
+    width: scaleSize(50),
+    height: scaleSize(50),
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  aiButton: {
-    position: 'absolute',
-    bottom: 50,
-    left: 20,
-    backgroundColor: colors.pink,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 25,
-    ...createShadowStyle(colors.shadow, { width: 0, height: 4 }, 0.2, 5),
-    zIndex: 100,
-  },
-  aiButtonText: {
-    color: colors.white,
-    marginLeft: 8,
-    fontWeight: 'bold',
-    fontSize: FontSizes.body,
-  },
-  typeBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    backgroundColor: colors.pink,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: colors.white,
   },
   resultContent: {
     flex: 1,
-    justifyContent: 'center',
   },
   resultHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 2,
+    alignItems: 'flex-start',
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
   resultTitle: {
     fontSize: FontSizes.body,
     fontWeight: '600',
     color: colors.textPrimary,
     flex: 1,
-    textAlign: 'left',
+    marginRight: LAYOUT_CONSTANTS.SPACING.SM,
   },
-  resultMeta: {
-    fontSize: 10,
-    color: colors.textTertiary,
-    marginLeft: 8,
-    backgroundColor: colors.backgroundSecondary,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    overflow: 'hidden',
+  resultTypeBadge: {
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.XS,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
   },
-  resultSubtitle: {
+  resultTypeText: {
     fontSize: FontSizes.small,
-    color: colors.pink,
-    marginBottom: 2,
-    textAlign: 'left',
+    fontWeight: '600',
   },
   resultDescription: {
-    fontSize: FontSizes.small, // slightly smaller
+    fontSize: FontSizes.body,
     color: colors.textSecondary,
-    textAlign: 'left',
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
+    lineHeight: Math.round(FontSizes.body * 1.3),
   },
+  resultMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  resultCategory: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+    marginRight: LAYOUT_CONSTANTS.SPACING.MD,
+  },
+  resultLocation: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+  },
+  resultExtraInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: LAYOUT_CONSTANTS.SPACING.SM,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
+    flexWrap: 'wrap',
+  },
+  infoChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: LAYOUT_CONSTANTS.SPACING.XS,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.XS,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+  },
+  infoChipText: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: scaleSize(50),
+  },
+  loadingText: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
+  },
+  noResultsContainer: {
+    alignItems: 'center',
+    paddingVertical: scaleSize(50),
+  },
+  noResultsTitle: {
+    fontSize: FontSizes.heading3,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginTop: LAYOUT_CONSTANTS.SPACING.MD,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
+  },
+  noResultsText: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: Math.round(FontSizes.body * 1.4),
+  },
+
 });
 
 export default SearchScreen;
-

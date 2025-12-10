@@ -71,37 +71,37 @@ const ANALYTICS_ITEM_PREFIX = 'category:';
 // TODO: Create proper category icon management system
 // TODO: Add category access control and permissions
 const BASE_CATEGORIES = [
-  { id: 'money', icon: 'card-outline', color: colors.success, bgColor: colors.successLight, screen: 'MoneyScreen' },
-  { id: 'trump', icon: 'car-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'TrumpScreen' },
-  { id: 'knowledge', icon: 'school-outline', color: colors.warning, bgColor: colors.warningLight, screen: 'KnowledgeScreen' },
-  { id: 'time', icon: 'time-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'TimeScreen' },
-  { id: 'food', icon: 'restaurant-outline', color: colors.success, bgColor: colors.successLight, screen: 'FoodScreen' },
-  { id: 'clothes', icon: 'shirt-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'ClothesScreen' },
-  { id: 'books', icon: 'library-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'BooksScreen' },
-  { id: 'items', icon: 'cube-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'ItemsScreen' },
-  { id: 'furniture', icon: 'bed-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'FurnitureScreen' },
-  { id: 'medical', icon: 'medical-outline', color: colors.error, bgColor: colors.errorLight, screen: 'MedicalScreen' },
-  { id: 'animals', icon: 'paw-outline', color: colors.success, bgColor: colors.successLight, screen: 'AnimalsScreen' },
-  { id: 'housing', icon: 'home-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'HousingScreen' },
-  { id: 'support', icon: 'heart-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'SupportScreen' },
-  { id: 'education', icon: 'book-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'EducationScreen' },
-  { id: 'environment', icon: 'leaf-outline', color: colors.success, bgColor: colors.successLight, screen: 'EnvironmentScreen' },
-  { id: 'technology', icon: 'laptop-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'TechnologyScreen' },
-  { id: 'music', icon: 'musical-notes-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'MusicScreen' },
-  { id: 'games', icon: 'game-controller-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'GamesScreen' },
-  { id: 'riddles', icon: 'help-circle-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'RiddlesScreen' },
-  { id: 'recipes', icon: 'fast-food-outline', color: colors.success, bgColor: colors.successLight, screen: 'RecipesScreen' },
-  { id: 'plants', icon: 'flower-outline', color: colors.success, bgColor: colors.successLight, screen: 'PlantsScreen' },
-  { id: 'waste', icon: 'trash-outline', color: colors.warning, bgColor: colors.warningLight, screen: 'WasteScreen' },
-  { id: 'art', icon: 'color-palette-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'ArtScreen' },
-  { id: 'sports', icon: 'football-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'SportsScreen' },
-  { id: 'dreams', icon: 'star-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'DreamsScreen' },
-  { id: 'fertility', icon: 'medkit-outline', color: colors.error, bgColor: colors.errorLight, screen: 'FertilityScreen' },
-  { id: 'jobs', icon: 'briefcase-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'JobsScreen' },
-  { id: 'matchmaking', icon: 'people-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'MatchmakingScreen' },
-  { id: 'mentalHealth', icon: 'pulse-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'MentalHealthScreen' },
-  { id: 'goldenAge', icon: 'person-outline', color: colors.warning, bgColor: colors.warningLight, screen: 'GoldenAgeScreen' },
-  { id: 'languages', icon: 'language-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'LanguagesScreen' },
+  { id: 'money',      icon: 'card-outline',        color: colors.success, bgColor: colors.successLight, screen: 'MoneyScreen' },
+  { id: 'trump',      icon: 'car-outline',         color: colors.primary,    bgColor: colors.infoLight,    screen: 'TrumpScreen' },
+  { id: 'knowledge',  icon: 'school-outline',      color: colors.warning, bgColor: colors.warningLight, screen: 'KnowledgeScreen' },
+  { id: 'time',       icon: 'time-outline',        color: colors.secondary,  bgColor: colors.pinkLight, screen: 'TimeScreen' },
+  { id: 'food',       icon: 'restaurant-outline',  color: colors.success, bgColor: colors.successLight, screen: 'FoodScreen' },
+  { id: 'clothes',    icon: 'shirt-outline',       color: colors.secondary,    bgColor: colors.pinkLight,    screen: 'ClothesScreen' },
+  { id: 'books',      icon: 'library-outline',     color: colors.primary, bgColor: colors.infoLight, screen: 'BooksScreen' },
+  { id: 'items',      icon: 'cube-outline',        color: colors.secondary, bgColor: colors.pinkLight, screen: 'ItemsScreen' },
+  { id: 'furniture',  icon: 'bed-outline',         color: colors.secondary, bgColor: colors.pinkLight, screen: 'FurnitureScreen' },
+  { id: 'medical',    icon: 'medical-outline',     color: colors.error,   bgColor: colors.errorLight,   screen: 'MedicalScreen' },
+  { id: 'animals',    icon: 'paw-outline',         color: colors.success, bgColor: colors.successLight, screen: 'AnimalsScreen' },
+  { id: 'housing',    icon: 'home-outline',        color: colors.primary,    bgColor: colors.infoLight,    screen: 'HousingScreen' },
+  { id: 'support',    icon: 'heart-outline',       color: colors.secondary, bgColor: colors.pinkLight,   screen: 'SupportScreen' },
+  { id: 'education',  icon: 'book-outline',        color: colors.primary,    bgColor: colors.infoLight,    screen: 'EducationScreen' },
+  { id: 'environment',icon: 'leaf-outline',        color: colors.success, bgColor: colors.successLight, screen: 'EnvironmentScreen' },
+  { id: 'technology', icon: 'laptop-outline',      color: colors.primary,    bgColor: colors.infoLight,    screen: 'TechnologyScreen' },
+  { id: 'music',      icon: 'musical-notes-outline', color: colors.secondary,  bgColor: colors.pinkLight,    screen: 'MusicScreen' },
+  { id: 'games',      icon: 'game-controller-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'GamesScreen' },
+  { id: 'riddles',    icon: 'help-circle-outline', color: colors.secondary,    bgColor: colors.pinkLight,    screen: 'RiddlesScreen' },
+  { id: 'recipes',    icon: 'fast-food-outline',   color: colors.success, bgColor: colors.successLight, screen: 'RecipesScreen' },
+  { id: 'plants',     icon: 'flower-outline',      color: colors.success, bgColor: colors.successLight, screen: 'PlantsScreen' },
+  { id: 'waste',      icon: 'trash-outline',       color: colors.warning, bgColor: colors.warningLight, screen: 'WasteScreen' },
+  { id: 'art',        icon: 'color-palette-outline', color: colors.secondary,  bgColor: colors.pinkLight,    screen: 'ArtScreen' },
+  { id: 'sports',     icon: 'football-outline',    color: colors.primary,  bgColor: colors.infoLight,  screen: 'SportsScreen' },
+  { id: 'dreams',     icon: 'star-outline',        color: colors.secondary,    bgColor: colors.pinkLight,    screen: 'DreamsScreen' },
+  { id: 'fertility',  icon: 'medkit-outline',      color: colors.error,   bgColor: colors.errorLight,   screen: 'FertilityScreen' },
+  { id: 'jobs',       icon: 'briefcase-outline',   color: colors.primary,    bgColor: colors.infoLight,    screen: 'JobsScreen' },
+  { id: 'matchmaking', icon: 'people-outline',     color: colors.secondary,    bgColor: colors.pinkLight,    screen: 'MatchmakingScreen' },
+  { id: 'mentalHealth', icon: 'pulse-outline',     color: colors.secondary,  bgColor: colors.pinkLight,  screen: 'MentalHealthScreen' },
+  { id: 'goldenAge',   icon: 'person-outline',     color: colors.warning, bgColor: colors.warningLight, screen: 'GoldenAgeScreen' },
+  { id: 'languages',   icon: 'language-outline',   color: colors.primary,    bgColor: colors.infoLight,    screen: 'LanguagesScreen' },
 ] as const;
 
 type CategoryId = typeof BASE_CATEGORIES[number]['id'];
@@ -117,12 +117,12 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
   const { isGuestMode, isRealAuth } = useUser();
-  const { t } = useTranslation(['donations', 'common']);
+  const { t } = useTranslation(['donations','common']);
 
   // חישוב מידות responsive לכרטיסים
   const { isTablet: isTabletScreen, isDesktop: isDesktopScreen } = getScreenInfo();
   const landscapeMode = isLandscape();
-
+  
   // Simplified responsive sizing for mobile web
   const availableHeight = SCREEN_HEIGHT - (insets?.top ?? 0) - (insets?.bottom ?? 0) - (tabBarHeight ?? 0) - (headerHeight ?? 0);
   const isMobileWebView = Platform.OS === 'web' && SCREEN_WIDTH <= 768;
@@ -164,8 +164,8 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
 
   const handleCategoryPress = (category: { id: CategoryId; screen?: string }) => {
     // Fire-and-forget analytics increment  
-    incrementCategoryCounter(category.id).catch(() => { });
-
+    incrementCategoryCounter(category.id).catch(() => {});
+    
     logger.info('DonationsScreen', 'Category pressed', {
       id: category.id,
       title: getCategoryText(category.id).title,
@@ -193,7 +193,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
   const otherCategories = BASE_CATEGORIES.filter(
     (c) => !primaryCategoryIds.includes(c.id as CategoryId)
   );
-
+  
   logger.info('DonationsScreen', 'Categories organized', {
     primary: primaryCategories.map((c) => c.id),
     other: otherCategories.length,
@@ -212,7 +212,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundSecondary} />
       {isGuestMode && <GuestModeNotice showLoginButton={false} />}
-
+      
       <ScrollContainer style={styles.scrollContainer} contentStyle={styles.scrollContent}>
         {/* סעיף ראשון - 4 קטגוריות מועדפות */}
         <View style={[styles.modernSection, { padding: sectionPadding }]}>
@@ -234,7 +234,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                   key={`primary-${category.id}`}
                   style={[
                     styles.modernCard,
-                    {
+                    { 
                       gap: cardGap,
                       width: cardWidth,
                       minWidth: cardWidth,
@@ -265,10 +265,10 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                         },
                       ]}
                     >
-                      <Ionicons
-                        name={category.icon as any}
-                        size={iconInnerSize * 0.6}
-                        color="white"
+                      <Ionicons 
+                        name={category.icon as any} 
+                        size={iconInnerSize * 0.6} 
+                        color="white" 
                       />
                     </View>
                   </View>
@@ -325,29 +325,29 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                       },
                     ]}
                   >
-                    <Ionicons
-                      name={category.icon as any}
-                      size={iconInnerSize * 0.4}
-                      color="white"
+                    <Ionicons 
+                      name={category.icon as any} 
+                      size={iconInnerSize * 0.4} 
+                      color="white" 
                     />
                   </View>
-                  <Text
+                  <Text 
                     style={[
                       styles.modernSmallCardTitle,
-                      {
+                      { 
                         color: category.color,
                         marginBottom: responsiveSpacing(2, 3, 4),
                       }
-                    ]}
+                    ]} 
                     numberOfLines={1}
                   >
                     {title}
                   </Text>
-                  <Text
+                  <Text 
                     style={[
                       styles.modernSmallCardSubtitle,
                       { color: category.color + 'AA' }
-                    ]}
+                    ]} 
                     numberOfLines={1}
                   >
                     {subtitle}
@@ -358,17 +358,17 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Stats Section */}
-        {(() => {
-          const now = Date.now();
-          const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
-          const weeklyDonations = donations.filter((d: any) => {
-            const t = new Date(d.createdAt || Date.now()).getTime();
-            return t >= weekAgo;
-          }).length;
-          const activeDonors = new Set(donations.map((d: any) => d.createdBy).filter(Boolean)).size;
-          const activeCharities = charities.length;
-          return (
+      {/* Stats Section */}
+      {(() => {
+        const now = Date.now();
+        const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+        const weeklyDonations = donations.filter((d: any) => {
+          const t = new Date(d.createdAt || Date.now()).getTime();
+          return t >= weekAgo;
+        }).length;
+        const activeDonors = new Set(donations.map((d: any) => d.createdBy).filter(Boolean)).size;
+        const activeCharities = charities.length;
+        return (
             <DonationStatsFooter
               compact={isCompact}
               stats={[
@@ -377,8 +377,8 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                 { label: t('donations:activeCharities'), value: activeCharities, icon: 'business-outline' },
               ]}
             />
-          );
-        })()}
+        );
+      })()}
       </ScrollContainer>
     </SafeAreaView>
   );
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   // Web-specific scroll wrappers
   webScrollContainer: {
     flex: 1,
-    ...(Platform.OS === 'web' && {
+    ...(Platform.OS === 'web' && { 
       overflow: 'auto' as any,
       WebkitOverflowScrolling: 'touch' as any,
       overscrollBehavior: 'contain' as any,
@@ -700,10 +700,9 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
-
+  
   // Modern Design Styles
   modernSection: {
-    marginTop: LAYOUT_CONSTANTS.SPACING.LG,
     backgroundColor: colors.background,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
     marginHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
@@ -764,7 +763,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
   },
   modernOtherGrid: {
-
+    
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center', // יישור לאמצע

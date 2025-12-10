@@ -1,6 +1,14 @@
 const DEFAULT_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://kc-mvp-server-production.up.railway.app';
 
-module.exports = {
+// Define colors locally for config usage (colors.tsx cannot be imported in JS config)
+const colors = {
+  secondary: '#FFB6C1',     // Soft Pink - Secondary brand color
+  backgroundTertiary: '#E3F2FD', // Very light blue for highlights
+};
+
+
+
+export default {
   expo: {
     name: "KC - הקיבוץ הקפיטליסטי",
     slug: "karma-community",
@@ -10,11 +18,11 @@ module.exports = {
     scheme: "karma-community",
     userInterfaceStyle: "automatic",
     // שמירה על primaryColor שהיה ב-app.json
-    primaryColor: "#FF69B4",
+    primaryColor: colors.secondary,
     splash: {
       image: "./assets/images/pink_logo.png",
       resizeMode: "contain",
-      backgroundColor: "#F0F8FF"
+      backgroundColor: colors.backgroundTertiary
     },
     assetBundlePatterns: [
       "**/*"
@@ -36,7 +44,7 @@ module.exports = {
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/images/pink_logo.png",
-        backgroundColor: "#F0F8FF"
+        backgroundColor: colors.backgroundTertiary
       },
       package: "com.navesarussi1.KarmaCommunity",
       intentFilters: [
@@ -66,15 +74,15 @@ module.exports = {
     },
     web: {
       bundler: "metro",
-      output: "single",
+      output: "static",
       favicon: "./assets/images/favicon.png",
       name: "KC - הקיבוץ הקפיטליסטי",
       shortName: "KC",
       description: "פלטפורמה חינמית ללא מטרות רווח לקהילה הישראלית",
       lang: "he",
       dir: "rtl",
-      themeColor: "#FF69B4",
-      backgroundColor: "#F0F8FF",
+      themeColor: colors.secondary,
+      backgroundColor: colors.backgroundTertiary,
       // הגדרות meta ו-build מה-app.json
       meta: {
         viewport: "width=device-width, initial-scale=1, shrink-to-fit=no"
@@ -87,12 +95,11 @@ module.exports = {
     },
     plugins: [
       "expo-router",
-      "expo-secure-store",
       [
         "expo-notifications",
         {
           icon: "./assets/images/pink_logo.png",
-          color: "#FF69B4",
+          color: colors.secondary,
           mode: "production",
           androidMode: "default",
           androidCollapsedTitle: "התראה חדשה"

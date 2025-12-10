@@ -71,19 +71,7 @@ export default function FirebaseGoogleButton() {
       logger.debug('FirebaseGoogleButton', 'Google credentials extracted', {
         hasAccessToken: !!googleAccessToken,
         hasIdToken: !!googleIdToken,
-        accessTokenLength: googleAccessToken?.length || 0,
-        idTokenLength: googleIdToken?.length || 0,
       });
-
-      // Validate that we have at least one token
-      if (!googleIdToken && !googleAccessToken) {
-        const errorMsg = 'לא התקבל טוקן מגוגל. נסה שוב.';
-        logger.error('FirebaseGoogleButton', 'No tokens received from Google', {
-          hasCredential: !!credential,
-          hasResult: !!result,
-        });
-        throw new Error(errorMsg);
-      }
 
       const user = result.user;
       logger.debug('FirebaseGoogleButton', 'User data received', {
@@ -91,27 +79,9 @@ export default function FirebaseGoogleButton() {
         email: user.email,
       });
 
-      // Prepare request body - only include tokens that exist
-      const requestBody: {
-        idToken?: string;
-        accessToken?: string;
-        firebaseUid: string;
-      } = {
-        firebaseUid: user.uid, // Send Firebase UID (from Firebase Auth)
-      };
-
-      if (googleIdToken) {
-        requestBody.idToken = googleIdToken;
-      }
-      if (googleAccessToken) {
-        requestBody.accessToken = googleAccessToken;
-      }
-
       logger.debug('FirebaseGoogleButton', 'Sending to server for verification', {
         apiUrl: API_BASE_URL,
         firebaseUid: user.uid,
-        hasIdToken: !!requestBody.idToken,
-        hasAccessToken: !!requestBody.accessToken,
       });
 
       // Send Google tokens and Firebase UID to server
@@ -122,7 +92,11 @@ export default function FirebaseGoogleButton() {
           'Content-Type': 'application/json',
           'User-Agent': `KarmaCommunity-${Platform.OS}`,
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          idToken: googleIdToken,
+          accessToken: googleAccessToken,
+          firebaseUid: user.uid, // Send Firebase UID (from Firebase Auth)
+        }),
       });
 
       if (!response.ok) {
@@ -255,8 +229,8 @@ export default function FirebaseGoogleButton() {
         errorMessage = 'הדפדפן חסם את חלון ההתחברות. אנא אפשר pop-ups.';
         logger.warn('FirebaseGoogleButton', 'Popup was blocked by browser');
       } else {
-        errorMessage = error.message || 'שגיאה בהתחברות. נסה שוב.';
-        logger.warn('FirebaseGoogleButton', 'Login error', { code: error.code, message: error.message });
+        errorMessage = 'שגיאה בהתחברות. נסה שוב.';
+        logger.warn('FirebaseGoogleButton', 'Unknown error', { code: error.code });
       }
 
       setError(errorMessage);
