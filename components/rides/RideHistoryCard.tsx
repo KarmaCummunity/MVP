@@ -33,7 +33,7 @@ const RideHistoryCard: React.FC<RideHistoryCardProps> = ({ ride, onDelete, onRes
                         style={styles.deleteButton}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                        <Icon name="trash-outline" size={20} color="#D32F2F" />
+                        <Icon name="trash-outline" size={20} color={colors.legacyDarkRed} />
                     </TouchableOpacity>
                 )}
             </View>
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
         borderRadius: 4,
     },
     badgeCancelled: {
-        backgroundColor: '#FFEBEE',
+        backgroundColor: colors.errorLight,
     },
     badgeText: {
         fontSize: FontSizes.caption,
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     badgeTextCancelled: {
-        color: '#D32F2F',
+        color: colors.legacyDarkRed,
     },
     restoreChip: {
         backgroundColor: colors.moneyFormBackground,

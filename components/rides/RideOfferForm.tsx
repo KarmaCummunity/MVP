@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
         textAlign: 'right',
     },
     requiredStar: {
-        color: '#F44336',
+        color: colors.error,
         fontWeight: 'bold',
     },
     input: {
