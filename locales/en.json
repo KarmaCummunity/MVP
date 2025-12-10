@@ -36,19 +36,23 @@
     "report": "Report",
     "cannotOpenLink": "Cannot open the link",
     "welcomeShort": "Welcome!",
+    "appName": "Karma Community",
     "freeAppNotice": "The app is completely free and non-profit",
     "genericTryAgain": "An error occurred. Please try again.",
     "labels": {
       "countryIsrael": "Israel"
-    }
+    },
+    "newChat": "New Chat",
+    "chat": "Chat",
+    "favorites": "Favorites",
+    "posts": "Posts",
+    "inactive": "Inactive"
   },
   "search": {
     "sortTitle": "Sort",
     "filterTitle": "Filter",
     "chooseFiltersTitle": "Choose filter options",
     "chooseSortsTitle": "Choose sort options",
-    "filterLabel": "Filter:",
-    "sortLabel": "Sort:",
     "popularSearches": [
       "Food collection",
       "Blood donation",
@@ -91,24 +95,24 @@
       "disabled": "Disabled",
       "patients": "Patients",
       "familiesInDistress": "Families in distress",
-      "immigrants": "Immigtants",
+      "immigrants": "Immigrants",
       "community": "Community",
-      "noCost": "No cost sharing",
-      "womenOnly": "Women only",
-      "menOnly": "Men only",
-      "age18_25": "Age 18-25",
-      "age25_40": "Age 25-40",
-      "age40plus": "Age 40+",
-      "noJunctions": "No junctions",
-      "noBuses": "No buses",
-      "noSmoking": "No smoking",
-      "withKids": "With kids",
-      "withPets": "With pets",
-      "roomForGear": "Room for gear",
-      "highway6": "Highway 6",
-      "ac": "A/C",
-      "music": "Music",
-      "accessibility": "Accessibility"
+      "בחינם": "Free",
+      "כמו חדש": "Like New",
+      "משומש": "Used",
+      "לחלפים": "For Parts",
+      "עם איסוף עצמי": "Self Pickup",
+      "משלוח בתשלום": "Paid Delivery",
+      "נגישות": "Accessibility",
+      "ספות": "Sofas",
+      "ארונות": "Wardrobes",
+      "מיטות": "Beds",
+      "גברים": "Men",
+      "נשים": "Women",
+      "ילדים": "Children",
+      "מטבח": "Kitchen",
+      "חשמל": "Electronics",
+      "צעצועים": "Toys"
     },
     "sort": {
       "alphabetical": "Alphabetical",
@@ -117,7 +121,12 @@
       "byEstablishedDate": "By established date",
       "byDonors": "By donors",
       "byRating": "By rating",
-      "byRelevance": "By relevance"
+      "byRelevance": "By relevance",
+      "אלפביתי": "Alphabetical",
+      "לפי מיקום": "By location",
+      "לפי תאריך": "By date",
+      "לפי דירוג": "By rating",
+      "לפי רלוונטיות": "By relevance"
     },
     "popularTitle": "Popular searches",
     "recentTitle": "Recent searches",
@@ -143,6 +152,22 @@
       "assistantReply": "Got it! I'll get back with an answer soon."
     }
   },
+  "webOverlay": {
+    "stats": "In Numbers",
+    "vision": "Vision",
+    "problems": "The Problems",
+    "features": "Features",
+    "about": "About",
+    "how": "How it Works",
+    "who": "For Whom",
+    "values": "Values",
+    "roadmap": "Roadmap",
+    "contact": "Contact",
+    "faq": "FAQ",
+    "siteMode": "About Site",
+    "appMode": "App",
+    "menu": "Menu"
+  },
   "comments": {
     "title": "Comments",
     "reply": "Reply",
@@ -151,6 +176,7 @@
     "sendError": "Failed to send comment"
   },
   "chat": {
+    "title": "Chats",
     "loadError": "Failed to load messages",
     "sendError": "Failed to send message",
     "fileInvalid": "The file is invalid",
@@ -174,6 +200,34 @@
     "noChats": "No conversations",
     "startNewOrClearSearch": "Start a new chat or clear search",
     "loadConversationsError": "Failed to load conversations"
+  },
+  "newChatScreen": {
+    "title": "New Chat",
+    "error": "Error",
+    "selectUserFirst": "Please select a user first",
+    "errorLoadingFriends": "Error loading friends list",
+    "welcomeMessage": "Hi {{name}}! 👋",
+    "errorCreatingChat": "Error creating conversation",
+    "noName": "No name",
+    "existingChat": "Existing chat",
+    "noBio": "No description",
+    "karmaPoints": "Karma Points",
+    "followers": "Followers",
+    "noFriendsYet": "No friends yet",
+    "startFollowingToChat": "Start following people to create new chats",
+    "discoverNewPeople": "Discover new people",
+    "searchFriends": "Search friends...",
+    "filter": "Filter",
+    "all": "All",
+    "online": "Online",
+    "highKarma": "High Karma",
+    "newFollowers": "New Followers",
+    "sortLabel": "Sort:",
+    "sortName": "Name",
+    "sortKarma": "Karma",
+    "sortFollowers": "Followers",
+    "sortActivity": "Activity",
+    "loadingFriends": "Loading friends..."
   },
   "home": {
     "title": "Home",
@@ -304,10 +358,13 @@
   },
   "donations": {
     "title": "Community in action",
+    "searchCharitiesForHelp": "Search charities",
+    "searchCharitiesForDonation": "Search charities",
     "forYou": "Just for you",
     "popular": "Popular",
     "all": "All",
     "statistics": "Statistics",
+    "others": "Other categories",
     "allWays": "All ways to take action",
     "comingSoonTitle": "Soon",
     "comingSoonMessage": "This category will be available soon!",
@@ -502,6 +559,24 @@
     }
   },
   "trump": {
+    "filters": [
+      "No cost sharing",
+      "Gender: women only",
+      "Gender: men only",
+      "Age: 18-25",
+      "Age: 25-40",
+      "Age: 40+",
+      "No junctions",
+      "No buses",
+      "No smoking",
+      "With kids",
+      "With pets",
+      "Room for gear",
+      "Highway 6",
+      "AC",
+      "Music",
+      "Accessibility"
+    ],
     "sorts": [
       "Alphabetical",
       "By location",
@@ -551,9 +626,6 @@
     },
     "ui": {
       "timePickerPlaceholder": "Departure time",
-      "leavingToday": "Leaving today",
-      "selectDate": "Select date",
-      "recurringRide": "Recurring ride",
       "immediateDeparture": "Immediate departure",
       "useCurrentLocation": "Use current location",
       "fromPointLabel": "From",
@@ -568,35 +640,8 @@
       "searchPlaceholder": {
         "offer": "Where to? Destination...",
         "seek": "Find a ride: destination..."
-      },
-      "fromLocationLabel": "Where from?",
-      "otherLocation": "Other address",
-      "noRecentRides": "You haven't published any rides yet",
-      "whatsappGroups": "Ride groups",
-      "searchResultsPrefix": "Results for",
-      "availableRides": "Available rides",
-      "noRidesFoundTitle": "No rides found",
-      "noRidesFoundBody": "Try changing the filters or search again later",
-      "enterDepartureAddress": "Enter departure address"
+      }
     },
-    "filters": [
-      "noCost",
-      "womenOnly",
-      "menOnly",
-      "age18_25",
-      "age25_40",
-      "age40plus",
-      "noJunctions",
-      "noBuses",
-      "noSmoking",
-      "withKids",
-      "withPets",
-      "roomForGear",
-      "highway6",
-      "ac",
-      "music",
-      "accessibility"
-    ],
     "menu": {
       "history": "History",
       "settings": "Settings",
@@ -684,6 +729,7 @@
     "history": "History",
     "favorites": "Favorites",
     "discoverPeople": "Discover people",
+    "discover": "Discover people",
     "notifications": "Notifications",
     "highlights": {
       "new": "New",
@@ -744,6 +790,7 @@
     }
   },
   "notifications": {
+    "title": "Notifications",
     "loadError": "Failed to load notifications",
     "markAllDoneTitle": "Done",
     "markAllDoneBody": "All notifications marked as read",
@@ -761,6 +808,8 @@
     "welcomeSystem": "Welcome to Karma Community!"
   },
   "auth": {
+    "login": "Login",
+    "register": "Register",
     "title": "Welcome!",
     "subtitle": "The Capitalist Kibbutz of Israel",
     "continueAsGuest": "Continue as guest",
@@ -770,7 +819,9 @@
       "checkFailed": "Email check failed. Please try again.",
       "cta": "Sign up with email",
       "placeholder": "Enter email",
+      "placeholderExample": "name@example.com",
       "passwordPlaceholder": "Enter password",
+      "passwordPlaceholderExample": "******",
       "continue": "Continue",
       "submit": "Sign up / Login",
       "checking": "Checking...",
@@ -919,6 +970,12 @@
     "clearCacheConfirm": "Are you sure you want to clear the cache?",
     "clear": "Clear",
     "cacheCleared": "Cache cleared successfully",
+    "resetLocalData": "Reset Data",
+    "resetLocalDataDesc": "Clear all local data and cache",
+    "resetLocalDataTitle": "Reset Local Data",
+    "resetLocalDataMessage": "Are you sure you want to clear all local data? This action cannot be undone.",
+    "resetLocalDataConfirm": "Reset",
+    "resetLocalDataSuccess": "Data reset successfully",
     "aboutSection": "About",
     "about": "About Karma Community",
     "aboutDesc": "Version, Terms of Service and more",

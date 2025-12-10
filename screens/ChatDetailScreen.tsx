@@ -350,7 +350,7 @@ export default function ChatDetailScreen() {
 
   const renderLoadingIndicator = () => (
     <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={colors.pink} />
+      <ActivityIndicator size="large" color={colors.secondary} />
       <Text style={styles.loadingText}>טוען הודעות...</Text>
     </View>
   );
@@ -430,7 +430,7 @@ export default function ChatDetailScreen() {
             disabled={isSending}
           >
             {isSending ? (
-              <ActivityIndicator size="small" color={colors.backgroundPrimary} />
+              <ActivityIndicator size="small" color={colors.background} />
             ) : (
               <Text style={styles.sendButtonText}>שלח</Text>
             )}
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
   },
   loadingText: {
     marginTop: 10,
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
   // Chat messages container
   messagesContainer: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     paddingHorizontal: 10,
   },
   // Input container at bottom
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: 15,
     paddingBottom: Platform.OS === 'android' ? 20 : 10, 
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   sendButton: {
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
     borderRadius: 20,
     paddingHorizontal: 20,
     paddingVertical: 10,
@@ -563,20 +563,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.textSecondary,
   },
   sendButtonText: {
-    color: colors.backgroundPrimary,
+    color: colors.background,
     fontWeight: 'bold',
     fontSize: FontSizes.body,
   },
   androidBottomSpacer: {
     height: 20,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
   },
   mediaOptionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },

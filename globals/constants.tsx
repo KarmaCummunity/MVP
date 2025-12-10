@@ -1,4 +1,5 @@
 // Charities list moved to fakeData.ts file
+import colors from './colors';
 
 // TODO: Add comprehensive constants documentation and usage examples
 // TODO: Implement proper TypeScript strict types for all constants
@@ -26,46 +27,46 @@ export const IconSizes = {
 // Motivational quotes moved to fakeData.ts file
 
 export const FontSizes = {
-    // --- General Text Sizes ---
-    /** Smallest text size, often used for captions or fine print. */
-    caption: 10,
-    /** Typically used for secondary information, dates, or small labels. */
-    small: 12,
-    /** Standard body text size for most paragraphs and descriptions. */
-    body: 14,
-    /** Slightly larger text, often used for subheadings or prominent labels. */
-    medium: 16,
-    /** Larger text, suitable for section titles or important short phrases. */
-    large: 18,
-  
-    // --- Heading Sizes ---
-    /** Primary heading size for main screen titles. */
-    heading1: 24,
-    /** Secondary heading size for major sections. */
-    heading2: 20,
-    /** Tertiary heading size for subsections. */
-    heading3: 18, // Can be same as 'large' if appropriate
-    // --- Legacy/Compatibility ---
-    /** Compatibility mapping for older screens expecting 'title' */
-    title: 24,
-  
-    // --- UI Specific Sizes (if distinct from general text) ---
-    /** Size for button text. */
-    button: 14,
-    /** Size for input field text. */
-    input: 16,
-    /** Size for tab bar labels. */
-    tabLabel: 12,
-    /** Size for icon labels that accompany text. */
-    iconLabel: 12,
-  
-    // --- App-specific adjustments (if needed) ---
-    /** For specific very large numbers or display text */
-    displayLarge: 32,
-    /** For very small UI elements */
-    extraSmall: 8,
-  };
- 
+  // --- General Text Sizes ---
+  /** Smallest text size, often used for captions or fine print. */
+  caption: 10,
+  /** Typically used for secondary information, dates, or small labels. */
+  small: 12,
+  /** Standard body text size for most paragraphs and descriptions. */
+  body: 14,
+  /** Slightly larger text, often used for subheadings or prominent labels. */
+  medium: 16,
+  /** Larger text, suitable for section titles or important short phrases. */
+  large: 18,
+
+  // --- Heading Sizes ---
+  /** Primary heading size for main screen titles. */
+  heading1: 24,
+  /** Secondary heading size for major sections. */
+  heading2: 20,
+  /** Tertiary heading size for subsections. */
+  heading3: 18, // Can be same as 'large' if appropriate
+  // --- Legacy/Compatibility ---
+  /** Compatibility mapping for older screens expecting 'title' */
+  title: 24,
+
+  // --- UI Specific Sizes (if distinct from general text) ---
+  /** Size for button text. */
+  button: 14,
+  /** Size for input field text. */
+  input: 16,
+  /** Size for tab bar labels. */
+  tabLabel: 12,
+  /** Size for icon labels that accompany text. */
+  iconLabel: 12,
+
+  // --- App-specific adjustments (if needed) ---
+  /** For specific very large numbers or display text */
+  displayLarge: 32,
+  /** For very small UI elements */
+  extraSmall: 8,
+};
+
 // For searching 
 // i18n keys for search filters (displayed via t('search:filters.<key>'))
 export const filterOptions: string[] = [
@@ -110,7 +111,7 @@ export const menu_for_trumps: string[] = [
   'נסיעות חד פעמיות',
   'נסיעות משותפות',
   'הובלות',
-  'משלוחים',  
+  'משלוחים',
 ]
 
 // WhatsApp groups details moved to fakeData.ts file
@@ -225,17 +226,17 @@ export const categories = [
 
 // Task priorities
 export const priorities = [
-  { value: 'low', label: 'נמוכה', color: '#4CAF50' },
-  { value: 'medium', label: 'בינונית', color: '#FF9800' },
-  { value: 'high', label: 'גבוהה', color: '#F44336' }
+  { value: 'low', label: 'נמוכה', color: colors.success },
+  { value: 'medium', label: 'בינונית', color: colors.warning },
+  { value: 'high', label: 'גבוהה', color: colors.error }
 ];
 
 // Task statuses
 export const statuses = [
-  { value: 'pending', label: 'ממתין', color: '#FF9800' },
-  { value: 'in_progress', label: 'בביצוע', color: '#2196F3' },
-  { value: 'completed', label: 'הושלם', color: '#4CAF50' },
-  { value: 'cancelled', label: 'בוטל', color: '#9E9E9E' }
+  { value: 'pending', label: 'ממתין', color: colors.warning },
+  { value: 'in_progress', label: 'בביצוע', color: colors.primary },
+  { value: 'completed', label: 'הושלם', color: colors.success },
+  { value: 'cancelled', label: 'בוטל', color: colors.textTertiary }
 ];
 
 // Component size constants

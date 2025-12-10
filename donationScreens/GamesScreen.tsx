@@ -8,8 +8,8 @@ export default function GamesScreen() {
       config={{
         id: 'games',
         icon: 'game-controller-outline',
-        color: colors.orange,
-        bgColor: colors.orangeLight,
+        color: colors.accent,
+        bgColor: colors.warningLight,
       }}
     />
   );

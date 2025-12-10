@@ -1,6 +1,7 @@
 // utils/notificationService.ts
 import { Platform, Alert } from 'react-native';
 import { db, DB_COLLECTIONS, DatabaseService } from './databaseService';
+import colors from '../globals/colors';
 
 // Import notifications only on supported platforms
 let Notifications: any = null;
@@ -115,7 +116,7 @@ export const requestNotificationPermissions = async (): Promise<boolean> => {
         name: 'default',
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
+        lightColor: colors.error, // Red light
       });
     }
 

@@ -37,9 +37,9 @@ interface SearchBarProps {
   hideSortButton?: boolean;
 }
 
-const SearchBar = ({ 
-  onHasActiveConditionsChange, 
-  onSearch, 
+const SearchBar = ({
+  onHasActiveConditionsChange,
+  onSearch,
   placeholder,
   filterOptions = defaultFilterOptions,
   sortOptions = defaultSortOptions,
@@ -52,38 +52,38 @@ const SearchBar = ({
   hideSortButton = false
 }: SearchBarProps) => {
   const [searchText, setSearchText] = useState("");
-  const { t } = useTranslation(['search','common']);
+  const { t } = useTranslation(['search', 'common']);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [isSortModalVisible, setIsSortModalVisible] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [selectedSorts, setSelectedSorts] = useState<string[]>([]);
- // New state to track if SearchBar has active filters/sorts
- const [hasActiveConditions, setHasActiveConditions] = useState<boolean>(false);
+  // New state to track if SearchBar has active filters/sorts
+  const [hasActiveConditions, setHasActiveConditions] = useState<boolean>(false);
 
- // Callback function to be passed to SearchBar
- const handleHasActiveConditionsChange = (isActive: boolean) => {
-   setHasActiveConditions(isActive);
-   onHasActiveConditionsChange?.(isActive);
- };
+  // Callback function to be passed to SearchBar
+  const handleHasActiveConditionsChange = (isActive: boolean) => {
+    setHasActiveConditions(isActive);
+    onHasActiveConditionsChange?.(isActive);
+  };
 
- // Determine paddingBottom based on hasActiveConditions
- const getPaddingBottom = () => {
-   if (hasActiveConditions) {
-     // If there are filters/sorts, provide less padding to avoid excessive space
-     return Platform.select({
-       ios: 20,
-       android: 0,
-       web: 0,
-     });
-   } else {
-     // If no filters/sorts, provide more padding for the static buttons row
-     return Platform.select({
-       ios: 80,
-       android: 0,
-       web: 0, // Assuming web might handle spacing differently
-     });
-   }
- };
+  // Determine paddingBottom based on hasActiveConditions
+  const getPaddingBottom = () => {
+    if (hasActiveConditions) {
+      // If there are filters/sorts, provide less padding to avoid excessive space
+      return Platform.select({
+        ios: 20,
+        android: 0,
+        web: 0,
+      });
+    } else {
+      // If no filters/sorts, provide more padding for the static buttons row
+      return Platform.select({
+        ios: 80,
+        android: 0,
+        web: 0, // Assuming web might handle spacing differently
+      });
+    }
+  };
 
   // Effect to inform parent about active conditions
   useEffect(() => {
@@ -98,10 +98,10 @@ const SearchBar = ({
       onSearch?.(query, filters, sorts, []);
       return;
     }
-    
+
     // Perform search on the provided data
     let results = [...searchData];
-    
+
     // Filter by search text if provided
     if (query.trim() !== "") {
       results = results.filter(item => {
@@ -124,13 +124,13 @@ const SearchBar = ({
         if (item.title && item.title.toLowerCase().includes(query.toLowerCase())) {
           return true;
         }
-        
+
         // Fallback to generic search for other properties
         const itemStr = JSON.stringify(item).toLowerCase();
         return itemStr.includes(query.toLowerCase());
       });
     }
-    
+
     // Apply filters if any are selected
     if (filters.length > 0) {
       results = results.filter(item => {
@@ -154,11 +154,11 @@ const SearchBar = ({
         });
       });
     }
-    
+
     // Apply sorting if any is selected
     if (sorts.length > 0) {
       const sortOption = sorts[0]; // Only one sort at a time
-      
+
       // Enhanced sorting logic for charities
       if (sortOption === 'alphabetical') {
         results.sort((a, b) => {
@@ -199,7 +199,7 @@ const SearchBar = ({
         });
       }
     }
-    
+
     // Call the parent's search handler with all the parameters
     onSearch?.(query, filters, sorts, results);
   };
@@ -210,16 +210,16 @@ const SearchBar = ({
 
   const handleFilterSelection = (option: string) => {
     setSelectedFilters((prevFilters) => {
-      const newFilters = prevFilters.includes(option) 
+      const newFilters = prevFilters.includes(option)
         ? prevFilters.filter((item) => item !== option)
         : [...prevFilters, option];
-      
+
       // Notify parent of filter changes
       onFiltersChange?.(newFilters);
-      
+
       // Perform real-time search with new filters
       performSearch(searchText, newFilters, selectedSorts);
-      
+
       return newFilters;
     });
   };
@@ -227,13 +227,13 @@ const SearchBar = ({
   const handleSortSelection = (option: string) => {
     setSelectedSorts((prevSorts) => {
       const newSorts = prevSorts.includes(option) ? [] : [option];
-      
+
       // Notify parent of sort changes
       onSortsChange?.(newSorts);
-      
+
       // Perform real-time search with new sorts
       performSearch(searchText, selectedFilters, newSorts);
-      
+
       return newSorts;
     });
   };
@@ -241,23 +241,23 @@ const SearchBar = ({
   const removeFilter = (filterToRemove: string) => {
     setSelectedFilters((prevFilters) => {
       const newFilters = prevFilters.filter((filter) => filter !== filterToRemove);
-      
+
       // Notify parent of filter changes
       onFiltersChange?.(newFilters);
-      
+
       // Perform real-time search with updated filters
       performSearch(searchText, newFilters, selectedSorts);
-      
+
       return newFilters;
     });
   };
 
   const removeSort = (sortToRemove: string) => {
     setSelectedSorts([]); // Remove all sorts, as typically only one can be active
-    
+
     // Notify parent of sort changes
     onSortsChange?.([]);
-    
+
     // Perform real-time search with updated sorts
     performSearch(searchText, selectedFilters, []);
   };
@@ -268,7 +268,7 @@ const SearchBar = ({
   // Handle text input changes
   const handleTextChange = (text: string) => {
     setSearchText(text);
-    
+
     // Perform real-time search as user types
     performSearch(text, selectedFilters, selectedSorts);
   };
@@ -318,7 +318,7 @@ const SearchBar = ({
         <TextInput
           style={[localStyles.searchInput, { textAlign: biDiTextAlign('right') }]}
           placeholder={searchPlaceholder}
-          placeholderTextColor={colors.textPlaceholder}
+          placeholderTextColor={colors.textTertiary}
           value={searchText}
           onChangeText={handleTextChange}
           onSubmitEditing={handleSubmitEditing}
@@ -372,13 +372,13 @@ const SearchBar = ({
                         isFilterSelected(option) && localStyles.modalOptionTextSelected,
                       ]}
                     >
-                       {t(`search:filters.${option}`)}
+                      {t(`search:filters.${option}`)}
                     </Text>
                     {isFilterSelected(option) && (
                       <Ionicons
                         name="checkmark-circle"
                         size={20}
-                        color={colors.pink}
+                        color={colors.secondary}
                         style={localStyles.modalCheckmark}
                       />
                     )}
@@ -434,13 +434,13 @@ const SearchBar = ({
                         isSortSelected(option) && localStyles.modalOptionTextSelected,
                       ]}
                     >
-                       {t(`search:sort.${option}`)}
+                      {t(`search:sort.${option}`)}
                     </Text>
                     {isSortSelected(option) && (
                       <Ionicons
                         name="checkmark-circle"
                         size={20}
-                        color={colors.pink}
+                        color={colors.secondary}
                         style={localStyles.modalCheckmark}
                       />
                     )}
@@ -470,7 +470,7 @@ const SearchBar = ({
             {/* Sort items */}
             {selectedSorts.length > 0 && (
               <>
-                <Text style={localStyles.rowLabelInline}>{t('search:sortLabel')}:</Text>
+                <Text style={localStyles.rowLabelInline}>{t('search:sortTitle')}:</Text>
                 {selectedSorts.map((sort) => (
                   <TouchableOpacity
                     key={sort}
@@ -485,14 +485,14 @@ const SearchBar = ({
                 ))}
               </>
             )}
-            
+
             {/* Filter items */}
             {selectedFilters.length > 0 && (
               <>
                 {selectedSorts.length > 0 && (
                   <Text style={localStyles.separator}>•</Text>
                 )}
-                <Text style={localStyles.rowLabelInline}>{t('search:filterLabel')}:</Text>
+                <Text style={localStyles.rowLabelInline}>{t('search:filterTitle')}:</Text>
                 {selectedFilters.map((filter) => (
                   <TouchableOpacity
                     key={filter}
@@ -511,7 +511,7 @@ const SearchBar = ({
         </View>
       )}
 
-     
+
     </View>
   );
 };
@@ -528,17 +528,17 @@ const localStyles = StyleSheet.create({
     backgroundColor: colors.backgroundSecondary,
     borderRadius: responsiveSpacing(18, 20, 22),
     marginHorizontal: 5,
-    ...createShadowStyle("#000", { width: 0, height: 1 }, 0.08, 2),
+    ...createShadowStyle("colors.black", { width: 0, height: 1 }, 0.08, 2),
     elevation: 2,
     paddingVertical: responsiveSpacing(4, 6, 8),
     paddingHorizontal: responsiveSpacing(6, 8, 10),
     borderWidth: 0.5,
-    borderColor: colors.searchBorder,
+    borderColor: colors.black,
     maxWidth: '100%',
     minHeight: responsiveSpacing(32, 36, 40),
   },
   buttonContainer: {
-    backgroundColor: colors.moneyFormBackground,
+    backgroundColor: colors.pinkLight,
     borderRadius: responsiveSpacing(12, 14, 16),
     paddingVertical: responsiveSpacing(3, 4, 5),
     paddingHorizontal: responsiveSpacing(6, 8, 10),
@@ -546,14 +546,14 @@ const localStyles = StyleSheet.create({
   },
   buttonText: {
     fontSize: responsiveFontSize(FontSizes.caption, 10, 12),
-    color: colors.searchText,
+    color: colors.textSecondary,
     fontWeight: "600",
     writingDirection: "rtl",
   },
   searchInput: {
     flex: 1,
     fontSize: responsiveFontSize(FontSizes.small, 13, 15),
-    color: colors.searchText,
+    color: colors.textSecondary,
     paddingLeft: responsiveSpacing(4, 6, 8),
     paddingVertical: 0,
     minHeight: 20,
@@ -573,7 +573,7 @@ const localStyles = StyleSheet.create({
   modalContent: {
     backgroundColor: "white",
     // Dynamic styles applied in JSX for responsive sizing
-    ...createShadowStyle("#000", { width: 0, height: 2 }, 0.25, 4),
+    ...createShadowStyle("colors.black", { width: 0, height: 2 }, 0.25, 4),
     elevation: 5,
   },
   modalTitle: {
@@ -589,32 +589,32 @@ const localStyles = StyleSheet.create({
   modalOption: {
     paddingVertical: responsiveSpacing(15, 18, 20),
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: colors.border,
     flexDirection: rowDirection("row-reverse"),
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: responsiveSpacing(10, 12, 14),
   },
   modalOptionSelected: {
-    backgroundColor: colors.orangeLight,
+    backgroundColor: colors.warningLight,
   },
   modalOptionText: {
     fontSize: responsiveFontSize(FontSizes.medium, 16, 18),
     textAlign: "right",
     writingDirection: "rtl",
-    color: "#333",
+    color: colors.textPrimary,
     flex: 1,
   },
   modalOptionTextSelected: {
     fontWeight: "bold",
-    color: colors.pink,
+    color: colors.secondary,
   },
   modalCheckmark: {
     marginLeft: responsiveSpacing(10, 12, 14),
   },
   modalCloseButton: {
     marginTop: responsiveSpacing(20, 24, 28),
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
     paddingVertical: responsiveSpacing(12, 14, 16),
     borderRadius: responsiveSpacing(8, 10, 12),
     alignItems: "center",
@@ -662,7 +662,7 @@ const localStyles = StyleSheet.create({
     flexDirection: "row-reverse",
     alignItems: "center",
     gap: responsiveSpacing(3, 4, 5),
-    ...createShadowStyle("#000", { width: 0, height: 0.5 }, 0.05, 1),
+    ...createShadowStyle("colors.black", { width: 0, height: 0.5 }, 0.05, 1),
     elevation: 1,
   },
   selectedFilterSortButtonText: {
@@ -689,7 +689,7 @@ const localStyles = StyleSheet.create({
     flexGrow: 1,
   },
   staticFilterButton: {
-    backgroundColor: colors.orange,
+    backgroundColor: colors.accent,
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 20,

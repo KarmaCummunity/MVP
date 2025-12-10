@@ -8,6 +8,7 @@ import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUser } from '../stores/userStore';
+import colors from '../globals/colors';
 
 // Parse JWT token
 const parseJWT = (token: string) => {
@@ -118,7 +119,7 @@ export default function OAuthRedirect() {
     <View style={styles.container}>
       {status === 'processing' && (
         <>
-          <ActivityIndicator size="large" color="#4285F4" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.text}>מעבד התחברות...</Text>
         </>
       )}
@@ -137,21 +138,21 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
   },
   text: {
     marginTop: 16,
     fontSize: 16,
-    color: '#333',
+    color: colors.textPrimary,
   },
   successText: {
     fontSize: 18,
-    color: '#4CAF50',
+    color: colors.success,
     fontWeight: 'bold',
   },
   errorText: {
     fontSize: 18,
-    color: '#F44336',
+    color: colors.error,
     fontWeight: 'bold',
   },
 });

@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   closeButton: {
-    backgroundColor: colors.buttonPrimary,
+    backgroundColor: colors.primary,
     paddingVertical: 12,
     alignItems: 'center',
   },

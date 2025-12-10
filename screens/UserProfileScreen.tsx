@@ -70,11 +70,11 @@ const PostsRoute = ({ userId }: { userId: string }) => {
         setLoading(false);
         return;
       }
-
+      
       try {
         setLoading(true);
         console.log('📱 PostsRoute - Loading posts for userId:', userId);
-
+        
         // Load posts from database
         let userPosts: any[] = [];
         try {
@@ -83,7 +83,7 @@ const PostsRoute = ({ userId }: { userId: string }) => {
         } catch (error) {
           console.error('Error loading posts from DB:', error);
         }
-
+        
         // Load items from API
         const { USE_BACKEND, API_BASE_URL } = await import('../utils/dbConfig');
         let userItems: any[] = [];
@@ -123,8 +123,8 @@ const PostsRoute = ({ userId }: { userId: string }) => {
           ...userItems.map((item: any) => ({
             id: `item_${item.id}`,
             title: item.title,
-            thumbnail: item.image_base64
-              ? `data:image/jpeg;base64,${item.image_base64}`
+            thumbnail: item.image_base64 
+              ? `data:image/jpeg;base64,${item.image_base64}` 
               : '', // לא להציג תמונת placeholder כשאין תמונה
             likes: 0,
             type: 'item'
@@ -212,60 +212,6 @@ const TaggedRoute = () => (
   </View>
 );
 
-const RidesRoute = ({ userId }: { userId: string }) => {
-  const [rides, setRides] = useState<any[]>([]);
-  const { db } = require('../utils/databaseService');
-
-  useEffect(() => {
-    if (!userId) return;
-    const loadRides = async () => {
-      try {
-        const myRides = await db.getUserRides(userId, 'driver');
-        setRides(myRides || []);
-      } catch (e) {
-        console.error(e);
-        setRides([]);
-      }
-    };
-    loadRides();
-  }, [userId]);
-
-  if (rides.length === 0) {
-    return (
-      <View style={styles.tabContentPlaceholder}>
-        <Ionicons name="car-outline" size={60} color={colors.textSecondary} />
-        <Text style={styles.placeholderText}>אין טרמפים עדיין</Text>
-      </View>
-    );
-  }
-
-  return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
-      {rides.map((ride, i) => (
-        <View key={ride.id || i} style={{
-          backgroundColor: colors.backgroundSecondary,
-          padding: 12,
-          marginBottom: 10,
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: colors.border
-        }}>
-          <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ fontWeight: 'bold', fontSize: FontSizes.body, color: colors.textPrimary }}>
-              {ride.from} ➝ {ride.to}
-            </Text>
-            <Text style={{ fontSize: FontSizes.heading2 }}>🚗</Text>
-          </View>
-          <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', marginTop: 8 }}>
-            <Text style={{ color: colors.textSecondary }}>{ride.date} @ {ride.time}</Text>
-            <Text style={{ fontWeight: 'bold', color: colors.success }}>₪{ride.price}</Text>
-          </View>
-        </View>
-      ))}
-    </ScrollView>
-  );
-};
-
 // --- Main Component ---
 export default function UserProfileScreen() {
   const route = useRoute();
@@ -273,7 +219,7 @@ export default function UserProfileScreen() {
   const routeParams = route.params as UserProfileRouteParams | undefined;
   const { userId, userName, characterData } = routeParams || { userId: undefined, userName: undefined, characterData: undefined };
   const { selectedUser } = useUser();
-
+  
   // If no userId is provided, show error immediately
   if (!userId) {
     return (
@@ -299,11 +245,11 @@ export default function UserProfileScreen() {
       </SafeAreaView>
     );
   }
-
+  
   // Note: Removed automatic navigation to Profile screen when viewing own profile
   // This was causing the screen to get stuck in loading state
   // Users can still view their own profile via UserProfileScreen
-
+  
   const [index, setIndex] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followStats, setFollowStats] = useState({ followersCount: 0, followingCount: 0, isFollowing: false });
@@ -313,7 +259,6 @@ export default function UserProfileScreen() {
   const [routes] = useState<TabRoute[]>([
     { key: 'posts', title: 'פוסטים' },
     { key: 'reels', title: 'רילס' },
-    { key: 'rides', title: 'טרמפים' },
     { key: 'tagged', title: 'תיוגים' },
   ]);
 
@@ -393,7 +338,7 @@ export default function UserProfileScreen() {
         setLoading(false);
       }
     };
-
+    
     loadUser();
   }, [userId, userName, characterData]);
 
@@ -419,7 +364,7 @@ export default function UserProfileScreen() {
         // Screen is losing focus - reset only error state to prevent showing stale error messages
         // Don't reset user/loading as it might cause flickering when navigating back
         console.log('👤 UserProfileScreen - Screen losing focus, resetting error state only');
-
+        
         // Only reset error-related state if we're showing an error
         // Check if user is null (which means we're showing "משתמש לא נמצא")
         if (user === null && !loading) {
@@ -427,7 +372,7 @@ export default function UserProfileScreen() {
           setUser(null);
           setLoading(true);
         }
-
+        
         // Always reset follow stats when losing focus to prevent stale data
         setIsFollowing(false);
         setFollowStats({ followersCount: 0, followingCount: 0, isFollowing: false });
@@ -452,7 +397,7 @@ export default function UserProfileScreen() {
         }
       }
     };
-
+    
     loadFollowStats();
   }, [user, selectedUser]);
 
@@ -468,7 +413,7 @@ export default function UserProfileScreen() {
             setFollowStats(stats);
             setUpdatedCounts(counts);
             setIsFollowing(stats.isFollowing);
-
+            
             // Force re-render by updating a timestamp
             const refreshTimestamp = Date.now();
             setFollowStats(prevStats => ({
@@ -480,7 +425,7 @@ export default function UserProfileScreen() {
           }
         }
       };
-
+      
       refreshFollowStats();
     }, [user, selectedUser])
   );
@@ -491,8 +436,6 @@ export default function UserProfileScreen() {
         return <PostsRoute userId={userId} />;
       case 'reels':
         return <ReelsRoute />;
-      case 'rides':
-        return <RidesRoute userId={userId} />;
       case 'tagged':
         return <TaggedRoute />;
       default:
@@ -507,7 +450,7 @@ export default function UserProfileScreen() {
       {...props}
       indicatorStyle={styles.tabBarIndicator}
       style={styles.tabBar}
-      activeColor={colors.pink}
+      activeColor={colors.secondary}
       inactiveColor={colors.textSecondary}
       pressColor={colors.backgroundSecondary}
       renderTabBarItem={({ route, key }) => {
@@ -523,8 +466,8 @@ export default function UserProfileScreen() {
             <Text
               style={[
                 styles.tabBarText,
-                {
-                  color: isFocused ? colors.pink : colors.textSecondary,
+                { 
+                  color: isFocused ? colors.secondary : colors.textSecondary,
                   fontWeight: isFocused ? 'bold' : 'normal',
                 }
               ]}
@@ -580,14 +523,14 @@ export default function UserProfileScreen() {
       <ScrollContainer showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
+          <TouchableOpacity 
             style={styles.headerIcon}
             onPress={() => navigation.goBack()}
           >
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.username}>{user?.name || userName || 'ללא שם'}</Text>
-          <TouchableOpacity
+          <TouchableOpacity 
             style={styles.headerIcon}
             onPress={() => Alert.alert('אפשרויות', 'פתיחת אפשרויות')}
           >
@@ -606,7 +549,7 @@ export default function UserProfileScreen() {
               <Text style={styles.statNumber}>{(user as any)?.postsCount || 0}</Text>
               <Text style={styles.statLabel}>פוסטים</Text>
             </View>
-            <TouchableOpacity
+            <TouchableOpacity 
               style={styles.statItem}
               onPress={() => {
                 if (user?.id) {
@@ -621,7 +564,7 @@ export default function UserProfileScreen() {
               <Text style={styles.statNumber}>{updatedCounts.followersCount}</Text>
               <Text style={styles.statLabel}>עוקבים</Text>
             </TouchableOpacity>
-            <TouchableOpacity
+            <TouchableOpacity 
               style={styles.statItem}
               onPress={() => {
                 if (user?.id) {
@@ -654,7 +597,7 @@ export default function UserProfileScreen() {
               הצטרף ב-{new Date(user.joinDate).toLocaleDateString('he-IL')}
             </Text>
           )}
-
+          
           {/* Character-specific details */}
           {user && (
             <View style={styles.characterDetails}>
@@ -665,7 +608,7 @@ export default function UserProfileScreen() {
                   <Text style={styles.verifiedText}>מאומת</Text>
                 </View>
               )}
-
+              
               {/* Roles */}
               {user.roles && user.roles.length > 0 && (
                 <View style={styles.rolesContainer}>
@@ -676,7 +619,7 @@ export default function UserProfileScreen() {
                   ))}
                 </View>
               )}
-
+              
               {/* Interests */}
               {user.interests && user.interests.length > 0 && (
                 <View style={styles.interestsContainer}>
@@ -688,7 +631,7 @@ export default function UserProfileScreen() {
                   </View>
                 </View>
               )}
-
+              
               {/* Activity stats */}
               <View style={styles.activityStats}>
                 <View style={styles.activityItem}>
@@ -715,7 +658,7 @@ export default function UserProfileScreen() {
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           {selectedUser && user && selectedUser.id !== user.id && (
-            <TouchableOpacity
+            <TouchableOpacity 
               style={[
                 styles.followButton,
                 isFollowing && styles.followingButton
@@ -731,7 +674,7 @@ export default function UserProfileScreen() {
                     Alert.alert('שגיאה', 'משתמש לא נמצא');
                     return;
                   }
-
+                  
                   if (isFollowing) {
                     const success = await unfollowUser(selectedUser.id, user.id);
                     if (success) {
@@ -765,9 +708,9 @@ export default function UserProfileScreen() {
               </Text>
             </TouchableOpacity>
           )}
-
+          
           {user && selectedUser && user.id !== selectedUser.id && (
-            <TouchableOpacity
+            <TouchableOpacity 
               style={styles.messageButton}
               onPress={async () => {
                 if (!selectedUser) {
@@ -778,7 +721,7 @@ export default function UserProfileScreen() {
                 try {
                   const existingConvId = await conversationExists(selectedUser.id, userId);
                   let conversationId: string;
-
+                  
                   if (existingConvId) {
                     console.log('💬 Conversation already exists:', existingConvId);
                     conversationId = existingConvId;
@@ -786,7 +729,7 @@ export default function UserProfileScreen() {
                     console.log('💬 Creating new conversation...');
                     conversationId = await createConversation([selectedUser.id, userId]);
                   }
-
+                  
                   (navigation as any).navigate('ChatDetailScreen', {
                     conversationId,
                     otherUserId: userId,
@@ -809,12 +752,12 @@ export default function UserProfileScreen() {
         {user && (
           <View style={styles.karmaSection}>
             <View style={styles.karmaItem}>
-              <Ionicons name="star" size={20} color={colors.orange} />
+              <Ionicons name="star" size={20} color={colors.accent} />
               <Text style={styles.karmaText}>נקודות קארמה: {user.karmaPoints || 0}</Text>
             </View>
           </View>
         )}
-
+        
 
 
         {/* Tab View */}
@@ -835,7 +778,7 @@ export default function UserProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
   },
   errorContainer: {
     flex: 1,
@@ -856,7 +799,7 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
@@ -949,7 +892,7 @@ const styles = StyleSheet.create({
   },
   followButton: {
     flex: 1,
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -1071,12 +1014,12 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   tabBar: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   tabBarIndicator: {
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
     height: 2,
   },
   tabBarItem: {
@@ -1087,8 +1030,8 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.body,
     paddingVertical: 12,
   },
-  tabContentContainer: {
-    minHeight: 400
+  tabContentContainer: { 
+    minHeight: 400 
   },
   postsGrid: {
     flexDirection: 'row',

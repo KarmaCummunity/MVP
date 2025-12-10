@@ -223,7 +223,7 @@ export default function BookmarksScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',

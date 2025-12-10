@@ -8,7 +8,7 @@ export default function ArtScreen() {
       config={{
         id: 'art',
         icon: 'color-palette-outline',
-        color: colors.pink,
+        color: colors.secondary,
         bgColor: colors.pinkLight,
       }}
     />

@@ -239,7 +239,7 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  pageWrapper: { flex: 1, backgroundColor: colors.backgroundPrimary },
+  pageWrapper: { flex: 1, backgroundColor: colors.background },
   topBar: { height: 48, flexDirection: 'row', alignItems: 'center', paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG, borderBottomWidth: 1, borderBottomColor: colors.border },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8 },
   backText: { color: colors.textPrimary, fontSize: FontSizes.body },
@@ -249,14 +249,14 @@ const styles = StyleSheet.create({
   fieldGroup: { marginBottom: LAYOUT_CONSTANTS.SPACING.MD },
   fieldRow: { flexDirection: 'row-reverse', gap: LAYOUT_CONSTANTS.SPACING.SM },
   label: { fontSize: FontSizes.small, color: colors.textSecondary, marginBottom: 6, textAlign: 'right' },
-  input: { backgroundColor: colors.cardBackground, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 12, paddingHorizontal: 12, paddingVertical: Platform.OS === 'ios' ? 12 : 8, textAlign: 'right' },
+  input: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 12, paddingHorizontal: 12, paddingVertical: Platform.OS === 'ios' ? 12 : 8, textAlign: 'right' },
   avatarRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: LAYOUT_CONSTANTS.SPACING.MD, marginBottom: LAYOUT_CONSTANTS.SPACING.LG },
   avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.backgroundSecondary },
   avatarPlaceholder: { alignItems: 'center', justifyContent: 'center' },
   avatarButtons: { flexDirection: 'row-reverse', gap: LAYOUT_CONSTANTS.SPACING.SM },
-  smallButton: { backgroundColor: colors.pink, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
+  smallButton: { backgroundColor: colors.secondary, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
   smallButtonText: { color: colors.white, fontSize: FontSizes.small, fontWeight: '600' },
-  saveButton: { marginTop: LAYOUT_CONSTANTS.SPACING.LG, alignSelf: 'flex-start', backgroundColor: colors.pink, borderRadius: 24, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
+  saveButton: { marginTop: LAYOUT_CONSTANTS.SPACING.LG, alignSelf: 'flex-start', backgroundColor: colors.secondary, borderRadius: 24, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
   saveText: { color: colors.white, fontSize: FontSizes.body, fontWeight: '600' },
 });
 

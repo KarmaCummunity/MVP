@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
@@ -85,23 +85,16 @@ const FilterSortOptions: React.FC<FilterSortOptionsProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.orangeLight,
+    backgroundColor: colors.warningLight,
     padding: 10,
     borderRadius: 10,
     // marginBottom: 20,
     elevation: 1,
+    // shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 0.5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
     marginBottom: 10,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 0.5px 1px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 0.5 },
-        shadowOpacity: 0.1,
-        shadowRadius: 1,
-      },
-    }),
   },
   filterContainer: {
     flexDirection: 'row',

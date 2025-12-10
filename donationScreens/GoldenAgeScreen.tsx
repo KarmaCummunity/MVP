@@ -19,7 +19,7 @@ export default function GoldenAgeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     padding: LAYOUT_CONSTANTS.SPACING.LG,
     justifyContent: 'center',
     alignItems: 'center',

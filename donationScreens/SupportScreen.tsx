@@ -8,7 +8,7 @@ export default function SupportScreen() {
       config={{
         id: 'support',
         icon: 'heart-outline',
-        color: colors.pinkDark,
+        color: colors.pinkDeep,
         bgColor: colors.pinkLight,
       }}
     />

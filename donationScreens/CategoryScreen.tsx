@@ -187,7 +187,7 @@ const CategoryScreen: React.FC<Props> = ({ route, config: propConfig }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
   },
   content: {
     padding: LAYOUT_CONSTANTS.SPACING.MD,
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     gap: LAYOUT_CONSTANTS.SPACING.SM,
   },
   linkButton: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,

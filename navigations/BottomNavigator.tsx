@@ -44,7 +44,7 @@ import { logger } from "../utils/loggerService";
 // Define the type for your bottom tab navigator's route names and their parameters.
 export type BottomTabNavigatorParamList = {
   DonationsTab: undefined;
-  HomeScreen: undefined;
+  HomeScreen: { screen?: string } | undefined; // Allow nested navigation params
   SearchTab: undefined;
   ProfileScreen: undefined;
   AdminTab: undefined;
@@ -243,7 +243,7 @@ export default function BottomNavigator(): React.ReactElement {
             borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.XLARGE,
             elevation: LAYOUT_CONSTANTS.SHADOW.MEDIUM.elevation,
             height: barHeight,
-            backgroundColor: colors.bottomNavBackground,
+            backgroundColor: colors.surface,
             display: shouldHideTabBar ? 'none' as const : 'flex' as const,
           },
         });
@@ -272,35 +272,47 @@ export default function BottomNavigator(): React.ReactElement {
                 const stackState = currentRoute?.state;
                 const stackRoute = stackState?.routes?.[stackState?.index || 0];
                 const innerRouteName = stackRoute?.name;
-                
+
                 logger.debug('BottomNavigator', 'Already on HomeScreen, checking inner route', { innerRouteName });
-                
+
                 if (innerRouteName === 'HomeMain') {
                   // Already on HomeMain - just refresh without navigating
-                  // This prevents opening ChatListScreen or other screens
                   logger.debug('BottomNavigator', 'Already on HomeMain, just refreshing');
                   resetHomeScreen();
-                  // Don't navigate - just let the reset trigger refresh the screen
                   e.preventDefault();
                 } else {
-                  // On a different screen inside HomeTabStack - reset to HomeMain
-                  logger.debug('BottomNavigator', 'On different screen in HomeTabStack, resetting to HomeMain', { 
-                    currentScreen: innerRouteName 
+                  // On a different screen inside HomeTabStack - navigate back to HomeMain
+                  logger.debug('BottomNavigator', 'On different screen in HomeTabStack, navigating to HomeMain', {
+                    currentScreen: innerRouteName
                   });
-                  // Use resetHomeScreen trigger which will be handled by HomeTabStack
-                  // This is the most reliable way to reset the stack to HomeMain
+                  e.preventDefault(); // Prevent default tab press
+
+                  // Navigate to HomeMain in the HomeTabStack
+                  navigation.navigate('HomeScreen', {
+                    screen: 'HomeMain',
+                  });
+
+                  // Also trigger reset for good measure
                   resetHomeScreen();
-                  e.preventDefault(); // Prevent default navigation since we handled it
                 }
               } else {
-                // Switching tabs - just navigate
-                logger.debug('BottomNavigator', 'Switching to HomeScreen');
-                (navigation as any).navigate('HomeScreen');
+                // Switching tabs - navigate to HomeMain directly
+                logger.debug('BottomNavigator', 'Switching to HomeScreen from another tab');
+                e.preventDefault();
+                navigation.navigate('HomeScreen', {
+                  screen: 'HomeMain',
+                });
               }
             } catch (error) {
               logger.error('BottomNavigator', 'Error handling HomeScreen tab press', { error });
-              // Fallback: standard navigation
-              (navigation as any).navigate('HomeScreen');
+              // Fallback: navigate to HomeMain
+              try {
+                navigation.navigate('HomeScreen', {
+                  screen: 'HomeMain',
+                });
+              } catch (fallbackError) {
+                logger.error('BottomNavigator', 'Fallback navigation also failed', { fallbackError });
+              }
             }
           },
         })}

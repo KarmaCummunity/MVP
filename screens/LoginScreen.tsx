@@ -43,6 +43,7 @@ import i18n from '../app/i18n';
 import ScrollContainer from '../components/ScrollContainer';
 import { getScreenInfo, scaleSize } from '../globals/responsive';
 import { APP_VERSION } from '../globals/constants';
+import colors from '../globals/colors';
 
 export default function LoginScreen() {
 
@@ -72,7 +73,7 @@ export default function LoginScreen() {
   const [isEmailBusy, setIsEmailBusy] = useState(false);
   const emailOpenAnim = React.useRef(new Animated.Value(0)).current; // 0 closed, 1 open
   const [emailStatusMessage, setEmailStatusMessage] = useState<string | null>(null);
-  const [emailStatusColor, setEmailStatusColor] = useState<string>('#4CAF50');
+  const [emailStatusColor, setEmailStatusColor] = useState<string>(colors.success);
   const [passwordVisible, setPasswordVisible] = useState<boolean>(true);
   const [recentEmails, setRecentEmails] = useState<string[]>([]);
   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
@@ -266,10 +267,10 @@ export default function LoginScreen() {
       setEmailExists(exists);
       if (exists) {
         setEmailStatusMessage(`${email} • ${t('auth:email.knownUser')}`);
-        setEmailStatusColor('#2E7D32');
+        setEmailStatusColor(colors.success);
       } else {
         setEmailStatusMessage(`${email} • ${t('auth:email.unknownEmail')}`);
-        setEmailStatusColor('#C62828');
+        setEmailStatusColor(colors.error);
       }
       setEmailStep('password');
       setPasswordValue('');
@@ -303,7 +304,7 @@ export default function LoginScreen() {
           fbUser = await fbSignInWithEmail(email, passwordValue);
         } catch (e: any) {
           setEmailStatusMessage(t('auth:email.invalidPassword') as string);
-          setEmailStatusColor('#C62828');
+          setEmailStatusColor(colors.error);
           return;
         }
         const userData = {
@@ -365,7 +366,7 @@ export default function LoginScreen() {
               await setCurrentPrincipal({ user: userData as any, role: 'user' });
             } catch (signinErr) {
               setEmailStatusMessage(t('auth:email.invalidPassword') as string);
-              setEmailStatusColor('#C62828');
+              setEmailStatusColor(colors.error);
             }
           } else {
             Alert.alert(t('common:error') as string, t('auth:email.signupFailed') as string);
@@ -455,7 +456,7 @@ export default function LoginScreen() {
         accessible={true}
         accessibilityViewIsModal={false}
       >
-        <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
+        <StatusBar backgroundColor={colors.white} barStyle="dark-content" />
         <ScrollContainer
           contentStyle={{ flexGrow: 1, paddingBottom: 0 }}
           keyboardShouldPersistTaps="handled"
@@ -475,7 +476,7 @@ export default function LoginScreen() {
                     activeOpacity={0.8}
                     onPress={() => setLanguageMenuOpen((prev) => !prev)}
                   >
-                    <Ionicons name="globe-outline" size={22} color="#333" />
+                    <Ionicons name="globe-outline" size={22} color={colors.textPrimary} />
                   </TouchableOpacity>
                   {languageMenuOpen && (
                     <View style={styles.languageMenu}>
@@ -523,7 +524,7 @@ export default function LoginScreen() {
                       onPress={toggleEmailLogin}
                       activeOpacity={0.85}
                     >
-                      <Text style={[styles.guestButtonText, { color: '#4C7EFF', fontWeight: '700' }]}>
+                      <Text style={[styles.guestButtonText, { color: colors.primary, fontWeight: '700' }]}>
                         {t('auth:email.cta')}
                       </Text>
                     </TouchableOpacity>
@@ -542,14 +543,14 @@ export default function LoginScreen() {
                     >
                       <Animated.View style={[styles.orgMiniButton, { opacity: emailOpenAnim }]}>
                         <TouchableOpacity onPress={toggleEmailLogin} activeOpacity={0.8}>
-                          <Ionicons name="mail-outline" size={20} color="#4C7EFF" />
+                          <Ionicons name="mail-outline" size={20} color={colors.primary} />
                         </TouchableOpacity>
                       </Animated.View>
                       {emailStep === 'email' ? (
                         <TextInput
                           style={styles.orgInput}
                           placeholder={t('auth:email.placeholder')}
-                          placeholderTextColor="#B0B0B0"
+                          placeholderTextColor={colors.textTertiary}
                           value={emailValue}
                           textAlign="right"
                           onChangeText={setEmailValue}
@@ -571,7 +572,7 @@ export default function LoginScreen() {
                           <TextInput
                             style={[styles.orgInput, { paddingRight: 40 }]}
                             placeholder={t('auth:email.passwordPlaceholder')}
-                            placeholderTextColor="#B0B0B0"
+                            placeholderTextColor={colors.textTertiary}
                             value={passwordValue}
                             onChangeText={setPasswordValue}
                             autoCapitalize="none"
@@ -586,7 +587,7 @@ export default function LoginScreen() {
                             importantForAccessibility="yes"
                           />
                           <TouchableOpacity onPress={() => setPasswordVisible(v => !v)} style={styles.eyeToggle}>
-                            <Ionicons name={passwordVisible ? 'eye-outline' : 'eye-off-outline'} size={20} color="#666" />
+                            <Ionicons name={passwordVisible ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.textSecondary} />
                           </TouchableOpacity>
                         </View>
                       )}
@@ -631,7 +632,7 @@ export default function LoginScreen() {
                           {emailStatusMessage}
                         </Text>
                       </View>
-                      {emailStatusColor === '#C62828' && emailStep === 'password' && (
+                      {emailStatusColor === colors.error && emailStep === 'password' && (
                         <View style={styles.smallResetContainer}>
                           <TouchableOpacity
                             style={styles.smallResetButton}
@@ -663,7 +664,7 @@ export default function LoginScreen() {
                       onPress={toggleOrgLogin}
                       activeOpacity={0.85}
                     >
-                      <Text style={[styles.guestButtonText, { color: '#FF6B9D', fontWeight: '700' }]}>
+                      <Text style={[styles.guestButtonText, { color: colors.secondary, fontWeight: '700' }]}>
                         {t('auth:org.cta')}
                       </Text>
                     </TouchableOpacity>
@@ -682,13 +683,13 @@ export default function LoginScreen() {
                     >
                       <Animated.View style={[styles.orgMiniButton, { opacity: orgOpenAnim }]}>
                         <TouchableOpacity onPress={toggleOrgLogin} activeOpacity={0.8}>
-                          <Ionicons name="business-outline" size={20} color="#FF6B9D" />
+                          <Ionicons name="business-outline" size={20} color={colors.secondary} />
                         </TouchableOpacity>
                       </Animated.View>
                       <TextInput
                         style={styles.orgInput}
                         placeholder={t('auth:org.placeholder')}
-                        placeholderTextColor="#B0B0B0"
+                        placeholderTextColor={colors.textTertiary}
                         value={orgQuery}
                         onChangeText={setOrgQuery}
                         autoCapitalize="none"
@@ -804,7 +805,7 @@ const createLoginScreenStyles = () => {
   return StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: '#F5F9FF',
+      backgroundColor: colors.backgroundTertiary,
     },
     container: {
       flex: 1,
@@ -858,9 +859,9 @@ const createLoginScreenStyles = () => {
       marginTop: isDesktopWeb ? 20 : isTablet ? 18 : 16,
     },
     languageMenu: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.white,
       borderWidth: 1,
-      borderColor: '#E8E8E8',
+      borderColor: colors.border,
       borderRadius: isDesktopWeb ? 12 : isTablet ? 11 : 10,
       paddingVertical: isDesktopWeb ? 8 : isTablet ? 7 : 6,
       marginTop: isDesktopWeb ? 6 : isTablet ? 5.5 : 5,
@@ -872,20 +873,20 @@ const createLoginScreenStyles = () => {
     },
     languageMenuText: {
       fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
-      color: '#333333',
+      color: colors.textPrimary,
       textAlign: 'right',
     },
     title: {
       marginTop: 0,
       fontSize: isDesktopWeb ? 42 : isTablet ? 36 : scaleSize(32),
       fontWeight: 'bold',
-      color: '#2C2C2C',
+      color: colors.textPrimary,
       marginBottom: isDesktopWeb ? 12 : isTablet ? 11 : 10,
       textAlign: 'center',
     },
     subtitle: {
       fontSize: isDesktopWeb ? 20 : isTablet ? 18 : scaleSize(16),
-      color: '#444444',
+      color: colors.textPrimary,
       textAlign: 'center',
       marginBottom: isDesktopWeb ? 20 : isTablet ? 18 : 16,
       fontWeight: '600',
@@ -897,12 +898,12 @@ const createLoginScreenStyles = () => {
     },
     errorText: {
       fontSize: isDesktopWeb ? 18 : isTablet ? 17 : scaleSize(16),
-      color: '#FF4444',
+      color: colors.error,
       textAlign: 'center',
     },
     errorSubtext: {
       fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
-      color: '#888888',
+      color: colors.textSecondary,
       textAlign: 'center',
       marginTop: isDesktopWeb ? 8 : isTablet ? 6 : 5,
     },
@@ -914,9 +915,9 @@ const createLoginScreenStyles = () => {
       position: 'absolute',
       top: isDesktopWeb ? -6 : isTablet ? -5.5 : -5,
       right: isDesktopWeb ? -6 : isTablet ? -5.5 : -5,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.white,
       borderRadius: isDesktopWeb ? 14 : isTablet ? 13 : 12,
-      ...createShadowStyle('#000', { width: 0, height: 1 }, 0.2, 2),
+      ...createShadowStyle('colors.black', { width: 0, height: 1 }, 0.2, 2),
       elevation: 2,
     },
     // 🔥 buttonsContainer - מרכז את כל הכפתורים
@@ -928,22 +929,22 @@ const createLoginScreenStyles = () => {
       gap: isDesktopWeb ? 16 : isTablet ? 14 : 12, // Equal spacing between buttons
     },
     disabledButton: {
-      backgroundColor: '#CCCCCC',
+      backgroundColor: colors.textTertiary,
       opacity: 0.6,
     },
     disabledButtonText: {
-      color: '#999999',
+      color: colors.textTertiary,
     },
     // 🔥 guestButton - responsive, מותאם לטקסט, לא מרוח!
     guestButton: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.white,
       borderWidth: 1,
-      borderColor: '#E8E8E8',
+      borderColor: colors.border,
       borderRadius: buttonBorderRadius,
       paddingHorizontal: buttonPaddingH,
       paddingVertical: buttonPaddingV,
       alignItems: 'center',
-      ...createShadowStyle('#000', { width: 0, height: 2 }, 0.1, 4),
+      ...createShadowStyle('colors.black', { width: 0, height: 2 }, 0.1, 4),
       elevation: 3,
       width: '100%', // Full width instead of centered
       marginVertical: 0, // Remove vertical margin, use gap in container instead
@@ -953,24 +954,24 @@ const createLoginScreenStyles = () => {
     guestButtonText: {
       fontSize: buttonFontSize,
       fontWeight: '600',
-      color: '#666666',
+      color: colors.textSecondary,
       textAlign: 'center',
       // Removed width: '100%' - let text determine width
     },
     infoText: {
       fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
-      color: '#666666',
+      color: colors.textSecondary,
       textAlign: 'center',
     },
     clearDataButton: {
-      backgroundColor: '#FF4444',
+      backgroundColor: colors.error,
       borderRadius: isDesktopWeb ? 10 : isTablet ? 9 : 8,
       padding: isDesktopWeb ? 12 : isTablet ? 11 : 10,
       alignItems: 'center',
     },
     clearDataButtonText: {
       fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
-      color: '#FFFFFF',
+      color: colors.white,
       fontWeight: '600',
     },
     // 🔥 orgLoginContainer - מרכז את הכפתורים
@@ -983,12 +984,12 @@ const createLoginScreenStyles = () => {
     },
     // 🔥 orgButton - ללא width: '100%'
     orgButton: {
-      borderColor: '#FF6B9D',
+      borderColor: colors.secondary,
       // Removed width: '100%' - button will use guestButton styles
     },
     // 🔥 emailButton - ללא width: '100%'
     emailButton: {
-      borderColor: '#4C7EFF',
+      borderColor: colors.primary,
       marginTop: 0, // Remove top margin, use gap in container instead
       // Removed width: '100%' - button will use guestButton styles
     },
@@ -997,9 +998,9 @@ const createLoginScreenStyles = () => {
     orgExpandedRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.white,
       borderWidth: 1,
-      borderColor: '#E8E8E8',
+      borderColor: colors.border,
       borderRadius: expandedRowBorderRadius,
       padding: expandedRowPadding,
       marginHorizontal: 0,
@@ -1018,9 +1019,9 @@ const createLoginScreenStyles = () => {
     // 🔥 orgInput - responsive
     orgInput: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.white,
       borderWidth: 1,
-      borderColor: '#E8E8E8',
+      borderColor: colors.border,
       borderRadius: inputBorderRadius,
       paddingHorizontal: inputPaddingH,
       paddingVertical: inputPaddingV,
@@ -1028,21 +1029,21 @@ const createLoginScreenStyles = () => {
     },
     // 🔥 orgActionButton - responsive
     orgActionButton: {
-      backgroundColor: '#FF6B9D',
+      backgroundColor: colors.secondary,
       paddingHorizontal: actionButtonPaddingH,
       paddingVertical: actionButtonPaddingV,
       borderRadius: actionButtonBorderRadius,
     },
     orgActionButtonText: {
-      color: '#FFFFFF',
+      color: colors.white,
       fontWeight: '700',
       fontSize: actionButtonFontSize,
     },
     // 🔥 suggestionsBox - responsive, מותאם לכפתורים
     suggestionsBox: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.white,
       borderWidth: 1,
-      borderColor: '#E8E8E8',
+      borderColor: colors.border,
       borderRadius: suggestionsBoxBorderRadius,
       marginTop: suggestionsBoxMargin,
       marginBottom: suggestionsBoxMargin,
@@ -1055,7 +1056,7 @@ const createLoginScreenStyles = () => {
     },
     suggestionText: {
       fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
-      color: '#333333',
+      color: colors.textPrimary,
       textAlign: 'right',
     },
     inputWrapper: {
@@ -1104,7 +1105,7 @@ const createLoginScreenStyles = () => {
     },
     smallResetText: {
       fontSize: isDesktopWeb ? 15 : isTablet ? 14 : scaleSize(13),
-      color: '#1976D2',
+      color: colors.primary,
       fontWeight: '700',
       textDecorationLine: 'underline',
     },
@@ -1122,7 +1123,7 @@ const createLoginScreenStyles = () => {
     },
     versionText: {
       fontSize: isDesktopWeb ? 14 : isTablet ? 13 : scaleSize(12),
-      color: '#888888',
+      color: colors.textSecondary,
       textAlign: 'center',
       fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
       fontWeight: '500',

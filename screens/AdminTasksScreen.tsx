@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Modal, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Modal } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { Ionicons } from '@expo/vector-icons';
@@ -197,7 +197,7 @@ export default function AdminTasksScreen() {
           {updating === item.id ? (
             <ActivityIndicator size="small" color={colors.textSecondary} />
           ) : (
-            <Ionicons name={isDone ? 'checkbox' : 'square-outline'} size={24} color={isDone ? colors.green : colors.textSecondary} />
+            <Ionicons name={isDone ? 'checkbox' : 'square-outline'} size={24} color={isDone ? colors.success : colors.textSecondary} />
           )}
         </TouchableOpacity>
         <View style={styles.taskContent}>
@@ -347,7 +347,7 @@ export default function AdminTasksScreen() {
           onSubmitEditing={fetchTasks}
         />
         <TouchableOpacity style={styles.refreshBtn} onPress={fetchTasks}>
-          <Ionicons name="search-outline" size={22} color="#fff" />
+          <Ionicons name="search-outline" size={22} color={colors.white} />
         </TouchableOpacity>
       </View>
 
@@ -446,11 +446,11 @@ export default function AdminTasksScreen() {
               </TouchableOpacity>
               {editingId ? (
                 <TouchableOpacity style={[styles.modalBtn, styles.modalSave]} onPress={saveEdit} disabled={updating === editingId}>
-                  {updating === editingId ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>שמירה</Text>}
+                  {updating === editingId ? <ActivityIndicator color={colors.white} /> : <Text style={styles.modalBtnText}>שמירה</Text>}
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity style={[styles.modalBtn, styles.modalSave]} onPress={createTask} disabled={creating || !formData.title.trim()}>
-                  {creating ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>יצירה</Text>}
+                  {creating ? <ActivityIndicator color={colors.white} /> : <Text style={styles.modalBtnText}>יצירה</Text>}
                 </TouchableOpacity>
               )}
             </View>
@@ -459,7 +459,7 @@ export default function AdminTasksScreen() {
       </Modal>
 
       <TouchableOpacity style={styles.addButton} onPress={() => { resetForm(); setShowForm(true); }}>
-        <Ionicons name="add" size={24} color="#fff" />
+        <Ionicons name="add" size={24} color={colors.white} />
       </TouchableOpacity>
     </View>
   );
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
     paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     color: colors.textPrimary,
     borderWidth: 1,
     borderColor: colors.border,
@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
     height: 48,
     width: 48,
     borderRadius: 12,
-    backgroundColor: colors.blue,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -552,22 +552,15 @@ const styles = StyleSheet.create({
     height: 56,
     width: 56,
     borderRadius: 28,
-    backgroundColor: colors.green,
+    backgroundColor: colors.success,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 8,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
     zIndex: 1000,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 4px 4px rgba(0, 0, 0, 0.3)',
-      },
-      default: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-      },
-    }),
   },
   listContent: {
     paddingBottom: LAYOUT_CONSTANTS.SPACING.XL,
@@ -585,7 +578,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: LAYOUT_CONSTANTS.SPACING.MD,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -640,16 +633,16 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   priority_high: {
-    backgroundColor: '#ffebee',
-    borderColor: '#ffcdd2',
+    backgroundColor: colors.pinkLight,
+    borderColor: colors.pinkLight,
   },
   priority_medium: {
-    backgroundColor: '#fff8e1',
-    borderColor: '#ffecb3',
+    backgroundColor: colors.warningLight,
+    borderColor: colors.warningLight,
   },
   priority_low: {
-    backgroundColor: '#e8f5e9',
-    borderColor: '#c8e6c9',
+    backgroundColor: colors.successLight,
+    borderColor: colors.successLight,
   },
   errorBox: {
     backgroundColor: colors.errorLight,
@@ -673,7 +666,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryText: {
-    color: '#fff',
+    color: colors.white,
     fontWeight: '600',
   },
   emptyText: {
@@ -686,7 +679,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -712,7 +705,7 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     borderRadius: 16,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     padding: 16,
   },
   modalTitle: {
@@ -781,10 +774,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   modalSave: {
-    backgroundColor: colors.green,
+    backgroundColor: colors.success,
   },
   modalBtnText: {
-    color: '#fff',
+    color: colors.white,
     fontWeight: '600',
   },
 });

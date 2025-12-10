@@ -78,7 +78,7 @@ const DonationAmountSlider: React.FC<{
         trackClickable
         containerStyle={{ paddingHorizontal: 0 }}
         trackStyle={localStyles.sliderTrack}
-        minimumTrackTintColor={colors.pink}
+        minimumTrackTintColor={colors.secondary}
         maximumTrackTintColor="transparent"
         thumbStyle={localStyles.sliderThumb}
         renderThumbComponent={() => <View style={localStyles.sliderThumbInner} />}
@@ -860,7 +860,7 @@ export default function MoneyScreen({
 const localStyles = StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: colors.backgroundSecondary_2,
+      backgroundColor: colors.backgroundTertiary,
     },
     container: {
         flex: 1,
@@ -871,12 +871,12 @@ const localStyles = StyleSheet.create({
         paddingBottom: 100, // Bottom margin for screen
     },
     formContainer: {
-      backgroundColor: colors.moneyFormBackground,
+      backgroundColor: colors.pinkLight,
       padding: 16,
       borderRadius: 15,
       marginBottom: 24,
       borderWidth: 1,
-      borderColor: colors.moneyFormBorder,
+      borderColor: colors.secondary,
     },
     inputContainer: {
         marginBottom: 20,
@@ -889,14 +889,14 @@ const localStyles = StyleSheet.create({
         textAlign: 'right',
     },
     input: {
-        backgroundColor: colors.moneyInputBackground,
+        backgroundColor: colors.white,
         borderRadius: 10,
         padding: 15,
         fontSize: FontSizes.body,
         textAlign: 'right',
         color: colors.textPrimary,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
     },
     amountContainer: {
         marginBottom: 25,
@@ -907,16 +907,16 @@ const localStyles = StyleSheet.create({
         marginBottom: 15,
     },
     amountButton: {
-        backgroundColor: colors.moneyInputBackground,
+        backgroundColor: colors.white,
         paddingVertical: 12,
         paddingHorizontal: 20,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
     },
     selectedAmount: {
-        backgroundColor: colors.moneyButtonSelected,
-        borderColor: colors.moneyButtonSelected,
+        backgroundColor: colors.secondary,
+        borderColor: colors.secondary,
     },
     amountButtonText: {
         fontSize: FontSizes.body,
@@ -924,20 +924,20 @@ const localStyles = StyleSheet.create({
         color: colors.textPrimary,
     },
     selectedAmountText: {
-        color: colors.backgroundPrimary,
+        color: colors.background,
     },
     customAmountInput: {
         textAlign: 'center',
     },
     donateButton: {
-        // backgroundColor: colors.moneyButtonBackground,
+        // backgroundColor: colors.accent,
         padding: 16,
         borderRadius: 12,
         alignItems: 'center',
         marginTop: 10,
     },
     donateButtonText: {
-        color: colors.backgroundPrimary,
+        color: colors.background,
         fontSize: FontSizes.medium,
         fontWeight: 'bold',
     },
@@ -956,22 +956,22 @@ const localStyles = StyleSheet.create({
         gap: 5,
     },
     sectionPanel: {
-        backgroundColor: colors.moneyFormBackground,
+        backgroundColor: colors.pinkLight,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
         paddingVertical: 8,
         paddingHorizontal: 8,
     },
     recommendationCard: {
-        backgroundColor: colors.moneyCardBackground,
+        backgroundColor: colors.pinkLight,
         borderRadius: 15,
         padding: 15,
         marginRight: 15,
         width: 150,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
     },
     cardImage: {
         width: 60,
@@ -990,12 +990,12 @@ const localStyles = StyleSheet.create({
         textAlign: 'center',
     },
     historyCard: {
-        backgroundColor: colors.moneyCardBackground,
+        backgroundColor: colors.pinkLight,
         borderRadius: 12,
         padding: 16,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -1012,7 +1012,7 @@ const localStyles = StyleSheet.create({
     historyAmount: {
         fontSize: FontSizes.medium,
         fontWeight: 'bold',
-        color: colors.moneyHistoryAmount,
+        color: colors.accent,
         marginBottom: 2,
     },
     historyDate: {
@@ -1020,14 +1020,14 @@ const localStyles = StyleSheet.create({
         color: colors.textSecondary,
     },
     historyStatus: {
-        backgroundColor: colors.moneyStatusBackground,
+        backgroundColor: colors.successLight,
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 8,
     },
     historyStatusText: {
         fontSize: FontSizes.small,
-        color: colors.moneyStatusText,
+        color: colors.success,
         fontWeight: '600',
     },
     searchContainer: {
@@ -1037,14 +1037,14 @@ const localStyles = StyleSheet.create({
         marginBottom: 15,
     },
     searchButton: {
-        backgroundColor: colors.moneyButtonBackground,
+        backgroundColor: colors.accent,
         padding: 16,
         borderRadius: 12,
         alignItems: 'center',
         marginTop: 10,
     },
     searchButtonText: {
-        color: colors.backgroundPrimary,
+        color: colors.background,
         fontSize: FontSizes.medium,
         fontWeight: 'bold',
     },
@@ -1076,11 +1076,11 @@ const localStyles = StyleSheet.create({
         lineHeight: 24,
     },
     searchTipsContainer: {
-        backgroundColor: colors.moneyInputBackground,
+        backgroundColor: colors.white,
         borderRadius: 12,
         padding: 16,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
     },
     searchTipsTitle: {
         fontSize: FontSizes.body,
@@ -1108,11 +1108,11 @@ const localStyles = StyleSheet.create({
         width: 220,
     },
     charityCard: {
-        backgroundColor: colors.moneyCardBackground,
+        backgroundColor: colors.pinkLight,
         borderRadius: 12,
         padding: 16,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
         minHeight: 200,
     },
     charityCardHeader: {
@@ -1125,14 +1125,14 @@ const localStyles = StyleSheet.create({
         fontSize: FontSizes.displayLarge,
     },
     charityRating: {
-        backgroundColor: colors.moneyStatusBackground,
+        backgroundColor: colors.successLight,
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 8,
     },
     ratingText: {
         fontSize: FontSizes.small,
-        color: colors.moneyStatusText,
+        color: colors.success,
         fontWeight: 'bold',
     },
     charityName: {
@@ -1173,12 +1173,12 @@ const localStyles = StyleSheet.create({
     },
     charityDonors: {
         fontSize: FontSizes.small,
-        color: colors.moneyHistoryAmount,
+        color: colors.accent,
         fontWeight: '600',
     },
     charityMinDonation: {
         fontSize: FontSizes.small,
-        color: colors.moneyHistoryAmount,
+        color: colors.accent,
         fontWeight: '600',
     },
     // Recent Donations Styles
@@ -1191,11 +1191,11 @@ const localStyles = StyleSheet.create({
         width: 200,
     },
     recentDonationCard: {
-        backgroundColor: colors.moneyCardBackground,
+        backgroundColor: colors.pinkLight,
         borderRadius: 12,
         padding: 12,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
         minHeight: 120,
     },
     recentDonationHeader: {
@@ -1214,7 +1214,7 @@ const localStyles = StyleSheet.create({
     recentDonationAmount: {
         fontSize: FontSizes.body,
         fontWeight: 'bold',
-        color: colors.moneyHistoryAmount,
+        color: colors.accent,
     },
     recentDonationDetails: {
         flexDirection: 'row',
@@ -1234,15 +1234,15 @@ const localStyles = StyleSheet.create({
     },
     recentDonationStatusText: {
         fontSize: FontSizes.small,
-        color: colors.moneyStatusText,
+        color: colors.success,
         fontWeight: '600',
     },
     // Quick Donate Panel
     quickDonatePanel: {
-      backgroundColor: colors.moneyFormBackground,
+      backgroundColor: colors.pinkLight,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
 
       marginHorizontal: 0,
       paddingVertical: 10,
@@ -1285,9 +1285,9 @@ const localStyles = StyleSheet.create({
       marginBottom: 6,
     },
     quickAmountButton: {
-      backgroundColor: colors.moneyInputBackground,
+      backgroundColor: colors.white,
       borderWidth: 1,
-      borderColor: colors.moneyFormBorder,
+      borderColor: colors.secondary,
       borderRadius: 999,
       paddingHorizontal: 12,
       paddingVertical: 6,
@@ -1315,30 +1315,23 @@ const localStyles = StyleSheet.create({
       borderRadius: 999,
       backgroundColor: 'rgba(255, 255, 255, 0.85)',
       borderWidth: 1,
-      borderColor: colors.headerBorder,
+      borderColor: colors.border,
       overflow: 'hidden',
     },
     sliderFill: {
-      backgroundColor: colors.pink,
+      backgroundColor: colors.secondary,
     },
     sliderThumb: {
       // height: 30,
       borderRadius: 14,
-      backgroundColor: colors.pink,
+      backgroundColor: colors.secondary,
       borderWidth: 2,
-      borderColor: '#9C1B5E',
+      borderColor: colors.pinkDeep,
+      shadowColor: colors.black,
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
       elevation: 2,
-      ...Platform.select({
-        web: {
-          boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.08)',
-        },
-        default: {
-          shadowColor: '#000',
-          shadowOpacity: 0.08,
-          shadowRadius: 4,
-          shadowOffset: { width: 0, height: 2 },
-        },
-      }),
     },
     sliderThumbInner: {
       width: 12,
@@ -1418,11 +1411,11 @@ const localStyles = StyleSheet.create({
         lineHeight: 24,
     },
     searchHelpTipsContainer: {
-        backgroundColor: colors.moneyInputBackground,
+        backgroundColor: colors.white,
         borderRadius: 12,
         padding: 16,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
         width: '100%',
     },
     searchHelpTipsTitle: {
@@ -1447,9 +1440,9 @@ const localStyles = StyleSheet.create({
     },
     statChip: {
       flex: 1,
-      backgroundColor: colors.moneyInputBackground,
+      backgroundColor: colors.white,
       borderWidth: 1,
-      borderColor: colors.moneyFormBorder,
+      borderColor: colors.secondary,
       borderRadius: 10,
       paddingVertical: 8,
       paddingHorizontal: 10,
@@ -1478,10 +1471,10 @@ const localStyles = StyleSheet.create({
     centerModalContent: {
       width: '85%',
       maxHeight: '75%',
-      backgroundColor: colors.cardBackground,
+      backgroundColor: colors.surface,
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: colors.moneyFormBorder,
+      borderColor: colors.secondary,
       padding: 14,
     },
     modalTitle: {
@@ -1524,14 +1517,14 @@ const localStyles = StyleSheet.create({
     },
     // Dedicated modal primary button styles to avoid duplicate keys
     modalPrimaryButton: {
-      backgroundColor: colors.moneyButtonBackground,
+      backgroundColor: colors.accent,
       padding: 12,
       borderRadius: 10,
       alignItems: 'center',
       flex: 1,
     },
     modalPrimaryButtonText: {
-      color: colors.backgroundPrimary,
+      color: colors.background,
       fontSize: FontSizes.medium,
       fontWeight: 'bold',
     },
@@ -1542,7 +1535,7 @@ const localStyles = StyleSheet.create({
       alignItems: 'center',
       flex: 1,
       borderWidth: 1,
-      borderColor: colors.headerBorder,
+      borderColor: colors.border,
     },
     bitButtonText: {
       color: 'rgba(44,44,44,0.85)',
@@ -1550,9 +1543,9 @@ const localStyles = StyleSheet.create({
       fontWeight: 'bold',
     },
     contactButton: {
-      backgroundColor: colors.moneyInputBackground,
+      backgroundColor: colors.white,
       borderWidth: 1,
-      borderColor: colors.moneyFormBorder,
+      borderColor: colors.secondary,
       padding: 12,
       borderRadius: 10,
       alignItems: 'center',

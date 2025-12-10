@@ -8,7 +8,7 @@ export default function MatchmakingScreen() {
       config={{
         id: 'matchmaking',
         icon: 'people-outline',
-        color: colors.pink,
+        color: colors.secondary,
         bgColor: colors.pinkLight,
       }}
     />

@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
      retryButton: {
-     backgroundColor: colors.pink,
+     backgroundColor: colors.secondary,
      paddingVertical: 10,
      paddingHorizontal: 20,
      borderRadius: 8,

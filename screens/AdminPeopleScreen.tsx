@@ -269,7 +269,7 @@ export default function AdminPeopleScreen({ navigation }: AdminPeopleScreenProps
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="חפש לפי שם, תפקיד או תיאור..."
-            placeholderTextColor={colors.textPlaceholder}
+            placeholderTextColor={colors.textTertiary}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
@@ -309,7 +309,7 @@ export default function AdminPeopleScreen({ navigation }: AdminPeopleScreenProps
       {/* Members List */}
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.blue} />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>טוען...</Text>
         </View>
       ) : membersList.length === 0 ? (
@@ -353,7 +353,7 @@ export default function AdminPeopleScreen({ navigation }: AdminPeopleScreenProps
                     onPress={() => handleEditMember(member)}
                     disabled={isMutating}
                   >
-                    <Ionicons name="create-outline" size={20} color={colors.blue} />
+                    <Ionicons name="create-outline" size={20} color={colors.primary} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.actionButton}
@@ -431,7 +431,7 @@ export default function AdminPeopleScreen({ navigation }: AdminPeopleScreenProps
                   value={formData.name}
                   onChangeText={(text) => setFormData({ ...formData, name: text })}
                   placeholder="הזן שם"
-                  placeholderTextColor={colors.textPlaceholder}
+                  placeholderTextColor={colors.textTertiary}
                 />
               </View>
 
@@ -442,7 +442,7 @@ export default function AdminPeopleScreen({ navigation }: AdminPeopleScreenProps
                   value={formData.role}
                   onChangeText={(text) => setFormData({ ...formData, role: text })}
                   placeholder="הזן תפקיד או תרומה"
-                  placeholderTextColor={colors.textPlaceholder}
+                  placeholderTextColor={colors.textTertiary}
                 />
               </View>
 
@@ -453,7 +453,7 @@ export default function AdminPeopleScreen({ navigation }: AdminPeopleScreenProps
                   value={formData.description}
                   onChangeText={(text) => setFormData({ ...formData, description: text })}
                   placeholder="תיאור נוסף על התרומה (אופציונלי)"
-                  placeholderTextColor={colors.textPlaceholder}
+                  placeholderTextColor={colors.textTertiary}
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
@@ -467,7 +467,7 @@ export default function AdminPeopleScreen({ navigation }: AdminPeopleScreenProps
                   value={formData.email}
                   onChangeText={(text) => setFormData({ ...formData, email: text })}
                   placeholder="אימייל (אופציונלי)"
-                  placeholderTextColor={colors.textPlaceholder}
+                  placeholderTextColor={colors.textTertiary}
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
@@ -480,7 +480,7 @@ export default function AdminPeopleScreen({ navigation }: AdminPeopleScreenProps
                   value={formData.phone}
                   onChangeText={(text) => setFormData({ ...formData, phone: text })}
                   placeholder="טלפון (אופציונלי)"
-                  placeholderTextColor={colors.textPlaceholder}
+                  placeholderTextColor={colors.textTertiary}
                   keyboardType="phone-pad"
                 />
               </View>
@@ -554,9 +554,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: LAYOUT_CONSTANTS.SPACING.LG,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderSecondary,
+    borderBottomColor: colors.border,
   },
   title: {
     fontSize: FontSizes.heading1,
@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.blue,
+    backgroundColor: colors.primary,
     paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
     paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
@@ -578,10 +578,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   filtersContainer: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     padding: LAYOUT_CONSTANTS.SPACING.MD,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderSecondary,
+    borderBottomColor: colors.border,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   filterButtonActive: {
-    backgroundColor: colors.blue,
+    backgroundColor: colors.primary,
   },
   filterButtonText: {
     fontSize: FontSizes.small,
@@ -631,12 +631,12 @@ const styles = StyleSheet.create({
     padding: LAYOUT_CONSTANTS.SPACING.MD,
   },
   memberCard: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
     padding: LAYOUT_CONSTANTS.SPACING.MD,
     marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
     borderWidth: 1,
-    borderColor: colors.borderSecondary,
+    borderColor: colors.border,
   },
   memberHeader: {
     flexDirection: 'row',
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
     marginTop: LAYOUT_CONSTANTS.SPACING.XS,
     paddingTop: LAYOUT_CONSTANTS.SPACING.XS,
     borderTopWidth: 1,
-    borderTopColor: colors.borderSecondary,
+    borderTopColor: colors.border,
   },
   loadingContainer: {
     flex: 1,
@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderTopLeftRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
     borderTopRightRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
     maxHeight: '90%',
@@ -759,7 +759,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: LAYOUT_CONSTANTS.SPACING.LG,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderSecondary,
+    borderBottomColor: colors.border,
   },
   modalTitle: {
     fontSize: FontSizes.heading2,
@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.medium,
     color: colors.textPrimary,
     borderWidth: 1,
-    borderColor: colors.borderSecondary,
+    borderColor: colors.border,
   },
   textArea: {
     minHeight: 100,
@@ -809,8 +809,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   statusOptionActive: {
-    backgroundColor: colors.blue,
-    borderColor: colors.blue,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   statusOptionText: {
     fontSize: FontSizes.medium,
@@ -821,7 +821,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   saveButton: {
-    backgroundColor: colors.blue,
+    backgroundColor: colors.primary,
     paddingVertical: LAYOUT_CONSTANTS.SPACING.MD,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
     alignItems: 'center',

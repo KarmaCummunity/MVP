@@ -71,30 +71,37 @@ const ANALYTICS_ITEM_PREFIX = 'category:';
 // TODO: Create proper category icon management system
 // TODO: Add category access control and permissions
 const BASE_CATEGORIES = [
-  { id: 'money', icon: 'card-outline', color: colors.green, bgColor: colors.successLight, screen: 'MoneyScreen' },
-  { id: 'trump', icon: 'car-outline', color: colors.blue, bgColor: colors.infoLight, screen: 'TrumpScreen' },
+  { id: 'money', icon: 'card-outline', color: colors.success, bgColor: colors.successLight, screen: 'MoneyScreen' },
+  { id: 'trump', icon: 'car-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'TrumpScreen' },
   { id: 'knowledge', icon: 'school-outline', color: colors.warning, bgColor: colors.warningLight, screen: 'KnowledgeScreen' },
-  { id: 'time', icon: 'time-outline', color: colors.pink, bgColor: colors.pinkLight, screen: 'TimeScreen' },
-  { id: 'food', icon: 'restaurant-outline', color: colors.green, bgColor: colors.successLight, screen: 'FoodScreen' },
-  { id: 'items', icon: 'cube-outline', color: colors.pink, bgColor: colors.pinkLight, screen: 'ItemsScreen' },
+  { id: 'time', icon: 'time-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'TimeScreen' },
+  { id: 'food', icon: 'restaurant-outline', color: colors.success, bgColor: colors.successLight, screen: 'FoodScreen' },
+  { id: 'clothes', icon: 'shirt-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'ClothesScreen' },
+  { id: 'books', icon: 'library-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'BooksScreen' },
+  { id: 'items', icon: 'cube-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'ItemsScreen' },
+  { id: 'furniture', icon: 'bed-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'FurnitureScreen' },
   { id: 'medical', icon: 'medical-outline', color: colors.error, bgColor: colors.errorLight, screen: 'MedicalScreen' },
-  { id: 'animals', icon: 'paw-outline', color: colors.green, bgColor: colors.successLight, screen: 'AnimalsScreen' },
-  { id: 'housing', icon: 'home-outline', color: colors.blue, bgColor: colors.infoLight, screen: 'HousingScreen' },
-  { id: 'support', icon: 'heart-outline', color: colors.pink, bgColor: colors.pinkLight, screen: 'SupportScreen' },
-  { id: 'environment', icon: 'leaf-outline', color: colors.green, bgColor: colors.successLight, screen: 'EnvironmentScreen' },
-  { id: 'music', icon: 'musical-notes-outline', color: colors.pink, bgColor: colors.pinkLight, screen: 'MusicScreen' },
-  { id: 'games', icon: 'game-controller-outline', color: colors.blue, bgColor: colors.infoLight, screen: 'GamesScreen' },
-  { id: 'recipes', icon: 'fast-food-outline', color: colors.green, bgColor: colors.successLight, screen: 'RecipesScreen' },
+  { id: 'animals', icon: 'paw-outline', color: colors.success, bgColor: colors.successLight, screen: 'AnimalsScreen' },
+  { id: 'housing', icon: 'home-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'HousingScreen' },
+  { id: 'support', icon: 'heart-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'SupportScreen' },
+  { id: 'education', icon: 'book-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'EducationScreen' },
+  { id: 'environment', icon: 'leaf-outline', color: colors.success, bgColor: colors.successLight, screen: 'EnvironmentScreen' },
+  { id: 'technology', icon: 'laptop-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'TechnologyScreen' },
+  { id: 'music', icon: 'musical-notes-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'MusicScreen' },
+  { id: 'games', icon: 'game-controller-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'GamesScreen' },
+  { id: 'riddles', icon: 'help-circle-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'RiddlesScreen' },
+  { id: 'recipes', icon: 'fast-food-outline', color: colors.success, bgColor: colors.successLight, screen: 'RecipesScreen' },
+  { id: 'plants', icon: 'flower-outline', color: colors.success, bgColor: colors.successLight, screen: 'PlantsScreen' },
   { id: 'waste', icon: 'trash-outline', color: colors.warning, bgColor: colors.warningLight, screen: 'WasteScreen' },
-  { id: 'art', icon: 'color-palette-outline', color: colors.pink, bgColor: colors.pinkLight, screen: 'ArtScreen' },
-  { id: 'sports', icon: 'football-outline', color: colors.blue, bgColor: colors.infoLight, screen: 'SportsScreen' },
-  { id: 'dreams', icon: 'star-outline', color: colors.pink, bgColor: colors.pinkLight, screen: 'DreamsScreen' },
+  { id: 'art', icon: 'color-palette-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'ArtScreen' },
+  { id: 'sports', icon: 'football-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'SportsScreen' },
+  { id: 'dreams', icon: 'star-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'DreamsScreen' },
   { id: 'fertility', icon: 'medkit-outline', color: colors.error, bgColor: colors.errorLight, screen: 'FertilityScreen' },
-  { id: 'jobs', icon: 'briefcase-outline', color: colors.blue, bgColor: colors.infoLight, screen: 'JobsScreen' },
-  { id: 'matchmaking', icon: 'people-outline', color: colors.pink, bgColor: colors.pinkLight, screen: 'MatchmakingScreen' },
-  { id: 'mentalHealth', icon: 'pulse-outline', color: colors.pink, bgColor: colors.pinkLight, screen: 'MentalHealthScreen' },
+  { id: 'jobs', icon: 'briefcase-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'JobsScreen' },
+  { id: 'matchmaking', icon: 'people-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'MatchmakingScreen' },
+  { id: 'mentalHealth', icon: 'pulse-outline', color: colors.secondary, bgColor: colors.pinkLight, screen: 'MentalHealthScreen' },
   { id: 'goldenAge', icon: 'person-outline', color: colors.warning, bgColor: colors.warningLight, screen: 'GoldenAgeScreen' },
-  { id: 'languages', icon: 'language-outline', color: colors.blue, bgColor: colors.infoLight, screen: 'LanguagesScreen' },
+  { id: 'languages', icon: 'language-outline', color: colors.primary, bgColor: colors.infoLight, screen: 'LanguagesScreen' },
 ] as const;
 
 type CategoryId = typeof BASE_CATEGORIES[number]['id'];
@@ -232,7 +239,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                       width: cardWidth,
                       minWidth: cardWidth,
                       maxWidth: cardWidth,
-                      backgroundColor: category.bgColor || colors.backgroundPrimary, // רקע צבעוני לפי קטגוריה
+                      backgroundColor: category.bgColor || colors.background, // רקע צבעוני לפי קטגוריה
                     },
                   ]}
                   onPress={() => handleCategoryPress(category)}
@@ -298,7 +305,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                       width: smallCardWidth,
                       minWidth: smallCardWidth,
                       maxWidth: smallCardWidth,
-                      backgroundColor: category.bgColor || '#FFFFFF', // רקע צבעוני לפי קטגוריה
+                      backgroundColor: category.bgColor || 'colors.white', // רקע צבעוני לפי קטגוריה
                       paddingVertical: responsiveSpacing(12, 14, 16),
                       paddingHorizontal: responsiveSpacing(8, 10, 12),
                     },
@@ -383,7 +390,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundSecondary, // עודכן לכחול בהיר
   },
   scrollContainer: {
-    backgroundColor: colors.backgroundSecondary_2, // עודכן לכחול בהיר
+    backgroundColor: colors.backgroundTertiary, // עודכן לכחול בהיר
     flex: 1,
   },
   scrollContent: {
@@ -408,13 +415,13 @@ const styles = StyleSheet.create({
     paddingTop: LAYOUT_CONSTANTS.SPACING.LG,
   },
   header: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     paddingTop: LAYOUT_CONSTANTS.SPACING.LG,
     paddingBottom: LAYOUT_CONSTANTS.SPACING.MD,
     paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
     borderBottomLeftRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
     borderBottomRightRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.1, 4),
+    ...createShadowStyle(colors.shadow, { width: 0, height: 2 }, 0.1, 4),
   },
   headerContent: {
     flexDirection: 'row',
@@ -463,7 +470,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: FontSizes.heading2,
     fontWeight: '800', // פונט עבה יותר
-    color: colors.pink, // צבע ורוד מהלוגו החדש
+    color: colors.secondary, // צבע ורוד מהלוגו החדש
     marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
     textAlign: 'center', // מרכוז הכותרת
   },
@@ -477,7 +484,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: LAYOUT_CONSTANTS.SPACING.LG,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.1, 4),
+    ...createShadowStyle(colors.shadow, { width: 0, height: 2 }, 0.1, 4),
   },
   quickActionText: {
     color: colors.white,
@@ -486,17 +493,17 @@ const styles = StyleSheet.create({
     marginTop: LAYOUT_CONSTANTS.SPACING.SM,
   },
   categoriesSection: {
-    backgroundColor: colors.backgroundPrimary, // רקע לבן נקי לקטגוריות
+    backgroundColor: colors.background, // רקע לבן נקי לקטגוריות
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE, // עיגול גדול יותר
     borderWidth: 1,
-    borderColor: colors.borderSecondary, // גבול עדין
+    borderColor: colors.border, // גבול עדין
     marginTop: LAYOUT_CONSTANTS.SPACING.SM,
     marginBottom: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.SM : LAYOUT_CONSTANTS.SPACING.MD, // Less margin on web
     marginHorizontal: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.XS : LAYOUT_CONSTANTS.SPACING.SM, // Less margin on web
     alignItems: 'center',
     paddingVertical: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.MD : LAYOUT_CONSTANTS.SPACING.LG, // Less padding on web
     paddingHorizontal: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.SM : LAYOUT_CONSTANTS.SPACING.MD, // Less padding on web
-    ...createShadowStyle(colors.shadowColored, { width: 0, height: 4 }, 0.15, 8), // צל צבעוני
+    ...createShadowStyle(colors.secondary, { width: 0, height: 4 }, 0.15, 8), // צל צבעוני
   },
   categoriesGrid: {
     flexDirection: 'row',
@@ -558,10 +565,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.XS : LAYOUT_CONSTANTS.SPACING.SM, // Less padding on web
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM, // עיגול יותר מעוגל
     alignItems: 'center',
-    ...createShadowStyle(colors.shadowColored, { width: 0, height: 2 }, 0.12, 4), // צל צבעוני
-    backgroundColor: colors.backgroundPrimary, // רקע לבן נקי
+    ...createShadowStyle(colors.secondary, { width: 0, height: 2 }, 0.12, 4), // צל צבעוני
+    backgroundColor: colors.background, // רקע לבן נקי
     borderWidth: 1,
-    borderColor: colors.borderSecondary, // גבול עדין יותר
+    borderColor: colors.border, // גבול עדין יותר
   },
   categoryCardHorizontal: {
     width: Platform.OS === 'web' ? scaleSize(120) : scaleSize(140), // Smaller on web
@@ -569,10 +576,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Platform.OS === 'web' ? LAYOUT_CONSTANTS.SPACING.XS : LAYOUT_CONSTANTS.SPACING.SM, // Less padding on web
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM, // עיגול יותר מעוגל
     alignItems: 'center',
-    ...createShadowStyle(colors.shadowColored, { width: 0, height: 2 }, 0.12, 4), // צל צבעוני
-    backgroundColor: colors.backgroundPrimary, // רקע לבן נקי
+    ...createShadowStyle(colors.secondary, { width: 0, height: 2 }, 0.12, 4), // צל צבעוני
+    backgroundColor: colors.background, // רקע לבן נקי
     borderWidth: 1,
-    borderColor: colors.borderSecondary, // גבול עדין יותר
+    borderColor: colors.border, // גבול עדין יותר
     marginRight: LAYOUT_CONSTANTS.SPACING.XS,
   },
   activeCategoryCard: {
@@ -580,7 +587,7 @@ const styles = StyleSheet.create({
     padding: LAYOUT_CONSTANTS.SPACING.MD,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
     alignItems: 'center',
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 3 }, 0.15, 6),
+    ...createShadowStyle(colors.shadow, { width: 0, height: 3 }, 0.15, 6),
     minHeight: scaleSize(140),
     backgroundColor: colors.categoryCardBackground,
     borderWidth: 1,
@@ -597,7 +604,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: LAYOUT_CONSTANTS.SPACING.SM, // מרווח גדול יותר מתחת לאיקון
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.3, 4), // צל לאיקון
+    ...createShadowStyle(colors.shadow, { width: 0, height: 2 }, 0.3, 4), // צל לאיקון
   },
   categoryIconWrapper: {
     position: 'relative',
@@ -664,7 +671,7 @@ const styles = StyleSheet.create({
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
     padding: LAYOUT_CONSTANTS.SPACING.LG,
     marginHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 4 }, 0.1, 8),
+    ...createShadowStyle(colors.shadow, { width: 0, height: 4 }, 0.1, 8),
   },
   statsContainer: {
     flexDirection: 'row',
@@ -673,18 +680,18 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     padding: LAYOUT_CONSTANTS.SPACING.LG,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
     alignItems: 'center',
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.1, 4),
+    ...createShadowStyle(colors.shadow, { width: 0, height: 2 }, 0.1, 4),
     borderWidth: 1,
     borderColor: colors.backgroundTertiary,
   },
   statNumber: {
     fontSize: FontSizes.heading1,
     fontWeight: 'bold',
-    color: colors.pink,
+    color: colors.secondary,
     marginTop: LAYOUT_CONSTANTS.SPACING.SM,
     marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
@@ -696,11 +703,12 @@ const styles = StyleSheet.create({
 
   // Modern Design Styles
   modernSection: {
-    backgroundColor: colors.backgroundPrimary,
+    marginTop: LAYOUT_CONSTANTS.SPACING.LG,
+    backgroundColor: colors.background,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
     marginHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
     marginBottom: LAYOUT_CONSTANTS.SPACING.LG,
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.08, 12),
+    ...createShadowStyle(colors.shadow, { width: 0, height: 2 }, 0.08, 12),
   },
   modernGrid: {
     flexDirection: 'row',
@@ -715,8 +723,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.borderSecondary,
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 4 }, 0.1, 8),
+    borderColor: colors.border,
+    ...createShadowStyle(colors.shadow, { width: 0, height: 4 }, 0.1, 8),
   },
   modernIconContainer: {
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
@@ -728,7 +736,7 @@ const styles = StyleSheet.create({
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
     justifyContent: 'center',
     alignItems: 'center',
-    ...createShadowStyle(colors.shadowMedium, { width: 0, height: 3 }, 0.2, 6),
+    ...createShadowStyle(colors.shadow, { width: 0, height: 3 }, 0.2, 6),
   },
   modernCardContent: {
     alignItems: 'center',
@@ -768,8 +776,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 3 }, 0.1, 10),
+    borderColor: colors.border,
+    ...createShadowStyle(colors.shadow, { width: 0, height: 3 }, 0.1, 10),
   },
   modernSmallIconContainer: {
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,

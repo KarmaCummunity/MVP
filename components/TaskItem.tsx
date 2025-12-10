@@ -2,7 +2,7 @@
 'use strict';
 
 import React, { useCallback, memo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Task } from '../globals/types';
 import colors from '../globals/colors';
@@ -192,7 +192,7 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
             onPress={handleEditPress} 
             style={[styles.actionButton, styles.editButton]}
           >
-            <Ionicons name="create-outline" size={18} color={colors.pink} />
+            <Ionicons name="create-outline" size={18} color={colors.secondary} />
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -210,22 +210,15 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderRadius: 12,
     marginBottom: 12,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 3,
     overflow: 'hidden',
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        shadowColor: colors.shadowLight,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-    }),
   },
   completedContainer: {
     opacity: 0.6,
@@ -330,7 +323,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   editButton: {
-    backgroundColor: colors.pink + '10',
+    backgroundColor: colors.secondary + '10',
   },
   deleteButton: {
     backgroundColor: colors.error + '10',

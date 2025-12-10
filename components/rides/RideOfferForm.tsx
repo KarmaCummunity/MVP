@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
         color: colors.textPrimary,
     },
     locationOptionTextSelected: {
-        color: colors.backgroundPrimary,
+        color: colors.white,
         fontWeight: 'bold',
     },
     checkboxRow: {
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
         borderColor: colors.moneyButtonBackground,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: colors.backgroundPrimary,
+        backgroundColor: colors.white,
     },
     checkboxChecked: {
         backgroundColor: colors.moneyButtonBackground,
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     offerButtonText: {
-        color: colors.backgroundPrimary,
+        color: colors.white,
         fontSize: FontSizes.medium,
         fontWeight: 'bold',
     },
@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
         color: colors.textPrimary,
     },
     recurrenceUnitOptionTextSelected: {
-        color: colors.backgroundPrimary,
+        color: colors.white,
         fontWeight: 'bold',
     },
     recurrencePreview: {

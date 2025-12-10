@@ -2,7 +2,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';
 import { useTranslation } from 'react-i18next';
 
 interface ModeToggleButtonProps {
@@ -12,25 +11,42 @@ interface ModeToggleButtonProps {
 
 const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({ mode, onToggle }) => {
   const { t } = useTranslation(['common']);
-  // console.log("Toggling mode" + mode);
+
   return (
-    <TouchableOpacity style={localStyles.modeToggleWrapper} onPress={onToggle}>
-      <View style={localStyles.modeToggleBackground}>
+    <TouchableOpacity style={localStyles.toggleWrapper} onPress={onToggle} activeOpacity={0.9}>
+      <View style={localStyles.toggleBackground}>
+        {/* Helper (Offerer) - Left side in LTR, Right side in RTL (handled by row-reverse) */}
         <View
           style={[
-            localStyles.modeButton,
-            !mode ? localStyles.selected: localStyles.unselected // Adjusted for 'מחפש' (left)
+            localStyles.toggleSegment,
+            !mode ? localStyles.toggleSelected : localStyles.toggleUnselected
           ]}
         >
-          <Text style={localStyles.modeText}>{t('common:offerer')}</Text>
+          <Text
+            style={[
+              localStyles.toggleText,
+              !mode ? localStyles.toggleTextSelected : undefined
+            ]}
+          >
+            {t('common:offerer')}
+          </Text>
         </View>
+
+        {/* Seeker - Right side in LTR, Left side in RTL */}
         <View
           style={[
-            localStyles.modeButton,
-            mode ? localStyles.selected : localStyles.unselected // Adjusted for 'מציע' (right)
+            localStyles.toggleSegment,
+            mode ? localStyles.toggleSelected : localStyles.toggleUnselected
           ]}
         >
-          <Text style={localStyles.modeText}>{t('common:seeker')}</Text>
+          <Text
+            style={[
+              localStyles.toggleText,
+              mode ? localStyles.toggleTextSelected : undefined
+            ]}
+          >
+            {t('common:seeker')}
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -38,35 +54,51 @@ const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({ mode, onToggle }) =
 };
 
 const localStyles = StyleSheet.create({
-  modeToggleWrapper: {
-    maxWidth: '20%',
+  toggleWrapper: {
     borderRadius: 999,
     overflow: 'hidden',
-    width: '40%', 
+    backgroundColor: 'transparent',
+    // Allow flexibility in width or constraints if passed from parent, 
+    // but here we keep it self-contained
   },
-  modeToggleBackground: {
-    flexDirection: 'row-reverse', // Keeps "מחפש" on the right initially for rtl
-    backgroundColor: colors.toggleBackground,
-    borderRadius: 999, // Use 999 for full pill shape
-    height: 25, // Fixed height for consistency
-  },
-  modeButton: {
-    flex: 1, // Distributes space evenly
+  toggleBackground: {
+    flexDirection: 'row-reverse', // RTL support
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 999,
+    height: 32,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 2,
     alignItems: 'center',
-    justifyContent: 'center', // Center text vertically
+    justifyContent: 'center',
   },
-  unselected: { 
-    backgroundColor: colors.toggleActive,
-    borderRadius: 999, // Full pill shape
+  toggleSegment: {
+    paddingHorizontal: 16,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    minWidth: 70, // Ensure minimum tap target area
   },
-  selected: {
-    backgroundColor: colors.toggleBackground,
+  toggleSelected: {
+    backgroundColor: colors.white,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-
-  modeText: {
-    fontWeight: 'bold',
-    color: colors.toggleText,
-    fontSize: FontSizes.small,
+  toggleUnselected: {
+    backgroundColor: 'transparent',
+  },
+  toggleText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  toggleTextSelected: {
+    color: colors.primary,
+    fontWeight: '700',
   },
 });
 

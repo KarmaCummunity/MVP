@@ -234,7 +234,7 @@ export default function TimeScreen({
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundPrimary} />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       
       <HeaderComp
         mode={true}
@@ -257,14 +257,14 @@ export default function TimeScreen({
             onPress={handleEmergencyLink}
           >
             <View style={styles.emergencyContent}>
-              <Ionicons name="flash" size={32} color={colors.orange} />
+              <Ionicons name="flash" size={32} color={colors.accent} />
               <View style={styles.emergencyText}>
                 <Text style={styles.emergencyTitle}>התנדבות דחופה</Text>
                 <Text style={styles.emergencyDescription}>
                   מצא הזדמנויות התנדבות דחופות באזור שלך
                 </Text>
               </View>
-              <Ionicons name="arrow-forward" size={24} color={colors.orange} />
+              <Ionicons name="arrow-forward" size={24} color={colors.accent} />
             </View>
           </TouchableOpacity>
         </View>
@@ -386,7 +386,7 @@ export default function TimeScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
   },
 
   content: {
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 20,
     borderWidth: 2,
-    borderColor: colors.orange,
+    borderColor: colors.accent,
   },
   emergencyContent: {
     flexDirection: 'row',
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   emergencyTitle: {
     fontSize: FontSizes.medium,
     fontWeight: 'bold',
-    color: colors.orange,
+    color: colors.accent,
     marginBottom: 4,
   },
   emergencyDescription: {
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
     paddingRight: 20,
   },
   categoryButton: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
@@ -445,8 +445,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   categoryButtonActive: {
-    backgroundColor: colors.pink,
-    borderColor: colors.pink,
+    backgroundColor: colors.secondary,
+    borderColor: colors.secondary,
   },
   categoryButtonText: {
     fontSize: FontSizes.body,
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   opportunityCard: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderRadius: 15,
     overflow: 'hidden',
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
@@ -484,9 +484,9 @@ const styles = StyleSheet.create({
   visitButton: {
     marginTop: 6,
     alignSelf: 'flex-start',
-    backgroundColor: colors.moneyInputBackground,
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: colors.moneyFormBorder,
+    borderColor: colors.secondary,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   opportunityCategoryText: {
-    color: colors.pinkDark,
+    color: colors.pinkDeep,
     fontSize: FontSizes.small,
     fontWeight: '600',
   },
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: 6,
-    backgroundColor: colors.orange,
+    backgroundColor: colors.accent,
     borderRadius: 3,
   },
   volunteersText: {
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   joinButton: {
-    backgroundColor: colors.orange,
+    backgroundColor: colors.accent,
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,
@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     padding: 20,
     borderRadius: 15,
     alignItems: 'center',
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: FontSizes.heading1,
     fontWeight: 'bold',
-    color: colors.orange,
+    color: colors.accent,
     marginTop: 8,
     marginBottom: 4,
   },

@@ -1,39 +1,22 @@
 // File overview:
 // - Purpose: Root stack navigator controlling auth vs app flows, with web mode support.
 // - Reached from: `App.tsx` renders `<MainNavigator />` inside `NavigationContainer`.
-// - Provides: Stack with routes that depend on web mode:
-//   * Site mode: Shows 'LandingSiteScreen' as entry point
-//   * App mode: Shows 'LoginScreen' -> 'HomeStack' (BottomNavigator tabs)
-// - Decides: Based on web mode and authentication state which screen to show initially
-// - Web Mode Logic:
-//   * 'site' mode: LandingSiteScreen is initial route, toggle switches to app mode (Login/Home)
-//   * 'app' mode: Normal app flow with persistent toggle button above content
-// - Reads from context: `useUser()`, `useWebMode()` for controlling navigation flow
-// - Navigation params in common: Many screens expect optional ids (e.g., chatId, userId, url).
+// - Provides: Stack with routes that depend on authentication and web mode:
+//   * Authenticated: Shows 'HomeStack' (BottomNavigator tabs) and other protected screens.
+//   * Unauthenticated (Site Mode): Shows 'LandingSiteScreen' as entry point.
+//   * Unauthenticated (App Mode): Shows 'LoginScreen' as entry point.
+// - Decides: conditionally renders screens based on `useUser()` state (`isAuthenticated`, `isGuestMode`).
 // - Downstream flows:
 //   - LandingSiteScreen -> toggle to app mode -> Login/Home
-//   - LoginScreen -> on success/guest: `navigation.reset({ routes: [{ name: 'HomeStack' }] })`.
-//   - Notifications -> may navigate to 'ChatDetailScreen' with `conversationId`.
+//   - LoginScreen -> on success/guest: state updates -> re-render allows 'HomeStack'.
 // - External deps: react-navigation stack, i18n for titles, shared colors/styles.
 
-// TODO: Add proper navigation state persistence for deep linking
-// TODO: Implement proper screen pre-loading for better performance
-// TODO: Add navigation analytics and tracking
-// TODO: Simplify complex navigation logic - too many conditional renders
-// TODO: Add proper TypeScript typing for all navigation params
-// TODO: Implement proper loading states during navigation transitions
-// TODO: Add navigation guards for protected routes
-// TODO: Remove hardcoded console.log statements - use proper logging
-// TODO: Add navigation error boundaries and fallback screens
-// TODO: Optimize navigation performance with lazy loading
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, ActivityIndicator, Text, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { createStackNavigator } from "@react-navigation/stack";
 import { useFocusEffect } from "@react-navigation/native";
 import BottomNavigator from "./BottomNavigator";
-// InactiveScreen was removed; replace with LoginScreen to avoid missing module
-// import InactiveScreen from "../screens/InactiveScreen";
 import WebViewScreen from "../screens/WebViewScreen";
 import PostsReelsScreenWrapper from "../components/PostsReelsScreenWrapper";
 import BookmarksScreen from "../screens/BookmarksScreen";
@@ -41,6 +24,7 @@ import UserProfileScreen from "../screens/UserProfileScreen";
 import FollowersScreen from "../screens/FollowersScreen";
 import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
 import LoginScreen from "../screens/LoginScreen";
+import NewLoginScreen from "../screens/NewLoginScreen";
 import { useUser } from '../stores/userStore';
 import colors from '../globals/colors';
 import styles from '../globals/styles';
@@ -64,10 +48,8 @@ const Stack = createStackNavigator<RootStackParamList>();
 
 export default function MainNavigator() {
   const { selectedUser, isLoading, isGuestMode, isAuthenticated } = useUser();
-  const { t } = useTranslation(['common','profile']);
+  const { t } = useTranslation(['common', 'profile']);
   const { mode } = useWebMode();
-  const initialRouteNameRef = useRef<string | null>(null);
-  const hasInitializedRef = useRef(false);
 
   // Log render state for debugging
   useEffect(() => {
@@ -84,7 +66,6 @@ export default function MainNavigator() {
   useFocusEffect(
     React.useCallback(() => {
       logger.debug('MainNavigator', 'Navigator focused');
-      // This will trigger re-renders of child screens when needed
     }, [])
   );
 
@@ -99,135 +80,91 @@ export default function MainNavigator() {
     );
   }
 
-  // Determine initial route - only set once to prevent resets on auth state changes
-  // This prevents the navigator from resetting when auth state updates
-  useEffect(() => {
-    if (!hasInitializedRef.current && !isLoading) {
-      if (Platform.OS === 'web' && mode === 'site') {
-        // Site mode: always start with landing page
-        initialRouteNameRef.current = 'LandingSiteScreen';
-        logger.debug('MainNavigator', 'Site mode: showing LandingSiteScreen as initial route');
-      } else {
-        // App mode: determine based on authentication
-        if (isAuthenticated || isGuestMode) {
-          initialRouteNameRef.current = 'HomeStack';
-          logger.debug('MainNavigator', 'App mode: user authenticated/guest, showing HomeStack');
-        } else {
-          initialRouteNameRef.current = 'LoginScreen';
-          logger.debug('MainNavigator', 'App mode: user not authenticated, showing LoginScreen');
-        }
-      }
-      hasInitializedRef.current = true;
-    }
-  }, [mode, isAuthenticated, isGuestMode, isLoading]);
-
-  // Reset initialization flag when mode changes (to allow new initial route for new mode)
-  useEffect(() => {
-    if (hasInitializedRef.current) {
-      // Mode changed - allow re-initialization for the new mode
-      const currentRoute = initialRouteNameRef.current;
-      if (Platform.OS === 'web' && mode === 'site') {
-        if (currentRoute !== 'LandingSiteScreen') {
-          hasInitializedRef.current = false;
-        }
-      } else {
-        if (isAuthenticated || isGuestMode) {
-          if (currentRoute !== 'HomeStack') {
-            hasInitializedRef.current = false;
-          }
-        } else {
-          if (currentRoute !== 'LoginScreen') {
-            hasInitializedRef.current = false;
-          }
-        }
-      }
-    }
-  }, [mode]);
-
-  // Get initial route name - only use if no initialState is provided by NavigationContainer
-  // If initialState exists, React Navigation will use it and ignore initialRouteName
-  const initialRouteName = useMemo(() => {
-    if (initialRouteNameRef.current) {
-      return initialRouteNameRef.current;
-    }
-    
-    // Fallback calculation (should only be used on first render when no saved state exists)
-    if (Platform.OS === 'web' && mode === 'site') {
-      return 'LandingSiteScreen';
-    } else {
-      if (isAuthenticated || isGuestMode) {
-        return 'HomeStack';
-      } else {
-        return 'LoginScreen';
-      }
-    }
-  }, []); // Empty deps - only calculate once
-
-  // Stack Navigator key - only change when mode changes, not on auth state changes
-  // This prevents unnecessary re-mounts when auth state updates after initialization
-  // We only re-mount when switching between site/app modes
-  const stackKey = useMemo(() => `stack-${mode}`, [mode]);
+  // Stack Navigator key - only change when mode changes, or authentication state toggles major branches
+  // This helps ensure clean transitions between Auth and Unauth states
+  const stackKey = useMemo(() => `stack-${mode}-${isAuthenticated || isGuestMode ? 'auth' : 'unauth'}`, [mode, isAuthenticated, isGuestMode]);
 
   return (
-    <Stack.Navigator 
+    <Stack.Navigator
       key={stackKey}
       id={undefined}
       detachInactiveScreens={true}
-      screenOptions={{ 
+      screenOptions={{
         headerShown: false,
         // Fix for aria-hidden warning: prevent focus on inactive screens
-        // detachInactiveScreens already handles this, but we keep cardStyle for web compatibility
-        cardStyle: Platform.OS === 'web' ? { 
+        cardStyle: Platform.OS === 'web' ? {
           // On web, ensure inactive screens don't interfere with focus
-          // This prevents elements in hidden screens from receiving focus
         } : undefined,
       }}
-      initialRouteName={initialRouteName as any}
     >
-      {Platform.OS === 'web' ? (
-        <Stack.Screen name="LandingSiteScreen" component={LandingSiteScreen} />
-      ) : null}
-      <Stack.Screen name="LoginScreen" component={LoginScreen} />
-      <Stack.Screen name="HomeStack" component={BottomNavigator} />
-      <Stack.Screen name="NewChatScreen" component={NewChatScreen} />
-      <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
-      {/* InactiveScreen removed - redirect to LoginScreen */}
-      <Stack.Screen name="InactiveScreen" component={LoginScreen} />
-      <Stack.Screen name="WebViewScreen" component={WebViewScreen} />
-      <Stack.Screen
-        name="PostsReelsScreen"
-        component={PostsReelsScreenWrapper}
-        options={{
-          cardStyle: { backgroundColor: 'transparent' },
-          presentation: 'transparentModal',
-        }}
-      />
-      <Stack.Screen
-        name="BookmarksScreen"
-        component={BookmarksScreen}
-        options={{
-          title: t('profile:menu.bookmarks'),
-          headerTitleAlign: 'center',
-          headerShown: true,
-        }}
-      />
-      {/* Screen we see that opens when user looks at another user */}
-      <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} />
-      <Stack.Screen name="FollowersScreen" component={FollowersScreen} />
-      <Stack.Screen name="DiscoverPeopleScreen" component={DiscoverPeopleScreen} />
-      
-      {/* Top Bar Screens */}
-      <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
-      <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
-      <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
-      <Stack.Screen name="AboutKarmaCommunityScreen" component={AboutKarmaCommunityScreen} />
-     
-{/* Org Screens */}     
-      <Stack.Screen name="OrgOnboardingScreen" component={OrgOnboardingScreen} />
-      <Stack.Screen name="AdminOrgApprovalsScreen" component={AdminOrgApprovalsScreen} />
-      <Stack.Screen name="OrgDashboardScreen" component={OrgDashboardScreen} />
-      {/* User Profile Screens */}
-      <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} />
+      {isAuthenticated || isGuestMode ? (
+        // ==================================================================
+        // AUTHENTICATED STACK
+        // Screens available only to logged-in users or guests
+        // ==================================================================
+        <Stack.Group>
+          <Stack.Screen name="HomeStack" component={BottomNavigator} />
+
+          <Stack.Screen name="NewChatScreen" component={NewChatScreen} />
+          <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
+
+          <Stack.Screen name="WebViewScreen" component={WebViewScreen} />
+
+          <Stack.Screen
+            name="PostsReelsScreen"
+            component={PostsReelsScreenWrapper}
+            options={{
+              cardStyle: { backgroundColor: 'transparent' },
+              presentation: 'transparentModal',
+            }}
+          />
+
+          <Stack.Screen
+            name="BookmarksScreen"
+            component={BookmarksScreen}
+            options={{
+              title: t('profile:menu.bookmarks'),
+              headerTitleAlign: 'center',
+              headerShown: true,
+            }}
+          />
+
+          <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} />
+          <Stack.Screen name="FollowersScreen" component={FollowersScreen} />
+          <Stack.Screen name="DiscoverPeopleScreen" component={DiscoverPeopleScreen} />
+
+          {/* Top Bar Screens accessible from HomeTabStack headers */}
+          <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
+          <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
+          <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
+          <Stack.Screen name="AboutKarmaCommunityScreen" component={AboutKarmaCommunityScreen} />
+
+          {/* Org & Admin Screens */}
+          <Stack.Screen name="AdminOrgApprovalsScreen" component={AdminOrgApprovalsScreen} />
+          <Stack.Screen name="OrgDashboardScreen" component={OrgDashboardScreen} />
+          <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} />
+        </Stack.Group>
+      ) : (
+        // ==================================================================
+        // UNAUTHENTICATED STACK
+        // Screens available to users who are NOT logged in
+        // ==================================================================
+        <Stack.Group>
+          {/* In site mode, LandingSiteScreen is the entry point */}
+          {Platform.OS === 'web' && mode === 'site' ? (
+            <Stack.Screen name="LandingSiteScreen" component={LandingSiteScreen} />
+          ) : null}
+
+          {/* In app mode (or if site mode landing navigates here), LoginScreen is main */}
+          <Stack.Screen name="LoginScreen" component={NewLoginScreen} />
+
+          {/* Org Onboarding is part of the sign-up flow */}
+          <Stack.Screen name="OrgOnboardingScreen" component={OrgOnboardingScreen} />
+
+          {/* Legacy mapping for removed screen */}
+          <Stack.Screen name="InactiveScreen" component={LoginScreen} />
+        </Stack.Group>
+      )}
     </Stack.Navigator>
   );
 }

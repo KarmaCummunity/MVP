@@ -6,7 +6,6 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
-  Platform,
 } from 'react-native';
 import { NavigationProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,7 +33,7 @@ const adminButtons: AdminButton[] = [
     id: 'money',
     title: 'כסף',
     icon: 'card-outline',
-    color: colors.green,
+    color: colors.success,
     bgColor: colors.successLight,
     route: 'AdminMoney',
   },
@@ -42,7 +41,7 @@ const adminButtons: AdminButton[] = [
     id: 'tasks',
     title: 'משימות',
     icon: 'checkmark-done-outline',
-    color: colors.blue,
+    color: colors.primary,
     bgColor: colors.successLight,
     route: 'AdminTasks',
   },
@@ -50,7 +49,7 @@ const adminButtons: AdminButton[] = [
     id: 'people',
     title: 'אנשים',
     icon: 'people-outline',
-    color: colors.blue,
+    color: colors.primary,
     bgColor: colors.infoLight,
     route: 'AdminPeople',
   },
@@ -58,7 +57,7 @@ const adminButtons: AdminButton[] = [
     id: 'review',
     title: 'ביקורת',
     icon: 'shield-checkmark-outline',
-    color: colors.pink,
+    color: colors.secondary,
     bgColor: colors.pinkLight,
     route: 'AdminReview',
   }
@@ -152,18 +151,11 @@ const styles = StyleSheet.create({
     padding: LAYOUT_CONSTANTS.SPACING.LG,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 3,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        shadowColor: colors.shadowLight,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-    }),
   },
   iconContainer: {
     width: 80,
@@ -172,7 +164,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
-    shadowColor: '#000',
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,

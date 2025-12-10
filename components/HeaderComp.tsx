@@ -56,12 +56,12 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
   hideSortButton = false,
 }) => {
   const { isGuestMode } = useUser();
-  const { t } = useTranslation(['search','common']);
+  const { t } = useTranslation(['search', 'common']);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [selectedSorts, setSelectedSorts] = useState<string[]>([]);
   const removeFilterRef = React.useRef<((filter: string) => void) | null>(null);
   const removeSortRef = React.useRef<(() => void) | null>(null);
- 
+
   const { isTablet, isDesktop, isLargeDesktop, width } = getScreenInfo();
   const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
   const horizontalPadding = isLargeDesktop ? 32 : isDesktopWeb ? 24 : isTablet ? 20 : 16;
@@ -84,15 +84,15 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
   const handleSortsChange = (sorts: string[]) => {
     setSelectedSorts(sorts);
   };
-  
+
   return (
     <View style={[
       headerStyles.headerContainer,
       {
-        paddingHorizontal: horizontalPadding/2,
-        paddingVertical: verticalPadding/2,
+        paddingHorizontal: horizontalPadding / 2,
+        paddingVertical: verticalPadding / 2,
         borderRadius: containerRadius,
-        marginHorizontal: marginHorizontal/2,
+        marginHorizontal: marginHorizontal / 2,
       }
     ]}>
       {/* מציג את הבאנר במצב אורח אם המשתמש במצב אורח */}
@@ -102,7 +102,7 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
 
       <View style={[headerStyles.topRow, { flexDirection: rowDirection('row') }]}>
         <MenuComp options={menuOptions} onSelectOption={onSelectMenuItem} />
-        <SearchBar 
+        <SearchBar
           placeholder={placeholder}
           filterOptions={filterOptions}
           sortOptions={sortOptions}
@@ -130,7 +130,7 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
             {/* Sort items */}
             {selectedSorts.length > 0 && (
               <>
-                <Text style={headerStyles.rowLabelInline}>{t('search:sortLabel')}:</Text>
+                <Text style={headerStyles.rowLabelInline}>{t('search:sortTitle')}:</Text>
                 {selectedSorts.map((sort) => (
                   <TouchableOpacity
                     key={sort}
@@ -145,14 +145,14 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
                 ))}
               </>
             )}
-            
+
             {/* Filter items */}
             {selectedFilters.length > 0 && (
               <>
                 {selectedSorts.length > 0 && (
                   <Text style={headerStyles.separator}>•</Text>
                 )}
-                <Text style={headerStyles.rowLabelInline}>{t('search:filterLabel')}:</Text>
+                <Text style={headerStyles.rowLabelInline}>{t('search:filterTitle')}:</Text>
                 {selectedFilters.map((filter) => (
                   <TouchableOpacity
                     key={filter}
@@ -176,10 +176,10 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
 
 const headerStyles = StyleSheet.create({
   headerContainer: {
-    backgroundColor: colors.moneyFormBackground,
+    backgroundColor: colors.pinkLight,
     marginBottom: responsiveSpacing(5, 6, 7),
     borderBottomWidth: 1,
-    borderBottomColor: colors.headerBorder,
+    borderBottomColor: colors.border,
     paddingBottom: responsiveSpacing(8, 10, 12),
     marginTop: responsiveSpacing(10, 12, 14),
     // Dynamic styles applied in JSX for responsive padding and radius
@@ -191,7 +191,7 @@ const headerStyles = StyleSheet.create({
   screenTitle: {
     fontSize: responsiveFontSize(FontSizes.body, 17, 19),
     fontWeight: 'bold',
-    color: colors.headerTitleText,
+    color: colors.textPrimary,
     textAlign: 'center',
     flex: 1,
   },
@@ -233,7 +233,7 @@ const headerStyles = StyleSheet.create({
     flexDirection: "row-reverse",
     alignItems: "center",
     gap: responsiveSpacing(3, 4, 5),
-    ...createShadowStyle("#000", { width: 0, height: 0.5 }, 0.05, 1),
+    ...createShadowStyle("colors.black", { width: 0, height: 0.5 }, 0.05, 1),
     elevation: 1,
   },
   selectedFilterSortButtonText: {

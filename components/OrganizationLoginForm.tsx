@@ -21,13 +21,13 @@ import {
   Animated,
   StyleSheet,
   Dimensions,
-  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from '../utils/databaseService';
+import colors from '../globals/colors';
 
 // TypeScript Interfaces
 interface OrganizationLoginFormProps {
@@ -72,7 +72,7 @@ const OrganizationLoginForm: React.FC<OrganizationLoginFormProps> = ({
 }) => {
   const { t } = useTranslation(['auth', 'common']);
   const navigation = useNavigation<any>();
-  
+
   // Form state management
   const [formState, setFormState] = useState<OrganizationFormState>({
     query: '',
@@ -101,9 +101,9 @@ const OrganizationLoginForm: React.FC<OrganizationLoginFormProps> = ({
 
     const query = formState.query.trim().toLowerCase();
     if (!query) {
-      setRecentEmails(prev => ({ 
-        ...prev, 
-        suggestions: recentEmails.emails.slice(0, 5) 
+      setRecentEmails(prev => ({
+        ...prev,
+        suggestions: recentEmails.emails.slice(0, 5)
       }));
       return;
     }
@@ -111,7 +111,7 @@ const OrganizationLoginForm: React.FC<OrganizationLoginFormProps> = ({
     const filtered = recentEmails.emails
       .filter(email => email.toLowerCase().includes(query))
       .slice(0, 5);
-    
+
     setRecentEmails(prev => ({ ...prev, suggestions: filtered }));
   }, [formState.query, isOpen, recentEmails.emails]);
 
@@ -144,7 +144,7 @@ const OrganizationLoginForm: React.FC<OrganizationLoginFormProps> = ({
           return;
         }
       }
-      
+
       // Fallback to known emails
       const knownRaw = await AsyncStorage.getItem(KNOWN_EMAILS_KEY);
       if (knownRaw) {
@@ -164,10 +164,10 @@ const OrganizationLoginForm: React.FC<OrganizationLoginFormProps> = ({
   const handleOrgConfirm = async () => {
     try {
       const query = formState.query.trim();
-      
+
       if (!query) {
         Alert.alert(
-          t('common:error') as string, 
+          t('common:error') as string,
           t('auth:org.enterNameOrEmail') as string
         );
         return;
@@ -178,7 +178,7 @@ const OrganizationLoginForm: React.FC<OrganizationLoginFormProps> = ({
       // Search for organization applications
       let applications: any[] = [];
       const isEmail = query.includes('@');
-      
+
       if (isEmail) {
         // Search by email (primary key)
         const emailKey = query.toLowerCase();
@@ -203,7 +203,7 @@ const OrganizationLoginForm: React.FC<OrganizationLoginFormProps> = ({
 
       if (pending) {
         Alert.alert(
-          t('auth:org.pendingTitle') as string, 
+          t('auth:org.pendingTitle') as string,
           t('auth:org.pendingMessage') as string
         );
         setFormState(prev => ({ ...prev, isChecking: false }));
@@ -215,7 +215,7 @@ const OrganizationLoginForm: React.FC<OrganizationLoginFormProps> = ({
     } catch (error) {
       console.error('Org login check failed:', error);
       Alert.alert(
-        t('common:error') as string, 
+        t('common:error') as string,
         t('auth:org.checkFailed') as string
       );
       setFormState(prev => ({ ...prev, isChecking: false }));
@@ -228,7 +228,7 @@ const OrganizationLoginForm: React.FC<OrganizationLoginFormProps> = ({
   const handleApprovedOrganization = async (approved: any, isEmail: boolean, query: string) => {
     try {
       const email = String(approved.contactEmail || (isEmail ? query : '')).toLowerCase();
-      
+
       const orgUser = {
         id: `org_${approved.id}`,
         name: approved.orgName || (t('auth:org.defaultName') as string),
@@ -240,9 +240,9 @@ const OrganizationLoginForm: React.FC<OrganizationLoginFormProps> = ({
         joinDate: new Date().toISOString(),
         isActive: true,
         lastActive: new Date().toISOString(),
-        location: { 
-          city: approved.city || (t('common:labels.countryIsrael') as string), 
-          country: 'IL' 
+        location: {
+          city: approved.city || (t('common:labels.countryIsrael') as string),
+          country: 'IL'
         },
         interests: [],
         roles: ['org_admin'],
@@ -276,7 +276,7 @@ const OrganizationLoginForm: React.FC<OrganizationLoginFormProps> = ({
           onPress={onToggle}
           activeOpacity={0.85}
         >
-          <Text style={[styles.ctaButtonText, { color: '#FF6B9D', fontWeight: '700' }]}>
+          <Text style={[styles.ctaButtonText, { color: colors.secondary, fontWeight: '700' }]}>
             {t('auth:org.cta')}
           </Text>
         </TouchableOpacity>
@@ -289,14 +289,14 @@ const OrganizationLoginForm: React.FC<OrganizationLoginFormProps> = ({
       <View style={styles.expandedRow}>
         <Animated.View style={[styles.miniButton, { opacity: animationValue }]}>
           <TouchableOpacity onPress={onToggle} activeOpacity={0.8}>
-            <Ionicons name="business-outline" size={20} color="#FF6B9D" />
+            <Ionicons name="business-outline" size={20} color={colors.secondary} />
           </TouchableOpacity>
         </Animated.View>
 
         <TextInput
           style={styles.input}
           placeholder={t('auth:org.placeholder')}
-          placeholderTextColor="#B0B0B0"
+          placeholderTextColor={colors.textTertiary}
           value={formState.query}
           onChangeText={(text) => setFormState(prev => ({ ...prev, query: text }))}
           autoCapitalize="none"
@@ -329,9 +329,9 @@ const OrganizationLoginForm: React.FC<OrganizationLoginFormProps> = ({
       {recentEmails.suggestions.length > 0 && (
         <View style={styles.suggestionsBox}>
           {recentEmails.suggestions.map((suggestion) => (
-            <TouchableOpacity 
-              key={suggestion} 
-              style={styles.suggestionItem} 
+            <TouchableOpacity
+              key={suggestion}
+              style={styles.suggestionItem}
               onPress={() => handleSuggestionSelect(suggestion)}
             >
               <Text style={styles.suggestionText}>{suggestion}</Text>
@@ -350,45 +350,38 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   ctaButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 3,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-    }),
     width: '100%',
     marginVertical: 6,
     marginBottom: 22,
   },
   orgButton: {
-    borderColor: '#FF6B9D',
+    borderColor: colors.secondary,
     width: '100%',
   },
   ctaButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#666666',
+    color: colors.textSecondary,
     textAlign: 'center',
     width: '100%',
   },
   expandedRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 6,
     marginHorizontal: 0,
@@ -406,32 +399,32 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
   actionButton: {
-    backgroundColor: '#FF6B9D',
+    backgroundColor: colors.secondary,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 10,
   },
   actionButtonText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontWeight: '700',
     fontSize: 14,
   },
   disabledButton: {
-    backgroundColor: '#CCCCCC',
+    backgroundColor: colors.textTertiary,
     opacity: 0.6,
   },
   suggestionsBox: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: colors.border,
     borderRadius: 10,
     marginTop: 6,
     marginBottom: 6,
@@ -443,7 +436,7 @@ const styles = StyleSheet.create({
   },
   suggestionText: {
     fontSize: 14,
-    color: '#333333',
+    color: colors.textPrimary,
     textAlign: 'right',
   },
 });

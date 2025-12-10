@@ -329,7 +329,7 @@ const localStyles = StyleSheet.create({
   headerTitle: {
     fontSize: FontSizes.heading2,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.textPrimary,
     textAlign: 'center',
     flex: 1,
   },
@@ -349,7 +349,7 @@ const localStyles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 10,
-    color: colors.text
+    color: colors.textPrimary
   },
   subtitle: {
     fontSize: FontSizes.medium,
@@ -364,7 +364,7 @@ const localStyles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 25,
     marginBottom: 15,
-    color: colors.text,
+    color: colors.textPrimary,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     paddingBottom: 5
@@ -374,7 +374,7 @@ const localStyles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 15,
-    color: colors.text
+    color: colors.textPrimary
   },
   bulletPointContainer: {
     flexDirection: 'row-reverse',

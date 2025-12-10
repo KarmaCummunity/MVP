@@ -373,7 +373,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundPrimary} />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       
        {showPosts ? (
         // Posts screen
@@ -440,7 +440,7 @@ const StatCard = ({ title, value, change, changeType, iconName, color }: StatCar
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
   },
   
   activitiesContainer: {
@@ -451,12 +451,12 @@ const styles = StyleSheet.create({
     paddingRight: LAYOUT_CONSTANTS.SPACING.LG,
   },
   activityCard: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     padding: LAYOUT_CONSTANTS.SPACING.MD,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
     marginRight: LAYOUT_CONSTANTS.SPACING.SM,
     width: scaleSize(150),
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.1, 2),
+    ...createShadowStyle(colors.shadow, { width: 0, height: 1 }, 0.1, 2),
   },
   activityIcon: {
     width: scaleSize(30),
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
     marginBottom: LAYOUT_CONSTANTS.SPACING.LG,
   },
 
-     statCard: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'white', borderRadius: 12, padding: 16, margin: 8, ...createShadowStyle('#000', { width: 0, height: 0 }, 0.1, 4) },
+     statCard: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'white', borderRadius: 12, padding: 16, margin: 8, ...createShadowStyle('colors.black', { width: 0, height: 0 }, 0.1, 4) },
   statContent: {
     flex: 1,
     marginRight: LAYOUT_CONSTANTS.SPACING.MD,
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
      statValue: {
      fontSize: FontSizes.medium,
      fontWeight: 'bold',
-     color: '#1976D2', // Darker blue for better readability
+     color: colors.primary, // Darker blue for better readability
      marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
    },
    statTitle: {
@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
    },
    statName: {
      fontSize: FontSizes.caption,
-     color: '#1565C0', // Darker blue for better readability
+     color: colors.primary, // Darker blue for better readability
      textAlign: 'center',
      fontWeight: '500',
    },
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
     bottom: LAYOUT_CONSTANTS.SPACING.SM,
     borderTopLeftRadius: scaleSize(250),
     borderTopRightRadius: scaleSize(250),
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: -3 }, 0.15, 8),
+    ...createShadowStyle(colors.shadow, { width: 0, height: -3 }, 0.15, 8),
   },
   panelHandle: {
     height: scaleSize(6),
@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
   // New styles for posts screen and scrolling
   postsContainer: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
   },
   postsHeader: {
     flexDirection: 'row',
@@ -588,7 +588,7 @@ const styles = StyleSheet.create({
   dragHandleButton: {
     position: 'absolute',
     bottom: Platform.OS === 'web' ? 20 : 60, // Much lower on web to reduce dead space
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
     alignSelf: 'center',
     width: scaleSize(96),
     height: scaleSize(24),
@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.15, 4),
+    ...createShadowStyle(colors.shadow, { width: 0, height: 2 }, 0.15, 4),
   },
   handleBar: {
     alignSelf: 'center',
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderTopLeftRadius: scaleSize(24),
     borderTopRightRadius: scaleSize(24),
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: -3 }, 0.15, 8),
+    ...createShadowStyle(colors.shadow, { width: 0, height: -3 }, 0.15, 8),
     zIndex: 900,
   },
   toggleButton: {
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
   },
   toggleButtonActive: {
     backgroundColor: colors.primary,
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.4, 2),
+    ...createShadowStyle(colors.shadow, { width: 0, height: 1 }, 0.4, 2),
   },
   toggleText: {
     fontSize: FontSizes.body,
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   toggleTextActive: {
-    color: colors.backgroundPrimary,
+    color: colors.background,
   },
   // Community mode styles
   communityModeContainer: {
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
   selectedUserName: {
     fontSize: FontSizes.small,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
   },
   selectedUserLocation: {
@@ -723,14 +723,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
      personalStatCard: {
-     backgroundColor: '#E3F2FD', // Very light blue
+     backgroundColor: colors.backgroundTertiary, // Very light blue
      padding: LAYOUT_CONSTANTS.SPACING.MD,
      borderRadius: scaleSize(50), // Fully rounded
      alignItems: 'center',
      flex: 1,
      marginHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
      marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
-     ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.15, 4),
+     ...createShadowStyle(colors.shadow, { width: 0, height: 2 }, 0.15, 4),
      minWidth: scaleSize(80),
      minHeight: scaleSize(80),
      justifyContent: 'center',
@@ -742,12 +742,12 @@ const styles = StyleSheet.create({
      personalStatValue: {
      fontSize: FontSizes.large,
      fontWeight: 'bold',
-     color: '#1976D2', // Darker blue for better readability
+     color: colors.primary, // Darker blue for better readability
      marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
    },
    personalStatName: {
      fontSize: FontSizes.caption,
-     color: '#1565C0', // Darker blue for better readability
+     color: colors.primary, // Darker blue for better readability
      textAlign: 'center',
      fontWeight: '500',
    },
@@ -762,13 +762,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
      floatingBubble: {
-     backgroundColor: '#E3F2FD', // Very light blue
+     backgroundColor: colors.backgroundTertiary, // Very light blue
      padding: LAYOUT_CONSTANTS.SPACING.MD,
      borderRadius: scaleSize(50), // Fully rounded
      alignItems: 'center',
      marginHorizontal: LAYOUT_CONSTANTS.SPACING.XS,
      marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
-     ...createShadowStyle(colors.shadowLight, { width: 0, height: 2 }, 0.15, 4),
+     ...createShadowStyle(colors.shadow, { width: 0, height: 2 }, 0.15, 4),
      minWidth: scaleSize(80),
      minHeight: scaleSize(80),
      justifyContent: 'center',
@@ -780,12 +780,12 @@ const styles = StyleSheet.create({
      bubbleValue: {
      fontSize: FontSizes.large,
      fontWeight: 'bold',
-     color: '#1976D2', // Darker blue for better readability
+     color: colors.primary, // Darker blue for better readability
      marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
    },
    bubbleLabel: {
      fontSize: FontSizes.caption,
-     color: '#1565C0', // Darker blue for better readability
+     color: colors.primary, // Darker blue for better readability
      textAlign: 'center',
      fontWeight: '500',
    },
@@ -837,7 +837,7 @@ const styles = StyleSheet.create({
    },
    eventsBubble: {
      backgroundColor: colors.legacyLightPink,
-     borderColor: colors.pink + '30',
+     borderColor: colors.secondary + '30',
      borderWidth: 1,
    },
    recyclingBubble: {
@@ -862,7 +862,7 @@ const styles = StyleSheet.create({
    },
    childrenBubble: {
      backgroundColor: colors.legacyLightPink,
-     borderColor: colors.pink + '30',
+     borderColor: colors.secondary + '30',
      borderWidth: 1,
    },
    sportsBubble: {
@@ -921,11 +921,11 @@ const styles = StyleSheet.create({
   // statCard styles are already defined earlier in this StyleSheet.
   chartCard: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
     padding: LAYOUT_CONSTANTS.SPACING.MD,
     marginHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
-    ...createShadowStyle(colors.shadowLight, { width: 0, height: 1 }, 0.1, 2),
+    ...createShadowStyle(colors.shadow, { width: 0, height: 1 }, 0.1, 2),
   },
   chartTitle: {
     fontSize: FontSizes.heading3,

@@ -28,18 +28,18 @@ interface TopBarNavigatorProps {
 }
 
 function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: TopBarNavigatorProps) {
-  const { t } = useTranslation(['home','common','settings','donations','notifications','profile']);
-  
+  const { t } = useTranslation(['home', 'common', 'settings', 'donations', 'notifications', 'profile']);
+
   const route = useRoute();
   const { isGuestMode } = useUser();
   const unreadCount = useUnreadNotificationsCount();
   const translateY = useSharedValue(0);
   const [measuredHeight, setMeasuredHeight] = React.useState(56);
-  
+
   // Get the current active route name from navigation state
   const activeRouteName = useNavigationState(state => {
     if (!state) return 'HomeMain';
-    
+
     const findActiveRoute = (routes: any[], index: number): string => {
       const currentRoute = routes[index];
       if (currentRoute?.state?.routes) {
@@ -48,10 +48,10 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
       }
       return currentRoute?.name || 'HomeMain';
     };
-    
+
     return findActiveRoute(state.routes, state.index || 0);
   });
-  
+
   // Log render for debugging
   React.useEffect(() => {
     logger.debug('TopBarNavigator', 'Component rendered', {
@@ -59,7 +59,7 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
       isGuestMode,
     });
   }, [route.name, isGuestMode]);
-  
+
   // Refresh data when navigator comes into focus
   useFocusEffect(
     React.useCallback(() => {
@@ -146,17 +146,17 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
 
   // Get current route name
   const currentRouteName = activeRouteName || route.name;
-  
+
   // Determine title based on current route
   let title = 'KC';
-  
+
   if (currentRouteName === 'HomeScreen' || currentRouteName === 'HomeMain') {
     title = showPosts ? t('home:newsTitle') : t('home:numbersTitle');
   } else {
     // Use the routeTitles mapping for all other screens
     title = routeTitles[currentRouteName] ?? 'KC';
   }
-  
+
   // Log important state changes
   React.useEffect(() => {
     logger.logUserAction('state-change', 'TopBarNavigator', {
@@ -177,51 +177,51 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
         onLayout={(e) => setMeasuredHeight(e.nativeEvent.layout.height)}
       >
 
-      <View style={styles.topBarIconsRow as StyleProp<ViewStyle>}>
-        <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={styles.topBarIconButton as StyleProp<ViewStyle>}>
-          <Icon name="settings-outline" size={24} color={colors.topNavIcon} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('NotificationsScreen')} style={styles.topBarIconButton as StyleProp<ViewStyle>}>
-          <View style={{ position: 'relative' }}>
-            <Icon name="notifications-circle-outline" size={24} color={colors.topNavIcon} />
-            {unreadCount > 0 && (
-              <View style={(styles as any).notificationBadge as StyleProp<ViewStyle>}>
-                <Text style={(styles as any).notificationBadgeText as StyleProp<TextStyle>}>
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.topBarIconsRow as StyleProp<ViewStyle>}>
+          <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={styles.topBarIconButton as StyleProp<ViewStyle>}>
+            <Icon name="settings-outline" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('NotificationsScreen')} style={styles.topBarIconButton as StyleProp<ViewStyle>}>
+            <View style={{ position: 'relative' }}>
+              <Icon name="notifications-circle-outline" size={24} color={colors.textPrimary} />
+              {unreadCount > 0 && (
+                <View style={(styles as any).notificationBadge as StyleProp<ViewStyle>}>
+                  <Text style={(styles as any).notificationBadgeText as StyleProp<TextStyle>}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+        </View>
 
-      {/* Title */}
-      <View style={styles.topBarTitleContainer as StyleProp<ViewStyle>}>
-        <Text style={styles.topBarTitle as StyleProp<TextStyle>}>{title}</Text>
-      </View>
-      {/* Left Icons Group: Notifications + Settings */}
-      
-      {/* Right Icons Group: Chat + About (for authenticated users) OR About only (for guests) */}
-      {/* 
+        {/* Title */}
+        <View style={styles.topBarTitleContainer as StyleProp<ViewStyle>}>
+          <Text style={styles.topBarTitle as StyleProp<TextStyle>}>{title}</Text>
+        </View>
+        {/* Left Icons Group: Notifications + Settings */}
+
+        {/* Right Icons Group: Chat + About (for authenticated users) OR About only (for guests) */}
+        {/* 
         About button is now available in both guest and authenticated modes:
         - Guest mode: Shows only About button (replaces Chat button)
         - Authenticated mode: Shows both Chat and About buttons
         This provides consistent access to About information across all user states.
       */}
-      <View style={styles.topBarIconsRow as StyleProp<ViewStyle>}>
-        {isGuestMode ? (
-          // Guest mode: Show only About button
-          <AboutButton style={styles.topBarIconButton as StyleProp<ViewStyle>} />
-        ) : (
-          // Authenticated mode: Show both Chat and About buttons
-          <>
-            <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={styles.topBarIconButton as StyleProp<ViewStyle>}>
-              <Icon name="chatbubbles-outline" size={24} color={colors.topNavIcon} />
-            </TouchableOpacity>
+        <View style={styles.topBarIconsRow as StyleProp<ViewStyle>}>
+          {isGuestMode ? (
+            // Guest mode: Show only About button
             <AboutButton style={styles.topBarIconButton as StyleProp<ViewStyle>} />
-          </>
-        )}
-      </View>
+          ) : (
+            // Authenticated mode: Show both Chat and About buttons
+            <>
+              <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={styles.topBarIconButton as StyleProp<ViewStyle>}>
+                <Icon name="chatbubbles-outline" size={24} color={colors.textPrimary} />
+              </TouchableOpacity>
+              <AboutButton style={styles.topBarIconButton as StyleProp<ViewStyle>} />
+            </>
+          )}
+        </View>
       </Animated.View>
     </SafeAreaView>
   );

@@ -521,7 +521,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
               <RefreshControl
                 refreshing={isLoading || isMutating}
                 onRefresh={loadDonations}
-                tintColor={colors.pink}
+                tintColor={colors.secondary}
               />
             }
           >
@@ -572,7 +572,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
                   value={formData.donorName}
                   onChangeText={(text) => setFormData({ ...formData, donorName: text })}
                   placeholder="הזן שם תורם"
-                  placeholderTextColor={colors.textPlaceholder}
+                  placeholderTextColor={colors.textTertiary}
                 />
               </View>
 
@@ -584,7 +584,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
                   onChangeText={(text) => setFormData({ ...formData, amount: text })}
                   placeholder="הזן סכום"
                   keyboardType="numeric"
-                  placeholderTextColor={colors.textPlaceholder}
+                  placeholderTextColor={colors.textTertiary}
                 />
               </View>
 
@@ -634,7 +634,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
                     }
                   }}
                   placeholder="YYYY-MM-DD (למשל: 2024-01-15)"
-                  placeholderTextColor={colors.textPlaceholder}
+                  placeholderTextColor={colors.textTertiary}
                   maxLength={10}
                 />
                 {formData.date && formData.date.length > 0 && (
@@ -668,8 +668,8 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
                   <Switch
                     value={formData.isRecurring}
                     onValueChange={(value) => setFormData({ ...formData, isRecurring: value })}
-                    thumbColor="#FFFFFF"
-                    trackColor={{ false: '#CBD5F5', true: colors.info }}
+                    thumbColor={colors.white}
+                    trackColor={{ false: colors.border, true: colors.info }}
                   />
                 </View>
                 <Text style={styles.helperText}>
@@ -686,7 +686,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
                   placeholder="הערות נוספות (אופציונלי)"
                   multiline
                   numberOfLines={4}
-                  placeholderTextColor={colors.textPlaceholder}
+                  placeholderTextColor={colors.textTertiary}
                 />
               </View>
             </ScrollView>
@@ -738,7 +738,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
                 onChangeText={setConfirmText}
                 placeholder="CONFIRM"
                 autoCapitalize="characters"
-                placeholderTextColor={colors.textPlaceholder}
+                placeholderTextColor={colors.textTertiary}
               />
             </View>
             <View style={styles.modalFooter}>
@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
     paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
     paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
@@ -807,22 +807,15 @@ const styles = StyleSheet.create({
     paddingBottom: 120, // מקום לכפתור FAB + מרווח נוסף
   },
   donationCard: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
     padding: LAYOUT_CONSTANTS.SPACING.MD,
     marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 2,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        shadowColor: colors.shadowLight,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-    }),
   },
   donationHeader: {
     flexDirection: 'row',
@@ -895,7 +888,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderTopLeftRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
     borderTopRightRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
     maxHeight: '90%',
@@ -906,7 +899,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: LAYOUT_CONSTANTS.SPACING.LG,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderSecondary,
+    borderBottomColor: colors.border,
   },
   modalTitle: {
     fontSize: FontSizes.heading2,
@@ -925,7 +918,7 @@ const styles = StyleSheet.create({
   },
   recurringGroup: {
     borderTopWidth: 1,
-    borderTopColor: '#EEF2FF',
+    borderTopColor: colors.backgroundTertiary,
     paddingTop: LAYOUT_CONSTANTS.SPACING.SM,
   },
   recurringRow: {
@@ -952,7 +945,7 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.body,
     color: colors.textPrimary,
     borderWidth: 1,
-    borderColor: colors.borderSecondary,
+    borderColor: colors.border,
   },
   textArea: {
     minHeight: 100,
@@ -969,11 +962,11 @@ const styles = StyleSheet.create({
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
     backgroundColor: colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: colors.borderSecondary,
+    borderColor: colors.border,
   },
   categoryChipSelected: {
-    backgroundColor: colors.pink,
-    borderColor: colors.pink,
+    backgroundColor: colors.secondary,
+    borderColor: colors.secondary,
   },
   categoryChipText: {
     fontSize: FontSizes.small,
@@ -988,7 +981,7 @@ const styles = StyleSheet.create({
     gap: LAYOUT_CONSTANTS.SPACING.MD,
     padding: LAYOUT_CONSTANTS.SPACING.LG,
     borderTopWidth: 1,
-    borderTopColor: colors.borderSecondary,
+    borderTopColor: colors.border,
   },
   modalButton: {
     flex: 1,
@@ -1005,7 +998,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   saveButton: {
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
   },
   saveButtonText: {
     fontSize: FontSizes.medium,
@@ -1020,11 +1013,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: LAYOUT_CONSTANTS.SPACING.XS,
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
     paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
     paddingVertical: LAYOUT_CONSTANTS.SPACING.MD,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
-    shadowColor: colors.shadowLight,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 6,

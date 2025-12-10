@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   ctaButton: {
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,

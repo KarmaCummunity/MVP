@@ -32,41 +32,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
 const isTablet = SCREEN_WIDTH > 768;
 const isMobileWeb = isWeb && SCREEN_WIDTH <= 768;
-const showFloatingMenu = isWeb; // Show on all web screens, including mobile
-
-// Helper function to create shadow styles with Platform.select to avoid deprecated warnings
-const createShadowStyle = (
-  shadowColor: string,
-  shadowOffset: { width: number; height: number },
-  shadowOpacity: number,
-  shadowRadius: number,
-  elevation: number = Math.max(1, Math.round(shadowRadius))
-) => {
-  const rgbaColor = shadowColor.startsWith('rgba') 
-    ? shadowColor 
-    : shadowColor.startsWith('#')
-    ? (() => {
-        const hex = shadowColor.slice(1);
-        const r = parseInt(hex.length === 3 ? hex[0] + hex[0] : hex.slice(0, 2), 16);
-        const g = parseInt(hex.length === 3 ? hex[1] + hex[1] : hex.slice(2, 4), 16);
-        const b = parseInt(hex.length === 3 ? hex[2] + hex[2] : hex.slice(4, 6), 16);
-        return `rgba(${r}, ${g}, ${b}, ${shadowOpacity})`;
-      })()
-    : `rgba(0, 0, 0, ${shadowOpacity})`;
-  
-  return Platform.select({
-    web: {
-      boxShadow: `${shadowOffset.width}px ${shadowOffset.height}px ${shadowRadius}px ${rgbaColor}`,
-    },
-    default: {
-      shadowColor,
-      shadowOffset,
-      shadowOpacity,
-      shadowRadius,
-      elevation,
-    },
-  });
-};
 
 const getSectionElement = (sectionId: string): HTMLElement | null => {
   if (!isWeb || typeof document === 'undefined') {
@@ -123,7 +88,7 @@ const Feature: React.FC<{ emoji: string; title: string; text: string }> = ({ emo
 );
 
 // Floating Navigation Menu Component
-const FloatingMenu: React.FC<{ 
+const FloatingMenu: React.FC<{
   onNavigate: (section: string) => void;
   activeSection: string | null;
 }> = ({ onNavigate, activeSection }) => {
@@ -147,7 +112,7 @@ const FloatingMenu: React.FC<{
   if (isMinimized) {
     return (
       <View style={styles.floatingMenuMinimized}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => setIsMinimized(false)}
           style={styles.menuToggleButton}
         >
@@ -167,7 +132,7 @@ const FloatingMenu: React.FC<{
       />
       {/* התפריט הפתוח */}
       <View style={styles.floatingMenu}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => setIsMinimized(true)}
           style={styles.menuHeader}
           activeOpacity={0.7}
@@ -190,10 +155,10 @@ const FloatingMenu: React.FC<{
               }}
               activeOpacity={0.7}
             >
-              <Ionicons 
-                name={item.icon as any} 
-                size={menuSizes.iconSize} 
-                color={activeSection === item.id ? colors.info : colors.textSecondary} 
+              <Ionicons
+                name={item.icon as any}
+                size={menuSizes.iconSize}
+                color={activeSection === item.id ? colors.info : colors.textSecondary}
                 style={styles.menuItemIcon}
               />
               <Text style={[
@@ -254,12 +219,12 @@ const LazySection: React.FC<LazySectionProps> = ({ section: SectionComponent, ..
   }, []);
 
   return (
-    <View ref={ref} style={{minHeight: 200}}>
+    <View ref={ref} style={{ minHeight: 200 }}>
       {isVisible ? (
-        <Suspense fallback={<ActivityIndicator size="large" color={colors.info} style={{marginVertical: 50}} />}>
+        <Suspense fallback={<ActivityIndicator size="large" color={colors.info} style={{ marginVertical: 50 }} />}>
           <SectionComponent {...props} />
         </Suspense>
-      ) : <ActivityIndicator size="large" color={colors.info} style={{marginVertical: 50}} />}
+      ) : <ActivityIndicator size="large" color={colors.info} style={{ marginVertical: 50 }} />}
     </View>
   );
 };
@@ -277,124 +242,125 @@ const HeroSection: React.FC<{ onDonate: () => void }> = ({ onDonate }) => {
   }, [heroAnimation]);
 
   return (
-      <View style={styles.hero}>
-        <View style={styles.heroGradient}>
-          <View style={styles.decoCircle1} />
-          <View style={styles.decoCircle2} />
-          <Animated.View style={[
-            styles.heroContent,
-            {
-              opacity: heroAnimation,
-              transform: [{
-                translateY: heroAnimation.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [20, 0]
-                })
-              }]
-            }
-          ]}>
+    <View style={styles.hero}>
+      <View style={styles.heroGradient}>
+        <View style={styles.decoCircle1} />
+        <View style={styles.decoCircle2} />
+        <Animated.View style={[
+          styles.heroContent,
+          {
+            opacity: heroAnimation,
+            transform: [{
+              translateY: heroAnimation.interpolate({
+                inputRange: [0, 1],
+                outputRange: [20, 0]
+              })
+            }]
+          }
+        ]}>
 
-            <Text style={styles.welcomeTitle}>המקום בו הטוב קורה</Text>
-            <View style={styles.logoContainer}>
-              <Image source={require('../assets/images/pink_logo.png')} style={styles.logo} resizeMode="contain" />
-              <View style={styles.logoGlow} />
-            </View>
-            <Text style={styles.title}>Karma Community</Text>
-            <Text style={styles.subtitle}>רשת חברתית שמחברת בין אנשים שצריכים עזרה, לאנשים שרוצים לעזור. פשוט, שקוף ומהלב.</Text>
-            
-            <View style={styles.heroMottosContainer}>
-              <View style={styles.mottoItem}>
-                <Ionicons name="sparkles" size={isMobileWeb ? 18 : 24} color={colors.accent} style={styles.mottoItemIcon} />
-                <Text style={styles.mottoSubtitle}>השאריות של האחד יכול להיות האוצר של מישהו אחר</Text>
-              </View>
-              
-              <View style={styles.mottoItem}>
-                <Ionicons name="heart-circle" size={isMobileWeb ? 18 : 24} color={colors.pink} style={styles.mottoItemIcon} />
-                <Text style={styles.mottoSubtitle}>לכל אחד מאיתנו יש משהו לתת וגם משהו שהוא היה שמח לקבל</Text>
-              </View>
-            
-              <View style={styles.mottoItem}>
-                <Ionicons name="swap-horizontal" size={isMobileWeb ? 18 : 24} color={colors.info} style={styles.mottoItemIcon} />
-                <Text style={styles.mottoSubtitle}>לתת זה גם לקבל</Text>
-              </View>
-              
+          <Text style={styles.welcomeTitle}>המקום בו טוב קורה</Text>
+          <View style={styles.logoContainer}>
+            <Image source={require('../assets/images/pink_logo.png')} style={styles.logo} resizeMode="contain" />
+            <View style={styles.logoGlow} />
+          </View>
+          <Text style={styles.title}>Karma Community</Text>
+          <Text style={styles.subtitle}>רשת חברתית שמחברת בין אנשים שצריכים עזרה, לאנשים שרוצים לעזור. פשוט, שקוף ומהלב.</Text>
+
+          <View style={styles.heroMottosContainer}>
+
+            <View style={styles.mottoItem}>
+              <Ionicons name="sparkles" size={isMobileWeb ? 18 : 24} color={colors.accent} style={styles.mottoItemIcon} />
+              <Text style={styles.mottoSubtitle}>השאריות של האחד יכול להיות האוצר של מישהו אחר</Text>
             </View>
 
-            
-            <View style={styles.ctaRow}>
-            <TouchableOpacity style={[styles.contactButton, { backgroundColor: '#25D366' }]} onPress={() => { logger.info('LandingSite', 'Click - whatsapp direct'); Linking.openURL('https://wa.me/972528616878'); }}>
-          <Ionicons name="logo-whatsapp" color="#fff" size={isMobileWeb ? 14 : 18} /><Text style={styles.contactButtonText}>שלחו לי ווטסאפ </Text>
-        </TouchableOpacity>
+            <View style={styles.mottoItem}>
+              <Ionicons name="heart-circle" size={isMobileWeb ? 18 : 24} color={colors.secondary} style={styles.mottoItemIcon} />
+              <Text style={styles.mottoSubtitle}>לכל אחד מאיתנו יש משהו לתת וגם משהו שהוא היה שמח לקבל</Text>
             </View>
-                  {/* Donation Button */}
-                  <TouchableOpacity 
-            style={styles.donationCtaButton} 
+
+            <View style={styles.mottoItem}>
+              <Ionicons name="swap-horizontal" size={isMobileWeb ? 18 : 24} color={colors.info} style={styles.mottoItemIcon} />
+              <Text style={styles.mottoSubtitle}>לתת זה גם לקבל</Text>
+            </View>
+
+          </View>
+
+
+          <View style={styles.ctaRow}>
+            <TouchableOpacity style={[styles.contactButton, { backgroundColor: colors.success }]} onPress={() => { logger.info('LandingSite', 'Click - whatsapp direct'); Linking.openURL('https://wa.me/972528616878'); }}>
+              <Ionicons name="logo-whatsapp" color={colors.white} size={isMobileWeb ? 14 : 18} /><Text style={styles.contactButtonText}>שלחו לי ווטסאפ </Text>
+            </TouchableOpacity>
+          </View>
+          {/* Donation Button */}
+          <TouchableOpacity
+            style={styles.donationCtaButton}
             onPress={onDonate}
             activeOpacity={0.8}
           >
-            <Ionicons name="heart" size={isMobileWeb ? 18 : 24} color="#fff" />
+            <Ionicons name="heart" size={isMobileWeb ? 18 : 24} color={colors.white} />
             <Text style={styles.donationCtaButtonText}>תרמו לנו</Text>
           </TouchableOpacity>
-          </Animated.View>
-        </View>
+        </Animated.View>
       </View>
+    </View>
   );
 }
 
 const VisionSection: React.FC<{ onGoToApp: () => void }> = ({ onGoToApp }) => (
-    <Section id="section-vision" title="החזון שלנו" subtitle="הקיבוץ הקפיטליסטי" style={styles.sectionAltBackground}>
-      <Text style={styles.paragraph}>
-        <Text style={styles.emphasis}>קיבוץ דגיטלי בעולם קפיטליסטי. </Text>רשת חברתית לאיחוד, ריכוז, הנגשה, והפצת פילנתרופיה ועשייה חברתית מכל הסוגים ולכל האנשים.
-        {"\n\n"}
-        <Text style={styles.emphasis}>כרגע אנחנו בתהליך הקמה.</Text> כל מה שרשום בהמשך הוא חלק מהחזון שאנחנו רוצים לבנות, וכרגע אנחנו מזמינים אתכם לעזור לנו לבנות את זה.
-      </Text>
-      <Text style={styles.paragraph}>
-        אנחנו מזמינים אתכם להצטרף אלינו לשנות את העולם וליצור שינוי חברתי אמיתי. להיות חלק ממשהו גדול, מוסרי ברמה הכי גבוהה, טכנולוגי, חברתי ועוד מלא דברים טובים.
-      </Text>
-      <View style={styles.mottoContainer}>
-        <View style={styles.mottoCard}>
-          <Ionicons name="swap-horizontal-outline" size={isMobileWeb ? 24 : 32} color={colors.info} style={styles.mottoIcon} />
-          <Text style={styles.mottoText}>"לתת זה גם לקבל"</Text>
-        </View>
-        <View style={styles.mottoCard}>
-          <Ionicons name="gift-outline" size={isMobileWeb ? 24 : 32} color={colors.pink} style={styles.mottoIcon} />
-          <Text style={styles.mottoText}>"לכל אחד יש משהו שהוא צריך ומשהו שהוא ישמח לתת"</Text>
-        </View>
+  <Section id="section-vision" title="החזון שלנו" subtitle="הקיבוץ הקפיטליסטי" style={styles.sectionAltBackground}>
+    <Text style={styles.paragraph}>
+      <Text style={styles.emphasis}>קיבוץ דגיטלי בעולם קפיטליסטי. </Text>רשת חברתית לאיחוד, ריכוז, הנגשה, והפצת פילנתרופיה ועשייה חברתית מכל הסוגים ולכל האנשים.
+      {"\n\n"}
+      <Text style={styles.emphasis}>כרגע אנחנו בתהליך הקמה.</Text> כל מה שרשום בהמשך הוא חלק מהחזון שאנחנו רוצים לבנות, וכרגע אנחנו מזמינים אתכם לעזור לנו לבנות את זה.
+    </Text>
+    <Text style={styles.paragraph}>
+      אנחנו מזמינים אתכם להצטרף אלינו לשנות את העולם וליצור שינוי חברתי אמיתי. להיות חלק ממשהו גדול, מוסרי ברמה הכי גבוהה, טכנולוגי, חברתי ועוד מלא דברים טובים.
+    </Text>
+    <View style={styles.mottoContainer}>
+      <View style={styles.mottoCard}>
+        <Ionicons name="swap-horizontal-outline" size={isMobileWeb ? 24 : 32} color={colors.info} style={styles.mottoIcon} />
+        <Text style={styles.mottoText}>"לתת זה גם לקבל"</Text>
       </View>
-      <Text style={styles.paragraph}>
-        KarmaCommunity היא יותר מרשת חברתית - היא תנועה שמחברת בין אנשים שרוצים לעשות טוב, ללא אינטרסים מסחריים, ללא פרסומות, רק אנושיות וקהילתיות אמיתית.
-      </Text>
-      <View style={styles.visionHighlights}>
-        <View style={styles.visionHighlight}>
-          <Ionicons name="heart" size={isMobileWeb ? 20 : 28} color={colors.pink} />
-          <Text style={styles.visionHighlightText}>מוסרי ברמה הגבוהה ביותר</Text>
-        </View>
-        <View style={styles.visionHighlight}>
-          <Ionicons name="code-working" size={isMobileWeb ? 20 : 28} color={colors.info} />
-          <Text style={styles.visionHighlightText}>טכנולוגי וחדשני</Text>
-        </View>
-        <View style={styles.visionHighlight}>
-          <Ionicons name="people" size={isMobileWeb ? 20 : 28} color={colors.accent} />
-          <Text style={styles.visionHighlightText}>חברתי ומחבר</Text>
-        </View>
-        <View style={styles.visionHighlight}>
-          <Ionicons name="globe" size={isMobileWeb ? 20 : 28} color={colors.success} />
-          <Text style={styles.visionHighlightText}>שינוי עולמי אמיתי</Text>
-        </View>
+      <View style={styles.mottoCard}>
+        <Ionicons name="gift-outline" size={isMobileWeb ? 24 : 32} color={colors.secondary} style={styles.mottoIcon} />
+        <Text style={styles.mottoText}>"לכל אחד יש משהו שהוא צריך ומשהו שהוא ישמח לתת"</Text>
       </View>
-      
-      {/* CTA Button - Join Us */}
-      <View style={styles.ctaRow}>
-        <TouchableOpacity 
-          style={styles.primaryCta} 
-          onPress={onGoToApp}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="people-outline" size={isMobileWeb ? 16 : 22} color="#fff" style={styles.ctaIcon} />
-          <Text style={styles.primaryCtaText}>הצטרפו אלינו</Text>
-        </TouchableOpacity>
+    </View>
+    <Text style={styles.paragraph}>
+      KarmaCommunity היא יותר מרשת חברתית - היא תנועה שמחברת בין אנשים שרוצים לעשות טוב, ללא אינטרסים מסחריים, ללא פרסומות, רק אנושיות וקהילתיות אמיתית.
+    </Text>
+    <View style={styles.visionHighlights}>
+      <View style={styles.visionHighlight}>
+        <Ionicons name="heart" size={isMobileWeb ? 20 : 28} color={colors.secondary} />
+        <Text style={styles.visionHighlightText}>מוסרי ברמה הגבוהה ביותר</Text>
       </View>
-    </Section>
+      <View style={styles.visionHighlight}>
+        <Ionicons name="code-working" size={isMobileWeb ? 20 : 28} color={colors.info} />
+        <Text style={styles.visionHighlightText}>טכנולוגי וחדשני</Text>
+      </View>
+      <View style={styles.visionHighlight}>
+        <Ionicons name="people" size={isMobileWeb ? 20 : 28} color={colors.accent} />
+        <Text style={styles.visionHighlightText}>חברתי ומחבר</Text>
+      </View>
+      <View style={styles.visionHighlight}>
+        <Ionicons name="globe" size={isMobileWeb ? 20 : 28} color={colors.success} />
+        <Text style={styles.visionHighlightText}>שינוי עולמי אמיתי</Text>
+      </View>
+    </View>
+
+    {/* CTA Button - Join Us */}
+    <View style={styles.ctaRow}>
+      <TouchableOpacity
+        style={styles.primaryCta}
+        onPress={onGoToApp}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="people-outline" size={isMobileWeb ? 16 : 22} color={colors.white} style={styles.ctaIcon} />
+        <Text style={styles.primaryCtaText}>הצטרפו אלינו</Text>
+      </TouchableOpacity>
+    </View>
+  </Section>
 );
 
 // Stats Detail Modal Component
@@ -449,7 +415,7 @@ const StatsDetailModal: React.FC<{
             </View>
           </View>
         );
-      
+
       case 'totalUsers':
         return (
           <View style={styles.detailItem}>
@@ -465,7 +431,7 @@ const StatsDetailModal: React.FC<{
             </View>
           </View>
         );
-      
+
       case 'totalMoneyDonated':
         return (
           <View style={styles.detailItem}>
@@ -483,7 +449,7 @@ const StatsDetailModal: React.FC<{
             </View>
           </View>
         );
-      
+
       case 'itemDonations':
         return (
           <View style={styles.detailItem}>
@@ -501,7 +467,7 @@ const StatsDetailModal: React.FC<{
             </View>
           </View>
         );
-      
+
       case 'completedRides':
         return (
           <View style={styles.detailItem}>
@@ -519,7 +485,7 @@ const StatsDetailModal: React.FC<{
             </View>
           </View>
         );
-      
+
       case 'uniqueDonors':
       case 'recurringDonationsAmount':
         return (
@@ -527,7 +493,7 @@ const StatsDetailModal: React.FC<{
             <Text style={styles.detailItemNumber}>{index + 1}.</Text>
             <View style={styles.detailItemContent}>
               <Text style={styles.detailItemText}>
-                {item.donor_name || 'תורם'} 
+                {item.donor_name || 'תורם'}
                 {item.amount && ` • ${item.amount.toLocaleString('he-IL')} ₪`}
               </Text>
               {item.frequency && (
@@ -541,7 +507,7 @@ const StatsDetailModal: React.FC<{
             </View>
           </View>
         );
-      
+
       default:
         return (
           <View style={styles.detailItem}>
@@ -627,7 +593,7 @@ const DonationModal: React.FC<{
         <View style={styles.donationModalContainer}>
           <View style={styles.donationModalHeader}>
             <View style={styles.donationModalTitleRow}>
-              <Ionicons name="heart" size={isMobileWeb ? 32 : 40} color={colors.pink} />
+              <Ionicons name="heart" size={isMobileWeb ? 32 : 40} color={colors.secondary} />
               <View style={styles.donationModalTitleContainer}>
                 <Text style={styles.donationModalTitle}>תרמו לנו</Text>
                 <Text style={styles.donationModalSubtitle}>כל תרומה עוזרת לנו לגדול</Text>
@@ -647,12 +613,12 @@ const DonationModal: React.FC<{
             </View>
 
             <View style={styles.donationButtonsContainer}>
-              <TouchableOpacity 
-                style={[styles.donationButton, styles.donationButtonWhatsApp]} 
+              <TouchableOpacity
+                style={[styles.donationButton, styles.donationButtonWhatsApp]}
                 onPress={handleWhatsApp}
                 activeOpacity={0.8}
               >
-                <Ionicons name="logo-whatsapp" size={isMobileWeb ? 20 : 28} color="#fff" />
+                <Ionicons name="logo-whatsapp" size={isMobileWeb ? 20 : 28} color={colors.white} />
                 <Text style={styles.donationButtonText}>ווטסאפ</Text>
               </TouchableOpacity>
 
@@ -668,7 +634,7 @@ const DonationModal: React.FC<{
   );
 };
 
-const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onGoToApp: () => void }> = ({stats, isLoadingStats, onGoToApp}) => {
+const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onGoToApp: () => void }> = ({ stats, isLoadingStats, onGoToApp }) => {
   const [selectedStat, setSelectedStat] = useState<{
     type: string;
     title: string;
@@ -695,7 +661,7 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onG
           iconColor={selectedStat.color}
         />
       )}
-      
+
       {isLoadingStats ? (
         <View style={styles.statsLoadingContainer}>
           <ActivityIndicator size="large" color={colors.info} />
@@ -703,7 +669,7 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onG
         </View>
       ) : (
         <View style={styles.statsGrid}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.statCard}
             onPress={() => handleStatPress('siteVisits', 'ביקורים באתר', stats.siteVisits, 'eye-outline', colors.info)}
             activeOpacity={0.7}
@@ -713,8 +679,8 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onG
             <Text style={styles.statLabel}>ביקורים באתר</Text>
             <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.statCard}
             onPress={() => handleStatPress('totalMoneyDonated', 'תרומות כספיות', stats.totalMoneyDonated, 'cash-outline', colors.success)}
             activeOpacity={0.7}
@@ -724,30 +690,30 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onG
             <Text style={styles.statLabel}>ש"ח שנתרמו ישירות</Text>
             <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.statCard}
-            onPress={() => handleStatPress('totalUsers', 'חברי קהילה רשומים', stats.totalUsers, 'heart-outline', colors.pink)}
+            onPress={() => handleStatPress('totalUsers', 'חברי קהילה רשומים', stats.totalUsers, 'heart-outline', colors.secondary)}
             activeOpacity={0.7}
           >
-            <Ionicons name="heart-outline" size={isMobileWeb ? 24 : 32} color={colors.pink} style={styles.statIcon} />
+            <Ionicons name="heart-outline" size={isMobileWeb ? 24 : 32} color={colors.secondary} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.totalUsers.toLocaleString('he-IL')}</Text>
             <Text style={styles.statLabel}>חברי קהילה רשומים</Text>
             <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.statCard}
-            onPress={() => handleStatPress('itemDonations', 'פריטים שפורסמו', stats.itemDonations, 'cube-outline', colors.orange)}
+            onPress={() => handleStatPress('itemDonations', 'פריטים שפורסמו', stats.itemDonations, 'cube-outline', colors.accent)}
             activeOpacity={0.7}
           >
-            <Ionicons name="cube-outline" size={isMobileWeb ? 24 : 32} color={colors.orange} style={styles.statIcon} />
+            <Ionicons name="cube-outline" size={isMobileWeb ? 24 : 32} color={colors.accent} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.itemDonations.toLocaleString('he-IL')}</Text>
             <Text style={styles.statLabel}>פריטים שפורסמו</Text>
             <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.statCard}
             onPress={() => handleStatPress('completedRides', 'נסיעות קהילתיות', stats.completedRides, 'car-outline', colors.accent)}
             activeOpacity={0.7}
@@ -757,8 +723,8 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onG
             <Text style={styles.statLabel}>נסיעות קהילתיות</Text>
             <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.statCard}
             onPress={() => handleStatPress('recurringDonationsAmount', 'תרומות קבועות', stats.recurringDonationsAmount, 'repeat-outline', colors.success)}
             activeOpacity={0.7}
@@ -768,8 +734,8 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onG
             <Text style={styles.statLabel}>תרומות קבועות פעילות</Text>
             <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.statCard}
             onPress={() => handleStatPress('uniqueDonors', 'תורמים פעילים', stats.uniqueDonors, 'people-outline', colors.info)}
             activeOpacity={0.7}
@@ -781,15 +747,15 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onG
           </TouchableOpacity>
         </View>
       )}
-      
+
       {/* CTA Button - Go to App */}
       <View style={styles.ctaRow}>
-        <TouchableOpacity 
-          style={styles.primaryCta} 
+        <TouchableOpacity
+          style={styles.primaryCta}
           onPress={onGoToApp}
           activeOpacity={0.8}
         >
-          <Ionicons name="phone-portrait-outline" size={isMobileWeb ? 16 : 22} color="#fff" style={styles.ctaIcon} />
+          <Ionicons name="phone-portrait-outline" size={isMobileWeb ? 16 : 22} color={colors.white} style={styles.ctaIcon} />
           <Text style={styles.primaryCtaText}>עבור לאפליקציה</Text>
         </TouchableOpacity>
       </View>
@@ -798,157 +764,157 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onG
 };
 
 const ProblemsSection = () => (
-    <Section id="section-problems" title="הבעיות שאנחנו באים לפתור" subtitle="למה צריך בכלל את KC?">
-      <View style={styles.problemsContent}>
-        <View style={styles.problemCard}>
-          <Ionicons name="copy-outline" size={isMobileWeb ? 24 : 32} color={colors.orange} style={styles.problemIcon} />
-          <Text style={styles.problemTitle}>כפילות, פיזור וחוסר אמינות</Text>
-          <Text style={styles.problemText}>
-            היום יש כל כך הרבה פלטפורמות, קבוצות וואטסאפ, ועמותות שמנסות לעזור. כל אחד עובד לבד, יש כפילויות, חוסר תיאום, וקשה לדעת על מי אפשר לסמוך. 
-            Karma Community מאחדת את כל זה למקום אחד, שקוף ואמין.
-          </Text>
-        </View>
-        
-        <View style={styles.problemCard}>
-          <Ionicons name="people-circle-outline" size={isMobileWeb ? 24 : 32} color={colors.info} style={styles.problemIcon} />
-          <Text style={styles.problemTitle}>הדיסוננס בין קהילה לחופשיות</Text>
-          <Text style={styles.problemText}>
-            כבר שנים שיש לאדם את הדיסוננס בין הרצון לקהילה והרצון לחופשיות. הרי כל קהילה עם הגבלות ומוסכמות משלה.
-            {'\n\n'}
-            Karma Community באה להציע פלטפורמה, מין רשת חברתית, אשר מצד אחד שמה דגש על ביחד ומצד שני דגש על חופש וליברליות.
-          </Text>
-        </View>
-        
-        <View style={styles.problemCard}>
-          <Ionicons name="ban-outline" size={isMobileWeb ? 24 : 32} color={colors.pink} style={styles.problemIcon} />
-          <Text style={styles.problemTitle}>רשתות חברתיות מונעות מאינטרסים</Text>
-          <Text style={styles.problemText}>
-            דווקא בעידן של רשתות חברתיות המונעות מאינטרסים של כסף ופרסומות, אנחנו רואים את הפוטנציאל והצורך האמיתי שיש לנו כבני אדם ב"רשתות" האלה.
-            {'\n\n'}
-            Karma Community באה להציע רשת חברתית ללא פרסומות וללא תוכן חומרי/פוגעני. פלטפורמה המקדשת קהילתיות ושיתוף.
-          </Text>
-        </View>
+  <Section id="section-problems" title="הבעיות שאנחנו באים לפתור" subtitle="למה צריך בכלל את KC?">
+    <View style={styles.problemsContent}>
+      <View style={styles.problemCard}>
+        <Ionicons name="copy-outline" size={isMobileWeb ? 24 : 32} color={colors.accent} style={styles.problemIcon} />
+        <Text style={styles.problemTitle}>כפילות, פיזור וחוסר אמינות</Text>
+        <Text style={styles.problemText}>
+          היום יש כל כך הרבה פלטפורמות, קבוצות וואטסאפ, ועמותות שמנסות לעזור. כל אחד עובד לבד, יש כפילויות, חוסר תיאום, וקשה לדעת על מי אפשר לסמוך.
+          Karma Community מאחדת את כל זה למקום אחד, שקוף ואמין.
+        </Text>
       </View>
-    </Section>
+
+      <View style={styles.problemCard}>
+        <Ionicons name="people-circle-outline" size={isMobileWeb ? 24 : 32} color={colors.info} style={styles.problemIcon} />
+        <Text style={styles.problemTitle}>הדיסוננס בין קהילה לחופשיות</Text>
+        <Text style={styles.problemText}>
+          כבר שנים שיש לאדם את הדיסוננס בין הרצון לקהילה והרצון לחופשיות. הרי כל קהילה עם הגבלות ומוסכמות משלה.
+          {'\n\n'}
+          Karma Community באה להציע פלטפורמה, מין רשת חברתית, אשר מצד אחד שמה דגש על ביחד ומצד שני דגש על חופש וליברליות.
+        </Text>
+      </View>
+
+      <View style={styles.problemCard}>
+        <Ionicons name="ban-outline" size={isMobileWeb ? 24 : 32} color={colors.secondary} style={styles.problemIcon} />
+        <Text style={styles.problemTitle}>רשתות חברתיות מונעות מאינטרסים</Text>
+        <Text style={styles.problemText}>
+          דווקא בעידן של רשתות חברתיות המונעות מאינטרסים של כסף ופרסומות, אנחנו רואים את הפוטנציאל והצורך האמיתי שיש לנו כבני אדם ב"רשתות" האלה.
+          {'\n\n'}
+          Karma Community באה להציע רשת חברתית ללא פרסומות וללא תוכן חומרי/פוגעני. פלטפורמה המקדשת קהילתיות ושיתוף.
+        </Text>
+      </View>
+    </View>
+  </Section>
 );
 
 const FeaturesSection = () => (
-    <Section id="section-features" title="כל מה שצריך כדי לעשות טוב" subtitle="כלים פשוטים שהופכים עזרה הדדית לחלק מהיום-יום" style={styles.sectionAltBackground}>
-      <View style={styles.featuresGrid}>
-        <Feature emoji="🤝" title="צריכים עזרה? רוצים לעזור?" text="פרסמו בקלות בקשה או הצעה, וקבלו מענה מהקהילה סביבכם. משיעורי עזר ועד תיקונים קטנים בבית." />
-        <Feature emoji="💬" title="התחברו לאנשים כמוכם" text="מצאו קבוצות עניין, הצטרפו לדיונים, וצרו קשרים חדשים עם אנשים שאכפת להם." />
-        <Feature emoji="📍" title="גלו הזדמנויות סביבכם" text="המפה החכמה שלנו תראה לכם איפה צריכים אתכם, ממש ליד הבית." />
-        <Feature emoji="🔒" title="פלטפורמה בטוחה ושקופה" text="בלי פרסומות, בלי תוכן פוגעני, רק קהילתיות אמיתית ואמון הדדי." />
-      </View>
-    </Section>
+  <Section id="section-features" title="כל מה שצריך כדי לעשות טוב" subtitle="כלים פשוטים שהופכים עזרה הדדית לחלק מהיום-יום" style={styles.sectionAltBackground}>
+    <View style={styles.featuresGrid}>
+      <Feature emoji="🤝" title="צריכים עזרה? רוצים לעזור?" text="פרסמו בקלות בקשה או הצעה, וקבלו מענה מהקהילה סביבכם. משיעורי עזר ועד תיקונים קטנים בבית." />
+      <Feature emoji="💬" title="התחברו לאנשים כמוכם" text="מצאו קבוצות עניין, הצטרפו לדיונים, וצרו קשרים חדשים עם אנשים שאכפת להם." />
+      <Feature emoji="📍" title="גלו הזדמנויות סביבכם" text="המפה החכמה שלנו תראה לכם איפה צריכים אתכם, ממש ליד הבית." />
+      <Feature emoji="🔒" title="פלטפורמה בטוחה ושקופה" text="בלי פרסומות, בלי תוכן פוגעני, רק קהילתיות אמיתית ואמון הדדי." />
+    </View>
+  </Section>
 );
 
 const HowItWorksSection = () => (
-    <Section id="section-how" title="איך זה עובד?" subtitle="תהליך פשוט וברור שמחבר בין אנשים">
-      <Text style={styles.paragraph}>
-        קהילת קארמה בנויה על עקרון פשוט: כל אחד יכול לתת וכל אחד יכול לקבל. התהליך שלנו נועד להיות פשוט, שקוף וידידותי.
-      </Text>
-      <View style={styles.stepsRow}>
-        <View style={styles.stepCard}>
-          <View style={styles.stepNumberBadge}>
-            <Text style={styles.stepNumber}>1</Text>
-          </View>
-          <Ionicons name="person-add-outline" size={isMobileWeb ? 24 : 32} color={colors.info} style={styles.stepIcon} />
-          <Text style={styles.stepTitle}>הצטרפו לקהילה</Text>
-          <Text style={styles.stepText}>
-            הירשמו בכמה שניות - רק פרטים בסיסיים. ספרו לנו מה מעניין אתכם, איפה אתם, ומה אתם יכולים להציע או מה אתם צריכים. אין צורך במידע מיותר, רק מה שחשוב.
-          </Text>
+  <Section id="section-how" title="איך זה עובד?" subtitle="תהליך פשוט וברור שמחבר בין אנשים">
+    <Text style={styles.paragraph}>
+      קהילת קארמה בנויה על עקרון פשוט: כל אחד יכול לתת וכל אחד יכול לקבל. התהליך שלנו נועד להיות פשוט, שקוף וידידותי.
+    </Text>
+    <View style={styles.stepsRow}>
+      <View style={styles.stepCard}>
+        <View style={styles.stepNumberBadge}>
+          <Text style={styles.stepNumber}>1</Text>
         </View>
-        <View style={styles.stepCard}>
-          <View style={styles.stepNumberBadge}>
-            <Text style={styles.stepNumber}>2</Text>
-          </View>
-          <Ionicons name="create-outline" size={isMobileWeb ? 24 : 32} color={colors.accent} style={styles.stepIcon} />
-          <Text style={styles.stepTitle}>פרסמו או חפשו</Text>
-          <Text style={styles.stepText}>
-            צריכים עזרה? פרסמו בקשה ברורה עם מה אתם צריכים, מתי ואיפה. רוצים לעזור? פרסמו הצעה עם מה אתם יכולים לתת. או פשוט דפדפו בפיד וראו מה קורה סביבכם.
-          </Text>
-        </View>
-        <View style={styles.stepCard}>
-          <View style={styles.stepNumberBadge}>
-            <Text style={styles.stepNumber}>3</Text>
-          </View>
-          <Ionicons name="search-outline" size={isMobileWeb ? 24 : 32} color={colors.orange} style={styles.stepIcon} />
-          <Text style={styles.stepTitle}>גלו הזדמנויות</Text>
-          <Text style={styles.stepText}>
-            המפה החכמה שלנו תראה לכם איפה צריכים אתכם, ממש ליד הבית. הפיד האישי שלכם יציג לכם בקשות והצעות רלוונטיות לפי המיקום והעניין שלכם.
-          </Text>
-        </View>
-        <View style={styles.stepCard}>
-          <View style={styles.stepNumberBadge}>
-            <Text style={styles.stepNumber}>4</Text>
-          </View>
-          <Ionicons name="chatbubble-ellipses-outline" size={isMobileWeb ? 24 : 32} color={colors.pink} style={styles.stepIcon} />
-          <Text style={styles.stepTitle}>צרו קשר</Text>
-          <Text style={styles.stepText}>
-            ראיתם משהו שמעניין אתכם? שלחו הודעה ישירה, תאמו פרטים, הכירו את האדם שמאחורי הבקשה או ההצעה. הכל שקוף, בטוח ופשוט.
-          </Text>
-        </View>
-        <View style={styles.stepCard}>
-          <View style={styles.stepNumberBadge}>
-            <Text style={styles.stepNumber}>5</Text>
-          </View>
-          <Ionicons name="heart-outline" size={isMobileWeb ? 24 : 32} color={colors.success} style={styles.stepIcon} />
-          <Text style={styles.stepTitle}>עשו טוב והרגישו את ההבדל</Text>
-          <Text style={styles.stepText}>
-            תאמו, פגשו, עזרו או קבלו עזרה. כל פעולה כזו יוצרת קשר אנושי אמיתי ומחזקת את הקהילה. אתם תראו את ההשפעה שלכם, והקהילה תראה את התרומה שלכם.
-          </Text>
-        </View>
-      </View>
-      <View style={styles.howItWorksNote}>
-        <Ionicons name="information-circle-outline" size={isMobileWeb ? 18 : 24} color={colors.info} />
-        <Text style={styles.howItWorksNoteText}>
-          הכל בחינם, הכל שקוף, הכל למען הקהילה. אין בירוקרטיה, אין עמלות, רק אנשים שעוזרים לאנשים.
+        <Ionicons name="person-add-outline" size={isMobileWeb ? 24 : 32} color={colors.info} style={styles.stepIcon} />
+        <Text style={styles.stepTitle}>הצטרפו לקהילה</Text>
+        <Text style={styles.stepText}>
+          הירשמו בכמה שניות - רק פרטים בסיסיים. ספרו לנו מה מעניין אתכם, איפה אתם, ומה אתם יכולים להציע או מה אתם צריכים. אין צורך במידע מיותר, רק מה שחשוב.
         </Text>
       </View>
-    </Section>
+      <View style={styles.stepCard}>
+        <View style={styles.stepNumberBadge}>
+          <Text style={styles.stepNumber}>2</Text>
+        </View>
+        <Ionicons name="create-outline" size={isMobileWeb ? 24 : 32} color={colors.accent} style={styles.stepIcon} />
+        <Text style={styles.stepTitle}>פרסמו או חפשו</Text>
+        <Text style={styles.stepText}>
+          צריכים עזרה? פרסמו בקשה ברורה עם מה אתם צריכים, מתי ואיפה. רוצים לעזור? פרסמו הצעה עם מה אתם יכולים לתת. או פשוט דפדפו בפיד וראו מה קורה סביבכם.
+        </Text>
+      </View>
+      <View style={styles.stepCard}>
+        <View style={styles.stepNumberBadge}>
+          <Text style={styles.stepNumber}>3</Text>
+        </View>
+        <Ionicons name="search-outline" size={isMobileWeb ? 24 : 32} color={colors.accent} style={styles.stepIcon} />
+        <Text style={styles.stepTitle}>גלו הזדמנויות</Text>
+        <Text style={styles.stepText}>
+          המפה החכמה שלנו תראה לכם איפה צריכים אתכם, ממש ליד הבית. הפיד האישי שלכם יציג לכם בקשות והצעות רלוונטיות לפי המיקום והעניין שלכם.
+        </Text>
+      </View>
+      <View style={styles.stepCard}>
+        <View style={styles.stepNumberBadge}>
+          <Text style={styles.stepNumber}>4</Text>
+        </View>
+        <Ionicons name="chatbubble-ellipses-outline" size={isMobileWeb ? 24 : 32} color={colors.secondary} style={styles.stepIcon} />
+        <Text style={styles.stepTitle}>צרו קשר</Text>
+        <Text style={styles.stepText}>
+          ראיתם משהו שמעניין אתכם? שלחו הודעה ישירה, תאמו פרטים, הכירו את האדם שמאחורי הבקשה או ההצעה. הכל שקוף, בטוח ופשוט.
+        </Text>
+      </View>
+      <View style={styles.stepCard}>
+        <View style={styles.stepNumberBadge}>
+          <Text style={styles.stepNumber}>5</Text>
+        </View>
+        <Ionicons name="heart-outline" size={isMobileWeb ? 24 : 32} color={colors.success} style={styles.stepIcon} />
+        <Text style={styles.stepTitle}>עשו טוב והרגישו את ההבדל</Text>
+        <Text style={styles.stepText}>
+          תאמו, פגשו, עזרו או קבלו עזרה. כל פעולה כזו יוצרת קשר אנושי אמיתי ומחזקת את הקהילה. אתם תראו את ההשפעה שלכם, והקהילה תראה את התרומה שלכם.
+        </Text>
+      </View>
+    </View>
+    <View style={styles.howItWorksNote}>
+      <Ionicons name="information-circle-outline" size={isMobileWeb ? 18 : 24} color={colors.info} />
+      <Text style={styles.howItWorksNoteText}>
+        הכל בחינם, הכל שקוף, הכל למען הקהילה. אין בירוקרטיה, אין עמלות, רק אנשים שעוזרים לאנשים.
+      </Text>
+    </View>
+  </Section>
 );
 
 const WhoIsItForSection: React.FC<{ onDonate: () => void }> = ({ onDonate }) => (
-    <Section id="section-who" title="למי זה מתאים?" subtitle="לכולם. באמת." style={styles.sectionAltBackground}>
-      <Text style={styles.paragraph}>
-        <Text style={styles.emphasis}>קהילת קארמה מיועדת לכולם.</Text> עשירים ועניים, מרכז ופריפריה, לא משנה דת, גזע, מין, לאום ואפילו לא מיקום פיזי. כל אחד יכול לתת וכל אחד יכול לקבל.
-      </Text>
-      <View style={styles.whoContent}>
-        <View style={styles.whoMainCard}>
-          <Ionicons name="people-outline" size={isMobileWeb ? 32 : 48} color={colors.info} style={styles.whoMainIcon} />
-          <Text style={styles.splitTitle}>לאנשים פרטיים</Text>
-          <Text style={styles.paragraph}>
-            בשלבים הראשונים, KarmaCommunity מתמקדת באנשים פרטיים - שכנים, חברים, וכל מי שרוצה לתת מהזמן, הידע או החפצים שלו כדי לעזור לאחרים.
-          </Text>
-          <View style={styles.iconBullets}>
-            <View style={styles.iconBulletRow}><Ionicons name="gift-outline" size={isMobileWeb ? 14 : 18} color={colors.pink} /><Text style={styles.iconBulletText}>שיתוף חפצים, מזון וציוד</Text></View>
-            <View style={styles.iconBulletRow}><Ionicons name="time-outline" size={isMobileWeb ? 14 : 18} color={colors.orange} /><Text style={styles.iconBulletText}>התנדבות וסיוע נקודתי</Text></View>
-            <View style={styles.iconBulletRow}><Ionicons name="school-outline" size={isMobileWeb ? 14 : 18} color={colors.info} /><Text style={styles.iconBulletText}>שיתוף ידע ושיעורי עזר</Text></View>
-            <View style={styles.iconBulletRow}><Ionicons name="heart-outline" size={isMobileWeb ? 14 : 18} color={colors.pink} /><Text style={styles.iconBulletText}>יצירת קשרים אנושיים אמיתיים</Text></View>
-            <View style={styles.iconBulletRow}><Ionicons name="people-outline" size={isMobileWeb ? 14 : 18} color={colors.green} /><Text style={styles.iconBulletText}>כמובן כולם מוזמנים להתנדב ולתרום גם לקהילה עצמה ולהיות חלק מהמייסדים</Text></View>
-          </View>
-          
-          {/* Donation Button */}
-          <TouchableOpacity 
-            style={styles.donationCtaButton} 
-            onPress={onDonate}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="heart" size={isMobileWeb ? 18 : 24} color="#fff" />
-            <Text style={styles.donationCtaButtonText}>תרמו לנו</Text>
-          </TouchableOpacity>
+  <Section id="section-who" title="למי זה מתאים?" subtitle="לכולם. באמת." style={styles.sectionAltBackground}>
+    <Text style={styles.paragraph}>
+      <Text style={styles.emphasis}>קהילת קארמה מיועדת לכולם.</Text> עשירים ועניים, מרכז ופריפריה, לא משנה דת, גזע, מין, לאום ואפילו לא מיקום פיזי. כל אחד יכול לתת וכל אחד יכול לקבל.
+    </Text>
+    <View style={styles.whoContent}>
+      <View style={styles.whoMainCard}>
+        <Ionicons name="people-outline" size={isMobileWeb ? 32 : 48} color={colors.info} style={styles.whoMainIcon} />
+        <Text style={styles.splitTitle}>לאנשים פרטיים</Text>
+        <Text style={styles.paragraph}>
+          בשלבים הראשונים, KarmaCommunity מתמקדת באנשים פרטיים - שכנים, חברים, וכל מי שרוצה לתת מהזמן, הידע או החפצים שלו כדי לעזור לאחרים.
+        </Text>
+        <View style={styles.iconBullets}>
+          <View style={styles.iconBulletRow}><Ionicons name="gift-outline" size={isMobileWeb ? 14 : 18} color={colors.secondary} /><Text style={styles.iconBulletText}>שיתוף חפצים, מזון וציוד</Text></View>
+          <View style={styles.iconBulletRow}><Ionicons name="time-outline" size={isMobileWeb ? 14 : 18} color={colors.accent} /><Text style={styles.iconBulletText}>התנדבות וסיוע נקודתי</Text></View>
+          <View style={styles.iconBulletRow}><Ionicons name="school-outline" size={isMobileWeb ? 14 : 18} color={colors.info} /><Text style={styles.iconBulletText}>שיתוף ידע ושיעורי עזר</Text></View>
+          <View style={styles.iconBulletRow}><Ionicons name="heart-outline" size={isMobileWeb ? 14 : 18} color={colors.secondary} /><Text style={styles.iconBulletText}>יצירת קשרים אנושיים אמיתיים</Text></View>
+          <View style={styles.iconBulletRow}><Ionicons name="people-outline" size={isMobileWeb ? 14 : 18} color={colors.success} /><Text style={styles.iconBulletText}>כמובן כולם מוזמנים להתנדב ולתרום גם לקהילה עצמה ולהיות חלק מהמייסדים</Text></View>
         </View>
-        
-        <View style={styles.whoFutureCard}>
-          <Ionicons name="business-outline" size={isMobileWeb ? 24 : 32} color={colors.textSecondary} style={styles.whoFutureIcon} />
-          <Text style={styles.whoFutureTitle}>עמותות וארגונים - בהמשך</Text>
-          <Text style={styles.whoFutureText}>
-            בשלבים הבאים נחבר גם עמותות וארגונים עם כלים ייעודיים לניהול מתנדבים, תרומות ופניות. דגש חשוב - זה יקרה רק אחרי שנבסס קהילה חזקה של אנשים פרטיים.
-          </Text>
-        </View>
+
+        {/* Donation Button */}
+        <TouchableOpacity
+          style={styles.donationCtaButton}
+          onPress={onDonate}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="heart" size={isMobileWeb ? 18 : 24} color={colors.white} />
+          <Text style={styles.donationCtaButtonText}>תרמו לנו</Text>
+        </TouchableOpacity>
       </View>
-    </Section>
+
+      <View style={styles.whoFutureCard}>
+        <Ionicons name="business-outline" size={isMobileWeb ? 24 : 32} color={colors.textSecondary} style={styles.whoFutureIcon} />
+        <Text style={styles.whoFutureTitle}>עמותות וארגונים - בהמשך</Text>
+        <Text style={styles.whoFutureText}>
+          בשלבים הבאים נחבר גם עמותות וארגונים עם כלים ייעודיים לניהול מתנדבים, תרומות ופניות. דגש חשוב - זה יקרה רק אחרי שנבסס קהילה חזקה של אנשים פרטיים.
+        </Text>
+      </View>
+    </View>
+  </Section>
 );
 
 const ValuesSection = () => {
@@ -962,7 +928,7 @@ const ValuesSection = () => {
   ];
   const commitments = [
     { icon: 'shield-checkmark-outline', text: 'אימות משתמשים וארגונים לפני עלייה לאוויר', color: colors.success },
-    { icon: 'sparkles-outline', text: 'חוויית שימוש נוחה ונקייה מהסחות דעת', color: colors.pink },
+    { icon: 'sparkles-outline', text: 'חוויית שימוש נוחה ונקייה מהסחות דעת', color: colors.secondary },
     { icon: 'leaf-outline', text: 'התפתחות ברת קיימא – בלי פרסומות ובלי דאטה מיותר', color: colors.accent },
   ];
 
@@ -992,26 +958,26 @@ const ValuesSection = () => {
 
 const RoadmapSection = () => {
   const roadmapSteps = [
-    { 
-      time: 'Q1 2026', 
+    {
+      time: 'Q1 2026',
       label: 'הוצאת גרסה ראשונה לאפלקציה לandroid וios',
       icon: 'phone-portrait-outline',
       color: colors.info
     },
-    { 
-      time: 'Q2 2026', 
+    {
+      time: 'Q2 2026',
       label: 'פיצירים מתקדמים לשיתוף מידע עם שאר העמותות וקבוצות הוואטספ והפייסבוק',
       icon: 'share-social-outline',
-      color: colors.pink
+      color: colors.secondary
     },
-    { 
-      time: 'Q3 2026', 
+    {
+      time: 'Q3 2026',
       label: 'שיתופי פעולה עם עיריות וגורמי רווחה',
       icon: 'business-outline',
       color: colors.accent
     },
-    { 
-      time: 'Q4 2026', 
+    {
+      time: 'Q4 2026',
       label: 'יציאה לחו״ל כפלטפורמה בינלאומית',
       icon: 'globe-outline',
       color: colors.success
@@ -1033,10 +999,10 @@ const RoadmapSection = () => {
           <View key={step.label} style={styles.roadmapItemWrapper}>
             <View style={styles.roadmapItem}>
               <View style={[styles.roadmapIconContainer, { backgroundColor: step.color + '15' }]}>
-                <Ionicons 
-                  name={step.icon as any} 
-                  size={isMobileWeb ? 24 : 32} 
-                  color={step.color} 
+                <Ionicons
+                  name={step.icon as any}
+                  size={isMobileWeb ? 24 : 32}
+                  color={step.color}
                 />
               </View>
               <View style={styles.roadmapContent}>
@@ -1054,7 +1020,7 @@ const RoadmapSection = () => {
           </View>
         ))}
       </View>
-      
+
       {/* Logo Evolution Section */}
       <View style={styles.logoEvolutionContainer}>
         <Text style={styles.logoEvolutionTitle}>איך הדברים מתפתחים</Text>
@@ -1068,7 +1034,7 @@ const RoadmapSection = () => {
           ))}
         </View>
       </View>
-      
+
       <View style={styles.brandStrip}>
         <Ionicons name="rocket-outline" size={isMobileWeb ? 18 : 24} color={colors.info} />
         <Text style={styles.trustText}>מתקדמים יחד עם הקהילה – כל פידבק משפיע על סדר העדיפויות שלנו.</Text>
@@ -1078,60 +1044,60 @@ const RoadmapSection = () => {
 };
 
 const AboutSection: React.FC = () => (
-    <Section id="section-about" title="קהילה אחת. מטרה אחת." subtitle="הסיפור של קהילת קארמה">
-      <Text style={styles.paragraph}>
-        בעולם מלא ברעש, אנחנו מאמינים בכוח השקט של עשיית הטוב. קהילת קארמה נולדה מתוך צורך פשוט: לחבר בין אנשים. בין אלה שצריכים עזרה, לבין אלה שיכולים ורוצים להושיט יד. ראינו את הכפילויות, את חוסר האמון ואת המאמצים המפוזרים, והחלטנו ליצור פלטפורמה אחת שמאחדת את כולם.
-      </Text>
-      <Text style={styles.paragraph}>
-        בלי פרסומות, בלי אינטרסים, רק טכנולוגיה בשירות האנושיות. המשימה שלנו היא להפוך את הנתינה לחלק טבעי ופשוט מהיום-יום של כולנו, וליצור חברה ישראלית מחוברת, תומכת ואכפתית יותר.
-      </Text>
-      <Text style={[styles.sectionSubTitle, {marginTop: 30}]}>מילה מהמייסד, נוה סרוסי</Text>
-      <Text style={styles.paragraph}>
-        מגיל צעיר הרגשתי פריבילגיה ושהחיים שלי מסודרים. דווקא בצבא, למרות שהגעתי לתפקיד טוב בתור מתכנת מטוסים, לא הרגשתי את המשמעות שחיפשתי. כל הזמן חשבתי איך אני יכול להביא שינוי אמיתי וטוב לעולם. תמיד עניין אותי לעבוד בסקיילים גדולים ולהשפיע לטובה על כמה שיותר אנשים.
-      </Text>
-      <Text style={styles.paragraph}>
-        קהילת קארמה היא הדרך שלי להפוך את הטוב לנגיש יותר, ליצור פלטפורמה שמחברת בין אנשים שרוצים לעזור לאנשים שצריכים עזרה. אני מאמין בכוח של קהילה לשנות מציאות, ואשמח שתצטרפו אליי למסע הזה.
-      </Text>
-      
-      {/* WhatsApp CTA Button */}
-      <View style={styles.ctaRow}>
-        <TouchableOpacity 
-          style={[styles.contactButton, { backgroundColor: '#25D366' }]} 
-          onPress={() => { 
-            logger.info('LandingSite', 'Click - whatsapp from founder section'); 
-            Linking.openURL('https://wa.me/972528616878'); 
-          }}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="logo-whatsapp" color="#fff" size={isMobileWeb ? 14 : 18} />
-          <Text style={styles.contactButtonText}>שלחו לי ווטסאפ</Text>
-        </TouchableOpacity>
-      </View>
-      
-      <View style={styles.githubLinkContainer}>
-        <TouchableOpacity 
-          style={styles.githubLinkButton}
-          onPress={() => { logger.info('LandingSite', 'Click - github org'); Linking.openURL('https://github.com/KarmaCummunity'); }}
-        >
-          <Ionicons name="logo-github" size={isMobileWeb ? 18 : 24} color={colors.textPrimary} />
-          <View style={styles.githubLinkTextContainer}>
-            <Text style={styles.githubLinkTitle}>גיטהאב - הקוד הפתוח</Text>
-            <Text style={styles.githubLinkDescription}>זה הקוד של האפליקציה. כולם מוזמנים להסתכל ולעזור</Text>
-          </View>
-          <Ionicons name="arrow-forward-outline" size={isMobileWeb ? 16 : 20} color={colors.info} />
-        </TouchableOpacity>
-      </View>
-    </Section>
+  <Section id="section-about" title="קהילה אחת. מטרה אחת." subtitle="הסיפור של קהילת קארמה">
+    <Text style={styles.paragraph}>
+      בעולם מלא ברעש, אנחנו מאמינים בכוח השקט של עשיית הטוב. קהילת קארמה נולדה מתוך צורך פשוט: לחבר בין אנשים. בין אלה שצריכים עזרה, לבין אלה שיכולים ורוצים להושיט יד. ראינו את הכפילויות, את חוסר האמון ואת המאמצים המפוזרים, והחלטנו ליצור פלטפורמה אחת שמאחדת את כולם.
+    </Text>
+    <Text style={styles.paragraph}>
+      בלי פרסומות, בלי אינטרסים, רק טכנולוגיה בשירות האנושיות. המשימה שלנו היא להפוך את הנתינה לחלק טבעי ופשוט מהיום-יום של כולנו, וליצור חברה ישראלית מחוברת, תומכת ואכפתית יותר.
+    </Text>
+    <Text style={[styles.sectionSubTitle, { marginTop: 30 }]}>מילה מהמייסד, נוה סרוסי</Text>
+    <Text style={styles.paragraph}>
+      מגיל צעיר הרגשתי פריבילגיה ושהחיים שלי מסודרים. דווקא בצבא, למרות שהגעתי לתפקיד טוב בתור מתכנת מטוסים, לא הרגשתי את המשמעות שחיפשתי. כל הזמן חשבתי איך אני יכול להביא שינוי אמיתי וטוב לעולם. תמיד עניין אותי לעבוד בסקיילים גדולים ולהשפיע לטובה על כמה שיותר אנשים.
+    </Text>
+    <Text style={styles.paragraph}>
+      קהילת קארמה היא הדרך שלי להפוך את הטוב לנגיש יותר, ליצור פלטפורמה שמחברת בין אנשים שרוצים לעזור לאנשים שצריכים עזרה. אני מאמין בכוח של קהילה לשנות מציאות, ואשמח שתצטרפו אליי למסע הזה.
+    </Text>
+
+    {/* WhatsApp CTA Button */}
+    <View style={styles.ctaRow}>
+      <TouchableOpacity
+        style={[styles.contactButton, { backgroundColor: colors.success }]}
+        onPress={() => {
+          logger.info('LandingSite', 'Click - whatsapp from founder section');
+          Linking.openURL('https://wa.me/972528616878');
+        }}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="logo-whatsapp" color={colors.white} size={isMobileWeb ? 14 : 18} />
+        <Text style={styles.contactButtonText}>שלחו לי ווטסאפ</Text>
+      </TouchableOpacity>
+    </View>
+
+    <View style={styles.githubLinkContainer}>
+      <TouchableOpacity
+        style={styles.githubLinkButton}
+        onPress={() => { logger.info('LandingSite', 'Click - github org'); Linking.openURL('https://github.com/KarmaCummunity'); }}
+      >
+        <Ionicons name="logo-github" size={isMobileWeb ? 18 : 24} color={colors.textPrimary} />
+        <View style={styles.githubLinkTextContainer}>
+          <Text style={styles.githubLinkTitle}>גיטהאב - הקוד הפתוח</Text>
+          <Text style={styles.githubLinkDescription}>זה הקוד של האפליקציה. כולם מוזמנים להסתכל ולעזור</Text>
+        </View>
+        <Ionicons name="arrow-forward-outline" size={isMobileWeb ? 16 : 20} color={colors.info} />
+      </TouchableOpacity>
+    </View>
+  </Section>
 );
 
 const GallerySection = () => (
-    <Section title="רגעים מהקהילה" subtitle="תמונות ששוות אלף מילים">
-      <View style={styles.galleryGrid}>
-        <Image source={require('../assets/images/landingScreen/found-money.png')} style={styles.galleryImage} resizeMode="cover" />
-        <Image source={require('../assets/images/landingScreen/together.png')} style={styles.galleryImage} resizeMode="cover" />
-        <Image source={require('../assets/images/landingScreen/toy_donation.png')} style={styles.galleryImage} resizeMode="cover" />
-      </View>
-    </Section>
+  <Section title="רגעים מהקהילה" subtitle="תמונות ששוות אלף מילים">
+    <View style={styles.galleryGrid}>
+      <Image source={require('../assets/images/landingScreen/found-money.png')} style={styles.galleryImage} resizeMode="cover" />
+      <Image source={require('../assets/images/landingScreen/together.png')} style={styles.galleryImage} resizeMode="cover" />
+      <Image source={require('../assets/images/landingScreen/toy_donation.png')} style={styles.galleryImage} resizeMode="cover" />
+    </View>
+  </Section>
 );
 
 const PartnersSection = () => (
@@ -1161,7 +1127,7 @@ const InstagramSection = () => {
               startInLoadingState={true}
               renderLoading={() => (
                 <View style={styles.instagramLoadingContainer}>
-                  <ActivityIndicator size="large" color={colors.pink} />
+                  <ActivityIndicator size="large" color={colors.secondary} />
                   <Text style={styles.instagramLoadingText}>טוען אינסטגרם...</Text>
                 </View>
               )}
@@ -1173,18 +1139,18 @@ const InstagramSection = () => {
           </View>
         ) : (
           <View style={styles.instagramFallback}>
-            <Ionicons name="logo-instagram" size={isMobileWeb ? 48 : 64} color={colors.pink} />
+            <Ionicons name="logo-instagram" size={isMobileWeb ? 48 : 64} color={colors.secondary} />
             <Text style={styles.instagramFallbackText}>
               עקבו אחרינו באינסטגרם
             </Text>
-            <TouchableOpacity 
-              style={[styles.contactButton, { backgroundColor: '#E4405F' }]} 
-              onPress={() => { 
-                logger.info('LandingSite', 'Click - instagram from section'); 
-                Linking.openURL('https://www.instagram.com/karma_community_/'); 
+            <TouchableOpacity
+              style={[styles.contactButton, { backgroundColor: colors.secondary }]}
+              onPress={() => {
+                logger.info('LandingSite', 'Click - instagram from section');
+                Linking.openURL('https://www.instagram.com/karma_community_/');
               }}
             >
-              <Ionicons name="logo-instagram" color="#fff" size={isMobileWeb ? 14 : 18} />
+              <Ionicons name="logo-instagram" color={colors.white} size={isMobileWeb ? 14 : 18} />
               <Text style={styles.contactButtonText}>פתח באינסטגרם</Text>
             </TouchableOpacity>
           </View>
@@ -1203,8 +1169,6 @@ const FAQItem: React.FC<{ question: string; answer: string; icon?: string }> = (
 
   const toggleExpanded = () => {
     const toValue = isExpanded ? 0 : 1;
-    // useNativeDriver is not supported on Web
-    const useNativeDriver = Platform.OS !== 'web';
     Animated.parallel([
       Animated.timing(animatedHeight, {
         toValue,
@@ -1214,7 +1178,7 @@ const FAQItem: React.FC<{ question: string; answer: string; icon?: string }> = (
       Animated.timing(animatedRotation, {
         toValue,
         duration: 300,
-        useNativeDriver,
+        useNativeDriver: true,
       }),
     ]).start();
     setIsExpanded(!isExpanded);
@@ -1232,34 +1196,34 @@ const FAQItem: React.FC<{ question: string; answer: string; icon?: string }> = (
 
   return (
     <View style={styles.faqCard}>
-      <TouchableOpacity 
-        style={styles.faqQuestionRow} 
+      <TouchableOpacity
+        style={styles.faqQuestionRow}
         onPress={toggleExpanded}
         activeOpacity={0.7}
       >
         <View style={styles.faqQuestionContent}>
           {icon && (
-            <Ionicons 
-              name={icon as any} 
-              size={isMobileWeb ? 20 : 24} 
-              color={colors.info} 
+            <Ionicons
+              name={icon as any}
+              size={isMobileWeb ? 20 : 24}
+              color={colors.info}
               style={styles.faqIcon}
             />
           )}
           <Text style={styles.faqQ}>{question}</Text>
-      </View>
+        </View>
         <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
-          <Ionicons 
-            name="chevron-down-outline" 
-            size={isMobileWeb ? 20 : 24} 
-            color={colors.info} 
+          <Ionicons
+            name="chevron-down-outline"
+            size={isMobileWeb ? 20 : 24}
+            color={colors.info}
           />
         </Animated.View>
       </TouchableOpacity>
       <Animated.View style={[styles.faqAnswerContainer, { maxHeight: contentHeight, opacity: animatedHeight }]}>
         <Text style={styles.faqA}>{answer}</Text>
       </Animated.View>
-      </View>
+    </View>
   );
 };
 
@@ -1321,7 +1285,7 @@ const FAQSection = () => {
     <Section id="section-faq" title="שאלות ותשובות" subtitle="כל מה שרציתם לדעת על Karma Community">
       <View style={styles.faqContainer}>
         {faqData.map((item, index) => (
-          <FAQItem 
+          <FAQItem
             key={index}
             question={item.question}
             answer={item.answer}
@@ -1330,37 +1294,37 @@ const FAQSection = () => {
         ))}
       </View>
     </Section>
-);
+  );
 };
 
 const ContactSection = () => (
-    <Section id="section-contact" title="דברו איתנו והצטרפו לקהילה שעושה טוב" subtitle="נשמח לשמוע מכם, לקבל פידבק או או ביקורת וכמובן לחבר אתכם לקהילה" style={styles.sectionAltBackground}>
-      <View style={styles.contactRow}>
-        <TouchableOpacity style={[styles.contactButton, { backgroundColor: '#25D366' }]} onPress={() => { logger.info('LandingSite', 'Click - whatsapp direct'); Linking.openURL('https://wa.me/972528616878'); }}>
-          <Ionicons name="logo-whatsapp" color="#fff" size={isMobileWeb ? 14 : 18} /><Text style={styles.contactButtonText}>שלחו לי ווטסאפ</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.contactButton, { backgroundColor: colors.info }]} onPress={() => { logger.info('LandingSite', 'Click - email'); Linking.openURL('mailto:navesarussi@gmail.com'); }}>
-          <Ionicons name="mail-outline" color="#fff" size={isMobileWeb ? 14 : 18} /><Text style={styles.contactButtonText}>שלחו לי מייל</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.contactButton, { backgroundColor: '#E4405F' }]} onPress={() => { logger.info('LandingSite', 'Click - instagram'); Linking.openURL('https://www.instagram.com/karma_community_/'); }}>
-          <Ionicons name="logo-instagram" color="#fff" size={isMobileWeb ? 14 : 18} /><Text style={styles.contactButtonText}>עקבו באינסטגרם</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.contactButton, { backgroundColor: '#128C7E' }]} onPress={() => { logger.info('LandingSite', 'Click - whatsapp group'); Linking.openURL('https://chat.whatsapp.com/Hi2TpFcO5huKVKarvecz00'); }}>
-          <Ionicons name="chatbubbles-outline" color="#fff" size={isMobileWeb ? 14 : 18} /><Text style={styles.contactButtonText}>הצטרפו לקבוצת ווטסאפ</Text>
-        </TouchableOpacity>
-      </View>
-    </Section>
+  <Section id="section-contact" title="דברו איתנו והצטרפו לקהילה שעושה טוב" subtitle="נשמח לשמוע מכם, לקבל פידבק או או ביקורת וכמובן לחבר אתכם לקהילה" style={styles.sectionAltBackground}>
+    <View style={styles.contactRow}>
+      <TouchableOpacity style={[styles.contactButton, { backgroundColor: colors.success }]} onPress={() => { logger.info('LandingSite', 'Click - whatsapp direct'); Linking.openURL('https://wa.me/972528616878'); }}>
+        <Ionicons name="logo-whatsapp" color={colors.white} size={isMobileWeb ? 14 : 18} /><Text style={styles.contactButtonText}>שלחו לי ווטסאפ</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.contactButton, { backgroundColor: colors.info }]} onPress={() => { logger.info('LandingSite', 'Click - email'); Linking.openURL('mailto:navesarussi@gmail.com'); }}>
+        <Ionicons name="mail-outline" color={colors.white} size={isMobileWeb ? 14 : 18} /><Text style={styles.contactButtonText}>שלחו לי מייל</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.contactButton, { backgroundColor: colors.secondary }]} onPress={() => { logger.info('LandingSite', 'Click - instagram'); Linking.openURL('https://www.instagram.com/karma_community_/'); }}>
+        <Ionicons name="logo-instagram" color={colors.white} size={isMobileWeb ? 14 : 18} /><Text style={styles.contactButtonText}>עקבו באינסטגרם</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.contactButton, { backgroundColor: colors.success }]} onPress={() => { logger.info('LandingSite', 'Click - whatsapp group'); Linking.openURL('https://chat.whatsapp.com/Hi2TpFcO5huKVKarvecz00'); }}>
+        <Ionicons name="chatbubbles-outline" color={colors.white} size={isMobileWeb ? 14 : 18} /><Text style={styles.contactButtonText}>הצטרפו לקבוצת ווטסאפ</Text>
+      </TouchableOpacity>
+    </View>
+  </Section>
 );
 
-    {/* <Section title="הצטרפו לקהילה שעושה טוב" subtitle="כל אחד יכול להשפיע. בואו נבנה את זה יחד." style={styles.sectionAltBackground}> */}
+{/* <Section title="הצטרפו לקהילה שעושה טוב" subtitle="כל אחד יכול להשפיע. בואו נבנה את זה יחד." style={styles.sectionAltBackground}> */ }
 
 const LandingSiteScreen: React.FC = () => {
   console.log('LandingSiteScreen - Component rendered');
-  
+
   const { setMode } = useWebMode();
   const navigation = useNavigation<any>();
   const { isAuthenticated, isGuestMode, isAdmin } = useUser();
-  
+
   const [stats, setStats] = useState<LandingStats>({
     siteVisits: 0,
     totalMoneyDonated: 0,
@@ -1377,15 +1341,27 @@ const LandingSiteScreen: React.FC = () => {
   const scrollViewRef = useRef<ScrollView | null>(null);
   const scrollSpyObserverRef = useRef<IntersectionObserver | null>(null);
   const observedElementsRef = useRef<Set<HTMLElement>>(new Set());
-  
+
+  // Ensure top bar and bottom bar are visible when this screen is focused
+  // This fixes the issue where bars disappear when navigating from TopBar's AboutButton
+  useFocusEffect(
+    useCallback(() => {
+      console.log('🏠 LandingSiteScreen - Screen focused, ensuring bars are visible');
+      navigation.setParams({
+        hideTopBar: false,
+        hideBottomBar: false,
+      });
+    }, [navigation])
+  );
+
   // Handle navigation to app mode
   const handleGoToApp = async () => {
     logger.info('LandingSiteScreen', 'Navigate to app mode', { isAuthenticated, isGuestMode });
     setMode('app');
-    
+
     // Determine target route based on authentication status
     const targetRoute = (isAuthenticated || isGuestMode) ? 'HomeStack' : 'LoginScreen';
-    
+
     // Check guards before navigation
     const guardContext = {
       isAuthenticated,
@@ -1414,7 +1390,7 @@ const LandingSiteScreen: React.FC = () => {
     // Use navigation queue with high priority (2) for mode changes
     await navigationQueue.reset(0, [{ name: targetRoute }], 2);
   };
-  
+
   // Handle navigation from floating menu
   const handleNavigate = (sectionId: string) => {
     logger.info('LandingSiteScreen', `Navigate to section: ${sectionId}`, {
@@ -1422,33 +1398,82 @@ const LandingSiteScreen: React.FC = () => {
       hasScrollRef: !!scrollViewRef.current,
       platform: Platform.OS,
     });
-    
-    // For web, use DOM scrolling
+
+    // For web, use DOM scrolling with container targeting to prevent window scroll
     if (isWeb) {
       const scrollToSection = (retryCount = 0) => {
         try {
+          if (sectionId === 'top') {
+            // Find the specific scroll container specifically to avoid window scrolling
+            const scrollContainer = document.querySelector('[data-scroll-container="true"]');
+            if (scrollContainer) {
+              scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+              setActiveSection(sectionId);
+              logger.info('LandingSiteScreen', 'Scrolled to top via container');
+            } else {
+              // Fallback if container not found
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            return;
+          }
+
           const element = getSectionElement(sectionId);
           logger.info('LandingSiteScreen', `Found element for ${sectionId}:`, {
             found: !!element,
             elementId: element?.id || element?.getAttribute?.('data-nativeid') || null,
             retryCount,
           });
-          
+
           if (element) {
-            element.scrollIntoView({ 
-              behavior: 'smooth', 
-              block: 'start',
-            });
-            setActiveSection(sectionId);
-            logger.info('LandingSiteScreen', `Scrolled to section: ${sectionId}`);
-          } else if (sectionId === 'top') {
-            // Scroll to top if no specific section
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            setActiveSection(sectionId);
-            logger.info('LandingSiteScreen', 'Scrolled to top via window.scrollTo');
+            // Find the nearest scrollable parent explicitly
+            let parent = element.parentElement;
+            let scrollContainer: HTMLElement | null = null;
+
+            while (parent) {
+              const style = window.getComputedStyle(parent);
+              // Check for our specific scroll container or general overflow
+              if (
+                parent.getAttribute('data-scroll-container') === 'true' ||
+                style.overflowY === 'auto' ||
+                style.overflowY === 'scroll'
+              ) {
+                scrollContainer = parent;
+                break;
+              }
+              parent = parent.parentElement;
+            }
+
+            if (scrollContainer) {
+              // Calculate position relative to the container
+              // We need to account for the element's position inside the container
+              const containerRect = scrollContainer.getBoundingClientRect();
+              const elementRect = element.getBoundingClientRect();
+
+              // Current scroll position + difference in tops
+              const scrollTop = scrollContainer.scrollTop + (elementRect.top - containerRect.top);
+
+              // Add a small offset for breathing room (e.g., 20px)
+              const offset = 20;
+
+              scrollContainer.scrollTo({
+                top: scrollTop - offset,
+                behavior: 'smooth',
+              });
+
+              setActiveSection(sectionId);
+              logger.info('LandingSiteScreen', `Scrolled to section via container: ${sectionId}`);
+            } else {
+              // Fallback to scrollIntoView only if no container found (unlikely in our app structure)
+              // Use block: 'center' to avoid aggressive top alignment that might pull the window
+              element.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+              });
+              setActiveSection(sectionId);
+              logger.warn('LandingSiteScreen', 'Scroll container not found, using scrollIntoView fallback');
+            }
           } else if (retryCount < 10) {
             // Retry if element not found yet (DOM might still be rendering)
-            // ניסיון חוזר אם האלמנט עדיין לא נמצא (DOM עדיין יכול להיות בתהליך רינדור)
             setTimeout(() => scrollToSection(retryCount + 1), 100);
             logger.info('LandingSiteScreen', `Retrying to find section: ${sectionId}, attempt ${retryCount + 1}`);
           } else {
@@ -1458,7 +1483,7 @@ const LandingSiteScreen: React.FC = () => {
           logger.error('LandingSiteScreen', 'Error scrolling to section', { error, sectionId });
         }
       };
-      
+
       scrollToSection();
     } else {
       // For native, use ScrollView ref
@@ -1466,11 +1491,13 @@ const LandingSiteScreen: React.FC = () => {
         scrollViewRef.current.scrollTo?.({ y: 0, animated: true });
         logger.info('LandingSiteScreen', 'Scrolled to top via ScrollView ref');
       } else {
-        logger.warn('LandingSiteScreen', 'Native scrolling not implemented for sections');
+        // Should implemented map of refs for sections if needed for native
+        // But currently this feature is mostly for web landing page
+        logger.warn('LandingSiteScreen', 'Native scrolling not implemented for specific sections');
       }
     }
   };
-  
+
   // Shared loadStats function - used by both initial load and auto-refresh
   // פונקציה משותפת לטעינת סטטיסטיקות - משמשת גם לטעינה ראשונית וגם לרענון אוטומטי
   const loadStats = useCallback(async (forceRefresh = false) => {
@@ -1478,7 +1505,7 @@ const LandingSiteScreen: React.FC = () => {
       setIsLoadingStats(true);
       logger.info('LandingSite', 'Loading stats', { forceRefresh });
       const communityStats = await EnhancedStatsService.getCommunityStats({}, forceRefresh);
-      
+
       // Extract values - handle both direct values and nested value objects
       // תמיכה בשני פורמטים: מספר ישיר או אובייקט עם שדה value
       // Support for two formats: direct number or object with value field
@@ -1487,7 +1514,7 @@ const LandingSiteScreen: React.FC = () => {
         if (stat && typeof stat === 'object' && 'value' in stat) return stat.value || 0;
         return 0;
       };
-      
+
       const statsData = {
         siteVisits: getValue(communityStats.siteVisits) || 0,
         totalMoneyDonated: getValue(communityStats.totalMoneyDonated) || 0,
@@ -1497,7 +1524,7 @@ const LandingSiteScreen: React.FC = () => {
         recurringDonationsAmount: getValue(communityStats.recurringDonationsAmount) || 0,
         uniqueDonors: getValue(communityStats.uniqueDonors) || 0,
       };
-      
+
       logger.info('LandingSite', 'Stats loaded', statsData);
       setStats(statsData);
     } catch (error) {
@@ -1517,7 +1544,7 @@ const LandingSiteScreen: React.FC = () => {
     }
 
     logger.info('LandingSite', 'Setting up smart polling (checks every 30 seconds)');
-    
+
     const checkForUpdates = async () => {
       try {
         // Lightweight check - only gets version hash
@@ -1525,7 +1552,7 @@ const LandingSiteScreen: React.FC = () => {
         if (response.success && response.version) {
           const newVersion = response.version;
           const currentVersion = statsVersionRef.current;
-          
+
           // Only reload if version actually changed
           if (currentVersion && newVersion !== currentVersion) {
             logger.info('LandingSite', 'Stats version changed, reloading...', {
@@ -1549,7 +1576,7 @@ const LandingSiteScreen: React.FC = () => {
 
     // Check immediately on mount (but don't reload if stats already loaded)
     checkForUpdates();
-    
+
     // Set up interval to check for updates every 30 seconds (reduced from 5 seconds to prevent excessive checks)
     // Only reloads if version actually changed in database
     const pollInterval = setInterval(checkForUpdates, 30000);
@@ -1563,7 +1590,7 @@ const LandingSiteScreen: React.FC = () => {
 
   useEffect(() => {
     logger.info('LandingSite', 'useEffect triggered - Landing page mounted', { isWeb, USE_BACKEND });
-    
+
     // Use sessionStorage to prevent double tracking across all instances
     // שימוש ב-sessionStorage למניעת ספירה כפולה בכל ה-instances
     const VISIT_TRACKED_KEY = 'kc_site_visit_tracked';
@@ -1575,7 +1602,7 @@ const LandingSiteScreen: React.FC = () => {
     const trackVisitAndLoadStats = async () => {
       // Check if visit already tracked in this session (shared across all component instances)
       // בדיקה אם הביקור כבר נספר ב-session זה (משותף לכל ה-instances של הקומפוננטה)
-      const visitTracked = isWeb && typeof window !== 'undefined' 
+      const visitTracked = isWeb && typeof window !== 'undefined'
         ? sessionStorage.getItem(VISIT_TRACKED_KEY) === 'true'
         : false;
 
@@ -1592,7 +1619,7 @@ const LandingSiteScreen: React.FC = () => {
           if (typeof window !== 'undefined') {
             sessionStorage.setItem(VISIT_TRACKED_KEY, 'true');
           }
-          
+
           logger.info('LandingSite', 'Tracking site visit...');
           const response = await apiService.trackSiteVisit();
           if (response.success) {
@@ -1626,9 +1653,9 @@ const LandingSiteScreen: React.FC = () => {
         await loadStats(false);
       }
     };
-    
+
     trackVisitAndLoadStats();
-    
+
     return () => {
       logger.info('LandingSite', 'Landing page unmounted');
     };
@@ -1640,7 +1667,7 @@ const LandingSiteScreen: React.FC = () => {
     if (!isWeb) return; // Works on all web screens including mobile
 
     const sectionIds = ['stats', 'vision', 'problems', 'features', 'about', 'how', 'who', 'values', 'roadmap', 'contact', 'faq'];
-    
+
     // Create Intersection Observer
     const observerOptions = {
       root: null, // viewport
@@ -1678,7 +1705,7 @@ const LandingSiteScreen: React.FC = () => {
         }
         return true;
       }
-      
+
       // Retry if element not found yet (DOM might still be rendering)
       // ניסיון חוזר אם האלמנט עדיין לא נמצא (DOM עדיין יכול להיות בתהליך רינדור)
       if (retryCount < 20) {
@@ -1713,19 +1740,20 @@ const LandingSiteScreen: React.FC = () => {
       scrollSpyObserverRef.current = null;
       mutationObserver?.disconnect();
     };
-  }, [isWeb, showFloatingMenu]);
+  }, [isWeb]);
 
   return (
     <ScreenWrapper style={styles.container}>
       {/* Floating Navigation Menu */}
-      {showFloatingMenu && <FloatingMenu onNavigate={handleNavigate} activeSection={activeSection} />}
-      
+      {/* Floating Navigation Menu - Shown only for authenticated users (who don't see the top bar) */}
+      {isAuthenticated && !isGuestMode && <FloatingMenu onNavigate={handleNavigate} activeSection={activeSection} />}
+
       {/* Donation Modal */}
-      <DonationModal 
-        visible={showDonationModal} 
-        onClose={() => setShowDonationModal(false)} 
+      <DonationModal
+        visible={showDonationModal}
+        onClose={() => setShowDonationModal(false)}
       />
-      
+
       <ScrollContainer
         scrollRef={scrollViewRef}
         style={styles.scrollContainer}
@@ -1747,34 +1775,34 @@ const LandingSiteScreen: React.FC = () => {
         <LazySection section={ContactSection} />
         <LazySection section={FAQSection} />
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>© {new Date().getFullYear()} Karma Community — נבנה באהבה ובתמיכת הקהילה.</Text>
-      </View>
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>© {new Date().getFullYear()} Karma Community — נבנה באהבה ובתמיכת הקהילה.</Text>
+        </View>
       </ScrollContainer>
     </ScreenWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { 
+  container: {
     flex: 1,
     backgroundColor: colors.background,
   },
   scrollContainer: {
     flex: 1,
   },
-  content: { 
+  content: {
     paddingBottom: isMobileWeb ? 80 : 120,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
-  hero: { 
+  hero: {
     width: '100%',
     overflow: 'hidden',
   },
   heroGradient: {
-    backgroundColor: '#F2F7FF',
-    paddingTop: isMobileWeb ? 40 : (isWeb ? 60 : 80), 
-    paddingBottom: isMobileWeb ? 30 : (isWeb ? 50 : 70), 
+    backgroundColor: colors.backgroundTertiary,
+    paddingTop: isMobileWeb ? 40 : (isWeb ? 60 : 80),
+    paddingBottom: isMobileWeb ? 30 : (isWeb ? 50 : 70),
     paddingHorizontal: isMobileWeb ? 16 : (isWeb ? 20 : 40),
     position: 'relative',
   },
@@ -1799,8 +1827,8 @@ const styles = StyleSheet.create({
     width: isMobileWeb ? 100 : (isWeb ? (isTablet ? 180 : 160) : 200),
     height: isMobileWeb ? 100 : (isWeb ? (isTablet ? 180 : 160) : 200),
   },
-  logo: { 
-    width: isMobileWeb ? 80 : (isWeb ? (isTablet ? 140 : 120) : 160), 
+  logo: {
+    width: isMobileWeb ? 80 : (isWeb ? (isTablet ? 140 : 120) : 160),
     height: isMobileWeb ? 80 : (isWeb ? (isTablet ? 140 : 120) : 160),
     zIndex: 2,
   },
@@ -1812,20 +1840,20 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(65, 105, 225, 0.15)',
     zIndex: 1,
   },
-  title: { 
-    fontSize: isMobileWeb ? 24 : (isWeb ? (isTablet ? 48 : 36) : 56), 
-    fontWeight: '900', 
-    color: colors.textPrimary, 
-    textAlign: 'center', 
+  title: {
+    fontSize: isMobileWeb ? 24 : (isWeb ? (isTablet ? 48 : 36) : 56),
+    fontWeight: '900',
+    color: colors.textPrimary,
+    textAlign: 'center',
     marginBottom: isMobileWeb ? 12 : (isWeb ? 16 : 20),
     letterSpacing: -0.5,
   },
-  subtitle: { 
-    fontSize: isMobileWeb ? 14 : (isWeb ? (isTablet ? 20 : 18) : 24), 
-    color: colors.textSecondary, 
-    textAlign: 'center', 
-    marginTop: isMobileWeb ? 6 : (isWeb ? 8 : 12), 
-    maxWidth: isMobileWeb ? '95%' : (isTablet ? '70%' : '90%'), 
+  subtitle: {
+    fontSize: isMobileWeb ? 14 : (isWeb ? (isTablet ? 20 : 18) : 24),
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: isMobileWeb ? 6 : (isWeb ? 8 : 12),
+    maxWidth: isMobileWeb ? '95%' : (isTablet ? '70%' : '90%'),
     lineHeight: isMobileWeb ? 20 : (isWeb ? 28 : 32),
     fontWeight: '500',
   },
@@ -1852,150 +1880,154 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: isMobileWeb ? 24 : (isWeb ? 32 : 36),
     fontStyle: 'italic',
-    ...Platform.select({
-      web: {
-        textShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        textShadowColor: 'rgba(0, 0, 0, 0.1)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 2,
-      },
-    }),
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
     flex: 1,
   },
-  ctaRow: { 
-    flexDirection: 'row', 
-    gap: isMobileWeb ? 10 : 16, 
-    marginTop: isMobileWeb ? 24 : 40, 
-    justifyContent: 'center', 
+  ctaRow: {
+    flexDirection: 'row',
+    gap: isMobileWeb ? 10 : 16,
+    marginTop: isMobileWeb ? 24 : 40,
+    justifyContent: 'center',
     flexWrap: 'wrap',
     alignItems: 'center',
   },
   ctaIcon: {
     marginRight: isMobileWeb ? 6 : 8,
   },
-  primaryCta: { 
-    backgroundColor: colors.info, 
-    paddingHorizontal: isMobileWeb ? 20 : 32, 
-    paddingVertical: isMobileWeb ? 12 : 18, 
-    borderRadius: isMobileWeb ? 12 : 16, 
+  primaryCta: {
+    backgroundColor: colors.info,
+    paddingHorizontal: isMobileWeb ? 20 : 32,
+    paddingVertical: isMobileWeb ? 12 : 18,
+    borderRadius: isMobileWeb ? 12 : 16,
     minWidth: isMobileWeb ? 140 : 200,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    ...createShadowStyle(colors.info, { width: 0, height: 8 }, 0.15, 12, 8),
+    shadowColor: colors.info,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 12,
+    elevation: 8,
   },
-  primaryCtaText: { 
-    color: '#fff', 
-    fontWeight: '800', 
-    fontSize: isMobileWeb ? 14 : (isWeb ? 18 : 20), 
+  primaryCtaText: {
+    color: colors.white,
+    fontWeight: '800',
+    fontSize: isMobileWeb ? 14 : (isWeb ? 18 : 20),
     textAlign: 'center',
     letterSpacing: 0.3,
   },
-  secondaryCta: { 
-    backgroundColor: '#FFFFFF', 
-    borderWidth: 2, 
-    borderColor: colors.info, 
-    paddingHorizontal: isMobileWeb ? 20 : 32, 
-    paddingVertical: isMobileWeb ? 12 : 18, 
-    borderRadius: isMobileWeb ? 12 : 16, 
+  secondaryCta: {
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.info,
+    paddingHorizontal: isMobileWeb ? 20 : 32,
+    paddingVertical: isMobileWeb ? 12 : 18,
+    borderRadius: isMobileWeb ? 12 : 16,
     minWidth: isMobileWeb ? 140 : 200,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    ...createShadowStyle('#000', { width: 0, height: 4 }, 0.1, 8, 4),
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  secondaryCtaText: { 
-    color: colors.info, 
-    fontWeight: '800', 
-    fontSize: isMobileWeb ? 14 : (isWeb ? 18 : 20), 
+  secondaryCtaText: {
+    color: colors.info,
+    fontWeight: '800',
+    fontSize: isMobileWeb ? 14 : (isWeb ? 18 : 20),
     textAlign: 'center',
     letterSpacing: 0.3,
   },
-  section: { 
-    paddingHorizontal: isMobileWeb ? 16 : (isWeb ? (isTablet ? 40 : 24) : 40), 
-    paddingVertical: isMobileWeb ? 24 : (isWeb ? (isTablet ? 60 : 40) : 50), 
-    width: '100%', 
+  section: {
+    paddingHorizontal: isMobileWeb ? 16 : (isWeb ? (isTablet ? 40 : 24) : 40),
+    paddingVertical: isMobileWeb ? 24 : (isWeb ? (isTablet ? 60 : 40) : 50),
+    width: '100%',
     alignSelf: 'center',
     maxWidth: isTablet ? 1200 : '100%',
   },
-  sectionTitle: { 
-    fontSize: isMobileWeb ? 20 : (isWeb ? (isTablet ? 36 : 28) : 42), 
-    fontWeight: '900', 
-    color: colors.textPrimary, 
-    textAlign: 'center', 
+  sectionTitle: {
+    fontSize: isMobileWeb ? 20 : (isWeb ? (isTablet ? 36 : 28) : 42),
+    fontWeight: '900',
+    color: colors.textPrimary,
+    textAlign: 'center',
     marginBottom: isMobileWeb ? 6 : 8,
     letterSpacing: -0.5,
   },
-  sectionSubtitle: { 
-    fontSize: isMobileWeb ? 13 : (isWeb ? (isTablet ? 18 : 16) : 22), 
-    color: colors.textSecondary, 
-    textAlign: 'center', 
-    marginBottom: isMobileWeb ? 12 : (isWeb ? 20 : 24), 
+  sectionSubtitle: {
+    fontSize: isMobileWeb ? 13 : (isWeb ? (isTablet ? 18 : 16) : 22),
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: isMobileWeb ? 12 : (isWeb ? 20 : 24),
     lineHeight: isMobileWeb ? 18 : (isWeb ? 26 : 30),
     fontWeight: '500',
   },
-  sectionSubTitle: { 
-    fontSize: isMobileWeb ? 14 : (isWeb ? 18 : 24), 
-    fontWeight: '700', 
-    color: colors.textPrimary, 
-    textAlign: 'center', 
-    marginTop: isMobileWeb ? 10 : (isWeb ? 15 : 20), 
-    marginBottom: isMobileWeb ? 6 : (isWeb ? 8 : 12) 
+  sectionSubTitle: {
+    fontSize: isMobileWeb ? 14 : (isWeb ? 18 : 24),
+    fontWeight: '700',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginTop: isMobileWeb ? 10 : (isWeb ? 15 : 20),
+    marginBottom: isMobileWeb ? 6 : (isWeb ? 8 : 12)
   },
-  featuresGrid: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    justifyContent: 'space-around', 
-    gap: isMobileWeb ? 12 : 24, 
+  featuresGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    gap: isMobileWeb ? 12 : 24,
     width: '100%',
     marginTop: isMobileWeb ? 12 : 20,
   },
-  feature: { 
-    flex: 1, 
-    minWidth: isMobileWeb ? 140 : 280, 
-    maxWidth: isMobileWeb ? '100%' : 350, 
-    backgroundColor: '#FFFFFF', 
-    borderWidth: 1, 
-    borderColor: '#EDF1FF', 
-    borderRadius: isMobileWeb ? 12 : 20, 
-    padding: isMobileWeb ? 16 : 28, 
-    alignItems: 'center', 
+  feature: {
+    flex: 1,
+    minWidth: isMobileWeb ? 140 : 280,
+    maxWidth: isMobileWeb ? '100%' : 350,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.backgroundTertiary,
+    borderRadius: isMobileWeb ? 12 : 20,
+    padding: isMobileWeb ? 16 : 28,
+    alignItems: 'center',
     margin: isMobileWeb ? 4 : 8,
-    ...createShadowStyle('#000', { width: 0, height: 6 }, 0.1, 16, 6),
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 6,
   },
-  featureEmoji: { 
-    fontSize: isMobileWeb ? 32 : 48, 
+  featureEmoji: {
+    fontSize: isMobileWeb ? 32 : 48,
     marginBottom: isMobileWeb ? 10 : 16,
   },
-  featureTitle: { 
-    fontSize: isMobileWeb ? 16 : 24, 
-    fontWeight: '800', 
-    color: colors.textPrimary, 
-    textAlign: 'center', 
+  featureTitle: {
+    fontSize: isMobileWeb ? 16 : 24,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    textAlign: 'center',
     marginBottom: isMobileWeb ? 8 : 12,
     letterSpacing: -0.3,
   },
-  featureText: { 
-    fontSize: isMobileWeb ? 13 : 18, 
-    color: colors.textSecondary, 
-    textAlign: 'center', 
+  featureText: {
+    fontSize: isMobileWeb ? 13 : 18,
+    color: colors.textSecondary,
+    textAlign: 'center',
     lineHeight: isMobileWeb ? 18 : 28,
     fontWeight: '400',
   },
-  paragraph: { 
-    fontSize: isMobileWeb ? 14 : (isWeb ? 18 : 20), 
-    color: colors.textPrimary, 
-    lineHeight: isMobileWeb ? 20 : (isWeb ? 28 : 30), 
-    textAlign: 'center', 
-    marginTop: isMobileWeb ? 8 : 12, 
-    maxWidth: isMobileWeb ? '95%' : (isTablet ? '80%' : '90%'), 
+  paragraph: {
+    fontSize: isMobileWeb ? 14 : (isWeb ? 18 : 20),
+    color: colors.textPrimary,
+    lineHeight: isMobileWeb ? 20 : (isWeb ? 28 : 30),
+    textAlign: 'center',
+    marginTop: isMobileWeb ? 8 : 12,
+    maxWidth: isMobileWeb ? '95%' : (isTablet ? '80%' : '90%'),
     alignSelf: 'center',
     fontWeight: '400',
   },
   linksRow: { flexDirection: 'row', gap: isMobileWeb ? 12 : 24, marginTop: isMobileWeb ? 10 : 16, alignSelf: 'center', flexWrap: 'wrap', justifyContent: 'center' },
-  link: { color: '#2563EB', fontWeight: '700', fontSize: isMobileWeb ? 14 : 20, padding: isMobileWeb ? 6 : 8 },
+  link: { color: colors.primary, fontWeight: '700', fontSize: isMobileWeb ? 14 : 20, padding: isMobileWeb ? 6 : 8 },
   faqContainer: {
     width: '100%',
     maxWidth: isTablet ? 900 : '100%',
@@ -2004,20 +2036,24 @@ const styles = StyleSheet.create({
     marginTop: isMobileWeb ? 12 : 20,
   },
   faqCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: isMobileWeb ? 12 : 16,
     borderWidth: 1,
-    borderColor: '#E6EEF9',
+    borderColor: colors.backgroundTertiary,
     marginBottom: isMobileWeb ? 8 : 12,
     overflow: 'hidden',
-    ...createShadowStyle('#000', { width: 0, height: 2 }, 0.05, 4, 2),
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   faqQuestionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: isMobileWeb ? 16 : 20,
-    backgroundColor: '#FAFBFF',
+    backgroundColor: colors.backgroundSecondary,
   },
   faqQuestionContent: {
     flex: 1,
@@ -2028,11 +2064,11 @@ const styles = StyleSheet.create({
   faqIcon: {
     marginRight: isMobileWeb ? 4 : 6,
   },
-  faqQ: { 
+  faqQ: {
     flex: 1,
-    fontWeight: '800', 
-    color: colors.textPrimary, 
-    fontSize: isMobileWeb ? 15 : 18, 
+    fontWeight: '800',
+    color: colors.textPrimary,
+    fontSize: isMobileWeb ? 15 : 18,
     lineHeight: isMobileWeb ? 22 : 26,
   },
   faqAnswerContainer: {
@@ -2040,9 +2076,9 @@ const styles = StyleSheet.create({
     paddingBottom: isMobileWeb ? 16 : 20,
     overflow: 'hidden',
   },
-  faqA: { 
-    color: colors.textSecondary, 
-    fontSize: isMobileWeb ? 14 : 16, 
+  faqA: {
+    color: colors.textSecondary,
+    fontSize: isMobileWeb ? 14 : 16,
     lineHeight: isMobileWeb ? 20 : 24,
     fontWeight: '400',
   },
@@ -2050,31 +2086,35 @@ const styles = StyleSheet.create({
   iconBulletRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: isMobileWeb ? 10 : 16, justifyContent: 'center', paddingVertical: isMobileWeb ? 2 : 4 },
   iconBulletText: { color: colors.textPrimary, fontSize: isMobileWeb ? 13 : 18, textAlign: 'center', flex: 1 },
   stepsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: isMobileWeb ? 12 : 24, justifyContent: 'space-around', marginTop: isMobileWeb ? 12 : 20, width: '100%' },
-  stepCard: { 
-    flex: 1, 
-    minWidth: isMobileWeb ? 140 : 280, 
-    maxWidth: isMobileWeb ? '100%' : 350, 
-    borderRadius: isMobileWeb ? 12 : 20, 
-    borderWidth: 1, 
-    borderColor: '#E6EEF9', 
-    backgroundColor: '#FFFFFF', 
-    padding: isMobileWeb ? 16 : 28, 
-    alignItems: 'center', 
+  stepCard: {
+    flex: 1,
+    minWidth: isMobileWeb ? 140 : 280,
+    maxWidth: isMobileWeb ? '100%' : 350,
+    borderRadius: isMobileWeb ? 12 : 20,
+    borderWidth: 1,
+    borderColor: colors.backgroundTertiary,
+    backgroundColor: colors.white,
+    padding: isMobileWeb ? 16 : 28,
+    alignItems: 'center',
     margin: isMobileWeb ? 4 : 8,
-    ...createShadowStyle('#000', { width: 0, height: 6 }, 0.1, 16, 6),
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 6,
   },
-  stepTitle: { 
-    marginTop: isMobileWeb ? 10 : 16, 
-    fontWeight: '800', 
-    color: colors.textPrimary, 
+  stepTitle: {
+    marginTop: isMobileWeb ? 10 : 16,
+    fontWeight: '800',
+    color: colors.textPrimary,
     fontSize: isMobileWeb ? 16 : 24,
     letterSpacing: -0.3,
   },
-  stepText: { 
-    marginTop: isMobileWeb ? 8 : 12, 
-    textAlign: 'center', 
-    color: colors.textSecondary, 
-    fontSize: isMobileWeb ? 13 : 18, 
+  stepText: {
+    marginTop: isMobileWeb ? 8 : 12,
+    textAlign: 'center',
+    color: colors.textSecondary,
+    fontSize: isMobileWeb ? 13 : 18,
     lineHeight: isMobileWeb ? 18 : 28,
     fontWeight: '400',
   },
@@ -2082,19 +2122,23 @@ const styles = StyleSheet.create({
   splitColumn: { flex: 1, minWidth: isMobileWeb ? 140 : 320, maxWidth: isMobileWeb ? '100%' : 500, padding: isMobileWeb ? 12 : 20 },
   splitTitle: { textAlign: 'center', fontSize: isMobileWeb ? 18 : 24, fontWeight: '800', color: colors.textPrimary, marginBottom: isMobileWeb ? 8 : 12 },
   valuesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: isMobileWeb ? 6 : 10, justifyContent: 'center', marginTop: isMobileWeb ? 4 : 6 },
-  valuePill: { 
-    paddingHorizontal: isMobileWeb ? 14 : 24, 
-    paddingVertical: isMobileWeb ? 8 : 14, 
-    borderRadius: 999, 
-    backgroundColor: '#FFFFFF', 
-    borderWidth: 2, 
-    borderColor: colors.info, 
+  valuePill: {
+    paddingHorizontal: isMobileWeb ? 14 : 24,
+    paddingVertical: isMobileWeb ? 8 : 14,
+    borderRadius: 999,
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.info,
     margin: isMobileWeb ? 3 : 6,
-    ...createShadowStyle('#000', { width: 0, height: 2 }, 0.05, 4, 2),
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  valuePillText: { 
-    color: colors.info, 
-    fontWeight: '700', 
+  valuePillText: {
+    color: colors.info,
+    fontWeight: '700',
     fontSize: isMobileWeb ? 12 : 18,
   },
   roadmapContainer: {
@@ -2111,13 +2155,17 @@ const styles = StyleSheet.create({
   roadmapItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: isMobileWeb ? 16 : 20,
     padding: isMobileWeb ? 16 : 24,
     marginBottom: isMobileWeb ? 20 : 24,
-    ...createShadowStyle('#000', { width: 0, height: 4 }, 0.1, 12, 4),
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
     borderWidth: 1,
-    borderColor: '#F0F4F8',
+    borderColor: colors.backgroundSecondary,
     writingDirection: 'rtl',
   },
   roadmapIconContainer: {
@@ -2142,7 +2190,7 @@ const styles = StyleSheet.create({
     marginBottom: isMobileWeb ? 8 : 12,
   },
   roadmapTimeText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontWeight: '900',
     fontSize: isMobileWeb ? 14 : 16,
     letterSpacing: 0.5,
@@ -2209,8 +2257,8 @@ const styles = StyleSheet.create({
     height: isMobileWeb ? 80 : 120,
     borderRadius: isMobileWeb ? 12 : 16,
     borderWidth: 2,
-    borderColor: '#E6EEF9',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.backgroundTertiary,
+    backgroundColor: colors.white,
   },
   logoEvolutionLabel: {
     fontSize: isMobileWeb ? 12 : 14,
@@ -2221,75 +2269,83 @@ const styles = StyleSheet.create({
   brandStrip: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: isMobileWeb ? 8 : 10, paddingVertical: isMobileWeb ? 12 : 16 },
   brandIcon: { width: isMobileWeb ? 30 : 40, height: isMobileWeb ? 30 : 40, opacity: 0.9 },
   contactRow: { flexDirection: 'row', flexWrap: 'wrap', gap: isMobileWeb ? 10 : 20, justifyContent: 'center', marginTop: isMobileWeb ? 16 : 24, width: '100%' },
-  contactButton: { 
-    flexDirection: 'row', 
-    gap: isMobileWeb ? 8 : 12, 
-    alignItems: 'center', 
-    paddingHorizontal: isMobileWeb ? 16 : 28, 
-    paddingVertical: isMobileWeb ? 12 : 18, 
-    borderRadius: isMobileWeb ? 12 : 16, 
-    minWidth: isMobileWeb ? 140 : 200, 
+  contactButton: {
+    flexDirection: 'row',
+    gap: isMobileWeb ? 8 : 12,
+    alignItems: 'center',
+    paddingHorizontal: isMobileWeb ? 16 : 28,
+    paddingVertical: isMobileWeb ? 12 : 18,
+    borderRadius: isMobileWeb ? 12 : 16,
+    minWidth: isMobileWeb ? 140 : 200,
     justifyContent: 'center',
-    ...createShadowStyle('#000', { width: 0, height: 6 }, 0.25, 10, 6),
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 6,
   },
-  contactButtonText: { 
-    color: '#fff', 
-    fontWeight: '800', 
+  contactButtonText: {
+    color: colors.white,
+    fontWeight: '800',
     fontSize: isMobileWeb ? 13 : 18,
     letterSpacing: 0.3,
   },
-  footer: { 
-    paddingHorizontal: isMobileWeb ? 16 : 20, 
-    paddingVertical: isMobileWeb ? 20 : 32, 
-    borderTopWidth: 1, 
-    borderTopColor: '#F1F5F9', 
-    alignItems: 'center', 
+  footer: {
+    paddingHorizontal: isMobileWeb ? 16 : 20,
+    paddingVertical: isMobileWeb ? 20 : 32,
+    borderTopWidth: 1,
+    borderTopColor: colors.backgroundSecondary,
+    alignItems: 'center',
     marginTop: isMobileWeb ? 24 : 40,
-    backgroundColor: '#FAFBFF',
+    backgroundColor: colors.backgroundSecondary,
   },
-  footerText: { 
-    color: colors.textSecondary, 
+  footerText: {
+    color: colors.textSecondary,
     fontSize: isMobileWeb ? 12 : 14,
     fontWeight: '500',
   },
   // Statistics styles
-  statsGrid: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    justifyContent: 'space-around', 
-    gap: isMobileWeb ? 12 : 24, 
-    marginTop: isMobileWeb ? 12 : 20, 
-    width: '100%' 
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    gap: isMobileWeb ? 12 : 24,
+    marginTop: isMobileWeb ? 12 : 20,
+    width: '100%'
   },
-  statCard: { 
-    flex: 1, 
-    minWidth: isMobileWeb ? 140 : 250, 
-    maxWidth: isMobileWeb ? '48%' : 300, 
-    paddingVertical: isMobileWeb ? 16 : 32, 
+  statCard: {
+    flex: 1,
+    minWidth: isMobileWeb ? 140 : 250,
+    maxWidth: isMobileWeb ? '48%' : 300,
+    paddingVertical: isMobileWeb ? 16 : 32,
     paddingHorizontal: isMobileWeb ? 12 : 20,
-    borderRadius: isMobileWeb ? 12 : 20, 
-    borderWidth: 1, 
-    borderColor: '#E6EEF9', 
-    backgroundColor: '#FFFFFF', 
-    alignItems: 'center', 
+    borderRadius: isMobileWeb ? 12 : 20,
+    borderWidth: 1,
+    borderColor: colors.backgroundTertiary,
+    backgroundColor: colors.white,
+    alignItems: 'center',
     margin: isMobileWeb ? 4 : 8,
-    ...createShadowStyle('#000', { width: 0, height: 6 }, 0.1, 16, 6),
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 6,
   },
   statIcon: {
     marginBottom: isMobileWeb ? 8 : 12,
   },
-  statNumber: { 
-    fontSize: isMobileWeb ? 22 : (isWeb ? 36 : 40), 
-    fontWeight: '900', 
-    color: colors.textPrimary, 
+  statNumber: {
+    fontSize: isMobileWeb ? 22 : (isWeb ? 36 : 40),
+    fontWeight: '900',
+    color: colors.textPrimary,
     marginBottom: isMobileWeb ? 6 : 8,
     letterSpacing: -1,
     textAlign: 'center',
   },
-  statLabel: { 
-    fontSize: isMobileWeb ? 12 : 18, 
-    color: colors.textSecondary, 
-    textAlign: 'center', 
+  statLabel: {
+    fontSize: isMobileWeb ? 12 : 18,
+    color: colors.textSecondary,
+    textAlign: 'center',
     lineHeight: isMobileWeb ? 16 : 26,
     fontWeight: '500',
   },
@@ -2308,47 +2364,51 @@ const styles = StyleSheet.create({
   useCaseRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: isMobileWeb ? 10 : 16, alignSelf: 'center', paddingVertical: isMobileWeb ? 4 : 8 },
   useCaseText: { color: colors.textPrimary, fontSize: isMobileWeb ? 13 : 18, textAlign: 'center', flex: 1 },
   testimonials: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', gap: isMobileWeb ? 12 : 24, marginTop: isMobileWeb ? 12 : 20, width: '100%' },
-  testimonialCard: { 
-    flex: 1, 
-    minWidth: isMobileWeb ? 140 : 320, 
-    maxWidth: isMobileWeb ? '100%' : 400, 
-    borderRadius: isMobileWeb ? 12 : 20, 
-    borderWidth: 1, 
-    borderColor: '#E6EEF9', 
-    backgroundColor: '#FFFFFF', 
-    padding: isMobileWeb ? 16 : 28, 
+  testimonialCard: {
+    flex: 1,
+    minWidth: isMobileWeb ? 140 : 320,
+    maxWidth: isMobileWeb ? '100%' : 400,
+    borderRadius: isMobileWeb ? 12 : 20,
+    borderWidth: 1,
+    borderColor: colors.backgroundTertiary,
+    backgroundColor: colors.white,
+    padding: isMobileWeb ? 16 : 28,
     margin: isMobileWeb ? 4 : 8,
-    ...createShadowStyle('#000', { width: 0, height: 6 }, 0.1, 16, 6),
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 6,
   },
-  testimonialText: { 
-    color: colors.textPrimary, 
-    fontSize: isMobileWeb ? 13 : 18, 
-    lineHeight: isMobileWeb ? 18 : 30, 
+  testimonialText: {
+    color: colors.textPrimary,
+    fontSize: isMobileWeb ? 13 : 18,
+    lineHeight: isMobileWeb ? 18 : 30,
     textAlign: 'center',
     fontStyle: 'italic',
     fontWeight: '400',
   },
-  testimonialUser: { 
-    color: colors.textSecondary, 
-    marginTop: isMobileWeb ? 10 : 16, 
-    textAlign: 'center', 
-    fontWeight: '700', 
+  testimonialUser: {
+    color: colors.textSecondary,
+    marginTop: isMobileWeb ? 10 : 16,
+    textAlign: 'center',
+    fontWeight: '700',
     fontSize: isMobileWeb ? 12 : 16,
   },
-  galleryGrid: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    justifyContent: 'center', 
-    gap: isMobileWeb ? 8 : 16, 
-    marginTop: isMobileWeb ? 12 : 20 
+  galleryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: isMobileWeb ? 8 : 16,
+    marginTop: isMobileWeb ? 12 : 20
   },
-  galleryImage: { 
-    width: isMobileWeb ? 140 : 280, 
-    height: isMobileWeb ? 140 : 280, 
-    borderRadius: isMobileWeb ? 12 : 20, 
-    borderWidth: 1, 
-    borderColor: '#E6EEF9',
-    backgroundColor: '#FAFBFF'
+  galleryImage: {
+    width: isMobileWeb ? 140 : 280,
+    height: isMobileWeb ? 140 : 280,
+    borderRadius: isMobileWeb ? 12 : 20,
+    borderWidth: 1,
+    borderColor: colors.backgroundTertiary,
+    backgroundColor: colors.backgroundSecondary
   },
   partnersContainer: {
     width: '100%',
@@ -2356,28 +2416,32 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: isMobileWeb ? 12 : 20,
   },
-  partnersRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
+  partnersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: isMobileWeb ? 20 : 40,
     marginTop: isMobileWeb ? 12 : 20,
     flexWrap: 'wrap'
   },
   partnerCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: isMobileWeb ? 16 : 24,
     padding: isMobileWeb ? 24 : 32,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E6EEF9',
-    ...createShadowStyle('#000', { width: 0, height: 4 }, 0.1, 8, 4),
+    borderColor: colors.backgroundTertiary,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
     maxWidth: isMobileWeb ? '100%' : 400,
     alignSelf: 'center',
   },
-  partnerLogo: { 
-    height: isMobileWeb ? 50 : 70, 
+  partnerLogo: {
+    height: isMobileWeb ? 50 : 70,
     width: isMobileWeb ? 120 : 180,
     marginBottom: isMobileWeb ? 12 : 16,
   },
@@ -2400,10 +2464,14 @@ const styles = StyleSheet.create({
     marginTop: isMobileWeb ? 12 : 20,
     borderRadius: isMobileWeb ? 12 : 16,
     overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: '#E6EEF9',
-    ...createShadowStyle('#000', { width: 0, height: 4 }, 0.1, 8, 4),
+    borderColor: colors.backgroundTertiary,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   instagramEmbedContainer: {
     width: '100%',
@@ -2429,7 +2497,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     gap: isMobileWeb ? 12 : 16,
   },
   instagramLoadingText: {
@@ -2453,20 +2521,24 @@ const styles = StyleSheet.create({
   trustRow: { flexDirection: 'row-reverse', gap: isMobileWeb ? 6 : 8, alignItems: 'center' },
   trustText: { color: colors.textPrimary, fontSize: isMobileWeb ? 11 : 14 },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: isMobileWeb ? 8 : 12, marginTop: isMobileWeb ? 6 : 8 },
-  categoryCard: { 
-    width: isMobileWeb ? 100 : 150, 
-    height: isMobileWeb ? 60 : 90, 
-    borderRadius: isMobileWeb ? 12 : 16, 
-    borderWidth: 1, 
-    borderColor: '#E6EEF9', 
-    backgroundColor: '#FFFFFF', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
+  categoryCard: {
+    width: isMobileWeb ? 100 : 150,
+    height: isMobileWeb ? 60 : 90,
+    borderRadius: isMobileWeb ? 12 : 16,
+    borderWidth: 1,
+    borderColor: colors.backgroundTertiary,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: isMobileWeb ? 4 : 8,
-    ...createShadowStyle('#000', { width: 0, height: 2 }, 0.05, 6, 2),
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  categoryText: { 
-    fontWeight: '700', 
+  categoryText: {
+    fontWeight: '700',
     color: colors.textPrimary,
     fontSize: isMobileWeb ? 12 : 16,
   },
@@ -2487,11 +2559,15 @@ const styles = StyleSheet.create({
     minWidth: 150,
     width: isMobileWeb ? '14%' : '10%',
     maxHeight: isMobileWeb ? '70vh' as any : (isWeb ? '80vh' as any : 600),
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: isMobileWeb ? 12 : 20,
     borderWidth: 1,
-    borderColor: '#E6EEF9',
-    ...createShadowStyle('#000', { width: 0, height: 8 }, 0.15, 20, 10),
+    borderColor: colors.backgroundTertiary,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
     zIndex: 1000,
     overflow: 'hidden',
   },
@@ -2501,11 +2577,15 @@ const styles = StyleSheet.create({
     top: isMobileWeb ? 60 : 100,
     width: isMobileWeb ? SCREEN_WIDTH * 0.05 : SCREEN_WIDTH * 0.03, // 5% for mobile, 3% for desktop
     height: isMobileWeb ? SCREEN_WIDTH * 0.05 : SCREEN_WIDTH * 0.03,
-    // backgroundColor: '#FFFFFF',
+    // backgroundColor: colors.white,
     borderRadius: isMobileWeb ? SCREEN_WIDTH * 0.025 : SCREEN_WIDTH * 0.015,
     borderWidth: 1,
-    borderColor: '#E6EEF9',
-    ...createShadowStyle('#000', { width: 0, height: 4 }, 0.15, 12, 8),
+    borderColor: colors.backgroundTertiary,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
     zIndex: 1000,
     alignItems: 'center',
     justifyContent: 'center',
@@ -2523,8 +2603,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SCREEN_WIDTH * 0.01, // 1% of screen width
     paddingVertical: SCREEN_WIDTH * 0.008, // 0.8% of screen width
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    backgroundColor: '#FAFBFF',
+    borderBottomColor: colors.backgroundSecondary,
+    backgroundColor: colors.backgroundSecondary,
   },
   menuTitle: {
     fontWeight: '800',
@@ -2546,7 +2626,7 @@ const styles = StyleSheet.create({
     borderRightColor: 'transparent',
   },
   menuItemActive: {
-    backgroundColor: '#F2F7FF',
+    backgroundColor: colors.backgroundTertiary,
     borderRightColor: colors.info,
   },
   menuItemIcon: {
@@ -2590,7 +2670,7 @@ const styles = StyleSheet.create({
     marginBottom: isMobileWeb ? 16 : 24,
   },
   sectionAltBackground: {
-    backgroundColor: '#F0F4F8',
+    backgroundColor: colors.backgroundSecondary,
   },
   emphasis: {
     fontWeight: '800',
@@ -2624,12 +2704,16 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   problemCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: isMobileWeb ? 16 : 24,
     padding: isMobileWeb ? 20 : 32,
     borderWidth: 1,
-    borderColor: '#E6EEF9',
-    ...createShadowStyle('#000', { width: 0, height: 4 }, 0.1, 12, 4),
+    borderColor: colors.backgroundTertiary,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
     marginBottom: isMobileWeb ? 12 : 16,
   },
   problemIcon: {
@@ -2657,12 +2741,16 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   whoMainCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: isMobileWeb ? 16 : 24,
     padding: isMobileWeb ? 24 : 40,
     borderWidth: 2,
     borderColor: colors.info,
-    ...createShadowStyle(colors.info, { width: 0, height: 8 }, 0.15, 16, 8),
+    shadowColor: colors.info,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
     alignItems: 'center',
     marginBottom: isMobileWeb ? 20 : 32,
   },
@@ -2670,11 +2758,11 @@ const styles = StyleSheet.create({
     marginBottom: isMobileWeb ? 16 : 24,
   },
   whoFutureCard: {
-    backgroundColor: '#FAFBFF',
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: isMobileWeb ? 12 : 20,
     padding: isMobileWeb ? 20 : 28,
     borderWidth: 1,
-    borderColor: '#E6EEF9',
+    borderColor: colors.backgroundTertiary,
     borderStyle: 'dashed',
     alignItems: 'center',
   },
@@ -2705,12 +2793,16 @@ const styles = StyleSheet.create({
   githubLinkButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: isMobileWeb ? 16 : 20,
     padding: isMobileWeb ? 20 : 28,
     borderWidth: 2,
     borderColor: colors.info,
-    ...createShadowStyle('#000', { width: 0, height: 4 }, 0.1, 12, 4),
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
     gap: isMobileWeb ? 12 : 16,
   },
   githubLinkTextContainer: {
@@ -2742,7 +2834,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: isMobileWeb ? 140 : 280,
     maxWidth: isMobileWeb ? '100%' : 400,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: isMobileWeb ? 16 : 24,
     padding: isMobileWeb ? 20 : 32,
     borderWidth: 2,
@@ -2750,7 +2842,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: isMobileWeb ? 12 : 16,
-    ...createShadowStyle(colors.info, { width: 0, height: 6 }, 0.15, 16, 6),
+    shadowColor: colors.info,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 6,
   },
   mottoIcon: {
     marginBottom: isMobileWeb ? 4 : 8,
@@ -2774,13 +2870,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: '#FFFFFF',
-    ...createShadowStyle('#000', { width: 0, height: 2 }, 0.2, 4, 4),
+    borderColor: colors.white,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   stepNumber: {
     fontSize: isMobileWeb ? 16 : 20,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: colors.white,
   },
   stepIcon: {
     marginTop: isMobileWeb ? 12 : 16,
@@ -2800,12 +2900,16 @@ const styles = StyleSheet.create({
     padding: isMobileWeb ? 16 : 24,
   },
   modalContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: isMobileWeb ? 16 : 24,
     width: '100%',
     maxWidth: isTablet ? 800 : (isMobileWeb ? '95%' : 600),
     maxHeight: '85%',
-    ...createShadowStyle('#000', { width: 0, height: 10 }, 0.3, 20, 15),
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 15,
     overflow: 'hidden',
   },
   modalHeader: {
@@ -2814,8 +2918,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: isMobileWeb ? 16 : 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#E6EEF9',
-    backgroundColor: '#F2F7FF',
+    borderBottomColor: colors.backgroundTertiary,
+    backgroundColor: colors.backgroundTertiary,
   },
   modalTitleRow: {
     flexDirection: 'row',
@@ -2877,10 +2981,10 @@ const styles = StyleSheet.create({
     paddingVertical: isMobileWeb ? 12 : 16,
     paddingHorizontal: isMobileWeb ? 12 : 16,
     borderRadius: isMobileWeb ? 12 : 16,
-    backgroundColor: '#FAFBFF',
+    backgroundColor: colors.backgroundSecondary,
     marginBottom: isMobileWeb ? 8 : 12,
     borderWidth: 1,
-    borderColor: '#E6EEF9',
+    borderColor: colors.backgroundTertiary,
   },
   detailItemNumber: {
     fontSize: isMobileWeb ? 14 : 18,
@@ -2909,7 +3013,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: isMobileWeb ? 10 : 14,
-    backgroundColor: '#F2F7FF',
+    backgroundColor: colors.backgroundTertiary,
     borderRadius: isMobileWeb ? 12 : 16,
     padding: isMobileWeb ? 16 : 24,
     marginTop: isMobileWeb ? 24 : 32,
@@ -2928,11 +3032,15 @@ const styles = StyleSheet.create({
   },
   // Donation Modal Styles
   donationModalContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: isMobileWeb ? 20 : 28,
     width: '100%',
     maxWidth: isTablet ? 500 : (isMobileWeb ? '90%' : 450),
-    ...createShadowStyle('#000', { width: 0, height: 10 }, 0.3, 20, 15),
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 15,
     overflow: 'hidden',
   },
   donationModalHeader: {
@@ -2941,8 +3049,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: isMobileWeb ? 20 : 28,
     borderBottomWidth: 1,
-    borderBottomColor: '#E6EEF9',
-    backgroundColor: '#F2F7FF',
+    borderBottomColor: colors.backgroundTertiary,
+    backgroundColor: colors.backgroundTertiary,
   },
   donationModalTitleRow: {
     flexDirection: 'row',
@@ -2971,7 +3079,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: isMobileWeb ? 12 : 16,
-    backgroundColor: '#F2F7FF',
+    backgroundColor: colors.backgroundTertiary,
     borderRadius: isMobileWeb ? 12 : 16,
     padding: isMobileWeb ? 16 : 20,
     marginBottom: isMobileWeb ? 20 : 24,
@@ -3002,19 +3110,23 @@ const styles = StyleSheet.create({
     paddingVertical: isMobileWeb ? 14 : 18,
     paddingHorizontal: isMobileWeb ? 16 : 20,
     borderRadius: isMobileWeb ? 12 : 16,
-    ...createShadowStyle('#000', { width: 0, height: 4 }, 0.2, 8, 4),
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   donationButtonWhatsApp: {
-    backgroundColor: '#25D366',
+    backgroundColor: colors.success,
   },
   donationButtonBit: {
     backgroundColor: colors.info,
   },
   donationButtonPayBox: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: colors.primary,
   },
   donationButtonText: {
-    color: '#fff',
+    color: colors.white,
     fontWeight: '800',
     fontSize: isMobileWeb ? 14 : 18,
     letterSpacing: 0.3,
@@ -3032,15 +3144,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: isMobileWeb ? 8 : 12,
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
     paddingVertical: isMobileWeb ? 14 : 18,
     paddingHorizontal: isMobileWeb ? 24 : 32,
     borderRadius: isMobileWeb ? 12 : 16,
     marginTop: isMobileWeb ? 20 : 28,
-    ...createShadowStyle(colors.pink, { width: 0, height: 6 }, 0.3, 12, 6),
+    shadowColor: colors.secondary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
   donationCtaButtonText: {
-    color: '#fff',
+    color: colors.white,
     fontWeight: '800',
     fontSize: isMobileWeb ? 16 : 20,
     letterSpacing: 0.3,
@@ -3050,17 +3166,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: isMobileWeb ? 8 : 12,
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
     paddingVertical: isMobileWeb ? 12 : 18,
     paddingHorizontal: isMobileWeb ? 16 : 28,
     borderRadius: isMobileWeb ? 12 : 16,
     minWidth: isMobileWeb ? 140 : 200,
     marginBottom: isMobileWeb ? 16 : 20,
     alignSelf: 'center',
-    ...createShadowStyle(colors.pink, { width: 0, height: 6 }, 0.3, 10, 6),
+    shadowColor: colors.secondary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 6,
   },
   donationCtaButtonTextTop: {
-    color: '#fff',
+    color: colors.white,
     fontWeight: '800',
     fontSize: isMobileWeb ? 13 : 18,
     letterSpacing: 0.3,

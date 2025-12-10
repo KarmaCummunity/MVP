@@ -26,15 +26,16 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { 
-  getSignInMethods, 
-  signInWithEmail as fbSignInWithEmail, 
-  signUpWithEmail as fbSignUpWithEmail, 
-  sendVerification as fbSendVerification, 
-  sendPasswordReset 
+import {
+  getSignInMethods,
+  signInWithEmail as fbSignInWithEmail,
+  signUpWithEmail as fbSignUpWithEmail,
+  sendVerification as fbSendVerification,
+  sendPasswordReset
 } from '../utils/authService';
 import { restAdapter } from '../utils/restAdapter';
 import { createShadowStyle } from '../globals/styles';
+import colors from '../globals/colors';
 
 // TypeScript Interfaces
 interface EmailLoginFormProps {
@@ -84,7 +85,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
   animationValue,
 }) => {
   const { t } = useTranslation(['auth', 'common']);
-  
+
   // Form state management
   const [formState, setFormState] = useState<EmailFormState>({
     step: 'email',
@@ -93,7 +94,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
     emailExists: null,
     isBusy: false,
     statusMessage: null,
-    statusColor: '#4CAF50',
+    statusColor: colors.success,
     passwordVisible: true,
     suggestions: [],
   });
@@ -119,9 +120,9 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
 
     const query = formState.emailValue.trim().toLowerCase();
     if (!query) {
-      setRecentEmails(prev => ({ 
-        ...prev, 
-        suggestions: recentEmails.emails.slice(0, 5) 
+      setRecentEmails(prev => ({
+        ...prev,
+        suggestions: recentEmails.emails.slice(0, 5)
       }));
       return;
     }
@@ -129,7 +130,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
     const filtered = recentEmails.emails
       .filter(email => email.toLowerCase().includes(query))
       .slice(0, 5);
-    
+
     setRecentEmails(prev => ({ ...prev, suggestions: filtered }));
   }, [formState.emailValue, isOpen, formState.step, recentEmails.emails]);
 
@@ -149,7 +150,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
       emailExists: null,
       isBusy: false,
       statusMessage: null,
-      statusColor: '#4CAF50',
+      statusColor: colors.success,
       passwordVisible: true,
       suggestions: [],
     });
@@ -168,7 +169,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
           return;
         }
       }
-      
+
       // Fallback to known emails
       const knownRaw = await AsyncStorage.getItem(KNOWN_EMAILS_KEY);
       if (knownRaw) {
@@ -191,7 +192,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
       if (!normalized) return;
 
       const list = [
-        normalized, 
+        normalized,
         ...recentEmails.emails.filter(e => e.toLowerCase() !== normalized)
       ].slice(0, 10);
 
@@ -218,9 +219,9 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
     const lower = email.trim().toLowerCase();
     try {
       const methods = await getSignInMethods(lower);
-      const hasPasswordProvider = Array.isArray(methods) && 
+      const hasPasswordProvider = Array.isArray(methods) &&
         methods.some(m => m && m.toLowerCase().includes('password'));
-      
+
       if (hasPasswordProvider) return true;
 
       const cacheRaw = await AsyncStorage.getItem(KNOWN_EMAILS_KEY);
@@ -240,10 +241,10 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
   const handleEmailContinue = async () => {
     try {
       const email = formState.emailValue.trim().toLowerCase();
-      
+
       if (!email || !validateEmailFormat(email)) {
         Alert.alert(
-          t('common:error') as string, 
+          t('common:error') as string,
           t('auth:email.invalidFormat') as string
         );
         return;
@@ -256,7 +257,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
         ...prev,
         emailExists: exists,
         statusMessage: `${email} • ${exists ? t('auth:email.knownUser') : t('auth:email.unknownEmail')}`,
-        statusColor: exists ? '#2E7D32' : '#C62828',
+        statusColor: exists ? colors.success : colors.error,
         step: 'password',
         passwordValue: '',
         isBusy: false,
@@ -264,7 +265,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
     } catch (error) {
       console.error('Email check failed:', error);
       Alert.alert(
-        t('common:error') as string, 
+        t('common:error') as string,
         t('common:genericTryAgain') as string
       );
       setFormState(prev => ({ ...prev, isBusy: false }));
@@ -277,10 +278,10 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
   const handleEmailSubmit = async () => {
     try {
       const email = formState.emailValue.trim().toLowerCase();
-      
+
       if (!email || !validateEmailFormat(email)) {
         Alert.alert(
-          t('common:error') as string, 
+          t('common:error') as string,
           t('auth:email.invalidFormat') as string
         );
         return;
@@ -288,7 +289,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
 
       if (!formState.passwordValue || formState.passwordValue.length < 6) {
         Alert.alert(
-          t('common:error') as string, 
+          t('common:error') as string,
           t('auth:email.passwordTooShort') as string
         );
         return;
@@ -309,7 +310,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
     } catch (error) {
       console.error('Email submit failed:', error);
       Alert.alert(
-        t('common:error') as string, 
+        t('common:error') as string,
         t('common:genericTryAgain') as string
       );
       setFormState(prev => ({ ...prev, isBusy: false }));
@@ -322,7 +323,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
   const handleExistingUserLogin = async (email: string, nowIso: string) => {
     try {
       const fbUser = await fbSignInWithEmail(email, formState.passwordValue);
-      
+
       const userData = {
         id: fbUser.uid,
         name: fbUser.displayName || email.split('@')[0],
@@ -356,7 +357,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
       setFormState(prev => ({
         ...prev,
         statusMessage: t('auth:email.invalidPassword') as string,
-        statusColor: '#C62828',
+        statusColor: colors.error,
         isBusy: false,
       }));
     }
@@ -370,7 +371,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
       const fbUser = await fbSignUpWithEmail(email, formState.passwordValue);
       await fbSendVerification(fbUser);
       Alert.alert(
-        t('auth:email.verifyTitle') as string, 
+        t('auth:email.verifyTitle') as string,
         t('auth:email.verifySent') as string
       );
     } catch (error: any) {
@@ -411,14 +412,14 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
           setFormState(prev => ({
             ...prev,
             statusMessage: t('auth:email.invalidPassword') as string,
-            statusColor: '#C62828',
+            statusColor: colors.error,
             isBusy: false,
           }));
         }
       } else {
         console.error('Sign up failed:', error);
         Alert.alert(
-          t('common:error') as string, 
+          t('common:error') as string,
           t('auth:email.signupFailed') as string
         );
         setFormState(prev => ({ ...prev, isBusy: false }));
@@ -454,7 +455,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
           onPress={onToggle}
           activeOpacity={0.85}
         >
-          <Text style={[styles.ctaButtonText, { color: '#4C7EFF', fontWeight: '700' }]}>
+          <Text style={[styles.ctaButtonText, { color: colors.primary, fontWeight: '700' }]}>
             {t('auth:email.cta')}
           </Text>
         </TouchableOpacity>
@@ -467,7 +468,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
       <View style={styles.expandedRow}>
         <Animated.View style={[styles.miniButton, { opacity: animationValue }]}>
           <TouchableOpacity onPress={onToggle} activeOpacity={0.8}>
-            <Ionicons name="mail-outline" size={20} color="#4C7EFF" />
+            <Ionicons name="mail-outline" size={20} color={colors.primary} />
           </TouchableOpacity>
         </Animated.View>
 
@@ -475,7 +476,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
           <TextInput
             style={styles.input}
             placeholder={t('auth:email.placeholder')}
-            placeholderTextColor="#B0B0B0"
+            placeholderTextColor={colors.textTertiary}
             value={formState.emailValue}
             textAlign="right"
             onChangeText={(text) => setFormState(prev => ({ ...prev, emailValue: text }))}
@@ -497,7 +498,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
             <TextInput
               style={[styles.input, { paddingRight: 40 }]}
               placeholder={t('auth:email.passwordPlaceholder')}
-              placeholderTextColor="#B0B0B0"
+              placeholderTextColor={colors.textTertiary}
               value={formState.passwordValue}
               onChangeText={(text) => setFormState(prev => ({ ...prev, passwordValue: text }))}
               autoCapitalize="none"
@@ -511,14 +512,14 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
               accessibilityHint={t('auth:email.passwordAccessibilityHint') || 'Enter your password'}
               importantForAccessibility="yes"
             />
-            <TouchableOpacity 
-              onPress={() => setFormState(prev => ({ ...prev, passwordVisible: !prev.passwordVisible }))} 
+            <TouchableOpacity
+              onPress={() => setFormState(prev => ({ ...prev, passwordVisible: !prev.passwordVisible }))}
               style={styles.eyeToggle}
             >
-              <Ionicons 
-                name={formState.passwordVisible ? 'eye-outline' : 'eye-off-outline'} 
-                size={20} 
-                color="#666" 
+              <Ionicons
+                name={formState.passwordVisible ? 'eye-outline' : 'eye-off-outline'}
+                size={20}
+                color={colors.textSecondary}
               />
             </TouchableOpacity>
           </View>
@@ -553,9 +554,9 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
       {formState.step === 'email' && recentEmails.suggestions.length > 0 && (
         <View style={styles.suggestionsBox}>
           {recentEmails.suggestions.map((suggestion) => (
-            <TouchableOpacity 
-              key={suggestion} 
-              style={styles.suggestionItem} 
+            <TouchableOpacity
+              key={suggestion}
+              style={styles.suggestionItem}
               onPress={() => handleSuggestionSelect(suggestion)}
             >
               <Text style={styles.suggestionText}>{suggestion}</Text>
@@ -572,7 +573,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
               {formState.statusMessage}
             </Text>
           </View>
-          {formState.statusColor === '#C62828' && formState.step === 'password' && (
+          {formState.statusColor === colors.error && formState.step === 'password' && (
             <View style={styles.resetContainer}>
               <TouchableOpacity
                 style={styles.resetButton}
@@ -596,36 +597,36 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   ctaButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
-    ...createShadowStyle('#000', { width: 0, height: 2 }, 0.1, 4),
+    ...createShadowStyle('colors.black', { width: 0, height: 2 }, 0.1, 4),
     elevation: 3,
     width: '100%',
     marginVertical: 6,
     marginBottom: 22,
   },
   emailButton: {
-    borderColor: '#4C7EFF',
+    borderColor: colors.primary,
     marginTop: 12,
     width: '100%',
   },
   ctaButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#666666',
+    color: colors.textSecondary,
     textAlign: 'center',
     width: '100%',
   },
   expandedRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 6,
     marginHorizontal: 0,
@@ -643,9 +644,9 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -664,24 +665,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionButton: {
-    backgroundColor: '#4C7EFF',
+    backgroundColor: colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 10,
   },
   actionButtonText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontWeight: '700',
     fontSize: 14,
   },
   disabledButton: {
-    backgroundColor: '#CCCCCC',
+    backgroundColor: colors.textTertiary,
     opacity: 0.6,
   },
   suggestionsBox: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: colors.border,
     borderRadius: 10,
     marginTop: 6,
     marginBottom: 6,
@@ -693,7 +694,7 @@ const styles = StyleSheet.create({
   },
   suggestionText: {
     fontSize: 14,
-    color: '#333333',
+    color: colors.textPrimary,
     textAlign: 'right',
   },
   statusRow: {
@@ -726,7 +727,7 @@ const styles = StyleSheet.create({
   },
   resetText: {
     fontSize: 13,
-    color: '#1976D2',
+    color: colors.primary,
     fontWeight: '700',
     textDecorationLine: 'underline',
   },

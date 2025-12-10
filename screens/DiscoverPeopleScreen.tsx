@@ -408,7 +408,7 @@ export default function DiscoverPeopleScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
   },
   // Web-specific scroll wrappers
   webScrollContainer: {
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   activeTabButton: {
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
   },
   tabButtonText: {
     fontSize: FontSizes.body,
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   followButton: {
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,

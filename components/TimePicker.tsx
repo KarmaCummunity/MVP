@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderRadius: 16,
     width: '85%',
     maxWidth: 300,
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedItem: {
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
   },
   pickerItemText: {
     fontSize: FontSizes.body,
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginLeft: 6,
     borderRadius: 8,
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
     alignItems: 'center',
   },
   confirmButtonText: {

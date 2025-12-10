@@ -21,6 +21,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { ParamListBase } from '@react-navigation/native';
 import { useUser } from '../stores/userStore';
@@ -39,6 +40,7 @@ type NewChatRouteParams = {
 };
 
 export default function NewChatScreen() {
+  const { t } = useTranslation(['newChatScreen']);
   const navigation = useNavigation();
   const route = useRoute<RouteProp<Record<string, NewChatRouteParams>, string>>();
   const { selectedUser } = useUser();
@@ -54,7 +56,7 @@ export default function NewChatScreen() {
 
   const loadFriends = useCallback(async () => {
     if (!selectedUser) {
-      Alert.alert('שגיאה', 'יש לבחור יוזר תחילה');
+      Alert.alert(t('error'), t('selectUserFirst'));
       return;
     }
 
@@ -76,14 +78,14 @@ export default function NewChatScreen() {
       ).filter(friend => {
         const friendId = String(friend.id || '').trim().toLowerCase();
         const friendEmail = friend.email ? String(friend.email).trim().toLowerCase() : '';
-        const isCurrentUser = friendId === currentUserId || 
-                             (currentUserEmail && friendEmail === currentUserEmail) ||
-                             friendId === '';
-        
+        const isCurrentUser = friendId === currentUserId ||
+          (currentUserEmail && friendEmail === currentUserEmail) ||
+          friendId === '';
+
         if (isCurrentUser) {
           console.log('🚫 NewChatScreen - Filtered out current user:', { friendId, friendEmail, name: friend.name });
         }
-        
+
         return !isCurrentUser;
       });
 
@@ -99,14 +101,14 @@ export default function NewChatScreen() {
         const filteredSuggestions = suggestions.filter(friend => {
           const friendId = String(friend.id || '').trim().toLowerCase();
           const friendEmail = friend.email ? String(friend.email).trim().toLowerCase() : '';
-          const isCurrentUser = friendId === currentUserId || 
-                               (currentUserEmail && friendEmail === currentUserEmail) ||
-                               friendId === '';
-          
+          const isCurrentUser = friendId === currentUserId ||
+            (currentUserEmail && friendEmail === currentUserEmail) ||
+            friendId === '';
+
           if (isCurrentUser) {
             console.log('🚫 NewChatScreen - Filtered out current user from suggestions:', { friendId, friendEmail, name: friend.name });
           }
-          
+
           return !isCurrentUser;
         });
         setFriends(filteredSuggestions);
@@ -116,7 +118,7 @@ export default function NewChatScreen() {
 
     } catch (error) {
       console.error('❌ Load friends error:', error);
-      Alert.alert('שגיאה', 'שגיאה בטעינת רשימת החברים');
+      Alert.alert(t('error'), t('errorLoadingFriends'));
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -133,14 +135,14 @@ export default function NewChatScreen() {
     let filtered = friendsList.filter(friend => {
       const friendId = String(friend.id || '').trim().toLowerCase();
       const friendEmail = friend.email ? String(friend.email).trim().toLowerCase() : '';
-      const isCurrentUser = friendId === currentUserId || 
-                           (currentUserEmail && friendEmail === currentUserEmail) ||
-                           friendId === '';
-      
+      const isCurrentUser = friendId === currentUserId ||
+        (currentUserEmail && friendEmail === currentUserEmail) ||
+        friendId === '';
+
       if (isCurrentUser) {
         console.log('🚫 NewChatScreen - Filtered out current user in applyFilters:', { friendId, friendEmail, name: friend.name });
       }
-      
+
       return !isCurrentUser;
     });
 
@@ -201,7 +203,7 @@ export default function NewChatScreen() {
 
   const handleCreateChat = async (friend: CharacterType) => {
     if (!selectedUser) {
-      Alert.alert('שגיאה', 'יש לבחור יוזר תחילה');
+      Alert.alert(t('error'), t('selectUserFirst'));
       return;
     }
 
@@ -219,7 +221,7 @@ export default function NewChatScreen() {
         const welcomeMessage = {
           conversationId,
           senderId: selectedUser.id,
-          text: `היי ${friend.name}! 👋`,
+          text: t('welcomeMessage', { name: friend.name }),
           timestamp: new Date().toISOString(),
           read: false,
           type: 'text' as const,
@@ -239,22 +241,22 @@ export default function NewChatScreen() {
 
     } catch (error) {
       console.error('❌ Create chat error:', error);
-      Alert.alert('שגיאה', 'שגיאה ביצירת השיחה');
+      Alert.alert(t('error'), t('errorCreatingChat'));
     }
   };
 
   const renderFriend = ({ item }: { item: CharacterType }) => {
     // Double-check: if this is the current user, don't render at all
     if (!selectedUser) return null;
-    
+
     const currentUserId = String(selectedUser.id).trim().toLowerCase();
     const currentUserEmail = selectedUser.email ? String(selectedUser.email).trim().toLowerCase() : '';
     const itemId = String(item.id || '').trim().toLowerCase();
     const itemEmail = item.email ? String(item.email).trim().toLowerCase() : '';
-    const isCurrentUser = itemId === currentUserId || 
-                         (currentUserEmail && itemEmail === currentUserEmail) ||
-                         itemId === '';
-    
+    const isCurrentUser = itemId === currentUserId ||
+      (currentUserEmail && itemEmail === currentUserEmail) ||
+      itemId === '';
+
     if (isCurrentUser) {
       console.log('🚫 NewChatScreen - renderFriend: Skipping current user:', { itemId, itemEmail, name: item.name });
       return null;
@@ -277,20 +279,20 @@ export default function NewChatScreen() {
         </View>
         <View style={styles.friendInfo}>
           <View style={styles.friendHeader}>
-            <Text style={styles.friendName}>{item.name || 'ללא שם'}</Text>
+            <Text style={styles.friendName}>{item.name || t('noName')}</Text>
             {hasExistingChat && (
               <View style={styles.existingChatBadge}>
-                <Text style={styles.existingChatText}>שיחה קיימת</Text>
+                <Text style={styles.existingChatText}>{t('existingChat')}</Text>
               </View>
             )}
           </View>
           <Text style={styles.friendBio} numberOfLines={1}>
-            {item.bio || 'אין תיאור'}
+            {item.bio || t('noBio')}
           </Text>
           <View style={styles.friendStats}>
-            <Text style={styles.karmaPoints}>⭐ {item.karmaPoints ?? 0} נקודות קארמה</Text>
+            <Text style={styles.karmaPoints}>⭐ {item.karmaPoints ?? 0} {t('karmaPoints')}</Text>
             <Text style={styles.followersCount}>
-              👥 {item.followersCount ?? 0} עוקבים
+              👥 {item.followersCount ?? 0} {t('followers')}
             </Text>
           </View>
         </View>
@@ -306,15 +308,16 @@ export default function NewChatScreen() {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Icon name="people-outline" size={80} color={colors.textSecondary} />
-      <Text style={styles.emptyStateTitle}>אין חברים עדיין</Text>
+      <Icon name="people-outline" size={80} color={colors.textSecondary} />
+      <Text style={styles.emptyStateTitle}>{t('noFriendsYet')}</Text>
       <Text style={styles.emptyStateSubtitle}>
-        התחל לעקוב אחרי אנשים כדי ליצור שיחות חדשות
+        {t('startFollowingToChat')}
       </Text>
       <TouchableOpacity
         style={styles.exploreButton}
         onPress={() => (navigation as any).navigate('DiscoverPeopleScreen')}
       >
-        <Text style={styles.exploreButtonText}>גלה אנשים חדשים</Text>
+        <Text style={styles.exploreButtonText}>{t('discoverNewPeople')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -323,7 +326,7 @@ export default function NewChatScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
-          <Icon name="arrow-back" size={24} color={colors.text} />
+          <Icon name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => (navigation as any).navigate('DiscoverPeopleScreen')}
@@ -338,7 +341,7 @@ export default function NewChatScreen() {
           <Icon name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="חיפוש חברים..."
+            placeholder={t('searchFriends')}
             placeholderTextColor={colors.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -355,7 +358,7 @@ export default function NewChatScreen() {
           onPress={() => setShowFilters(!showFilters)}
         >
           <Icon name="funnel-outline" size={20} color={colors.primary} />
-          <Text style={styles.filterButtonText}>סינון</Text>
+          <Text style={styles.filterButtonText}>{t('filter')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -367,7 +370,7 @@ export default function NewChatScreen() {
               onPress={() => setActiveFilter('all')}
             >
               <Text style={[styles.filterChipText, activeFilter === 'all' && styles.filterChipTextActive]}>
-                הכל
+                {t('all')}
               </Text>
             </TouchableOpacity>
 
@@ -376,7 +379,7 @@ export default function NewChatScreen() {
               onPress={() => setActiveFilter('online')}
             >
               <Text style={[styles.filterChipText, activeFilter === 'online' && styles.filterChipTextActive]}>
-                מחוברים
+                {t('online')}
               </Text>
             </TouchableOpacity>
 
@@ -385,7 +388,7 @@ export default function NewChatScreen() {
               onPress={() => setActiveFilter('highKarma')}
             >
               <Text style={[styles.filterChipText, activeFilter === 'highKarma' && styles.filterChipTextActive]}>
-                קארמה גבוהה
+                {t('highKarma')}
               </Text>
             </TouchableOpacity>
 
@@ -394,20 +397,20 @@ export default function NewChatScreen() {
               onPress={() => setActiveFilter('recentFollowers')}
             >
               <Text style={[styles.filterChipText, activeFilter === 'recentFollowers' && styles.filterChipTextActive]}>
-                עוקבים חדשים
+                {t('newFollowers')}
               </Text>
             </TouchableOpacity>
           </ScrollView>
 
           <View style={styles.sortContainer}>
-            <Text style={styles.sortLabel}>מיון:</Text>
+            <Text style={styles.sortLabel}>{t('sortLabel')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sortScrollView}>
               <TouchableOpacity
                 style={[styles.sortChip, sortBy === 'name' && styles.sortChipActive]}
                 onPress={() => setSortBy('name')}
               >
                 <Text style={[styles.sortChipText, sortBy === 'name' && styles.sortChipTextActive]}>
-                  שם
+                  {t('sortName')}
                 </Text>
               </TouchableOpacity>
 
@@ -416,7 +419,7 @@ export default function NewChatScreen() {
                 onPress={() => setSortBy('karma')}
               >
                 <Text style={[styles.sortChipText, sortBy === 'karma' && styles.sortChipTextActive]}>
-                  קארמה
+                  {t('sortKarma')}
                 </Text>
               </TouchableOpacity>
 
@@ -425,7 +428,7 @@ export default function NewChatScreen() {
                 onPress={() => setSortBy('followers')}
               >
                 <Text style={[styles.sortChipText, sortBy === 'followers' && styles.sortChipTextActive]}>
-                  עוקבים
+                  {t('sortFollowers')}
                 </Text>
               </TouchableOpacity>
 
@@ -434,7 +437,7 @@ export default function NewChatScreen() {
                 onPress={() => setSortBy('recent')}
               >
                 <Text style={[styles.sortChipText, sortBy === 'recent' && styles.sortChipTextActive]}>
-                  פעילות
+                  {t('sortActivity')}
                 </Text>
               </TouchableOpacity>
             </ScrollView>
@@ -445,7 +448,7 @@ export default function NewChatScreen() {
       {isLoading && filteredFriends.length === 0 ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>טוען חברים...</Text>
+          <Text style={styles.loadingText}>{t('loadingFriends')}</Text>
         </View>
       ) : (
         <FlatList
@@ -487,7 +490,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: FontSizes.heading2,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.textPrimary,
     textAlign: 'center',
     flex: 1,
   },
@@ -508,7 +511,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderRadius: 12,
     paddingHorizontal: 12,
     borderWidth: 1,
@@ -522,7 +525,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 44,
     fontSize: FontSizes.body,
-    color: colors.text,
+    color: colors.textPrimary,
     textAlign: 'right',
   },
   clearButton: {
@@ -536,7 +539,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     marginHorizontal: 16,
     marginVertical: 4,
     borderRadius: 12,
@@ -555,7 +558,7 @@ const styles = StyleSheet.create({
   friendName: {
     fontSize: FontSizes.heading3,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: 2,
   },
   friendBio: {
@@ -586,7 +589,7 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: FontSizes.heading2,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.textPrimary,
     marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',
@@ -639,7 +642,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     marginRight: 8,
     borderWidth: 1,
     borderColor: colors.border,
@@ -650,7 +653,7 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: FontSizes.caption,
-    color: colors.text,
+    color: colors.textPrimary,
   },
   filterChipTextActive: {
     color: colors.white,
@@ -662,7 +665,7 @@ const styles = StyleSheet.create({
   },
   sortLabel: {
     fontSize: FontSizes.body,
-    color: colors.text,
+    color: colors.textPrimary,
     fontWeight: '600',
     marginRight: 12,
   },
@@ -673,7 +676,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     marginRight: 8,
     borderWidth: 1,
     borderColor: colors.border,
@@ -684,7 +687,7 @@ const styles = StyleSheet.create({
   },
   sortChipText: {
     fontSize: FontSizes.caption,
-    color: colors.text,
+    color: colors.textPrimary,
   },
   sortChipTextActive: {
     color: colors.white,
@@ -702,7 +705,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: colors.success,
     borderWidth: 2,
-    borderColor: colors.backgroundPrimary,
+    borderColor: colors.background,
   },
   friendHeader: {
     flexDirection: 'row',

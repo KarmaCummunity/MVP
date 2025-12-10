@@ -92,7 +92,7 @@ SplashScreen.preventAutoHideAsync();
 function AppContent() {
   const { t } = useTranslation(['common']);
   const { selectedUser } = useUser();
-  
+
   const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
   // Initialize with null - will be loaded before NavigationContainer renders
   const [initialNavigationState, setInitialNavigationState] = React.useState<NavigationState | undefined>(undefined);
@@ -130,12 +130,12 @@ function AppContent() {
         const { useWebModeStore } = await import('./stores/webModeStore');
         const mode = useWebModeStore.getState().mode;
         const userId = useUserStore.getState().selectedUser?.id || null;
-        
+
         const savedState = await loadNavigationState(mode, userId);
         if (savedState) {
           setInitialNavigationState(savedState);
-          logger.info('App', 'Navigation state loaded successfully', { 
-            mode, 
+          logger.info('App', 'Navigation state loaded successfully', {
+            mode,
             hasUserId: !!userId,
             routeNames: savedState.routes?.map((r: any) => r.name) || []
           });
@@ -353,7 +353,7 @@ function AppContent() {
      */
     const containerStyle = useMemo(() => ({
       flex: 1,
-      paddingTop: Platform.OS === 'web' && mode === 'app' && shouldShowToggle ? 48 : 0 // Space for toggle button in app mode
+      paddingTop: Platform.OS === 'web' && shouldShowToggle ? 64 : 0 // Space for top bar
     }), [mode, shouldShowToggle]);
 
     // Wrapper style for web - full width without maxWidth constraint
@@ -413,7 +413,7 @@ function AppContent() {
     useEffect(() => {
       const prevMode = prevModeRef.current;
       const prevUserId = prevUserIdRef.current;
-      
+
       // If mode or userId changed, clear old navigation state
       if (prevMode !== mode || prevUserId !== selectedUser?.id) {
         if (prevMode && prevUserId !== undefined) {
@@ -423,7 +423,7 @@ function AppContent() {
           });
         }
       }
-      
+
       prevModeRef.current = mode;
       prevUserIdRef.current = selectedUser?.id || null;
     }, [mode, selectedUser?.id]);

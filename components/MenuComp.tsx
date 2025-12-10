@@ -149,7 +149,7 @@ const localStyles = StyleSheet.create({
     backgroundColor: colors.menuBackground,
     position: "absolute",
     // Dynamic styles applied in JSX for responsive sizing
-    ...createShadowStyle("#000", { width: 0, height: 2 }, 0.25, 3.84),
+    ...createShadowStyle("colors.black", { width: 0, height: 2 }, 0.25, 3.84),
     elevation: 5,
     borderWidth: 1,
     borderColor: colors.menuBorder,

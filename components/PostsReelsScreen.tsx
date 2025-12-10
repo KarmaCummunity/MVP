@@ -384,13 +384,15 @@ const PostReelItem = ({ item }: { item: Item }) => {
 };
 
 interface PostsReelsScreenProps {
+  navigation?: any; // Optional navigation prop from parent
   onScroll?: (hide: boolean) => void;
   hideTopBar?: boolean;
   showTopBar?: boolean;
 }
 
-export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTopBar = false }: PostsReelsScreenProps) {
-  const navigation = useNavigation();
+export default function PostsReelsScreen({ navigation: navProp, onScroll, hideTopBar = false, showTopBar = false }: PostsReelsScreenProps) {
+  const navigationHook = useNavigation();
+  const navigation = navProp || navigationHook; // Use prop if provided, otherwise use hook
   console.log('📱 PostsReelsScreen - hideTopBar prop:', hideTopBar);
   const { selectedUser, isRealAuth } = useUser();
   const [realFeed, setRealFeed] = useState<Item[]>([]);
@@ -789,38 +791,73 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
     setLastOffsetY(offsetY);
   };
 
-  // Render header component for FlatList
-  const renderHeader = () => (
-    <View style={styles.toggleContainer}>
-      <TouchableOpacity
-        style={[styles.toggleButton, feedMode === 'friends' && styles.toggleButtonActive]}
-        onPress={() => setFeedMode('friends')}
-      >
-        <Text style={[styles.toggleText, feedMode === 'friends' && styles.toggleTextActive]}>
-          חברים
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.toggleButton, feedMode === 'discovery' && styles.toggleButtonActive]}
-        onPress={() => setFeedMode('discovery')}
-      >
-        <Text style={[styles.toggleText, feedMode === 'discovery' && styles.toggleTextActive]}>
-          גילוי
-        </Text>
-      </TouchableOpacity>
+  // Render floating header with Toggle and Stats Button
+  const renderFloatingHeader = () => (
+    <View style={styles.floatingHeaderContainer}>
+      <View style={styles.headerContentWrapper}>
+        {/* Toggle Switch */}
+        <View style={styles.toggleBackground}>
+          <TouchableOpacity
+            style={[
+              styles.toggleSegment,
+              feedMode === 'friends' ? styles.toggleSelected : styles.toggleUnselected
+            ]}
+            onPress={() => setFeedMode('friends')}
+            activeOpacity={0.9}
+          >
+            <Text style={[styles.toggleText, feedMode === 'friends' ? styles.toggleTextSelected : undefined]}>
+              חברים
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.toggleSegment,
+              feedMode === 'discovery' ? styles.toggleSelected : styles.toggleUnselected
+            ]}
+            onPress={() => setFeedMode('discovery')}
+            activeOpacity={0.9}
+          >
+            <Text style={[styles.toggleText, feedMode === 'discovery' ? styles.toggleTextSelected : undefined]}>
+              גילוי
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Stats Button */}
+        <TouchableOpacity
+          style={styles.statsButton}
+          onPress={() => {
+            logger.debug('PostsReelsScreen', 'Stats button pressed');
+            try {
+              navigation.navigate('CommunityStatsScreen');
+              logger.debug('PostsReelsScreen', 'Navigation to CommunityStatsScreen succeeded');
+            } catch (error) {
+              logger.error('PostsReelsScreen', 'Failed to navigate to CommunityStatsScreen', { error });
+              Alert.alert('שגיאה', 'לא ניתן לפתוח את מסך הסטטיסטיקות');
+            }
+          }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="stats-chart" size={20} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
   return (
     <View style={styles.container}>
+      <View style={styles.floatingHeaderContainer}>
+        {renderFloatingHeader()}
+      </View>
       <FlatList
         ref={flatListRef}
         data={isRealAuth ? realFeed : data}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <PostReelItem item={item} />}
-        ListHeaderComponent={renderHeader}
         contentContainerStyle={{
+          paddingTop: 70, // Space for floating header
           paddingBottom: 20,
+
           flexGrow: 1,
           minHeight: '150%' // Force content to be taller than viewport
         }}
@@ -873,26 +910,26 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
   },
   itemContainer: {
     marginBottom: 16,
     marginHorizontal: 16,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     elevation: 2,
     ...(Platform.OS === 'web' ? {
       boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)'
     } : {
-      shadowColor: colors.shadowLight,
+      shadowColor: colors.shadow,
       shadowOpacity: 0.1,
       shadowOffset: { width: 0, height: 1 },
       shadowRadius: 4,
     }),
   },
   reelItem: {
-    backgroundColor: '#e0f7fa',
+    backgroundColor: colors.infoLight,
   },
   thumbnail: {
     width: width - 32,
@@ -914,7 +951,7 @@ const styles = StyleSheet.create({
   typeLabel: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#00796b',
+    color: colors.info,
     marginBottom: 4,
   },
   title: {
@@ -985,36 +1022,79 @@ const styles = StyleSheet.create({
     color: colors.error,
     fontWeight: '600',
   },
-  toggleContainer: {
+  headerToggleWrapper: {
+    // Deprecated
+  },
+  floatingHeaderContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    alignItems: 'center',
+    paddingVertical: 12, // Slight padding from top
+    backgroundColor: 'transparent',
+    pointerEvents: 'box-none', // Allow clicks to pass through empty areas
+  },
+  headerContentWrapper: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12, // Space between toggle and stats button
+  },
+  statsButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 10,
-    marginHorizontal: 16,
-    backgroundColor: 'hsla(0, 0%, 100%, 0.70)',
-    borderRadius: 20,
-    padding: 4,
-    opacity: 0.9,
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  toggleButton: {
+  toggleBackground: {
+    flexDirection: 'row-reverse', // RTL support
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 999,
+    height: 36,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 200,
+  },
+  toggleSegment: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 16,
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 18,
+    paddingHorizontal: 16,
   },
-  toggleButtonActive: {
-    backgroundColor: colors.primary,
+  toggleSelected: {
+    backgroundColor: colors.white,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  toggleUnselected: {
+    backgroundColor: 'transparent',
   },
   toggleText: {
-    fontSize: FontSizes.body,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textSecondary,
   },
-  toggleTextActive: {
-    color: colors.white,
+  toggleTextSelected: {
+    color: colors.primary,
+    fontWeight: '700',
   },
   emptyContainer: {
     flex: 1,

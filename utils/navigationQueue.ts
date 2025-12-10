@@ -3,8 +3,8 @@
 // Prevents race conditions and navigation conflicts
 
 import { NavigationContainerRef, StackActions } from '@react-navigation/native';
-import { 
-  QueuedNavigationAction, 
+import {
+  QueuedNavigationAction,
   NavigationQueueItem,
   NavigateAction,
   ResetAction,
@@ -163,9 +163,9 @@ class NavigationQueue {
     }
 
     if (action.key) {
-      this.navigationRef.navigate(action.routeName as never, action.params as never);
+      (this.navigationRef as any).navigate(action.routeName, action.params);
     } else {
-      this.navigationRef.navigate(action.routeName as never, action.params as never);
+      (this.navigationRef as any).navigate(action.routeName, action.params);
     }
   }
 

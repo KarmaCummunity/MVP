@@ -773,7 +773,7 @@ const styles = StyleSheet.create({
     textAlign: biDiTextAlign('right'),
   },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
-  modalCard: { backgroundColor: '#fff', width: 300, borderRadius: 12, padding: 16, gap: 8 },
+  modalCard: { backgroundColor: colors.white, width: 300, borderRadius: 12, padding: 16, gap: 8 },
   modalTitle: { fontSize: FontSizes.medium, color: colors.textPrimary, textAlign: 'center', marginBottom: 8 },
   modalOption: { paddingVertical: 10 },
   modalOptionText: { fontSize: FontSizes.body, color: colors.textPrimary, textAlign: 'center' },
@@ -826,7 +826,7 @@ const styles = StyleSheet.create({
   },
   logoutModalButtonTextConfirm: {
     fontSize: FontSizes.body,
-    color: '#fff',
+    color: colors.white,
     fontWeight: '600',
   },
 });

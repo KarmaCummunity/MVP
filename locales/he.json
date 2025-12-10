@@ -38,6 +38,7 @@
     "save": "שמור",
     "saving": "שומר...",
     "welcomeShort": "ברוכים הבאים!",
+    "appName": "Karma Community",
     "freeAppNotice": "האפליקציה חינמית לחלוטין ללא מטרות רווח",
     "genericTryAgain": "אירעה שגיאה. נסו שוב.",
     "labels": {
@@ -167,9 +168,25 @@
     "ai": {
       "fabLabel": "AI",
       "title": "עוזר AI",
-      "placeholder": "שאלו כל דבר: איפה למצוא תרומות, איך לפרסם, או ניווט באפליקציה.",
+      "placeholder": "חפשו כבר דבר: אנשים, תרומות, חפצים ",
       "assistantReply": "קיבלתי! אחזור עם תשובה בהקדם."
     }
+  },
+  "webOverlay": {
+    "stats": "במספרים",
+    "vision": "החזון",
+    "problems": "הבעיות",
+    "features": "תכונות",
+    "about": "אודות",
+    "how": "איך זה עובד",
+    "who": "למי זה מתאים",
+    "values": "ערכים",
+    "roadmap": "מפת דרכים",
+    "contact": "יצירת קשר",
+    "faq": "שאלות נפוצות",
+    "siteMode": "אתר אודות",
+    "appMode": "אפליקציה",
+    "menu": "תפריט"
   },
   "comments": {
     "title": "תגובות",
@@ -204,9 +221,37 @@
     "startNewOrClearSearch": "התחל שיחה חדשה או נקה חיפוש",
     "loadConversationsError": "שגיאה בטעינת השיחות"
   },
+  "newChatScreen": {
+    "title": "שיחה חדשה",
+    "error": "שגיאה",
+    "selectUserFirst": "יש לבחור יוזר תחילה",
+    "errorLoadingFriends": "שגיאה בטעינת רשימת החברים",
+    "welcomeMessage": "היי {{name}}! 👋",
+    "errorCreatingChat": "שגיאה ביצירת השיחה",
+    "noName": "ללא שם",
+    "existingChat": "שיחה קיימת",
+    "noBio": "אין תיאור",
+    "karmaPoints": "נקודות קארמה",
+    "followers": "עוקבים",
+    "noFriendsYet": "אין חברים עדיין",
+    "startFollowingToChat": "התחל לעקוב אחרי אנשים כדי ליצור שיחות חדשות",
+    "discoverNewPeople": "גלה אנשים חדשים",
+    "searchFriends": "חיפוש חברים...",
+    "filter": "סינון",
+    "all": "הכל",
+    "online": "מחוברים",
+    "highKarma": "קארמה גבוהה",
+    "newFollowers": "עוקבים חדשים",
+    "sortLabel": "מיון:",
+    "sortName": "שם",
+    "sortKarma": "קארמה",
+    "sortFollowers": "עוקבים",
+    "sortActivity": "פעילות",
+    "loadingFriends": "טוען חברים..."
+  },
   "home": {
     "title": "בית",
-    "numbersTitle": "הקהילה במספרים",
+    "numbersTitle": "הקהילה במעשים",
     "newsTitle": "חדשות",
     "stats": {
       "moneyDonations": "תרומות כספיות",
@@ -819,13 +864,19 @@
     "welcomeSystem": "ברוך הבא לקרמה קומיוניטי!"
   },
   "auth": {
+    "login": "התחברות",
+    "register": "הירשם",
     "title": "ברוכים הבאים!",
     "subtitle": "קהילת קארמה רוצה להכיר לכם את \n הקיבוץ הקפטליסטי של ישראל",
     "continueAsGuest": "המשך כאורח",
     "email": {
+      "accessibilityHint": "הכנס את כתובת האימייל שלך",
+      "passwordAccessibilityHint": "הכנס את הסיסמה שלך",
       "cta": "התחבר/הרשם עם מייל",
-      "placeholder": "הכנס מייל",
+      "placeholder": "אמייל",
+      "placeholderExample": "name@example.com",
       "passwordPlaceholder": "הכנס סיסמה",
+      "passwordPlaceholderExample": "******",
       "continue": "המשך",
       "submit": "הרשם/היכנס",
       "checking": "בודק...",
@@ -855,7 +906,8 @@
     },
     "loginCta": "התחבר",
     "org": {
-      "cta": "התחבר/הרשם עם מייל הארגון",
+      "accessibilityHint": "הכנס מייל או שם ארגון",
+      "cta": "כניסת ארגון / עמותה",
       "placeholder": "הכנס מייל ארגון",
       "continue": "המשך",
       "checking": "בודק...",

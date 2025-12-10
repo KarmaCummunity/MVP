@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../utils/config.constants';
 import { createShadowStyle } from '../globals/styles';
+import colors from '../globals/colors';
 import { navigationQueue } from '../utils/navigationQueue';
 import { checkNavigationGuards } from '../utils/navigationGuards';
 import { logger } from '../utils/loggerService';
@@ -187,7 +188,21 @@ export default function FirebaseGoogleButton() {
       logger.debug('FirebaseGoogleButton', 'AsyncStorage updated');
 
       // Give React time to update state and re-render before navigation
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Use longer timeout for iOS/mobile web to ensure state is fully updated
+      const isMobileWeb = Platform.OS === 'web' && typeof window !== 'undefined' && window.innerWidth <= 768;
+      const timeoutDuration = isMobileWeb ? 300 : 100;
+      await new Promise(resolve => setTimeout(resolve, timeoutDuration));
+
+      // Use requestAnimationFrame to ensure DOM/state updates are complete
+      await new Promise(resolve => {
+        if (typeof requestAnimationFrame !== 'undefined') {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(resolve);
+          });
+        } else {
+          setTimeout(resolve, 50);
+        }
+      });
 
       logger.debug('FirebaseGoogleButton', 'Navigating to HomeStack');
 
@@ -201,8 +216,9 @@ export default function FirebaseGoogleButton() {
 
       const guardResult = await checkNavigationGuards(
         {
-          type: 'replace',
-          routeName: 'HomeStack',
+          type: 'reset',
+          index: 0,
+          routes: [{ name: 'HomeStack' }],
         },
         guardContext
       );
@@ -210,13 +226,15 @@ export default function FirebaseGoogleButton() {
       if (!guardResult.allowed) {
         // If guard blocks, try redirect if provided
         if (guardResult.redirectTo) {
-          await navigationQueue.replace(guardResult.redirectTo, undefined, 2);
+          await navigationQueue.reset(0, [{ name: guardResult.redirectTo }], 2);
         }
+        setLoading(false);
         return;
       }
 
-      // Use navigation queue with high priority (2) for auth changes
-      await navigationQueue.replace('HomeStack', undefined, 2);
+      // Use reset instead of replace for more reliable navigation after auth
+      // This ensures a clean navigation stack
+      await navigationQueue.reset(0, [{ name: 'HomeStack' }], 2);
       logger.info('FirebaseGoogleButton', 'Google login success');
 
       // Reset loading state after navigation
@@ -256,9 +274,9 @@ export default function FirebaseGoogleButton() {
       >
         <View style={styles.content}>
           {loading ? (
-            <ActivityIndicator color="#fff" style={styles.icon} />
+            <ActivityIndicator color={colors.white} style={styles.icon} />
           ) : (
-            <Ionicons name="logo-google" size={20} color="#fff" style={styles.icon} />
+            <Ionicons name="logo-google" size={20} color={colors.white} style={styles.icon} />
           )}
           <Text style={styles.text}>
             {loading ? 'מתחבר...' : (t('auth:googleCta') || 'התחבר/הרשם עם גוגל')}
@@ -275,13 +293,13 @@ export default function FirebaseGoogleButton() {
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: '#4285F4',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     paddingHorizontal: 24,
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    ...createShadowStyle('#000', { width: 0, height: 2 }, 0.1, 4),
+    ...createShadowStyle('colors.black', { width: 0, height: 2 }, 0.1, 4),
     elevation: 3,
     width: '100%',
   },
@@ -297,12 +315,12 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   text: {
-    color: '#fff',
+    color: colors.white,
     fontSize: 16,
     fontWeight: '600',
   },
   errorText: {
-    color: '#FF6B6B',
+    color: colors.error,
     fontSize: 14,
     textAlign: 'center',
     marginTop: 8,

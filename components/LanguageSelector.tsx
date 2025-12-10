@@ -24,6 +24,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from '../app/i18n';
+import colors from '../globals/colors';
 
 // TypeScript Interfaces
 interface LanguageSelectorProps {
@@ -58,7 +59,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   onLanguageChange,
 }) => {
   const { t } = useTranslation(['common', 'settings']);
-  
+
   // State management
   const [languageState, setLanguageState] = useState<LanguageState>({
     menuOpen: false,
@@ -72,28 +73,28 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     try {
       // Save language preference to AsyncStorage
       await AsyncStorage.setItem('app_language', language);
-      
+
       // Change i18n language
       await i18n.changeLanguage(language);
-      
+
       // Update current language state
       setLanguageState(prev => ({ ...prev, currentLanguage: language }));
-      
+
       // Handle RTL support for Hebrew
       const isRTL = language === 'he';
       if (I18nManager.isRTL !== isRTL) {
         I18nManager.allowRTL(isRTL);
         I18nManager.forceRTL(isRTL);
-        
+
         // Show restart notification for native platforms
         if (Platform.OS !== 'web') {
           Alert.alert(
-            t('settings:restartRequired') as string, 
+            t('settings:restartRequired') as string,
             t('settings:restartDesc') as string
           );
         }
       }
-      
+
       // Notify parent component
       onLanguageChange?.(language);
     } catch (error) {
@@ -107,9 +108,9 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
    * Toggles the language menu visibility
    */
   const toggleLanguageMenu = () => {
-    setLanguageState(prev => ({ 
-      ...prev, 
-      menuOpen: !prev.menuOpen 
+    setLanguageState(prev => ({
+      ...prev,
+      menuOpen: !prev.menuOpen
     }));
   };
 
@@ -131,9 +132,9 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         accessibilityHint="Tap to change language"
         accessibilityRole="button"
       >
-        <Ionicons name="globe-outline" size={22} color="#333" />
+        <Ionicons name="globe-outline" size={22} color={colors.textPrimary} />
       </TouchableOpacity>
-      
+
       {showMenu && languageState.menuOpen && (
         <View style={styles.menu}>
           <TouchableOpacity
@@ -154,10 +155,10 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
               {t('common:languages.he')}
             </Text>
             {languageState.currentLanguage === 'he' && (
-              <Ionicons name="checkmark" size={16} color="#4C7EFF" />
+              <Ionicons name="checkmark" size={16} color={colors.primary} />
             )}
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={[
               styles.menuItem,
@@ -176,7 +177,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
               {t('common:languages.en')}
             </Text>
             {languageState.currentLanguage === 'en' && (
-              <Ionicons name="checkmark" size={16} color="#4C7EFF" />
+              <Ionicons name="checkmark" size={16} color={colors.primary} />
             )}
           </TouchableOpacity>
         </View>
@@ -204,7 +205,7 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'web' ? {
       boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     } : {
-      shadowColor: '#000',
+      shadowColor: colors.black,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
@@ -212,9 +213,9 @@ const styles = StyleSheet.create({
     }),
   },
   menu: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: colors.border,
     borderRadius: 10,
     paddingVertical: 6,
     marginTop: 5,
@@ -222,7 +223,7 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'web' ? {
       boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.15)',
     } : {
-      shadowColor: '#000',
+      shadowColor: colors.black,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.15,
       shadowRadius: 8,
@@ -242,12 +243,12 @@ const styles = StyleSheet.create({
   },
   menuText: {
     fontSize: 14,
-    color: '#333333',
+    color: colors.textPrimary,
     textAlign: 'right',
     flex: 1,
   },
   selectedMenuText: {
-    color: '#4C7EFF',
+    color: colors.primary,
     fontWeight: '600',
   },
 });

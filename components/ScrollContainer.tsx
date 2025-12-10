@@ -2,12 +2,12 @@
 // Universal scrolling component that handles web and mobile consistently
 // Automatically preserves scroll position across re-renders
 import React, { MutableRefObject } from 'react';
-import { 
-  ScrollView, 
+import {
+  ScrollView,
   ScrollViewProps,
   FlatList,
-  View, 
-  Platform, 
+  View,
+  Platform,
   Dimensions,
   StyleSheet,
   ViewStyle,
@@ -46,8 +46,8 @@ interface ScrollContainerProps extends Omit<ScrollViewProps, 'style' | 'contentC
  * </ScrollContainer>
  * ```
  */
-export default function ScrollContainer({ 
-  children, 
+export default function ScrollContainer({
+  children,
   style,
   contentStyle,
   enableWebScrolling = true,
@@ -55,24 +55,24 @@ export default function ScrollContainer({
   screenKey: providedScreenKey,
   preserveScrollPosition = true,
   onScroll: externalOnScroll,
-  ...scrollViewProps 
+  ...scrollViewProps
 }: ScrollContainerProps) {
   const route = useRoute();
-  
+
   // Get screen key for scroll position preservation
   // Use provided key, or fallback to route name, or component name
   const screenKey = providedScreenKey || route.name || 'ScrollContainer';
-  
+
   // Use scroll position preservation hook if enabled
   const { ref: preservedScrollRef, onScroll: preservedOnScroll } = useScrollPositionWithHandler(
     screenKey,
     { enabled: preserveScrollPosition }
   );
-  
+
   // Use preserved ref if no external ref provided, otherwise use external ref
   const internalScrollRef = preservedScrollRef;
   const finalScrollRef = externalScrollRef || internalScrollRef;
-  
+
   // Combine scroll handlers - call both preserved and external handlers
   const handleScroll = React.useCallback(
     (event: any) => {
@@ -85,11 +85,11 @@ export default function ScrollContainer({
     },
     [preserveScrollPosition, preservedOnScroll, externalOnScroll]
   );
-  
+
   // Ref for web View element (for scroll position on web)
   const webScrollRef = React.useRef<View | null>(null);
   const scrollTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  
+
   // Handle scroll position for web - restore when screen gains focus
   useFocusEffect(
     React.useCallback(() => {
@@ -99,12 +99,12 @@ export default function ScrollContainer({
             const { useUserStore } = await import('../stores/userStore');
             const userId = useUserStore.getState().selectedUser?.id || null;
             const storageKey = `scroll_pos_${screenKey}_${userId || 'guest'}`;
-            
+
             let savedPosition: string | null = null;
             if (typeof window !== 'undefined' && window.localStorage) {
               savedPosition = window.localStorage.getItem(storageKey);
             }
-            
+
             if (savedPosition) {
               const position = parseFloat(savedPosition);
               if (!isNaN(position) && position > 0) {
@@ -112,9 +112,9 @@ export default function ScrollContainer({
                 setTimeout(() => {
                   try {
                     // Find the scrollable element in the DOM
-                    const element = (webScrollRef.current as any)?._nativeNode || 
-                                   (webScrollRef.current as any)?.firstElementChild;
-                    
+                    const element = (webScrollRef.current as any)?._nativeNode ||
+                      (webScrollRef.current as any)?.firstElementChild;
+
                     if (element) {
                       if (typeof element.scrollTo === 'function') {
                         element.scrollTo({ top: position, behavior: 'auto' });
@@ -132,41 +132,41 @@ export default function ScrollContainer({
             console.warn('Error loading scroll position for web', error);
           }
         };
-        
+
         restorePosition();
       }
     }, [screenKey, preserveScrollPosition, enableWebScrolling])
   );
-  
+
   // Handle scroll events for web - attach event listener to DOM
   React.useLayoutEffect(() => {
     if (Platform.OS !== 'web' || !enableWebScrolling || !preserveScrollPosition) {
       return;
     }
-    
+
     let cleanupFn: (() => void) | null = null;
     // Wait a bit for DOM to be ready
     const timeoutId = setTimeout(() => {
       const element = (webScrollRef.current as any)?._nativeNode;
-      
+
       if (!element) return;
-      
+
       const handleScroll = () => {
         // Clear existing timeout
         if (scrollTimeoutRef.current) {
           clearTimeout(scrollTimeoutRef.current);
         }
-        
+
         // Debounce save
         scrollTimeoutRef.current = setTimeout(async () => {
           try {
             const scrollTop = element.scrollTop || 0;
-            
+
             if (scrollTop > 0) {
               const { useUserStore } = await import('../stores/userStore');
               const userId = useUserStore.getState().selectedUser?.id || null;
               const storageKey = `scroll_pos_${screenKey}_${userId || 'guest'}`;
-              
+
               if (typeof window !== 'undefined' && window.localStorage) {
                 window.localStorage.setItem(storageKey, scrollTop.toString());
               }
@@ -176,9 +176,9 @@ export default function ScrollContainer({
           }
         }, 200);
       };
-      
+
       element.addEventListener('scroll', handleScroll, { passive: true });
-      
+
       // Store cleanup function
       cleanupFn = () => {
         element.removeEventListener('scroll', handleScroll);
@@ -187,7 +187,7 @@ export default function ScrollContainer({
         }
       };
     }, 100);
-    
+
     // Cleanup function
     return () => {
       clearTimeout(timeoutId);
@@ -207,9 +207,10 @@ export default function ScrollContainer({
   if (Platform.OS === 'web' && enableWebScrolling) {
     // Web: Custom scrollable container with CSS overflow
     return (
-      <View 
+      <View
         ref={webScrollRef}
         style={[styles.webScrollContainer, style]}
+        {...{ "data-scroll-container": "true" } as any}
       >
         <View style={[styles.webScrollContent, contentStyle]}>
           {children}
@@ -217,7 +218,7 @@ export default function ScrollContainer({
       </View>
     );
   }
-  
+
   // Native: Standard ScrollView for iOS/Android
   return (
     <ScrollView
@@ -264,7 +265,7 @@ const styles = StyleSheet.create({
     minHeight: '100%' as any,
     width: '100%',
   },
-  
+
   // Native: Standard ScrollView styles
   nativeScrollView: {
     flex: 1,

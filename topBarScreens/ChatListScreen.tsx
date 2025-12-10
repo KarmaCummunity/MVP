@@ -306,10 +306,10 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 12,
     paddingHorizontal: 12,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
-    color: colors.text,
+    color: colors.textPrimary,
     textAlign: 'right',
     fontSize: FontSizes.body,
     flex: 1,
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: FontSizes.heading2,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: 6,
   },
   emptyStateSubtitle: {

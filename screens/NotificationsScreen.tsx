@@ -355,14 +355,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    // backgroundColor: colors.backgroundPrimary,
+    // backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: FontSizes.heading2,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.textPrimary,
     textAlign: 'center',
     flex: 1,
   },
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   notificationItem: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     marginHorizontal: 16,
     marginVertical: 4,
     borderRadius: 12,
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
   notificationTitle: {
     fontSize: FontSizes.body,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: 4,
   },
   notificationBody: {
@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: FontSizes.heading2,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.textPrimary,
     marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',

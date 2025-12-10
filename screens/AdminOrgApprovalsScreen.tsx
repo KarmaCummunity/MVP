@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   btn: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10 },
   approve: { backgroundColor: colors.primary },
   reject: { backgroundColor: colors.error },
-  btnText: { color: '#fff', fontWeight: '700' },
+  btnText: { color: colors.white, fontWeight: '700' },
 });
 
 

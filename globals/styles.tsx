@@ -69,12 +69,10 @@ export const createShadowStyle = (
 ) => {
   if (Platform.OS === 'web') {
     const rgbaColor = colorToRgba(shadowColor, shadowOpacity);
-    // On web, only return boxShadow to avoid deprecated shadow* property warnings
     return {
       boxShadow: `${shadowOffset.width}px ${shadowOffset.height}px ${shadowRadius}px ${rgbaColor}`,
     } as any; // TODO: Replace any with proper web style type
   }
-  // On native platforms, use shadow* properties
   return {
     shadowColor,
     shadowOffset,
@@ -137,7 +135,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     marginBottom: 20,
     paddingBottom: Platform.OS === 'web' ? 60 : 200, // Much less padding on web
-    backgroundColor: colors.orangeLight,
+    backgroundColor: colors.warningLight,
   },
   /**
    * Header container with row layout, space between content, and bottom border.
@@ -201,7 +199,7 @@ export const styles = StyleSheet.create({
    */
   mainSectionContainer: {
     flex: 1,
-    backgroundColor: colors.legacyLightGray,
+    backgroundColor: colors.surfaceVariant,
   },
   /**
    * Title style for sections, bold and centered.
@@ -219,7 +217,7 @@ export const styles = StyleSheet.create({
   recentButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: colors.orangeLight,
+    backgroundColor: colors.warningLight,
     borderRadius: 15,
     paddingVertical: 15,
     paddingHorizontal: 20,
@@ -233,18 +231,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 10,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        shadowColor: colors.black,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 3,
-      },
-    }),
+    ...createShadowStyle(colors.black, { width: 0, height: 2 }, 0.1, 3),
   },
   /**
    * Text style for recent buttons.
@@ -252,7 +239,7 @@ export const styles = StyleSheet.create({
   recentButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.legacyMediumGray,
+    color: colors.textSecondary,
   },
   /**
    * Grid container for all categories, with wrap functionality, centered content, light orange background, and rounded corners.
@@ -263,14 +250,14 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    backgroundColor: colors.orangeLight,
+    backgroundColor: colors.warningLight,
     borderRadius: 15,
     paddingVertical: 15,
     paddingHorizontal: 0,
     height: 800,
   },
   contentWrapperPadded: {
-    backgroundColor: colors.orangeLight,
+    backgroundColor: colors.warningLight,
     // paddingVertical: 10, // Vertical padding inside this wrapper
     // We're letting localStyles.container handle paddingHorizontal
     // If this view needs a background, define it here.
@@ -286,18 +273,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
     margin: 10,
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        shadowColor: colors.black,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 3,
-      },
-    }),
+    ...createShadowStyle(colors.black, { width: 0, height: 2 }, 0.1, 3),
   },
   /**
    * Text style for category buttons, centered.
@@ -305,7 +281,7 @@ export const styles = StyleSheet.create({
   categoryButtonText: {
     fontSize: scaleSize(14),
     fontWeight: 'bold',
-    color: colors.legacyMediumGray,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   /**
@@ -317,7 +293,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.white,
     borderTopWidth: 1,
-    borderTopColor: colors.legacyLightGray,
+    borderTopColor: colors.surfaceVariant,
     paddingVertical: 10,
   },
   /**
@@ -338,14 +314,14 @@ export const styles = StyleSheet.create({
    */
   bottomNavText: {
     fontSize: 12,
-    color: colors.legacyMediumGray,
+    color: colors.textSecondary,
   },
   /**
    * Container for the special center icon in the bottom navigation.
    * Features an orange background, circular shape, lifted position, border, and shadow.
    */
   bottomNavCenterIconContainer: {
-    backgroundColor: colors.orange,
+    backgroundColor: colors.accent,
     borderRadius: 30,
     width: 60,
     height: 60,
@@ -353,19 +329,8 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: -30,
     borderWidth: 4,
-    borderColor: colors.legacyLightGray, // Match screen background color
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 4px 5px rgba(0, 0, 0, 0.2)',
-      },
-      default: {
-        shadowColor: colors.black,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
-        elevation: 5,
-      },
-    }),
+    borderColor: colors.surfaceVariant, // Match screen background color
+    ...createShadowStyle(colors.black, { width: 0, height: 4 }, 0.2, 5),
   },
   /**
    * Icon style for the center icon in the bottom navigation.
@@ -379,7 +344,7 @@ export const styles = StyleSheet.create({
    */
   searchFilterContainer: {
     padding: 15,
-    backgroundColor: colors.orangeLight,
+    backgroundColor: colors.warningLight,
   },
   /**
    * Search box style with white background, rounded corners, and right alignment.
@@ -397,7 +362,7 @@ export const styles = StyleSheet.create({
   searchText: {
     fontSize: scaleSize(16),
     fontWeight: 'bold',
-    color: colors.orangeDark,
+    color: colors.warning,
   },
   /**
    * Container for search input fields, arranged in a row.
@@ -433,7 +398,7 @@ export const styles = StyleSheet.create({
     flexDirection: rowDirection('row'),
     justifyContent: 'space-around',
     paddingVertical: 10,
-    backgroundColor: colors.orangeLight,
+    backgroundColor: colors.warningLight,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
@@ -441,7 +406,7 @@ export const styles = StyleSheet.create({
    * Style for individual filter buttons, with orange background, rounded corners, and padding.
    */
   filterButton: {
-    backgroundColor: colors.pinkDark,
+    backgroundColor: colors.pinkDeep,
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 15,
@@ -482,7 +447,7 @@ export const styles = StyleSheet.create({
    */
   dropdown: {
     borderWidth: 1,
-    borderColor: colors.legacyLightGray,
+    borderColor: colors.surfaceVariant,
     borderRadius: 8,
     padding: 10,
     flexDirection: 'row',
@@ -495,7 +460,7 @@ export const styles = StyleSheet.create({
    */
   section: {
     padding: 15,
-    backgroundColor: colors.orangeLight,
+    backgroundColor: colors.warningLight,
     marginTop: 10,
     borderRadius: 20,
     marginHorizontal: 10,
@@ -510,18 +475,7 @@ export const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 10,
     alignItems: 'center',
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
-      },
-      default: {
-        shadowColor: colors.black,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 3,
-      },
-    }),
+    ...createShadowStyle(colors.black, { width: 0, height: 2 }, 0.1, 3),
   },
   /**
    * Style for images within cards, circular and with left margin.
@@ -567,7 +521,7 @@ export const styles = StyleSheet.create({
         minHeight: "100vh", // Ensure full height
       },
     }),
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
   },
   /**
    * Scroll container with padding for content.
@@ -607,7 +561,7 @@ export const styles = StyleSheet.create({
    */
   subtitle: {
     fontSize: scaleSize(18),
-    color: '#555', // Keeping this as a literal as no specific gray color is defined in Colors for this
+    color: colors.textSecondary, // Keeping this as a literal as no specific gray color is defined in Colors for this
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -616,7 +570,7 @@ export const styles = StyleSheet.create({
    */
   description: {
     fontSize: scaleSize(16),
-    color: '#444', // Keeping this as a literal as no specific gray color is defined in Colors for this
+    color: colors.textPrimary, // Keeping this as a literal as no specific gray color is defined in Colors for this
     lineHeight: 24,
     textAlign: biDiTextAlign('right'),
   },
@@ -626,8 +580,8 @@ export const styles = StyleSheet.create({
   bottomSection: {
     padding: 20,
     borderTopWidth: 1,
-    borderColor: colors.headerBorder,
-    backgroundColor: colors.pink,
+    borderColor: colors.border,
+    backgroundColor: colors.secondary,
   },
   /**
    * Button style with dark pink background, padding, rounded corners, and centered content.
@@ -635,7 +589,7 @@ export const styles = StyleSheet.create({
    */
   button: {
     alignSelf: "center", // Make container as small as needed
-    backgroundColor: colors.pinkDark,
+    backgroundColor: colors.pinkDeep,
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 25,
@@ -668,7 +622,7 @@ export const styles = StyleSheet.create({
   formContainer: {
     width: '90%',
     height: '60%',
-    backgroundColor: colors.orange,
+    backgroundColor: colors.accent,
     padding: 24,
     borderRadius: 20,
     marginTop: 10,
@@ -678,7 +632,7 @@ export const styles = StyleSheet.create({
    * Input field style within forms, with peach background, padding, rounded corners, and white text.
    */
   input: {
-    backgroundColor: colors.orangeLight,
+    backgroundColor: colors.warningLight,
     padding: 12,
     borderRadius: 20,
     marginBottom: 12,
@@ -706,7 +660,7 @@ export const styles = StyleSheet.create({
    * Style for a primary button.
    */
   primaryButton: {
-    backgroundColor: colors.orange,
+    backgroundColor: colors.accent,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 20,
@@ -715,7 +669,7 @@ export const styles = StyleSheet.create({
    * Style for a secondary button.
    */
   secondaryButton: {
-    backgroundColor: colors.orangeLight,
+    backgroundColor: colors.warningLight,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 20,
@@ -760,7 +714,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
   },
   /**
    * Row container for top-bar icon groups with platform/orientation-aware direction.
