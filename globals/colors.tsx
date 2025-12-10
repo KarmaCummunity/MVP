@@ -43,8 +43,44 @@ export const colors = {
   // Specific Shades (only if necessary for gradients/layers)
   blueLight: '#87CEEB',
   blueDark: '#0047AB',
+  pink: '#FFB6C1',           // Alias for secondary
   pinkLight: '#FFE4E1',
   pinkDeep: '#FF1493',
+
+  // Additional shadows
+  shadowLight: 'rgba(0, 0, 0, 0.05)',
+
+  // Menu colors
+  menuBorder: '#E5E5EA',
+  menuText: '#2C2C2C',
+
+  // Category colors (DonationsScreen)
+  categoryCardBackground: '#FFFFFF',
+  categoryBorder: '#E5E5EA',
+  categoryIconBackground: '#4169E1',
+
+  // Money/Ride screen specific colors
+  moneyCardBackground: '#FFFFFF',
+  moneyFormBackground: '#F5F7FA',
+  moneyFormBorder: '#E5E5EA',
+  moneyHistoryAmount: '#34C759',
+  moneyStatusBackground: '#E8F5E9',
+  moneyStatusText: '#34C759',
+  moneyInputBackground: '#FFFFFF',
+  moneyButtonBackground: '#4169E1',
+
+  // Additional UI colors
+  offWhite: '#F9F9F9',
+  topNavIcon: '#2C2C2C',
+
+  // Legacy colors (for HomeScreenOld)
+  legacyLightGreen: '#E8F5E9',
+  legacyLightBlue: '#E3F2FD',
+  legacyLightOrange: '#FFF3E0',
+  legacyLightPink: '#FFE4E1',
+  legacyLightPurple: '#F3E5F5',
+  legacyLightRed: '#FFEBEE',
+  legacyLightYellow: '#FFFDE7',
 };
 
 export default colors;
