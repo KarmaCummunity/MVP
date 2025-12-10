@@ -72,6 +72,11 @@ export const colors = {
   // Additional UI colors
   offWhite: '#F9F9F9',
   topNavIcon: '#2C2C2C',
+  buttonPrimary: '#4169E1',
+  textPlaceholder: '#999999',
+  overlayMedium: 'rgba(0, 0, 0, 0.3)',
+  modalBackground: '#FFFFFF',
+  dropdownPlaceholder: '#999999',
 
   // Legacy colors (for HomeScreenOld)
   legacyLightGreen: '#E8F5E9',
