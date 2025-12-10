@@ -559,24 +559,6 @@
     }
   },
   "trump": {
-    "filters": [
-      "No cost sharing",
-      "Gender: women only",
-      "Gender: men only",
-      "Age: 18-25",
-      "Age: 25-40",
-      "Age: 40+",
-      "No junctions",
-      "No buses",
-      "No smoking",
-      "With kids",
-      "With pets",
-      "Room for gear",
-      "Highway 6",
-      "AC",
-      "Music",
-      "Accessibility"
-    ],
     "sorts": [
       "Alphabetical",
       "By location",
@@ -611,6 +593,13 @@
     "requestSentTitle": "Request sent",
     "requestSentBody": "Request to join {{name}}'s ride was sent successfully!",
     "currentLocation": "Current location",
+    "near": "Near",
+    "filters": {
+      "noCostSharing": "No cost sharing",
+      "noSmoking": "No smoking",
+      "withPets": "With pets",
+      "withKids": "With kids"
+    },
     "category": {
       "other": "Other"
     },
@@ -623,7 +612,9 @@
       "fillFromOrCurrent": "Please set 'From' or choose current location",
       "saveFailed": "Failed to save ride",
       "noGroupLink": "Group link not available",
-      "locationNotResolved": "Please wait for location detection or enter address manually"
+      "locationNotResolved": "Please wait for location detection or enter address manually",
+      "locationPermissionDenied": "Location permission denied",
+      "locationFetchFailed": "Failed to fetch location"
     },
     "ui": {
       "timePickerPlaceholder": "Departure time",
@@ -655,6 +646,11 @@
       "ridesRecommendedTitle": "Recommended rides",
       "groupsTitle": "Groups",
       "whatsappGroups": "WhatsApp groups",
+      "noRecentRides": "No recent rides",
+      "searchResultsPrefix": "Search results for",
+      "availableRides": "Available rides",
+      "noRidesFoundTitle": "No rides found",
+      "noRidesFoundBody": "Try changing your search criteria",
       "searchPlaceholder": {
         "offer": "Where to? Destination...",
         "seek": "Find a ride: destination..."
@@ -672,7 +668,9 @@
       "rideSelectedTitle": "Ride selected",
       "rideSelectedBody": "You selected {{name}}'s ride",
       "restoreDoneTitle": "Restored",
-      "restoreDoneBody": "From {{from}} to {{to}} restored to the form"
+      "restoreDoneBody": "From {{from}} to {{to}} restored to the form",
+      "deleteRideTitle": "Delete ride",
+      "deleteRideBody": "Are you sure you want to delete this ride?"
     },
     "restore": "Restore",
     "groups": {

@@ -28,7 +28,7 @@ const colors = {
   backgroundPrimary: '#FFFFFF',      // רקע ראשי
   backgroundSecondary: '#F0F8FF', // רקע משני (כחול בהיר יותר)
   backgroundSecondary_2: '#E6F3FF', // רקע משני (כחול בהיר)
-  backgroundSecondaryPink: 'rgba(255, 182, 193, 0.9)', // Updated to match new pink
+  backgroundSecondaryPink: 'rgba(182, 192, 255, 0.9)', // Updated to match new pink
   backgroundTertiary: '#F0FFFF',     // רקע שלישי (תכלת בהיר)
   cardBackground: '#FFFFFF',         // רקע כרטיסים
   modalBackground: '#FFFFFF',        // רקע מודאלים
