@@ -143,10 +143,9 @@ export default function TrumpScreen({
   const [selectedFormTags, setSelectedFormTags] = useState<string[]>([]);
 
   // Static Options (Now Translated Keys mapped to Labels)
-  // trump:filters is now an array of keys ["noCost", "womenOnly", ...]
-  const filterKeys = (t('trump:filters', { returnObjects: true }) as unknown as string[]) || [];
-  // We map them to Translated Labels using 'search:filters.KEY'
-  const trumpFilterOptions = filterKeys.map(key => t(`search:filters.${key}`));
+  // trump:filters is now an object with keys like {noCostSharing: "...", noSmoking: "...", ...}
+  const filtersObj = (t('trump:filters', { returnObjects: true }) as Record<string, string>) || {};
+  const trumpFilterOptions = Object.values(filtersObj);
 
   const trumpSortOptions = (t('trump:sorts', { returnObjects: true }) as unknown as string[]) || [];
 
