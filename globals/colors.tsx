@@ -21,8 +21,8 @@ const colors = {
   blueDark: '#0000CD',     // Medium blue
   green: '#90EE90',        // Light green from logo
   orange: '#FF8A65',       // Keeping some orange as accent
-  orangeLight: '#FFCCBC',  
-  orangeDark: '#FF5722',   
+  orangeLight: '#FFCCBC',
+  orangeDark: '#FF5722',
 
   // Backgrounds
   backgroundPrimary: '#FFFFFF',      // רקע ראשי
@@ -34,28 +34,28 @@ const colors = {
   modalBackground: '#FFFFFF',        // רקע מודאלים
 
   // Text
-  textPrimary: '#2C2C2C',     
-  textSecondary: '#666666',   
-  textTertiary: '#999999',    
-  textDisabled: '#CCCCCC',    
-  textPlaceholder: '#BBBBBB', 
-  textInverse: '#FFFFFF',     
+  textPrimary: '#2C2C2C',
+  textSecondary: '#666666',
+  textTertiary: '#999999',
+  textDisabled: '#CCCCCC',
+  textPlaceholder: '#BBBBBB',
+  textInverse: '#FFFFFF',
 
   // Status
-  success: '#4CAF50',         
-  successLight: '#E8F5E8',     
-  error: '#F44336',           
-  errorLight: '#FFEBEE',       
-  warning: '#FF9800',         
-  warningLight: '#FFF3E0',     
+  success: '#4CAF50',
+  successLight: '#E8F5E8',
+  error: '#F44336',
+  errorLight: '#FFEBEE',
+  warning: '#FF9800',
+  warningLight: '#FFF3E0',
   info: '#4169E1',         // Updated to royal blue
-  infoLight: '#E3F2FD',    
+  infoLight: '#E3F2FD',
 
   // Border
-  border: '#E8E8E8',          
-  borderSecondary: '#F0F0F0', 
-  borderAccent: '#FFB3D1',    
-  borderFocus: '#FF8A65',    
+  border: '#E8E8E8',
+  borderSecondary: '#F0F0F0',
+  borderAccent: '#FFB3D1',
+  borderFocus: '#FF8A65',
 
   // Shadow
   shadowLight: 'rgba(0, 0, 0, 0.1)',
@@ -90,7 +90,7 @@ const colors = {
   navigationBorder: '#E8E8E8',
   navigationActive: '#FF69B4',     // Hot pink
   navigationInactive: '#999999',
-  
+
   // Bottom Navigation
   bottomNavBackground: 'rgba(255, 255, 255, 0.65)',
   bottomNavActive: '#FF69B4',      // Hot pink
@@ -131,6 +131,7 @@ const colors = {
   // TODO: Update all components to use semantic color names
   text: '#2C2C2C',           // Alias for textPrimary
   primary: '#FF69B4',        // Alias for pink - updated
+  secondary: '#FFB6C1',      // Alias for pinkLight
   background: '#FFFFFF',     // Alias for backgroundPrimary
   shadow: 'rgba(0, 0, 0, 0.1)', // Alias for shadowLight
   danger: '#F44336',         // Alias for error
