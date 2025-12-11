@@ -51,6 +51,7 @@ import { saveNavigationState, loadNavigationState, clearNavigationState } from '
 import { NavigationState } from '@react-navigation/native';
 import { navigationQueue } from './utils/navigationQueue';
 import { RootStackParamList } from './globals/types';
+import { linking } from './utils/linkingConfig';
 // RTL is controlled via selected language in i18n and Settings
 
 // Initialize notifications only on supported platforms
@@ -441,6 +442,7 @@ function AppContent() {
             navigationQueue.initialize(navigationRef.current);
           }
         }}
+        linking={linking}
         initialState={initialState}
         onStateChange={handleNavigationStateChange}
         children={

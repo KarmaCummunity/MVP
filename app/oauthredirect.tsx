@@ -61,35 +61,57 @@ export default function OAuthRedirect() {
           throw new Error('Failed to parse token');
         }
 
-        // Create user data
+        // Send idToken to server to get UUID
+        const { API_BASE_URL } = await import('../utils/config.constants');
+        const response = await fetch(`${API_BASE_URL}/auth/google`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            idToken: idToken,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to authenticate with server');
+        }
+
+        const serverResponse = await response.json();
+        if (!serverResponse.success || !serverResponse.user) {
+          throw new Error(serverResponse.error || 'Invalid response from server');
+        }
+
+        // Use UUID from server - this is the primary identifier
+        const serverUser = serverResponse.user;
         const userData = {
-          id: profile.sub,
-          name: profile.name || profile.email?.split('@')[0] || 'User',
-          email: profile.email || '',
-          avatar: profile.picture || 'https://i.pravatar.cc/150?img=1',
-          phone: '+972500000000',
-          bio: '',
-          karmaPoints: 0,
-          joinDate: new Date().toISOString(),
-          isActive: true,
-          lastActive: new Date().toISOString(),
-          location: { city: 'ישראל', country: 'IL' },
-          interests: [],
-          roles: ['user'],
-          postsCount: 0,
-          followersCount: 0,
-          followingCount: 0,
+          id: serverUser.id, // UUID from database, not Google ID
+          name: serverUser.name || profile.name || profile.email?.split('@')[0] || 'User',
+          email: serverUser.email || profile.email || '',
+          avatar: serverUser.avatar || profile.picture || 'https://i.pravatar.cc/150?img=1',
+          phone: serverUser.phone || '+972500000000',
+          bio: serverUser.bio || '',
+          karmaPoints: serverUser.karmaPoints || 0,
+          joinDate: serverUser.createdAt || serverUser.joinDate || new Date().toISOString(),
+          isActive: serverUser.isActive !== false,
+          lastActive: serverUser.lastActive || new Date().toISOString(),
+          location: serverUser.location || { city: 'ישראל', country: 'IL' },
+          interests: serverUser.interests || [],
+          roles: serverUser.roles || ['user'],
+          postsCount: serverUser.postsCount || 0,
+          followersCount: serverUser.followersCount || 0,
+          followingCount: serverUser.followingCount || 0,
           notifications: [
             { type: 'system', text: 'ברוך הבא לקרמה קומיוניטי!', date: new Date().toISOString() }
           ],
-          settings: {
+          settings: serverUser.settings || {
             language: 'he',
             darkMode: false,
             notificationsEnabled: true
           }
         };
 
-        console.log('💾 [OAuthRedirect] Saving user...');
+        console.log('💾 [OAuthRedirect] Saving user with UUID:', userData.id);
         await setSelectedUserWithMode(userData, 'real');
         await AsyncStorage.setItem('current_user', JSON.stringify(userData));
         await AsyncStorage.setItem('auth_mode', 'real');

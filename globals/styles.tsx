@@ -34,6 +34,11 @@ import { FontSizes, LAYOUT_CONSTANTS } from "./constants";
 
 // Helper function to convert color string to rgba string
 const colorToRgba = (color: string, opacity: number): string => {
+  // Safety check: if color is undefined or null, use black
+  if (!color || typeof color !== 'string') {
+    return `rgba(0, 0, 0, ${opacity})`;
+  }
+  
   // If color is already rgba/rgb, extract RGB values
   if (color.startsWith('rgba(')) {
     const matches = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);

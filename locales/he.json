@@ -598,7 +598,8 @@
       "noCostSharing": "בלי השתתפות בהוצאות",
       "noSmoking": "בלי עישון",
       "withPets": "עם חיות",
-      "withKids": "עם ילדים"
+      "withKids": "עם ילדים",
+      "includePast": "כולל נסיעות שעברו"
     },
     "category": {
       "other": "אחר"
@@ -710,6 +711,11 @@
     "tagged": {
       "noTagsYet": "אין תיוגים עדיין",
       "tagsAppearHere": "כאשר אנשים יתייגו אותך, זה יופיע כאן"
+    },
+    "posts": {
+      "loading": "טוען פוסטים...",
+      "noPostsYet": "אין פוסטים עדיין",
+      "createFirstPost": "הפוסטים שלך יופיעו כאן"
     },
     "alerts": {
       "post": "פוסט",

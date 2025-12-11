@@ -239,7 +239,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                       width: cardWidth,
                       minWidth: cardWidth,
                       maxWidth: cardWidth,
-                      backgroundColor: category.bgColor || colors.background, // רקע צבעוני לפי קטגוריה
+                      backgroundColor: colors.infoLight, // רקע אחיד כמו הטרמפים
                     },
                   ]}
                   onPress={() => handleCategoryPress(category)}
@@ -305,7 +305,7 @@ const DonationsScreen: React.FC<DonationsScreenProps> = ({ navigation }) => {
                       width: smallCardWidth,
                       minWidth: smallCardWidth,
                       maxWidth: smallCardWidth,
-                      backgroundColor: category.bgColor || 'colors.white', // רקע צבעוני לפי קטגוריה
+                      backgroundColor: colors.infoLight, // רקע אחיד כמו הטרמפים
                       paddingVertical: responsiveSpacing(12, 14, 16),
                       paddingHorizontal: responsiveSpacing(8, 10, 12),
                     },

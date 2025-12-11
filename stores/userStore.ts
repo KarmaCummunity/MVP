@@ -47,6 +47,7 @@ interface UserState {
   authMode: AuthMode;
   resetHomeScreenTrigger: number;
   isInitialized: boolean; // Flag to track if store has been initialized
+  lastHomeTabScreen: string | null; // Last screen visited in HomeTabStack before switching tabs
   
   // Actions
   setSelectedUser: (user: User | null) => Promise<void>;
@@ -56,6 +57,8 @@ interface UserState {
   setGuestMode: () => Promise<void>;
   setDemoUser: () => Promise<void>;
   resetHomeScreen: () => void;
+  setLastHomeTabScreen: (screen: string | null) => void;
+  clearLastHomeTabScreen: () => void;
   checkAuthStatus: () => Promise<void>;
   initialize: () => Promise<void>;
 }
@@ -116,6 +119,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   authMode: 'guest',
   resetHomeScreenTrigger: 0,
   isInitialized: false,
+  lastHomeTabScreen: null,
   
   // Actions
   setCurrentPrincipal: async (principal: { user: User | null; role: Role }) => {
@@ -377,6 +381,16 @@ export const useUserStore = create<UserState>((set, get) => ({
     set((state) => ({ resetHomeScreenTrigger: state.resetHomeScreenTrigger + 1 }));
   },
   
+  setLastHomeTabScreen: (screen: string | null) => {
+    console.log('🏠 userStore - setLastHomeTabScreen called', { screen });
+    set({ lastHomeTabScreen: screen });
+  },
+  
+  clearLastHomeTabScreen: () => {
+    console.log('🏠 userStore - clearLastHomeTabScreen called');
+    set({ lastHomeTabScreen: null });
+  },
+  
   initialize: async () => {
     console.log('🔐 userStore - initialize - Starting initialization');
     
@@ -409,56 +423,114 @@ export const useUserStore = create<UserState>((set, get) => ({
         });
 
         if (firebaseUser) {
-          // Check if we already have this user loaded to prevent unnecessary updates
-          const currentState = get();
-          if (currentState.selectedUser?.id === firebaseUser.uid && 
-              currentState.isAuthenticated && 
-              currentState.authMode === 'real') {
-            console.log('🔥 Firebase Auth State Changed - User already loaded, skipping update');
-            return;
-          }
-          
           // Firebase user is logged in - restore/create session
           console.log('🔥 Firebase user detected, restoring session');
           
-          // Create or restore user data
-          const nowIso = new Date().toISOString();
-          const userData: User = {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-            email: firebaseUser.email || '',
-            phone: firebaseUser.phoneNumber || '+9720000000',
-            avatar: firebaseUser.photoURL || 'https://i.pravatar.cc/150?img=1',
-            bio: '',
-            karmaPoints: 0,
-            joinDate: nowIso,
-            isActive: true,
-            lastActive: nowIso,
-            location: { city: 'ישראל', country: 'IL' },
-            interests: [],
-            roles: ['user'],
-            postsCount: 0,
-            followersCount: 0,
-            followingCount: 0,
-            notifications: [],
-            settings: { language: 'he', darkMode: false, notificationsEnabled: true },
-          };
+          try {
+            // Get UUID from server using firebase_uid
+            const { apiService } = await import('../utils/apiService');
+            
+            const resolveResponse = await apiService.resolveUserId({ 
+              firebase_uid: firebaseUser.uid,
+              email: firebaseUser.email || undefined 
+            });
+            
+            if (!resolveResponse.success || !(resolveResponse as any).user) {
+              console.warn('🔥 Failed to resolve user ID from server, using fallback');
+              // Fallback: try to get user by email
+              if (firebaseUser.email) {
+                const userResponse = await apiService.getUserById(firebaseUser.email);
+                if (userResponse.success && userResponse.data) {
+                  const serverUser = userResponse.data;
+                  const nowIso = new Date().toISOString();
+                  const userData: User = {
+                    id: serverUser.id, // UUID from database
+                    name: serverUser.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+                    email: serverUser.email || firebaseUser.email || '',
+                    phone: serverUser.phone || firebaseUser.phoneNumber || '+9720000000',
+                    avatar: serverUser.avatar_url || firebaseUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+                    bio: serverUser.bio || '',
+                    karmaPoints: serverUser.karma_points || 0,
+                    joinDate: serverUser.join_date || serverUser.created_at || nowIso,
+                    isActive: serverUser.is_active !== false,
+                    lastActive: serverUser.last_active || nowIso,
+                    location: { city: serverUser.city || 'ישראל', country: serverUser.country || 'IL' },
+                    interests: serverUser.interests || [],
+                    roles: serverUser.roles || ['user'],
+                    postsCount: serverUser.posts_count || 0,
+                    followersCount: serverUser.followers_count || 0,
+                    followingCount: serverUser.following_count || 0,
+                    notifications: [],
+                    settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+                  };
+                  
+                  await AsyncStorage.setItem('current_user', JSON.stringify(userData));
+                  await AsyncStorage.setItem('auth_mode', 'real');
+                  await AsyncStorage.setItem('firebase_user_id', firebaseUser.uid);
+                  
+                  const enrichedUser = await enrichUserWithOrgRoles(userData);
+                  set({
+                    selectedUser: enrichedUser,
+                    isAuthenticated: true
+                  });
+                  console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
+                  return;
+                }
+              }
+              throw new Error('Failed to get user from server');
+            }
+            
+            // Check if we already have this user loaded to prevent unnecessary updates
+            const currentState = get();
+            if (currentState.selectedUser?.id === (resolveResponse as any).user.id && 
+                currentState.isAuthenticated && 
+                currentState.authMode === 'real') {
+              console.log('🔥 Firebase Auth State Changed - User already loaded, skipping update');
+              return;
+            }
+            
+            // Use UUID from server
+            const serverUser = (resolveResponse as any).user;
+            const nowIso = new Date().toISOString();
+            const userData: User = {
+              id: serverUser.id, // UUID from database - this is the primary identifier
+              name: serverUser.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+              email: serverUser.email || firebaseUser.email || '',
+              phone: serverUser.phone || firebaseUser.phoneNumber || '+9720000000',
+              avatar: serverUser.avatar || firebaseUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+              bio: serverUser.bio || '',
+              karmaPoints: serverUser.karmaPoints || 0,
+              joinDate: serverUser.createdAt || serverUser.joinDate || nowIso,
+              isActive: serverUser.isActive !== false,
+              lastActive: serverUser.lastActive || nowIso,
+              location: serverUser.location || { city: 'ישראל', country: 'IL' },
+              interests: serverUser.interests || [],
+              roles: serverUser.roles || ['user'],
+              postsCount: serverUser.postsCount || 0,
+              followersCount: serverUser.followersCount || 0,
+              followingCount: serverUser.followingCount || 0,
+              notifications: [],
+              settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+            };
 
-          // Save to AsyncStorage for persistence
-          await AsyncStorage.setItem('current_user', JSON.stringify(userData));
-          await AsyncStorage.setItem('auth_mode', 'real');
-          await AsyncStorage.setItem('firebase_user_id', firebaseUser.uid);
-          
-          // Update store state
-          const enrichedUser = await enrichUserWithOrgRoles(userData);
-          set({
-            selectedUser: enrichedUser,
-            isAuthenticated: true,
-            isGuestMode: false,
-            authMode: 'real',
-          });
-          
-          console.log('🔥 Firebase session restored successfully');
+            // Save to AsyncStorage for persistence
+            await AsyncStorage.setItem('current_user', JSON.stringify(userData));
+            await AsyncStorage.setItem('auth_mode', 'real');
+            await AsyncStorage.setItem('firebase_user_id', firebaseUser.uid);
+            
+            // Update store state
+            const enrichedUser = await enrichUserWithOrgRoles(userData);
+            set({
+              selectedUser: enrichedUser,
+              isAuthenticated: true,
+              authMode: 'real',
+              isGuestMode: false
+            });
+            console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
+          } catch (error) {
+            console.error('🔥 Failed to restore Firebase session:', error);
+            // Don't set user state if we can't get UUID from server
+          }
         } else {
           // No Firebase user - only clear if we had a Firebase user before
           const currentState = get();
@@ -512,6 +584,9 @@ export const useUser = () => {
     setDemoUser: store.setDemoUser,
     resetHomeScreen: store.resetHomeScreen,
     resetHomeScreenTrigger: store.resetHomeScreenTrigger,
+    lastHomeTabScreen: store.lastHomeTabScreen,
+    setLastHomeTabScreen: store.setLastHomeTabScreen,
+    clearLastHomeTabScreen: store.clearLastHomeTabScreen,
   };
 };
 

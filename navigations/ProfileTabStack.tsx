@@ -22,9 +22,10 @@ import EditProfileScreen from '../screens/EditProfileScreen';
 import LandingSiteScreen from '../screens/LandingSiteScreen';
 import TopBarNavigator from './TopBarNavigator';
 import { logger } from '../utils/loggerService';
+import { useUser } from '../stores/userStore';
 
 type ProfileTabStackParamList = {
-  ProfileScreen: undefined;
+  ProfileScreen: { userId?: string } | undefined;
   SettingsScreen: undefined;
   ChatListScreen: undefined;
   ChatDetailScreen: { chatId?: string } | undefined;
@@ -39,6 +40,8 @@ type ProfileTabStackParamList = {
 const Stack = createStackNavigator<ProfileTabStackParamList>();
 
 export default function ProfileTabStack(): React.ReactElement {
+  const { selectedUser } = useUser();
+  
   useFocusEffect(
     React.useCallback(() => {
       logger.debug('ProfileTabStack', 'Navigator focused');
@@ -61,7 +64,11 @@ export default function ProfileTabStack(): React.ReactElement {
         } : undefined,
       })}
     >
-      <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+      <Stack.Screen 
+        name="ProfileScreen" 
+        component={ProfileScreen}
+        initialParams={selectedUser?.id ? { userId: selectedUser.id } : undefined}
+      />
       <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
       <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
       <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />

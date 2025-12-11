@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Linking,
   Alert,
 } from 'react-native';
-import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
+import { NavigationProp, ParamListBase, useFocusEffect, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import DonationStatsFooter from '../components/DonationStatsFooter';
 import colors from '../globals/colors';
@@ -130,7 +130,31 @@ export default function KnowledgeScreen({
 }: {
   navigation: NavigationProp<ParamListBase>;
 }) {
+  const route = useRoute();
+  const routeParams = route.params as { mode?: string } | undefined;
+  
   const { selectedUser, isRealAuth } = useUser();
+  
+  // Get initial mode from URL (deep link) or default to search mode (מחפש)
+  // mode: true = offerer (wants to teach/share), false = seeker (needs learning)
+  // URL mode: 'offer' = true, 'search' = false or undefined = search
+  // Default is search mode (false)
+  const initialMode = routeParams?.mode === 'offer' ? true : false;
+  const [mode, setMode] = useState(initialMode);
+  
+  // If no mode in URL, set it to search (default) and update URL
+  useEffect(() => {
+    if (!routeParams?.mode || routeParams.mode === 'undefined' || routeParams.mode === 'null' || routeParams.mode === '') {
+      // URL doesn't have mode, so we're in default search mode
+      // Make sure state reflects this and update URL
+      if (mode !== false) {
+        setMode(false);
+      }
+      // Update URL to include /search
+      (navigation as any).setParams({ mode: 'search' });
+    }
+  }, [routeParams?.mode]);
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("");
   const [selectedSort, setSelectedSort] = useState("");
@@ -138,6 +162,34 @@ export default function KnowledgeScreen({
   const [filteredCommunityContent, setFilteredCommunityContent] = useState(communityContent);
   const [selectedMentorship, setSelectedMentorship] = useState<any>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Update mode when route params change (e.g., from deep link)
+  useEffect(() => {
+    if (routeParams?.mode && routeParams.mode !== 'undefined' && routeParams.mode !== 'null') {
+      const newMode = routeParams.mode === 'offer' ? true : false;
+      if (newMode !== mode) {
+        setMode(newMode);
+      }
+    }
+  }, [routeParams?.mode]);
+
+  // Update URL when mode changes (toggle button pressed) or when screen loads without mode
+  useEffect(() => {
+    const newMode = mode ? 'offer' : 'search';
+    const currentMode = routeParams?.mode;
+    
+    // If no mode in URL, set it to search (default)
+    if (!currentMode || currentMode === 'undefined' || currentMode === 'null') {
+      // Set initial mode to search in URL
+      (navigation as any).setParams({ mode: 'search' });
+      return;
+    }
+    
+    // Only update URL if mode actually changed
+    if (newMode !== currentMode) {
+      (navigation as any).setParams({ mode: newMode });
+    }
+  }, [mode, navigation, routeParams?.mode]);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -253,9 +305,9 @@ export default function KnowledgeScreen({
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       
       <HeaderComp
-        mode={true}
+        mode={mode}
         menuOptions={[]}
-        onToggleMode={() => {}}
+        onToggleMode={() => setMode(!mode)}
         onSelectMenuItem={() => {}}
         title=""
         placeholder="חפש קורסים ושיעורים..."

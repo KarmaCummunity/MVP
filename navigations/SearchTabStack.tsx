@@ -25,7 +25,7 @@ import TopBarNavigator from './TopBarNavigator';
 import { logger } from '../utils/loggerService';
 
 type SearchTabStackParamList = {
-  SearchScreen: undefined;
+  SearchScreen: { q?: string } | undefined;
   UserProfileScreen: { userId?: string } | undefined;
   FollowersScreen: { userId?: string } | undefined;
   DiscoverPeopleScreen: undefined;

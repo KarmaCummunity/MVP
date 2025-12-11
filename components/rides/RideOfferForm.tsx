@@ -1,10 +1,10 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, I18nManager, Platform } from 'react-native';
 import { Ionicons as Icon } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import colors from '../../globals/colors';
 import { FontSizes } from '../../globals/constants';
 import TimePicker from '../TimePicker';
+import DatePicker from '../DatePicker';
 import { useTranslation } from 'react-i18next';
 
 // Ensure layout is RTL friendly manually where needed
@@ -60,13 +60,14 @@ interface RideOfferFormProps {
     // Location Details
     detectedAddress?: string;
     isLocating?: boolean;
+    isLocationError?: boolean;
 }
 
 const RideOfferForm: React.FC<RideOfferFormProps> = ({
     destination, onDestinationChange,
     fromLocation, onFromLocationChange,
     useCurrentLocation, onToggleCurrentLocation,
-    detectedAddress, isLocating, // Destructure new props
+    detectedAddress, isLocating, isLocationError, // Destructure new props
     departureTime, onDepartureTimeChange,
     immediateDeparture, onToggleImmediateDeparture,
     leavingToday, onToggleLeavingToday,
@@ -82,17 +83,25 @@ const RideOfferForm: React.FC<RideOfferFormProps> = ({
     const { t } = useTranslation();
     const priceInputRef = useRef<TextInput>(null);
     const [needToPay, setNeedToPay] = useState(price !== '0' && price !== '');
-    const [showDatePicker, setShowDatePicker] = useState(false);
 
     // Synchronize internal pay toggle if price changes externally
     React.useEffect(() => {
         if (price && price !== '0') setNeedToPay(true);
     }, [price]);
 
-    const handleDateSelect = (event: any, selectedDate?: Date) => {
-        if (Platform.OS === 'android') setShowDatePicker(false);
-        if (selectedDate) {
-            onDateChange(selectedDate);
+    // Ensure rideDate is always a valid Date
+    const validRideDate = React.useMemo(() => {
+        if (!rideDate || !(rideDate instanceof Date) || isNaN(rideDate.getTime())) {
+            return new Date();
+        }
+        return rideDate;
+    }, [rideDate]);
+
+    const handleDateChange = (date: Date | null) => {
+        if (date && date instanceof Date && !isNaN(date.getTime())) {
+            onDateChange(date);
+        } else {
+            onDateChange(new Date());
         }
     };
 
@@ -128,7 +137,11 @@ const RideOfferForm: React.FC<RideOfferFormProps> = ({
                     <View style={[styles.checkbox, useCurrentLocation && styles.checkboxChecked]}>
                         {useCurrentLocation && <Icon name="checkmark" size={16} color="white" />}
                     </View>
-                    <Text style={[styles.checkboxLabel, { flex: 1, flexWrap: 'wrap' }]}>
+                    <Text style={[
+                        styles.checkboxLabel,
+                        { flex: 1, flexWrap: 'wrap' },
+                        (isLocationError && useCurrentLocation) ? { color: colors.error } : {}
+                    ]}>
                         {isLocating
                             ? `${t('trump:currentLocation')}...`
                             : (useCurrentLocation && detectedAddress ? detectedAddress : t('trump:currentLocation'))
@@ -187,42 +200,12 @@ const RideOfferForm: React.FC<RideOfferFormProps> = ({
                         {/* Date Picker (if not today) */}
                         {!leavingToday && (
                             <View style={{ marginTop: 12 }}>
-                                {Platform.OS === 'web' ? (
-                                    <TextInput
-                                        style={styles.input}
-                                        value={rideDate.toISOString().split('T')[0]}
-                                        onChangeText={(text) => {
-                                            // Simple text handler fallback
-                                            const d = new Date(text);
-                                            if (!isNaN(d.getTime())) onDateChange(d);
-                                        }}
-                                        placeholder="YYYY-MM-DD"
-                                        {...((Platform.OS === 'web' ? { type: 'date', onChange: (e: any) => onDateChange(new Date(e.target.value)) } : {}) as any)}
-                                    />
-                                ) : (
-                                    <>
-                                        <TouchableOpacity
-                                            style={styles.dateButton}
-                                            onPress={() => setShowDatePicker(true)}
-                                        >
-                                            <Text style={styles.dateButtonText}>
-                                                {rideDate.toLocaleDateString('he-IL')} (
-                                                {t('trump:ui.selectDate')})
-                                            </Text>
-                                            <Icon name="calendar-outline" size={20} color={colors.textSecondary} />
-                                        </TouchableOpacity>
-
-                                        {showDatePicker && (
-                                            <DateTimePicker
-                                                value={rideDate}
-                                                mode="date"
-                                                display="default"
-                                                onChange={handleDateSelect}
-                                                minimumDate={new Date()}
-                                            />
-                                        )}
-                                    </>
-                                )}
+                                <DatePicker
+                                    value={validRideDate}
+                                    onChange={handleDateChange}
+                                    placeholder={t('trump:ui.selectDate')}
+                                    minimumDate={new Date()}
+                                />
                             </View>
                         )}
                     </View>

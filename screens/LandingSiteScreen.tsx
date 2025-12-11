@@ -261,7 +261,7 @@ const HeroSection: React.FC<{ onDonate: () => void }> = ({ onDonate }) => {
 
           <Text style={styles.welcomeTitle}>המקום בו טוב קורה</Text>
           <View style={styles.logoContainer}>
-            <Image source={require('../assets/images/pink_logo.png')} style={styles.logo} resizeMode="contain" />
+            <Image source={require('../assets/images/new_logo_black.png')} style={styles.logo} resizeMode="contain" />
             <View style={styles.logoGlow} />
           </View>
           <Text style={styles.title}>Karma Community</Text>

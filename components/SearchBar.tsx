@@ -15,7 +15,7 @@ import colors from "../globals/colors"; // Ensure this path is correct
 import { FontSizes, filterOptions as defaultFilterOptions, sortOptions as defaultSortOptions } from "../globals/constants";
 import { useTranslation } from 'react-i18next';
 import { createShadowStyle } from "../globals/styles";
-import { biDiTextAlign, rowDirection, getResponsiveModalStyles, responsiveSpacing, responsiveFontSize, getScreenInfo, BREAKPOINTS } from "../globals/responsive";
+import { biDiTextAlign, rowDirection, getResponsiveModalStyles, responsiveSpacing, responsiveFontSize, getScreenInfo, BREAKPOINTS, scaleSize } from "../globals/responsive";
 
 interface SearchBarProps {
   onHasActiveConditionsChange?: (isActive: boolean) => void;
@@ -33,6 +33,8 @@ interface SearchBarProps {
   onRemoveSortRequested?: (removeFn: () => void) => void;
   // Whether to render the selected filters/sorts row (false = parent will render it)
   renderSelectedRow?: boolean;
+  // Whether to hide the sort button explicitly
+  hideSortButton?: boolean;
 }
 
 const SearchBar = ({
@@ -46,10 +48,11 @@ const SearchBar = ({
   onSortsChange,
   onRemoveFilterRequested,
   onRemoveSortRequested,
-  renderSelectedRow = true
+  renderSelectedRow = true,
+  hideSortButton = false,
 }: SearchBarProps) => {
   const [searchText, setSearchText] = useState("");
-  const { t } = useTranslation(['search', 'common']);
+  const { t } = useTranslation(['search', 'common', 'trump']);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [isSortModalVisible, setIsSortModalVisible] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
@@ -279,7 +282,9 @@ const SearchBar = ({
   const modalStyles = getResponsiveModalStyles();
   const { isTablet, isDesktop, isLargeDesktop, width } = getScreenInfo();
   const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
-  const iconSize = isLargeDesktop ? 28 : isDesktopWeb ? 26 : isTablet ? 24 : 22;
+  const isMobileWeb = Platform.OS === 'web' && width <= BREAKPOINTS.TABLET;
+  // Icon size optimized for mobile web - smaller for better proportions
+  const iconSize = isLargeDesktop ? 28 : isDesktopWeb ? 26 : isTablet ? 24 : isMobileWeb ? 20 : 22;
   // Default placeholder if none provided
   const searchPlaceholder = placeholder || t('donations:searchCharitiesForHelp');
 
@@ -294,12 +299,14 @@ const SearchBar = ({
       {/* --- Main Search Bar Row --- */}
       <View style={[localStyles.searchBarContainer, { flexDirection: rowDirection('row-reverse') }]}>
         {/* Sort Button (opens sort modal) - Inside search bar, smaller */}
-        <TouchableOpacity
-          style={localStyles.buttonContainer}
-          onPress={() => setIsSortModalVisible(true)}
-        >
-          <Text style={localStyles.buttonText}>{t('search:sortTitle')}</Text>
-        </TouchableOpacity>
+        {!hideSortButton && (
+          <TouchableOpacity
+            style={localStyles.buttonContainer}
+            onPress={() => setIsSortModalVisible(true)}
+          >
+            <Text style={localStyles.buttonText}>{t('search:sortTitle')}</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Filter Button (opens filter modal) - Inside search bar, smaller */}
         <TouchableOpacity
@@ -324,6 +331,7 @@ const SearchBar = ({
         <TouchableOpacity
           onPress={handleSearch}
           style={localStyles.searchIconContainer}
+          activeOpacity={0.7}
         >
           <Ionicons name="search" size={iconSize} color={colors.textSecondary} />
         </TouchableOpacity>
@@ -367,7 +375,8 @@ const SearchBar = ({
                         isFilterSelected(option) && localStyles.modalOptionTextSelected,
                       ]}
                     >
-                      {t(`search:filters.${option}`)}
+                      {/* Try trump:filters first (for trump screen), then search:filters */}
+                      {t(`trump:filters.${option}`, { defaultValue: t(`search:filters.${option}`, { defaultValue: option }) })}
                     </Text>
                     {isFilterSelected(option) && (
                       <Ionicons
@@ -495,7 +504,8 @@ const SearchBar = ({
                     onPress={() => removeFilter(filter)}
                   >
                     <Text style={localStyles.selectedFilterSortButtonText}>
-                      {t(`search:filters.${filter}`)}
+                      {/* Try trump:filters first (for trump screen), then search:filters */}
+                      {t(`trump:filters.${filter}`, { defaultValue: t(`search:filters.${filter}`, { defaultValue: filter }) })}
                     </Text>
                     <Ionicons name="close-circle" size={12} color={colors.black} style={localStyles.removeIcon} />
                   </TouchableOpacity>
@@ -514,33 +524,36 @@ const SearchBar = ({
 const localStyles = StyleSheet.create({
   container: {
     backgroundColor: "transparent",
-    width: "60%",
+    flex: 1, // Take available space instead of fixed 60%
+    minWidth: 0, // Allow shrinking below content size
   },
   searchBarContainer: {
     flexDirection: "row-reverse",
     alignItems: "center",
-    alignSelf: "center",
     backgroundColor: colors.backgroundSecondary,
     borderRadius: responsiveSpacing(18, 20, 22),
-    marginHorizontal: 5,
-    ...createShadowStyle("colors.black", { width: 0, height: 1 }, 0.08, 2),
+    ...createShadowStyle(colors.black, { width: 0, height: 1 }, 0.08, 2),
     elevation: 2,
-    paddingVertical: responsiveSpacing(4, 6, 8),
-    paddingHorizontal: responsiveSpacing(6, 8, 10),
+    height: scaleSize(32), // Match the height of ModeToggleButton
+    paddingVertical: 5, // No vertical padding, height is fixed
+    paddingHorizontal: responsiveSpacing(4, 6, 8), // Optimized horizontal padding for mobile web
     borderWidth: 0.5,
     borderColor: colors.black,
-    maxWidth: '100%',
-    minHeight: responsiveSpacing(32, 36, 40),
+    width: '100%',
   },
   buttonContainer: {
     backgroundColor: colors.pinkLight,
     borderRadius: responsiveSpacing(12, 14, 16),
-    paddingVertical: responsiveSpacing(3, 4, 5),
-    paddingHorizontal: responsiveSpacing(6, 8, 10),
-    marginLeft: responsiveSpacing(4, 5, 6),
+    paddingVertical: responsiveSpacing(1, 2, 3), // Reduced padding to fit in 32px height
+    paddingHorizontal: responsiveSpacing(5, 6, 7), // Optimized padding for mobile web
+    marginLeft: responsiveSpacing(4, 5, 6), // Better spacing for mobile web
+    flexShrink: 0, // Don't shrink buttons
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%', // Match container height
   },
   buttonText: {
-    fontSize: responsiveFontSize(FontSizes.caption, 10, 12),
+    fontSize: responsiveFontSize(FontSizes.caption, 9, 11), // Smaller font for mobile
     color: colors.textSecondary,
     fontWeight: "600",
     writingDirection: "rtl",
@@ -550,12 +563,20 @@ const localStyles = StyleSheet.create({
     fontSize: responsiveFontSize(FontSizes.small, 13, 15),
     color: colors.textSecondary,
     paddingLeft: responsiveSpacing(4, 6, 8),
+    paddingRight: responsiveSpacing(2, 3, 4), // Space between input and icon
     paddingVertical: 0,
-    minHeight: 20,
+    minWidth: 0, // Allow shrinking
+    height: '100%', // Take full height of container
   },
   searchIconContainer: {
-    paddingRight: responsiveSpacing(4, 6, 8),
-    paddingLeft: 0,
+    paddingRight: responsiveSpacing(6, 8, 10), // More padding for better touch target
+    paddingLeft: responsiveSpacing(2, 3, 4),
+    paddingVertical: 0, // No vertical padding, container height is fixed
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0, // Don't shrink icon container
+    minWidth: scaleSize(32), // Minimum touch target size for mobile web
+    height: '100%', // Match container height
   },
 
   // --- Modals Styles ---
@@ -568,7 +589,7 @@ const localStyles = StyleSheet.create({
   modalContent: {
     backgroundColor: "white",
     // Dynamic styles applied in JSX for responsive sizing
-    ...createShadowStyle("colors.black", { width: 0, height: 2 }, 0.25, 4),
+    ...createShadowStyle(colors.black, { width: 0, height: 2 }, 0.25, 4),
     elevation: 5,
   },
   modalTitle: {
@@ -591,7 +612,7 @@ const localStyles = StyleSheet.create({
     paddingHorizontal: responsiveSpacing(10, 12, 14),
   },
   modalOptionSelected: {
-    backgroundColor: colors.warningLight,
+    backgroundColor: colors.warning,
   },
   modalOptionText: {
     fontSize: responsiveFontSize(FontSizes.medium, 16, 18),
@@ -657,7 +678,7 @@ const localStyles = StyleSheet.create({
     flexDirection: "row-reverse",
     alignItems: "center",
     gap: responsiveSpacing(3, 4, 5),
-    ...createShadowStyle("colors.black", { width: 0, height: 0.5 }, 0.05, 1),
+    ...createShadowStyle(colors.black, { width: 0, height: 0.5 }, 0.05, 1),
     elevation: 1,
   },
   selectedFilterSortButtonText: {

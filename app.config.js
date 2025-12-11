@@ -14,13 +14,13 @@ export default {
     slug: "karma-community",
     version: "1.9.5",
     orientation: "portrait",
-    icon: "./assets/images/pink_logo.png",
+    icon: "./assets/images/new_logo_black.png",
     scheme: "karma-community",
     userInterfaceStyle: "automatic",
     // שמירה על primaryColor שהיה ב-app.json
     primaryColor: colors.secondary,
     splash: {
-      image: "./assets/images/pink_logo.png",
+      image: "./assets/images/new_logo_black.png",
       resizeMode: "contain",
       backgroundColor: colors.backgroundTertiary
     },
@@ -30,6 +30,11 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.navesarussi1.KarmaCommunity",
+      // Associated domains for Universal Links
+      associatedDomains: [
+        "applinks:karma-community-kc.com",
+        "applinks:www.karma-community-kc.com"
+      ],
       // איחוד הרשאות ו־ATS שהיו ב-app.json
       infoPlist: {
         NSAppTransportSecurity: {
@@ -43,7 +48,7 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/images/pink_logo.png",
+        foregroundImage: "./assets/images/new_logo_black.png",
         backgroundColor: colors.backgroundTertiary
       },
       package: "com.navesarussi1.KarmaCommunity",
@@ -98,7 +103,7 @@ export default {
       [
         "expo-notifications",
         {
-          icon: "./assets/images/pink_logo.png",
+          icon: "./assets/images/new_logo_black.png",
           color: colors.secondary,
           mode: "production",
           androidMode: "default",

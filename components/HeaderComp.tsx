@@ -6,7 +6,7 @@ import MenuComp from "../components/MenuComp";
 import ModeToggleButton from "../components/ModeToggleButton";
 import GuestModeNotice from "../components/GuestModeNotice";
 import colors from "../globals/colors";
-import { getScreenInfo, scaleSize, rowDirection, responsiveSpacing, responsiveFontSize, BREAKPOINTS } from "../globals/responsive";
+import { getScreenInfo, scaleSize, rowDirection, responsiveSpacing, responsiveFontSize, BREAKPOINTS, getScreenInfo as getScreen } from "../globals/responsive";
 import { FontSizes } from "../globals/constants";
 import { useUser } from "../stores/userStore";
 import { useTranslation } from 'react-i18next';
@@ -39,6 +39,7 @@ interface HeaderSectionProps {
   sortOptions: string[]; // Sort options specific to each screen
   searchData: any[]; // Data array to search through (charities, rides, etc.) - TODO: Replace any[] with proper types
   onSearch: (query: string, filters?: string[], sorts?: string[], results?: any[]) => void; // Search handler function - TODO: Improve typing
+  hideSortButton?: boolean;
 }
 
 const HeaderComp: React.FC<HeaderSectionProps> = ({
@@ -51,9 +52,10 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
   sortOptions,
   searchData,
   onSearch,
+  hideSortButton = false,
 }) => {
   const { isGuestMode } = useUser();
-  const { t } = useTranslation(['search', 'common']);
+  const { t } = useTranslation(['search', 'common', 'trump']);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [selectedSorts, setSelectedSorts] = useState<string[]>([]);
   const removeFilterRef = React.useRef<((filter: string) => void) | null>(null);
@@ -61,10 +63,12 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
 
   const { isTablet, isDesktop, isLargeDesktop, width } = getScreenInfo();
   const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
-  const horizontalPadding = isLargeDesktop ? 32 : isDesktopWeb ? 24 : isTablet ? 20 : 16;
-  const containerRadius = isLargeDesktop ? 28 : isDesktopWeb ? 24 : isTablet ? 22 : 30;
-  const verticalPadding = isLargeDesktop ? 16 : isDesktopWeb ? 14 : isTablet ? 12 : 10;
-  const marginHorizontal = isLargeDesktop ? 20 : isDesktopWeb ? 16 : isTablet ? 14 : 10;
+  // Responsive padding and margins using responsiveSpacing for better mobile support
+  // Values are optimized for mobile web experience
+  const horizontalPadding = responsiveSpacing(8, 10, isLargeDesktop ? 16 : 12);
+  const containerRadius = scaleSize(isLargeDesktop ? 28 : isDesktopWeb ? 24 : isTablet ? 22 : 20);
+  const verticalPadding = responsiveSpacing(5, 6, isLargeDesktop ? 8 : 7);
+  const marginHorizontal = responsiveSpacing(5, 7, isLargeDesktop ? 10 : 8);
 
   const handleRemoveFilter = (filterToRemove: string) => {
     removeFilterRef.current?.(filterToRemove);
@@ -98,20 +102,27 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
       )}
 
       <View style={[headerStyles.topRow, { flexDirection: rowDirection('row') }]}>
-        <MenuComp options={menuOptions} onSelectOption={onSelectMenuItem} />
-        <SearchBar
-          placeholder={placeholder}
-          filterOptions={filterOptions}
-          sortOptions={sortOptions}
-          searchData={searchData}
-          onSearch={onSearch}
-          onFiltersChange={handleFiltersChange}
-          onSortsChange={handleSortsChange}
-          onRemoveFilterRequested={(fn) => { removeFilterRef.current = fn; }}
-          onRemoveSortRequested={(fn) => { removeSortRef.current = fn; }}
-          renderSelectedRow={false}
-        />
-        <ModeToggleButton mode={mode} onToggle={onToggleMode} />
+        <View style={headerStyles.menuWrapper}>
+          <MenuComp options={menuOptions} onSelectOption={onSelectMenuItem} />
+        </View>
+        <View style={headerStyles.searchBarWrapper}>
+          <SearchBar
+            placeholder={placeholder}
+            filterOptions={filterOptions}
+            sortOptions={sortOptions}
+            searchData={searchData}
+            onSearch={onSearch}
+            onFiltersChange={handleFiltersChange}
+            onSortsChange={handleSortsChange}
+            onRemoveFilterRequested={(fn) => { removeFilterRef.current = fn; }}
+            onRemoveSortRequested={(fn) => { removeSortRef.current = fn; }}
+            renderSelectedRow={false}
+            hideSortButton={hideSortButton}
+          />
+        </View>
+        <View style={headerStyles.toggleWrapper}>
+          <ModeToggleButton mode={mode} onToggle={onToggleMode} />
+        </View>
       </View>
 
       {/* Selected Filters & Sorts Row - Full width scrollable */}
@@ -136,7 +147,7 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
                     <Text style={headerStyles.selectedFilterSortButtonText}>
                       {t(`search:sort.${sort}`)}
                     </Text>
-                    <Ionicons name="close-circle" size={12} color={colors.black} style={headerStyles.removeIcon} />
+                    <Ionicons name="close-circle" size={scaleSize(12)} color={colors.black} style={headerStyles.removeIcon} />
                   </TouchableOpacity>
                 ))}
               </>
@@ -156,9 +167,10 @@ const HeaderComp: React.FC<HeaderSectionProps> = ({
                     onPress={() => handleRemoveFilter(filter)}
                   >
                     <Text style={headerStyles.selectedFilterSortButtonText}>
-                      {t(`search:filters.${filter}`)}
+                      {/* Try trump:filters first (for trump screen), then search:filters */}
+                      {t(`trump:filters.${filter}`, { defaultValue: t(`search:filters.${filter}`, { defaultValue: filter }) })}
                     </Text>
-                    <Ionicons name="close-circle" size={12} color={colors.black} style={headerStyles.removeIcon} />
+                    <Ionicons name="close-circle" size={scaleSize(12)} color={colors.black} style={headerStyles.removeIcon} />
                   </TouchableOpacity>
                 ))}
               </>
@@ -181,8 +193,26 @@ const headerStyles = StyleSheet.create({
     // Dynamic styles applied in JSX for responsive padding and radius
   },
   topRow: {
+    flexDirection: 'row',
     justifyContent: "space-between",
     alignItems: "center",
+    gap: responsiveSpacing(4, 6, 8), // Responsive gap between elements for better mobile spacing
+    width: '100%',
+  },
+  menuWrapper: {
+    flexShrink: 0, // Don't shrink menu icon
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchBarWrapper: {
+    flex: 1, // Take remaining space
+    minWidth: 0, // Allow shrinking below content size
+    marginHorizontal: responsiveSpacing(2, 4, 6),
+  },
+  toggleWrapper: {
+    flexShrink: 0, // Don't shrink toggle button
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   screenTitle: {
     fontSize: responsiveFontSize(FontSizes.body, 17, 19),
@@ -229,7 +259,7 @@ const headerStyles = StyleSheet.create({
     flexDirection: "row-reverse",
     alignItems: "center",
     gap: responsiveSpacing(3, 4, 5),
-    ...createShadowStyle("colors.black", { width: 0, height: 0.5 }, 0.05, 1),
+    ...createShadowStyle(colors.black, { width: 0, height: scaleSize(0.5) }, 0.05, scaleSize(1)),
     elevation: 1,
   },
   selectedFilterSortButtonText: {

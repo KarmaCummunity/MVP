@@ -156,6 +156,17 @@ class ApiService {
     return this.request(`/api/users/${userId}`);
   }
 
+  /**
+   * Resolve user ID from firebase_uid, google_id, or email to UUID
+   * This is used when the client has Firebase UID or Google ID and needs the database UUID
+   */
+  async resolveUserId(params: { firebase_uid?: string; google_id?: string; email?: string }): Promise<ApiResponse> {
+    return this.request('/api/users/resolve-id', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  }
+
   async getUsers(filters: {
     city?: string;
     search?: string;
@@ -265,6 +276,7 @@ class ApiService {
     status?: string;
     limit?: number;
     offset?: number;
+    include_past?: string;
   } = {}): Promise<ApiResponse> {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {

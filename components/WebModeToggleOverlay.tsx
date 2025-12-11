@@ -154,7 +154,7 @@ const WebModeToggleOverlay: React.FC = () => {
           {/* Left Side: Logo */}
           <View style={styles.logoContainer}>
             <Image
-              source={require('../assets/images/pink_logo.png')}
+              source={require('../assets/images/new_logo_black.png')}
               style={styles.logo}
               resizeMode="contain"
             />

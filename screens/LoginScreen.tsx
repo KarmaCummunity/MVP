@@ -303,31 +303,73 @@ export default function LoginScreen() {
           setEmailStatusColor(colors.error);
           return;
         }
-        const userData = {
-          id: fbUser.uid,
-          name: fbUser.displayName || email.split('@')[0],
-          email: fbUser.email || email,
-          phone: fbUser.phoneNumber || '+9720000000',
-          avatar: fbUser.photoURL || 'https://i.pravatar.cc/150?img=1',
-          bio: '',
-          karmaPoints: 0,
-          joinDate: nowIso,
-          isActive: true,
-          lastActive: nowIso,
-          location: { city: t('common:labels.countryIsrael') as string, country: 'IL' },
-          interests: [],
-          roles: ['user'],
-          postsCount: 0,
-          followersCount: 0,
-          followingCount: 0,
-          notifications: [],
-          settings: { language: 'he', darkMode: false, notificationsEnabled: true },
-        } as any;
+        // Get UUID from server using firebase_uid
         try {
-          await restAdapter.create('users', userData.id, userData.id, userData);
-        } catch (e) {
+          const { apiService } = await import('../utils/apiService');
+          const resolveResponse = await apiService.resolveUserId({ 
+            firebase_uid: fbUser.uid,
+            email: fbUser.email || email 
+          });
+          
+          if (!resolveResponse.success || !(resolveResponse as any).user) {
+            // Fallback: try to get user by email
+            const userResponse = await apiService.getUserById(fbUser.email || email);
+            if (userResponse.success && userResponse.data) {
+              const serverUser = userResponse.data;
+              const userData = {
+                id: serverUser.id, // UUID from database
+                name: serverUser.name || fbUser.displayName || email.split('@')[0],
+                email: serverUser.email || fbUser.email || email,
+                phone: serverUser.phone || fbUser.phoneNumber || '+9720000000',
+                avatar: serverUser.avatar_url || fbUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+                bio: serverUser.bio || '',
+                karmaPoints: serverUser.karma_points || 0,
+                joinDate: serverUser.join_date || serverUser.created_at || nowIso,
+                isActive: serverUser.is_active !== false,
+                lastActive: serverUser.last_active || nowIso,
+                location: { city: serverUser.city || t('common:labels.countryIsrael') as string, country: serverUser.country || 'IL' },
+                interests: serverUser.interests || [],
+                roles: serverUser.roles || ['user'],
+                postsCount: serverUser.posts_count || 0,
+                followersCount: serverUser.followers_count || 0,
+                followingCount: serverUser.following_count || 0,
+                notifications: [],
+                settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+              } as any;
+              await setCurrentPrincipal({ user: userData as any, role: 'user' });
+              return;
+            }
+            throw new Error('Failed to get user from server');
+          }
+          
+          // Use UUID from server
+          const serverUser = (resolveResponse as any).user;
+          const userData = {
+            id: serverUser.id, // UUID from database - this is the primary identifier
+            name: serverUser.name || fbUser.displayName || email.split('@')[0],
+            email: serverUser.email || fbUser.email || email,
+            phone: serverUser.phone || fbUser.phoneNumber || '+9720000000',
+            avatar: serverUser.avatar || fbUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+            bio: serverUser.bio || '',
+            karmaPoints: serverUser.karmaPoints || 0,
+            joinDate: serverUser.createdAt || serverUser.joinDate || nowIso,
+            isActive: serverUser.isActive !== false,
+            lastActive: serverUser.lastActive || nowIso,
+            location: serverUser.location || { city: t('common:labels.countryIsrael') as string, country: 'IL' },
+            interests: serverUser.interests || [],
+            roles: serverUser.roles || ['user'],
+            postsCount: serverUser.postsCount || 0,
+            followersCount: serverUser.followersCount || 0,
+            followingCount: serverUser.followingCount || 0,
+            notifications: [],
+            settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+          } as any;
+          await setCurrentPrincipal({ user: userData as any, role: 'user' });
+        } catch (error) {
+          console.error('Failed to get user UUID from server:', error);
+          setEmailStatusMessage(t('auth:email.invalidPassword') as string);
+          setEmailStatusColor(colors.error);
         }
-        await setCurrentPrincipal({ user: userData as any, role: 'user' });
       } else {
         try {
           const fbUser = await fbSignUpWithEmail(email, passwordValue);
@@ -337,30 +379,73 @@ export default function LoginScreen() {
           if (String(e?.code || '').includes('auth/email-already-in-use')) {
             try {
               const fbUser = await fbSignInWithEmail(email, passwordValue);
+              
+              // Get UUID from server using firebase_uid
+              const { apiService } = await import('../utils/apiService');
+              const resolveResponse = await apiService.resolveUserId({ 
+                firebase_uid: fbUser.uid,
+                email: fbUser.email || email 
+              });
+              
+              if (!resolveResponse.success || !(resolveResponse as any).user) {
+                // Fallback: try to get user by email
+                const userResponse = await apiService.getUserById(fbUser.email || email);
+                if (userResponse.success && userResponse.data) {
+                  const serverUser = userResponse.data;
+                  const userData = {
+                    id: serverUser.id, // UUID from database
+                    name: serverUser.name || fbUser.displayName || email.split('@')[0],
+                    email: serverUser.email || fbUser.email || email,
+                    phone: serverUser.phone || fbUser.phoneNumber || '+9720000000',
+                    avatar: serverUser.avatar_url || fbUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+                    bio: serverUser.bio || '',
+                    karmaPoints: serverUser.karma_points || 0,
+                    joinDate: serverUser.join_date || serverUser.created_at || nowIso,
+                    isActive: serverUser.is_active !== false,
+                    lastActive: serverUser.last_active || nowIso,
+                    location: { city: serverUser.city || t('common:labels.countryIsrael') as string, country: serverUser.country || 'IL' },
+                    interests: serverUser.interests || [],
+                    roles: serverUser.roles || ['user'],
+                    postsCount: serverUser.posts_count || 0,
+                    followersCount: serverUser.followers_count || 0,
+                    followingCount: serverUser.following_count || 0,
+                    notifications: [],
+                    settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+                  } as any;
+                  // User is already in database from resolveUserId/getUserById - no need to create via restAdapter
+                  await saveRecentEmail(email);
+                  await setCurrentPrincipal({ user: userData as any, role: 'user' });
+                  return;
+                }
+                throw new Error('Failed to get user from server');
+              }
+              
+              // Use UUID from server
+              const serverUser = (resolveResponse as any).user;
               const userData = {
-                id: fbUser.uid,
-                name: fbUser.displayName || email.split('@')[0],
-                email: fbUser.email || email,
-                phone: fbUser.phoneNumber || '+9720000000',
-                avatar: fbUser.photoURL || 'https://i.pravatar.cc/150?img=1',
-                bio: '',
-                karmaPoints: 0,
-                joinDate: nowIso,
-                isActive: true,
-                lastActive: nowIso,
-                location: { city: t('common:labels.countryIsrael') as string, country: 'IL' },
-                interests: [],
-                roles: ['user'],
-                postsCount: 0,
-                followersCount: 0,
-                followingCount: 0,
+                id: serverUser.id, // UUID from database - this is the primary identifier
+                name: serverUser.name || fbUser.displayName || email.split('@')[0],
+                email: serverUser.email || fbUser.email || email,
+                phone: serverUser.phone || fbUser.phoneNumber || '+9720000000',
+                avatar: serverUser.avatar || fbUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+                bio: serverUser.bio || '',
+                karmaPoints: serverUser.karmaPoints || 0,
+                joinDate: serverUser.createdAt || serverUser.joinDate || nowIso,
+                isActive: serverUser.isActive !== false,
+                lastActive: serverUser.lastActive || nowIso,
+                location: serverUser.location || { city: t('common:labels.countryIsrael') as string, country: 'IL' },
+                interests: serverUser.interests || [],
+                roles: serverUser.roles || ['user'],
+                postsCount: serverUser.postsCount || 0,
+                followersCount: serverUser.followersCount || 0,
+                followingCount: serverUser.followingCount || 0,
                 notifications: [],
-                settings: { language: 'he', darkMode: false, notificationsEnabled: true },
+                settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
               } as any;
-              try { await restAdapter.create('users', userData.id, userData.id, userData); } catch (_) { }
+              // User is already in database from resolveUserId/getUserById - no need to create via restAdapter
               await saveRecentEmail(email);
               await setCurrentPrincipal({ user: userData as any, role: 'user' });
-            } catch (signinErr) {
+            } catch (signinErr: any) {
               setEmailStatusMessage(t('auth:email.invalidPassword') as string);
               setEmailStatusColor(colors.error);
             }
@@ -499,7 +584,7 @@ export default function LoginScreen() {
               {/* Logo */}
               <View style={styles.logoContainer}>
                 <Image
-                  source={require('../assets/images/pink_logo.png')}
+                  source={require('../assets/images/new_logo_black.png')}
                   style={styles.logo}
                   resizeMode="contain"
                 />

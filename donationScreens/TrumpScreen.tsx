@@ -7,7 +7,7 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
+import { NavigationProp, ParamListBase, useFocusEffect, useRoute } from '@react-navigation/native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useTranslation } from 'react-i18next';
 import * as Location from 'expo-location';
@@ -16,6 +16,7 @@ import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import HeaderComp from '../components/HeaderComp';
 import DonationStatsFooter from '../components/DonationStatsFooter';
+import ItemDetailsModal from '../components/ItemDetailsModal';
 import { db } from '../utils/databaseService';
 import { useUser } from '../stores/userStore';
 import ScrollContainer from '../components/ScrollContainer';
@@ -33,8 +34,45 @@ export default function TrumpScreen({
 }) {
   console.log('🚗 TrumpScreen - Refactored Component Rendered');
 
-  const [mode, setMode] = useState(true); // true = Offer Mode (Driver), false = Search Mode (Passenger)
+  const route = useRoute();
+  const routeParams = route.params as { mode?: string } | undefined;
+  
+  // Get initial mode from URL (deep link) or default to search mode (מחפש)
+  // mode: false = Offer Mode (Driver/פרסום), true = Search Mode (Passenger/חיפוש)
+  // URL mode: 'offer' = false, 'search' = true
+  // Default is search mode (true)
+  const initialMode = routeParams?.mode === 'offer' ? false : true;
+  
+  const [mode, setMode] = useState(initialMode); // false = Offer Mode (Driver/פרסום), true = Search Mode (Passenger/חיפוש)
   const { t } = useTranslation(['donations', 'common', 'trump', 'search']);
+
+  // Update mode when route params change (e.g., from deep link)
+  useEffect(() => {
+    if (routeParams?.mode && routeParams.mode !== 'undefined' && routeParams.mode !== 'null') {
+      const newMode = routeParams.mode === 'search';
+      if (newMode !== mode) {
+        setMode(newMode);
+      }
+    }
+  }, [routeParams?.mode]);
+
+  // Update URL when mode changes (toggle button pressed) or when screen loads without mode
+  useEffect(() => {
+    const newMode = mode ? 'search' : 'offer';
+    const currentMode = routeParams?.mode;
+    
+    // If no mode in URL, set it to search (default)
+    if (!currentMode || currentMode === 'undefined' || currentMode === 'null') {
+      // Set initial mode to search in URL
+      (navigation as any).setParams({ mode: 'search' });
+      return;
+    }
+    
+    // Only update URL if mode actually changed
+    if (newMode !== currentMode) {
+      (navigation as any).setParams({ mode: newMode });
+    }
+  }, [mode, navigation, routeParams?.mode]);
 
   // === Shared State ===
   const { selectedUser } = useUser();
@@ -45,6 +83,10 @@ export default function TrumpScreen({
   const [allRides, setAllRides] = useState<any[]>([]); // Active rides for search
   const [filteredRides, setFilteredRides] = useState<any[]>([]); // Filtered active rides
   const [recentRides, setRecentRides] = useState<any[]>([]); // User's Published History
+  
+  // === Modal State ===
+  const [selectedRide, setSelectedRide] = useState<any | null>(null);
+  const [showRideModal, setShowRideModal] = useState(false);
 
   // === Search Mode State ===
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,6 +99,7 @@ export default function TrumpScreen({
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
   const [detectedAddress, setDetectedAddress] = useState<string>("");
   const [isLocating, setIsLocating] = useState(false);
+  const [isLocationError, setIsLocationError] = useState(false);
 
   // Location Fetching Effect
   useEffect(() => {
@@ -65,15 +108,18 @@ export default function TrumpScreen({
     const getLocation = async () => {
       if (!useCurrentLocation) {
         setDetectedAddress("");
+        setIsLocationError(false);
         return;
       }
 
       setIsLocating(true);
+      setIsLocationError(false);
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
           if (isMounted) {
             setDetectedAddress(t('trump:errors.locationPermissionDenied') || "Permission denied");
+            setIsLocationError(true);
             setIsLocating(false);
           }
           return;
@@ -109,12 +155,19 @@ export default function TrumpScreen({
           }
 
           setDetectedAddress(formattedAddress);
+          setIsLocationError(false);
         } else {
-          if (isMounted) setDetectedAddress(t('trump:errors.locationFetchFailed') || "Address not found");
+          if (isMounted) {
+            setDetectedAddress(t('trump:errors.locationFetchFailed') || "Address not found");
+            setIsLocationError(true);
+          }
         }
       } catch (error) {
         console.error("Error fetching location:", error);
-        if (isMounted) setDetectedAddress(t('trump:errors.locationFetchFailed') || "Location unavailable");
+        if (isMounted) {
+          setDetectedAddress(t('trump:errors.locationFetchFailed') || "Location unavailable");
+          setIsLocationError(true);
+        }
       } finally {
         if (isMounted) setIsLocating(false);
       }
@@ -131,10 +184,19 @@ export default function TrumpScreen({
   const [immediateDeparture, setImmediateDeparture] = useState(true); // 1. Immediate?
   const [departureTime, setDepartureTime] = useState("");           // 2. If not, what time?
   const [leavingToday, setLeavingToday] = useState(true);           // 3. If time set, is it today?
-  const [rideDate, setRideDate] = useState(new Date());             // 4. If not today, what date?
+  const [rideDate, setRideDate] = useState<Date>(() => new Date());             // 4. If not today, what date?
   const [isRecurring, setIsRecurring] = useState(false);            // 5. Recurring?
   const [recurrenceFrequency, setRecurrenceFrequency] = useState(1);
   const [recurrenceUnit, setRecurrenceUnit] = useState<'day' | 'week' | 'month' | null>(null);
+
+  // Ensure rideDate is always valid
+  const handleDateChange = (date: Date) => {
+    if (date && date instanceof Date && !isNaN(date.getTime())) {
+      setRideDate(date);
+    } else {
+      setRideDate(new Date());
+    }
+  };
 
   // Other Offer Details
   const [seats, setSeats] = useState(3);
@@ -145,7 +207,8 @@ export default function TrumpScreen({
   // Static Options (Now Translated Keys mapped to Labels)
   // trump:filters is now an object with keys like {noCostSharing: "...", noSmoking: "...", ...}
   const filtersObj = (t('trump:filters', { returnObjects: true }) as Record<string, string>) || {};
-  const trumpFilterOptions = Object.values(filtersObj);
+  // Use keys instead of values so SearchBar can translate them properly
+  const trumpFilterOptions = Object.keys(filtersObj);
 
   const trumpSortOptions = (t('trump:sorts', { returnObjects: true }) as unknown as string[]) || [];
 
@@ -153,14 +216,28 @@ export default function TrumpScreen({
   // placeholder={mode ? t('trump:ui.searchPlaceholder.offer') : t('trump:ui.searchPlaceholder.seek')}
 
   // --- 1. Data Loading ---
-  const loadRides = useCallback(async () => {
+  const loadRides = useCallback(async (includePastOverride?: boolean) => {
     try {
       const uid = selectedUser?.id || 'guest';
+      console.log('🔄 Loading rides for user:', uid);
 
+      // Check if includePast filter is selected, or use override
+      const shouldIncludePast = includePastOverride !== undefined 
+        ? includePastOverride 
+        : selectedFilters.includes('includePast');
+      
       const [activeRides, myHistory] = await Promise.all([
-        db.listRides(uid, { includePast: true }), // Active Search Data
+        db.listRides(uid, { includePast: shouldIncludePast }), // Active Search Data - include past only if filter is selected
         selectedUser?.id ? db.getUserRides(selectedUser.id, 'driver') : Promise.resolve([]) // History Data
       ]);
+
+      console.log('📊 Loaded rides - Active:', activeRides?.length || 0, 'History:', myHistory?.length || 0);
+      if (activeRides && activeRides.length > 0) {
+        console.log('📋 Sample active ride:', JSON.stringify(activeRides[0], null, 2));
+      }
+      if (myHistory && myHistory.length > 0) {
+        console.log('📋 Sample history ride:', JSON.stringify(myHistory[0], null, 2));
+      }
 
       // Enrich activeRides with real user names
       const enrichedRides = await Promise.all((activeRides || []).map(async (ride: any) => {
@@ -184,24 +261,46 @@ export default function TrumpScreen({
         return ride;
       }));
 
+      console.log('✅ Enriched rides count:', enrichedRides.length);
+      if (enrichedRides.length > 0) {
+        console.log('📋 Sample enriched ride:', {
+          id: enrichedRides[0].id,
+          from: enrichedRides[0].from,
+          to: enrichedRides[0].to,
+          date: enrichedRides[0].date,
+          time: enrichedRides[0].time,
+          driverId: enrichedRides[0].driverId,
+          driverName: enrichedRides[0].driverName
+        });
+      }
       setAllRides(enrichedRides);
 
       // Map history to UI format if needed (or ensure backend consistency)
       const userRecent = (myHistory || []).map((r: any) => ({
         ...r,
-        status: r.status || t('trump:status.published') as string,
+        status: r.status || 'active', // Changed from 'published' to 'active'
         price: r.price || 0,
       }));
       setRecentRides(userRecent);
     } catch (e) {
-      console.error("Failed to load rides", e);
+      console.error("❌ Failed to load rides", e);
       setAllRides([]);
       setRecentRides([]);
     }
-  }, [selectedUser?.id, t]);
+  }, [selectedUser?.id, t, selectedFilters]);
+
+  // Reload rides when includePast filter changes
+  useEffect(() => {
+    if (mode) { // Only in search mode
+      const shouldIncludePast = selectedFilters.includes('includePast');
+      loadRides(shouldIncludePast);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFilters, mode]); // Reload when filters change
 
   useFocusEffect(
     useCallback(() => {
+      console.log('🔄 useFocusEffect triggered, refreshKey:', refreshKey);
       loadRides();
     }, [loadRides, refreshKey])
   );
@@ -209,6 +308,8 @@ export default function TrumpScreen({
   // --- 2. Search Logic (Search Mode) ---
   const getFilteredRides = useCallback(() => {
     let filtered = [...allRides];
+    
+    console.log('🔍 Filtering rides - Total:', allRides.length, 'Search query:', searchQuery, 'Filters:', selectedFilters.length);
 
     // Filter by text
     if (searchQuery) {
@@ -219,16 +320,24 @@ export default function TrumpScreen({
         (ride.to?.toLowerCase()?.includes(q) ?? false) ||
         (ride.category?.toLowerCase()?.includes(q) ?? false)
       );
+      console.log('🔍 After text filter:', filtered.length);
     }
 
     // Apply Filters (Search Mode Tags)
     if (selectedFilters.length > 0) {
       selectedFilters.forEach(f => {
-        if (f === t('trump:filters.noCostSharing')) filtered = filtered.filter(r => (r.price ?? 0) === 0);
-        if (f === t('trump:filters.noSmoking')) filtered = filtered.filter(r => r.noSmoking);
-        if (f === t('trump:filters.withPets')) filtered = filtered.filter(r => r.petsAllowed);
-        if (f === t('trump:filters.withKids')) filtered = filtered.filter(r => r.kidsFriendly);
+        // f is now a key like 'noCostSharing', not the translated value
+        if (f === 'noCostSharing') filtered = filtered.filter(r => (r.price ?? 0) === 0);
+        if (f === 'noSmoking') filtered = filtered.filter(r => r.noSmoking);
+        if (f === 'withPets') filtered = filtered.filter(r => r.petsAllowed);
+        if (f === 'withKids') filtered = filtered.filter(r => r.kidsFriendly);
+        if (f === 'includePast') {
+          // Include past rides - don't filter them out
+          // This filter is handled by the server, so we don't need to filter here
+          // But we can add a visual indicator if needed
+        }
       });
+      console.log('🔍 After tag filters:', filtered.length);
     }
 
     // Sorting
@@ -239,6 +348,7 @@ export default function TrumpScreen({
       // Add other sorts as needed
     }
 
+    console.log('✅ Final filtered rides:', filtered.length);
     return filtered;
   }, [allRides, searchQuery, selectedFilters, selectedSorts, t]);
 
@@ -247,7 +357,7 @@ export default function TrumpScreen({
   }, [getFilteredRides]);
 
   const handleSearch = (query: string, filters?: string[], sorts?: string[]) => {
-    if (mode) {
+    if (!mode) {
       // Offer Mode: Header search input acts as "Destination"
       setToLocation(query);
     } else {
@@ -265,7 +375,7 @@ export default function TrumpScreen({
     // If using current location, we MUST have a detected address.
     // Otherwise, we need a manual fromLocation.
     const hasOrigin = useCurrentLocation
-      ? Boolean(detectedAddress && detectedAddress.length > 0)
+      ? Boolean(detectedAddress && detectedAddress.length > 0 && !isLocationError)
       : Boolean(fromLocation && fromLocation.trim().length > 0);
 
     // Time validity:
@@ -282,9 +392,35 @@ export default function TrumpScreen({
 
   const handleCreateRide = async () => {
     if (!isFormValid()) {
-      if (useCurrentLocation && !detectedAddress) {
-        Alert.alert(t('common:errorTitle') || 'שגיאה', t('trump:errors.locationNotResolved') || 'אנא המתן לזיהוי המיקום או הזן כתובת ידנית');
+      // Provide detailed error messages
+      const errors: string[] = [];
+      
+      if (!toLocation || !toLocation.trim()) {
+        errors.push('יש להזין יעד');
       }
+      
+      if (useCurrentLocation) {
+        if (!detectedAddress || isLocationError) {
+          errors.push('אנא המתן לזיהוי המיקום או הזן כתובת ידנית');
+        }
+      } else {
+        if (!fromLocation || !fromLocation.trim()) {
+          errors.push('יש להזין כתובת יציאה');
+        }
+      }
+      
+      if (!immediateDeparture && (!departureTime || !departureTime.trim())) {
+        errors.push('יש להזין שעת יציאה');
+      }
+      
+      if (isRecurring && !recurrenceUnit) {
+        errors.push('יש לבחור תדירות לנסיעה חוזרת');
+      }
+      
+      Alert.alert(
+        t('common:errorTitle') || 'שגיאה', 
+        errors.length > 0 ? errors.join('\n') : (t('trump:errors.formInvalid') || 'יש למלא את כל השדות הנדרשים')
+      );
       return;
     }
 
@@ -297,17 +433,26 @@ export default function TrumpScreen({
       if (immediateDeparture || leavingToday) {
         dateToSave = new Date().toISOString().split('T')[0]; // Current date YYYY-MM-DD
       } else {
-        dateToSave = rideDate.toISOString().split('T')[0]; // Selected date YYYY-MM-DD
+        // Ensure rideDate is valid before using toISOString
+        const validDate = rideDate && rideDate instanceof Date && !isNaN(rideDate.getTime()) 
+          ? rideDate 
+          : new Date();
+        dateToSave = validDate.toISOString().split('T')[0]; // Selected date YYYY-MM-DD
       }
 
       // --- Calculate Final Time ---
       let timeToSave: string;
       if (immediateDeparture) {
-        // Current time HH:MM
+        // Current time HH:MM in local timezone (not UTC)
         const now = new Date();
-        timeToSave = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        // Use local time, not UTC
+        const localHours = now.getHours();
+        const localMinutes = now.getMinutes();
+        timeToSave = `${String(localHours).padStart(2, '0')}:${String(localMinutes).padStart(2, '0')}`;
+        console.log('⏰ Immediate departure time (local):', timeToSave);
       } else {
         timeToSave = departureTime; // Selected HH:MM
+        console.log('⏰ Selected departure time:', timeToSave);
       }
 
       const baseRideData = {
@@ -319,22 +464,26 @@ export default function TrumpScreen({
         time: timeToSave,
         seats: seats,
         price: Number(price) || 0,
-        noSmoking: selectedFormTags.includes(t('trump:filters.noSmoking') as string),
-        petsAllowed: selectedFormTags.includes(t('trump:filters.withPets') as string),
-        kidsFriendly: selectedFormTags.includes(t('trump:filters.withKids') as string),
+        noSmoking: selectedFormTags.includes('noSmoking') || selectedFormTags.includes(t('trump:filters.noSmoking') as string),
+        petsAllowed: selectedFormTags.includes('withPets') || selectedFormTags.includes(t('trump:filters.withPets') as string),
+        kidsFriendly: selectedFormTags.includes('withKids') || selectedFormTags.includes(t('trump:filters.withKids') as string),
         isRecurring: isRecurring,
         recurrenceFrequency: recurrenceFrequency,
         recurrenceUnit: recurrenceUnit,
-        status: 'published'
+        status: 'active' // Changed from 'published' to 'active' to match server filter
       };
 
       // Calculate base departure datetime for recurring rides
+      // Use local timezone, not UTC
       const [hours, minutes] = timeToSave.split(':').map(Number);
-      const baseDate = new Date(dateToSave);
+      const baseDate = new Date(dateToSave + 'T00:00:00'); // Create date in local timezone
       baseDate.setHours(hours, minutes, 0, 0);
+      console.log('📅 Base date calculated:', baseDate.toISOString(), 'Local:', baseDate.toLocaleString('he-IL'));
 
       // Create the first ride
+      console.log('🚗 Creating ride with data:', JSON.stringify(baseRideData, null, 2));
       await db.createRide(uid, rideId, baseRideData);
+      console.log('✅ Ride created successfully');
 
       // If recurring, create 5 future instances
       if (isRecurring && recurrenceUnit) {
@@ -388,16 +537,22 @@ export default function TrumpScreen({
       setSelectedFormTags([]);
 
       // Also clear header search if possible via searchQuery state if it was bound
-      if (mode) setSearchQuery('');
+      if (!mode) setSearchQuery('');
 
       Alert.alert(t('trump:success.title') as string, t('trump:success.ridePublished') as string);
 
-      // Refresh Data
-      setRefreshKey(prev => prev + 1);
+      // Refresh Data - wait a bit for backend to update cache
+      setTimeout(() => {
+        setRefreshKey(prev => prev + 1);
+      }, 1500);
 
     } catch (e) {
       console.error("Failed to create ride", e);
-      Alert.alert(t('common:errorTitle') as string, t('trump:errors.saveFailed') as string);
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      Alert.alert(
+        t('common:errorTitle') as string, 
+        `${t('trump:errors.saveFailed') as string}\n${errorMessage}`
+      );
     }
   };
 
@@ -450,6 +605,16 @@ export default function TrumpScreen({
   const handleToggleMode = () => setMode(!mode);
 
   const handleSelectRide = (ride: any) => {
+    setSelectedRide(ride);
+    setShowRideModal(true);
+  };
+
+  const handleCloseRideModal = () => {
+    setShowRideModal(false);
+    setSelectedRide(null);
+  };
+
+  const handleSelectRideOld = (ride: any) => {
     // In Search Mode: Show join details/contact
     Alert.alert(
       t('trump:rideOf', { name: ride.driverName }) as string,
@@ -471,93 +636,94 @@ export default function TrumpScreen({
         onSelectMenuItem={() => { }}
         title=""
         // Dynamic placeholder based on mode
-        placeholder={mode ? t('trump:ui.searchPlaceholder.offer') : t('trump:ui.searchPlaceholder.seek')}
+        placeholder={mode ? t('trump:ui.searchPlaceholder.seek') : t('trump:ui.searchPlaceholder.offer')}
         filterOptions={trumpFilterOptions}
         sortOptions={trumpSortOptions}
         searchData={allRides}
         onSearch={handleSearch}
-        // Hide sort button in offer mode (mode === true)
-        hideSortButton={mode}
+        // Hide sort button in offer mode (mode === false)
+        hideSortButton={!mode}
       />
 
-      {mode ? (
-        // === OFFER MODE ===
+      {!mode ? (
+        // === OFFER MODE (Driver) - Show Form ===
         <ScrollContainer
-          style={localStyles.container}
-          contentStyle={localStyles.scrollContent}
-          keyboardShouldPersistTaps="always"
-        >
-          {/* 1. Form */}
-          <RideOfferForm
-            destination={toLocation}
-            onDestinationChange={setToLocation}
+        style={localStyles.container}
+        contentStyle={localStyles.scrollContent}
+        keyboardShouldPersistTaps="always"
+      >
+        {/* 1. Form */}
+        <RideOfferForm
+          destination={toLocation}
+          onDestinationChange={setToLocation}
 
-            fromLocation={fromLocation}
-            onFromLocationChange={setFromLocation}
-            useCurrentLocation={useCurrentLocation}
-            onToggleCurrentLocation={setUseCurrentLocation}
-            detectedAddress={detectedAddress}
-            isLocating={isLocating}
+          fromLocation={fromLocation}
+          onFromLocationChange={setFromLocation}
+          useCurrentLocation={useCurrentLocation}
+          onToggleCurrentLocation={setUseCurrentLocation}
+          detectedAddress={detectedAddress}
+          isLocating={isLocating}
+          isLocationError={isLocationError}
 
-            // Scheduling
-            departureTime={departureTime}
-            onDepartureTimeChange={setDepartureTime}
-            immediateDeparture={immediateDeparture}
-            onToggleImmediateDeparture={setImmediateDeparture}
-            leavingToday={leavingToday}
-            onToggleLeavingToday={setLeavingToday}
-            rideDate={rideDate}
-            onDateChange={setRideDate}
-            isRecurring={isRecurring}
-            onToggleRecurring={setIsRecurring}
-            recurrenceFrequency={recurrenceFrequency}
-            onRecurrenceFrequencyChange={setRecurrenceFrequency}
-            recurrenceUnit={recurrenceUnit}
-            onRecurrenceUnitChange={setRecurrenceUnit}
+          // Scheduling
+          departureTime={departureTime}
+          onDepartureTimeChange={setDepartureTime}
+          immediateDeparture={immediateDeparture}
+          onToggleImmediateDeparture={setImmediateDeparture}
+          leavingToday={leavingToday}
+          onToggleLeavingToday={setLeavingToday}
+          rideDate={rideDate}
+          onDateChange={handleDateChange}
+          isRecurring={isRecurring}
+          onToggleRecurring={setIsRecurring}
+          recurrenceFrequency={recurrenceFrequency}
+          onRecurrenceFrequencyChange={setRecurrenceFrequency}
+          recurrenceUnit={recurrenceUnit}
+          onRecurrenceUnitChange={setRecurrenceUnit}
 
-            seats={seats}
-            onSeatsChange={setSeats}
-            price={price}
-            onPriceChange={setPrice}
+          seats={seats}
+          onSeatsChange={setSeats}
+          price={price}
+          onPriceChange={setPrice}
 
-            selectedTags={selectedFormTags}
-            onToggleTag={(tag) => {
-              setSelectedFormTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
-            }}
-            availableTags={trumpFilterOptions}
+          selectedTags={selectedFormTags}
+          onToggleTag={(tag) => {
+            setSelectedFormTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+          }}
+          availableTags={trumpFilterOptions}
 
-            onSubmit={handleCreateRide}
-            isValid={isFormValid()}
-            hideDestinationInput={true} // New prop to hide internal input
-          />
+          onSubmit={handleCreateRide}
+          isValid={isFormValid()}
+          hideDestinationInput={true} // New prop to hide internal input
+        />
 
-          {/* 2. History */}
-          <View style={localStyles.section}>
-            <Text style={localStyles.sectionTitle}>{t('trump:ui.yourRecentRides')}</Text>
-            {recentRides.length === 0 ? (
-              <Text style={localStyles.emptyStateText}>{t('trump:ui.noRecentRides')}</Text>
-            ) : (
-              recentRides.map((ride, idx) => (
-                <RideHistoryCard
-                  key={ride.id || idx}
-                  ride={ride}
-                  onDelete={handleDeleteRide}
-                  onRestore={handleRestoreRide}
-                />
-              ))
-            )}
+        {/* 2. History */}
+        <View style={localStyles.section}>
+          <Text style={localStyles.sectionTitle}>{t('trump:ui.yourRecentRides')}</Text>
+          {recentRides.length === 0 ? (
+            <Text style={localStyles.emptyStateText}>{t('trump:ui.noRecentRides')}</Text>
+          ) : (
+            recentRides.map((ride, idx) => (
+              <RideHistoryCard
+                key={ride.id || idx}
+                ride={ride}
+                onDelete={handleDeleteRide}
+                onRestore={handleRestoreRide}
+              />
+            ))
+          )}
+        </View>
+
+        {/* 3. Groups Section */}
+        <View style={[localStyles.section, { marginTop: 30, paddingBottom: 20 }]}>
+          <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Text style={localStyles.sectionTitle}>{t('trump:ui.whatsappGroups')}</Text>
           </View>
-
-          {/* 3. Groups Section */}
-          <View style={[localStyles.section, { marginTop: 30, paddingBottom: 20 }]}>
-            <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <Text style={localStyles.sectionTitle}>{t('trump:ui.whatsappGroups')}</Text>
-            </View>
-            <AddLinkComponent category="trump" />
-          </View>
-        </ScrollContainer>
+          <AddLinkComponent category="trump" />
+        </View>
+      </ScrollContainer>
       ) : (
-        // === SEARCH MODE ===
+        // === SEARCH MODE (Passenger) - Show Search Results ===
         <View style={localStyles.searchContainer}>
           <View style={localStyles.resultsHeader}>
             <Text style={localStyles.resultsTitle}>
@@ -597,6 +763,15 @@ export default function TrumpScreen({
           </ScrollContainer>
         </View>
       )}
+
+      {/* Ride Details Modal */}
+      <ItemDetailsModal
+        visible={showRideModal}
+        onClose={handleCloseRideModal}
+        item={selectedRide}
+        type="ride"
+        navigation={navigation}
+      />
 
       {/* Footer Stats (Visible in Search Mode usually, or always) */}
       {!mode && (

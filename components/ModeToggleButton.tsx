@@ -3,6 +3,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import colors from '../globals/colors';
 import { useTranslation } from 'react-i18next';
+import { scaleSize, responsiveFontSize, responsiveSpacing } from '../globals/responsive';
+import { FontSizes } from '../globals/constants';
 
 interface ModeToggleButtonProps {
   mode: boolean;
@@ -27,6 +29,8 @@ const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({ mode, onToggle }) =
               localStyles.toggleText,
               !mode ? localStyles.toggleTextSelected : undefined
             ]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
           >
             {t('common:offerer')}
           </Text>
@@ -44,6 +48,8 @@ const ModeToggleButton: React.FC<ModeToggleButtonProps> = ({ mode, onToggle }) =
               localStyles.toggleText,
               mode ? localStyles.toggleTextSelected : undefined
             ]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
           >
             {t('common:seeker')}
           </Text>
@@ -65,34 +71,35 @@ const localStyles = StyleSheet.create({
     flexDirection: 'row-reverse', // RTL support
     backgroundColor: colors.backgroundSecondary,
     borderRadius: 999,
-    height: 32,
-    borderWidth: 1,
+    height: scaleSize(32),
+    borderWidth: scaleSize(1),
     borderColor: colors.border,
-    padding: 2,
+    padding: scaleSize(2),
     alignItems: 'center',
     justifyContent: 'center',
   },
   toggleSegment: {
-    paddingHorizontal: 16,
+    paddingHorizontal: responsiveSpacing(8, 10, 12), // Smaller padding for mobile
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
-    minWidth: 70, // Ensure minimum tap target area
+    borderRadius: scaleSize(14),
+    minWidth: scaleSize(50), // Smaller minWidth for mobile, but still tap-friendly
+    maxWidth: scaleSize(80), // Prevent too wide on large screens
   },
   toggleSelected: {
     backgroundColor: colors.white,
     shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: scaleSize(1) },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: scaleSize(2),
     elevation: 2,
   },
   toggleUnselected: {
     backgroundColor: 'transparent',
   },
   toggleText: {
-    fontSize: 13,
+    fontSize: responsiveFontSize(FontSizes.caption, 11, 13), // Smaller font for mobile to prevent text truncation
     fontWeight: '600',
     color: colors.textSecondary,
   },

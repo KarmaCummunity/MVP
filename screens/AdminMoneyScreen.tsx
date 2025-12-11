@@ -24,6 +24,7 @@ import { USE_BACKEND } from '../utils/dbConfig';
 import { useUser } from '../stores/userStore';
 import { logger } from '../utils/loggerService';
 import ScrollContainer from '../components/ScrollContainer';
+import DatePicker from '../components/DatePicker';
 
 interface Donation {
   id: string;
@@ -615,51 +616,16 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
 
               <View style={styles.formGroup}>
                 <Text style={styles.label}>תאריך *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.date}
-                  onChangeText={(text) => {
-                    // Allow only digits and hyphens, enforce YYYY-MM-DD format
-                    let cleaned = text.replace(/[^\d-]/g, '');
-                    // Auto-format: YYYY-MM-DD
-                    if (cleaned.length > 4 && cleaned[4] !== '-') {
-                      cleaned = cleaned.slice(0, 4) + '-' + cleaned.slice(4);
-                    }
-                    if (cleaned.length > 7 && cleaned[7] !== '-') {
-                      cleaned = cleaned.slice(0, 7) + '-' + cleaned.slice(7);
-                    }
-                    // Limit to YYYY-MM-DD format (10 characters)
-                    if (cleaned.length <= 10) {
-                      setFormData({ ...formData, date: cleaned });
+                <DatePicker
+                  value={formData.date ? new Date(formData.date + 'T00:00:00') : new Date()}
+                  onChange={(date) => {
+                    if (date && date instanceof Date && !isNaN(date.getTime())) {
+                      const dateStr = date.toISOString().split('T')[0];
+                      setFormData({ ...formData, date: dateStr });
                     }
                   }}
-                  placeholder="YYYY-MM-DD (למשל: 2024-01-15)"
-                  placeholderTextColor={colors.textTertiary}
-                  maxLength={10}
+                  placeholder="בחר תאריך"
                 />
-                {formData.date && formData.date.length > 0 && (
-                  <Text style={[styles.label, { fontSize: FontSizes.caption, color: colors.textSecondary, marginTop: 4 }]}>
-                    {(() => {
-                      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-                      if (!dateRegex.test(formData.date)) {
-                        return '⚠️ אנא הזן תאריך בפורמט YYYY-MM-DD';
-                      }
-                      const dateParts = formData.date.split('-');
-                      const year = parseInt(dateParts[0], 10);
-                      const month = parseInt(dateParts[1], 10);
-                      const day = parseInt(dateParts[2], 10);
-                      const testDate = new Date(year, month - 1, day);
-                      if (
-                        testDate.getFullYear() !== year ||
-                        testDate.getMonth() !== month - 1 ||
-                        testDate.getDate() !== day
-                      ) {
-                        return '⚠️ התאריך שהוזן לא תקין';
-                      }
-                      return `✓ ${testDate.toLocaleDateString('he-IL')}`;
-                    })()}
-                  </Text>
-                )}
               </View>
 
               <View style={[styles.formGroup, styles.recurringGroup]}>

@@ -56,18 +56,6 @@ export default function HomeTabStack(): React.ReactElement {
   const navigation = useNavigation();
   const { resetHomeScreenTrigger } = useUser();
 
-  // Get the stack navigator reference - useNavigation() returns parent, so we need to get the stack itself
-  // We'll use a ref to store the stack navigator when it's available
-  const stackNavigatorRef = React.useRef<any>(null);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      logger.debug('HomeTabStack', 'Navigator focused');
-      // Navigation to HomeMain is handled by BottomNavigator when tab is pressed
-      // We don't need to handle it here to avoid navigation conflicts
-    }, [])
-  );
-
   // Navigate to HomeMain when resetHomeScreenTrigger changes
   // This is called when the home tab is pressed in BottomNavigator
   useEffect(() => {
@@ -84,7 +72,7 @@ export default function HomeTabStack(): React.ReactElement {
           mode
         });
 
-        // Only navigate if we're not already on HomeMain
+        // Always navigate to HomeMain when reset is triggered
         if (currentRouteName !== 'HomeMain') {
           logger.debug('HomeTabStack', 'Navigating to HomeMain due to resetHomeScreenTrigger', {
             resetHomeScreenTrigger,
@@ -129,6 +117,7 @@ export default function HomeTabStack(): React.ReactElement {
       }
     }
   }, [resetHomeScreenTrigger, navigation, mode]);
+
 
   // Determine initial route based on web mode
   const initialRouteName = (typeof window !== 'undefined' && mode === 'site')

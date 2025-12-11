@@ -124,3 +124,5 @@ echo "   the frontend will automatically start fresh on next app launch"
 echo "   since all server data has been cleared."
 echo ""
 echo "✅ Frontend storage clear instructions completed!"
+
+

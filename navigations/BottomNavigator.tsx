@@ -266,33 +266,14 @@ export default function BottomNavigator(): React.ReactElement {
               logger.debug('BottomNavigator', 'Tab press check', { currentRouteName });
 
               if (currentRouteName === 'HomeScreen') {
-                // Already on Home tab - check if we're on HomeMain inside the stack
-                const stackState = currentRoute?.state;
-                const stackRoute = stackState?.routes?.[stackState?.index || 0];
-                const innerRouteName = stackRoute?.name;
-                
-                logger.debug('BottomNavigator', 'Already on HomeScreen, checking inner route', { innerRouteName });
-                
-                if (innerRouteName === 'HomeMain') {
-                  // Already on HomeMain - just refresh without navigating
-                  // This prevents opening ChatListScreen or other screens
-                  logger.debug('BottomNavigator', 'Already on HomeMain, just refreshing');
-                  resetHomeScreen();
-                  // Don't navigate - just let the reset trigger refresh the screen
-                  e.preventDefault();
-                } else {
-                  // On a different screen inside HomeTabStack - reset to HomeMain
-                  logger.debug('BottomNavigator', 'On different screen in HomeTabStack, resetting to HomeMain', { 
-                    currentScreen: innerRouteName 
-                  });
-                  // Use resetHomeScreen trigger which will be handled by HomeTabStack
-                  // This is the most reliable way to reset the stack to HomeMain
-                  resetHomeScreen();
-                  e.preventDefault(); // Prevent default navigation since we handled it
-                }
+                // Already on Home tab - always reset to HomeMain
+                logger.debug('BottomNavigator', 'Already on HomeScreen, resetting to HomeMain');
+                resetHomeScreen();
+                e.preventDefault(); // Prevent default navigation since we handled it
               } else {
-                // Switching tabs - just navigate
-                logger.debug('BottomNavigator', 'Switching to HomeScreen');
+                // Switching tabs from another tab to HomeScreen
+                // Just navigate normally - will go to HomeMain
+                logger.debug('BottomNavigator', 'Switching to HomeScreen from another tab');
                 (navigation as any).navigate('HomeScreen');
               }
             } catch (error) {

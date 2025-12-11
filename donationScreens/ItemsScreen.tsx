@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, TextInput, Alert, Image } from 'react-native';
-import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
+import { NavigationProp, ParamListBase, useFocusEffect, useRoute } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import HeaderComp from '../components/HeaderComp';
 import DonationStatsFooter from '../components/DonationStatsFooter';
 import ScrollContainer from '../components/ScrollContainer';
+import ItemDetailsModal from '../components/ItemDetailsModal';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { db } from '../utils/databaseService';
 import { useUser } from '../stores/userStore';
@@ -64,7 +65,42 @@ const itemsSortOptions = [
 
 export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   const itemType: ItemType = (route?.params?.itemType as ItemType) || 'general';
-  const [mode, setMode] = useState(true); // false = מחפש, true = מציע
+  const routeParams = route?.params as { mode?: string } | undefined;
+  
+  // Get initial mode from URL (deep link) or default to search mode (מחפש)
+  // mode: true = מציע, false = מחפש
+  // URL mode: 'offer' = true, 'search' = false
+  // Default is search mode (false)
+  const initialMode = routeParams?.mode === 'offer' ? true : false;
+  const [mode, setMode] = useState(initialMode);
+
+  // Update mode when route params change (e.g., from deep link)
+  useEffect(() => {
+    if (routeParams?.mode && routeParams.mode !== 'undefined' && routeParams.mode !== 'null') {
+      const newMode = routeParams.mode === 'offer' ? true : false;
+      if (newMode !== mode) {
+        setMode(newMode);
+      }
+    }
+  }, [routeParams?.mode]);
+
+  // Update URL when mode changes (toggle button pressed) or when screen loads without mode
+  useEffect(() => {
+    const newMode = mode ? 'offer' : 'search';
+    const currentMode = routeParams?.mode;
+    
+    // If no mode in URL, set it to search (default)
+    if (!currentMode || currentMode === 'undefined' || currentMode === 'null') {
+      // Set initial mode to search in URL
+      (navigation as any).setParams({ mode: 'search' });
+      return;
+    }
+    
+    // Only update URL if mode actually changed
+    if (newMode !== currentMode) {
+      (navigation as any).setParams({ mode: newMode });
+    }
+  }, [mode, navigation, routeParams?.mode]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [selectedSorts, setSelectedSorts] = useState<string[]>([]);
@@ -81,6 +117,8 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   const [qty, setQty] = useState<number>(1);
   const [condition, setCondition] = useState<'new' | 'like_new' | 'used' | 'for_parts' | ''>('');
   const { selectedUser } = useUser();
+  const [selectedItem, setSelectedItem] = useState<DonationItem | null>(null);
+  const [showItemModal, setShowItemModal] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -230,7 +268,10 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         if (f === 'לחלפים') filtered = filtered.filter(i => i.condition === 'for_parts');
         // type specific
         if (['ספות','ארונות','מיטות','גברים','נשים','ילדים','מטבח','חשמל','צעצועים'].includes(f)) {
-          filtered = filtered.filter(i => (i.tags || []).includes(f));
+          filtered = filtered.filter(item => {
+            const tagsArray = typeof item.tags === 'string' ? item.tags.split(',') : (item.tags || []);
+            return tagsArray.includes(f);
+          });
         }
       });
     }
@@ -434,8 +475,18 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
 
   const menuOptions = ['היסטוריית פריטים', 'הגדרות', 'עזרה', 'צור קשר'];
 
+  const handleItemPress = (item: DonationItem) => {
+    setSelectedItem(item);
+    setShowItemModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowItemModal(false);
+    setSelectedItem(null);
+  };
+
   const renderItemCard = ({ item }: { item: DonationItem }) => (
-    <TouchableOpacity style={localStyles.itemCard} onPress={() => Alert.alert(item.title, item.description || 'אין תיאור')}>
+    <TouchableOpacity style={localStyles.itemCard} onPress={() => handleItemPress(item)}>
       {/* תמונה base64 */}
       {item.image_base64 && (
         <Image 
@@ -486,7 +537,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
             <Icon name="trash-outline" size={20} color={colors.error} />
           </TouchableOpacity>
         </View>
-        <Text style={localStyles.itemMeta}>📅 {new Date(item.timestamp).toLocaleDateString('he-IL')}</Text>
+        <Text style={localStyles.itemMeta}>📅 {new Date(item.timestamp).toLocaleDateString('he-IL')} {new Date(item.timestamp).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</Text>
       </View>
       
       {/* שורה נוספת עם מצב + כמות */}
@@ -509,11 +560,14 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
           onPress={() => { 
             setTitle(item.title); 
             setDescription(item.description || '');
-            setLocation(item.location || ''); 
+            setCity(item.city || '');
+            setAddress(item.address || '');
             setPrice(String(item.price ?? 0)); 
             setQty(item.qty || 1);
             setCondition(item.condition || '');
-            setImageUri(item.images?.[0] || '');
+            if (item.image_base64) {
+              setImageUri(item.image_base64);
+            }
           }}
         >
           <Text style={localStyles.restoreChipText}>שחזר</Text>
@@ -538,6 +592,49 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
       />
 
       {mode ? (
+        <>
+          <View style={[localStyles.container, localStyles.noOuterScrollContainer]}>
+            <View style={localStyles.sectionWithScroller}>
+              <View style={localStyles.headerRow}>
+                <Text style={localStyles.sectionTitle}>{searchQuery || selectedFilters.length > 0 ? 'פריטים זמינים' : 'פריטים מומלצים'}</Text>
+                {(searchQuery || selectedFilters.length > 0 || selectedSorts.length > 0) && (
+                  <TouchableOpacity style={localStyles.clearButton} onPress={handleClearAll}>
+                    <Text style={localStyles.clearButtonText}>נקה הכל</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <ScrollView style={localStyles.innerScroll} contentContainerStyle={[localStyles.itemsGridContainer, isLandscape() && { paddingHorizontal: 16 }]} showsVerticalScrollIndicator nestedScrollEnabled>
+                {filteredItems.length === 0 ? (
+                  <View style={localStyles.emptyState}>
+                    <Icon name="search-outline" size={48} color={colors.textSecondary} />
+                    <Text style={localStyles.emptyStateTitle}>לא נמצאו פריטים</Text>
+                    <Text style={localStyles.emptyStateText}>נסה לשנות את הפילטרים או החיפוש</Text>
+                    {(searchQuery || selectedFilters.length > 0 || selectedSorts.length > 0) && (
+                      <TouchableOpacity style={localStyles.emptyStateClearButton} onPress={handleClearAll}>
+                        <Text style={localStyles.emptyStateClearButtonText}>נקה הכל</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ) : (
+                  filteredItems.map((it) => (
+                    <View key={it.id} style={localStyles.itemCardWrapper}>{renderItemCard({ item: it })}</View>
+                  ))
+                )}
+              </ScrollView>
+            </View>
+          </View>
+
+          <View style={localStyles.section}>
+            <DonationStatsFooter
+              stats={[
+                { label: 'פריטים שפורסמו', value: getFilteredItems().length, icon: 'cube-outline' },
+                { label: 'פריטים בחינם', value: getFilteredItems().filter(i => (i.price ?? 0) === 0).length, icon: 'pricetag-outline' },
+                { label: 'מיקומים ייחודיים', value: new Set(getFilteredItems().map(i => i.city || 'לא צויין')).size, icon: 'pin-outline' },
+              ]}
+            />
+          </View>
+        </>
+      ) : (
         <ScrollContainer
           style={localStyles.container}
           contentStyle={localStyles.scrollContent}
@@ -672,50 +769,16 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
             </View>
           </View>
         </ScrollContainer>
-      ) : (
-        <>
-          <View style={[localStyles.container, localStyles.noOuterScrollContainer]}>
-            <View style={localStyles.sectionWithScroller}>
-              <View style={localStyles.headerRow}>
-                <Text style={localStyles.sectionTitle}>{searchQuery || selectedFilters.length > 0 ? 'פריטים זמינים' : 'פריטים מומלצים'}</Text>
-                {(searchQuery || selectedFilters.length > 0 || selectedSorts.length > 0) && (
-                  <TouchableOpacity style={localStyles.clearButton} onPress={handleClearAll}>
-                    <Text style={localStyles.clearButtonText}>נקה הכל</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <ScrollView style={localStyles.innerScroll} contentContainerStyle={[localStyles.itemsGridContainer, isLandscape() && { paddingHorizontal: 16 }]} showsVerticalScrollIndicator nestedScrollEnabled>
-                {filteredItems.length === 0 ? (
-                  <View style={localStyles.emptyState}>
-                    <Icon name="search-outline" size={48} color={colors.textSecondary} />
-                    <Text style={localStyles.emptyStateTitle}>לא נמצאו פריטים</Text>
-                    <Text style={localStyles.emptyStateText}>נסה לשנות את הפילטרים או החיפוש</Text>
-                    {(searchQuery || selectedFilters.length > 0 || selectedSorts.length > 0) && (
-                      <TouchableOpacity style={localStyles.emptyStateClearButton} onPress={handleClearAll}>
-                        <Text style={localStyles.emptyStateClearButtonText}>נקה הכל</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                ) : (
-                  filteredItems.map((it) => (
-                    <View key={it.id} style={localStyles.itemCardWrapper}>{renderItemCard({ item: it })}</View>
-                  ))
-                )}
-              </ScrollView>
-            </View>
-          </View>
-
-          <View style={localStyles.section}>
-            <DonationStatsFooter
-              stats={[
-                { label: 'פריטים שפורסמו', value: getFilteredItems().length, icon: 'cube-outline' },
-                { label: 'פריטים בחינם', value: getFilteredItems().filter(i => (i.price ?? 0) === 0).length, icon: 'pricetag-outline' },
-                { label: 'מיקומים ייחודיים', value: new Set(getFilteredItems().map(i => i.location || 'לא צויין')).size, icon: 'pin-outline' },
-              ]}
-            />
-          </View>
-        </>
       )}
+
+      {/* Item Details Modal */}
+      <ItemDetailsModal
+        visible={showItemModal}
+        onClose={handleCloseModal}
+        item={selectedItem}
+        type="item"
+        navigation={navigation}
+      />
     </SafeAreaView>
   );
 }
@@ -741,7 +804,7 @@ const localStyles = StyleSheet.create({
   tagsRow: {marginTop: 10, alignItems: 'stretch', flexDirection: rowDirection('row-reverse'), flexWrap: 'wrap', gap: 3 },
   tag: { backgroundColor: colors.pinkLight, borderWidth: 1, borderColor: colors.secondary, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
   tagSmall: { paddingHorizontal: 8, marginHorizontal: "4%", paddingVertical: 4 },
-  tagSelected: { backgroundColor: colors.successLight, borderColor: colors.successLight },
+  tagSelected: { backgroundColor: colors.backgroundSecondary, borderColor: colors.success },
   tagText: { fontSize: FontSizes.small, color: colors.textPrimary },
   tagTextSm: { fontSize: FontSizes.caption },
   tagTextSelected: { color: colors.success, fontWeight: '600' },
@@ -767,7 +830,7 @@ const localStyles = StyleSheet.create({
   itemTitle: { fontSize: FontSizes.small, fontWeight: 'bold', color: colors.textPrimary, textAlign: biDiTextAlign('right'), flex: 1, marginLeft: 6 },
   itemMeta: { fontSize: FontSizes.small, color: colors.textSecondary },
   itemPrice: { fontSize: FontSizes.small, color: colors.accent, fontWeight: '600' },
-  itemBadge: { backgroundColor: colors.successLight, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 6 },
+  itemBadge: { backgroundColor: colors.backgroundSecondary, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 6 },
   itemBadgeText: { fontSize: FontSizes.small, color: colors.success, fontWeight: 'bold' },
   recentContainer: { paddingHorizontal: 8, paddingVertical: 8 },
   recentItemWrapper: { marginBottom: 8, width: '100%' },
@@ -829,7 +892,7 @@ const localStyles = StyleSheet.create({
   },
   removeImageButton: {
     marginLeft: 'auto',
-    backgroundColor: colors.errorLight,
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 20,
     padding: 4,
   },

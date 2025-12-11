@@ -139,33 +139,75 @@ export default function NewLoginScreen() {
             if (isLoginMode) {
                 // LOGIN
                 const fbUser = await signInWithEmail(email, password);
-                // Construct user data (similar to legacy login)
-                const userData = {
-                    id: fbUser.uid,
-                    name: fbUser.displayName || email.split('@')[0],
-                    email: fbUser.email || email,
-                    isActive: true,
-                    lastActive: nowIso,
-                    roles: ['user'],
-                    settings: { language: 'he', darkMode: false, notificationsEnabled: true },
-                    // Added missing fields
-                    phone: fbUser.phoneNumber || '',
-                    avatar: fbUser.photoURL || 'https://i.pravatar.cc/150?img=12', // specific avatar from fakeData
-                    bio: '',
-                    karmaPoints: 0,
-                    joinDate: nowIso,
-                    location: { city: 'תל אביב', country: 'Israel' },
-                    interests: [],
-                    postsCount: 0,
-                    followersCount: 0,
-                    followingCount: 0,
-                    notifications: [],
-                };
-                // Try to fetch or update from DB if needed, simplified here
+                
+                // Get UUID from server using firebase_uid
                 try {
-                    // In a real scenario we might fetch the user profile from DB here
-                    // For now, valid firebase login is enough to proceed
-                } catch (e) { }
+                    const { apiService } = await import('../utils/apiService');
+                    const resolveResponse = await apiService.resolveUserId({ 
+                        firebase_uid: fbUser.uid,
+                        email: fbUser.email || email 
+                    });
+                    
+                    if (!resolveResponse.success || !resolveResponse.user) {
+                        // Fallback: try to get user by email
+                        const userResponse = await apiService.getUserById(fbUser.email || email);
+                        if (userResponse.success && userResponse.data) {
+                            const serverUser = userResponse.data;
+                            const userData = {
+                                id: serverUser.id, // UUID from database
+                                name: serverUser.name || fbUser.displayName || email.split('@')[0],
+                                email: serverUser.email || fbUser.email || email,
+                                isActive: serverUser.is_active !== false,
+                                lastActive: serverUser.last_active || nowIso,
+                                roles: serverUser.roles || ['user'],
+                                settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+                                phone: serverUser.phone || fbUser.phoneNumber || '',
+                                avatar: serverUser.avatar_url || fbUser.photoURL || 'https://i.pravatar.cc/150?img=12',
+                                bio: serverUser.bio || '',
+                                karmaPoints: serverUser.karma_points || 0,
+                                joinDate: serverUser.join_date || serverUser.created_at || nowIso,
+                                location: { city: serverUser.city || 'תל אביב', country: serverUser.country || 'Israel' },
+                                interests: serverUser.interests || [],
+                                postsCount: serverUser.posts_count || 0,
+                                followersCount: serverUser.followers_count || 0,
+                                followingCount: serverUser.following_count || 0,
+                                notifications: [],
+                            };
+                            await setCurrentPrincipal({ user: userData, role: 'user' });
+                            await navigationQueue.reset(0, [{ name: 'HomeStack' }], 2);
+                            return;
+                        }
+                        throw new Error('Failed to get user from server');
+                    }
+                    
+                    // Use UUID from server
+                    const serverUser = resolveResponse.user;
+                    const userData = {
+                        id: serverUser.id, // UUID from database - this is the primary identifier
+                        name: serverUser.name || fbUser.displayName || email.split('@')[0],
+                        email: serverUser.email || fbUser.email || email,
+                        isActive: serverUser.isActive !== false,
+                        lastActive: serverUser.lastActive || nowIso,
+                        roles: serverUser.roles || ['user'],
+                        settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+                        phone: serverUser.phone || fbUser.phoneNumber || '',
+                        avatar: serverUser.avatar || fbUser.photoURL || 'https://i.pravatar.cc/150?img=12',
+                        bio: serverUser.bio || '',
+                        karmaPoints: serverUser.karmaPoints || 0,
+                        joinDate: serverUser.createdAt || serverUser.joinDate || nowIso,
+                        location: serverUser.location || { city: 'תל אביב', country: 'Israel' },
+                        interests: serverUser.interests || [],
+                        postsCount: serverUser.postsCount || 0,
+                        followersCount: serverUser.followersCount || 0,
+                        followingCount: serverUser.followingCount || 0,
+                        notifications: [],
+                    };
+                    await setCurrentPrincipal({ user: userData, role: 'user' });
+                    await navigationQueue.reset(0, [{ name: 'HomeStack' }], 2);
+                } catch (error) {
+                    console.error('Failed to get user UUID from server:', error);
+                    throw error;
+                }
 
                 await setCurrentPrincipal({ user: userData, role: 'user' });
                 await navigationQueue.reset(0, [{ name: 'HomeStack' }], 2);
@@ -214,7 +256,7 @@ export default function NewLoginScreen() {
                     {/* Header / Logo */}
                     <View style={styles.header}>
                         <Image
-                            source={require('../assets/images/pink_logo.png')}
+                            source={require('../assets/images/new_logo_black.png')}
                             style={styles.logo}
                             resizeMode="contain"
                         />

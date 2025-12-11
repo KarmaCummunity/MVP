@@ -189,10 +189,10 @@ export class DatabaseService {
       } else {
         await this.ensureVersion();
         const keys = await AsyncStorage.getAllKeys();
-        const userKeys = keys.filter(key => 
+        const userKeys = keys.filter(key =>
           key.startsWith(`${collection}_${userId}_`)
         );
-        
+
         if (userKeys.length === 0) return [];
 
         const items = await AsyncStorage.multiGet(userKeys);
@@ -223,7 +223,7 @@ export class DatabaseService {
         return items.length;
       } else {
         const keys = await AsyncStorage.getAllKeys();
-        const userKeys = keys.filter(key => 
+        const userKeys = keys.filter(key =>
           key.startsWith(`${collection}_${userId}_`)
         );
         return userKeys.length;
@@ -413,181 +413,181 @@ export class DatabaseService {
 // Convenience functions for common operations
 export const db = {
   // Users
-  createUser: (userId: string, userData: any) => 
+  createUser: (userId: string, userData: any) =>
     DatabaseService.create(DB_COLLECTIONS.USERS, userId, userId, userData),
-  
-  getUser: (userId: string) => 
+
+  getUser: (userId: string) =>
     DatabaseService.read(DB_COLLECTIONS.USERS, userId, userId),
-  
-  updateUser: (userId: string, userData: Partial<any>) => 
+
+  updateUser: (userId: string, userData: Partial<any>) =>
     DatabaseService.update(DB_COLLECTIONS.USERS, userId, userId, userData),
 
   // Posts
-  createPost: (userId: string, postId: string, postData: any) => 
+  createPost: (userId: string, postId: string, postData: any) =>
     DatabaseService.create(DB_COLLECTIONS.POSTS, userId, postId, postData),
-  
-  getPost: (userId: string, postId: string) => 
+
+  getPost: (userId: string, postId: string) =>
     DatabaseService.read(DB_COLLECTIONS.POSTS, userId, postId),
-  
-  getUserPosts: (userId: string) => 
+
+  getUserPosts: (userId: string) =>
     DatabaseService.list(DB_COLLECTIONS.POSTS, userId),
-  
-  deletePost: (userId: string, postId: string) => 
+
+  deletePost: (userId: string, postId: string) =>
     DatabaseService.delete(DB_COLLECTIONS.POSTS, userId, postId),
 
   // Followers
-  addFollower: (userId: string, followerId: string, followerData: any) => 
+  addFollower: (userId: string, followerId: string, followerData: any) =>
     DatabaseService.create(DB_COLLECTIONS.FOLLOWERS, userId, followerId, followerData),
-  
-  removeFollower: (userId: string, followerId: string) => 
+
+  removeFollower: (userId: string, followerId: string) =>
     DatabaseService.delete(DB_COLLECTIONS.FOLLOWERS, userId, followerId),
-  
-  getFollowers: (userId: string) => 
+
+  getFollowers: (userId: string) =>
     DatabaseService.list(DB_COLLECTIONS.FOLLOWERS, userId),
 
   // Following
-  addFollowing: (userId: string, followingId: string, followingData: any) => 
+  addFollowing: (userId: string, followingId: string, followingData: any) =>
     DatabaseService.create(DB_COLLECTIONS.FOLLOWING, userId, followingId, followingData),
-  
-  removeFollowing: (userId: string, followingId: string) => 
+
+  removeFollowing: (userId: string, followingId: string) =>
     DatabaseService.delete(DB_COLLECTIONS.FOLLOWING, userId, followingId),
-  
-  getFollowing: (userId: string) => 
+
+  getFollowing: (userId: string) =>
     DatabaseService.list(DB_COLLECTIONS.FOLLOWING, userId),
 
   // Chats
-  createChat: (userId: string, chatId: string, chatData: any) => 
+  createChat: (userId: string, chatId: string, chatData: any) =>
     DatabaseService.create(DB_COLLECTIONS.CHATS, userId, chatId, chatData),
-  
-  getChat: (userId: string, chatId: string) => 
+
+  getChat: (userId: string, chatId: string) =>
     DatabaseService.read(DB_COLLECTIONS.CHATS, userId, chatId),
-  
-  getUserChats: (userId: string) => 
+
+  getUserChats: (userId: string) =>
     DatabaseService.list(DB_COLLECTIONS.CHATS, userId),
 
   // Messages
-  createMessage: (userId: string, messageId: string, messageData: any) => 
+  createMessage: (userId: string, messageId: string, messageData: any) =>
     DatabaseService.create(DB_COLLECTIONS.MESSAGES, userId, messageId, messageData),
-  
-  getChatMessages: (userId: string, conversationId: string) => 
+
+  getChatMessages: (userId: string, conversationId: string) =>
     DatabaseService.search(DB_COLLECTIONS.MESSAGES, userId, (msg: any) => msg.conversationId === conversationId),
 
   // Notifications
-  createNotification: (userId: string, notificationId: string, notificationData: any) => 
+  createNotification: (userId: string, notificationId: string, notificationData: any) =>
     DatabaseService.create(DB_COLLECTIONS.NOTIFICATIONS, userId, notificationId, notificationData),
-  
-  getUserNotifications: (userId: string) => 
+
+  getUserNotifications: (userId: string) =>
     DatabaseService.list(DB_COLLECTIONS.NOTIFICATIONS, userId),
-  
-  markNotificationAsRead: (userId: string, notificationId: string) => 
+
+  markNotificationAsRead: (userId: string, notificationId: string) =>
     DatabaseService.update(DB_COLLECTIONS.NOTIFICATIONS, userId, notificationId, { read: true }),
-  
-  deleteNotification: (userId: string, notificationId: string) => 
+
+  deleteNotification: (userId: string, notificationId: string) =>
     DatabaseService.delete(DB_COLLECTIONS.NOTIFICATIONS, userId, notificationId),
 
   // Bookmarks
-  addBookmark: (userId: string, bookmarkId: string, bookmarkData: any) => 
+  addBookmark: (userId: string, bookmarkId: string, bookmarkData: any) =>
     DatabaseService.create(DB_COLLECTIONS.BOOKMARKS, userId, bookmarkId, bookmarkData),
-  
-  removeBookmark: (userId: string, bookmarkId: string) => 
+
+  removeBookmark: (userId: string, bookmarkId: string) =>
     DatabaseService.delete(DB_COLLECTIONS.BOOKMARKS, userId, bookmarkId),
-  
-  getUserBookmarks: (userId: string) => 
+
+  getUserBookmarks: (userId: string) =>
     DatabaseService.list(DB_COLLECTIONS.BOOKMARKS, userId),
 
   // Settings
-  getUserSettings: (userId: string) => 
+  getUserSettings: (userId: string) =>
     DatabaseService.read(DB_COLLECTIONS.SETTINGS, userId, 'settings'),
-  
-  updateUserSettings: (userId: string, settings: any) => 
+
+  updateUserSettings: (userId: string, settings: any) =>
     DatabaseService.create(DB_COLLECTIONS.SETTINGS, userId, 'settings', settings),
 
   // Media
-  saveMedia: (userId: string, mediaId: string, mediaData: any) => 
+  saveMedia: (userId: string, mediaId: string, mediaData: any) =>
     DatabaseService.create(DB_COLLECTIONS.MEDIA, userId, mediaId, mediaData),
-  
-  getMedia: (userId: string, mediaId: string) => 
+
+  getMedia: (userId: string, mediaId: string) =>
     DatabaseService.read(DB_COLLECTIONS.MEDIA, userId, mediaId),
-  
-  deleteMedia: (userId: string, mediaId: string) => 
+
+  deleteMedia: (userId: string, mediaId: string) =>
     DatabaseService.delete(DB_COLLECTIONS.MEDIA, userId, mediaId),
 
   // Blocked Users
-  blockUser: (userId: string, blockedUserId: string, blockedData: any) => 
+  blockUser: (userId: string, blockedUserId: string, blockedData: any) =>
     DatabaseService.create(DB_COLLECTIONS.BLOCKED_USERS, userId, blockedUserId, blockedData),
-  
-  unblockUser: (userId: string, blockedUserId: string) => 
+
+  unblockUser: (userId: string, blockedUserId: string) =>
     DatabaseService.delete(DB_COLLECTIONS.BLOCKED_USERS, userId, blockedUserId),
-  
-  getBlockedUsers: (userId: string) => 
+
+  getBlockedUsers: (userId: string) =>
     DatabaseService.list(DB_COLLECTIONS.BLOCKED_USERS, userId),
-  
+
   isUserBlocked: async (userId: string, targetUserId: string) => {
     const blocked = await DatabaseService.read(DB_COLLECTIONS.BLOCKED_USERS, userId, targetUserId);
     return blocked !== null;
   },
 
   // Message Reactions
-  addReaction: (userId: string, reactionId: string, reactionData: any) => 
+  addReaction: (userId: string, reactionId: string, reactionData: any) =>
     DatabaseService.create(DB_COLLECTIONS.MESSAGE_REACTIONS, userId, reactionId, reactionData),
-  
-  removeReaction: (userId: string, reactionId: string) => 
+
+  removeReaction: (userId: string, reactionId: string) =>
     DatabaseService.delete(DB_COLLECTIONS.MESSAGE_REACTIONS, userId, reactionId),
-  
-  getMessageReactions: (userId: string, messageId: string) => 
+
+  getMessageReactions: (userId: string, messageId: string) =>
     DatabaseService.search(DB_COLLECTIONS.MESSAGE_REACTIONS, userId, (reaction: any) => reaction.messageId === messageId),
 
   // Typing Status
-  setTypingStatus: (userId: string, conversationId: string, typingData: any) => 
+  setTypingStatus: (userId: string, conversationId: string, typingData: any) =>
     DatabaseService.create(DB_COLLECTIONS.TYPING_STATUS, userId, conversationId, typingData),
-  
-  clearTypingStatus: (userId: string, conversationId: string) => 
+
+  clearTypingStatus: (userId: string, conversationId: string) =>
     DatabaseService.delete(DB_COLLECTIONS.TYPING_STATUS, userId, conversationId),
-  
-  getTypingStatus: (userId: string, conversationId: string) => 
+
+  getTypingStatus: (userId: string, conversationId: string) =>
     DatabaseService.read(DB_COLLECTIONS.TYPING_STATUS, userId, conversationId),
 
   // Read Receipts
-  markAsRead: (userId: string, receiptId: string, receiptData: any) => 
+  markAsRead: (userId: string, receiptId: string, receiptData: any) =>
     DatabaseService.create(DB_COLLECTIONS.READ_RECEIPTS, userId, receiptId, receiptData),
-  
-  getReadReceipts: (userId: string, messageId: string) => 
+
+  getReadReceipts: (userId: string, messageId: string) =>
     DatabaseService.search(DB_COLLECTIONS.READ_RECEIPTS, userId, (receipt: any) => receipt.messageId === messageId),
 
   // Voice Messages
-  saveVoiceMessage: (userId: string, voiceId: string, voiceData: any) => 
+  saveVoiceMessage: (userId: string, voiceId: string, voiceData: any) =>
     DatabaseService.create(DB_COLLECTIONS.VOICE_MESSAGES, userId, voiceId, voiceData),
-  
-  getVoiceMessage: (userId: string, voiceId: string) => 
+
+  getVoiceMessage: (userId: string, voiceId: string) =>
     DatabaseService.read(DB_COLLECTIONS.VOICE_MESSAGES, userId, voiceId),
-  
-  deleteVoiceMessage: (userId: string, voiceId: string) => 
+
+  deleteVoiceMessage: (userId: string, voiceId: string) =>
     DatabaseService.delete(DB_COLLECTIONS.VOICE_MESSAGES, userId, voiceId),
 
   // Conversation Metadata
-  updateConversationMetadata: (userId: string, conversationId: string, metadata: any) => 
+  updateConversationMetadata: (userId: string, conversationId: string, metadata: any) =>
     DatabaseService.create(DB_COLLECTIONS.CONVERSATION_METADATA, userId, conversationId, metadata),
-  
-  getConversationMetadata: (userId: string, conversationId: string) => 
+
+  getConversationMetadata: (userId: string, conversationId: string) =>
     DatabaseService.read(DB_COLLECTIONS.CONVERSATION_METADATA, userId, conversationId),
 
   // Advanced Message Operations
-  updateMessage: (userId: string, messageId: string, messageData: any) => 
+  updateMessage: (userId: string, messageId: string, messageData: any) =>
     DatabaseService.update(DB_COLLECTIONS.MESSAGES, userId, messageId, messageData),
-  
-  deleteMessage: (userId: string, messageId: string) => 
+
+  deleteMessage: (userId: string, messageId: string) =>
     DatabaseService.delete(DB_COLLECTIONS.MESSAGES, userId, messageId),
-  
-  searchMessages: (userId: string, searchQuery: string) => 
-    DatabaseService.search(DB_COLLECTIONS.MESSAGES, userId, (msg: any) => 
+
+  searchMessages: (userId: string, searchQuery: string) =>
+    DatabaseService.search(DB_COLLECTIONS.MESSAGES, userId, (msg: any) =>
       msg.text?.toLowerCase().includes(searchQuery.toLowerCase())
     ),
 
   // Batch Message Operations
-  batchCreateMessages: (userId: string, messages: Array<{ id: string; data: any }>) => 
+  batchCreateMessages: (userId: string, messages: Array<{ id: string; data: any }>) =>
     DatabaseService.batchCreate(DB_COLLECTIONS.MESSAGES, userId, messages),
-  
-  batchDeleteMessages: (userId: string, messageIds: string[]) => 
+
+  batchDeleteMessages: (userId: string, messageIds: string[]) =>
     DatabaseService.batchDelete(DB_COLLECTIONS.MESSAGES, userId, messageIds),
 
   // Rides (Trump)
@@ -598,27 +598,37 @@ export const db = {
           try {
             const dateStr = typeof rideData?.date === 'string' ? rideData.date : new Date().toISOString().split('T')[0];
             const timeStr = typeof rideData?.time === 'string' ? rideData.time : new Date().toTimeString().slice(0, 5);
-            
+
             // Validate date format (YYYY-MM-DD)
             if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
               throw new Error('Invalid date format');
             }
-            
+
             // Validate time format (HH:MM)
             if (!/^\d{2}:\d{2}$/.test(timeStr)) {
               throw new Error('Invalid time format');
             }
+
+            // Parse time components
+            const [hours, minutes] = timeStr.split(':').map(Number);
             
-            // Create date without Z suffix to avoid timezone issues
-            const dateTimeStr = `${dateStr}T${timeStr}:00`;
-            const date = new Date(dateTimeStr);
+            // Create date in local timezone (not UTC)
+            // Use the date string and set hours/minutes in local timezone
+            const localDate = new Date(dateStr + 'T00:00:00');
+            localDate.setHours(hours, minutes, 0, 0);
             
+            // Convert to ISO string (this will be in UTC, but we preserve the local time intent)
+            // The server should store this as-is, treating it as the intended local time
+            const isoString = localDate.toISOString();
+            
+            console.log('🕐 Converting time:', { dateStr, timeStr, localDate: localDate.toLocaleString('he-IL'), isoString });
+
             // Check if date is valid
-            if (isNaN(date.getTime())) {
+            if (isNaN(localDate.getTime())) {
               throw new Error('Invalid datetime');
             }
-            
-            return date.toISOString();
+
+            return isoString;
           } catch (error) {
             console.error('Date parsing error:', error);
             // Fallback to current time if date parsing fails
@@ -629,24 +639,24 @@ export const db = {
         if (!rideData.from || !rideData.to) {
           throw new Error('From and to locations are required');
         }
-        
+
         const driverId = rideData.driverId || userId;
         if (!driverId) {
           throw new Error('Driver ID is required');
         }
-        
+
         const payload = {
           driver_id: driverId,
           title: rideData.title || `${rideData.from} → ${rideData.to}`,
-          from_location: { 
-            name: rideData.from, 
-            city: rideData.from, 
-            address: rideData.from 
+          from_location: {
+            name: rideData.from,
+            city: rideData.from,
+            address: rideData.from
           },
-          to_location: { 
-            name: rideData.to, 
-            city: rideData.to, 
-            address: rideData.to 
+          to_location: {
+            name: rideData.to,
+            city: rideData.to,
+            address: rideData.to
           },
           departure_time: departureIso,
           arrival_time: null,
@@ -662,10 +672,20 @@ export const db = {
           })(),
           metadata: { source: 'legacy-app', legacy_id: rideId },
         };
-        
+
         console.log('🚗 Creating ride with payload:', JSON.stringify(payload, null, 2));
         const res = await apiService.createRide(payload);
         if (!res.success) throw new Error(res.error || 'Failed to create ride');
+
+        // Clear cache to ensure immediate update in UI
+        try {
+          const enhancedDB = await loadEnhancedDB();
+          await enhancedDB.clearCachePattern('rides_list');
+          await enhancedDB.clearCachePattern('user_rides');
+        } catch (cacheError) {
+          console.warn('Failed to clear ride cache:', cacheError);
+        }
+
         return;
       }
       return DatabaseService.create(DB_COLLECTIONS.RIDES, userId, rideId, rideData);
@@ -701,28 +721,115 @@ export const db = {
     }
   },
 
-  listRides: async (_userId: string) => {
+  listRides: async (_userId: string, _options?: { includePast?: boolean }) => {
     try {
       if (USE_BACKEND) {
         const enhancedDB = await loadEnhancedDB();
-        const apiRides = await enhancedDB.getRides();
-        return (apiRides || []).map((r: any) => ({
-          id: r.id,
-          driverName: r.driver_name || r.driverId || 'Driver',
-          from: r.from_location?.name || r.from || '',
-          to: r.to_location?.name || r.to || '',
-          date: r.departure_time ? new Date(r.departure_time).toISOString().slice(0, 10) : (r.date || new Date().toISOString().slice(0, 10)),
-          time: r.departure_time ? new Date(r.departure_time).toISOString().slice(11, 16) : (r.time || '00:00'),
-          seats: r.available_seats ?? r.seats ?? 1,
-          price: Number(r.price_per_seat ?? r.price ?? 0),
-          rating: r.rating ?? 5,
-          image: r.image ?? '🚗',
-          category: r.category ?? 'ride',
-        }));
+        // Pass include_past parameter to get all rides including past ones
+        const filters: any = {};
+        if (_options?.includePast) {
+          filters.include_past = 'true';
+        }
+        // Don't set status filter - let server return all active/published rides
+        // The server defaults to 'active' but we want to see all published rides too
+        console.log('🔍 listRides filters:', filters);
+        const apiRides = await enhancedDB.getRides(filters);
+        console.log('📋 listRides returned:', apiRides?.length || 0, 'rides');
+        if (apiRides && apiRides.length > 0) {
+          console.log('📋 First ride sample:', JSON.stringify({
+            id: apiRides[0].id,
+            status: apiRides[0].status,
+            from: apiRides[0].from_location?.name,
+            to: apiRides[0].to_location?.name,
+            departure_time: apiRides[0].departure_time
+          }, null, 2));
+        }
+        return (apiRides || []).map((r: any) => {
+          // Convert UTC time to local time for display
+          let dateStr = '';
+          let timeStr = '00:00';
+          
+          if (r.departure_time) {
+            const departureDate = new Date(r.departure_time);
+            // Get local date and time (not UTC)
+            dateStr = departureDate.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+            const localHours = departureDate.getHours();
+            const localMinutes = departureDate.getMinutes();
+            timeStr = `${String(localHours).padStart(2, '0')}:${String(localMinutes).padStart(2, '0')}`;
+          } else {
+            dateStr = r.date || new Date().toISOString().slice(0, 10);
+            timeStr = r.time || '00:00';
+          }
+          
+          return {
+            id: r.id,
+            driverId: r.driver_id || r.driverId || r.createdBy,
+            driverName: r.driver_name || r.driverId || 'Driver',
+            from: r.from_location?.name || r.from || '',
+            to: r.to_location?.name || r.to || '',
+            date: dateStr,
+            time: timeStr,
+            seats: r.available_seats ?? r.seats ?? 1,
+            price: Number(r.price_per_seat ?? r.price ?? 0),
+            rating: r.rating ?? 5,
+            image: r.image ?? '🚗',
+            category: r.category ?? 'ride',
+            status: r.status || 'active', // Ensure status is set
+            noSmoking: r.requirements?.includes('no-smoking') || false,
+            petsAllowed: r.requirements?.includes('pets-allowed') || false,
+            kidsFriendly: r.requirements?.includes('kids-friendly') || false,
+          };
+        });
       }
       return DatabaseService.list(DB_COLLECTIONS.RIDES, _userId);
     } catch (error) {
       console.error('❌ DatabaseService.db.listRides error:', error);
+      return [];
+    }
+  },
+
+  getUserRides: async (_userId: string, _role: 'driver' | 'passenger' = 'driver') => {
+    try {
+      if (USE_BACKEND) {
+        const enhancedDB = await loadEnhancedDB();
+        const apiRides = await enhancedDB.getUserRides(_userId, _role);
+        return (apiRides || []).map((r: any) => {
+          // Convert UTC time to local time for display
+          let dateStr = '';
+          let timeStr = '00:00';
+          
+          if (r.departure_time) {
+            const departureDate = new Date(r.departure_time);
+            // Get local date and time (not UTC)
+            dateStr = departureDate.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+            const localHours = departureDate.getHours();
+            const localMinutes = departureDate.getMinutes();
+            timeStr = `${String(localHours).padStart(2, '0')}:${String(localMinutes).padStart(2, '0')}`;
+          } else {
+            dateStr = r.date || new Date().toISOString().slice(0, 10);
+            timeStr = r.time || '00:00';
+          }
+          
+          return {
+            id: r.id,
+            driverId: r.driver_id || r.driverId || r.createdBy,
+            driverName: r.driver_name || r.driverId || 'Driver',
+            from: r.from_location?.name || r.from || '',
+            to: r.to_location?.name || r.to || '',
+            date: dateStr,
+            time: timeStr,
+            seats: r.available_seats ?? r.seats ?? 1,
+            price: Number(r.price_per_seat ?? r.price ?? 0),
+            rating: r.rating ?? 5,
+            image: r.image ?? '🚗',
+            category: r.category ?? 'ride',
+            status: r.status || 'published',
+          };
+        });
+      }
+      return DatabaseService.list(DB_COLLECTIONS.RIDES, _userId);
+    } catch (error) {
+      console.error('❌ DatabaseService.db.getUserRides error:', error);
       return [];
     }
   },
@@ -821,7 +928,7 @@ export const db = {
   // ========================================
   // Dedicated Items API (separate columns)
   // ========================================
-  
+
   createDedicatedItem: async (itemData: any) => {
     console.log('📤 API: Creating dedicated item to:', `${API_BASE_URL}/api/dedicated-items`);
     console.log('📦 Item data:', JSON.stringify(itemData, null, 2));
@@ -829,28 +936,91 @@ export const db = {
     console.log('✅ API: Item created:', response.data);
     return response.data;
   },
-    
+
   getDedicatedItemsByOwner: async (ownerId: string) => {
     console.log('📥 API: Fetching items for owner:', ownerId);
     const response = await axios.get(`${API_BASE_URL}/api/dedicated-items/owner/${ownerId}`);
     console.log('✅ API: Received items:', response.data.length || 0);
     return response.data;
   },
-    
+
   getDedicatedItemById: async (id: string) => {
     console.log('📥 API: Fetching item by ID:', id);
     const response = await axios.get(`${API_BASE_URL}/api/dedicated-items/${id}`);
     console.log('✅ API: Item received');
     return response.data;
   },
-    
+
   updateDedicatedItem: async (id: string, itemData: any) => {
     console.log('✏️ API: Updating item:', id);
     const response = await axios.put(`${API_BASE_URL}/api/dedicated-items/${id}`, itemData);
     console.log('✅ API: Item updated');
     return response.data;
   },
-    
+
+  // Links (for groups and organizations)
+  createLink: (userId: string, linkId: string, linkData: any) =>
+    DatabaseService.create(DB_COLLECTIONS.LINKS, userId, linkId, linkData),
+
+  getLink: (userId: string, linkId: string) =>
+    DatabaseService.read(DB_COLLECTIONS.LINKS, userId, linkId),
+
+  listLinks: (userId: string) =>
+    DatabaseService.list(DB_COLLECTIONS.LINKS, userId),
+
+  listAllLinks: async () => {
+    try {
+      if (USE_BACKEND) {
+        // Fetch all links from the backend using 'all' as userId
+        return await restAdapter.list(DB_COLLECTIONS.LINKS, 'all');
+      } else if (USE_FIRESTORE) {
+        // For Firestore, we need to get all links across all users
+        // This is a simplified version - you may need to adjust based on your Firestore setup
+        const keys = await AsyncStorage.getAllKeys();
+        const linkKeys = keys.filter(key => key.startsWith(`${DB_COLLECTIONS.LINKS}_`));
+
+        if (linkKeys.length === 0) return [];
+
+        const items = await AsyncStorage.multiGet(linkKeys);
+        return items
+          .map(([key, value]) => value ? JSON.parse(value) : null)
+          .filter((item): item is any => item !== null)
+          .sort((a, b) => {
+            if (a.createdAt && b.createdAt) {
+              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            }
+            return 0;
+          });
+      } else {
+        // For AsyncStorage, get all links across all users
+        const keys = await AsyncStorage.getAllKeys();
+        const linkKeys = keys.filter(key => key.startsWith(`${DB_COLLECTIONS.LINKS}_`));
+
+        if (linkKeys.length === 0) return [];
+
+        const items = await AsyncStorage.multiGet(linkKeys);
+        return items
+          .map(([key, value]) => value ? JSON.parse(value) : null)
+          .filter((item): item is any => item !== null)
+          .sort((a, b) => {
+            if (a.createdAt && b.createdAt) {
+              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            }
+            return 0;
+          });
+      }
+    } catch (error) {
+      console.error('❌ DatabaseService - List all links error:', error);
+      return [];
+    }
+  },
+
+  updateLink: (userId: string, linkId: string, linkData: Partial<any>) =>
+    DatabaseService.update(DB_COLLECTIONS.LINKS, userId, linkId, linkData),
+
+  deleteLink: (userId: string, linkId: string) =>
+    DatabaseService.delete(DB_COLLECTIONS.LINKS, userId, linkId),
+
   deleteDedicatedItem: async (id: string) => {
     console.log('🗑️ API: Deleting item:', id);
     const response = await axios.delete(`${API_BASE_URL}/api/dedicated-items/${id}`);
@@ -859,4 +1029,4 @@ export const db = {
   },
 };
 
-export default DatabaseService; 
+export default DatabaseService;

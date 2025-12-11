@@ -598,7 +598,8 @@
       "noCostSharing": "No cost sharing",
       "noSmoking": "No smoking",
       "withPets": "With pets",
-      "withKids": "With kids"
+      "withKids": "With kids",
+      "includePast": "Include past rides"
     },
     "category": {
       "other": "Other"
