@@ -61,50 +61,30 @@ export default function HomeTabStack(): React.ReactElement {
   useEffect(() => {
     if (resetHomeScreenTrigger > 0) {
       try {
-        // Get the current navigation state - navigation here is the HomeTabStack navigator itself
-        const state = (navigation as any).getState();
-        const currentRoute = state?.routes?.[state?.index || 0];
-        const currentRouteName = currentRoute?.name;
-
         logger.debug('HomeTabStack', 'resetHomeScreenTrigger activated', {
           resetHomeScreenTrigger,
-          currentRouteName,
           mode
         });
 
-        // Always navigate to HomeMain when reset is triggered
-        if (currentRouteName !== 'HomeMain') {
-          logger.debug('HomeTabStack', 'Navigating to HomeMain due to resetHomeScreenTrigger', {
-            resetHomeScreenTrigger,
-            currentRoute: currentRouteName,
-            mode
-          });
-
-          // Use CommonActions.reset to reset the stack to HomeMain
-          // This ensures we pop all screens and go back to HomeMain
+        // Always reset to HomeMain when reset is triggered
+        // Use CommonActions.reset to reset the stack to HomeMain
+        // This ensures we pop all screens and go back to HomeMain
+        try {
+          (navigation as any).dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'HomeMain' }],
+            })
+          );
+          logger.debug('HomeTabStack', 'Successfully reset to HomeMain');
+        } catch (resetError) {
+          logger.error('HomeTabStack', 'Error resetting to HomeMain', { resetError });
+          // Fallback: try to navigate directly
           try {
-            (navigation as any).dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [{ name: 'HomeMain' }],
-              })
-            );
-            logger.debug('HomeTabStack', 'Successfully reset to HomeMain');
-          } catch (resetError) {
-            logger.error('HomeTabStack', 'Error resetting to HomeMain', { resetError });
-            // Fallback: try to navigate directly
-            try {
-              (navigation as any).navigate('HomeMain');
-            } catch (navError) {
-              logger.error('HomeTabStack', 'Fallback navigation also failed', { navError });
-            }
+            (navigation as any).navigate('HomeMain');
+          } catch (navError) {
+            logger.error('HomeTabStack', 'Fallback navigation also failed', { navError });
           }
-        } else {
-          // Already on HomeMain - just log that we're refreshing
-          logger.debug('HomeTabStack', 'Already on HomeMain, trigger just refreshes the screen', {
-            resetHomeScreenTrigger,
-            mode
-          });
         }
       } catch (error) {
         logger.error('HomeTabStack', 'Error navigating to HomeMain', { error });

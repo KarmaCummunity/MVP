@@ -258,24 +258,11 @@ export default function BottomNavigator(): React.ReactElement {
           tabPress: (e) => {
             logger.debug('BottomNavigator', 'HomeScreen tab pressed');
             try {
-              // Get current navigation state
-              const state = (navigation as any).getState();
-              const currentRoute = state?.routes?.[state?.index || 0];
-              const currentRouteName = currentRoute?.name;
-
-              logger.debug('BottomNavigator', 'Tab press check', { currentRouteName });
-
-              if (currentRouteName === 'HomeScreen') {
-                // Already on Home tab - always reset to HomeMain
-                logger.debug('BottomNavigator', 'Already on HomeScreen, resetting to HomeMain');
-                resetHomeScreen();
-                e.preventDefault(); // Prevent default navigation since we handled it
-              } else {
-                // Switching tabs from another tab to HomeScreen
-                // Just navigate normally - will go to HomeMain
-                logger.debug('BottomNavigator', 'Switching to HomeScreen from another tab');
-                (navigation as any).navigate('HomeScreen');
-              }
+              // Always reset to HomeMain when home tab is pressed
+              // This ensures we always go to HomeMain regardless of current state
+              logger.debug('BottomNavigator', 'Resetting to HomeMain');
+              resetHomeScreen();
+              e.preventDefault(); // Prevent default navigation since we handled it
             } catch (error) {
               logger.error('BottomNavigator', 'Error handling HomeScreen tab press', { error });
               // Fallback: standard navigation
