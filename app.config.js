@@ -43,7 +43,9 @@ export default {
         },
         NSCameraUsageDescription: "האפליקציה זקוקה לגישה למצלמה כדי לצלם תמונות וסרטונים",
         NSMicrophoneUsageDescription: "האפליקציה זקוקה לגישה למיקרופון לצורך הקלטת אודיו",
-        NSPhotoLibraryUsageDescription: "האפליקציה זקוקה לגישה לספריית התמונות כדי לבחור ולהעלות קבצים"
+        NSPhotoLibraryUsageDescription: "האפליקציה זקוקה לגישה לספריית התמונות כדי לבחור ולהעלות קבצים",
+        NSLocationWhenInUseUsageDescription: "האפליקציה זקוקה לגישה למיקום כדי לזהות את מיקומך הנוכחי",
+        NSLocationAlwaysAndWhenInUseUsageDescription: "האפליקציה זקוקה לגישה למיקום כדי לזהות את מיקומך הנוכחי"
       }
     },
     android: {
@@ -74,7 +76,9 @@ export default {
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.WAKE_LOCK",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
       ]
     },
     web: {
@@ -108,6 +112,12 @@ export default {
           mode: "production",
           androidMode: "default",
           androidCollapsedTitle: "התראה חדשה"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          locationAlwaysAndWhenInUsePermission: "האפליקציה זקוקה לגישה למיקום כדי לזהות את מיקומך הנוכחי"
         }
       ]
     ],
