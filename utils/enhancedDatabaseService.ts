@@ -210,10 +210,16 @@ export class EnhancedDatabaseService {
       }
 
       const response = await apiService.updateUser(userId, updateData);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'enhancedDatabaseService.ts:212',message:'API updateUser response',data:{success:response.success,hasData:!!response.data,responseDataKeys:response.data?Object.keys(response.data):null,responseDataBio:response.data?.bio,responseDataCity:response.data?.city,responseDataCountry:response.data?.country,userId,updateDataSent:updateData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
 
       if (response.success && response.data) {
         await this.setCache('user_profile', userId, response.data);
         await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(response.data));
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'enhancedDatabaseService.ts:216',message:'Saved to AsyncStorage',data:{userId,storageKey:STORAGE_KEYS.USER_DATA,dataBio:response.data?.bio,dataCity:response.data?.city,dataCountry:response.data?.country},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
       }
 
       return response;

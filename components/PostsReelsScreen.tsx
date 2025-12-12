@@ -35,6 +35,7 @@ import { isBookmarked, addBookmark, removeBookmark } from '../utils/bookmarksSer
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { db } from '../utils/databaseService';
+import { getCategoryLabel } from '../utils/itemCategoryUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -1055,7 +1056,7 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
             id: `item_${item.id}`,
             type: 'post' as const,
             title: item.title || 'פריט למסירה',
-            description: item.description || `קטגוריה: ${item.category || 'כללי'}`,
+            description: item.description || `קטגוריה: ${getCategoryLabel(item.category)}`,
             thumbnail, // לא להציג תמונת placeholder כשאין תמונה או אם ה-base64 פגום
             user: {
               id: ownerId, // Always use ownerId as the user id (for navigation to profile)

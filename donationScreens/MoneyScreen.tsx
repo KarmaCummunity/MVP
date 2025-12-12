@@ -57,6 +57,7 @@ import { Ionicons as Icon } from '@expo/vector-icons';
 import { Slider } from '@miblanchard/react-native-slider';
 import HeaderComp from '../components/HeaderComp';
 import DonationStatsFooter from '../components/DonationStatsFooter';
+import AddLinkComponent from '../components/AddLinkComponent';
 
 // Slider component using @miblanchard/react-native-slider
 const DonationAmountSlider: React.FC<{
@@ -741,6 +742,7 @@ export default function MoneyScreen({
             </View>
 
             {/* Bottom small stats */}
+            <View style={[localStyles.section, localStyles.sectionPanel]}>
               <DonationStatsFooter
                 stats={[
                   { label: 'תרמת עד עכשיו', value: `₪${getFilteredRecentDonations().reduce((s, d) => s + (Number(d.amount) || 0), 0)}`, icon: 'cash-outline' },
@@ -749,6 +751,13 @@ export default function MoneyScreen({
                 ]}
               />
             </View>
+
+            {/* Add Links Section */}
+            <View style={[localStyles.section, localStyles.sectionPanel]}>
+              <Text style={localStyles.sectionTitle}>קישורים שימושיים</Text>
+              <AddLinkComponent category="money" />
+            </View>
+          </View>
         ) : (
           // Beneficiary mode - show charities that can help
           <View style={localStyles.sectionsContainer}>
@@ -770,6 +779,7 @@ export default function MoneyScreen({
             </View>
 
             {/* Bottom small stats */}
+            <View style={[localStyles.section, localStyles.sectionPanel]}>
               <DonationStatsFooter
                 stats={[
                   { label: 'תרמת עד עכשיו', value: `₪${getFilteredRecentDonations().reduce((s, d) => s + (Number(d.amount) || 0), 0)}`, icon: 'cash-outline' },
@@ -777,6 +787,13 @@ export default function MoneyScreen({
                   { label: 'עמותות שנתמכו', value: new Set(getFilteredRecentDonations().map(d => d.charityName)).size, icon: 'business-outline' },
                 ]}
               />
+            </View>
+
+            {/* Add Links Section */}
+            <View style={[localStyles.section, localStyles.sectionPanel]}>
+              <Text style={localStyles.sectionTitle}>קישורים שימושיים</Text>
+              <AddLinkComponent category="money" />
+            </View>
           </View>
         )}
       </ScrollContainer>

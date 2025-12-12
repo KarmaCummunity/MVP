@@ -11,10 +11,12 @@ import PostsReelsScreen from "../components/PostsReelsScreen";
 import colors from "../globals/colors";
 import { useUser } from "../stores/userStore";
 import { logger } from "../utils/loggerService";
+import { useToast } from "../utils/toastService";
 
 export default function HomeScreen() {
   const isFocused = useIsFocused();
   const { isGuestMode, selectedUser, isRealAuth } = useUser();
+  const { ToastComponent } = useToast();
 
   useEffect(() => {
     logger.debug('HomeScreen', 'Component rendered', {
@@ -48,6 +50,7 @@ export default function HomeScreen() {
         hideTopBar={false}
         showTopBar={true}
       />
+      {ToastComponent}
     </SafeAreaView>
   );
 }

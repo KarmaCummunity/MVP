@@ -73,7 +73,7 @@ const ANALYTICS_ITEM_PREFIX = 'category:';
 const BASE_CATEGORIES = [
   { id: 'money',      icon: 'card-outline',        color: colors.success, bgColor: colors.successLight, screen: 'MoneyScreen' },
   { id: 'trump',      icon: 'car-outline',         color: colors.primary,    bgColor: colors.infoLight,    screen: 'TrumpScreen' },
-  { id: 'knowledge',  icon: 'school-outline',      color: colors.warning, bgColor: colors.warningLight, screen: 'KnowledgeScreen' },
+  { id: 'knowledge',  icon: 'school-outline',      color: colors.warning, bgColor: colors.warning, screen: 'KnowledgeScreen' },
   { id: 'time',       icon: 'time-outline',        color: colors.secondary,  bgColor: colors.pinkLight, screen: 'TimeScreen' },
   { id: 'food',       icon: 'restaurant-outline',  color: colors.success, bgColor: colors.successLight, screen: 'FoodScreen' },
   { id: 'clothes',    icon: 'shirt-outline',       color: colors.secondary,    bgColor: colors.pinkLight,    screen: 'ClothesScreen' },
@@ -92,7 +92,7 @@ const BASE_CATEGORIES = [
   { id: 'riddles',    icon: 'help-circle-outline', color: colors.secondary,    bgColor: colors.pinkLight,    screen: 'RiddlesScreen' },
   { id: 'recipes',    icon: 'fast-food-outline',   color: colors.success, bgColor: colors.successLight, screen: 'RecipesScreen' },
   { id: 'plants',     icon: 'flower-outline',      color: colors.success, bgColor: colors.successLight, screen: 'PlantsScreen' },
-  { id: 'waste',      icon: 'trash-outline',       color: colors.warning, bgColor: colors.warningLight, screen: 'WasteScreen' },
+  { id: 'waste',      icon: 'trash-outline',       color: colors.warning, bgColor: colors.warning, screen: 'WasteScreen' },
   { id: 'art',        icon: 'color-palette-outline', color: colors.secondary,  bgColor: colors.pinkLight,    screen: 'ArtScreen' },
   { id: 'sports',     icon: 'football-outline',    color: colors.primary,  bgColor: colors.infoLight,  screen: 'SportsScreen' },
   { id: 'dreams',     icon: 'star-outline',        color: colors.secondary,    bgColor: colors.pinkLight,    screen: 'DreamsScreen' },
@@ -100,7 +100,7 @@ const BASE_CATEGORIES = [
   { id: 'jobs',       icon: 'briefcase-outline',   color: colors.primary,    bgColor: colors.infoLight,    screen: 'JobsScreen' },
   { id: 'matchmaking', icon: 'people-outline',     color: colors.secondary,    bgColor: colors.pinkLight,    screen: 'MatchmakingScreen' },
   { id: 'mentalHealth', icon: 'pulse-outline',     color: colors.secondary,  bgColor: colors.pinkLight,  screen: 'MentalHealthScreen' },
-  { id: 'goldenAge',   icon: 'person-outline',     color: colors.warning, bgColor: colors.warningLight, screen: 'GoldenAgeScreen' },
+  { id: 'goldenAge',   icon: 'person-outline',     color: colors.warning, bgColor: colors.warning, screen: 'GoldenAgeScreen' },
   { id: 'languages',   icon: 'language-outline',   color: colors.primary,    bgColor: colors.infoLight,    screen: 'LanguagesScreen' },
 ] as const;
 
@@ -703,6 +703,7 @@ const styles = StyleSheet.create({
   
   // Modern Design Styles
   modernSection: {
+    marginTop: LAYOUT_CONSTANTS.SPACING.LG,
     backgroundColor: colors.background,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
     marginHorizontal: LAYOUT_CONSTANTS.SPACING.MD,

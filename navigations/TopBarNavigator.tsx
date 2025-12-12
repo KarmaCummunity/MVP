@@ -9,7 +9,7 @@ import styles from '../globals/styles'; // your styles file
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { View, Text, TouchableOpacity, StyleProp, ViewStyle, TextStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { NavigationProp, ParamListBase } from '@react-navigation/native';
+import { NavigationProp, ParamListBase, StackActions } from '@react-navigation/native';
 import { useRoute, useFocusEffect, useNavigationState } from '@react-navigation/native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import colors from '../globals/colors';
@@ -51,6 +51,39 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
 
     return findActiveRoute(state.routes, state.index || 0);
   });
+
+  // List of top bar screens that should be mutually exclusive
+  const topBarScreens = ['SettingsScreen', 'NotificationsScreen', 'ChatListScreen', 'LandingSiteScreen'];
+
+  // Handler for toggling screens (open if closed, close if open)
+  // Only one top bar screen can be open at a time
+  const handleScreenToggle = (screenName: string) => {
+    // Get current route name for comparison
+    const currentRoute = activeRouteName || route.name;
+    
+    if (currentRoute === screenName) {
+      // Screen is open, close it by going back
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      }
+    } else {
+      // Check if any other top bar screen is currently open
+      const otherTopBarScreenOpen = topBarScreens.find(
+        screen => screen !== screenName && currentRoute === screen
+      );
+      
+      if (otherTopBarScreenOpen) {
+        // Another top bar screen is open, replace it with the new screen
+        // This ensures only one top bar screen is open at a time
+        navigation.dispatch(
+          StackActions.replace(screenName, {})
+        );
+      } else {
+        // No other top bar screen is open, navigate to the new screen
+        navigation.navigate(screenName as never);
+      }
+    }
+  };
 
   // Log render for debugging
   React.useEffect(() => {
@@ -178,10 +211,10 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
       >
 
         <View style={styles.topBarIconsRow as StyleProp<ViewStyle>}>
-          <TouchableOpacity onPress={() => navigation.navigate('SettingsScreen')} style={styles.topBarIconButton as StyleProp<ViewStyle>}>
+          <TouchableOpacity onPress={() => handleScreenToggle('SettingsScreen')} style={styles.topBarIconButton as StyleProp<ViewStyle>}>
             <Icon name="settings-outline" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('NotificationsScreen')} style={styles.topBarIconButton as StyleProp<ViewStyle>}>
+          <TouchableOpacity onPress={() => handleScreenToggle('NotificationsScreen')} style={styles.topBarIconButton as StyleProp<ViewStyle>}>
             <View style={{ position: 'relative' }}>
               <Icon name="notifications-circle-outline" size={24} color={colors.textPrimary} />
               {unreadCount > 0 && (
@@ -211,14 +244,20 @@ function TopBarNavigator({ navigation, hideTopBar = false, showPosts = false }: 
         <View style={styles.topBarIconsRow as StyleProp<ViewStyle>}>
           {isGuestMode ? (
             // Guest mode: Show only About button
-            <AboutButton style={styles.topBarIconButton as StyleProp<ViewStyle>} />
+            <AboutButton 
+              style={styles.topBarIconButton as StyleProp<ViewStyle>}
+              onPress={() => handleScreenToggle('LandingSiteScreen')}
+            />
           ) : (
             // Authenticated mode: Show both Chat and About buttons
             <>
-              <TouchableOpacity onPress={() => navigation.navigate('ChatListScreen')} style={styles.topBarIconButton as StyleProp<ViewStyle>}>
+              <TouchableOpacity onPress={() => handleScreenToggle('ChatListScreen')} style={styles.topBarIconButton as StyleProp<ViewStyle>}>
                 <Icon name="chatbubbles-outline" size={24} color={colors.textPrimary} />
               </TouchableOpacity>
-              <AboutButton style={styles.topBarIconButton as StyleProp<ViewStyle>} />
+              <AboutButton 
+                style={styles.topBarIconButton as StyleProp<ViewStyle>}
+                onPress={() => handleScreenToggle('LandingSiteScreen')}
+              />
             </>
           )}
         </View>

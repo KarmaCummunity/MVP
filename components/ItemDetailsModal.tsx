@@ -6,6 +6,7 @@ import {
   Modal,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   Image,
   ActivityIndicator,
 } from 'react-native';
@@ -19,6 +20,7 @@ import { biDiTextAlign, rowDirection } from '../globals/responsive';
 import { apiService } from '../utils/apiService';
 import { useUser } from '../stores/userStore';
 import { logger } from '../utils/loggerService';
+import { getCategoryLabel } from '../utils/itemCategoryUtils';
 
 export interface ItemDetailsModalProps {
   visible: boolean;
@@ -219,18 +221,11 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             <Text style={styles.modalItemTitle}>{item.title}</Text>
             <View style={styles.modalBadge}>
               <Text style={styles.modalBadgeText}>
-                {item.category === 'furniture' ? 'רהיטים' : 
-                 item.category === 'clothes' ? 'בגדים' : 'חפצים'}
+                {getCategoryLabel(item.category)}
               </Text>
             </View>
           </View>
 
-          {/* Price */}
-          <View style={styles.modalSection}>
-            <Text style={styles.modalPrice}>
-              {(item.price ?? 0) === 0 ? 'בחינם' : `₪${item.price}`}
-            </Text>
-          </View>
 
           {/* Description */}
           {item.description && (
@@ -373,8 +368,14 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalCard}>
+      <Pressable 
+        style={styles.modalOverlay}
+        onPress={onClose}
+      >
+        <Pressable 
+          style={styles.modalCard}
+          onPress={() => {}}
+        >
           {/* Header */}
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{getModalTitle()}</Text>
@@ -421,8 +422,8 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
               </View>
             )}
           </ScrollView>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 };

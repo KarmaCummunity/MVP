@@ -31,6 +31,7 @@ import { enhancedDB } from '../utils/enhancedDatabaseService';
 import { apiService } from '../utils/apiService';
 import { scaleSize } from '../globals/responsive';
 import { createShadowStyle } from '../globals/styles';
+import ItemDetailsModal from '../components/ItemDetailsModal';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -76,6 +77,9 @@ const SearchScreen = () => {
     const [results, setResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [hasSearched, setHasSearched] = useState(false); // To show "start typing" vs "no results"
+    const [selectedItem, setSelectedItem] = useState<any | null>(null);
+    const [showItemModal, setShowItemModal] = useState(false);
+    const [selectedItemType, setSelectedItemType] = useState<'item' | 'ride'>('item');
 
     const searchInputRef = useRef<TextInput>(null);
 
@@ -131,7 +135,7 @@ const SearchScreen = () => {
                             .map(r => ({
                                 id: r.id,
                                 type: 'ride' as const,
-                                title: `${r.from} ←→ ${r.to}`,
+                                title: `${r.from} ➝ ${r.to}`,
                                 subtitle: `${new Date((r.departure_time || r.date) as any).toLocaleDateString()} ${new Date((r.departure_time || r.time) as any).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
                                 description: r.description as string,
                                 image: (r.driverImage as any) || undefined,
@@ -297,18 +301,28 @@ const SearchScreen = () => {
     };
 
     const handleResultPress = (item: SearchResult) => {
-        // TODO: Navigate to real details screens
-        Alert.alert(
-            item.title,
-            `${item.description || ''}\n\n${item.subtitle || ''}`,
-            [
-                { text: t('common:close'), style: 'cancel' },
-                {
-                    text: t('common:moreDetails'),
-                    onPress: () => console.log('Navigate to:', item.type, item.id)
-                }
-            ]
-        );
+        // Open modal for rides and donations (items)
+        if (item.type === 'ride' || item.type === 'donation') {
+            setSelectedItem(item.rawData);
+            setSelectedItemType(item.type === 'ride' ? 'ride' : 'item');
+            setShowItemModal(true);
+        } else if (item.type === 'user') {
+            // Navigate to user profile
+            navigation.navigate('UserProfileScreen', {
+                userId: item.rawData.id,
+                userName: item.rawData.name || item.title,
+                characterData: item.rawData
+            });
+        } else if (item.type === 'hashtag') {
+            // For hashtags, show alert for now
+            Alert.alert(
+                item.title,
+                `${item.description || ''}\n\n${item.subtitle || ''}`,
+                [
+                    { text: t('common:close'), style: 'cancel' }
+                ]
+            );
+        }
     };
 
     const renderItem = ({ item }: { item: SearchResult }) => (
@@ -473,6 +487,18 @@ const SearchScreen = () => {
                 <Ionicons name="chatbubbles-outline" size={24} color={colors.white} />
                 <Text style={styles.aiButtonText}>AI</Text>
             </TouchableOpacity>
+
+            {/* Item Details Modal */}
+            <ItemDetailsModal
+                visible={showItemModal}
+                onClose={() => {
+                    setShowItemModal(false);
+                    setSelectedItem(null);
+                }}
+                item={selectedItem}
+                type={selectedItemType}
+                navigation={navigation}
+            />
         </SafeAreaView>
     );
 };

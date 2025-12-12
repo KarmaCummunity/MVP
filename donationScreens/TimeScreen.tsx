@@ -18,6 +18,7 @@ import { FontSizes } from '../globals/constants';
 import { useUser } from '../stores/userStore';
 import HeaderComp from '../components/HeaderComp';
 import DonationStatsFooter from '../components/DonationStatsFooter';
+import AddLinkComponent from '../components/AddLinkComponent';
 
 // Mock data for volunteer opportunities
 const volunteerOpportunities = [
@@ -416,6 +417,12 @@ export default function TimeScreen({
               { label: 'ארגונים פעילים', value: 156, icon: 'heart-outline' },
             ]}
           />
+        </View>
+
+        {/* Add Links Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>קישורים שימושיים</Text>
+          <AddLinkComponent category="time" />
         </View>
       </ScrollView>
     </SafeAreaView>

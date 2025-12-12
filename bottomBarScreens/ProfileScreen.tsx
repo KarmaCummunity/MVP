@@ -133,18 +133,60 @@ const PostsRoute = ({ userId }: { userId?: string }) => {
           }
         }
 
-        // Combine posts and items
+        // Load rides
+        let userRides: any[] = [];
+        try {
+          const allRides = await enhancedDB.getRides({});
+          userRides = allRides.filter((ride: any) => {
+            const createdBy = ride.createdBy || ride.created_by || ride.driver_id || ride.driverId;
+            return createdBy === targetUserId;
+          });
+          console.log('📱 PostsRoute - Loaded rides:', userRides.length);
+        } catch (error) {
+          console.error('Error loading rides:', error);
+        }
+
+        // Combine posts, items, and rides
         const allPosts = [
           ...(userPosts || []),
-          ...userItems.map((item: any) => ({
-            id: `item_${item.id}`,
-            title: item.title,
-            thumbnail: item.image_base64
-              ? `data:image/jpeg;base64,${item.image_base64}`
-              : '', // לא להציג תמונת placeholder כשאין תמונה
-            likes: 0,
-            type: 'item'
-          }))
+          ...userItems.map((item: any) => {
+            // Process image_base64 - check if prefix already exists
+            let thumbnail = '';
+            if (item.image_base64) {
+              const imageData = item.image_base64;
+              // Check if it's already a data URI or URL
+              if (imageData.startsWith('data:image') || imageData.startsWith('http')) {
+                // Already has prefix or is a URL - use as is
+                thumbnail = imageData;
+              } else if (imageData.length > 100) {
+                // Valid base64 string without prefix - add prefix
+                thumbnail = `data:image/jpeg;base64,${imageData}`;
+              }
+              // If image_base64 is too short or invalid, thumbnail remains empty
+            }
+            
+            return {
+              id: `item_${item.id}`,
+              title: item.title,
+              thumbnail: thumbnail,
+              likes: 0,
+              type: 'item'
+            };
+          }),
+          ...userRides.map((ride: any) => {
+            const fromLocation = ride.from || ride.from_location?.name || ride.from_location?.city || '';
+            const toLocation = ride.to || ride.to_location?.name || ride.to_location?.city || '';
+            return {
+              id: `ride_${ride.id}`,
+              title: `טרמפ: ${fromLocation} ➝ ${toLocation}`,
+              thumbnail: ride.image || '', // Rides usually don't have images
+              likes: 0,
+              type: 'ride',
+              from: fromLocation,
+              to: toLocation,
+              rawData: ride
+            };
+          })
         ];
 
         console.log('📱 PostsRoute - Total posts/items:', allPosts.length);
@@ -194,6 +236,22 @@ const PostsRoute = ({ userId }: { userId?: string }) => {
                 source={{ uri: post.thumbnail || post.image }}
                 style={styles.postImage}
               />
+            ) : post.type === 'ride' ? (
+              // Special display for rides without image
+              <View style={[styles.postImage, styles.ridePlaceholder]}>
+                <Ionicons name="car-sport" size={scaleSize(32)} color={colors.info} />
+                {post.from && post.to && (
+                  <View style={styles.rideDetailsContainer}>
+                    <Text style={styles.rideDetailsText} numberOfLines={1}>
+                      {post.from}
+                    </Text>
+                    <Ionicons name="arrow-forward" size={scaleSize(12)} color={colors.textSecondary} style={styles.rideArrow} />
+                    <Text style={styles.rideDetailsText} numberOfLines={1}>
+                      {post.to}
+                    </Text>
+                  </View>
+                )}
+              </View>
             ) : (
               <View style={[styles.postImage, { backgroundColor: colors.backgroundTertiary, justifyContent: 'center', alignItems: 'center' }]}>
                 <Ionicons name="image-outline" size={32} color={colors.textSecondary} />
@@ -548,10 +606,12 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
         });
         
         userRides.forEach((ride: any) => {
+          const fromLocation = ride.from || ride.from_location?.name || ride.from_location?.city || 'לא צויין';
+          const toLocation = ride.to || ride.to_location?.name || ride.to_location?.city || 'לא צויין';
           activities.push({
             id: `ride_${ride.id}`,
             type: 'ride',
-            title: `טרמפ: ${ride.from} ←→ ${ride.to}`,
+            title: `טרמפ: ${fromLocation} ➝ ${toLocation}`,
             time: ride.created_at || ride.createdAt || new Date().toISOString(),
             icon: 'car-sport-outline',
             color: colors.info,
@@ -2146,6 +2206,30 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: FontSizes.small,
     marginLeft: 4,
+  },
+  ridePlaceholder: {
+    backgroundColor: colors.info + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: LAYOUT_CONSTANTS.SPACING.SM,
+    borderWidth: 1,
+    borderColor: colors.info + '30',
+  },
+  rideDetailsContainer: {
+    marginTop: LAYOUT_CONSTANTS.SPACING.XS + 2,
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 6,
+  },
+  rideDetailsText: {
+    fontSize: FontSizes.small - 1,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    textAlign: 'center',
+    maxWidth: '90%',
+  },
+  rideArrow: {
+    marginVertical: 3,
   },
   tabContentPlaceholder: {
     flex: 1,

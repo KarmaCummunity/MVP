@@ -435,34 +435,69 @@ export const useUserStore = create<UserState>((set, get) => ({
               email: firebaseUser.email || undefined 
             });
             
-            if (!resolveResponse.success || !(resolveResponse as any).user) {
+            // Always call getUserById to get full user data (including bio, city, country)
+            // resolveUserId only returns basic fields, we need all profile data
+            let userResponse: any;
+            if (resolveResponse.success && (resolveResponse as any).user?.id) {
+              // Use the resolved UUID to get full user data
+              const resolvedUserId = (resolveResponse as any).user.id;
+              userResponse = await apiService.getUserById(resolvedUserId);
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'userStore.ts:437',message:'getUserById after resolveUserId',data:{success:userResponse.success,hasData:!!userResponse.data,resolvedUserId,serverUserKeys:userResponse.data?Object.keys(userResponse.data):null,serverUserBio:userResponse.data?.bio,serverUserCity:userResponse.data?.city,serverUserCountry:userResponse.data?.country,serverUserAvatarUrl:userResponse.data?.avatar_url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+              // #endregion
+            } else {
               console.warn('🔥 Failed to resolve user ID from server, using fallback');
               // Fallback: try to get user by email
               if (firebaseUser.email) {
-                const userResponse = await apiService.getUserById(firebaseUser.email);
-                if (userResponse.success && userResponse.data) {
-                  const serverUser = userResponse.data;
+                userResponse = await apiService.getUserById(firebaseUser.email);
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'userStore.ts:442',message:'getUserById response after login (fallback)',data:{success:userResponse.success,hasData:!!userResponse.data,serverUserKeys:userResponse.data?Object.keys(userResponse.data):null,serverUserBio:userResponse.data?.bio,serverUserCity:userResponse.data?.city,serverUserCountry:userResponse.data?.country,serverUserAvatarUrl:userResponse.data?.avatar_url,email:firebaseUser.email},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+                // #endregion
+              }
+            }
+            
+            if (userResponse?.success && userResponse.data) {
+              const serverUser = userResponse.data;
                   const nowIso = new Date().toISOString();
+                  // Map server response fields (snake_case) to client User interface (camelCase)
                   const userData: User = {
                     id: serverUser.id, // UUID from database
                     name: serverUser.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
                     email: serverUser.email || firebaseUser.email || '',
                     phone: serverUser.phone || firebaseUser.phoneNumber || '+9720000000',
-                    avatar: serverUser.avatar_url || firebaseUser.photoURL || 'https://i.pravatar.cc/150?img=1',
-                    bio: serverUser.bio || '',
-                    karmaPoints: serverUser.karma_points || 0,
-                    joinDate: serverUser.join_date || serverUser.created_at || nowIso,
-                    isActive: serverUser.is_active !== false,
-                    lastActive: serverUser.last_active || nowIso,
-                    location: { city: serverUser.city || 'ישראל', country: serverUser.country || 'IL' },
-                    interests: serverUser.interests || [],
-                    roles: serverUser.roles || ['user'],
-                    postsCount: serverUser.posts_count || 0,
-                    followersCount: serverUser.followers_count || 0,
-                    followingCount: serverUser.following_count || 0,
+                    avatar: serverUser.avatar_url || serverUser.avatar || firebaseUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+                    bio: (serverUser.bio !== null && serverUser.bio !== undefined) ? String(serverUser.bio) : '',
+                    karmaPoints: serverUser.karma_points || serverUser.karmaPoints || 0,
+                    joinDate: serverUser.join_date || serverUser.joinDate || serverUser.created_at || serverUser.createdAt || nowIso,
+                    isActive: serverUser.is_active !== false && serverUser.isActive !== false,
+                    lastActive: serverUser.last_active || serverUser.lastActive || nowIso,
+                    location: { 
+                      city: serverUser.city || '', 
+                      country: serverUser.country || 'IL' 
+                    },
+                    interests: Array.isArray(serverUser.interests) ? serverUser.interests : [],
+                    roles: Array.isArray(serverUser.roles) ? serverUser.roles : ['user'],
+                    postsCount: serverUser.posts_count || serverUser.postsCount || 0,
+                    followersCount: serverUser.followers_count || serverUser.followersCount || 0,
+                    followingCount: serverUser.following_count || serverUser.followingCount || 0,
                     notifications: [],
                     settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
                   };
+                  
+                  // #region agent log
+                  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'userStore.ts:471',message:'Mapped userData after login',data:{userId:userData.id,userDataBio:userData.bio,userDataCity:userData.location.city,userDataCountry:userData.location.country,serverUserBio:serverUser.bio,serverUserCity:serverUser.city,serverUserCountry:serverUser.country,serverUserBioType:typeof serverUser.bio,serverUserCityType:typeof serverUser.city},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+                  // #endregion
+                  // Log loaded user data for debugging
+                  console.log('🔐 userStore - Loaded user data from API:', {
+                    id: userData.id,
+                    bio: userData.bio,
+                    city: userData.location.city,
+                    country: userData.location.country,
+                    interests: userData.interests,
+                    serverBio: serverUser.bio,
+                    serverCity: serverUser.city,
+                    serverCountry: serverUser.country
+                  });
                   
                   await AsyncStorage.setItem('current_user', JSON.stringify(userData));
                   await AsyncStorage.setItem('auth_mode', 'real');
@@ -471,65 +506,18 @@ export const useUserStore = create<UserState>((set, get) => ({
                   const enrichedUser = await enrichUserWithOrgRoles(userData);
                   set({
                     selectedUser: enrichedUser,
-                    isAuthenticated: true
+                    isAuthenticated: true,
+                    authMode: 'real',
+                    isGuestMode: false
                   });
                   console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
                   return;
-                }
-              }
-              throw new Error('Failed to get user from server');
+            } else {
+              console.error('🔥 Failed to get user from server - userResponse failed');
             }
-            
-            // Check if we already have this user loaded to prevent unnecessary updates
-            const currentState = get();
-            if (currentState.selectedUser?.id === (resolveResponse as any).user.id && 
-                currentState.isAuthenticated && 
-                currentState.authMode === 'real') {
-              console.log('🔥 Firebase Auth State Changed - User already loaded, skipping update');
-              return;
-            }
-            
-            // Use UUID from server
-            const serverUser = (resolveResponse as any).user;
-            const nowIso = new Date().toISOString();
-            const userData: User = {
-              id: serverUser.id, // UUID from database - this is the primary identifier
-              name: serverUser.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-              email: serverUser.email || firebaseUser.email || '',
-              phone: serverUser.phone || firebaseUser.phoneNumber || '+9720000000',
-              avatar: serverUser.avatar || firebaseUser.photoURL || 'https://i.pravatar.cc/150?img=1',
-              bio: serverUser.bio || '',
-              karmaPoints: serverUser.karmaPoints || 0,
-              joinDate: serverUser.createdAt || serverUser.joinDate || nowIso,
-              isActive: serverUser.isActive !== false,
-              lastActive: serverUser.lastActive || nowIso,
-              location: serverUser.location || { city: 'ישראל', country: 'IL' },
-              interests: serverUser.interests || [],
-              roles: serverUser.roles || ['user'],
-              postsCount: serverUser.postsCount || 0,
-              followersCount: serverUser.followersCount || 0,
-              followingCount: serverUser.followingCount || 0,
-              notifications: [],
-              settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
-            };
-
-            // Save to AsyncStorage for persistence
-            await AsyncStorage.setItem('current_user', JSON.stringify(userData));
-            await AsyncStorage.setItem('auth_mode', 'real');
-            await AsyncStorage.setItem('firebase_user_id', firebaseUser.uid);
-            
-            // Update store state
-            const enrichedUser = await enrichUserWithOrgRoles(userData);
-            set({
-              selectedUser: enrichedUser,
-              isAuthenticated: true,
-              authMode: 'real',
-              isGuestMode: false
-            });
-            console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
           } catch (error) {
             console.error('🔥 Failed to restore Firebase session:', error);
-            // Don't set user state if we can't get UUID from server
+            // Don't set user state if we can't get user data from server
           }
         } else {
           // No Firebase user - only clear if we had a Firebase user before

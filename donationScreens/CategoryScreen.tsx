@@ -8,6 +8,7 @@ import { biDiTextAlign, isLandscape, scaleSize } from '../globals/responsive';
 import { useTranslation } from 'react-i18next';
 import { donationResources } from '../utils/donationResources';
 import ScrollContainer from '../components/ScrollContainer';
+import AddLinkComponent from '../components/AddLinkComponent';
 
 export interface CategoryConfig {
   id: string;
@@ -178,6 +179,12 @@ const CategoryScreen: React.FC<Props> = ({ route, config: propConfig }) => {
               { label: t('donations:stats.activePartners'), value: 5, icon: 'people-outline' },
             ]}
           />
+        </View>
+
+        {/* Add Links Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>קישורים שימושיים</Text>
+          <AddLinkComponent category={config.id} />
         </View>
       </ScrollContainer>
     </View>

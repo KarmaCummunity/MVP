@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
  * @returns {React.FC} A React component rendering the Bottom Tab Navigator.
  */
 export default function BottomNavigator(): React.ReactElement {
-  const { isGuestMode, resetHomeScreen, isAdmin } = useUser();
+  const { isGuestMode, isAdmin } = useUser();
   const { mode } = useWebMode();
   const navigation = useNavigation();
 
@@ -256,17 +256,30 @@ export default function BottomNavigator(): React.ReactElement {
         component={HomeTabStack}
         listeners={({ navigation }) => ({
           tabPress: (e) => {
-            logger.debug('BottomNavigator', 'HomeScreen tab pressed');
             try {
-              // Always reset to HomeMain when home tab is pressed
-              // This ensures we always go to HomeMain regardless of current state
-              logger.debug('BottomNavigator', 'Resetting to HomeMain');
-              resetHomeScreen();
-              e.preventDefault(); // Prevent default navigation since we handled it
+              const state = navigation.getState();
+              const currentTabIndex = state?.index ?? -1;
+              const currentTabRoute = state?.routes?.[currentTabIndex];
+              const isHomeTabFocused = currentTabRoute?.name === 'HomeScreen';
+              
+              if (isHomeTabFocused) {
+                // Tab is already focused - check if we're in a nested screen
+                const homeTabState = currentTabRoute?.state;
+                const homeTabRoutes = homeTabState?.routes;
+                const homeTabIndex = homeTabState?.index ?? 0;
+                const currentScreen = homeTabRoutes?.[homeTabIndex];
+                const currentScreenName = currentScreen?.name;
+                
+                if (currentScreenName && currentScreenName !== 'HomeMain') {
+                  // We're in a nested screen - navigate to HomeMain using nested navigation syntax
+                  e.preventDefault();
+                  (navigation as any).navigate('HomeScreen', { screen: 'HomeMain' });
+                }
+                // If already at HomeMain, let default behavior handle it (do nothing)
+              }
+              // If tab is not focused, let default behavior switch to Home tab
             } catch (error) {
               logger.error('BottomNavigator', 'Error handling HomeScreen tab press', { error });
-              // Fallback: standard navigation
-              (navigation as any).navigate('HomeScreen');
             }
           },
         })}

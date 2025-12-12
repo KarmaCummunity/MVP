@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, TextInput, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, TextInput, Alert, Image, Modal, FlatList } from 'react-native';
 import { NavigationProp, ParamListBase, useFocusEffect, useRoute } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import colors from '../globals/colors';
@@ -8,12 +8,34 @@ import HeaderComp from '../components/HeaderComp';
 import DonationStatsFooter from '../components/DonationStatsFooter';
 import ScrollContainer from '../components/ScrollContainer';
 import ItemDetailsModal from '../components/ItemDetailsModal';
+import AddLinkComponent from '../components/AddLinkComponent';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { db } from '../utils/databaseService';
 import { useUser } from '../stores/userStore';
 import { biDiTextAlign, rowDirection, isLandscape, marginStartEnd } from '../globals/responsive';
+import { getCategoryLabel } from '../utils/itemCategoryUtils';
 
-type ItemType = 'furniture' | 'clothes' | 'general';
+type ItemType = 'furniture' | 'clothes' | 'general' | 'books' | 'dry_food' | 'games' | 'electronics' | 'toys' | 'sports' | 'art' | 'kitchen' | 'bathroom' | 'garden' | 'tools' | 'baby' | 'pet' | 'other';
+
+// רשימת קטגוריות לפרסום פריטים
+const ITEM_CATEGORIES = [
+  { id: 'clothes', label: 'בגדים', icon: 'shirt-outline' },
+  { id: 'books', label: 'ספרים', icon: 'library-outline' },
+  { id: 'furniture', label: 'רהיטים', icon: 'bed-outline' },
+  { id: 'dry_food', label: 'אוכל יבש', icon: 'restaurant-outline' },
+  { id: 'games', label: 'משחקים', icon: 'game-controller-outline' },
+  { id: 'electronics', label: 'חשמל ואלקטרוניקה', icon: 'phone-portrait-outline' },
+  { id: 'toys', label: 'צעצועים', icon: 'happy-outline' },
+  { id: 'sports', label: 'ספורט', icon: 'football-outline' },
+  { id: 'art', label: 'אמנות', icon: 'color-palette-outline' },
+  { id: 'kitchen', label: 'מטבח', icon: 'cafe-outline' },
+  { id: 'bathroom', label: 'אמבטיה', icon: 'water-outline' },
+  { id: 'garden', label: 'גינה', icon: 'leaf-outline' },
+  { id: 'tools', label: 'כלים', icon: 'construct-outline' },
+  { id: 'baby', label: 'תינוקות', icon: 'baby-outline' },
+  { id: 'pet', label: 'חיות מחמד', icon: 'paw-outline' },
+  { id: 'other', label: 'אחר', icon: 'cube-outline' },
+] as const;
 
 export interface ItemsScreenProps {
   navigation: NavigationProp<ParamListBase>;
@@ -68,16 +90,16 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   const routeParams = route?.params as { mode?: string } | undefined;
   
   // Get initial mode from URL (deep link) or default to search mode (מחפש)
-  // mode: true = מציע, false = מחפש
-  // URL mode: 'offer' = true, 'search' = false
-  // Default is search mode (false)
-  const initialMode = routeParams?.mode === 'offer' ? true : false;
+  // mode: false = מציע, true = מחפש
+  // URL mode: 'offer' = false, 'search' = true
+  // Default is search mode (true)
+  const initialMode = routeParams?.mode === 'offer' ? false : true;
   const [mode, setMode] = useState(initialMode);
 
   // Update mode when route params change (e.g., from deep link)
   useEffect(() => {
     if (routeParams?.mode && routeParams.mode !== 'undefined' && routeParams.mode !== 'null') {
-      const newMode = routeParams.mode === 'offer' ? true : false;
+      const newMode = routeParams.mode === 'search';
       if (newMode !== mode) {
         setMode(newMode);
       }
@@ -86,7 +108,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
 
   // Update URL when mode changes (toggle button pressed) or when screen loads without mode
   useEffect(() => {
-    const newMode = mode ? 'offer' : 'search';
+    const newMode = mode ? 'search' : 'offer';
     const currentMode = routeParams?.mode;
     
     // If no mode in URL, set it to search (default)
@@ -116,6 +138,8 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   const [address, setAddress] = useState('');
   const [qty, setQty] = useState<number>(1);
   const [condition, setCondition] = useState<'new' | 'like_new' | 'used' | 'for_parts' | ''>('');
+  const [selectedCategory, setSelectedCategory] = useState<ItemType>('general');
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const { selectedUser } = useUser();
   const [selectedItem, setSelectedItem] = useState<DonationItem | null>(null);
   const [showItemModal, setShowItemModal] = useState(false);
@@ -130,6 +154,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
       setQty(1);
       setCondition('');
       setImageUri('');
+      setSelectedCategory('general');
     }, [])
   );
 
@@ -192,47 +217,145 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   // פונקציה נפרדת לטעינת פריטים שנוכל לקרוא לה גם אחרי שמירה
   const loadItems = async () => {
     try {
-      console.log('📥 טוען פריטים מהשרת...');
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:217',message:'loadItems entry',data:{mode,itemType,currentUserId:selectedUser?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+      console.log('📥 טוען פריטים מהשרת...', { mode, itemType });
       const uid = selectedUser?.id || 'guest';
       
-      // קריאה מה-API החדש
-      const serverItems = await db.getDedicatedItemsByOwner(uid);
+      let serverItems: any[] = [];
+      
+      if (mode) {
+        // מצב "מחפש" - טוען את כל הפריטים הזמינים מכל המשתמשים (ללא סינון קטגוריה)
+        console.log('🔍 מצב מחפש - טוען את כל הפריטים הזמינים');
+        const { USE_BACKEND, API_BASE_URL } = await import('../utils/dbConfig');
+        if (USE_BACKEND && API_BASE_URL) {
+          const axios = (await import('axios')).default;
+          // במצב "מחפש", לא נסנן לפי קטגוריה - נטען את כל הפריטים הזמינים
+          // הסינון לפי קטגוריה ייעשה רק ב-UI אחרי הטעינה
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:236',message:'Before API call',data:{apiUrl:`${API_BASE_URL}/api/items-delivery/search`,params:{status:'available',limit:100}},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+          // #endregion
+          const response = await axios.get(`${API_BASE_URL}/api/items-delivery/search`, {
+            params: {
+              status: 'available',
+              // לא נשלח category במצב "מחפש" כדי לקבל את כל הפריטים
+              limit: 100, // Limit to 100 items for performance
+            }
+          });
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:248',message:'API response received',data:{success:response.data?.success,dataLength:response.data?.data?.length,firstItemOwnerId:response.data?.data?.[0]?.owner_id,firstItemOwnerIdAlt:response.data?.data?.[0]?.ownerId,allOwnerIds:response.data?.data?.map((i:any)=>i.owner_id||i.ownerId).slice(0,5),uniqueOwnerIdsCount:new Set(response.data?.data?.map((i:any)=>i.owner_id||i.ownerId)).size},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+          // #endregion
+          console.log('🔍 API Response:', {
+            success: response.data?.success,
+            dataLength: response.data?.data?.length,
+            data: response.data?.data?.slice(0, 3), // First 3 items for debugging
+          });
+          if (response.data?.success && Array.isArray(response.data.data)) {
+            serverItems = response.data.data;
+            console.log('✅ טעינת פריטים מה-API הצליחה:', serverItems.length, 'פריטים');
+            // לוג של ownerIds כדי לראות אם יש פריטים ממשתמשים שונים
+            const ownerIds = [...new Set(serverItems.map((item: any) => item.owner_id || item.ownerId))];
+            console.log('👥 משתמשים שונים בפריטים:', ownerIds.length, ownerIds);
+          } else {
+            console.warn('⚠️ API response לא תקין:', response.data);
+          }
+        } else {
+          // Fallback: אם אין backend, נטען רק את הפריטים של המשתמש
+          console.warn('⚠️ אין backend - טוען רק פריטים של המשתמש');
+          serverItems = await db.getDedicatedItemsByOwner(uid);
+        }
+      } else {
+        // מצב "מציע" - טוען רק את הפריטים של המשתמש הנוכחי
+        console.log('🔵 מצב מציע - טוען פריטים של המשתמש:', uid);
+        serverItems = await db.getDedicatedItemsByOwner(uid);
+      }
       
       console.log('✅ התקבלו פריטים מהשרת:', serverItems.length || 0);
-      
-      // המרה לפורמט התצוגה
-      const displayItems: DonationItem[] = (serverItems || []).map((item: any) => ({
+      console.log('📋 דוגמה לפריטים מהשרת:', serverItems.slice(0, 2).map((item: any) => ({
         id: item.id,
-        ownerId: item.owner_id,
         title: item.title,
-        description: item.description,
+        owner_id: item.owner_id || item.ownerId,
         category: item.category,
-        condition: item.condition,
-        city: item.city,
-        address: item.address,
-        coordinates: item.coordinates,
-        price: item.price,
-        image_base64: item.image_base64,
-        rating: item.rating,
-        timestamp: item.created_at,
-        tags: item.tags,
-        qty: item.quantity,
-        delivery_method: item.delivery_method,
-        status: item.status,
-        isDeleted: item.is_deleted,
-        deletedAt: item.deleted_at,
-      }));
+      })));
+      
+      // המרה לפורמט התצוגה + סינון פריטים שנמחקו
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:272',message:'Before data transformation',data:{serverItemsCount:serverItems.length,sampleItem:serverItems[0]?{id:serverItems[0].id,owner_id:serverItems[0].owner_id,ownerId:serverItems[0].ownerId,title:serverItems[0].title}:null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      const displayItems: DonationItem[] = (serverItems || [])
+        .filter((item: any) => {
+          // נסנן פריטים שנמחקו
+          const isDeleted = item.is_deleted || item.isDeleted;
+          if (isDeleted) {
+            console.log('🗑️ פריט נמחק, מסונן:', item.id, item.title);
+            return false;
+          }
+          return true;
+        })
+        .map((item: any) => ({
+          id: item.id,
+          ownerId: item.owner_id || item.ownerId,
+          title: item.title,
+          description: item.description,
+          category: item.category,
+          condition: item.condition,
+          city: item.city || (item.location && typeof item.location === 'object' ? item.location.city : null),
+          address: item.address || (item.location && typeof item.location === 'object' ? item.location.address : null),
+          coordinates: item.coordinates || (item.location && typeof item.location === 'object' ? item.location.coordinates : null),
+          price: item.price,
+          image_base64: item.image_base64,
+          rating: item.rating,
+          timestamp: item.created_at || item.timestamp,
+          tags: item.tags,
+          qty: item.quantity || item.qty,
+          delivery_method: item.delivery_method,
+          status: item.status,
+          isDeleted: item.is_deleted || item.isDeleted,
+          deletedAt: item.deleted_at || item.deletedAt,
+        }));
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:303',message:'After data transformation',data:{displayItemsCount:displayItems.length,ownerIdsInDisplay:displayItems.map(i=>i.ownerId).slice(0,5),uniqueOwnerIds:Array.from(new Set(displayItems.map(i=>i.ownerId))).length,currentUserId:uid,itemsFromOtherUsers:displayItems.filter(i=>i.ownerId!==uid).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       
       // סינון לפי קטגוריה
-      const forType = displayItems.filter(i =>
-        itemType === 'general' ? true : i.category === itemType
-      );
+      // במצב "מחפש", נציג את כל הפריטים ללא סינון קטגוריה
+      // במצב "מציע", נסנן לפי קטגוריה רק אם itemType לא 'general'
+      const forType = !mode 
+        ? displayItems.filter(i => itemType === 'general' ? true : i.category === itemType)
+        : displayItems; // במצב "מחפש", נציג את כל הפריטים
       
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:308',message:'After category filter',data:{mode,displayItemsCount:displayItems.length,forTypeCount:forType.length,ownerIds:Array.from(new Set(forType.map(i=>i.ownerId))),currentUserId:uid,itemsFromOtherUsers:forType.filter(i=>i.ownerId!==uid).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      console.log('📊 אחרי סינון:', {
+        mode,
+        displayItemsCount: displayItems.length,
+        forTypeCount: forType.length,
+        ownerIds: [...new Set(forType.map(i => i.ownerId))],
+        currentUserId: uid,
+        itemsFromOtherUsers: forType.filter(i => i.ownerId !== uid).length,
+      });
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:320',message:'Before setState',data:{forTypeCount:forType.length,forTypeOwnerIds:Array.from(new Set(forType.map(i=>i.ownerId))),itemsFromOtherUsers:forType.filter(i=>i.ownerId!==uid).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       setAllItems(forType);
       setFilteredItems(forType);
-      setRecentMine(forType);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:323',message:'After setState',data:{forTypeCount:forType.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       
-      console.log('✅ פריטים טעונים בהצלחה:', forType.length);
+      // recentMine - רק במצב "מציע" נשמור את הפריטים של המשתמש
+      if (!mode) {
+        setRecentMine(forType);
+      } else {
+        // במצב "מחפש", recentMine יהיה רק הפריטים של המשתמש הנוכחי
+        const myItems = forType.filter(i => i.ownerId === uid);
+        setRecentMine(myItems);
+      }
+      
+      console.log('✅ פריטים טעונים בהצלחה:', forType.length, { mode, myItems: !mode ? forType.length : forType.filter(i => i.ownerId === uid).length });
       
     } catch (error) {
       console.error('❌ שגיאה בטעינת פריטים:', error);
@@ -245,9 +368,12 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
 
   useEffect(() => {
     loadItems();
-  }, [selectedUser, itemType]);
+  }, [selectedUser, itemType, mode]);
 
   const getFilteredItems = useCallback(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:372',message:'getFilteredItems entry',data:{allItemsCount:allItems.length,searchQuery,selectedFiltersCount:selectedFilters.length,selectedSortsCount:selectedSorts.length,ownerIds:Array.from(new Set(allItems.map(i=>i.ownerId))),currentUserId:selectedUser?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     let filtered = [...allItems];
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -258,6 +384,9 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         (i.description || '').toLowerCase().includes(q) ||
         (i.tags || '').toLowerCase().includes(q)
       );
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:383',message:'After search filter',data:{filteredCount:filtered.length,ownerIds:Array.from(new Set(filtered.map(i=>i.ownerId))),itemsFromOtherUsers:filtered.filter(i=>i.ownerId!==selectedUser?.id).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
     }
 
     if (selectedFilters.length > 0) {
@@ -301,6 +430,9 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   // Update filtered items whenever search/filter/sort changes
   useEffect(() => {
     const filtered = getFilteredItems();
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:406',message:'Updating filteredItems state',data:{filteredCount:filtered.length,ownerIds:Array.from(new Set(filtered.map(i=>i.ownerId))),itemsFromOtherUsers:filtered.filter(i=>i.ownerId!==selectedUser?.id).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     setFilteredItems(filtered);
   }, [getFilteredItems]);
 
@@ -411,7 +543,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         owner_id: uid,
         title: title.trim(),
         description: description.trim() || '',
-        category: itemType,
+        category: selectedCategory || itemType,
         condition: condition || 'used',
         
         // שדות מיקום נפרדים
@@ -455,6 +587,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
       setQty(1);
       setCondition('');
       setImageUri('');
+      setSelectedCategory('general');
       setSelectedFilters([]);
       
       Alert.alert(
@@ -500,7 +633,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         <Text style={localStyles.itemTitle} numberOfLines={1}>{item.title}</Text>
         <View style={localStyles.itemBadge}>
           <Text style={localStyles.itemBadgeText}>
-            {item.category === 'furniture' ? 'רהיטים' : item.category === 'clothes' ? 'בגדים' : 'חפצים'}
+            {getCategoryLabel(item.category)}
           </Text>
         </View>
       </View>
@@ -510,7 +643,6 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         <Text style={localStyles.itemMeta} numberOfLines={1}>
           📍 {item.city || 'מיקום לא זמין'}{item.address ? `, ${item.address}` : ''}
         </Text>
-        <Text style={localStyles.itemPrice}>{(item.price ?? 0) === 0 ? 'בחינם' : `₪${item.price}`}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -551,11 +683,16 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         </Text>
       </View>
       
-      <View style={localStyles.itemRow}>
-        <Text style={localStyles.itemMeta} numberOfLines={1}>
-          📍 {item.city || 'מיקום לא זמין'}{item.address ? `, ${item.address}` : ''}
-        </Text>
-        <TouchableOpacity 
+        <View style={localStyles.itemRow}>
+          <Text style={localStyles.itemMeta} numberOfLines={1}>
+            📍 {item.city || 'מיקום לא זמין'}{item.address ? `, ${item.address}` : ''}
+          </Text>
+          <View style={localStyles.itemBadge}>
+            <Text style={localStyles.itemBadgeText}>
+              {getCategoryLabel(item.category)}
+            </Text>
+          </View>
+          <TouchableOpacity
           style={localStyles.restoreChip} 
           onPress={() => { 
             setTitle(item.title); 
@@ -584,7 +721,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         onToggleMode={() => setMode(!mode)}
         onSelectMenuItem={(o) => Alert.alert('תפריט', `נבחר: ${o}`)}
         title=""
-        placeholder={mode ? 'שם הפריט' : 'חפש פריטים זמינים'}
+        placeholder={mode ? 'חפש פריטים זמינים' : 'שם הפריט'}
         filterOptions={filterOptions}
         sortOptions={itemsSortOptions}
         searchData={allItems}
@@ -604,6 +741,12 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
                 )}
               </View>
               <ScrollView style={localStyles.innerScroll} contentContainerStyle={[localStyles.itemsGridContainer, isLandscape() && { paddingHorizontal: 16 }]} showsVerticalScrollIndicator nestedScrollEnabled>
+                {(() => {
+                  // #region agent log
+                  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:744',message:'Rendering items list',data:{filteredItemsCount:filteredItems.length,mode,ownerIds:Array.from(new Set(filteredItems.map(i=>i.ownerId))),itemsFromOtherUsers:filteredItems.filter(i=>i.ownerId!==selectedUser?.id).length,currentUserId:selectedUser?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+                  // #endregion
+                  return null;
+                })()}
                 {filteredItems.length === 0 ? (
                   <View style={localStyles.emptyState}>
                     <Icon name="search-outline" size={48} color={colors.textSecondary} />
@@ -633,6 +776,12 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
               ]}
             />
           </View>
+
+          {/* Add Links Section */}
+          <View style={localStyles.section}>
+            <Text style={localStyles.sectionTitle}>קישורים שימושיים</Text>
+            <AddLinkComponent category="items" />
+          </View>
         </>
       ) : (
         <ScrollContainer
@@ -655,6 +804,89 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
                 <TextInput style={[localStyles.input, { height: 80 }]} value={description} onChangeText={setDescription} placeholder="מצב הפריט, מידות, הערות" multiline />
               </View>
             </View>
+
+            {/* בחירת קטגוריה - דרופדאון */}
+            <View style={localStyles.row}>
+              <View style={localStyles.field}>
+                <Text style={localStyles.label}>קטגוריה</Text>
+                <TouchableOpacity
+                  style={localStyles.dropdownButton}
+                  onPress={() => setShowCategoryDropdown(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    localStyles.dropdownButtonText,
+                    !selectedCategory && localStyles.dropdownPlaceholder
+                  ]}>
+                    {ITEM_CATEGORIES.find(c => c.id === selectedCategory)?.label || 'בחר קטגוריה'}
+                  </Text>
+                  <Icon 
+                    name={showCategoryDropdown ? "chevron-up" : "chevron-down"} 
+                    size={20} 
+                    color={colors.textSecondary} 
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Modal לבחירת קטגוריה */}
+            <Modal
+              visible={showCategoryDropdown}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setShowCategoryDropdown(false)}
+            >
+              <TouchableOpacity
+                style={localStyles.modalOverlay}
+                activeOpacity={1}
+                onPress={() => setShowCategoryDropdown(false)}
+              >
+                <View style={localStyles.modalContent} onStartShouldSetResponder={() => true}>
+                  <View style={localStyles.modalHeader}>
+                    <Text style={localStyles.modalTitle}>בחר קטגוריה</Text>
+                    <TouchableOpacity
+                      onPress={() => setShowCategoryDropdown(false)}
+                      style={localStyles.modalCloseButton}
+                    >
+                      <Icon name="close" size={24} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+                  <FlatList
+                    data={ITEM_CATEGORIES}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={[
+                          localStyles.dropdownItem,
+                          selectedCategory === item.id && localStyles.dropdownItemSelected
+                        ]}
+                        onPress={() => {
+                          setSelectedCategory(item.id as ItemType);
+                          setShowCategoryDropdown(false);
+                        }}
+                      >
+                        <Icon 
+                          name={item.icon as any} 
+                          size={20} 
+                          color={selectedCategory === item.id ? colors.primary : colors.textSecondary} 
+                          style={localStyles.dropdownItemIcon}
+                        />
+                        <Text style={[
+                          localStyles.dropdownItemText,
+                          selectedCategory === item.id && localStyles.dropdownItemTextSelected
+                        ]}>
+                          {item.label}
+                        </Text>
+                        {selectedCategory === item.id && (
+                          <Icon name="checkmark" size={20} color={colors.success} />
+                        )}
+                      </TouchableOpacity>
+                    )}
+                    style={localStyles.dropdownList}
+                  />
+                </View>
+              </TouchableOpacity>
+            </Modal>
 
             {/* Location fields - split into city and address */}
             <View style={localStyles.row}>
@@ -768,6 +1000,12 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
               ))}
             </View>
           </View>
+
+          {/* Add Links Section */}
+          <View style={localStyles.section}>
+            <Text style={localStyles.sectionTitle}>קישורים שימושיים</Text>
+            <AddLinkComponent category="items" />
+          </View>
         </ScrollContainer>
       )}
 
@@ -829,7 +1067,6 @@ const localStyles = StyleSheet.create({
   itemRow: { flexDirection: rowDirection('row-reverse'), justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   itemTitle: { fontSize: FontSizes.small, fontWeight: 'bold', color: colors.textPrimary, textAlign: biDiTextAlign('right'), flex: 1, marginLeft: 6 },
   itemMeta: { fontSize: FontSizes.small, color: colors.textSecondary },
-  itemPrice: { fontSize: FontSizes.small, color: colors.accent, fontWeight: '600' },
   itemBadge: { backgroundColor: colors.backgroundSecondary, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 6 },
   itemBadgeText: { fontSize: FontSizes.small, color: colors.success, fontWeight: 'bold' },
   recentContainer: { paddingHorizontal: 8, paddingVertical: 8 },
@@ -910,6 +1147,84 @@ const localStyles = StyleSheet.create({
     fontSize: FontSizes.small,
     color: colors.textSecondary,
     marginTop: 2,
+  },
+  // Dropdown styles
+  dropdownButton: {
+    backgroundColor: colors.white,
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    flexDirection: rowDirection('row-reverse'),
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 48,
+  },
+  dropdownButtonText: {
+    fontSize: FontSizes.body,
+    color: colors.textPrimary,
+    textAlign: biDiTextAlign('right'),
+    flex: 1,
+  },
+  dropdownPlaceholder: {
+    color: colors.textSecondary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    width: '85%',
+    maxHeight: '70%',
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: rowDirection('row-reverse'),
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitle: {
+    fontSize: FontSizes.heading2,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  dropdownList: {
+    maxHeight: 400,
+  },
+  dropdownItem: {
+    flexDirection: rowDirection('row-reverse'),
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  dropdownItemSelected: {
+    backgroundColor: colors.pinkLight,
+  },
+  dropdownItemIcon: {
+    marginLeft: 12,
+  },
+  dropdownItemText: {
+    fontSize: FontSizes.body,
+    color: colors.textPrimary,
+    flex: 1,
+    textAlign: biDiTextAlign('right'),
+  },
+  dropdownItemTextSelected: {
+    color: colors.primary,
+    fontWeight: '600',
   },
 });
 

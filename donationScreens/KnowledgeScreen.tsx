@@ -5,7 +5,6 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
-  ScrollView,
   TouchableOpacity,
   Image,
   Linking,
@@ -19,6 +18,8 @@ import { FontSizes } from '../globals/constants';
 import { useUser } from '../stores/userStore';
 import HeaderComp from '../components/HeaderComp';
 import { donationResources } from '../utils/donationResources';
+import AddLinkComponent from '../components/AddLinkComponent';
+import ScrollContainer from '../components/ScrollContainer';
 
 // Mock data for educational content
 const educationalLinks = [
@@ -317,7 +318,11 @@ export default function KnowledgeScreen({
         onSearch={handleSearch}
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollContainer
+        style={styles.scrollView}
+        contentStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Educational Links Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>קישורים חינוכיים</Text>
@@ -444,7 +449,13 @@ export default function KnowledgeScreen({
               />
             );
           })()}
-      </ScrollView>
+
+        {/* Add Links Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>קישורים שימושיים</Text>
+          <AddLinkComponent category="knowledge" />
+        </View>
+      </ScrollContainer>
     </SafeAreaView>
   );
 };
@@ -500,9 +511,12 @@ const styles = StyleSheet.create({
   settingsButton: {
     padding: 8,
   },
-  content: {
+  scrollView: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  content: {
+    paddingBottom: 40,
   },
   section: {
     marginTop: 20,

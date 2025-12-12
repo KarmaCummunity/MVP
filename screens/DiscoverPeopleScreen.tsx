@@ -202,23 +202,8 @@ export default function DiscoverPeopleScreen() {
   };
 
   const renderUserItem = ({ item }: { item: CharacterType }) => {
-    // Double-check: if this is the current user, don't render at all
-    if (!selectedUser) return null;
-    
-    const currentUserId = String(selectedUser.id).trim().toLowerCase();
-    const currentUserEmail = selectedUser.email ? String(selectedUser.email).trim().toLowerCase() : '';
-    const itemId = String(item.id || '').trim().toLowerCase();
-    const itemEmail = item.email ? String(item.email).trim().toLowerCase() : '';
-    const isCurrentUser = itemId === currentUserId || 
-                         (currentUserEmail && itemEmail === currentUserEmail) ||
-                         itemId === '';
-    
-    if (isCurrentUser) {
-      console.log('🚫 DiscoverPeopleScreen - renderUserItem: Skipping current user:', { itemId, itemEmail, name: item.name });
-      return null;
-    }
-
     const currentStats = followStats[item.id] || { isFollowing: false };
+    const isCurrentUser = selectedUser?.id === item.id;
 
     return (
       <View style={styles.userItem}>
@@ -261,29 +246,31 @@ export default function DiscoverPeopleScreen() {
           </View>
         </TouchableOpacity>
 
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity
-            style={[
-              styles.followButton,
-              currentStats.isFollowing && styles.followingButton
-            ]}
-            onPress={() => handleFollowToggle(item.id)}
-          >
-            <Text style={[
-              styles.followButtonText,
-              currentStats.isFollowing && styles.followingButtonText
-            ]}>
-              {currentStats.isFollowing ? 'עוקב' : 'עקוב'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.messageButton}
-            onPress={() => handleMessage(item)}
-          >
-            <Ionicons name="chatbubble-outline" size={16} color={colors.textPrimary} />
-            <Text style={styles.messageButtonText}>הודעה</Text>
-          </TouchableOpacity>
-        </View>
+        {!isCurrentUser && (
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity
+              style={[
+                styles.followButton,
+                currentStats.isFollowing && styles.followingButton
+              ]}
+              onPress={() => handleFollowToggle(item.id)}
+            >
+              <Text style={[
+                styles.followButtonText,
+                currentStats.isFollowing && styles.followingButtonText
+              ]}>
+                {currentStats.isFollowing ? 'עוקב' : 'עקוב'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.messageButton}
+              onPress={() => handleMessage(item)}
+            >
+              <Ionicons name="chatbubble-outline" size={16} color={colors.textPrimary} />
+              <Text style={styles.messageButtonText}>הודעה</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     );
   };
@@ -408,7 +395,7 @@ export default function DiscoverPeopleScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundPrimary,
   },
   // Web-specific scroll wrappers
   webScrollContainer: {
@@ -462,7 +449,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   activeTabButton: {
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.pink,
   },
   tabButtonText: {
     fontSize: FontSizes.body,
@@ -545,7 +532,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   followButton: {
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.pink,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,

@@ -67,6 +67,7 @@ const colors = {
   error: palette.errorRed,   // Distinct error
   errorLight: palette.greyLight, // Light error background
   info: palette.tealLight,
+  infoLight: palette.greyLight, // Light info background
   warning: palette.brownDeep, // Warning color
 
   // --- Domain Specific ---

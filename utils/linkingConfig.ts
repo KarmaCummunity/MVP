@@ -398,7 +398,7 @@ export const linking: LinkingOptions<RootStackParamList> = {
       // ==================================================================
       
       // Landing Site Screen (for unauthenticated users in site mode)
-      LandingSiteScreen: '',
+      LandingSiteScreen: 'about-site',
       
       // Login Screen
       LoginScreen: 'login',

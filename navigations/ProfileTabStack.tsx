@@ -25,7 +25,7 @@ import { logger } from '../utils/loggerService';
 import { useUser } from '../stores/userStore';
 
 type ProfileTabStackParamList = {
-  ProfileScreen: { userId?: string } | undefined;
+  ProfileMain: { userId?: string } | undefined;
   SettingsScreen: undefined;
   ChatListScreen: undefined;
   ChatDetailScreen: { chatId?: string } | undefined;
@@ -51,7 +51,7 @@ export default function ProfileTabStack(): React.ReactElement {
   return (
     <Stack.Navigator
       id={undefined}
-      initialRouteName="ProfileScreen"
+      initialRouteName="ProfileMain"
       detachInactiveScreens={true}
       screenOptions={({ navigation }) => ({
         headerShown: true,
@@ -65,7 +65,7 @@ export default function ProfileTabStack(): React.ReactElement {
       })}
     >
       <Stack.Screen 
-        name="ProfileScreen" 
+        name="ProfileMain" 
         component={ProfileScreen}
         initialParams={selectedUser?.id ? { userId: selectedUser.id } : undefined}
       />

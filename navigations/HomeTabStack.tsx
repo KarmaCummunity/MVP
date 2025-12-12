@@ -5,10 +5,10 @@
 // - Screens: HomeMain (HomeScreen), ChatList, ChatDetail, Notifications, About, Settings, Bookmarks, UserProfile, Followers, PostsReels (modal), WebView.
 // - Params of interest: `hideTopBar`, `showPosts` passed by HomeScreen to control header and content.
 // - External deps: react-navigation stack, TopBarNavigator wrapper.
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Platform } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { useFocusEffect, useNavigation, CommonActions } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 
 import HomeScreen from '../bottomBarScreens/HomeScreen';
 import ChatListScreen from '../topBarScreens/ChatListScreen';
@@ -27,7 +27,6 @@ import LandingSiteScreen from '../screens/LandingSiteScreen';
 
 import TopBarNavigator from './TopBarNavigator';
 import { useWebMode } from '../stores/webModeStore';
-import { useUser } from '../stores/userStore';
 import { logger } from '../utils/loggerService';
 import CommunityStatsScreen from '../screens/CommunityStatsScreen';
 
@@ -53,50 +52,7 @@ const Stack = createStackNavigator<HomeTabStackParamList>();
 
 export default function HomeTabStack(): React.ReactElement {
   const { mode } = useWebMode();
-  const navigation = useNavigation();
-  const { resetHomeScreenTrigger } = useUser();
 
-  // Navigate to HomeMain when resetHomeScreenTrigger changes
-  // This is called when the home tab is pressed in BottomNavigator
-  useEffect(() => {
-    if (resetHomeScreenTrigger > 0) {
-      try {
-        logger.debug('HomeTabStack', 'resetHomeScreenTrigger activated', {
-          resetHomeScreenTrigger,
-          mode
-        });
-
-        // Always reset to HomeMain when reset is triggered
-        // Use CommonActions.reset to reset the stack to HomeMain
-        // This ensures we pop all screens and go back to HomeMain
-        try {
-          (navigation as any).dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [{ name: 'HomeMain' }],
-            })
-          );
-          logger.debug('HomeTabStack', 'Successfully reset to HomeMain');
-        } catch (resetError) {
-          logger.error('HomeTabStack', 'Error resetting to HomeMain', { resetError });
-          // Fallback: try to navigate directly
-          try {
-            (navigation as any).navigate('HomeMain');
-          } catch (navError) {
-            logger.error('HomeTabStack', 'Fallback navigation also failed', { navError });
-          }
-        }
-      } catch (error) {
-        logger.error('HomeTabStack', 'Error navigating to HomeMain', { error });
-        // Fallback: try to navigate directly to HomeMain
-        try {
-          (navigation as any).navigate('HomeMain');
-        } catch (fallbackError) {
-          logger.error('HomeTabStack', 'Fallback navigation also failed', { fallbackError });
-        }
-      }
-    }
-  }, [resetHomeScreenTrigger, navigation, mode]);
 
 
   // Determine initial route based on web mode

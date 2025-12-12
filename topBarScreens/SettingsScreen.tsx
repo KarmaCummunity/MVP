@@ -404,7 +404,7 @@ export default function SettingsScreen() {
             <Text style={styles.userName}>{selectedUser.name}</Text>
             <Text style={styles.userEmail}>{selectedUser.email}</Text>
             <Text style={styles.karmaPoints}>
-              {selectedUser.karmaPoints.toLocaleString()} {t('profile:stats.karmaPointsSuffix')}
+              {(selectedUser.karmaPoints || 0).toLocaleString()} {t('profile:stats.karmaPointsSuffix')}
             </Text>
           </View>
         </View>

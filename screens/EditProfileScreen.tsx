@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Platform, Image } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Platform, Image, ActivityIndicator } from 'react-native';
+import { logger } from '../utils/loggerService';
 import ScrollContainer from '../components/ScrollContainer';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +9,7 @@ import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { useUser } from '../stores/userStore';
 import { useTranslation } from 'react-i18next';
 import { pickImage, takePhoto } from '../utils/fileService';
+import { enhancedDB } from '../utils/enhancedDatabaseService';
 
 export default function EditProfileScreen() {
   const navigation = useNavigation<any>();
@@ -28,12 +30,13 @@ export default function EditProfileScreen() {
   const [houseNumber, setHouseNumber] = useState('');
   const [zipcode, setZipcode] = useState('');
   const [bio, setBio] = useState(selectedUser?.bio || '');
-  const [interests, setInterests] = useState('');
+  const [interests, setInterests] = useState((selectedUser?.interests || []).join(', '));
   const [website, setWebsite] = useState('');
   const [linkedin, setLinkedin] = useState('');
   const [facebook, setFacebook] = useState('');
   const [instagram, setInstagram] = useState('');
-  const [language, setLanguage] = useState<'he'|'en'|''>('');
+  const [language, setLanguage] = useState<'he'|'en'|''>((selectedUser?.settings?.language as any) || '');
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
     const fullName = `${firstName} ${lastName}`.trim();
@@ -41,18 +44,127 @@ export default function EditProfileScreen() {
       Alert.alert(t('common:errorTitle'), t('common:genericTryAgain'));
       return;
     }
-    const updated = {
-      ...selectedUser!,
-      name: fullName,
-      avatar: avatar.trim(),
-      bio: bio.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
-      location: { city: city.trim(), country: country.trim() },
-      settings: { ...(selectedUser?.settings || {}), language: language || (selectedUser?.settings?.language as any) },
-    };
-    await setSelectedUserWithMode(updated as any, 'real');
-    navigation.goBack();
+
+    setIsSaving(true);
+    try {
+      // Prepare data for API (convert interests string to array)
+      const interestsArray = interests.trim() 
+        ? interests.split(',').map(i => i.trim()).filter(i => i.length > 0)
+        : [];
+
+      const updateData = {
+        name: fullName,
+        avatar_url: avatar.trim(), // API expects avatar_url
+        bio: bio.trim(),
+        phone: phone.trim(),
+        city: city.trim(),
+        country: country.trim(),
+        interests: interestsArray,
+        settings: {
+          ...(selectedUser?.settings || {}),
+          language: language || (selectedUser?.settings?.language as any) || 'he',
+        },
+      };
+
+      // Save to database via API
+      if (selectedUser?.id) {
+        logger.info('EditProfileScreen', 'Saving profile', { userId: selectedUser.id, updateData });
+        const response = await enhancedDB.updateUserProfile(selectedUser.id, updateData);
+        logger.info('EditProfileScreen', 'Save response', { success: response.success, hasData: !!response.data, error: response.error });
+        
+        if (response.success && response.data) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'EditProfileScreen.tsx:75',message:'API response.data after save',data:{success:response.success,hasData:!!response.data,responseDataKeys:response.data?Object.keys(response.data):null,responseDataBio:response.data?.bio,responseDataCity:response.data?.city,responseDataCountry:response.data?.country,responseDataAvatarUrl:response.data?.avatar_url,updateDataSent:updateData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+          // #endregion
+          // Update local state with the response from server (includes all computed fields)
+          // Map server response fields to client User interface
+          const updatedUser = {
+            id: response.data.id,
+            name: response.data.name || fullName,
+            email: email.trim(), // Keep the email from form (not updated via API)
+            phone: response.data.phone || phone.trim(),
+            avatar: response.data.avatar_url || response.data.avatar || avatar.trim(),
+            bio: response.data.bio || bio.trim(),
+            karmaPoints: response.data.karma_points || response.data.karmaPoints || selectedUser?.karmaPoints || 0,
+            joinDate: response.data.join_date || response.data.joinDate || selectedUser?.joinDate || new Date().toISOString(),
+            isActive: response.data.is_active !== false,
+            lastActive: response.data.last_active || response.data.lastActive || new Date().toISOString(),
+            location: {
+              city: response.data.city || city.trim(),
+              country: response.data.country || country.trim(),
+            },
+            interests: response.data.interests || interestsArray,
+            roles: response.data.roles || selectedUser?.roles || ['user'],
+            postsCount: response.data.posts_count || response.data.postsCount || selectedUser?.postsCount || 0,
+            followersCount: response.data.followers_count || response.data.followersCount || selectedUser?.followersCount || 0,
+            followingCount: response.data.following_count || response.data.followingCount || selectedUser?.followingCount || 0,
+            notifications: selectedUser?.notifications || [],
+            settings: response.data.settings || {
+              ...(selectedUser?.settings || {}),
+              language: language || (selectedUser?.settings?.language as any) || 'he',
+            },
+          };
+          logger.info('EditProfileScreen', 'Updating user state', { 
+            userId: updatedUser.id, 
+            bio: updatedUser.bio,
+            city: updatedUser.location.city,
+            country: updatedUser.location.country 
+          });
+          await setSelectedUserWithMode(updatedUser as any, 'real');
+          
+          // Also save to AsyncStorage with 'current_user' key (used by login flow)
+          try {
+            const { default: AsyncStorage } = await import('@react-native-async-storage/async-storage');
+            await AsyncStorage.setItem('current_user', JSON.stringify(updatedUser));
+            logger.info('EditProfileScreen', 'Saved user to AsyncStorage', { userId: updatedUser.id });
+          } catch (storageError) {
+            logger.error('EditProfileScreen', 'Failed to save to AsyncStorage', { error: storageError });
+          }
+          
+          // Show success message - use alert() for web, Alert.alert() for native
+          const successMessage = t('profile:edit.saveSuccess', 'הפרופיל נשמר בהצלחה');
+          if (Platform.OS === 'web') {
+            alert(successMessage);
+          } else {
+            Alert.alert(t('common:success', 'הצלחה'), successMessage);
+          }
+          navigation.goBack();
+        } else {
+          const errorMessage = response.error || t('common:genericTryAgain', 'אירעה שגיאה, נסה שוב');
+          logger.error('EditProfileScreen', 'Save failed', { error: response.error, response });
+          if (Platform.OS === 'web') {
+            alert(t('common:errorTitle', 'שגיאה') + ': ' + errorMessage);
+          } else {
+            Alert.alert(
+              t('common:errorTitle', 'שגיאה'),
+              errorMessage
+            );
+          }
+        }
+      } else {
+        const errorMsg = 'משתמש לא מזוהה';
+        logger.error('EditProfileScreen', 'No user ID', { selectedUser });
+        if (Platform.OS === 'web') {
+          alert(t('common:errorTitle', 'שגיאה') + ': ' + errorMsg);
+        } else {
+          Alert.alert(t('common:errorTitle', 'שגיאה'), errorMsg);
+        }
+      }
+    } catch (error) {
+      logger.error('EditProfileScreen', 'Save exception', { error });
+      console.error('Error saving profile:', error);
+      const errorMsg = t('common:genericTryAgain', 'אירעה שגיאה בשמירת הפרופיל, נסה שוב');
+      if (Platform.OS === 'web') {
+        alert(t('common:errorTitle', 'שגיאה') + ': ' + errorMsg);
+      } else {
+        Alert.alert(
+          t('common:errorTitle', 'שגיאה'),
+          errorMsg
+        );
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handlePickImage = async () => {
@@ -109,6 +221,20 @@ export default function EditProfileScreen() {
           <TouchableOpacity style={[styles.smallButton, { backgroundColor: colors.primary }]} onPress={handleTakePhoto}>
             <Ionicons name="camera-outline" size={16} color={colors.white} />
             <Text style={styles.smallButtonText}>{t('profile:edit.camera')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.saveButtonFixed, isSaving && styles.saveButtonDisabled]} 
+            onPress={handleSave}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <>
+                <Ionicons name="save-outline" size={18} color={colors.white} />
+                <Text style={styles.saveText}>{t('common:done')}</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -228,11 +354,6 @@ export default function EditProfileScreen() {
         <Text style={styles.label}>{t('profile:banner.fields.bio')}</Text>
         <TextInput style={[styles.input, { height: 100, textAlignVertical: 'top' }]} value={bio} onChangeText={setBio} placeholder={t('profile:banner.fields.bio')} multiline />
       </View>
-
-      <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-        <Ionicons name="save-outline" size={18} color={colors.white} />
-        <Text style={styles.saveText}>{t('common:done')}</Text>
-      </TouchableOpacity>
       </ScrollContainer>
     </View>
   );
@@ -253,10 +374,11 @@ const styles = StyleSheet.create({
   avatarRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: LAYOUT_CONSTANTS.SPACING.MD, marginBottom: LAYOUT_CONSTANTS.SPACING.LG },
   avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.backgroundSecondary },
   avatarPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  avatarButtons: { flexDirection: 'row-reverse', gap: LAYOUT_CONSTANTS.SPACING.SM },
+  avatarButtons: { flexDirection: 'row-reverse', gap: LAYOUT_CONSTANTS.SPACING.SM, flexWrap: 'wrap', alignItems: 'center' },
   smallButton: { backgroundColor: colors.secondary, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
   smallButtonText: { color: colors.white, fontSize: FontSizes.small, fontWeight: '600' },
-  saveButton: { marginTop: LAYOUT_CONSTANTS.SPACING.LG, alignSelf: 'flex-start', backgroundColor: colors.secondary, borderRadius: 24, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
+  saveButtonFixed: { backgroundColor: colors.secondary, borderRadius: 24, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
+  saveButtonDisabled: { opacity: 0.6 },
   saveText: { color: colors.white, fontSize: FontSizes.body, fontWeight: '600' },
 });
 
