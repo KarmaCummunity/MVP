@@ -29,6 +29,14 @@ class ToastService {
     }, duration);
   }
 
+  showSuccess(message: string, duration: number = 2000) {
+    this.show(message, 'success', duration);
+  }
+
+  showError(message: string, duration: number = 2000) {
+    this.show(message, 'error', duration);
+  }
+
   hide() {
     this.toastState = {
       ...this.toastState,

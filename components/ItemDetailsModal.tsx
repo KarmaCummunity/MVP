@@ -21,6 +21,9 @@ import { apiService } from '../utils/apiService';
 import { useUser } from '../stores/userStore';
 import { logger } from '../utils/loggerService';
 import { getCategoryLabel } from '../utils/itemCategoryUtils';
+import { sendMessage, createConversation, getConversations } from '../utils/chatService';
+import { toastService, useToast } from '../utils/toastService';
+import { useTranslation } from 'react-i18next';
 
 export interface ItemDetailsModalProps {
   visible: boolean;
@@ -48,11 +51,14 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
   const { selectedUser } = useUser();
   const [itemOwner, setItemOwner] = useState<OwnerInfo | null>(null);
   const [loadingOwner, setLoadingOwner] = useState(false);
+  const { t } = useTranslation(['common', 'trump', 'donations', 'quickMessage']);
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const { ToastComponent } = useToast();
 
   useEffect(() => {
     if (visible && item) {
-      const ownerId = type === 'item' 
-        ? (item.ownerId || item.owner_id) 
+      const ownerId = type === 'item'
+        ? (item.ownerId || item.owner_id)
         : (item.driverId || item.driver_id || item.createdBy || item.created_by);
       if (ownerId) {
         loadItemOwner(ownerId);
@@ -95,10 +101,10 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
   const handleProfilePress = () => {
     if (!itemOwner) return;
     onClose();
-    
+
     // Check if this is the current user's own profile
     const isOwnProfile = itemOwner.id === selectedUser?.id;
-    
+
     if (isOwnProfile) {
       // Navigate to Profile tab in BottomNavigator instead of UserProfileScreen
       // This ensures the bottom bar and top bar are visible
@@ -106,7 +112,7 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         // Navigation structure: MainNavigator -> BottomNavigator -> HomeTabStack -> ItemDetailsModal
         // We need to find the BottomNavigator (which is the parent of HomeTabStack)
         // and navigate to ProfileScreen tab through it
-        
+
         // First, get the parent (HomeTabStack)
         const homeTabStack = (navigation as any).getParent();
         if (homeTabStack) {
@@ -119,12 +125,12 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             return;
           }
         }
-        
+
         // Fallback: try to find BottomNavigator by traversing up
         let currentNav = (navigation as any).getParent();
         let depth = 0;
         const maxDepth = 5; // Safety limit
-        
+
         while (currentNav && depth < maxDepth) {
           // Check if this navigator has a route named 'ProfileScreen' (it's the BottomNavigator)
           const state = currentNav.getState?.();
@@ -134,7 +140,7 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             logger.debug('ItemDetailsModal', 'Navigated to ProfileScreen tab via traversal (own profile)');
             return;
           }
-          
+
           const parent = currentNav.getParent?.();
           if (parent) {
             currentNav = parent;
@@ -143,7 +149,7 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             break;
           }
         }
-        
+
         // If we couldn't find BottomNavigator, fall back to UserProfileScreen
         logger.warn('ItemDetailsModal', 'Could not find BottomNavigator, falling back to UserProfileScreen');
         const parentNavigator = (navigation as any).getParent();
@@ -183,21 +189,178 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         }
       }
     } else {
-      // Navigate to other user's profile via UserProfileScreen
-      const parentNavigator = (navigation as any).getParent();
-      if (parentNavigator) {
-        parentNavigator.navigate('UserProfileScreen', {
-          userId: itemOwner.id,
-          userName: itemOwner.name,
-          characterData: null
-        });
-      } else {
-        (navigation as any).navigate('UserProfileScreen', {
-          userId: itemOwner.id,
-          userName: itemOwner.name,
-          characterData: null
-        });
+      // Navigate to other user's profile via HomeTabStack to keep bottom bar and top bar visible
+      // Try to navigate through HomeScreen first (which is part of BottomNavigator)
+      try {
+        // Check if we're already in HomeTabStack context
+        const currentState = (navigation as any).getState?.();
+        const currentRouteName = currentState?.routes?.[currentState?.index]?.name;
+        
+        // Try to find BottomNavigator
+        let bottomNavigator = null;
+        let currentNav = navigation as any;
+        let depth = 0;
+        const maxDepth = 5;
+        
+        while (currentNav && depth < maxDepth) {
+          const state = currentNav.getState?.();
+          if (state?.routeNames?.includes('HomeScreen')) {
+            bottomNavigator = currentNav;
+            break;
+          }
+          const parent = currentNav.getParent?.();
+          if (parent) {
+            currentNav = parent;
+            depth++;
+          } else {
+            break;
+          }
+        }
+        
+        if (bottomNavigator) {
+          // Navigate through HomeScreen to UserProfileScreen (which is in HomeTabStack)
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ItemDetailsModal.tsx:219', message: 'Navigating via BottomNavigator to HomeScreen', data: { userId: itemOwner.id, userName: itemOwner.name, foundBottomNavigator: true }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
+          // #endregion
+          bottomNavigator.navigate('HomeScreen', {
+            screen: 'UserProfileScreen',
+            params: {
+              userId: itemOwner.id,
+              userName: itemOwner.name,
+              characterData: null
+            }
+          });
+          logger.debug('ItemDetailsModal', 'Navigated to UserProfileScreen via HomeTabStack');
+          return;
+        }
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ItemDetailsModal.tsx:231', message: 'BottomNavigator not found', data: { userId: itemOwner.id, depth }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
+        // #endregion
+        
+        // Fallback: try direct navigation to HomeScreen if available
+        const parentNavigator = (navigation as any).getParent();
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ItemDetailsModal.tsx:234', message: 'Fallback navigation attempt', data: { hasParentNavigator: !!parentNavigator, userId: itemOwner.id }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'D' }) }).catch(() => { });
+        // #endregion
+        if (parentNavigator) {
+          try {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ItemDetailsModal.tsx:238', message: 'Trying parentNavigator.navigate to HomeScreen', data: { userId: itemOwner.id }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'D' }) }).catch(() => { });
+            // #endregion
+            parentNavigator.navigate('HomeScreen', {
+              screen: 'UserProfileScreen',
+              params: {
+                userId: itemOwner.id,
+                userName: itemOwner.name,
+                characterData: null
+              }
+            });
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ItemDetailsModal.tsx:246', message: 'ParentNavigator navigate to HomeScreen succeeded', data: { userId: itemOwner.id }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'D' }) }).catch(() => { });
+            // #endregion
+            return;
+          } catch (e) {
+            // If that fails, try UserProfileScreen directly as fallback
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ItemDetailsModal.tsx:250', message: 'ParentNavigator navigate to HomeScreen failed, trying direct UserProfileScreen', data: { error: String(e), userId: itemOwner.id }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'D' }) }).catch(() => { });
+            // #endregion
+            parentNavigator.navigate('UserProfileScreen', {
+              userId: itemOwner.id,
+              userName: itemOwner.name,
+              characterData: null
+            });
+          }
+        } else {
+          // Last resort: direct navigation
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ItemDetailsModal.tsx:259', message: 'No parent navigator, using direct navigation', data: { userId: itemOwner.id }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'D' }) }).catch(() => { });
+          // #endregion
+          (navigation as any).navigate('UserProfileScreen', {
+            userId: itemOwner.id,
+            userName: itemOwner.name,
+            characterData: null
+          });
+        }
+      } catch (error) {
+        logger.error('ItemDetailsModal', 'Error navigating to UserProfileScreen via HomeTabStack', { error });
+        // Fallback to direct navigation
+        try {
+          const parentNavigator = (navigation as any).getParent();
+          if (parentNavigator) {
+            parentNavigator.navigate('UserProfileScreen', {
+              userId: itemOwner.id,
+              userName: itemOwner.name,
+              characterData: null
+            });
+          } else {
+            (navigation as any).navigate('UserProfileScreen', {
+              userId: itemOwner.id,
+              userName: itemOwner.name,
+              characterData: null
+            });
+          }
+        } catch (fallbackError) {
+          logger.error('ItemDetailsModal', 'Fallback navigation also failed', { fallbackError });
+        }
       }
+    }
+  };
+
+  const handleQuickMessage = async () => {
+    if (!itemOwner || !selectedUser) return;
+
+    // Check if trying to message self
+    if (itemOwner.id === selectedUser.id) return;
+
+    setSendingMessage(true);
+    try {
+      // Get translation with fallback - ensure we get the actual text, not the key
+      const rideText = t('quickMessage:ride', { defaultValue: 'האם טרמפ זה רלוונטי?' });
+      const itemText = t('quickMessage:item', { defaultValue: 'האם פריט זה רלוונטי?' });
+      let messageText = type === 'ride' ? rideText : itemText;
+      
+      // Fallback if translation returns the key itself or empty
+      if (!messageText || messageText === 'quickMessage:ride' || messageText === 'quickMessage:item' || messageText === 'ride' || messageText === 'item') {
+        messageText = type === 'ride' ? 'האם טרמפ זה רלוונטי?' : 'האם פריט זה רלוונטי?';
+      }
+
+      // 1. Try to find existing conversation
+      let conversationId = '';
+      try {
+        const conversations = await getConversations(selectedUser.id);
+        const existingConv = conversations.find(c =>
+          c.participants && c.participants.includes(itemOwner.id)
+        );
+        if (existingConv) {
+          conversationId = existingConv.id;
+        }
+      } catch (e) {
+        console.log('Error finding conversation, will create new', e);
+      }
+
+      // 2. If not found, create new
+      if (!conversationId) {
+        conversationId = await createConversation([selectedUser.id, itemOwner.id]);
+      }
+
+      // 3. Send message with the correct text
+      await sendMessage({
+        conversationId: conversationId,
+        senderId: selectedUser.id,
+        text: messageText,
+        type: 'text',
+        timestamp: new Date().toISOString(),
+        read: false,
+        status: 'sending'
+      });
+
+      toastService.showSuccess(t('quickMessage:success', { defaultValue: 'ההודעה נשלחה בהצלחה' }));
+      onClose();
+    } catch (error) {
+      console.error('❌ Quick message error:', error);
+      toastService.showError(t('quickMessage:error', { defaultValue: 'ההודעה נכשלה' }));
+    } finally {
+      setSendingMessage(false);
     }
   };
 
@@ -209,8 +372,8 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         <>
           {/* Item Image */}
           {item.image_base64 && (
-            <Image 
-              source={{ uri: item.image_base64 }} 
+            <Image
+              source={{ uri: item.image_base64 }}
               style={styles.modalImage}
               resizeMode="cover"
             />
@@ -240,9 +403,9 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             <View style={styles.modalSection}>
               <Text style={styles.modalLabel}>מצב:</Text>
               <Text style={styles.modalText}>
-                {item.condition === 'new' ? '🆕 חדש' : 
-                 item.condition === 'like_new' ? '✨ כמו חדש' :
-                 item.condition === 'used' ? '📦 משומש' : '🔧 לחלפים'}
+                {item.condition === 'new' ? '🆕 חדש' :
+                  item.condition === 'like_new' ? '✨ כמו חדש' :
+                    item.condition === 'used' ? '📦 משומש' : '🔧 לחלפים'}
               </Text>
             </View>
           )}
@@ -312,7 +475,7 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             <View style={styles.modalSection}>
               <Text style={styles.modalLabel}>תאריך ושעה:</Text>
               <Text style={styles.modalText}>
-                📅 {item.departure_time 
+                📅 {item.departure_time
                   ? new Date(item.departure_time).toLocaleDateString('he-IL') + ' ' + new Date(item.departure_time).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })
                   : item.date + ' ' + (item.time || '')}
               </Text>
@@ -368,13 +531,13 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <Pressable 
+      <Pressable
         style={styles.modalOverlay}
         onPress={onClose}
       >
-        <Pressable 
+        <Pressable
           style={styles.modalCard}
-          onPress={() => {}}
+          onPress={() => { }}
         >
           {/* Header */}
           <View style={styles.modalHeader}>
@@ -392,17 +555,42 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             {showOwnerInfo && (
               <View style={styles.modalSection}>
                 <Text style={styles.modalLabel}>{getOwnerLabel()}</Text>
+
+                {/* Quick Message Button - Only if not own item */}
+                {itemOwner && selectedUser && itemOwner.id !== selectedUser.id && (
+                  <TouchableOpacity
+                    style={styles.quickMessageButton}
+                    onPress={handleQuickMessage}
+                    disabled={sendingMessage}
+                  >
+                    {sendingMessage ? (
+                      <ActivityIndicator size="small" color={colors.white} />
+                    ) : (
+                      <>
+                        <Icon name="chatbubble-ellipses-outline" size={18} color={colors.white} />
+                        <Text style={styles.quickMessageText}>
+                          {(() => {
+                            const rideText = t('quickMessage:ride', { defaultValue: 'האם טרמפ זה רלוונטי?' });
+                            const itemText = t('quickMessage:item', { defaultValue: 'האם פריט זה רלוונטי?' });
+                            return type === 'ride' ? rideText : itemText;
+                          })()}
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
+
                 {loadingOwner ? (
                   <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 8 }} />
                 ) : itemOwner ? (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.ownerCard}
                     onPress={handleProfilePress}
                     activeOpacity={0.7}
                   >
                     {itemOwner.avatar ? (
-                      <Image 
-                        source={{ uri: itemOwner.avatar }} 
+                      <Image
+                        source={{ uri: itemOwner.avatar }}
                         style={styles.ownerAvatar}
                       />
                     ) : (
@@ -424,6 +612,7 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
           </ScrollView>
         </Pressable>
       </Pressable>
+      {ToastComponent}
     </Modal>
   );
 };
@@ -568,6 +757,27 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: FontSizes.small,
+  },
+  quickMessageButton: {
+    backgroundColor: colors.primary,
+    flexDirection: rowDirection('row-reverse'),
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20, // Rounded button
+    marginBottom: 12, // Space above profile card
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  quickMessageText: {
+    color: colors.white,
+    fontSize: FontSizes.medium,
+    fontWeight: '600',
   },
 });
 

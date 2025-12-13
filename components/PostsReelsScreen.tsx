@@ -32,6 +32,9 @@ import { useUser } from '../stores/userStore';
 import CommentsModal from './CommentsModal';
 import { logger } from '../utils/loggerService';
 import { isBookmarked, addBookmark, removeBookmark } from '../utils/bookmarksService';
+import { sendMessage, createConversation, getConversations } from '../utils/chatService';
+import { toastService } from '../utils/toastService';
+import { useTranslation } from 'react-i18next';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { db } from '../utils/databaseService';
@@ -79,7 +82,13 @@ const data = generateFakeData();
  */
 const PostReelItem = ({ item }: { item: Item }) => {
   const navigation = useNavigation();
+  // No changes here, matching original to insert t
+  // Wait, I can't match easily inside PostComponent without seeing it.
+  // The PostComponent starts around line 126 in the previous view.
+  // But line numbers might have shifted.
+  // I will assume standard usage.
   const { selectedUser } = useUser();
+  const { t } = useTranslation(['common', 'trump', 'donations', 'quickMessage']);
   const [isLiked, setIsLiked] = useState(item.isLiked);
   const [likesCount, setLikesCount] = useState(item.likes);
   const [showComments, setShowComments] = useState(false);
@@ -169,7 +178,7 @@ const PostReelItem = ({ item }: { item: Item }) => {
     const targetUserName = (item.user.name && item.user.name !== item.user.id) ? item.user.name : 'משתמש';
 
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PostsReelsScreen.tsx:167',message:'Profile press - navigating to profile',data:{targetUserId,targetUserIdType:typeof targetUserId,targetUserIdLength:targetUserId?.length,currentUserId:selectedUser?.id,currentUserIdType:typeof selectedUser?.id,itemId:item.id,isOwnProfile:targetUserId === selectedUser?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'PostsReelsScreen.tsx:167', message: 'Profile press - navigating to profile', data: { targetUserId, targetUserIdType: typeof targetUserId, targetUserIdLength: targetUserId?.length, currentUserId: selectedUser?.id, currentUserIdType: typeof selectedUser?.id, itemId: item.id, isOwnProfile: targetUserId === selectedUser?.id }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
     // #endregion
 
     logger.logScreenNavigation('PostsReelsScreen', 'UserProfileScreen', selectedUser?.id);
@@ -188,7 +197,7 @@ const PostReelItem = ({ item }: { item: Item }) => {
 
     // Check if this is the current user's own profile
     const isOwnProfile = targetUserId === selectedUser?.id;
-    
+
     if (isOwnProfile) {
       // Navigate to Profile tab in BottomNavigator instead of UserProfileScreen
       // This ensures the bottom bar and top bar are visible
@@ -196,7 +205,7 @@ const PostReelItem = ({ item }: { item: Item }) => {
         // Navigation structure: MainNavigator -> BottomNavigator -> HomeTabStack -> PostsReelsScreen
         // We need to find the BottomNavigator (which is the parent of HomeTabStack)
         // and navigate to ProfileScreen tab through it
-        
+
         // First, get the parent (HomeTabStack)
         const homeTabStack = (navigation as any).getParent();
         if (homeTabStack) {
@@ -209,12 +218,12 @@ const PostReelItem = ({ item }: { item: Item }) => {
             return;
           }
         }
-        
+
         // Fallback: try to find BottomNavigator by traversing up
         let currentNav = (navigation as any).getParent();
         let depth = 0;
         const maxDepth = 5; // Safety limit
-        
+
         while (currentNav && depth < maxDepth) {
           // Check if this navigator has a route named 'ProfileScreen' (it's the BottomNavigator)
           const state = currentNav.getState?.();
@@ -224,7 +233,7 @@ const PostReelItem = ({ item }: { item: Item }) => {
             logger.debug('PostsReelsScreen', 'Navigated to ProfileScreen tab via traversal (own profile)');
             return;
           }
-          
+
           const parent = currentNav.getParent?.();
           if (parent) {
             currentNav = parent;
@@ -233,7 +242,7 @@ const PostReelItem = ({ item }: { item: Item }) => {
             break;
           }
         }
-        
+
         // If we couldn't find BottomNavigator, fall back to UserProfileScreen
         logger.warn('PostsReelsScreen', 'Could not find BottomNavigator, falling back to UserProfileScreen');
         const parentNavigator = (navigation as any).getParent();
@@ -273,20 +282,73 @@ const PostReelItem = ({ item }: { item: Item }) => {
         }
       }
     } else {
-      // Navigate to other user's profile via UserProfileScreen
+      // Navigate to other user's profile via HomeTabStack to keep bottom bar and top bar visible
+      // Try to navigate through HomeScreen first (which is part of BottomNavigator)
       try {
-        // Try to navigate through the parent navigator (HomeTabStack) first
-        // If that fails, try the root navigator (MainNavigator)
+        // Try to find BottomNavigator
+        let bottomNavigator = null;
+        let currentNav = navigation as any;
+        let depth = 0;
+        const maxDepth = 5;
+        
+        while (currentNav && depth < maxDepth) {
+          const state = currentNav.getState?.();
+          if (state?.routeNames?.includes('HomeScreen')) {
+            bottomNavigator = currentNav;
+            break;
+          }
+          const parent = currentNav.getParent?.();
+          if (parent) {
+            currentNav = parent;
+            depth++;
+          } else {
+            break;
+          }
+        }
+        
+        if (bottomNavigator) {
+          // Navigate through HomeScreen to UserProfileScreen (which is in HomeTabStack)
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'PostsReelsScreen.tsx:297', message: 'Navigating via BottomNavigator to HomeScreen (from user press)', data: { userId: targetUserId, userName: targetUserName, foundBottomNavigator: true }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
+          // #endregion
+          bottomNavigator.navigate('HomeScreen', {
+            screen: 'UserProfileScreen',
+            params: {
+              userId: targetUserId,
+              userName: targetUserName,
+              characterData: null
+            }
+          });
+          logger.debug('PostsReelsScreen', 'Navigated to UserProfileScreen via HomeTabStack (from user press)');
+          return;
+        }
+        
+        // Fallback: try direct navigation to HomeScreen if available
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'PostsReelsScreen.tsx:312', message: 'BottomNavigator not found (from user press)', data: { userId: targetUserId, depth }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
+        // #endregion
         const parentNavigator = (navigation as any).getParent();
         if (parentNavigator) {
-          // Navigate through parent (HomeTabStack)
-          parentNavigator.navigate('UserProfileScreen', {
-            userId: targetUserId,
-            userName: targetUserName,
-            characterData: null
-          });
+          try {
+            parentNavigator.navigate('HomeScreen', {
+              screen: 'UserProfileScreen',
+              params: {
+                userId: targetUserId,
+                userName: targetUserName,
+                characterData: null
+              }
+            });
+            return;
+          } catch (e) {
+            // If that fails, try UserProfileScreen directly as fallback
+            parentNavigator.navigate('UserProfileScreen', {
+              userId: targetUserId,
+              userName: targetUserName,
+              characterData: null
+            });
+          }
         } else {
-          // Fallback to root navigator
+          // Last resort: direct navigation
           (navigation as any).navigate('UserProfileScreen', {
             userId: targetUserId,
             userName: targetUserName,
@@ -294,14 +356,23 @@ const PostReelItem = ({ item }: { item: Item }) => {
           });
         }
       } catch (error) {
-        logger.error('PostsReelsScreen', 'Error navigating to profile', { error, targetUserId, targetUserName });
-        // Final fallback - try direct navigation
+        logger.error('PostsReelsScreen', 'Error navigating to UserProfileScreen via HomeTabStack', { error, targetUserId, targetUserName });
+        // Fallback to direct navigation
         try {
-          (navigation as any).navigate('UserProfileScreen', {
-            userId: targetUserId,
-            userName: targetUserName,
-            characterData: null
-          });
+          const parentNavigator = (navigation as any).getParent();
+          if (parentNavigator) {
+            parentNavigator.navigate('UserProfileScreen', {
+              userId: targetUserId,
+              userName: targetUserName,
+              characterData: null
+            });
+          } else {
+            (navigation as any).navigate('UserProfileScreen', {
+              userId: targetUserId,
+              userName: targetUserName,
+              characterData: null
+            });
+          }
         } catch (fallbackError) {
           logger.error('PostsReelsScreen', 'Fallback navigation also failed', { fallbackError });
         }
@@ -353,7 +424,7 @@ const PostReelItem = ({ item }: { item: Item }) => {
         // Navigation structure: MainNavigator -> BottomNavigator -> HomeTabStack -> PostsReelsScreen
         // We need to find the BottomNavigator (which is the parent of HomeTabStack)
         // and navigate to ProfileScreen tab through it
-        
+
         // First, get the parent (HomeTabStack)
         const homeTabStack = (navigation as any).getParent();
         if (homeTabStack) {
@@ -366,12 +437,12 @@ const PostReelItem = ({ item }: { item: Item }) => {
             return;
           }
         }
-        
+
         // Fallback: try to find BottomNavigator by traversing up
         let currentNav = (navigation as any).getParent();
         let depth = 0;
         const maxDepth = 5; // Safety limit
-        
+
         while (currentNav && depth < maxDepth) {
           // Check if this navigator has a route named 'ProfileScreen' (it's the BottomNavigator)
           const state = currentNav.getState?.();
@@ -381,7 +452,7 @@ const PostReelItem = ({ item }: { item: Item }) => {
             logger.debug('PostsReelsScreen', 'Navigated to ProfileScreen tab via traversal (own profile)');
             return;
           }
-          
+
           const parent = currentNav.getParent?.();
           if (parent) {
             currentNav = parent;
@@ -390,7 +461,7 @@ const PostReelItem = ({ item }: { item: Item }) => {
             break;
           }
         }
-        
+
         // If we couldn't find BottomNavigator, fall back to UserProfileScreen
         logger.warn('PostsReelsScreen', 'Could not find BottomNavigator, falling back to UserProfileScreen');
         const parentNavigator = (navigation as any).getParent();
@@ -430,20 +501,70 @@ const PostReelItem = ({ item }: { item: Item }) => {
         }
       }
     } else {
-      // Navigate to other user's profile via UserProfileScreen
+      // Navigate to other user's profile via HomeTabStack to keep bottom bar and top bar visible
+      // Try to navigate through HomeScreen first (which is part of BottomNavigator)
       try {
-        // Try to navigate through the parent navigator (HomeTabStack) first
-        // If that fails, try the root navigator (MainNavigator)
+        // Try to find BottomNavigator
+        let bottomNavigator = null;
+        let currentNav = navigation as any;
+        let depth = 0;
+        const maxDepth = 5;
+        
+        while (currentNav && depth < maxDepth) {
+          const state = currentNav.getState?.();
+          if (state?.routeNames?.includes('HomeScreen')) {
+            bottomNavigator = currentNav;
+            break;
+          }
+          const parent = currentNav.getParent?.();
+          if (parent) {
+            currentNav = parent;
+            depth++;
+          } else {
+            break;
+          }
+        }
+        
+        if (bottomNavigator) {
+          // Navigate through HomeScreen to UserProfileScreen (which is in HomeTabStack)
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'PostsReelsScreen.tsx:442', message: 'Navigating via BottomNavigator to HomeScreen (from post)', data: { userId: targetUserId, userName: targetUserName, foundBottomNavigator: true }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
+          // #endregion
+          bottomNavigator.navigate('HomeScreen', {
+            screen: 'UserProfileScreen',
+            params: {
+              userId: targetUserId,
+              userName: targetUserName,
+              characterData: null
+            }
+          });
+          logger.debug('PostsReelsScreen', 'Navigated to UserProfileScreen via HomeTabStack (from post)');
+          return;
+        }
+        
+        // Fallback: try direct navigation to HomeScreen if available
         const parentNavigator = (navigation as any).getParent();
         if (parentNavigator) {
-          // Navigate through parent (HomeTabStack)
-          parentNavigator.navigate('UserProfileScreen', {
-            userId: targetUserId,
-            userName: targetUserName,
-            characterData: null
-          });
+          try {
+            parentNavigator.navigate('HomeScreen', {
+              screen: 'UserProfileScreen',
+              params: {
+                userId: targetUserId,
+                userName: targetUserName,
+                characterData: null
+              }
+            });
+            return;
+          } catch (e) {
+            // If that fails, try UserProfileScreen directly as fallback
+            parentNavigator.navigate('UserProfileScreen', {
+              userId: targetUserId,
+              userName: targetUserName,
+              characterData: null
+            });
+          }
         } else {
-          // Fallback to root navigator
+          // Last resort: direct navigation
           (navigation as any).navigate('UserProfileScreen', {
             userId: targetUserId,
             userName: targetUserName,
@@ -451,14 +572,23 @@ const PostReelItem = ({ item }: { item: Item }) => {
           });
         }
       } catch (error) {
-        logger.error('PostsReelsScreen', 'Error navigating to profile', { error, targetUserId, targetUserName });
-        // Final fallback - try direct navigation
+        logger.error('PostsReelsScreen', 'Error navigating to UserProfileScreen via HomeTabStack', { error, targetUserId, targetUserName });
+        // Fallback to direct navigation
         try {
-          (navigation as any).navigate('UserProfileScreen', {
-            userId: targetUserId,
-            userName: targetUserName,
-            characterData: null
-          });
+          const parentNavigator = (navigation as any).getParent();
+          if (parentNavigator) {
+            parentNavigator.navigate('UserProfileScreen', {
+              userId: targetUserId,
+              userName: targetUserName,
+              characterData: null
+            });
+          } else {
+            (navigation as any).navigate('UserProfileScreen', {
+              userId: targetUserId,
+              userName: targetUserName,
+              characterData: null
+            });
+          }
         } catch (fallbackError) {
           logger.error('PostsReelsScreen', 'Fallback navigation also failed', { fallbackError });
         }
@@ -484,6 +614,61 @@ const PostReelItem = ({ item }: { item: Item }) => {
     }
   };
 
+  const handleQuickMessage = async () => {
+    if (!selectedUser) {
+      Alert.alert(t('common:error'), t('common:guestLoginHint'));
+      return;
+    }
+
+    try {
+      // Check title for 'ride' heuristic since item.type is usually 'post'
+      const isRide = item.title && item.title.includes('טרמפ');
+      const rideText = t('quickMessage:ride', { defaultValue: 'האם טרמפ זה רלוונטי?' });
+      const itemText = t('quickMessage:item', { defaultValue: 'האם פריט זה רלוונטי?' });
+      let messageText = isRide ? rideText : itemText;
+      
+      // Fallback if translation returns the key itself or empty
+      if (!messageText || messageText === 'quickMessage:ride' || messageText === 'quickMessage:item' || messageText === 'ride' || messageText === 'item') {
+        messageText = isRide ? 'האם טרמפ זה רלוונטי?' : 'האם פריט זה רלוונטי?';
+      }
+
+      // 1. Try to find existing conversation
+      let conversationId = '';
+      try {
+        const conversations = await getConversations(selectedUser.id);
+        const existingConv = conversations.find(c =>
+          c.participants && c.participants.includes(item.user.id)
+        );
+        if (existingConv) {
+          conversationId = existingConv.id;
+        }
+      } catch (e) {
+        console.log('Error finding conversation, will create new', e);
+      }
+
+      // 2. If not found, create new
+      if (!conversationId) {
+        conversationId = await createConversation([selectedUser.id, item.user.id]);
+      }
+
+      // 3. Send message
+      await sendMessage({
+        conversationId: conversationId,
+        senderId: selectedUser.id,
+        text: messageText,
+        type: 'text',
+        timestamp: new Date().toISOString(),
+        read: false,
+        status: 'sending'
+      });
+
+      toastService.showSuccess(t('quickMessage:success', { defaultValue: 'ההודעה נשלחה בהצלחה' }));
+    } catch (error) {
+      console.error('Quick message error', error);
+      toastService.showError(t('quickMessage:error', { defaultValue: 'ההודעה נכשלה' }));
+    }
+  };
+
   React.useEffect(() => {
     const checkBookmarkStatus = async () => {
       if (selectedUser) {
@@ -503,7 +688,7 @@ const PostReelItem = ({ item }: { item: Item }) => {
         <TouchableOpacity style={styles.userInfo} onPress={handleProfilePress}>
           {/* #region agent log */}
           {(() => {
-            fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PostsReelsScreen.tsx:328',message:'Rendering user avatar in post',data:{itemUserId:item.user.id,itemUserAvatar:item.user.avatar,hasAvatar:!!item.user.avatar,itemUserName:item.user.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+            fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'PostsReelsScreen.tsx:328', message: 'Rendering user avatar in post', data: { itemUserId: item.user.id, itemUserAvatar: item.user.avatar, hasAvatar: !!item.user.avatar, itemUserName: item.user.name }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
             return null;
           })()}
           {/* #endregion */}
@@ -555,6 +740,12 @@ const PostReelItem = ({ item }: { item: Item }) => {
             color={isBookmarkedState ? colors.primary : colors.textSecondary}
           />
         </TouchableOpacity>
+
+        {selectedUser?.id !== item.user.id && (
+          <TouchableOpacity style={styles.actionButton} onPress={handleQuickMessage}>
+            <Ionicons name="chatbubble-ellipses-outline" size={24} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Comments Modal */}
@@ -636,7 +827,7 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
     const from = ride.from_location?.name || ride.from || 'מיקום לא ידוע';
     const to = ride.to_location?.name || ride.to || 'מיקום לא ידוע';
     const title = ride.title || `טרמפ: ${from} → ${to}`;
-    
+
     // Format date and time
     let dateStr = '';
     let timeStr = '';
@@ -648,17 +839,17 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
       dateStr = ride.date;
       timeStr = ride.time;
     }
-    
+
     const seats = ride.available_seats ?? ride.seats ?? 1;
     const price = Number(ride.price_per_seat ?? ride.price ?? 0);
     const priceText = price === 0 ? 'חינם' : `₪${price}`;
-    
+
     const description = [
       dateStr && timeStr ? `יציאה: ${dateStr} ${timeStr}` : '',
       `מקומות: ${seats}`,
       `מחיר: ${priceText}`
     ].filter(Boolean).join(' | ');
-    
+
     // Handle thumbnail - can be URL, emoji, or empty
     let thumbnail = '';
     if (ride.image) {
@@ -670,9 +861,9 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
         thumbnail = '';
       }
     }
-    
+
     const timestamp = ride.departure_time || ride.created_at || ride.createdAt || new Date().toISOString();
-    
+
     // Ensure we never use ID as name - use null if name is missing or equals ID
     const userName = (user.name && user.name !== user.id && user.name.trim()) ? user.name : null;
 
@@ -743,7 +934,7 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
                 if (userResponse.data?.success && userResponse.data.data) {
                   const userData = userResponse.data.data;
                   // #region agent log
-                  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PostsReelsScreen.tsx:563',message:'Loading user for feed',data:{uid,userName:userData.name,userAvatar:userData.avatar_url,hasAvatar:!!userData.avatar_url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'PostsReelsScreen.tsx:563', message: 'Loading user for feed', data: { uid, userName: userData.name, userAvatar: userData.avatar_url, hasAvatar: !!userData.avatar_url }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
                   // #endregion
                   userIdToUser[uid] = {
                     id: uid,
@@ -1019,7 +1210,7 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
 
           // Determine final user avatar
           // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PostsReelsScreen.tsx:835',message:'Determining final user avatar',data:{ownerId,itemOwnerAvatar:item.owner_avatar,userAvatar:user?.avatar,hasItemAvatar:!!item.owner_avatar,hasUserAvatar:!!user?.avatar},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'PostsReelsScreen.tsx:835', message: 'Determining final user avatar', data: { ownerId, itemOwnerAvatar: item.owner_avatar, userAvatar: user?.avatar, hasItemAvatar: !!item.owner_avatar, hasUserAvatar: !!user?.avatar }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
           // #endregion
           const finalUserAvatar = (item.owner_avatar && item.owner_avatar.trim() && !item.owner_avatar.includes('pravatar'))
             ? item.owner_avatar

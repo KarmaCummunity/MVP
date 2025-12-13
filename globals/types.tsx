@@ -82,6 +82,8 @@ export type DonationsStackParamList = {
   MentalHealthScreen: undefined;
   GoldenAgeScreen: undefined;
   LanguagesScreen: undefined;
+  UserProfileScreen: { userId: string; userName?: string; characterData?: any } | undefined;
+  FollowersScreen: { userId: string; type: 'followers' | 'following'; title: string } | undefined;
 };
 
 export type SettingItemType = "navigate" | "toggle" | "button" | "value";

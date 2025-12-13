@@ -24,6 +24,7 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo, memo } from 'react';
 import { View, Text, ActivityIndicator, Platform, StyleSheet } from 'react-native';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
+import { useToast } from './utils/toastService';
 import * as Font from 'expo-font';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as SplashScreen from 'expo-splash-screen';
@@ -333,6 +334,7 @@ function AppContent() {
   const AppNavigationRoot = memo(({ initialState }: { initialState: NavigationState | undefined }) => {
     const { mode } = useWebMode();
     const { isAuthenticated, isGuestMode, selectedUser } = useUser();
+    const { ToastComponent } = useToast();
     const prevModeRef = useRef<string>(mode);
     const prevUserIdRef = useRef<string | null>(selectedUser?.id || null);
 
@@ -451,6 +453,7 @@ function AppContent() {
               <MainNavigator />
               <WebModeToggleOverlay />
               <StatusBar style="auto" />
+              {ToastComponent}
             </View>
           </View>
         }

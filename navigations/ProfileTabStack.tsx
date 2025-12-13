@@ -41,7 +41,7 @@ const Stack = createStackNavigator<ProfileTabStackParamList>();
 
 export default function ProfileTabStack(): React.ReactElement {
   const { selectedUser } = useUser();
-  
+
   useFocusEffect(
     React.useCallback(() => {
       logger.debug('ProfileTabStack', 'Navigator focused');
@@ -58,14 +58,14 @@ export default function ProfileTabStack(): React.ReactElement {
         header: () => <TopBarNavigator navigation={navigation as any} />,
         // Fix for aria-hidden warning: prevent focus on inactive screens
         // detachInactiveScreens already handles this, but we keep cardStyle for web compatibility
-        cardStyle: Platform.OS === 'web' ? { 
+        cardStyle: Platform.OS === 'web' ? {
           // On web, ensure inactive screens don't interfere with focus
           // This prevents elements in hidden screens from receiving focus
         } : undefined,
       })}
     >
-      <Stack.Screen 
-        name="ProfileMain" 
+      <Stack.Screen
+        name="ProfileMain"
         component={ProfileScreen}
         initialParams={selectedUser?.id ? { userId: selectedUser.id } : undefined}
       />

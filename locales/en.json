@@ -1275,6 +1275,13 @@
     },
     "footer": {
       "text": "© {{year}} KarmaCommunity — Built with love."
+    },
+    "quickMessage": {
+      "ride": "Is this ride still relevant?",
+      "item": "Is this item still relevant?",
+      "success": "Message sent successfully",
+      "error": "Error sending message",
+      "sendButton": "Send quick message"
     }
   }
 }

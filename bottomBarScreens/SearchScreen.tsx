@@ -32,6 +32,7 @@ import { apiService } from '../utils/apiService';
 import { scaleSize } from '../globals/responsive';
 import { createShadowStyle } from '../globals/styles';
 import ItemDetailsModal from '../components/ItemDetailsModal';
+import { useToast } from '../utils/toastService';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -67,6 +68,7 @@ const SearchScreen = () => {
     const tabBarHeight = useBottomTabBarHeight();
     const { t } = useTranslation(['search', 'common', 'donations', 'trump']);
     const { selectedUser } = useUser();
+    const { ToastComponent } = useToast();
 
     // Get initial query from route params (from deep link)
     const routeParams = route.params as { q?: string } | undefined;
@@ -499,6 +501,7 @@ const SearchScreen = () => {
                 type={selectedItemType}
                 navigation={navigation}
             />
+            {ToastComponent}
         </SafeAreaView>
     );
 };

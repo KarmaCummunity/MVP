@@ -41,6 +41,7 @@ import { enhancedDB } from '../utils/enhancedDatabaseService';
 import { apiService } from '../utils/apiService';
 import { USE_BACKEND } from '../utils/dbConfig';
 import { UserPreview as CharacterType } from '../globals/types';
+import { useToast, toastService } from '../utils/toastService';
 
 // --- Type Definitions ---
 type TabRoute = {
@@ -164,7 +165,7 @@ const PostsRoute = ({ userId }: { userId?: string }) => {
               }
               // If image_base64 is too short or invalid, thumbnail remains empty
             }
-            
+
             return {
               id: `item_${item.id}`,
               title: item.title,
@@ -301,31 +302,105 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Internal component that contains all the logic
 // It receives tabBarHeight as a prop so we can control it from outside
-function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
+function ProfileScreenContent({
+  tabBarHeight,
+  manualParams,
+  forceOtherProfile
+}: {
+  tabBarHeight: number;
+  manualParams?: ProfileScreenRouteParams;
+  forceOtherProfile?: boolean;
+}) {
   const route = useRoute();
   const { t } = useTranslation(['profile', 'common']);
   const { selectedUser, setSelectedUserWithMode, isRealAuth } = useUser();
   const navigation = useNavigation();
+  const { ToastComponent } = useToast();
   const defaultLogo = require('../assets/images/android-chrome-192x192.png');
-  
+
   // Get route params for viewing other users' profiles
-  const routeParams = route.params as ProfileScreenRouteParams | undefined;
-  const { userId: externalUserId, userName: externalUserName, characterData: externalCharacterData } = routeParams || {};
+  // Use manualParams if provided (from props), otherwise route.params
+  let routeParams = manualParams || (route.params as ProfileScreenRouteParams | undefined);
   
+  // On Web, handle refresh (F5) by restoring params from localStorage if route params are missing
+  const STORAGE_KEY = 'profileScreenParams';
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:327', message: 'localStorage check start', data: { hasRouteParams: !!routeParams, hasManualParams: !!manualParams, platformOS: Platform.OS, hasWindow: typeof window !== 'undefined' }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
+  // #endregion
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    if (!routeParams && !manualParams) {
+      // Try to restore from localStorage
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:330', message: 'Attempting to restore from localStorage', data: { storageKey: STORAGE_KEY }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
+      // #endregion
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:333', message: 'localStorage getItem result', data: { hasStored: !!stored, storedLength: stored?.length, storedValue: stored }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
+        // #endregion
+        if (stored) {
+          const parsedParams = JSON.parse(stored);
+          routeParams = parsedParams;
+          console.log('👤 ProfileScreen - Restored params from localStorage:', parsedParams);
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:337', message: 'Restored params from localStorage', data: { restoredUserId: parsedParams?.userId, restoredUserName: parsedParams?.userName }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
+          // #endregion
+        }
+      } catch (error) {
+        console.warn('Failed to restore params from localStorage:', error);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:340', message: 'Failed to restore from localStorage', data: { error: String(error) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
+        // #endregion
+      }
+    } else if (routeParams?.userId) {
+      // Save params to localStorage when viewing other user's profile
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:343', message: 'Saving params to localStorage', data: { userId: routeParams.userId, userName: routeParams.userName }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
+      // #endregion
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          userId: routeParams.userId,
+          userName: routeParams.userName,
+          // Don't save characterData as it might be large
+        }));
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:350', message: 'Successfully saved to localStorage', data: { userId: routeParams.userId }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
+        // #endregion
+      } catch (error) {
+        console.warn('Failed to save params to localStorage:', error);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:353', message: 'Failed to save to localStorage', data: { error: String(error) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
+        // #endregion
+      }
+    }
+  }
+  
+  const { userId: externalUserId, userName: externalUserName, characterData: externalCharacterData } = routeParams || {};
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:356', message: 'Extracted route params', data: { externalUserId, externalUserName, hasCharacterData: !!externalCharacterData, selectedUserId: selectedUser?.id }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
+  // #endregion
+
   // Determine if viewing own profile or other user's profile
   // CRITICAL: If externalUserId exists and equals selectedUser.id, it's OWN profile!
   // Only if externalUserId exists and is DIFFERENT from selectedUser.id, it's another user's profile
   // If no externalUserId, it's own profile (default)
-  
+
   // Normalize IDs to strings for comparison (in case one is number and one is string)
   const normalizedExternalUserId = externalUserId ? String(externalUserId).trim() : null;
   const normalizedSelectedUserId = selectedUser?.id ? String(selectedUser.id).trim() : null;
-  
-  // Check if viewing own profile: no externalUserId OR externalUserId equals selectedUser.id
-  const isOwnProfile = !normalizedExternalUserId || 
-                       (normalizedExternalUserId === normalizedSelectedUserId);
+
+  // Check if viewing own profile: 
+  // 1. Force other profile is FALSE AND
+  // 2. (no externalUserId OR externalUserId equals selectedUser.id)
+  const isOwnProfile = !forceOtherProfile &&
+    (!normalizedExternalUserId ||
+      (normalizedExternalUserId === normalizedSelectedUserId));
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:371', message: 'isOwnProfile calculation', data: { isOwnProfile, forceOtherProfile, normalizedExternalUserId, normalizedSelectedUserId, areEqual: normalizedExternalUserId === normalizedSelectedUserId }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
+  // #endregion
+
   const targetUserId = externalUserId || selectedUser?.id;
-  
+
   // Debug log to help identify the issue
   console.log('👤 ProfileScreenContent - Profile check:', {
     externalUserId,
@@ -337,7 +412,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
     hasExternalUserId: !!externalUserId,
     hasSelectedUser: !!selectedUser
   });
-  
+
   const [index, setIndex] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
   const [userStats, setUserStats] = useState({
@@ -351,31 +426,50 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<any | null>(null);
   const [showActivityModal, setShowActivityModal] = useState(false);
-  
+
   // State for viewing other user's profile
   const [viewingUser, setViewingUser] = useState<CharacterType | null>(externalCharacterData || null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followStats, setFollowStats] = useState({ followersCount: 0, followingCount: 0, isFollowing: false });
   const [updatedCounts, setUpdatedCounts] = useState({ followersCount: 0, followingCount: 0 });
   const [loadingUser, setLoadingUser] = useState(!isOwnProfile && !externalCharacterData);
-  
+
   // The user to display (either selectedUser for own profile, or viewingUser for other user's profile)
   const displayUser = isOwnProfile ? selectedUser : viewingUser;
 
+  // Clean up localStorage when viewing own profile or when component unmounts
+  useEffect(() => {
+    if (isOwnProfile && Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (error) {
+        // Ignore errors
+      }
+    }
+  }, [isOwnProfile]);
+
   // Load user data from backend if viewing other user's profile
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:424', message: 'loadUser useEffect triggered', data: { isOwnProfile, externalUserId, externalCharacterData: !!externalCharacterData, USE_BACKEND }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'E' }) }).catch(() => { });
+    // #endregion
     const loadUser = async () => {
-      if (isOwnProfile || !externalUserId) return;
-      
+      if (isOwnProfile || !externalUserId) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:426', message: 'loadUser early return', data: { isOwnProfile, hasExternalUserId: !!externalUserId }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'E' }) }).catch(() => { });
+        // #endregion
+        return;
+      }
+
       if (!externalCharacterData && externalUserId && USE_BACKEND) {
         try {
           setLoadingUser(true);
           // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProfileScreen.tsx:315',message:'Loading user profile',data:{externalUserId,externalUserIdType:typeof externalUserId,selectedUserId:selectedUser?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:315', message: 'Loading user profile', data: { externalUserId, externalUserIdType: typeof externalUserId, selectedUserId: selectedUser?.id }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
           // #endregion
           const response = await apiService.getUserById(externalUserId);
           // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProfileScreen.tsx:316',message:'User profile response',data:{success:response.success,hasData:!!response.data,userId:response.data?.id,userEmail:response.data?.email,userAvatar:response.data?.avatar_url,externalUserId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:316', message: 'User profile response', data: { success: response.success, hasData: !!response.data, userId: response.data?.id, userEmail: response.data?.email, userAvatar: response.data?.avatar_url, externalUserId }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
           // #endregion
           if (response.success && response.data) {
             const userData = response.data as any;
@@ -396,6 +490,17 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
               interests: userData.interests || [],
             };
             setViewingUser(mappedUser);
+            // Save userId to localStorage after successful load (Web only)
+            if (Platform.OS === 'web' && typeof window !== 'undefined') {
+              try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                  userId: externalUserId,
+                  userName: mappedUser.name,
+                }));
+              } catch (error) {
+                // Ignore errors
+              }
+            }
           } else {
             console.warn('User not found:', externalUserId);
             setViewingUser(null);
@@ -442,7 +547,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
         setLoadingUser(false);
       }
     };
-    
+
     loadUser();
   }, [externalUserId, externalUserName, externalCharacterData, isOwnProfile]);
 
@@ -450,7 +555,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
   useEffect(() => {
     const loadFollowStats = async () => {
       if (isOwnProfile || !viewingUser || !selectedUser || !viewingUser.id) return;
-      
+
       try {
         console.log('👤 ProfileScreen - Loading follow stats for user:', viewingUser.name);
         const stats = await getFollowStats(viewingUser.id, selectedUser.id);
@@ -462,7 +567,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
         console.error('❌ Load follow stats error:', error);
       }
     };
-    
+
     loadFollowStats();
   }, [viewingUser, selectedUser, isOwnProfile]);
 
@@ -474,7 +579,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
         console.warn('⚠️ No user ID, skipping stats update');
         return;
       }
-      
+
       const currentUserStats = await getFollowStats(userIdToUse, userIdToUse);
       const userToUse = isOwnProfile ? selectedUser : viewingUser;
 
@@ -498,7 +603,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
         setRecentActivities([]);
         return;
       }
-      
+
       if (!selectedUser?.id) {
         setRecentActivities([]);
         return;
@@ -530,7 +635,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
       try {
         const { USE_BACKEND, API_BASE_URL } = await import('../utils/dbConfig');
         let userItems: any[] = [];
-        
+
         if (USE_BACKEND && API_BASE_URL) {
           try {
             const axios = (await import('axios')).default;
@@ -573,16 +678,16 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
           const createdBy = donation.createdBy || donation.created_by || donation.donor_id || donation.donorId;
           return createdBy === userId;
         });
-        
+
         userDonations.forEach((donation: any) => {
-          const donationTitle = donation.type === 'money' 
+          const donationTitle = donation.type === 'money'
             ? `תרומה: ${donation.amount || 0} ₪`
             : donation.type === 'time'
-            ? `התנדבות: ${donation.title || ''}`
-            : donation.type === 'trump'
-            ? `טרמפ: ${donation.title || ''}`
-            : donation.title || 'תרומה חדשה';
-          
+              ? `התנדבות: ${donation.title || ''}`
+              : donation.type === 'trump'
+                ? `טרמפ: ${donation.title || ''}`
+                : donation.title || 'תרומה חדשה';
+
           activities.push({
             id: `donation_${donation.id}`,
             type: 'donation',
@@ -604,7 +709,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
           const createdBy = ride.createdBy || ride.created_by || ride.driver_id || ride.driverId;
           return createdBy === userId;
         });
-        
+
         userRides.forEach((ride: any) => {
           const fromLocation = ride.from || ride.from_location?.name || ride.from_location?.city || 'לא צויין';
           const toLocation = ride.to || ride.to_location?.name || ride.to_location?.city || 'לא צויין';
@@ -793,12 +898,12 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
   // Derived display values
   // #region agent log
   const logAvatar = () => {
-    fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProfileScreen.tsx:734',message:'Avatar source determination',data:{displayUserId:displayUser?.id,displayUserAvatar:displayUser?.avatar,hasAvatar:!!displayUser?.avatar,isOwnProfile,selectedUserAvatar:selectedUser?.avatar},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:734', message: 'Avatar source determination', data: { displayUserId: displayUser?.id, displayUserAvatar: displayUser?.avatar, hasAvatar: !!displayUser?.avatar, isOwnProfile, selectedUserAvatar: selectedUser?.avatar }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
   };
   logAvatar();
   // #endregion
   const avatarSource = displayUser?.avatar ? { uri: displayUser.avatar } : defaultLogo;
-  
+
   // Show error if viewing other user's profile and user not found
   if (!isOwnProfile && !loadingUser && !viewingUser) {
     return (
@@ -824,7 +929,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
       </SafeAreaView>
     );
   }
-  
+
   // Show loading if loading other user's profile
   if (!isOwnProfile && loadingUser) {
     return (
@@ -851,14 +956,14 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
             {/* Header for other user's profile */}
             {!isOwnProfile && (
               <View style={styles.header}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.headerIcon}
                   onPress={() => navigation.goBack()}
                 >
                   <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
                 </TouchableOpacity>
                 <Text style={styles.username}>{displayUser?.name || externalUserName || 'ללא שם'}</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.headerIcon}
                   onPress={() => Alert.alert('אפשרויות', 'פתיחת אפשרויות')}
                 >
@@ -866,10 +971,10 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                 </TouchableOpacity>
               </View>
             )}
-            
+
             {/* Completion Banner - only for own profile */}
             {isOwnProfile && <ProfileCompletionBanner />}
-            
+
             {/* Profile Info with Menu Icon */}
             <View style={styles.profileInfo}>
               {isOwnProfile && (
@@ -1048,7 +1153,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                   {typeof displayUser?.location === 'string' ? displayUser?.location : displayUser?.location?.city || ''}
                 </Text>
               )}
-              
+
               {/* Additional user details for other user's profile */}
               {!isOwnProfile && displayUser && (
                 <View style={styles.characterDetails}>
@@ -1059,7 +1164,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                       <Text style={styles.verifiedText}>מאומת</Text>
                     </View>
                   )}
-                  
+
                   {/* Roles */}
                   {displayUser.roles && displayUser.roles.length > 0 && (
                     <View style={styles.rolesContainer}>
@@ -1070,7 +1175,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                       ))}
                     </View>
                   )}
-                  
+
                   {/* Interests */}
                   {displayUser.interests && displayUser.interests.length > 0 && (
                     <View style={styles.interestsContainer}>
@@ -1082,7 +1187,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                       </View>
                     </View>
                   )}
-                  
+
                   {/* Join date */}
                   {displayUser.joinDate && (
                     <Text style={styles.joinDate}>
@@ -1146,7 +1251,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                 <>
                   {selectedUser && displayUser && selectedUser.id !== displayUser.id && (
                     <>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={[
                           styles.followButton,
                           isFollowing && styles.followingButton
@@ -1162,7 +1267,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                               Alert.alert('שגיאה', 'משתמש לא נמצא');
                               return;
                             }
-                            
+
                             if (isFollowing) {
                               const success = await unfollowUser(selectedUser.id, displayUser.id);
                               if (success) {
@@ -1195,8 +1300,8 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                           {isFollowing ? 'עוקב' : 'עקוב'}
                         </Text>
                       </TouchableOpacity>
-                      
-                      <TouchableOpacity 
+
+                      <TouchableOpacity
                         style={styles.messageButton}
                         onPress={async () => {
                           if (!selectedUser) {
@@ -1207,7 +1312,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                           try {
                             const existingConvId = await conversationExists(selectedUser.id, displayUser.id!);
                             let conversationId: string;
-                            
+
                             if (existingConvId) {
                               console.log('💬 Conversation already exists:', existingConvId);
                               conversationId = existingConvId;
@@ -1215,7 +1320,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                               console.log('💬 Creating new conversation...');
                               conversationId = await createConversation([selectedUser.id, displayUser.id!]);
                             }
-                            
+
                             (navigation as any).navigate('ChatDetailScreen', {
                               conversationId,
                               otherUserId: displayUser.id,
@@ -1240,79 +1345,79 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
             {/* Recent Activities - only for own profile */}
             {isOwnProfile && (
               <View style={styles.activitiesSection}>
-              <Text style={styles.sectionTitle}>{t('profile:sections.recentActivity')}</Text>
-              {recentActivities.length === 0 ? (
-                <View style={styles.emptyActivitiesContainer}>
-                  <Ionicons name="time-outline" size={scaleSize(40)} color={colors.textSecondary} />
-                  <Text style={styles.emptyActivitiesText}>{t('profile:recent.noActivityYet', 'אין פעילויות עדיין')}</Text>
-                  <Text style={styles.emptyActivitiesSubtext}>{t('profile:recent.startCreating', 'התחל ליצור תוכן כדי לראות את הפעילויות שלך כאן')}</Text>
-                </View>
-              ) : (
-                recentActivities.map((activity) => (
-                  <TouchableOpacity
-                    key={activity.id}
-                    style={styles.activityItem}
-                    onPress={() => {
-                      // Open modal for item and ride types
-                      if (activity.type === 'item' || activity.type === 'ride') {
-                        setSelectedActivity(activity);
-                        setShowActivityModal(true);
-                      } else {
-                        // For post and donation, show alert for now
-                        Alert.alert(activity.title, activity.time);
-                      }
-                    }}
-                  >
-                    <View style={[styles.activityIcon, { backgroundColor: activity.color + '20' }]}>
-                      <Ionicons name={activity.icon as any} size={16} color={activity.color} />
-                    </View>
-                    <View style={styles.activityContent}>
-                      <Text style={styles.activityTitle}>{activity.title}</Text>
-                      <Text style={styles.activityTime}>{activity.time}</Text>
-                    </View>
-                  </TouchableOpacity>
-                ))
-              )}
+                <Text style={styles.sectionTitle}>{t('profile:sections.recentActivity')}</Text>
+                {recentActivities.length === 0 ? (
+                  <View style={styles.emptyActivitiesContainer}>
+                    <Ionicons name="time-outline" size={scaleSize(40)} color={colors.textSecondary} />
+                    <Text style={styles.emptyActivitiesText}>{t('profile:recent.noActivityYet', 'אין פעילויות עדיין')}</Text>
+                    <Text style={styles.emptyActivitiesSubtext}>{t('profile:recent.startCreating', 'התחל ליצור תוכן כדי לראות את הפעילויות שלך כאן')}</Text>
+                  </View>
+                ) : (
+                  recentActivities.map((activity) => (
+                    <TouchableOpacity
+                      key={activity.id}
+                      style={styles.activityItem}
+                      onPress={() => {
+                        // Open modal for item and ride types
+                        if (activity.type === 'item' || activity.type === 'ride') {
+                          setSelectedActivity(activity);
+                          setShowActivityModal(true);
+                        } else {
+                          // For post and donation, show alert for now
+                          Alert.alert(activity.title, activity.time);
+                        }
+                      }}
+                    >
+                      <View style={[styles.activityIcon, { backgroundColor: activity.color + '20' }]}>
+                        <Ionicons name={activity.icon as any} size={16} color={activity.color} />
+                      </View>
+                      <View style={styles.activityContent}>
+                        <Text style={styles.activityTitle}>{activity.title}</Text>
+                        <Text style={styles.activityTime}>{activity.time}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                )}
               </View>
             )}
 
             {/* Story Highlights - only for own profile */}
             {isOwnProfile && (
               <View style={styles.highlightsSection}>
-              <Text style={styles.sectionTitle}>{t('profile:sections.highlights')}</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.storyHighlightsContentContainer}
-              >
-                {(isRealAuth ? [0] : Array.from({ length: 8 }).map((_, i) => i)).map((i) => (
-                  <TouchableOpacity
-                    key={i}
-                    style={styles.storyHighlightItem}
-                    onPress={() => {
-                      if (i === 0) {
-                        Alert.alert(t('profile:alerts.highlight'), t('profile:highlights.new'));
-                      } else {
-                        Alert.alert(t('profile:alerts.highlight'), t('profile:highlights.highlightIndex', { index: (i + 1).toString() }));
-                      }
-                    }}
-                  >
-                    <View style={styles.storyHighlightCircle}>
-                      {i === 0 ? (
-                        <Ionicons name="add" size={scaleSize(24)} color={colors.secondary} />
-                      ) : (
-                        <Image
-                          source={{ uri: `https://picsum.photos/60/60?random=${i + 10}` }}
-                          style={styles.highlightImage}
-                        />
-                      )}
-                    </View>
-                    <Text style={styles.storyHighlightText}>
-                      {i === 0 ? t('profile:highlights.new') : t('profile:highlights.highlightIndex', { index: i })}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+                <Text style={styles.sectionTitle}>{t('profile:sections.highlights')}</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.storyHighlightsContentContainer}
+                >
+                  {(isRealAuth ? [0] : Array.from({ length: 8 }).map((_, i) => i)).map((i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={styles.storyHighlightItem}
+                      onPress={() => {
+                        if (i === 0) {
+                          Alert.alert(t('profile:alerts.highlight'), t('profile:highlights.new'));
+                        } else {
+                          Alert.alert(t('profile:alerts.highlight'), t('profile:highlights.highlightIndex', { index: (i + 1).toString() }));
+                        }
+                      }}
+                    >
+                      <View style={styles.storyHighlightCircle}>
+                        {i === 0 ? (
+                          <Ionicons name="add" size={scaleSize(24)} color={colors.secondary} />
+                        ) : (
+                          <Image
+                            source={{ uri: `https://picsum.photos/60/60?random=${i + 10}` }}
+                            style={styles.highlightImage}
+                          />
+                        )}
+                      </View>
+                      <Text style={styles.storyHighlightText}>
+                        {i === 0 ? t('profile:highlights.new') : t('profile:highlights.highlightIndex', { index: i })}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </View>
             )}
 
@@ -1338,14 +1443,14 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
           {/* Header for other user's profile */}
           {!isOwnProfile && (
             <View style={styles.header}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.headerIcon}
                 onPress={() => navigation.goBack()}
               >
                 <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
               </TouchableOpacity>
               <Text style={styles.username}>{displayUser?.name || externalUserName || 'ללא שם'}</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.headerIcon}
                 onPress={() => Alert.alert('אפשרויות', 'פתיחת אפשרויות')}
               >
@@ -1353,10 +1458,10 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
               </TouchableOpacity>
             </View>
           )}
-          
+
           {/* Completion Banner - only for own profile */}
           {isOwnProfile && <ProfileCompletionBanner />}
-          
+
           {/* Profile Info with Menu Icon */}
           <View style={styles.profileInfo}>
             {isOwnProfile && (
@@ -1531,7 +1636,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                 {typeof displayUser?.location === 'string' ? displayUser?.location : displayUser?.location?.city || ''}
               </Text>
             )}
-            
+
             {/* Additional user details for other user's profile */}
             {!isOwnProfile && displayUser && (
               <View style={styles.characterDetails}>
@@ -1542,7 +1647,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                     <Text style={styles.verifiedText}>מאומת</Text>
                   </View>
                 )}
-                
+
                 {/* Roles */}
                 {displayUser.roles && displayUser.roles.length > 0 && (
                   <View style={styles.rolesContainer}>
@@ -1553,7 +1658,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                     ))}
                   </View>
                 )}
-                
+
                 {/* Interests */}
                 {displayUser.interests && displayUser.interests.length > 0 && (
                   <View style={styles.interestsContainer}>
@@ -1565,7 +1670,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                     </View>
                   </View>
                 )}
-                
+
                 {/* Join date */}
                 {displayUser.joinDate && (
                   <Text style={styles.joinDate}>
@@ -1638,7 +1743,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
               <>
                 {selectedUser && displayUser && selectedUser.id !== displayUser.id && (
                   <>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={[
                         styles.followButton,
                         isFollowing && styles.followingButton
@@ -1654,7 +1759,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                             Alert.alert('שגיאה', 'משתמש לא נמצא');
                             return;
                           }
-                          
+
                           if (isFollowing) {
                             const success = await unfollowUser(selectedUser.id, displayUser.id);
                             if (success) {
@@ -1687,8 +1792,8 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                         {isFollowing ? 'עוקב' : 'עקוב'}
                       </Text>
                     </TouchableOpacity>
-                    
-                    <TouchableOpacity 
+
+                    <TouchableOpacity
                       style={styles.messageButton}
                       onPress={async () => {
                         if (!selectedUser) {
@@ -1699,7 +1804,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                         try {
                           const existingConvId = await conversationExists(selectedUser.id, displayUser.id!);
                           let conversationId: string;
-                          
+
                           if (existingConvId) {
                             console.log('💬 Conversation already exists:', existingConvId);
                             conversationId = existingConvId;
@@ -1707,7 +1812,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
                             console.log('💬 Creating new conversation...');
                             conversationId = await createConversation([selectedUser.id, displayUser.id!]);
                           }
-                          
+
                           (navigation as any).navigate('ChatDetailScreen', {
                             conversationId,
                             otherUserId: displayUser.id,
@@ -1732,73 +1837,73 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
           {/* Recent Activities - only for own profile */}
           {isOwnProfile && (
             <View style={styles.activitiesSection}>
-            <Text style={styles.sectionTitle}>{t('profile:sections.recentActivity')}</Text>
-            {recentActivities.length === 0 ? (
-              <View style={styles.emptyActivitiesContainer}>
-                <Ionicons name="time-outline" size={scaleSize(40)} color={colors.textSecondary} />
-                <Text style={styles.emptyActivitiesText}>{t('profile:recent.noActivityYet', 'אין פעילויות עדיין')}</Text>
-                <Text style={styles.emptyActivitiesSubtext}>{t('profile:recent.startCreating', 'התחל ליצור תוכן כדי לראות את הפעילויות שלך כאן')}</Text>
-              </View>
-            ) : (
-              recentActivities.map((activity) => (
-                <TouchableOpacity
-                  key={activity.id}
-                  style={styles.activityItem}
-                  onPress={() => {
-                    // Open modal for item and ride types
-                    if (activity.type === 'item' || activity.type === 'ride') {
-                      setSelectedActivity(activity);
-                      setShowActivityModal(true);
-                    } else {
-                      // For post and donation, show alert for now
-                      Alert.alert(activity.title, activity.time);
-                    }
-                  }}
-                >
-                  <View style={[styles.activityIcon, { backgroundColor: activity.color + '20' }]}>
-                    <Ionicons name={activity.icon as any} size={16} color={activity.color} />
-                  </View>
-                  <View style={styles.activityContent}>
-                    <Text style={styles.activityTitle}>{activity.title}</Text>
-                    <Text style={styles.activityTime}>{activity.time}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))
-            )}
+              <Text style={styles.sectionTitle}>{t('profile:sections.recentActivity')}</Text>
+              {recentActivities.length === 0 ? (
+                <View style={styles.emptyActivitiesContainer}>
+                  <Ionicons name="time-outline" size={scaleSize(40)} color={colors.textSecondary} />
+                  <Text style={styles.emptyActivitiesText}>{t('profile:recent.noActivityYet', 'אין פעילויות עדיין')}</Text>
+                  <Text style={styles.emptyActivitiesSubtext}>{t('profile:recent.startCreating', 'התחל ליצור תוכן כדי לראות את הפעילויות שלך כאן')}</Text>
+                </View>
+              ) : (
+                recentActivities.map((activity) => (
+                  <TouchableOpacity
+                    key={activity.id}
+                    style={styles.activityItem}
+                    onPress={() => {
+                      // Open modal for item and ride types
+                      if (activity.type === 'item' || activity.type === 'ride') {
+                        setSelectedActivity(activity);
+                        setShowActivityModal(true);
+                      } else {
+                        // For post and donation, show alert for now
+                        Alert.alert(activity.title, activity.time);
+                      }
+                    }}
+                  >
+                    <View style={[styles.activityIcon, { backgroundColor: activity.color + '20' }]}>
+                      <Ionicons name={activity.icon as any} size={16} color={activity.color} />
+                    </View>
+                    <View style={styles.activityContent}>
+                      <Text style={styles.activityTitle}>{activity.title}</Text>
+                      <Text style={styles.activityTime}>{activity.time}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
             </View>
           )}
 
           {/* Story Highlights - only for own profile */}
           {isOwnProfile && (
             <View style={styles.highlightsSection}>
-            <Text style={styles.sectionTitle}>{t('profile:sections.highlights')}</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.storyHighlightsContentContainer}
-            >
-              {Array.from({ length: 8 }).map((_, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={styles.storyHighlightItem}
-                  onPress={() => Alert.alert(t('profile:alerts.highlight'), t('profile:highlights.highlightIndex', { index: (i + 1).toString() }))}
-                >
-                  <View style={styles.storyHighlightCircle}>
-                    {i === 0 ? (
-                      <Ionicons name="add" size={scaleSize(24)} color={colors.secondary} />
-                    ) : (
-                      <Image
-                        source={{ uri: `https://picsum.photos/60/60?random=${i + 10}` }}
-                        style={styles.highlightImage}
-                      />
-                    )}
-                  </View>
-                  <Text style={styles.storyHighlightText}>
-                    {i === 0 ? t('profile:highlights.new') : t('profile:highlights.highlightIndex', { index: i })}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+              <Text style={styles.sectionTitle}>{t('profile:sections.highlights')}</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.storyHighlightsContentContainer}
+              >
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={styles.storyHighlightItem}
+                    onPress={() => Alert.alert(t('profile:alerts.highlight'), t('profile:highlights.highlightIndex', { index: (i + 1).toString() }))}
+                  >
+                    <View style={styles.storyHighlightCircle}>
+                      {i === 0 ? (
+                        <Ionicons name="add" size={scaleSize(24)} color={colors.secondary} />
+                      ) : (
+                        <Image
+                          source={{ uri: `https://picsum.photos/60/60?random=${i + 10}` }}
+                          style={styles.highlightImage}
+                        />
+                      )}
+                    </View>
+                    <Text style={styles.storyHighlightText}>
+                      {i === 0 ? t('profile:highlights.new') : t('profile:highlights.highlightIndex', { index: i })}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
           )}
 
@@ -1829,6 +1934,7 @@ function ProfileScreenContent({ tabBarHeight }: { tabBarHeight: number }) {
           showOwnerInfo={false}
         />
       )}
+      {ToastComponent}
     </SafeAreaView>
   );
 }
@@ -1841,45 +1947,101 @@ function ProfileScreenWithTabBar() {
 }
 
 // Main export - uses the hook for own profile
-export default function ProfileScreen() {
+// Main export - uses the hook for own profile
+export default function ProfileScreen(props: any) {
   const route = useRoute();
-  const routeParams = route.params as ProfileScreenRouteParams | undefined;
-  const { userId: externalUserId } = routeParams || {};
+  let routeParams = route.params as ProfileScreenRouteParams | undefined;
+
+  // On Web, handle refresh (F5) by restoring params from localStorage if route params are missing
+  const STORAGE_KEY = 'profileScreenParams';
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:1952', message: 'ProfileScreen - localStorage check start', data: { hasRouteParams: !!routeParams, hasProps: !!props?.userId, platformOS: Platform.OS, hasWindow: typeof window !== 'undefined' }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run2', hypothesisId: 'A' }) }).catch(() => { });
+  // #endregion
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && !routeParams && !props?.userId) {
+    // Try to restore from localStorage when route params are missing (after refresh)
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:1958', message: 'ProfileScreen - Attempting to restore from localStorage', data: { hasStored: !!stored, storedLength: stored?.length }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run2', hypothesisId: 'A' }) }).catch(() => { });
+      // #endregion
+      if (stored) {
+        const parsedParams = JSON.parse(stored);
+        routeParams = parsedParams;
+        console.log('👤 ProfileScreen - Restored params from localStorage:', parsedParams);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:1964', message: 'ProfileScreen - Restored params from localStorage', data: { restoredUserId: parsedParams?.userId, restoredUserName: parsedParams?.userName }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run2', hypothesisId: 'A' }) }).catch(() => { });
+        // #endregion
+      }
+    } catch (error) {
+      console.warn('Failed to restore params from localStorage:', error);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:1969', message: 'ProfileScreen - Failed to restore from localStorage', data: { error: String(error) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run2', hypothesisId: 'A' }) }).catch(() => { });
+      // #endregion
+    }
+  }
+
+  // Allow props to override route params (useful when used as a child component)
+  const propUserId = props?.userId;
+  const propUserName = props?.userName;
+  const propCharacterData = props?.characterData;
+  const isExplicitOtherProfile = props?.isExplicitOtherProfile === true;
+
+  // Use restored params if props are not provided
+  const externalUserId = propUserId || routeParams?.userId;
   const { selectedUser } = useUser();
-  
+
   // Determine if viewing own profile or other user's profile
   // CRITICAL: If externalUserId exists and equals selectedUser.id, it's OWN profile!
   // Only if externalUserId exists and is DIFFERENT from selectedUser.id, it's another user's profile
   // If no externalUserId, it's own profile (default - viewing from ProfileTabStack)
-  
+
   // Normalize IDs to strings for comparison (in case one is number and one is string)
   const normalizedExternalUserId = externalUserId ? String(externalUserId).trim() : null;
   const normalizedSelectedUserId = selectedUser?.id ? String(selectedUser.id).trim() : null;
-  
-  // Check if viewing other user: externalUserId exists AND it's different from selectedUser.id
-  const isViewingOtherUser = normalizedExternalUserId && 
-                              normalizedSelectedUserId && 
-                              normalizedExternalUserId !== normalizedSelectedUserId;
-  
+
+  // Check if viewing other user: 
+  // 1. Explicitly requested via prop
+  // 2. externalUserId exists AND it's different from selectedUser.id
+  const isViewingOtherUser = isExplicitOtherProfile ||
+    (normalizedExternalUserId &&
+      normalizedSelectedUserId &&
+      normalizedExternalUserId !== normalizedSelectedUserId);
+
   // Debug log to help identify the issue
   console.log('👤 ProfileScreen - Route check:', {
     externalUserId,
+    propUserId,
     normalizedExternalUserId,
     selectedUserId: selectedUser?.id,
     normalizedSelectedUserId,
     isViewingOtherUser,
+    isExplicitOtherProfile,
     areEqual: normalizedExternalUserId === normalizedSelectedUserId,
     hasExternalUserId: !!externalUserId,
     hasSelectedUser: !!selectedUser
   });
-  
+
+  // If explicitly viewing other profile but no user ID, we need to handle it in Content
+  // Pass params to Content
+  const passedParams: ProfileScreenRouteParams = {
+    userId: externalUserId,
+    userName: propUserName || routeParams?.userName,
+    characterData: propCharacterData || routeParams?.characterData
+  };
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:2006', message: 'ProfileScreen - Determining view mode', data: { isViewingOtherUser, externalUserId, propUserId, hasRouteParams: !!routeParams, hasManualParams: !!props?.userId }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run2', hypothesisId: 'B' }) }).catch(() => { });
+  // #endregion
+
   if (isViewingOtherUser) {
     // Viewing another user's profile - not in bottom tab navigator
     // Use ProfileScreenContent directly with tabBarHeight = 0 (no hook call)
     console.log('👤 ProfileScreen - Using ProfileScreenContent (other user)');
-    return <ProfileScreenContent tabBarHeight={0} />;
+    // Pass the params via route override or similar mechanism if ProfileScreenContent relies on useRoute
+    // Actually ProfileScreenContent calls useRoute(). We should probably pass props to it.
+    // Let's modify ProfileScreenContent to accept overrides.
+    return <ProfileScreenContent tabBarHeight={0} manualParams={passedParams} forceOtherProfile={true} />;
   }
-  
+
   // Viewing own profile (either no externalUserId, or externalUserId === selectedUser.id)
   // In bottom tab navigator, can use the hook
   console.log('👤 ProfileScreen - Using ProfileScreenWithTabBar (own profile)');

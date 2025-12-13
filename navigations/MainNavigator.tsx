@@ -20,7 +20,7 @@ import BottomNavigator from "./BottomNavigator";
 import WebViewScreen from "../screens/WebViewScreen";
 import PostsReelsScreenWrapper from "../components/PostsReelsScreenWrapper";
 import BookmarksScreen from "../screens/BookmarksScreen";
-import UserProfileScreen from "../screens/UserProfileScreen";
+// Removed UserProfileScreen import - it should only be accessed via HomeTabStack or SearchTabStack
 import FollowersScreen from "../screens/FollowersScreen";
 import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
 import LoginScreen from "../screens/LoginScreen";
@@ -129,7 +129,8 @@ export default function MainNavigator() {
             }}
           />
 
-          <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} />
+          {/* Removed UserProfileScreen from MainNavigator - it should only be accessed via HomeTabStack or SearchTabStack 
+              to ensure bottom bar and top bar remain visible */}
           <Stack.Screen name="FollowersScreen" component={FollowersScreen} />
           <Stack.Screen name="DiscoverPeopleScreen" component={DiscoverPeopleScreen} />
 

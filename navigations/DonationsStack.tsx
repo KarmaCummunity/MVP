@@ -80,7 +80,7 @@ export default function DonationsStack() {
         ),
         // Fix for aria-hidden warning: prevent focus on inactive screens
         // detachInactiveScreens already handles this, but we keep cardStyle for web compatibility
-        cardStyle: Platform.OS === 'web' ? { 
+        cardStyle: Platform.OS === 'web' ? {
           // On web, ensure inactive screens don't interfere with focus
           // This prevents elements in hidden screens from receiving focus
         } : undefined,

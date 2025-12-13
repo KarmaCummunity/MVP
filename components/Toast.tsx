@@ -118,11 +118,12 @@ const Toast: React.FC<ToastProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 100 : 80,
+    bottom: Platform.OS === 'ios' ? 120 : 100, // Increased to be above tab bar
     left: 0,
     right: 0,
     alignItems: 'center',
-    zIndex: 9999,
+    zIndex: 10000,
+    elevation: 10000,
     pointerEvents: 'none',
   },
   toast: {

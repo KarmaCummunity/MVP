@@ -14,6 +14,7 @@ import { db } from '../utils/databaseService';
 import { useUser } from '../stores/userStore';
 import { biDiTextAlign, rowDirection, isLandscape, marginStartEnd } from '../globals/responsive';
 import { getCategoryLabel } from '../utils/itemCategoryUtils';
+import { useToast } from '../utils/toastService';
 
 type ItemType = 'furniture' | 'clothes' | 'general' | 'books' | 'dry_food' | 'games' | 'electronics' | 'toys' | 'sports' | 'art' | 'kitchen' | 'bathroom' | 'garden' | 'tools' | 'baby' | 'pet' | 'other';
 
@@ -49,12 +50,12 @@ interface DonationItem {
   description?: string;
   category: ItemType;
   condition?: 'new' | 'like_new' | 'used' | 'for_parts';
-  
+
   // Location fields - separate
   city?: string;
   address?: string;
   coordinates?: string;
-  
+
   price?: number; // 0 means free
   image_base64?: string; // base64 encoded image
   rating?: number;
@@ -86,9 +87,10 @@ const itemsSortOptions = [
 ];
 
 export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
+  const { ToastComponent } = useToast();
   const itemType: ItemType = (route?.params?.itemType as ItemType) || 'general';
   const routeParams = route?.params as { mode?: string } | undefined;
-  
+
   // Get initial mode from URL (deep link) or default to search mode (מחפש)
   // mode: false = מציע, true = מחפש
   // URL mode: 'offer' = false, 'search' = true
@@ -110,14 +112,14 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   useEffect(() => {
     const newMode = mode ? 'search' : 'offer';
     const currentMode = routeParams?.mode;
-    
+
     // If no mode in URL, set it to search (default)
     if (!currentMode || currentMode === 'undefined' || currentMode === 'null') {
       // Set initial mode to search in URL
       (navigation as any).setParams({ mode: 'search' });
       return;
     }
-    
+
     // Only update URL if mode actually changed
     if (newMode !== currentMode) {
       (navigation as any).setParams({ mode: newMode });
@@ -129,6 +131,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   const [allItems, setAllItems] = useState<DonationItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<DonationItem[]>([]);
   const [recentMine, setRecentMine] = useState<DonationItem[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const titleInputRef = useRef<TextInput | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -162,21 +165,21 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   const convertImageToBase64 = async (uri: string): Promise<string | null> => {
     try {
       console.log('🖼️ Converting and compressing image...');
-      
+
       // Fetch the image
       const response = await fetch(uri);
       const blob = await response.blob();
-      
+
       // Create canvas to compress the image
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64 = reader.result as string;
-          
+
           // Check size and compress if needed
           const sizeInMB = (base64.length * 0.75) / (1024 * 1024); // Approximate size
           console.log(`📏 Image size: ${sizeInMB.toFixed(2)} MB`);
-          
+
           if (sizeInMB > 5) {
             console.warn('⚠️ Image too large, it may fail to upload. Consider using a smaller image.');
             Alert.alert(
@@ -206,10 +209,15 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   };
 
   const filterOptions = useMemo(() => {
+    // כל הקטגוריות האפשריות לפריטים
+    const allCategories = ITEM_CATEGORIES.map(cat => cat.label);
+
     const typeSpecific = itemType === 'furniture' ? ['ספות', 'ארונות', 'מיטות']
       : itemType === 'clothes' ? ['גברים', 'נשים', 'ילדים']
-      : ['מטבח', 'חשמל', 'צעצועים'];
-    return [...typeSpecific, ...itemsFilterOptionsBase];
+        : ['מטבח', 'חשמל', 'צעצועים'];
+
+    // מחזיר: קטגוריות כלליות + פילטרים ספציפיים לסוג + פילטרים בסיסיים
+    return [...allCategories, ...typeSpecific, ...itemsFilterOptionsBase];
   }, [itemType]);
 
   const dummyItems: DonationItem[] = useMemo(() => [], []);
@@ -217,14 +225,11 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   // פונקציה נפרדת לטעינת פריטים שנוכל לקרוא לה גם אחרי שמירה
   const loadItems = async () => {
     try {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:217',message:'loadItems entry',data:{mode,itemType,currentUserId:selectedUser?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       console.log('📥 טוען פריטים מהשרת...', { mode, itemType });
       const uid = selectedUser?.id || 'guest';
-      
+
       let serverItems: any[] = [];
-      
+
       if (mode) {
         // מצב "מחפש" - טוען את כל הפריטים הזמינים מכל המשתמשים (ללא סינון קטגוריה)
         console.log('🔍 מצב מחפש - טוען את כל הפריטים הזמינים');
@@ -233,30 +238,16 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
           const axios = (await import('axios')).default;
           // במצב "מחפש", לא נסנן לפי קטגוריה - נטען את כל הפריטים הזמינים
           // הסינון לפי קטגוריה ייעשה רק ב-UI אחרי הטעינה
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:236',message:'Before API call',data:{apiUrl:`${API_BASE_URL}/api/items-delivery/search`,params:{status:'available',limit:100}},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-          // #endregion
           const response = await axios.get(`${API_BASE_URL}/api/items-delivery/search`, {
             params: {
               status: 'available',
-              // לא נשלח category במצב "מחפש" כדי לקבל את כל הפריטים
               limit: 100, // Limit to 100 items for performance
             }
           });
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:248',message:'API response received',data:{success:response.data?.success,dataLength:response.data?.data?.length,firstItemOwnerId:response.data?.data?.[0]?.owner_id,firstItemOwnerIdAlt:response.data?.data?.[0]?.ownerId,allOwnerIds:response.data?.data?.map((i:any)=>i.owner_id||i.ownerId).slice(0,5),uniqueOwnerIdsCount:new Set(response.data?.data?.map((i:any)=>i.owner_id||i.ownerId)).size},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-          // #endregion
-          console.log('🔍 API Response:', {
-            success: response.data?.success,
-            dataLength: response.data?.data?.length,
-            data: response.data?.data?.slice(0, 3), // First 3 items for debugging
-          });
+
           if (response.data?.success && Array.isArray(response.data.data)) {
             serverItems = response.data.data;
             console.log('✅ טעינת פריטים מה-API הצליחה:', serverItems.length, 'פריטים');
-            // לוג של ownerIds כדי לראות אם יש פריטים ממשתמשים שונים
-            const ownerIds = [...new Set(serverItems.map((item: any) => item.owner_id || item.ownerId))];
-            console.log('👥 משתמשים שונים בפריטים:', ownerIds.length, ownerIds);
           } else {
             console.warn('⚠️ API response לא תקין:', response.data);
           }
@@ -270,28 +261,13 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         console.log('🔵 מצב מציע - טוען פריטים של המשתמש:', uid);
         serverItems = await db.getDedicatedItemsByOwner(uid);
       }
-      
-      console.log('✅ התקבלו פריטים מהשרת:', serverItems.length || 0);
-      console.log('📋 דוגמה לפריטים מהשרת:', serverItems.slice(0, 2).map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        owner_id: item.owner_id || item.ownerId,
-        category: item.category,
-      })));
-      
+
       // המרה לפורמט התצוגה + סינון פריטים שנמחקו
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:272',message:'Before data transformation',data:{serverItemsCount:serverItems.length,sampleItem:serverItems[0]?{id:serverItems[0].id,owner_id:serverItems[0].owner_id,ownerId:serverItems[0].ownerId,title:serverItems[0].title}:null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       const displayItems: DonationItem[] = (serverItems || [])
         .filter((item: any) => {
           // נסנן פריטים שנמחקו
           const isDeleted = item.is_deleted || item.isDeleted;
-          if (isDeleted) {
-            console.log('🗑️ פריט נמחק, מסונן:', item.id, item.title);
-            return false;
-          }
-          return true;
+          return !isDeleted;
         })
         .map((item: any) => ({
           id: item.id,
@@ -314,38 +290,16 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
           isDeleted: item.is_deleted || item.isDeleted,
           deletedAt: item.deleted_at || item.deletedAt,
         }));
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:303',message:'After data transformation',data:{displayItemsCount:displayItems.length,ownerIdsInDisplay:displayItems.map(i=>i.ownerId).slice(0,5),uniqueOwnerIds:Array.from(new Set(displayItems.map(i=>i.ownerId))).length,currentUserId:uid,itemsFromOtherUsers:displayItems.filter(i=>i.ownerId!==uid).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-      
+
       // סינון לפי קטגוריה
       // במצב "מחפש", נציג את כל הפריטים ללא סינון קטגוריה
       // במצב "מציע", נסנן לפי קטגוריה רק אם itemType לא 'general'
-      const forType = !mode 
+      const forType = !mode
         ? displayItems.filter(i => itemType === 'general' ? true : i.category === itemType)
         : displayItems; // במצב "מחפש", נציג את כל הפריטים
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:308',message:'After category filter',data:{mode,displayItemsCount:displayItems.length,forTypeCount:forType.length,ownerIds:Array.from(new Set(forType.map(i=>i.ownerId))),currentUserId:uid,itemsFromOtherUsers:forType.filter(i=>i.ownerId!==uid).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
-      console.log('📊 אחרי סינון:', {
-        mode,
-        displayItemsCount: displayItems.length,
-        forTypeCount: forType.length,
-        ownerIds: [...new Set(forType.map(i => i.ownerId))],
-        currentUserId: uid,
-        itemsFromOtherUsers: forType.filter(i => i.ownerId !== uid).length,
-      });
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:320',message:'Before setState',data:{forTypeCount:forType.length,forTypeOwnerIds:Array.from(new Set(forType.map(i=>i.ownerId))),itemsFromOtherUsers:forType.filter(i=>i.ownerId!==uid).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
+
       setAllItems(forType);
-      setFilteredItems(forType);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:323',message:'After setState',data:{forTypeCount:forType.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
-      
+
       // recentMine - רק במצב "מציע" נשמור את הפריטים של המשתמש
       if (!mode) {
         setRecentMine(forType);
@@ -354,15 +308,14 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         const myItems = forType.filter(i => i.ownerId === uid);
         setRecentMine(myItems);
       }
-      
-      console.log('✅ פריטים טעונים בהצלחה:', forType.length, { mode, myItems: !mode ? forType.length : forType.filter(i => i.ownerId === uid).length });
-      
+
     } catch (error) {
       console.error('❌ שגיאה בטעינת פריטים:', error);
       Alert.alert('שגיאה', 'לא הצלחנו לטעון את הפריטים');
       setAllItems([]);
-      setFilteredItems([]);
       setRecentMine([]);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -371,9 +324,6 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   }, [selectedUser, itemType, mode]);
 
   const getFilteredItems = useCallback(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:372',message:'getFilteredItems entry',data:{allItemsCount:allItems.length,searchQuery,selectedFiltersCount:selectedFilters.length,selectedSortsCount:selectedSorts.length,ownerIds:Array.from(new Set(allItems.map(i=>i.ownerId))),currentUserId:selectedUser?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
     let filtered = [...allItems];
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -384,19 +334,26 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         (i.description || '').toLowerCase().includes(q) ||
         (i.tags || '').toLowerCase().includes(q)
       );
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:383',message:'After search filter',data:{filteredCount:filtered.length,ownerIds:Array.from(new Set(filtered.map(i=>i.ownerId))),itemsFromOtherUsers:filtered.filter(i=>i.ownerId!==selectedUser?.id).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
     }
 
     if (selectedFilters.length > 0) {
       selectedFilters.forEach(f => {
+        // סינון לפי מחיר
         if (f === 'בחינם') filtered = filtered.filter(i => (i.price ?? 0) === 0);
+
+        // סינון לפי מצב
         if (f === 'כמו חדש') filtered = filtered.filter(i => i.condition === 'like_new' || i.condition === 'new');
         if (f === 'משומש') filtered = filtered.filter(i => i.condition === 'used');
         if (f === 'לחלפים') filtered = filtered.filter(i => i.condition === 'for_parts');
-        // type specific
-        if (['ספות','ארונות','מיטות','גברים','נשים','ילדים','מטבח','חשמל','צעצועים'].includes(f)) {
+
+        // סינון לפי קטגוריה - בודק אם הפילטר תואם לאחת הקטגוריות
+        const matchingCategory = ITEM_CATEGORIES.find(cat => cat.label === f);
+        if (matchingCategory) {
+          filtered = filtered.filter(item => item.category === matchingCategory.id);
+        }
+
+        // סינון לפי תגיות ספציפיות לסוג
+        if (['ספות', 'ארונות', 'מיטות', 'גברים', 'נשים', 'ילדים', 'מטבח', 'חשמל', 'צעצועים'].includes(f)) {
           filtered = filtered.filter(item => {
             const tagsArray = typeof item.tags === 'string' ? item.tags.split(',') : (item.tags || []);
             return tagsArray.includes(f);
@@ -429,11 +386,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
 
   // Update filtered items whenever search/filter/sort changes
   useEffect(() => {
-    const filtered = getFilteredItems();
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:406',message:'Updating filteredItems state',data:{filteredCount:filtered.length,ownerIds:Array.from(new Set(filtered.map(i=>i.ownerId))),itemsFromOtherUsers:filtered.filter(i=>i.ownerId!==selectedUser?.id).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
-    setFilteredItems(filtered);
+    setFilteredItems(getFilteredItems());
   }, [getFilteredItems]);
 
   const handleSearch = (query: string, filters: string[] = [], sorts: string[] = [], _results?: any[]) => {
@@ -477,12 +430,12 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
 
   const handleDeleteItem = async (item: DonationItem) => {
     console.warn('🗑️ מחיקת פריט - Soft Delete', { itemId: item.id, title: item.title });
-    
+
     Alert.alert(
       '🗑️ מחיקת פריט',
       `האם אתה בטוח שברצונך למחוק את:\n"${item.title}"?`,
       [
-        { 
+        {
           text: 'ביטול',
           style: 'cancel'
         },
@@ -492,17 +445,17 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
           onPress: async () => {
             try {
               console.log('🗑️ מוחק פריט:', item.id);
-              
+
               // Soft Delete דרך ה-API החדש
               await db.deleteDedicatedItem(item.id);
-              
+
               console.log('✅ פריט נמחק בשרת');
-              
+
               // הסרה מה-UI
               setAllItems(prev => prev.filter(i => i.id !== item.id));
               setFilteredItems(prev => prev.filter(i => i.id !== item.id));
               setRecentMine(prev => prev.filter(i => i.id !== item.id));
-              
+
               Alert.alert('✅ הצלחה', 'הפריט נמחק!');
             } catch (error: any) {
               console.error('❌ שגיאה במחיקה:', error);
@@ -521,12 +474,12 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         titleInputRef.current?.focus();
         return;
       }
-      
+
       console.log('🔵 מתחיל תהליך שמירת פריט...');
-      
+
       const uid = selectedUser?.id || 'guest';
       const id = `${Date.now()}`;
-      
+
       // המרת תמונה ל-base64
       let imageBase64 = null;
       if (imageUri) {
@@ -536,7 +489,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
           console.log('✅ התמונה הומרה בהצלחה (גודל:', imageBase64.length, 'תווים)');
         }
       }
-      
+
       // הכנת אובייקט עם כל השדות הנפרדים
       const itemData = {
         id,
@@ -545,12 +498,12 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         description: description.trim() || '',
         category: selectedCategory || itemType,
         condition: condition || 'used',
-        
+
         // שדות מיקום נפרדים
         city: city.trim() || '',
         address: address.trim() || '',
         coordinates: '',
-        
+
         price: Number(price) || 0,
         image_base64: imageBase64,
         rating: 0,
@@ -559,7 +512,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         delivery_method: 'pickup',
         status: 'available',
       };
-      
+
       console.log('📤 שולח לשרת:', {
         id: itemData.id,
         title: itemData.title,
@@ -568,16 +521,40 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         hasImage: !!itemData.image_base64,
         tagsCount: selectedFilters.length,
       });
-      
+
       // שליחה לשרת דרך API החדש
       const savedItem = await db.createDedicatedItem(itemData);
-      
+
       console.log('✅ נשמר בהצלחה בשרת:', savedItem);
-      
-      // טעינה מחדש של כל הפריטים מהשרת כדי להבטיח שהמידע מעודכן
-      console.log('🔄 טוען מחדש את הפריטים מהשרת...');
-      await loadItems();
-      
+
+      // Optimistic Update: Add to local state immediately
+      const newItemForState: DonationItem = {
+        id: itemData.id,
+        ownerId: itemData.owner_id,
+        title: itemData.title,
+        description: itemData.description,
+        category: itemData.category,
+        condition: itemData.condition as any,
+        city: itemData.city,
+        address: itemData.address,
+        coordinates: itemData.coordinates,
+        price: itemData.price,
+        image_base64: itemData.image_base64 || undefined,
+        rating: itemData.rating,
+        timestamp: new Date().toISOString(),
+        tags: itemData.tags,
+        qty: itemData.quantity,
+        delivery_method: itemData.delivery_method,
+        status: itemData.status,
+        isDeleted: false,
+      };
+
+      setAllItems(prev => [newItemForState, ...prev]);
+      // Filter logic will run via useEffect but we can also update explicitly if needed
+      // With optimistic update, we don't strictly need to await loadItems
+      // But we can trigger it in background
+      loadItems();
+
       // איפוס כל השדות
       setTitle('');
       setDescription('');
@@ -589,13 +566,13 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
       setImageUri('');
       setSelectedCategory('general');
       setSelectedFilters([]);
-      
+
       Alert.alert(
         '✅ נשמר בהצלחה!',
         `הפריט "${savedItem.title}" נשמר במערכת`,
         [{ text: 'אישור', style: 'default' }]
       );
-      
+
     } catch (error: any) {
       console.error('❌ שגיאה בשמירת פריט:', error);
       Alert.alert(
@@ -622,13 +599,13 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
     <TouchableOpacity style={localStyles.itemCard} onPress={() => handleItemPress(item)}>
       {/* תמונה base64 */}
       {item.image_base64 && (
-        <Image 
-          source={{ uri: item.image_base64 }} 
-          style={{ width: '100%', height: 120, borderRadius: 8, marginBottom: 8 }} 
+        <Image
+          source={{ uri: item.image_base64 }}
+          style={{ width: '100%', height: 120, borderRadius: 8, marginBottom: 8 }}
           resizeMode="cover"
         />
       )}
-      
+
       <View style={localStyles.itemRow}>
         <Text style={localStyles.itemTitle} numberOfLines={1}>{item.title}</Text>
         <View style={localStyles.itemBadge}>
@@ -637,7 +614,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
           </Text>
         </View>
       </View>
-      
+
       {/* מיקום מפוצל */}
       <View style={localStyles.itemRow}>
         <Text style={localStyles.itemMeta} numberOfLines={1}>
@@ -651,17 +628,17 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
     <View style={localStyles.itemCard}>
       {/* תמונה base64 */}
       {item.image_base64 && (
-        <Image 
-          source={{ uri: item.image_base64 }} 
-          style={{ width: '100%', height: 120, borderRadius: 8, marginBottom: 8 }} 
+        <Image
+          source={{ uri: item.image_base64 }}
+          style={{ width: '100%', height: 120, borderRadius: 8, marginBottom: 8 }}
           resizeMode="cover"
         />
       )}
-      
+
       <View style={localStyles.itemRow}>
         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
           <Text style={localStyles.itemTitle} numberOfLines={1}>{item.title}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => handleDeleteItem(item)}
             style={localStyles.deleteButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -671,35 +648,35 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         </View>
         <Text style={localStyles.itemMeta}>📅 {new Date(item.timestamp).toLocaleDateString('he-IL')} {new Date(item.timestamp).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</Text>
       </View>
-      
+
       {/* שורה נוספת עם מצב + כמות */}
       <View style={localStyles.itemRow}>
         <Text style={localStyles.itemMeta}>
-          {item.condition === 'new' ? '🆕 חדש' : 
-           item.condition === 'like_new' ? '✨ כמו חדש' :
-           item.condition === 'used' ? '📦 משומש' : '🔧 לחלפים'}
+          {item.condition === 'new' ? '🆕 חדש' :
+            item.condition === 'like_new' ? '✨ כמו חדש' :
+              item.condition === 'used' ? '📦 משומש' : '🔧 לחלפים'}
           {' • '}
           כמות: {item.qty || 1}
         </Text>
       </View>
-      
-        <View style={localStyles.itemRow}>
-          <Text style={localStyles.itemMeta} numberOfLines={1}>
-            📍 {item.city || 'מיקום לא זמין'}{item.address ? `, ${item.address}` : ''}
+
+      <View style={localStyles.itemRow}>
+        <Text style={localStyles.itemMeta} numberOfLines={1}>
+          📍 {item.city || 'מיקום לא זמין'}{item.address ? `, ${item.address}` : ''}
+        </Text>
+        <View style={localStyles.itemBadge}>
+          <Text style={localStyles.itemBadgeText}>
+            {getCategoryLabel(item.category)}
           </Text>
-          <View style={localStyles.itemBadge}>
-            <Text style={localStyles.itemBadgeText}>
-              {getCategoryLabel(item.category)}
-            </Text>
-          </View>
-          <TouchableOpacity
-          style={localStyles.restoreChip} 
-          onPress={() => { 
-            setTitle(item.title); 
+        </View>
+        <TouchableOpacity
+          style={localStyles.restoreChip}
+          onPress={() => {
+            setTitle(item.title);
             setDescription(item.description || '');
             setCity(item.city || '');
             setAddress(item.address || '');
-            setPrice(String(item.price ?? 0)); 
+            setPrice(String(item.price ?? 0));
             setQty(item.qty || 1);
             setCondition(item.condition || '');
             if (item.image_base64) {
@@ -729,50 +706,52 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
       />
 
       {mode ? (
-        <>
-          <View style={[localStyles.container, localStyles.noOuterScrollContainer]}>
-            <View style={localStyles.sectionWithScroller}>
-              <View style={localStyles.headerRow}>
-                <Text style={localStyles.sectionTitle}>{searchQuery || selectedFilters.length > 0 ? 'פריטים זמינים' : 'פריטים מומלצים'}</Text>
-                {(searchQuery || selectedFilters.length > 0 || selectedSorts.length > 0) && (
-                  <TouchableOpacity style={localStyles.clearButton} onPress={handleClearAll}>
-                    <Text style={localStyles.clearButtonText}>נקה הכל</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <ScrollView style={localStyles.innerScroll} contentContainerStyle={[localStyles.itemsGridContainer, isLandscape() && { paddingHorizontal: 16 }]} showsVerticalScrollIndicator nestedScrollEnabled>
-                {(() => {
-                  // #region agent log
-                  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ItemsScreen.tsx:744',message:'Rendering items list',data:{filteredItemsCount:filteredItems.length,mode,ownerIds:Array.from(new Set(filteredItems.map(i=>i.ownerId))),itemsFromOtherUsers:filteredItems.filter(i=>i.ownerId!==selectedUser?.id).length,currentUserId:selectedUser?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-                  // #endregion
-                  return null;
-                })()}
-                {filteredItems.length === 0 ? (
-                  <View style={localStyles.emptyState}>
-                    <Icon name="search-outline" size={48} color={colors.textSecondary} />
-                    <Text style={localStyles.emptyStateTitle}>לא נמצאו פריטים</Text>
-                    <Text style={localStyles.emptyStateText}>נסה לשנות את הפילטרים או החיפוש</Text>
-                    {(searchQuery || selectedFilters.length > 0 || selectedSorts.length > 0) && (
-                      <TouchableOpacity style={localStyles.emptyStateClearButton} onPress={handleClearAll}>
-                        <Text style={localStyles.emptyStateClearButtonText}>נקה הכל</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                ) : (
-                  filteredItems.map((it) => (
-                    <View key={it.id} style={localStyles.itemCardWrapper}>{renderItemCard({ item: it })}</View>
-                  ))
-                )}
-              </ScrollView>
-            </View>
+        <ScrollContainer
+          style={localStyles.container}
+          contentStyle={[
+            localStyles.scrollContent,
+            isLandscape() && { paddingHorizontal: 32 }
+          ]}
+        >
+          {/* Header */}
+          <View style={localStyles.headerRow}>
+            <Text style={localStyles.sectionTitle}>
+              {searchQuery || selectedFilters.length > 0 ? 'פריטים זמינים' : 'פריטים מומלצים'}
+            </Text>
+            {(searchQuery || selectedFilters.length > 0 || selectedSorts.length > 0) && (
+              <TouchableOpacity style={localStyles.clearButton} onPress={handleClearAll}>
+                <Text style={localStyles.clearButtonText}>נקה הכל</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
+          {/* Items List or Empty State */}
+          {filteredItems.length === 0 ? (
+            <View style={localStyles.emptyState}>
+              <Icon name="search-outline" size={48} color={colors.textSecondary} />
+              <Text style={localStyles.emptyStateTitle}>לא נמצאו פריטים</Text>
+              <Text style={localStyles.emptyStateText}>נסה לשנות את הפילטרים או החיפוש</Text>
+              {(searchQuery || selectedFilters.length > 0 || selectedSorts.length > 0) && (
+                <TouchableOpacity style={localStyles.emptyStateClearButton} onPress={handleClearAll}>
+                  <Text style={localStyles.emptyStateClearButtonText}>נקה הכל</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : (
+            filteredItems.map((item) => (
+              <View key={item.id} style={localStyles.itemCardWrapper}>
+                {renderItemCard({ item })}
+              </View>
+            ))
+          )}
+
+          {/* Footer Stats */}
           <View style={localStyles.section}>
             <DonationStatsFooter
               stats={[
-                { label: 'פריטים שפורסמו', value: getFilteredItems().length, icon: 'cube-outline' },
-                { label: 'פריטים בחינם', value: getFilteredItems().filter(i => (i.price ?? 0) === 0).length, icon: 'pricetag-outline' },
-                { label: 'מיקומים ייחודיים', value: new Set(getFilteredItems().map(i => i.city || 'לא צויין')).size, icon: 'pin-outline' },
+                { label: 'פריטים שפורסמו', value: filteredItems.length, icon: 'cube-outline' },
+                { label: 'פריטים בחינם', value: filteredItems.filter(i => (i.price ?? 0) === 0).length, icon: 'pricetag-outline' },
+                { label: 'מיקומים ייחודיים', value: new Set(filteredItems.map(i => i.city || 'לא צויין')).size, icon: 'pin-outline' },
               ]}
             />
           </View>
@@ -782,7 +761,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
             <Text style={localStyles.sectionTitle}>קישורים שימושיים</Text>
             <AddLinkComponent category="items" />
           </View>
-        </>
+        </ScrollContainer>
       ) : (
         <ScrollContainer
           style={localStyles.container}
@@ -820,10 +799,10 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
                   ]}>
                     {ITEM_CATEGORIES.find(c => c.id === selectedCategory)?.label || 'בחר קטגוריה'}
                   </Text>
-                  <Icon 
-                    name={showCategoryDropdown ? "chevron-up" : "chevron-down"} 
-                    size={20} 
-                    color={colors.textSecondary} 
+                  <Icon
+                    name={showCategoryDropdown ? "chevron-up" : "chevron-down"}
+                    size={20}
+                    color={colors.textSecondary}
                   />
                 </TouchableOpacity>
               </View>
@@ -865,10 +844,10 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
                           setShowCategoryDropdown(false);
                         }}
                       >
-                        <Icon 
-                          name={item.icon as any} 
-                          size={20} 
-                          color={selectedCategory === item.id ? colors.primary : colors.textSecondary} 
+                        <Icon
+                          name={item.icon as any}
+                          size={20}
+                          color={selectedCategory === item.id ? colors.primary : colors.textSecondary}
                           style={localStyles.dropdownItemIcon}
                         />
                         <Text style={[
@@ -892,20 +871,20 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
             <View style={localStyles.row}>
               <View style={localStyles.fieldSmall}>
                 <Text style={localStyles.label}>עיר</Text>
-                <TextInput 
-                  style={localStyles.input} 
-                  value={city} 
-                  onChangeText={setCity} 
-                  placeholder="תל אביב" 
+                <TextInput
+                  style={localStyles.input}
+                  value={city}
+                  onChangeText={setCity}
+                  placeholder="תל אביב"
                 />
               </View>
               <View style={localStyles.fieldSmall}>
                 <Text style={localStyles.label}>כתובת</Text>
-                <TextInput 
-                  style={localStyles.input} 
-                  value={address} 
-                  onChangeText={setAddress} 
-                  placeholder="רחוב 123" 
+                <TextInput
+                  style={localStyles.input}
+                  value={address}
+                  onChangeText={setAddress}
+                  placeholder="רחוב 123"
                 />
               </View>
             </View>
@@ -933,13 +912,13 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
                     { key: 'for_parts', label: 'לחלפים' },
                   ].map(opt => (
                     <TouchableOpacity
-                    key={opt.key}
-                    style={[
-                      localStyles.tag,
-                      localStyles.tagSmall,
-                      condition === (opt.key as any) && localStyles.tagSelected,
-                    ]}
-                    onPress={() => setCondition(opt.key as any)}
+                      key={opt.key}
+                      style={[
+                        localStyles.tag,
+                        localStyles.tagSmall,
+                        condition === (opt.key as any) && localStyles.tagSelected,
+                      ]}
+                      onPress={() => setCondition(opt.key as any)}
                     >
                       <Text
                         style={[
@@ -959,8 +938,8 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
             {/* כפתור העלאת תמונה */}
             <View style={localStyles.imageSection}>
               <Text style={localStyles.labelInline}>תמונה (אופציונלי)</Text>
-              <TouchableOpacity 
-                style={localStyles.imagePickerButton} 
+              <TouchableOpacity
+                style={localStyles.imagePickerButton}
                 onPress={pickImage}
               >
                 <Icon name="image-outline" size={24} color={colors.primary} />
@@ -968,7 +947,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
                   {imageUri ? '✅ תמונה נבחרה' : 'בחר תמונה מהגלריה'}
                 </Text>
               </TouchableOpacity>
-              
+
               {/* תצוגה מקדימה של התמונה */}
               {imageUri && (
                 <View style={localStyles.imagePreview}>
@@ -977,7 +956,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
                     <Text style={localStyles.imageInfoText}>✅ תמונה מוכנה</Text>
                     <Text style={localStyles.imageInfoSubtext}>80×80 פיקסלים</Text>
                   </View>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={localStyles.removeImageButton}
                     onPress={() => setImageUri('')}
                   >
@@ -1017,6 +996,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         type="item"
         navigation={navigation}
       />
+      {ToastComponent}
     </SafeAreaView>
   );
 }
@@ -1039,7 +1019,7 @@ const localStyles = StyleSheet.create({
   counterBtn: { backgroundColor: colors.pinkLight, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
   counterText: { fontSize: FontSizes.medium, fontWeight: 'bold', color: colors.textPrimary },
   counterValue: { fontSize: FontSizes.medium, fontWeight: 'bold', color: colors.textPrimary, minWidth: 30, textAlign: 'center' },
-  tagsRow: {marginTop: 10, alignItems: 'stretch', flexDirection: rowDirection('row-reverse'), flexWrap: 'wrap', gap: 3 },
+  tagsRow: { marginTop: 10, alignItems: 'stretch', flexDirection: rowDirection('row-reverse'), flexWrap: 'wrap', gap: 3 },
   tag: { backgroundColor: colors.pinkLight, borderWidth: 1, borderColor: colors.secondary, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
   tagSmall: { paddingHorizontal: 8, marginHorizontal: "4%", paddingVertical: 4 },
   tagSelected: { backgroundColor: colors.backgroundSecondary, borderColor: colors.success },
@@ -1073,8 +1053,8 @@ const localStyles = StyleSheet.create({
   recentItemWrapper: { marginBottom: 8, width: '100%' },
   restoreChip: { backgroundColor: colors.pinkLight, borderWidth: 1, borderColor: colors.secondary, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   restoreChipText: { fontSize: FontSizes.small, color: colors.textPrimary, fontWeight: '600' },
-  deleteButton: { 
-    padding: 6, 
+  deleteButton: {
+    padding: 6,
     marginLeft: 12,
     backgroundColor: colors.pinkLight,
     borderRadius: 8,

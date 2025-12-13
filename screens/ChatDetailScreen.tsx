@@ -21,6 +21,7 @@ import {
   SafeAreaView,
   StatusBar,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect, NavigationProp } from '@react-navigation/native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -51,6 +52,20 @@ export default function ChatDetailScreen() {
   const { selectedUser } = useUser();
   const { t } = useTranslation(['chat']);
   const tabBarHeight = useBottomTabBarHeight() || 0;
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const [inputHeight, setInputHeight] = useState(0);
+  const screenHeight = Platform.OS === 'web' ? Dimensions.get('window').height : undefined;
+  const maxMessagesHeight = Platform.OS === 'web' && screenHeight && headerHeight > 0 && inputHeight > 0 
+    ? screenHeight - tabBarHeight - inputHeight - headerHeight 
+    : undefined;
+  
+  // #region agent log
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ChatDetailScreen.tsx:53',message:'tabBarHeight value',data:{tabBarHeight,platform:'web'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    }
+  }, [tabBarHeight]);
+  // #endregion
   const [conversationId, setConversationId] = useState(initialConversationId);
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -65,7 +80,7 @@ export default function ChatDetailScreen() {
   // Load user profile for the other user
   const loadUserProfile = useCallback(async () => {
     if (!USE_BACKEND || !otherUserId || isLoadingProfile) return;
-    
+
     setIsLoadingProfile(true);
     try {
       const response = await apiService.getUserById(otherUserId);
@@ -74,7 +89,7 @@ export default function ChatDetailScreen() {
         // Only update if we got valid data and the initial name was "unknown user"
         const newName = userData.name || initialUserName || t('chat:unknownUser');
         const newAvatar = userData.avatar_url || userData.avatar || initialUserAvatar || '';
-        
+
         // Always update, but prioritize loaded data
         setUserName(newName);
         setUserAvatar(newAvatar);
@@ -105,7 +120,7 @@ export default function ChatDetailScreen() {
       if (selectedUser) {
         const conversationMessages = await getMessages(conversationId, selectedUser.id);
         setMessages(conversationMessages);
-        
+
         await markMessagesAsRead(conversationId, selectedUser.id);
       }
     } catch (error) {
@@ -158,7 +173,7 @@ export default function ChatDetailScreen() {
     if (selectedUser) {
       unsubscribe = subscribeToMessages(conversationId, selectedUser.id, (newMessages) => {
         setMessages(newMessages);
-        
+
         // Mark messages as read when they arrive
         markMessagesAsRead(conversationId, selectedUser.id).catch(console.error);
       });
@@ -178,9 +193,9 @@ export default function ChatDetailScreen() {
       'מה המידות של הספה?',
       'האם יש אפשרות למשלוח?',
     ];
-    
+
     const responseText = responses[Math.floor(Math.random() * responses.length)];
-    
+
     try {
       await sendMessage({
         conversationId,
@@ -201,7 +216,7 @@ export default function ChatDetailScreen() {
 
     const messageText = inputText.trim();
     const tempMessageId = `temp_${Date.now()}`;
-    
+
     // Add message to local state immediately with "sending" status
     const tempMessage: Message = {
       id: tempMessageId,
@@ -238,23 +253,23 @@ export default function ChatDetailScreen() {
 
       // Extract the actual message ID (handle both string and object return types)
       const actualMessageId = typeof messageId === 'string' ? messageId : messageId.messageId;
-      
+
       // Update the temp message with the real message ID and status
       setMessages(prev => prev.map(msg =>
-        msg.id === tempMessageId 
+        msg.id === tempMessageId
           ? { ...msg, id: actualMessageId, status: 'sent' as const }
           : msg
       ));
 
     } catch (error) {
       console.error('❌ Send message error:', error);
-      
+
       // Remove the temp message and restore the text
       setMessages(prev => prev.filter(msg => msg.id !== tempMessageId));
       setInputText(messageText);
-      
+
       Alert.alert(
-        'שגיאה', 
+        'שגיאה',
         'שגיאה בשליחת ההודעה. אנא נסה שוב.',
         [{ text: 'אישור', style: 'default' }]
       );
@@ -299,7 +314,7 @@ export default function ChatDetailScreen() {
   const handlePickImage = async () => {
     setShowMediaOptions(false);
     const result = await pickImage();
-    
+
     if (result.success && result.fileData) {
       await handleSendFile(result.fileData);
     } else if (result.error) {
@@ -310,7 +325,7 @@ export default function ChatDetailScreen() {
   const handleTakePhoto = async () => {
     setShowMediaOptions(false);
     const result = await takePhoto();
-    
+
     if (result.success && result.fileData) {
       await handleSendFile(result.fileData);
     } else if (result.error) {
@@ -321,7 +336,7 @@ export default function ChatDetailScreen() {
   const handlePickVideo = async () => {
     setShowMediaOptions(false);
     const result = await pickVideo();
-    
+
     if (result.success && result.fileData) {
       await handleSendFile(result.fileData);
     } else if (result.error) {
@@ -332,7 +347,7 @@ export default function ChatDetailScreen() {
   const handlePickDocument = async () => {
     setShowMediaOptions(false);
     const result = await pickDocument();
-    
+
     if (result.success && result.fileData) {
       await handleSendFile(result.fileData);
     } else if (result.error) {
@@ -355,14 +370,30 @@ export default function ChatDetailScreen() {
     </View>
   );
 
+  // #region agent log
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ChatDetailScreen.tsx:358',message:'Component render - SafeAreaView',data:{platform:'web',tabBarHeight,showMediaOptions},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    }
+  }, [tabBarHeight, showMediaOptions]);
+  // #endregion
+  
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, Platform.OS === 'web' && { position: 'relative' }]}>
       <StatusBar backgroundColor={colors.backgroundSecondary} barStyle="dark-content" />
-      <View style={styles.header}>
+      <View 
+        style={styles.header}
+        onLayout={(event) => {
+          if (Platform.OS === 'web') {
+            const { height } = event.nativeEvent.layout;
+            setHeaderHeight(height);
+          }
+        }}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
           <Icon name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => {
             navigation.navigate('UserProfileScreen', {
               userId: otherUserId,
@@ -376,25 +407,27 @@ export default function ChatDetailScreen() {
           <Image source={{ uri: userAvatar || 'https://i.pravatar.cc/150?img=1' }} style={styles.headerAvatar} />
           <Text style={styles.headerTitle}>{userName}</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => {
             navigation.navigate('UserProfileScreen', {
               userId: otherUserId,
               userName: userName,
               userAvatar: userAvatar,
             });
-          }} 
+          }}
           style={styles.headerButton}
         >
           <Icon name="person-circle-outline" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 100}
-      >
+      {/* Messages container - limited height on web to leave space for input */}
+      <View style={[
+        styles.messagesWrapper,
+        Platform.OS === 'web' && maxMessagesHeight ? {
+          maxHeight: maxMessagesHeight,
+        } : undefined
+      ]}>
         {isLoading ? (
           renderLoadingIndicator()
         ) : (
@@ -403,62 +436,183 @@ export default function ChatDetailScreen() {
             data={messages}
             keyExtractor={(item) => item.id}
             renderItem={renderMessage}
-            contentContainerStyle={[styles.messagesContainer, { paddingBottom: tabBarHeight + 80 }]}
-            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-            onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            contentContainerStyle={[
+              styles.messagesContainer,
+              (() => {
+                // For web with fixed position input, we need extra padding since fixed elements don't take space in flow
+                // Input height is approximately 70px, but we need more padding to ensure scrolling works
+                const inputHeight = 70;
+                const paddingBottom = Platform.OS === 'web' 
+                  ? tabBarHeight + inputHeight + 40  // Extra 40px for web to ensure scrolling works
+                  : tabBarHeight + (showMediaOptions ? 150 : 70);
+                // #region agent log
+                if (Platform.OS === 'web') {
+                  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ChatDetailScreen.tsx:424',message:'FlatList paddingBottom calculation - increased padding',data:{paddingBottom,tabBarHeight,showMediaOptions,inputHeight,platform:'web'},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-scroll-v2',hypothesisId:'I'})}).catch(()=>{});
+                }
+                // #endregion
+                return { paddingBottom };
+              })()
+            ]}
+            onContentSizeChange={(contentWidth, contentHeight) => {
+              // #region agent log
+              if (Platform.OS === 'web') {
+                fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ChatDetailScreen.tsx:436',message:'FlatList onContentSizeChange',data:{messagesCount:messages.length,contentWidth,contentHeight},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-scroll-v2',hypothesisId:'J'})}).catch(()=>{});
+              }
+              // #endregion
+              // Use setTimeout to ensure scroll happens after layout
+              setTimeout(() => {
+                flatListRef.current?.scrollToEnd({ animated: true });
+              }, 100);
+            }}
+            onLayout={(event) => {
+              // #region agent log
+              if (Platform.OS === 'web') {
+                const { height, width } = event.nativeEvent.layout;
+                fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ChatDetailScreen.tsx:437',message:'FlatList onLayout',data:{height,width},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-scroll',hypothesisId:'H'})}).catch(()=>{});
+              }
+              // #endregion
+              flatListRef.current?.scrollToEnd({ animated: true });
+            }}
             showsVerticalScrollIndicator={false}
+            style={styles.messagesList}
+            scrollEnabled={true}
+            nestedScrollEnabled={Platform.OS === 'web' ? true : undefined}
+            // #region agent log
+            onScroll={(event) => {
+              if (Platform.OS === 'web') {
+                const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+                fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ChatDetailScreen.tsx:462',message:'FlatList onScroll',data:{scrollY:contentOffset.y,contentHeight:contentSize.height,layoutHeight:layoutMeasurement.height,canScroll:contentSize.height>layoutMeasurement.height},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-scroll-v3',hypothesisId:'K'})}).catch(()=>{});
+              }
+            }}
+            scrollEventThrottle={16}
+            // #endregion
           />
         )}
+      </View>
 
-        <View style={[styles.inputContainer, { marginBottom: tabBarHeight + 10 }]}>
-          <TouchableOpacity onPress={() => setShowMediaOptions(!showMediaOptions)}>
-            <Icon name="add-circle-outline" size={24} color={colors.primary} style={styles.icon} />
+      {/* Media Options - Absolutely positioned above input */}
+      {showMediaOptions && (
+        <View style={[
+          styles.mediaOptionsContainer,
+          { bottom: tabBarHeight + 70, zIndex: 1000 }
+        ]}>
+          <TouchableOpacity style={styles.mediaOption} onPress={handleTakePhoto}>
+            <Icon name="camera" size={24} color={colors.primary} />
+            <Text style={styles.mediaOptionText}>צלם תמונה</Text>
           </TouchableOpacity>
-          <TextInput
-            style={styles.textInput}
-            value={inputText}
-            onChangeText={setInputText}
-            placeholder={t('chat:placeholder')}
-            placeholderTextColor={colors.textSecondary}
-            multiline
-            textAlignVertical="center"
-            editable={!isSending}
-          />
-          <TouchableOpacity 
-            onPress={handleSendMessage} 
-            style={[styles.sendButton, isSending && styles.sendButtonDisabled]}
-            disabled={isSending}
-          >
-            {isSending ? (
-              <ActivityIndicator size="small" color={colors.background} />
-            ) : (
-              <Text style={styles.sendButtonText}>שלח</Text>
-            )}
+          <TouchableOpacity style={styles.mediaOption} onPress={handlePickImage}>
+            <Icon name="image" size={24} color={colors.primary} />
+            <Text style={styles.mediaOptionText}>בחר תמונה</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.mediaOption} onPress={handlePickVideo}>
+            <Icon name="videocam" size={24} color={colors.primary} />
+            <Text style={styles.mediaOptionText}>בחר סרטון</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.mediaOption} onPress={handlePickDocument}>
+            <Icon name="document" size={24} color={colors.primary} />
+            <Text style={styles.mediaOptionText}>בחר קובץ</Text>
           </TouchableOpacity>
         </View>
+      )}
 
-        {showMediaOptions && (
-          <View style={[styles.mediaOptionsContainer, { marginBottom: tabBarHeight + 10 }]}>
-            <TouchableOpacity style={styles.mediaOption} onPress={handleTakePhoto}>
-              <Icon name="camera" size={24} color={colors.primary} />
-              <Text style={styles.mediaOptionText}>צלם תמונה</Text>
+      {/* Input Container - Fixed positioned at bottom for web */}
+      {Platform.OS === 'web' ? (
+        <View
+          style={(() => {
+            const inputStyle = {
+              position: 'fixed' as any,
+              left: 0,
+              right: 0,
+              bottom: tabBarHeight,
+              zIndex: 999,
+              backgroundColor: 'transparent'
+            };
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ChatDetailScreen.tsx:507',message:'Input container style - fixed position',data:{bottom:inputStyle.bottom,tabBarHeight,zIndex:inputStyle.zIndex,position:'fixed'},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-limit-height',hypothesisId:'M'})}).catch(()=>{});
+            // #endregion
+            return inputStyle;
+          })()}
+        >
+          <View 
+            style={styles.inputContainer}
+            onLayout={(event) => {
+              if (Platform.OS === 'web') {
+                const { height } = event.nativeEvent.layout;
+                setInputHeight(height);
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ChatDetailScreen.tsx:520',message:'Input container layout - measured height',data:{height,width:event.nativeEvent.layout.width,x:event.nativeEvent.layout.x,y:event.nativeEvent.layout.y,bottom:tabBarHeight},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-dynamic',hypothesisId:'N'})}).catch(()=>{});
+                // #endregion
+              }
+            }}
+          >
+            <TouchableOpacity onPress={() => setShowMediaOptions(!showMediaOptions)}>
+              <Icon name="add-circle-outline" size={24} color={colors.primary} style={styles.icon} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.mediaOption} onPress={handlePickImage}>
-              <Icon name="image" size={24} color={colors.primary} />
-              <Text style={styles.mediaOptionText}>בחר תמונה</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.mediaOption} onPress={handlePickVideo}>
-              <Icon name="videocam" size={24} color={colors.primary} />
-              <Text style={styles.mediaOptionText}>בחר סרטון</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.mediaOption} onPress={handlePickDocument}>
-              <Icon name="document" size={24} color={colors.primary} />
-              <Text style={styles.mediaOptionText}>בחר קובץ</Text>
+            <TextInput
+              style={styles.textInput}
+              value={inputText}
+              onChangeText={setInputText}
+              placeholder={t('chat:placeholder')}
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              textAlignVertical="center"
+              editable={!isSending}
+            />
+            <TouchableOpacity
+              onPress={handleSendMessage}
+              style={[styles.sendButton, isSending && styles.sendButtonDisabled]}
+              disabled={isSending}
+            >
+              {isSending ? (
+                <ActivityIndicator size="small" color={colors.background} />
+              ) : (
+                <Text style={styles.sendButtonText}>שלח</Text>
+              )}
             </TouchableOpacity>
           </View>
-        )}
-        {Platform.OS === 'android' && <View style={styles.androidBottomSpacer} />}
-      </KeyboardAvoidingView>
+        </View>
+      ) : (
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: tabBarHeight,
+            zIndex: 999,
+            backgroundColor: 'transparent'
+          }}
+          pointerEvents="box-none"
+        >
+          <View style={styles.inputContainer}>
+            <TouchableOpacity onPress={() => setShowMediaOptions(!showMediaOptions)}>
+              <Icon name="add-circle-outline" size={24} color={colors.primary} style={styles.icon} />
+            </TouchableOpacity>
+            <TextInput
+              style={styles.textInput}
+              value={inputText}
+              onChangeText={setInputText}
+              placeholder={t('chat:placeholder')}
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              textAlignVertical="center"
+              editable={!isSending}
+            />
+            <TouchableOpacity
+              onPress={handleSendMessage}
+              style={[styles.sendButton, isSending && styles.sendButtonDisabled]}
+              disabled={isSending}
+            >
+              {isSending ? (
+                <ActivityIndicator size="small" color={colors.background} />
+              ) : (
+                <Text style={styles.sendButtonText}>שלח</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      )}
     </SafeAreaView>
   );
 }
@@ -467,6 +621,10 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.backgroundSecondary,
+    position: 'relative', // Ensure absolute children are positioned relative to this
+    // #region agent log
+    // Logging safeArea style for web debugging
+    // #endregion
   },
   header: {
     flexDirection: 'row',
@@ -506,6 +664,21 @@ const styles = StyleSheet.create({
   backButton: {
     marginRight: 15,
   },
+  // Content container for messages
+  contentContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  // Messages wrapper - takes all available space
+  messagesWrapper: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  // Messages list
+  messagesList: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   // Loading indicator
   loadingContainer: {
     flex: 1,
@@ -520,16 +693,26 @@ const styles = StyleSheet.create({
   },
   // Chat messages container
   messagesContainer: {
-    flex: 1,
     backgroundColor: colors.background,
     paddingHorizontal: 10,
+    paddingTop: 10,
+  },
+  // Input container wrapper - ABSOLUTE POSITION
+  inputContainerWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+    zIndex: 99, // Ensure it sits on top of messages
+    elevation: 5, // For Android shadow
   },
   // Input container at bottom
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: 15,
-    paddingBottom: Platform.OS === 'android' ? 20 : 10, 
+    paddingVertical: 10,
+    paddingBottom: Platform.OS === 'android' ? 15 : 10,
     backgroundColor: colors.background,
     borderTopWidth: 1,
     borderTopColor: colors.border,
@@ -546,9 +729,10 @@ const styles = StyleSheet.create({
     paddingVertical: Platform.OS === 'ios' ? 10 : 8,
     marginHorizontal: 8,
     fontSize: FontSizes.body,
-    maxHeight: "80%",
+    maxHeight: 80,
     textAlign: 'right',
     color: colors.textPrimary,
+    backgroundColor: colors.background,
   },
   sendButton: {
     backgroundColor: colors.secondary,
@@ -571,7 +755,11 @@ const styles = StyleSheet.create({
     height: 20,
     backgroundColor: colors.background,
   },
+  // Media options container - ABSOLUTE POSITION
   mediaOptionsContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingHorizontal: 16,
@@ -579,6 +767,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    zIndex: 100, // Above input container
+    elevation: 6,
   },
   mediaOption: {
     alignItems: 'center',
