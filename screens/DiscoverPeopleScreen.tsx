@@ -81,7 +81,8 @@ export default function DiscoverPeopleScreen() {
       console.log('🔍 DiscoverPeopleScreen - Filtering users. Current user ID:', currentUserId, 'Email:', currentUserEmail);
       
       let filteredSuggestions: any[] = [];
-      const userSuggestions = await getFollowSuggestions(currentUserId, 20, currentUserEmail);
+      // Get ALL users (no limit) - use high limit to get all users from database
+      const userSuggestions = await getFollowSuggestions(currentUserId, 1000, currentUserEmail);
       // Filter out current user from suggestions - check both ID and email
       filteredSuggestions = (userSuggestions as any[]).filter(
         (user) => {
@@ -100,8 +101,8 @@ export default function DiscoverPeopleScreen() {
       );
       setSuggestions(filteredSuggestions);
       
-      // Get popular users excluding current user
-      const popular = await getPopularUsers(20, currentUserId, currentUserEmail);
+      // Get popular users excluding current user - get ALL users (no limit)
+      const popular = await getPopularUsers(1000, currentUserId, currentUserEmail);
       // Additional filter as safety measure - check both ID and email
       const filteredPopular = (popular as any[]).filter(
         (user) => {
@@ -387,39 +388,23 @@ export default function DiscoverPeopleScreen() {
       </View>
 
 
-      {Platform.OS === 'web' ? (
-        <View style={styles.webScrollContainer}>
-          <View style={[styles.webScrollContent, { paddingBottom: bottomPadding }]}
-            onLayout={(e) => {
-              const h = e.nativeEvent.layout.height;
-              console.log('🧭 DiscoverPeopleScreen[WEB] content layout height:', h, 'window:', SCREEN_HEIGHT);
-            }}
-          >
-            <FlatList
-              data={currentData}
-              renderItem={renderUserItem}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={[styles.listContainer, { paddingBottom: bottomPadding }]}
-              showsVerticalScrollIndicator={false}
-              ListEmptyComponent={renderEmptyState}
-              refreshing={loading}
-              onRefresh={loadUsers}
-              scrollEnabled={false}
-            />
-          </View>
-        </View>
-      ) : (
-        <FlatList
-          data={currentData}
-          renderItem={renderUserItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={[styles.listContainer, { paddingBottom: bottomPadding }]}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={renderEmptyState}
-          refreshing={loading}
-          onRefresh={loadUsers}
-        />
-      )}
+      <FlatList
+        data={currentData}
+        renderItem={renderUserItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={[styles.listContainer, { paddingBottom: bottomPadding }]}
+        showsVerticalScrollIndicator={true}
+        ListEmptyComponent={renderEmptyState}
+        refreshing={loading}
+        onRefresh={loadUsers}
+        style={styles.flatList}
+        // Fix for web: ensure all items are rendered, not just visible ones
+        initialNumToRender={Platform.OS === 'web' ? currentData.length : 20}
+        maxToRenderPerBatch={Platform.OS === 'web' ? currentData.length : 10}
+        windowSize={Platform.OS === 'web' ? 1 : 21}
+        removeClippedSubviews={Platform.OS !== 'web'}
+        updateCellsBatchingPeriod={Platform.OS === 'web' ? 0 : 50}
+      />
     </SafeAreaView>
   );
 }
@@ -429,21 +414,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.backgroundPrimary,
   },
-  // Web-specific scroll wrappers
-  webScrollContainer: {
+  flatList: {
     flex: 1,
-    ...(Platform.OS === 'web' && {
-      overflow: 'auto' as any,
-      WebkitOverflowScrolling: 'touch' as any,
-      overscrollBehavior: 'contain' as any,
-      height: SCREEN_HEIGHT as any,
-      maxHeight: SCREEN_HEIGHT as any,
-      width: '100%' as any,
-      touchAction: 'auto' as any,
-    }),
-  } as any,
-  webScrollContent: {
-    minHeight: SCREEN_HEIGHT * 1.2,
   },
   header: {
     flexDirection: 'row',
