@@ -1,12 +1,14 @@
 // components/ChatListItem.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { Ionicons as Icon } from '@expo/vector-icons';
 // Define types locally - replace with real types from API
 interface ChatUser {
   id: string;
   name: string;
   avatar?: string;
+  isOnline?: boolean;
 }
 
 interface ChatConversation {
@@ -17,6 +19,8 @@ interface ChatConversation {
     timestamp: string;
     senderId: string;
   };
+  lastMessageText?: string;
+  lastMessageTimestamp: string;
   unreadCount?: number;
 }
 import colors from '../globals/colors'; // Assuming you have a Colors file
@@ -30,6 +34,7 @@ interface ChatListItemProps {
 
 const ChatListItem: React.FC<ChatListItemProps> = ({ conversation, user, onPress }) => {
   const { t } = useTranslation(['common','chat']);
+  const [imageError, setImageError] = useState(false);
   // Use unreadCount directly instead of checking the messages array
   // This is because the messages array is not loaded in the ChatListScreen
   const isUnread = (conversation.unreadCount ?? 0) > 0;
@@ -51,11 +56,24 @@ const ChatListItem: React.FC<ChatListItemProps> = ({ conversation, user, onPress
     }
   };
 
+  const avatarUri = user.avatar || 'https://i.pravatar.cc/150?img=1';
+  const showPlaceholder = !user.avatar || imageError;
 
   return (
     <TouchableOpacity style={styles.container} onPress={() => onPress(conversation.id)}>
       <View style={styles.avatarContainer}>
-        <Image source={{ uri: user.avatar }} style={styles.avatar} />
+        {showPlaceholder ? (
+          <View style={[styles.avatar, styles.avatarPlaceholder]}>
+            <Icon name="person" size={28} color={colors.textSecondary} />
+          </View>
+        ) : (
+          <Image 
+            source={{ uri: avatarUri }} 
+            style={styles.avatar}
+            onError={() => setImageError(true)}
+            defaultSource={{ uri: 'https://i.pravatar.cc/150?img=1' }}
+          />
+        )}
         {user.isOnline && <View style={styles.onlineBadge} />}
       </View>
       <View style={styles.content}>
@@ -90,6 +108,12 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
+    backgroundColor: colors.backgroundSecondary,
+  },
+  avatarPlaceholder: {
+    backgroundColor: colors.backgroundSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   onlineBadge: {
     position: 'absolute',

@@ -8,6 +8,7 @@ import { biDiTextAlign, isLandscape, scaleSize } from '../globals/responsive';
 import { useTranslation } from 'react-i18next';
 import { donationResources } from '../utils/donationResources';
 import ScrollContainer from '../components/ScrollContainer';
+import AddLinkComponent from '../components/AddLinkComponent';
 
 export interface CategoryConfig {
   id: string;
@@ -117,7 +118,7 @@ const CategoryScreen: React.FC<Props> = ({ route, config: propConfig }) => {
         styles.content,
         isLandscape() && { paddingHorizontal: LAYOUT_CONSTANTS.SPACING.XL },
       ]} showsVerticalScrollIndicator={false}>
-        <View style={[styles.hero, { backgroundColor: config.bgColor, borderColor: config.color }]}> 
+        <View style={[styles.hero, { backgroundColor: config.bgColor, borderColor: config.color }]}>
           <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
           {!!subtitle && (
             <Text style={styles.subtitle}>{subtitle}</Text>
@@ -179,6 +180,12 @@ const CategoryScreen: React.FC<Props> = ({ route, config: propConfig }) => {
             ]}
           />
         </View>
+
+        {/* Add Links Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>קישורים שימושיים</Text>
+          <AddLinkComponent category={config.id} />
+        </View>
       </ScrollContainer>
     </View>
   );
@@ -187,7 +194,7 @@ const CategoryScreen: React.FC<Props> = ({ route, config: propConfig }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
   },
   content: {
     padding: LAYOUT_CONSTANTS.SPACING.MD,
@@ -243,7 +250,7 @@ const styles = StyleSheet.create({
     gap: LAYOUT_CONSTANTS.SPACING.SM,
   },
   linkButton: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,

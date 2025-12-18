@@ -1,16 +1,43 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
-import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, TextInput, Alert, Image, Modal, FlatList, Dimensions, Platform } from 'react-native';
+import { NavigationProp, ParamListBase, useFocusEffect, useRoute } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import HeaderComp from '../components/HeaderComp';
 import DonationStatsFooter from '../components/DonationStatsFooter';
+import ScrollContainer from '../components/ScrollContainer';
+import ItemDetailsModal from '../components/ItemDetailsModal';
+import AddLinkComponent from '../components/AddLinkComponent';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { db } from '../utils/databaseService';
 import { useUser } from '../stores/userStore';
-import { biDiTextAlign, rowDirection, isLandscape, marginStartEnd } from '../globals/responsive';
+import { biDiTextAlign, rowDirection, isLandscape, marginStartEnd, getScreenInfo, BREAKPOINTS } from '../globals/responsive';
+import { getCategoryLabel } from '../utils/itemCategoryUtils';
+import { useToast } from '../utils/toastService';
+import VerticalGridSlider from '../components/VerticalGridSlider';
 
-type ItemType = 'furniture' | 'clothes' | 'general';
+type ItemType = 'furniture' | 'clothes' | 'general' | 'books' | 'dry_food' | 'games' | 'electronics' | 'toys' | 'sports' | 'art' | 'kitchen' | 'bathroom' | 'garden' | 'tools' | 'baby' | 'pet' | 'other';
+
+// רשימת קטגוריות לפרסום פריטים
+const ITEM_CATEGORIES = [
+  { id: 'clothes', label: 'בגדים', icon: 'shirt-outline' },
+  { id: 'books', label: 'ספרים', icon: 'library-outline' },
+  { id: 'furniture', label: 'רהיטים', icon: 'bed-outline' },
+  { id: 'dry_food', label: 'אוכל יבש', icon: 'restaurant-outline' },
+  { id: 'games', label: 'משחקים', icon: 'game-controller-outline' },
+  { id: 'electronics', label: 'חשמל ואלקטרוניקה', icon: 'phone-portrait-outline' },
+  { id: 'toys', label: 'צעצועים', icon: 'happy-outline' },
+  { id: 'sports', label: 'ספורט', icon: 'football-outline' },
+  { id: 'art', label: 'אמנות', icon: 'color-palette-outline' },
+  { id: 'kitchen', label: 'מטבח', icon: 'cafe-outline' },
+  { id: 'bathroom', label: 'אמבטיה', icon: 'water-outline' },
+  { id: 'garden', label: 'גינה', icon: 'leaf-outline' },
+  { id: 'tools', label: 'כלים', icon: 'construct-outline' },
+  { id: 'baby', label: 'תינוקות', icon: 'baby-outline' },
+  { id: 'pet', label: 'חיות מחמד', icon: 'paw-outline' },
+  { id: 'other', label: 'אחר', icon: 'cube-outline' },
+] as const;
 
 export interface ItemsScreenProps {
   navigation: NavigationProp<ParamListBase>;
@@ -24,13 +51,22 @@ interface DonationItem {
   description?: string;
   category: ItemType;
   condition?: 'new' | 'like_new' | 'used' | 'for_parts';
-  location?: string;
+
+  // Location fields - separate
+  city?: string;
+  address?: string;
+  coordinates?: string;
+
   price?: number; // 0 means free
-  images?: string[];
+  image_base64?: string; // base64 encoded image
   rating?: number;
   timestamp: string;
-  tags?: string[];
+  tags?: string; // comma-separated string
   qty?: number;
+  delivery_method?: string;
+  status?: string;
+  isDeleted?: boolean;
+  deletedAt?: string;
 }
 
 const itemsFilterOptionsBase = [
@@ -52,67 +88,241 @@ const itemsSortOptions = [
 ];
 
 export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
+  const { ToastComponent } = useToast();
   const itemType: ItemType = (route?.params?.itemType as ItemType) || 'general';
-  const [mode, setMode] = useState(true); // false = מחפש, true = מציע
+  const routeParams = route?.params as { mode?: string } | undefined;
+
+  // Get initial mode from URL (deep link) or default to search mode (מחפש)
+  // mode: false = מציע, true = מחפש
+  // URL mode: 'offer' = false, 'search' = true
+  // Default is search mode (true)
+  const initialMode = routeParams?.mode === 'offer' ? false : true;
+  const [mode, setMode] = useState(initialMode);
+
+  // Update mode when route params change (e.g., from deep link)
+  useEffect(() => {
+    if (routeParams?.mode && routeParams.mode !== 'undefined' && routeParams.mode !== 'null') {
+      const newMode = routeParams.mode === 'search';
+      if (newMode !== mode) {
+        setMode(newMode);
+      }
+    }
+  }, [routeParams?.mode]);
+
+  // Update URL when mode changes (toggle button pressed) or when screen loads without mode
+  useEffect(() => {
+    const newMode = mode ? 'search' : 'offer';
+    const currentMode = routeParams?.mode;
+
+    // If no mode in URL, set it to search (default)
+    if (!currentMode || currentMode === 'undefined' || currentMode === 'null') {
+      // Set initial mode to search in URL
+      (navigation as any).setParams({ mode: 'search' });
+      return;
+    }
+
+    // Only update URL if mode actually changed
+    if (newMode !== currentMode) {
+      (navigation as any).setParams({ mode: newMode });
+    }
+  }, [mode, navigation, routeParams?.mode]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [selectedSorts, setSelectedSorts] = useState<string[]>([]);
   const [allItems, setAllItems] = useState<DonationItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<DonationItem[]>([]);
   const [recentMine, setRecentMine] = useState<DonationItem[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const titleInputRef = useRef<TextInput | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [imageUri, setImageUri] = useState<string>('');
   const [price, setPrice] = useState('0');
-  const [location, setLocation] = useState('');
+  const [city, setCity] = useState('');
+  const [address, setAddress] = useState('');
   const [qty, setQty] = useState<number>(1);
   const [condition, setCondition] = useState<'new' | 'like_new' | 'used' | 'for_parts' | ''>('');
+  const [selectedCategory, setSelectedCategory] = useState<ItemType>('general');
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const { selectedUser } = useUser();
+  const [selectedItem, setSelectedItem] = useState<DonationItem | null>(null);
+  const [showItemModal, setShowItemModal] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       setTitle('');
       setDescription('');
       setPrice('0');
-      setLocation('');
+      setCity('');
+      setAddress('');
       setQty(1);
       setCondition('');
+      setImageUri('');
+      setSelectedCategory('general');
     }, [])
   );
 
+  // Convert image URI to base64 with compression
+  const convertImageToBase64 = async (uri: string): Promise<string | null> => {
+    try {
+      console.log('🖼️ Converting and compressing image...');
+
+      // Fetch the image
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      // Create canvas to compress the image
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+
+          // Check size and compress if needed
+          const sizeInMB = (base64.length * 0.75) / (1024 * 1024); // Approximate size
+          console.log(`📏 Image size: ${sizeInMB.toFixed(2)} MB`);
+
+          if (sizeInMB > 5) {
+            console.warn('⚠️ Image too large, it may fail to upload. Consider using a smaller image.');
+            Alert.alert(
+              'תמונה גדולה',
+              'התמונה שבחרת גדולה מאוד. מומלץ להשתמש בתמונה קטנה יותר.',
+              [
+                { text: 'המשך בכל זאת', onPress: () => resolve(base64) },
+                { text: 'בטל', onPress: () => resolve(null), style: 'cancel' }
+              ]
+            );
+          } else {
+            console.log('✅ Image converted to base64');
+            resolve(base64);
+          }
+        };
+        reader.onerror = (error) => {
+          console.error('❌ Error converting image:', error);
+          reject(error);
+        };
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('❌ Error in convertImageToBase64:', error);
+      Alert.alert('שגיאה', 'לא הצלחנו להמיר את התמונה');
+      return null;
+    }
+  };
+
   const filterOptions = useMemo(() => {
+    // כל הקטגוריות האפשריות לפריטים
+    const allCategories = ITEM_CATEGORIES.map(cat => cat.label);
+
     const typeSpecific = itemType === 'furniture' ? ['ספות', 'ארונות', 'מיטות']
       : itemType === 'clothes' ? ['גברים', 'נשים', 'ילדים']
-      : ['מטבח', 'חשמל', 'צעצועים'];
-    return [...typeSpecific, ...itemsFilterOptionsBase];
+        : ['מטבח', 'חשמל', 'צעצועים'];
+
+    // מחזיר: קטגוריות כלליות + פילטרים ספציפיים לסוג + פילטרים בסיסיים
+    return [...allCategories, ...typeSpecific, ...itemsFilterOptionsBase];
   }, [itemType]);
 
-  const dummyItems: DonationItem[] = useMemo(() => [
-    { id: 'i1', ownerId: 'u1', title: 'ספת בד אפורה 3 מושבים', category: 'furniture', condition: 'used', location: 'תל אביב', price: 0, rating: 4.7, timestamp: new Date().toISOString(), tags: ['ספות'], qty: 1 },
-    { id: 'i2', ownerId: 'u2', title: 'ארון 2 דלתות לבן', category: 'furniture', condition: 'like_new', location: 'אשדוד', price: 50, rating: 4.6, timestamp: new Date().toISOString(), tags: ['ארונות'], qty: 1 },
-    { id: 'i3', ownerId: 'u3', title: 'מכנסי ג׳ינס נשים M', category: 'clothes', condition: 'like_new', location: 'ירושלים', price: 0, rating: 4.8, timestamp: new Date().toISOString(), tags: ['נשים'], qty: 1 },
-    { id: 'i4', ownerId: 'u4', title: 'מעיל חורף ילדים 6Y', category: 'clothes', condition: 'used', location: 'חיפה', price: 20, rating: 4.4, timestamp: new Date().toISOString(), tags: ['ילדים'], qty: 1 },
-    { id: 'i5', ownerId: 'u5', title: 'מיקסר יד חשמלי', category: 'general', condition: 'like_new', location: 'רמת גן', price: 30, rating: 4.5, timestamp: new Date().toISOString(), tags: ['מטבח'], qty: 1 },
-  ], []);
+  const dummyItems: DonationItem[] = useMemo(() => [], []);
+
+  // פונקציה נפרדת לטעינת פריטים שנוכל לקרוא לה גם אחרי שמירה
+  const loadItems = async () => {
+    try {
+      console.log('📥 טוען פריטים מהשרת...', { mode, itemType });
+      const uid = selectedUser?.id || 'guest';
+
+      let serverItems: any[] = [];
+
+      if (mode) {
+        // מצב "מחפש" - טוען את כל הפריטים הזמינים מכל המשתמשים (ללא סינון קטגוריה)
+        console.log('🔍 מצב מחפש - טוען את כל הפריטים הזמינים');
+        const { USE_BACKEND, API_BASE_URL } = await import('../utils/dbConfig');
+        if (USE_BACKEND && API_BASE_URL) {
+          const axios = (await import('axios')).default;
+          // במצב "מחפש", לא נסנן לפי קטגוריה - נטען את כל הפריטים הזמינים
+          // הסינון לפי קטגוריה ייעשה רק ב-UI אחרי הטעינה
+          const response = await axios.get(`${API_BASE_URL}/api/items-delivery/search`, {
+            params: {
+              status: 'available',
+              limit: 100, // Limit to 100 items for performance
+            }
+          });
+
+          if (response.data?.success && Array.isArray(response.data.data)) {
+            serverItems = response.data.data;
+            console.log('✅ טעינת פריטים מה-API הצליחה:', serverItems.length, 'פריטים');
+          } else {
+            console.warn('⚠️ API response לא תקין:', response.data);
+          }
+        } else {
+          // Fallback: אם אין backend, נטען רק את הפריטים של המשתמש
+          console.warn('⚠️ אין backend - טוען רק פריטים של המשתמש');
+          serverItems = await db.getDedicatedItemsByOwner(uid);
+        }
+      } else {
+        // מצב "מציע" - טוען רק את הפריטים של המשתמש הנוכחי
+        console.log('🔵 מצב מציע - טוען פריטים של המשתמש:', uid);
+        serverItems = await db.getDedicatedItemsByOwner(uid);
+      }
+
+      // המרה לפורמט התצוגה + סינון פריטים שנמחקו
+      const displayItems: DonationItem[] = (serverItems || [])
+        .filter((item: any) => {
+          // נסנן פריטים שנמחקו
+          const isDeleted = item.is_deleted || item.isDeleted;
+          return !isDeleted;
+        })
+        .map((item: any) => ({
+          id: item.id,
+          ownerId: item.owner_id || item.ownerId,
+          title: item.title,
+          description: item.description,
+          category: item.category,
+          condition: item.condition,
+          city: item.city || (item.location && typeof item.location === 'object' ? item.location.city : null),
+          address: item.address || (item.location && typeof item.location === 'object' ? item.location.address : null),
+          coordinates: item.coordinates || (item.location && typeof item.location === 'object' ? item.location.coordinates : null),
+          price: item.price,
+          image_base64: item.image_base64,
+          rating: item.rating,
+          timestamp: item.created_at || item.timestamp,
+          tags: item.tags,
+          qty: item.quantity || item.qty,
+          delivery_method: item.delivery_method,
+          status: item.status,
+          isDeleted: item.is_deleted || item.isDeleted,
+          deletedAt: item.deleted_at || item.deletedAt,
+        }));
+
+      // סינון לפי קטגוריה
+      // במצב "מחפש", נציג את כל הפריטים ללא סינון קטגוריה
+      // במצב "מציע", נסנן לפי קטגוריה רק אם itemType לא 'general'
+      const forType = !mode
+        ? displayItems.filter(i => itemType === 'general' ? true : i.category === itemType)
+        : displayItems; // במצב "מחפש", נציג את כל הפריטים
+
+      setAllItems(forType);
+
+      // recentMine - רק במצב "מציע" נשמור את הפריטים של המשתמש
+      if (!mode) {
+        setRecentMine(forType);
+      } else {
+        // במצב "מחפש", recentMine יהיה רק הפריטים של המשתמש הנוכחי
+        const myItems = forType.filter(i => i.ownerId === uid);
+        setRecentMine(myItems);
+      }
+
+    } catch (error) {
+      console.error('❌ שגיאה בטעינת פריטים:', error);
+      Alert.alert('שגיאה', 'לא הצלחנו לטעון את הפריטים');
+      setAllItems([]);
+      setRecentMine([]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const uid = selectedUser?.id || 'guest';
-        const my = (await db.listDonations(uid)) as DonationItem[];
-        const merged: DonationItem[] = [...dummyItems, ...my];
-        const forType: DonationItem[] = merged.filter(i => itemType === 'general' ? true : i.category === itemType);
-        setAllItems(forType);
-        setFilteredItems(forType);
-        setRecentMine(my.filter(i => itemType === 'general' ? true : i.category === itemType));
-      } catch (e) {
-        setAllItems(dummyItems.filter(i => itemType === 'general' ? true : i.category === itemType));
-        setFilteredItems(dummyItems.filter(i => itemType === 'general' ? true : i.category === itemType));
-        setRecentMine([]);
-      }
-    };
-    load();
-  }, [selectedUser, itemType, dummyItems]);
+    loadItems();
+  }, [selectedUser, itemType, mode]);
 
   const getFilteredItems = useCallback(() => {
     let filtered = [...allItems];
@@ -120,20 +330,35 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(i =>
         i.title.toLowerCase().includes(q) ||
-        (i.location || '').toLowerCase().includes(q) ||
-        (i.tags || []).some(t => t.toLowerCase().includes(q))
+        (i.city || '').toLowerCase().includes(q) ||
+        (i.address || '').toLowerCase().includes(q) ||
+        (i.description || '').toLowerCase().includes(q) ||
+        (i.tags || '').toLowerCase().includes(q)
       );
     }
 
     if (selectedFilters.length > 0) {
       selectedFilters.forEach(f => {
+        // סינון לפי מחיר
         if (f === 'בחינם') filtered = filtered.filter(i => (i.price ?? 0) === 0);
+
+        // סינון לפי מצב
         if (f === 'כמו חדש') filtered = filtered.filter(i => i.condition === 'like_new' || i.condition === 'new');
         if (f === 'משומש') filtered = filtered.filter(i => i.condition === 'used');
         if (f === 'לחלפים') filtered = filtered.filter(i => i.condition === 'for_parts');
-        // type specific
-        if (['ספות','ארונות','מיטות','גברים','נשים','ילדים','מטבח','חשמל','צעצועים'].includes(f)) {
-          filtered = filtered.filter(i => (i.tags || []).includes(f));
+
+        // סינון לפי קטגוריה - בודק אם הפילטר תואם לאחת הקטגוריות
+        const matchingCategory = ITEM_CATEGORIES.find(cat => cat.label === f);
+        if (matchingCategory) {
+          filtered = filtered.filter(item => item.category === matchingCategory.id);
+        }
+
+        // סינון לפי תגיות ספציפיות לסוג
+        if (['ספות', 'ארונות', 'מיטות', 'גברים', 'נשים', 'ילדים', 'מטבח', 'חשמל', 'צעצועים'].includes(f)) {
+          filtered = filtered.filter(item => {
+            const tagsArray = typeof item.tags === 'string' ? item.tags.split(',') : (item.tags || []);
+            return tagsArray.includes(f);
+          });
         }
       });
     }
@@ -144,7 +369,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         filtered.sort((a, b) => a.title.localeCompare(b.title, 'he'));
         break;
       case 'לפי מיקום':
-        filtered.sort((a, b) => (a.location || '').localeCompare((b.location || ''), 'he'));
+        filtered.sort((a, b) => (a.city || '').localeCompare((b.city || ''), 'he'));
         break;
       case 'לפי תאריך':
         filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -160,76 +385,323 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
     return filtered;
   }, [allItems, searchQuery, selectedFilters, selectedSorts]);
 
+  // Update filtered items whenever search/filter/sort changes
+  useEffect(() => {
+    setFilteredItems(getFilteredItems());
+  }, [getFilteredItems]);
+
+  // Calculate grid layout for search mode
+  const { width } = Dimensions.get('window');
+  const { isTablet, isDesktop } = getScreenInfo();
+  const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
+
+  // Initialize with appropriate default, but allow user control via slider
+  const [numColumns, setNumColumns] = useState(() => (isTablet || isDesktop || isDesktopWeb) ? 3 : 2);
+
+  const screenPadding = 20;
+  const cardGap = isTablet || isDesktop || isDesktopWeb ? 16 : 14;
+  const cardWidth = (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
+
   const handleSearch = (query: string, filters: string[] = [], sorts: string[] = [], _results?: any[]) => {
     setSearchQuery(query);
     setSelectedFilters(filters);
     setSelectedSorts(sorts);
-    setFilteredItems(getFilteredItems());
+  };
+
+  const handleClearAll = () => {
+    setSearchQuery('');
+    setSelectedFilters([]);
+    setSelectedSorts([]);
+  };
+
+  const pickImage = async () => {
+    try {
+      // בקשת הרשאה
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('אין הרשאה', 'נדרשת הרשאה לגשת לגלריה');
+        return;
+      }
+
+      // פתיחת הגלריה
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setImageUri(result.assets[0].uri);
+        console.log('✅ תמונה נבחרה:', result.assets[0].uri);
+      }
+    } catch (e) {
+      console.error('❌ שגיאה בבחירת תמונה:', e);
+      Alert.alert('שגיאה', 'לא הצלחנו לטעון את התמונה');
+    }
+  };
+
+  const handleDeleteItem = async (item: DonationItem) => {
+    console.warn('🗑️ מחיקת פריט - Soft Delete', { itemId: item.id, title: item.title });
+
+    Alert.alert(
+      '🗑️ מחיקת פריט',
+      `האם אתה בטוח שברצונך למחוק את:\n"${item.title}"?`,
+      [
+        {
+          text: 'ביטול',
+          style: 'cancel'
+        },
+        {
+          text: 'מחק',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              console.log('🗑️ מוחק פריט:', item.id);
+
+              // Soft Delete דרך ה-API החדש
+              await db.deleteDedicatedItem(item.id);
+
+              console.log('✅ פריט נמחק בשרת');
+
+              // הסרה מה-UI
+              setAllItems(prev => prev.filter(i => i.id !== item.id));
+              setFilteredItems(prev => prev.filter(i => i.id !== item.id));
+              setRecentMine(prev => prev.filter(i => i.id !== item.id));
+
+              Alert.alert('✅ הצלחה', 'הפריט נמחק!');
+            } catch (error: any) {
+              console.error('❌ שגיאה במחיקה:', error);
+              Alert.alert('שגיאה', `לא הצלחנו למחוק את הפריט:\n${error.message || 'שגיאה לא ידועה'}`);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleCreateItem = async () => {
     try {
       if (!title.trim()) {
-        Alert.alert('שגיאה', 'נא לתת כותרת לפריט');
+        Alert.alert('שגיאה', 'נא למלא כותרת');
         titleInputRef.current?.focus();
         return;
       }
-      const uid = selectedUser?.id || 'guest';
+
+      console.log('🔵 מתחיל תהליך שמירת פריט...');
+
+      // Ensure we have a valid UUID - guests cannot create items
+      if (!selectedUser?.id) {
+        Alert.alert('שגיאה', 'נא להתחבר כדי ליצור פריט');
+        return;
+      }
+      const uid = selectedUser.id; // This is already a UUID from the server
       const id = `${Date.now()}`;
-      const item: DonationItem = {
+
+      // המרת תמונה ל-base64
+      let imageBase64 = null;
+      if (imageUri) {
+        console.log('🖼️ ממיר תמונה ל-base64...');
+        imageBase64 = await convertImageToBase64(imageUri);
+        if (imageBase64) {
+          console.log('✅ התמונה הומרה בהצלחה (גודל:', imageBase64.length, 'תווים)');
+        }
+      }
+
+      // הכנת אובייקט עם כל השדות הנפרדים
+      const itemData = {
         id,
-        ownerId: uid,
+        owner_id: uid,
         title: title.trim(),
-        description: description.trim() || undefined,
-        category: itemType,
-        condition: (condition || undefined) as any,
-        location: location || undefined,
+        description: description.trim() || '',
+        category: selectedCategory || itemType,
+        condition: condition || 'used',
+
+        // שדות מיקום נפרדים
+        city: city.trim() || '',
+        address: address.trim() || '',
+        coordinates: '',
+
         price: Number(price) || 0,
-        images: [],
-        rating: 5,
-        timestamp: new Date().toISOString(),
-        tags: selectedFilters,
-        qty,
+        image_base64: imageBase64,
+        rating: 0,
+        tags: selectedFilters.join(','),  // המרה ל-string מופרד בפסיקים
+        quantity: qty || 1,
+        delivery_method: 'pickup',
+        status: 'available',
       };
-      await db.createDonation(uid, id, item);
-      setFilteredItems(prev => [item, ...prev]);
-      setRecentMine(prev => [item, ...prev]);
+
+      console.log('📤 שולח לשרת:', {
+        id: itemData.id,
+        title: itemData.title,
+        city: itemData.city,
+        address: itemData.address,
+        hasImage: !!itemData.image_base64,
+        tagsCount: selectedFilters.length,
+      });
+
+      // שליחה לשרת דרך API החדש
+      const savedItem = await db.createDedicatedItem(itemData);
+
+      console.log('✅ נשמר בהצלחה בשרת:', savedItem);
+
+      // Optimistic Update: Add to local state immediately
+      const newItemForState: DonationItem = {
+        id: itemData.id,
+        ownerId: itemData.owner_id,
+        title: itemData.title,
+        description: itemData.description,
+        category: itemData.category,
+        condition: itemData.condition as any,
+        city: itemData.city,
+        address: itemData.address,
+        coordinates: itemData.coordinates,
+        price: itemData.price,
+        image_base64: itemData.image_base64 || undefined,
+        rating: itemData.rating,
+        timestamp: new Date().toISOString(),
+        tags: itemData.tags,
+        qty: itemData.quantity,
+        delivery_method: itemData.delivery_method,
+        status: itemData.status,
+        isDeleted: false,
+      };
+
+      setAllItems(prev => [newItemForState, ...prev]);
+      // Filter logic will run via useEffect but we can also update explicitly if needed
+      // With optimistic update, we don't strictly need to await loadItems
+      // But we can trigger it in background
+      loadItems();
+
+      // איפוס כל השדות
       setTitle('');
       setDescription('');
       setPrice('0');
-      setLocation('');
+      setCity('');
+      setAddress('');
       setQty(1);
       setCondition('');
-      Alert.alert('הצלחה', 'הפריט פורסם ונשמר במסד הנתונים');
-    } catch (e) {
-      Alert.alert('שגיאה', 'נכשל לשמור את הפריט');
+      setImageUri('');
+      setSelectedCategory('general');
+      setSelectedFilters([]);
+
+      Alert.alert(
+        '✅ נשמר בהצלחה!',
+        `הפריט "${savedItem.title}" נשמר במערכת`,
+        [{ text: 'אישור', style: 'default' }]
+      );
+
+    } catch (error: any) {
+      console.error('❌ שגיאה בשמירת פריט:', error);
+      Alert.alert(
+        '❌ שגיאה',
+        `לא הצלחנו לשמור את הפריט:\n${error.message || 'שגיאה לא ידועה'}`,
+        [{ text: 'סגור', style: 'cancel' }]
+      );
     }
   };
 
   const menuOptions = ['היסטוריית פריטים', 'הגדרות', 'עזרה', 'צור קשר'];
 
+  const handleItemPress = (item: DonationItem) => {
+    setSelectedItem(item);
+    setShowItemModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowItemModal(false);
+    setSelectedItem(null);
+  };
+
   const renderItemCard = ({ item }: { item: DonationItem }) => (
-    <TouchableOpacity style={localStyles.itemCard} onPress={() => Alert.alert(item.title, item.description || 'אין תיאור')}>
+    <TouchableOpacity style={localStyles.itemCard} onPress={() => handleItemPress(item)}>
+      {/* תמונה base64 */}
+      {item.image_base64 && (
+        <Image
+          source={{ uri: item.image_base64 }}
+          style={{ width: '100%', height: 120, borderRadius: 8, marginBottom: 8 }}
+          resizeMode="cover"
+        />
+      )}
+
       <View style={localStyles.itemRow}>
         <Text style={localStyles.itemTitle} numberOfLines={1}>{item.title}</Text>
-        <View style={localStyles.itemBadge}><Text style={localStyles.itemBadgeText}>{item.category === 'furniture' ? 'רהיטים' : item.category === 'clothes' ? 'בגדים' : 'חפצים'}</Text></View>
+        <View style={localStyles.itemBadge}>
+          <Text style={localStyles.itemBadgeText}>
+            {getCategoryLabel(item.category)}
+          </Text>
+        </View>
       </View>
+
+      {/* מיקום מפוצל */}
       <View style={localStyles.itemRow}>
-        <Text style={localStyles.itemMeta} numberOfLines={1}>{item.location || 'מיקום לא זמין'}</Text>
-        <Text style={localStyles.itemPrice}>{(item.price ?? 0) === 0 ? 'בחינם' : `₪${item.price}`}</Text>
+        <Text style={localStyles.itemMeta} numberOfLines={1}>
+          📍 {item.city || 'מיקום לא זמין'}{item.address ? `, ${item.address}` : ''}
+        </Text>
       </View>
     </TouchableOpacity>
   );
 
   const renderRecentCard = ({ item }: { item: DonationItem }) => (
     <View style={localStyles.itemCard}>
+      {/* תמונה base64 */}
+      {item.image_base64 && (
+        <Image
+          source={{ uri: item.image_base64 }}
+          style={{ width: '100%', height: 120, borderRadius: 8, marginBottom: 8 }}
+          resizeMode="cover"
+        />
+      )}
+
       <View style={localStyles.itemRow}>
-        <Text style={localStyles.itemTitle} numberOfLines={1}>{item.title}</Text>
-        <Text style={localStyles.itemMeta}>📅 {new Date(item.timestamp).toLocaleDateString('he-IL')}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          <Text style={localStyles.itemTitle} numberOfLines={1}>{item.title}</Text>
+          <TouchableOpacity
+            onPress={() => handleDeleteItem(item)}
+            style={localStyles.deleteButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Icon name="trash-outline" size={20} color={colors.error} />
+          </TouchableOpacity>
+        </View>
+        <Text style={localStyles.itemMeta}>📅 {new Date(item.timestamp).toLocaleDateString('he-IL')} {new Date(item.timestamp).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</Text>
       </View>
+
+      {/* שורה נוספת עם מצב + כמות */}
       <View style={localStyles.itemRow}>
-        <Text style={localStyles.itemMeta} numberOfLines={1}>{item.location || 'מיקום לא זמין'}</Text>
-        <TouchableOpacity style={localStyles.restoreChip} onPress={() => { setTitle(item.title); setLocation(item.location || ''); setPrice(String(item.price ?? 0)); setQty(item.qty || 1); }}>
+        <Text style={localStyles.itemMeta}>
+          {item.condition === 'new' ? '🆕 חדש' :
+            item.condition === 'like_new' ? '✨ כמו חדש' :
+              item.condition === 'used' ? '📦 משומש' : '🔧 לחלפים'}
+          {' • '}
+          כמות: {item.qty || 1}
+        </Text>
+      </View>
+
+      <View style={localStyles.itemRow}>
+        <Text style={localStyles.itemMeta} numberOfLines={1}>
+          📍 {item.city || 'מיקום לא זמין'}{item.address ? `, ${item.address}` : ''}
+        </Text>
+        <View style={localStyles.itemBadge}>
+          <Text style={localStyles.itemBadgeText}>
+            {getCategoryLabel(item.category)}
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={localStyles.restoreChip}
+          onPress={() => {
+            setTitle(item.title);
+            setDescription(item.description || '');
+            setCity(item.city || '');
+            setAddress(item.address || '');
+            setPrice(String(item.price ?? 0));
+            setQty(item.qty || 1);
+            setCondition(item.condition || '');
+            if (item.image_base64) {
+              setImageUri(item.image_base64);
+            }
+          }}
+        >
           <Text style={localStyles.restoreChipText}>שחזר</Text>
         </TouchableOpacity>
       </View>
@@ -244,7 +716,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         onToggleMode={() => setMode(!mode)}
         onSelectMenuItem={(o) => Alert.alert('תפריט', `נבחר: ${o}`)}
         title=""
-        placeholder={mode ? 'שם הפריט' : 'חפש פריטים זמינים'}
+        placeholder={mode ? 'חפש פריטים זמינים' : 'שם הפריט'}
         filterOptions={filterOptions}
         sortOptions={itemsSortOptions}
         searchData={allItems}
@@ -252,7 +724,93 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
       />
 
       {mode ? (
-        <ScrollView style={localStyles.container} contentContainerStyle={localStyles.scrollContent} keyboardShouldPersistTaps="always">
+        <View style={{ flex: 1 }}>
+          <VerticalGridSlider
+            numColumns={numColumns}
+            onNumColumnsChange={setNumColumns}
+            style={{
+              top: 10, // Relative to container below header
+              left: 4,
+            }}
+          />
+          <ScrollContainer
+            style={localStyles.container}
+            contentStyle={[
+              localStyles.scrollContent,
+              isLandscape() && { paddingHorizontal: 32 }
+            ]}
+          >
+            {/* Header */}
+            <View style={localStyles.headerRow}>
+              <Text style={localStyles.sectionTitle}>
+                {searchQuery || selectedFilters.length > 0 ? 'פריטים זמינים' : 'פריטים מומלצים'}
+              </Text>
+              {(searchQuery || selectedFilters.length > 0 || selectedSorts.length > 0) && (
+                <TouchableOpacity style={localStyles.clearButton} onPress={handleClearAll}>
+                  <Text style={localStyles.clearButtonText}>נקה הכל</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Items List or Empty State */}
+            {filteredItems.length === 0 ? (
+              <View style={localStyles.emptyState}>
+                <Icon name="search-outline" size={48} color={colors.textSecondary} />
+                <Text style={localStyles.emptyStateTitle}>לא נמצאו פריטים</Text>
+                <Text style={localStyles.emptyStateText}>נסה לשנות את הפילטרים או החיפוש</Text>
+                {(searchQuery || selectedFilters.length > 0 || selectedSorts.length > 0) && (
+                  <TouchableOpacity style={localStyles.emptyStateClearButton} onPress={handleClearAll}>
+                    <Text style={localStyles.emptyStateClearButtonText}>נקה הכל</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              <View style={[
+                localStyles.itemsGrid,
+                {
+                  paddingHorizontal: screenPadding,
+                }
+              ]}>
+                {filteredItems.map((item, idx) => (
+                  <View
+                    key={item.id}
+                    style={{
+                      width: cardWidth,
+                      marginBottom: cardGap,
+                      marginLeft: idx % numColumns === 0 ? 0 : cardGap,
+                    }}
+                  >
+                    {renderItemCard({ item })}
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Footer Stats */}
+            <View style={localStyles.section}>
+              <DonationStatsFooter
+                stats={[
+                  { label: 'פריטים שפורסמו', value: filteredItems.length, icon: 'cube-outline' },
+                  { label: 'פריטים בחינם', value: filteredItems.filter(i => (i.price ?? 0) === 0).length, icon: 'pricetag-outline' },
+                  { label: 'מיקומים ייחודיים', value: new Set(filteredItems.map(i => i.city || 'לא צויין')).size, icon: 'pin-outline' },
+                ]}
+              />
+            </View>
+
+            {/* Add Links Section */}
+            <View style={localStyles.section}>
+              <Text style={localStyles.sectionTitle}>קישורים שימושיים</Text>
+              <AddLinkComponent category="items" />
+            </View>
+          </ScrollContainer>
+        </View>
+      ) : (
+        <ScrollContainer
+          style={localStyles.container}
+          contentStyle={localStyles.scrollContent}
+          keyboardShouldPersistTaps="always"
+          showsVerticalScrollIndicator={false}
+        >
           <View style={localStyles.formContainer}>
             <View style={localStyles.row}>
               <View style={localStyles.field}>
@@ -268,11 +826,113 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
               </View>
             </View>
 
+            {/* בחירת קטגוריה - דרופדאון */}
             <View style={localStyles.row}>
-            <View style={localStyles.fieldSmall}>
-                <Text style={localStyles.label}>מיקום</Text>
-                <TextInput style={localStyles.input} value={location} onChangeText={setLocation} placeholder="לדוגמה: תל אביב" />
+              <View style={localStyles.field}>
+                <Text style={localStyles.label}>קטגוריה</Text>
+                <TouchableOpacity
+                  style={localStyles.dropdownButton}
+                  onPress={() => setShowCategoryDropdown(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    localStyles.dropdownButtonText,
+                    !selectedCategory && localStyles.dropdownPlaceholder
+                  ]}>
+                    {ITEM_CATEGORIES.find(c => c.id === selectedCategory)?.label || 'בחר קטגוריה'}
+                  </Text>
+                  <Icon
+                    name={showCategoryDropdown ? "chevron-up" : "chevron-down"}
+                    size={20}
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
               </View>
+            </View>
+
+            {/* Modal לבחירת קטגוריה */}
+            <Modal
+              visible={showCategoryDropdown}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setShowCategoryDropdown(false)}
+            >
+              <TouchableOpacity
+                style={localStyles.modalOverlay}
+                activeOpacity={1}
+                onPress={() => setShowCategoryDropdown(false)}
+              >
+                <View style={localStyles.modalContent} onStartShouldSetResponder={() => true}>
+                  <View style={localStyles.modalHeader}>
+                    <Text style={localStyles.modalTitle}>בחר קטגוריה</Text>
+                    <TouchableOpacity
+                      onPress={() => setShowCategoryDropdown(false)}
+                      style={localStyles.modalCloseButton}
+                    >
+                      <Icon name="close" size={24} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+                  <FlatList
+                    data={ITEM_CATEGORIES}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={[
+                          localStyles.dropdownItem,
+                          selectedCategory === item.id && localStyles.dropdownItemSelected
+                        ]}
+                        onPress={() => {
+                          setSelectedCategory(item.id as ItemType);
+                          setShowCategoryDropdown(false);
+                        }}
+                      >
+                        <Icon
+                          name={item.icon as any}
+                          size={20}
+                          color={selectedCategory === item.id ? colors.primary : colors.textSecondary}
+                          style={localStyles.dropdownItemIcon}
+                        />
+                        <Text style={[
+                          localStyles.dropdownItemText,
+                          selectedCategory === item.id && localStyles.dropdownItemTextSelected
+                        ]}>
+                          {item.label}
+                        </Text>
+                        {selectedCategory === item.id && (
+                          <Icon name="checkmark" size={20} color={colors.success} />
+                        )}
+                      </TouchableOpacity>
+                    )}
+                    style={localStyles.dropdownList}
+                  />
+                </View>
+              </TouchableOpacity>
+            </Modal>
+
+            {/* Location fields - split into city and address */}
+            <View style={localStyles.row}>
+              <View style={localStyles.fieldSmall}>
+                <Text style={localStyles.label}>עיר</Text>
+                <TextInput
+                  style={localStyles.input}
+                  value={city}
+                  onChangeText={setCity}
+                  placeholder="תל אביב"
+                />
+              </View>
+              <View style={localStyles.fieldSmall}>
+                <Text style={localStyles.label}>כתובת</Text>
+                <TextInput
+                  style={localStyles.input}
+                  value={address}
+                  onChangeText={setAddress}
+                  placeholder="רחוב 123"
+                />
+              </View>
+            </View>
+
+            {/* Quantity field */}
+            <View style={localStyles.row}>
               <View style={localStyles.fieldSmall}>
                 <Text style={localStyles.label}>כמות</Text>
                 <View style={localStyles.counterRow}>
@@ -294,13 +954,13 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
                     { key: 'for_parts', label: 'לחלפים' },
                   ].map(opt => (
                     <TouchableOpacity
-                    key={opt.key}
-                    style={[
-                      localStyles.tag,
-                      localStyles.tagSmall,
-                      condition === (opt.key as any) && localStyles.tagSelected,
-                    ]}
-                    onPress={() => setCondition(opt.key as any)}
+                      key={opt.key}
+                      style={[
+                        localStyles.tag,
+                        localStyles.tagSmall,
+                        condition === (opt.key as any) && localStyles.tagSelected,
+                      ]}
+                      onPress={() => setCondition(opt.key as any)}
                     >
                       <Text
                         style={[
@@ -317,6 +977,37 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
               </View>
             </View>
 
+            {/* כפתור העלאת תמונה */}
+            <View style={localStyles.imageSection}>
+              <Text style={localStyles.labelInline}>תמונה (אופציונלי)</Text>
+              <TouchableOpacity
+                style={localStyles.imagePickerButton}
+                onPress={pickImage}
+              >
+                <Icon name="image-outline" size={24} color={colors.primary} />
+                <Text style={localStyles.imagePickerText}>
+                  {imageUri ? '✅ תמונה נבחרה' : 'בחר תמונה מהגלריה'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* תצוגה מקדימה של התמונה */}
+              {imageUri && (
+                <View style={localStyles.imagePreview}>
+                  <Image source={{ uri: imageUri }} style={localStyles.previewImage} />
+                  <View style={localStyles.imageInfo}>
+                    <Text style={localStyles.imageInfoText}>✅ תמונה מוכנה</Text>
+                    <Text style={localStyles.imageInfoSubtext}>80×80 פיקסלים</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={localStyles.removeImageButton}
+                    onPress={() => setImageUri('')}
+                  >
+                    <Icon name="close-circle" size={24} color={colors.error} />
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+
             <TouchableOpacity style={[localStyles.offerButton, !title && { opacity: 0.5 }]} onPress={handleCreateItem} disabled={!title}>
               <Text style={localStyles.offerButtonText}>פרסם פריט</Text>
             </TouchableOpacity>
@@ -330,80 +1021,238 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
               ))}
             </View>
           </View>
-        </ScrollView>
-      ) : (
-        <>
-          <View style={[localStyles.container, localStyles.noOuterScrollContainer]}>
-            <View style={localStyles.sectionWithScroller}>
-              <Text style={localStyles.sectionTitle}>{searchQuery || selectedFilters.length > 0 ? 'פריטים זמינים' : 'פריטים מומלצים'}</Text>
-              <ScrollView style={localStyles.innerScroll} contentContainerStyle={[localStyles.itemsGridContainer, isLandscape() && { paddingHorizontal: 16 }]} showsVerticalScrollIndicator nestedScrollEnabled>
-                {filteredItems.map((it) => (
-                  <View key={it.id} style={localStyles.itemCardWrapper}>{renderItemCard({ item: it })}</View>
-                ))}
-              </ScrollView>
-            </View>
-          </View>
 
+          {/* Add Links Section */}
           <View style={localStyles.section}>
-            <DonationStatsFooter
-              stats={[
-                { label: 'פריטים שפורסמו', value: getFilteredItems().length, icon: 'cube-outline' },
-                { label: 'פריטים בחינם', value: getFilteredItems().filter(i => (i.price ?? 0) === 0).length, icon: 'pricetag-outline' },
-                { label: 'מיקומים ייחודיים', value: new Set(getFilteredItems().map(i => i.location || 'לא צויין')).size, icon: 'pin-outline' },
-              ]}
-            />
+            <Text style={localStyles.sectionTitle}>קישורים שימושיים</Text>
+            <AddLinkComponent category="items" />
           </View>
-        </>
+        </ScrollContainer>
       )}
+
+      {/* Item Details Modal */}
+      <ItemDetailsModal
+        visible={showItemModal}
+        onClose={handleCloseModal}
+        item={selectedItem}
+        type="item"
+        navigation={navigation}
+      />
+      {ToastComponent}
     </SafeAreaView>
   );
 }
 
 const localStyles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.backgroundSecondary_2 },
+  safeArea: { flex: 1, backgroundColor: colors.backgroundTertiary },
   container: { flex: 1, paddingHorizontal: 16, paddingTop: 4 },
-  scrollContent: { paddingBottom: 100 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 120, flexGrow: 1 },
   formContainer: { padding: 5, alignItems: 'center', borderRadius: 15, marginBottom: 15 },
   row: { flexDirection: rowDirection('row-reverse'), gap: 10, width: '100%', paddingHorizontal: 8 },
   field: { flex: 1 },
   fieldSmall: { flex: 0.5 },
   label: { fontSize: FontSizes.medium, fontWeight: '600', color: colors.textPrimary, marginBottom: 10, textAlign: 'center' },
   labelInline: { marginTop: 3, flex: 1, fontSize: FontSizes.medium, fontWeight: '600', color: colors.textPrimary, ...marginStartEnd(6, 0) },
-  input: { backgroundColor: colors.moneyInputBackground, borderRadius: 10, padding: 12, fontSize: FontSizes.body, textAlign: biDiTextAlign('right'), color: colors.textPrimary, borderWidth: 1, borderColor: colors.moneyFormBorder },
+  input: { backgroundColor: colors.white, borderRadius: 10, padding: 12, fontSize: FontSizes.body, textAlign: biDiTextAlign('right'), color: colors.textPrimary, borderWidth: 1, borderColor: colors.secondary },
   inputWrapper: { position: 'relative', justifyContent: 'center' },
   inputWithAdornment: { paddingRight: 30 },
   inputAdornment: { position: 'absolute', right: 10, color: colors.textSecondary, fontSize: FontSizes.body },
-  counterRow: { flexDirection: rowDirection('row'), alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.moneyInputBackground, borderRadius: 10, borderWidth: 1, borderColor: colors.moneyFormBorder, paddingHorizontal: 8, paddingVertical: 6 },
-  counterBtn: { backgroundColor: colors.moneyFormBackground, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  counterRow: { flexDirection: rowDirection('row'), alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.white, borderRadius: 10, borderWidth: 1, borderColor: colors.secondary, paddingHorizontal: 8, paddingVertical: 6 },
+  counterBtn: { backgroundColor: colors.pinkLight, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
   counterText: { fontSize: FontSizes.medium, fontWeight: 'bold', color: colors.textPrimary },
   counterValue: { fontSize: FontSizes.medium, fontWeight: 'bold', color: colors.textPrimary, minWidth: 30, textAlign: 'center' },
-  tagsRow: {marginTop: 10, alignItems: 'stretch', flexDirection: rowDirection('row-reverse'), flexWrap: 'wrap', gap: 3 },
-  tag: { backgroundColor: colors.moneyFormBackground, borderWidth: 1, borderColor: colors.moneyFormBorder, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
+  tagsRow: { marginTop: 10, alignItems: 'stretch', flexDirection: rowDirection('row-reverse'), flexWrap: 'wrap', gap: 3 },
+  tag: { backgroundColor: colors.pinkLight, borderWidth: 1, borderColor: colors.secondary, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
   tagSmall: { paddingHorizontal: 8, marginHorizontal: "4%", paddingVertical: 4 },
-  tagSelected: { backgroundColor: colors.moneyStatusBackground, borderColor: colors.moneyStatusBackground },
+  tagSelected: { backgroundColor: colors.backgroundSecondary, borderColor: colors.success },
   tagText: { fontSize: FontSizes.small, color: colors.textPrimary },
   tagTextSm: { fontSize: FontSizes.caption },
-  tagTextSelected: { color: colors.moneyStatusText, fontWeight: '600' },
-  offerButton: { backgroundColor: colors.moneyButtonBackground, padding: 14, borderRadius: 12, alignItems: 'center', marginTop: 10 },
-  offerButtonText: { color: colors.backgroundPrimary, fontSize: FontSizes.medium, fontWeight: 'bold' },
+  tagTextSelected: { color: colors.success, fontWeight: '600' },
+  offerButton: { backgroundColor: colors.accent, padding: 14, borderRadius: 12, alignItems: 'center', marginTop: 10 },
+  offerButtonText: { color: colors.background, fontSize: FontSizes.medium, fontWeight: 'bold' },
   section: { marginBottom: 10 },
   sectionTitle: { fontSize: FontSizes.body, fontWeight: 'bold', alignSelf: 'center', color: colors.textPrimary, textAlign: 'center' },
+  headerRow: { flexDirection: rowDirection('row-reverse'), justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingHorizontal: 4 },
+  clearButton: { backgroundColor: colors.pinkLight, borderWidth: 1, borderColor: colors.secondary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  clearButtonText: { fontSize: FontSizes.small, color: colors.textPrimary, fontWeight: '600' },
   noOuterScrollContainer: { flex: 1 },
-  sectionWithScroller: { flex: 1, backgroundColor: colors.moneyFormBackground, borderRadius: 12, borderWidth: 1, borderColor: colors.moneyFormBorder, paddingVertical: 8, paddingHorizontal: 8 },
+  sectionWithScroller: { flex: 1, backgroundColor: colors.pinkLight, borderRadius: 12, borderWidth: 1, borderColor: colors.secondary, paddingVertical: 8, paddingHorizontal: 8 },
   innerScroll: { flex: 1 },
   itemsGridContainer: {},
+  itemsGrid: {
+    flexDirection: 'row-reverse',
+    flexWrap: 'wrap',
+    paddingHorizontal: 0,
+  },
+  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
+  emptyStateTitle: { fontSize: FontSizes.body, fontWeight: 'bold', color: colors.textPrimary, marginTop: 16, marginBottom: 8 },
+  emptyStateText: { fontSize: FontSizes.small, color: colors.textSecondary, textAlign: 'center', marginBottom: 16 },
+  emptyStateClearButton: { backgroundColor: colors.accent, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, marginTop: 8 },
+  emptyStateClearButtonText: { fontSize: FontSizes.small, color: colors.background, fontWeight: '600' },
   itemCardWrapper: { marginBottom: 8, width: '100%' },
-  itemCard: { backgroundColor: colors.moneyCardBackground, borderRadius: 10, padding: 8, borderWidth: 1, borderColor: colors.moneyFormBorder },
+  itemCard: { backgroundColor: colors.pinkLight, borderRadius: 10, padding: 8, borderWidth: 1, borderColor: colors.secondary },
   itemRow: { flexDirection: rowDirection('row-reverse'), justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   itemTitle: { fontSize: FontSizes.small, fontWeight: 'bold', color: colors.textPrimary, textAlign: biDiTextAlign('right'), flex: 1, marginLeft: 6 },
   itemMeta: { fontSize: FontSizes.small, color: colors.textSecondary },
-  itemPrice: { fontSize: FontSizes.small, color: colors.moneyHistoryAmount, fontWeight: '600' },
-  itemBadge: { backgroundColor: colors.moneyStatusBackground, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 6 },
-  itemBadgeText: { fontSize: FontSizes.small, color: colors.moneyStatusText, fontWeight: 'bold' },
+  itemBadge: { backgroundColor: colors.backgroundSecondary, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 6 },
+  itemBadgeText: { fontSize: FontSizes.small, color: colors.success, fontWeight: 'bold' },
   recentContainer: { paddingHorizontal: 8, paddingVertical: 8 },
   recentItemWrapper: { marginBottom: 8, width: '100%' },
-  restoreChip: { backgroundColor: colors.moneyFormBackground, borderWidth: 1, borderColor: colors.moneyFormBorder, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  restoreChip: { backgroundColor: colors.pinkLight, borderWidth: 1, borderColor: colors.secondary, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   restoreChipText: { fontSize: FontSizes.small, color: colors.textPrimary, fontWeight: '600' },
+  deleteButton: {
+    padding: 6,
+    marginLeft: 12,
+    backgroundColor: colors.pinkLight,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.pinkLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 32,
+    minHeight: 32,
+  },
+  itemImageContainer: {
+    padding: 4,
+    marginBottom: 4,
+  },
+  itemImageIndicator: {
+    fontSize: FontSizes.small,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  imageSection: {
+    width: '100%',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  imagePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.backgroundSecondary,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    borderRadius: 12,
+    padding: 16,
+    gap: 8,
+    marginTop: 4,
+  },
+  imagePickerText: {
+    color: colors.primary,
+    fontSize: FontSizes.medium,
+    fontWeight: '600',
+  },
+  imagePreview: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  previewImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    resizeMode: 'cover',
+  },
+  removeImageButton: {
+    marginLeft: 'auto',
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 20,
+    padding: 4,
+  },
+  imageInfo: {
+    flex: 1,
+    marginLeft: 12,
+    justifyContent: 'center',
+  },
+  imageInfoText: {
+    fontSize: FontSizes.medium,
+    color: colors.success,
+    fontWeight: '600',
+  },
+  imageInfoSubtext: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  // Dropdown styles
+  dropdownButton: {
+    backgroundColor: colors.white,
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    flexDirection: rowDirection('row-reverse'),
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 48,
+  },
+  dropdownButtonText: {
+    fontSize: FontSizes.body,
+    color: colors.textPrimary,
+    textAlign: biDiTextAlign('right'),
+    flex: 1,
+  },
+  dropdownPlaceholder: {
+    color: colors.textSecondary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    width: '85%',
+    maxHeight: '70%',
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: rowDirection('row-reverse'),
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitle: {
+    fontSize: FontSizes.heading2,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  dropdownList: {
+    maxHeight: 400,
+  },
+  dropdownItem: {
+    flexDirection: rowDirection('row-reverse'),
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  dropdownItemSelected: {
+    backgroundColor: colors.pinkLight,
+  },
+  dropdownItemIcon: {
+    marginLeft: 12,
+  },
+  dropdownItemText: {
+    fontSize: FontSizes.body,
+    color: colors.textPrimary,
+    flex: 1,
+    textAlign: biDiTextAlign('right'),
+  },
+  dropdownItemTextSelected: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
 });
 
 

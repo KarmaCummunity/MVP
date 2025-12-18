@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,13 +11,14 @@ import {
   Linking,
   Alert,
 } from 'react-native';
-import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
+import { NavigationProp, ParamListBase, useFocusEffect, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { useUser } from '../stores/userStore';
 import HeaderComp from '../components/HeaderComp';
 import DonationStatsFooter from '../components/DonationStatsFooter';
+import AddLinkComponent from '../components/AddLinkComponent';
 
 // Mock data for volunteer opportunities
 const volunteerOpportunities = [
@@ -106,7 +107,18 @@ export default function TimeScreen({
 }: {
   navigation: NavigationProp<ParamListBase>;
 }) {
+  const route = useRoute();
+  const routeParams = route.params as { mode?: string } | undefined;
+  
   const { selectedUser, isRealAuth } = useUser();
+  
+  // Get initial mode from URL (deep link) or default to search mode (מחפש)
+  // mode: true = offerer (wants to volunteer), false = seeker (needs volunteers)
+  // URL mode: 'offer' = true, 'search' = false
+  // Default is search mode (false)
+  const initialMode = routeParams?.mode === 'offer' ? true : false;
+  const [mode, setMode] = useState(initialMode);
+  
   const [selectedCategory, setSelectedCategory] = useState<string>('כל הקטגוריות');
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("");
@@ -114,6 +126,34 @@ export default function TimeScreen({
   const [filteredOpportunities, setFilteredOpportunities] = useState(volunteerOpportunities);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Update mode when route params change (e.g., from deep link)
+  useEffect(() => {
+    if (routeParams?.mode && routeParams.mode !== 'undefined' && routeParams.mode !== 'null') {
+      const newMode = routeParams.mode === 'offer' ? true : false;
+      if (newMode !== mode) {
+        setMode(newMode);
+      }
+    }
+  }, [routeParams?.mode]);
+
+  // Update URL when mode changes (toggle button pressed) or when screen loads without mode
+  useEffect(() => {
+    const newMode = mode ? 'offer' : 'search';
+    const currentMode = routeParams?.mode;
+    
+    // If no mode in URL, set it to search (default)
+    if (!currentMode || currentMode === 'undefined' || currentMode === 'null') {
+      // Set initial mode to search in URL
+      (navigation as any).setParams({ mode: 'search' });
+      return;
+    }
+    
+    // Only update URL if mode actually changed
+    if (newMode !== currentMode) {
+      (navigation as any).setParams({ mode: newMode });
+    }
+  }, [mode, navigation, routeParams?.mode]);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -214,7 +254,7 @@ export default function TimeScreen({
       
       // Filter by search query
       if (query.trim() !== "") {
-        filtered = filtered.filter(opp => 
+        filtered = filtered.filter(opp =>
           opp.title.toLowerCase().includes(query.toLowerCase()) ||
           opp.organization.toLowerCase().includes(query.toLowerCase()) ||
           opp.description.toLowerCase().includes(query.toLowerCase()) ||
@@ -234,12 +274,12 @@ export default function TimeScreen({
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundPrimary} />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       
       <HeaderComp
-        mode={true}
+        mode={mode}
         menuOptions={['הגדרות', 'עזרה', 'צור קשר']}
-        onToggleMode={() => console.log('Mode toggled')}
+        onToggleMode={() => setMode(!mode)}
         onSelectMenuItem={(option: string) => console.log('Menu selected:', option)}
         title=""
         placeholder="חפש הזדמנויות התנדבות..."
@@ -257,14 +297,14 @@ export default function TimeScreen({
             onPress={handleEmergencyLink}
           >
             <View style={styles.emergencyContent}>
-              <Ionicons name="flash" size={32} color={colors.orange} />
+              <Ionicons name="flash" size={32} color={colors.accent} />
               <View style={styles.emergencyText}>
                 <Text style={styles.emergencyTitle}>התנדבות דחופה</Text>
                 <Text style={styles.emergencyDescription}>
                   מצא הזדמנויות התנדבות דחופות באזור שלך
                 </Text>
               </View>
-              <Ionicons name="arrow-forward" size={24} color={colors.orange} />
+              <Ionicons name="arrow-forward" size={24} color={colors.accent} />
             </View>
           </TouchableOpacity>
         </View>
@@ -378,6 +418,12 @@ export default function TimeScreen({
             ]}
           />
         </View>
+
+        {/* Add Links Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>קישורים שימושיים</Text>
+          <AddLinkComponent category="time" />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -386,7 +432,7 @@ export default function TimeScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
   },
 
   content: {
@@ -403,7 +449,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 20,
     borderWidth: 2,
-    borderColor: colors.orange,
+    borderColor: colors.accent,
   },
   emergencyContent: {
     flexDirection: 'row',
@@ -416,7 +462,7 @@ const styles = StyleSheet.create({
   emergencyTitle: {
     fontSize: FontSizes.medium,
     fontWeight: 'bold',
-    color: colors.orange,
+    color: colors.accent,
     marginBottom: 4,
   },
   emergencyDescription: {
@@ -436,7 +482,7 @@ const styles = StyleSheet.create({
     paddingRight: 20,
   },
   categoryButton: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
@@ -445,8 +491,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   categoryButtonActive: {
-    backgroundColor: colors.pink,
-    borderColor: colors.pink,
+    backgroundColor: colors.secondary,
+    borderColor: colors.secondary,
   },
   categoryButtonText: {
     fontSize: FontSizes.body,
@@ -468,7 +514,7 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   opportunityCard: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderRadius: 15,
     overflow: 'hidden',
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
@@ -484,9 +530,9 @@ const styles = StyleSheet.create({
   visitButton: {
     marginTop: 6,
     alignSelf: 'flex-start',
-    backgroundColor: colors.moneyInputBackground,
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: colors.moneyFormBorder,
+    borderColor: colors.secondary,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -515,7 +561,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   opportunityCategoryText: {
-    color: colors.pinkDark,
+    color: colors.pinkDeep,
     fontSize: FontSizes.small,
     fontWeight: '600',
   },
@@ -561,7 +607,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: 6,
-    backgroundColor: colors.orange,
+    backgroundColor: colors.accent,
     borderRadius: 3,
   },
   volunteersText: {
@@ -569,7 +615,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   joinButton: {
-    backgroundColor: colors.orange,
+    backgroundColor: colors.accent,
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,
@@ -589,7 +635,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     padding: 20,
     borderRadius: 15,
     alignItems: 'center',
@@ -599,7 +645,7 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: FontSizes.heading1,
     fontWeight: 'bold',
-    color: colors.orange,
+    color: colors.accent,
     marginTop: 8,
     marginBottom: 4,
   },

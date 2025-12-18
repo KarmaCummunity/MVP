@@ -6,12 +6,14 @@
 // - Params of interest: `hideTopBar`, `showPosts` passed by HomeScreen to control header and content.
 // - External deps: react-navigation stack, TopBarNavigator wrapper.
 import React from 'react';
+import { Platform } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useFocusEffect } from '@react-navigation/native';
 
 import HomeScreen from '../bottomBarScreens/HomeScreen';
 import ChatListScreen from '../topBarScreens/ChatListScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
+import NewChatScreen from '../screens/NewChatScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AboutKarmaCommunityScreen from '../topBarScreens/AboutKarmaCommunityScreen';
 import SettingsScreen from '../topBarScreens/SettingsScreen';
@@ -20,46 +22,51 @@ import PostsReelsScreenWrapper from '../components/PostsReelsScreenWrapper';
 import WebViewScreen from '../screens/WebViewScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
 import FollowersScreen from '../screens/FollowersScreen';
+import DiscoverPeopleScreen from '../screens/DiscoverPeopleScreen';
 import LandingSiteScreen from '../screens/LandingSiteScreen';
 
 import TopBarNavigator from './TopBarNavigator';
 import { useWebMode } from '../stores/webModeStore';
+import { logger } from '../utils/loggerService';
+import CommunityStatsScreen from '../screens/CommunityStatsScreen';
 
 type HomeTabStackParamList = {
   HomeMain: undefined;
   LandingSiteScreen: undefined;
   ChatListScreen: undefined;
   ChatDetailScreen: { chatId?: string } | undefined;
+  NewChatScreen: undefined;
   NotificationsScreen: undefined;
   AboutKarmaCommunityScreen: undefined;
   SettingsScreen: undefined;
   BookmarksScreen: undefined;
   PostsReelsScreen: undefined;
+  CommunityStatsScreen: undefined;
   WebViewScreen: { url?: string } | undefined;
-  UserProfileScreen: { userId?: string } | undefined;
+  UserProfileScreen: { userId: string; userName: string; characterData?: any } | undefined;
   FollowersScreen: { userId?: string } | undefined;
+  DiscoverPeopleScreen: undefined;
 };
 
 const Stack = createStackNavigator<HomeTabStackParamList>();
 
 export default function HomeTabStack(): React.ReactElement {
   const { mode } = useWebMode();
-  
-  useFocusEffect(
-    React.useCallback(() => {
-      console.log('🏠 HomeTabStack - focused');
-    }, [])
-  );
+
+
 
   // Determine initial route based on web mode
-  const initialRouteName = (typeof window !== 'undefined' && mode === 'site') 
-    ? "LandingSiteScreen" 
+  const initialRouteName = (typeof window !== 'undefined' && mode === 'site')
+    ? "LandingSiteScreen"
     : "HomeMain";
+
+  logger.debug('HomeTabStack', 'Rendering with initial route', { initialRouteName, mode });
 
   return (
     <Stack.Navigator
-      id={undefined}
+      id="HomeTabStack"
       initialRouteName={initialRouteName as keyof HomeTabStackParamList}
+      detachInactiveScreens={true}
       screenOptions={({ navigation, route }) => ({
         headerShown: true,
         header: () => (
@@ -69,18 +76,27 @@ export default function HomeTabStack(): React.ReactElement {
             showPosts={(route?.params as any)?.showPosts === true}
           />
         ),
+        // Fix for aria-hidden warning: prevent focus on inactive screens
+        // detachInactiveScreens already handles this, but we keep cardStyle for web compatibility
+        cardStyle: Platform.OS === 'web' ? {
+          // On web, ensure inactive screens don't interfere with focus
+          // This prevents elements in hidden screens from receiving focus
+        } : undefined,
       })}
     >
       <Stack.Screen name="HomeMain" component={HomeScreen} />
       <Stack.Screen name="LandingSiteScreen" component={LandingSiteScreen} />
       <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
       <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
+      <Stack.Screen name="NewChatScreen" component={NewChatScreen} />
       <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
       <Stack.Screen name="AboutKarmaCommunityScreen" component={AboutKarmaCommunityScreen} />
       <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
       <Stack.Screen name="BookmarksScreen" component={BookmarksScreen} />
       <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} />
       <Stack.Screen name="FollowersScreen" component={FollowersScreen} />
+      <Stack.Screen name="DiscoverPeopleScreen" component={DiscoverPeopleScreen} />
+      <Stack.Screen name="CommunityStatsScreen" component={CommunityStatsScreen} />
       <Stack.Screen
         name="PostsReelsScreen"
         component={PostsReelsScreenWrapper}

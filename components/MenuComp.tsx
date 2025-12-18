@@ -11,7 +11,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import colors from "../globals/colors";
 import { FontSizes } from "../globals/constants";
-import { getResponsiveMenuStyles, responsiveFontSize, responsiveSpacing } from "../globals/responsive";
+import { getResponsiveMenuStyles, responsiveFontSize, responsiveSpacing, scaleSize } from "../globals/responsive";
+import { createShadowStyle } from "../globals/styles";
 
 // Define the props that the MenuComp component will accept
 interface MenuCompProps {
@@ -72,7 +73,7 @@ const MenuComp: React.FC<MenuCompProps> = ({ options, onSelectOption }) => {
         onPress={openMenu}
         style={localStyles.menuIconPlacement}
       >
-        <Ionicons name="menu" size={24} color={colors.menuText} />
+        <Ionicons name="menu" size={scaleSize(22)} color={colors.menuText} />
       </TouchableOpacity>
 
       {/* Modal is only rendered when isVisible is true */}
@@ -133,8 +134,7 @@ const MenuComp: React.FC<MenuCompProps> = ({ options, onSelectOption }) => {
 
 const localStyles = StyleSheet.create({
   menuIconPlacement: {
-    padding: responsiveSpacing(10, 12, 14),
-    marginBottom: responsiveSpacing(5, 6, 7),
+    padding: responsiveSpacing(5, 6, 8),
   },
   modalOverlay: {
     flex: 1,
@@ -146,10 +146,7 @@ const localStyles = StyleSheet.create({
     backgroundColor: colors.menuBackground,
     position: "absolute",
     // Dynamic styles applied in JSX for responsive sizing
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    ...createShadowStyle(colors.black, { width: 0, height: scaleSize(2) }, 0.25, scaleSize(3.84)),
     elevation: 5,
     borderWidth: 1,
     borderColor: colors.menuBorder,

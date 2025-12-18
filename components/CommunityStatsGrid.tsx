@@ -52,7 +52,7 @@ const CommunityStatsGrid: React.FC<CommunityStatsGridProps> = ({ onSelect }) => 
 
   useEffect(() => {
     let mounted = true;
-    const POLLING_INTERVAL = 5000; // 5 seconds
+    const POLLING_INTERVAL = 60000; // 60 seconds - stats don't change frequently
     
     const loadStats = async (forceRefresh = false) => {
       if (!mounted) return;
@@ -92,7 +92,7 @@ const CommunityStatsGrid: React.FC<CommunityStatsGridProps> = ({ onSelect }) => 
     // Initial load
     loadStats();
     
-    // Auto-refresh every 5 seconds
+    // Auto-refresh every 60 seconds
     const intervalId = setInterval(() => {
       loadStats(true); // Force refresh from server
     }, POLLING_INTERVAL);
@@ -108,7 +108,7 @@ const CommunityStatsGrid: React.FC<CommunityStatsGridProps> = ({ onSelect }) => 
           { key: 'moneyDonations', icon: '💵', color: colors.legacyDarkGreen },
           { key: 'volunteerHours', icon: '⏰', color: colors.warning },
           { key: 'rides', icon: '🚗', color: colors.info },
-          { key: 'events', icon: '🎉', color: colors.pink },
+          { key: 'events', icon: '🎉', color: colors.secondary },
           { key: 'activeMembers', icon: '👥', color: colors.info, labelKey: 'appActiveUsers' },
           // Extended 15+
           { key: 'foodKg', icon: '🍎', color: colors.success },
@@ -123,7 +123,7 @@ const CommunityStatsGrid: React.FC<CommunityStatsGridProps> = ({ onSelect }) => 
           { key: 'activeVolunteers', icon: '🙋', color: colors.success },
           { key: 'kmCarpooled', icon: '🚗', color: colors.info },
           { key: 'fundsRaised', icon: '💰', color: colors.success },
-          { key: 'mealsServed', icon: '🍽️', color: colors.pink },
+          { key: 'mealsServed', icon: '🍽️', color: colors.secondary },
           { key: 'booksDonated', icon: '📚', color: colors.legacyMediumPurple },
         ];
         return cfg.map((c) => {
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   shadow: {
     ...(Platform.OS === 'web' ? { boxShadow: '0 2px 6px rgba(0,0,0,0.08)' } : {
       elevation: 2,
-      shadowColor: colors.shadowLight,
+      shadowColor: colors.shadow,
       shadowOpacity: 0.1,
       shadowOffset: { width: 0, height: 1 },
       shadowRadius: 4,

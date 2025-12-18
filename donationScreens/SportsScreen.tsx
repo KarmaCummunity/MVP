@@ -12,8 +12,8 @@ export default function SportsScreen() {
         title: t('donations:categories.sports.title'),
         subtitle: t('donations:categories.sports.subtitle'),
         icon: 'football-outline',
-        color: colors.orange,
-        bgColor: colors.orangeLight,
+        color: colors.accent,
+        bgColor: colors.warningLight,
         description: t('donations:categories.sports.description'),
       }}
     />

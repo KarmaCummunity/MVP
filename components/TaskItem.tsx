@@ -192,7 +192,7 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
             onPress={handleEditPress} 
             style={[styles.actionButton, styles.editButton]}
           >
-            <Ionicons name="create-outline" size={18} color={colors.pink} />
+            <Ionicons name="create-outline" size={18} color={colors.secondary} />
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -210,10 +210,10 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderRadius: 12,
     marginBottom: 12,
-    shadowColor: colors.shadowLight,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   editButton: {
-    backgroundColor: colors.pink + '10',
+    backgroundColor: colors.secondary + '10',
   },
   deleteButton: {
     backgroundColor: colors.error + '10',

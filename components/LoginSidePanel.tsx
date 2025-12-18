@@ -379,9 +379,9 @@ const styles = StyleSheet.create({
     top: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     zIndex: 1001,
-    shadowColor: '#000',
+    shadowColor: colors.black,
     shadowOffset: {
       width: -2,
       height: 0,
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.headerBorder,
+    borderBottomColor: colors.border,
     backgroundColor: colors.backgroundSecondary,
   },
   title: {
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.headerBorder,
+    borderColor: colors.border,
   },
   guestButtonText: {
     fontSize: FontSizes.medium,
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundSecondary,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: colors.headerBorder,
+    borderColor: colors.border,
   },
   loginOptionText: {
     fontSize: FontSizes.medium,
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: colors.headerBorder,
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,

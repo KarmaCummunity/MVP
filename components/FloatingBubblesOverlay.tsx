@@ -6,6 +6,7 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { EnhancedStatsService, formatShortNumber } from '../utils/statsService';
 import type { CommunityStats } from '../utils/statsService';
+import colors from '../globals/colors';
 
 // Fallback label by size before stats are loaded
 const getSizeLabel = (radius: number): string => {
@@ -75,41 +76,41 @@ const FloatingBubbles = () => {
   const BOTTOM_SAFE_ZONE_PX = 96; // שמירת אזור הכפתור בתחתית
   const MIN_LABEL_RADIUS_FOR_STATS = 36; // מציגים סטטיסטיקה רק בבועות גדולות יחסית
   const MAX_LABEL_RADIUS_FOR_STATS = 140; // רדיוס מקסימלי לבועה עם סטטיסטיקה
-  const REFRESH_MS = 5000; // רענון נתונים כל 5 שניות
+  const REFRESH_MS = 60000; // רענון נתונים כל 60 שניות - סטטיסטיקות לא משתנות בתדירות גבוהה
 
   // Order and labels for mapping stats to bubbles - all 40+ stats
   const statKeys: Array<keyof CommunityStats> = [
     // Core high-priority stats
     'moneyDonations', 'volunteerHours', 'rides', 'events', 'activeMembers', 'totalUsers',
-    
+
     // User engagement
-    'dailyActiveUsers', 'weeklyActiveUsers', 'newUsersThisWeek', 'newUsersThisMonth', 
+    'dailyActiveUsers', 'weeklyActiveUsers', 'newUsersThisWeek', 'newUsersThisMonth',
     'totalOrganizations', 'citiesWithUsers', 'userEngagementRate',
-    
+
     // Donation metrics
-    'totalDonations', 'donationsThisWeek', 'donationsThisMonth', 'activeDonations', 
-    'completedDonations', 'itemDonations', 'serviceDonations', 'totalMoneyDonated', 
+    'totalDonations', 'donationsThisWeek', 'donationsThisMonth', 'activeDonations',
+    'completedDonations', 'itemDonations', 'serviceDonations', 'totalMoneyDonated',
     'uniqueDonors', 'avgDonationAmount',
-    
+
     // Ride metrics
-    'totalRides', 'ridesThisWeek', 'ridesThisMonth', 'activeRides', 'completedRides', 
+    'totalRides', 'ridesThisWeek', 'ridesThisMonth', 'activeRides', 'completedRides',
     'totalSeatsOffered', 'uniqueDrivers', 'avgSeatsPerRide',
-    
+
     // Event metrics
-    'totalEvents', 'eventsThisWeek', 'eventsThisMonth', 'activeEvents', 'completedEvents', 
+    'totalEvents', 'eventsThisWeek', 'eventsThisMonth', 'activeEvents', 'completedEvents',
     'totalEventAttendees', 'virtualEvents',
-    
+
     // Activity metrics
-    'totalActivities', 'activitiesToday', 'activitiesThisWeek', 'totalLogins', 
+    'totalActivities', 'activitiesToday', 'activitiesThisWeek', 'totalLogins',
     'donationActivities', 'chatActivities', 'activeUsersTracked',
-    
+
     // Communication
-    'totalMessages', 'totalConversations', 'messagesThisWeek', 'groupConversations', 
+    'totalMessages', 'totalConversations', 'messagesThisWeek', 'groupConversations',
     'directConversations',
-    
+
     // Legacy extended stats
-    'foodKg', 'clothingKg', 'bloodLiters', 'treesPlanted', 'animalsAdopted', 'recyclingBags', 
-    'booksDonated', 'appActiveUsers', 'appDownloads', 'activeVolunteers', 'kmCarpooled', 
+    'foodKg', 'clothingKg', 'bloodLiters', 'treesPlanted', 'animalsAdopted', 'recyclingBags',
+    'booksDonated', 'appActiveUsers', 'appDownloads', 'activeVolunteers', 'kmCarpooled',
     'fundsRaised', 'mealsServed', 'courses', 'culturalEvents'
   ];
 
@@ -121,7 +122,7 @@ const FloatingBubbles = () => {
     events: 'אירועים',
     activeMembers: 'חברים פעילים',
     totalUsers: 'סה״כ משתמשים',
-    
+
     // User engagement
     dailyActiveUsers: 'פעילים יומי',
     weeklyActiveUsers: 'פעילים שבועי',
@@ -130,7 +131,7 @@ const FloatingBubbles = () => {
     totalOrganizations: 'ארגונים',
     citiesWithUsers: 'ערים',
     userEngagementRate: 'אחוז מעורבות',
-    
+
     // Donation metrics
     totalDonations: 'סה״כ תרומות',
     donationsThisWeek: 'תרומות השבוע',
@@ -142,7 +143,7 @@ const FloatingBubbles = () => {
     totalMoneyDonated: 'סכום נתרם',
     uniqueDonors: 'תורמים ייחודיים',
     avgDonationAmount: 'ממוצע תרומה',
-    
+
     // Ride metrics
     totalRides: 'סה״כ נסיעות',
     ridesThisWeek: 'נסיעות השבוע',
@@ -152,7 +153,7 @@ const FloatingBubbles = () => {
     totalSeatsOffered: 'מקומות הוצעו',
     uniqueDrivers: 'נהגים ייחודיים',
     avgSeatsPerRide: 'ממוצע מקומות',
-    
+
     // Event metrics
     totalEvents: 'סה״כ אירועים',
     eventsThisWeek: 'אירועים השבוע',
@@ -161,7 +162,7 @@ const FloatingBubbles = () => {
     completedEvents: 'אירועים הושלמו',
     totalEventAttendees: 'משתתפים',
     virtualEvents: 'אירועים וירטואליים',
-    
+
     // Activity metrics
     totalActivities: 'סה״כ פעילויות',
     activitiesToday: 'פעילויות היום',
@@ -170,14 +171,14 @@ const FloatingBubbles = () => {
     donationActivities: 'פעילות תרומה',
     chatActivities: 'פעילות צ׳אט',
     activeUsersTracked: 'משתמשים פעילים',
-    
+
     // Communication
     totalMessages: 'סה״כ הודעות',
     totalConversations: 'שיחות',
     messagesThisWeek: 'הודעות השבוע',
     groupConversations: 'קבוצות',
     directConversations: 'שיחות פרטיות',
-    
+
     // Legacy extended stats
     foodKg: 'ק״ג מזון',
     clothingKg: 'ק״ג בגדים',
@@ -200,11 +201,10 @@ const FloatingBubbles = () => {
     const depth = Math.random();
     const baseSize = 25 + Math.random() * 40;
     const size = baseSize * (0.3 + depth * 1.7); // גדלים מתאימים לעומק
-    // גווני צבע בהירים: תכלת/כחול/ורוד
     const hueBase = Math.random() < 0.3
       ? 330 + Math.random() * 20 // pinks 330-350
       : 195 + Math.random() * 45; // light blues 195-240
-    
+
     return {
       id: `bubble-${Math.random().toString(36).substr(2, 9)}`,
       x: Math.random() * (canvas.width + 200) - 100,
@@ -220,7 +220,7 @@ const FloatingBubbles = () => {
       speed: 0.006 + Math.random() * 0.012,
       wobbleSpeed: 0.0008 + Math.random() * 0.0015,
       wobbleAmount: 1 + Math.random() * 3,
-      wobbleOffset: Math.random() * Math.PI ,
+      wobbleOffset: Math.random() * Math.PI,
       shimmerSpeed: 0.008 + Math.random() * 0.015,
       shimmerOffset: Math.random() * Math.PI * 2,
       opacity: 0.5 + depth * 0.4,
@@ -383,15 +383,15 @@ const FloatingBubbles = () => {
     const dy = mouseRef.current.y - bubble.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     const influence = bubble.depth * 160 + 40; // טווח השפעה מעט רחב יותר לתנועה עדינה
-    
+
     if (distance < influence) {
       const force = (influence - distance) / influence;
       const angle = Math.atan2(dy, dx);
       const repelForce = force * force * 1.2; // כוח דחייה מעט חזק יותר
-      
+
       bubble.mouseForceX += Math.cos(angle + Math.PI) * repelForce;
       bubble.mouseForceY += Math.sin(angle + Math.PI) * repelForce;
-      
+
       // אם לוחצים, כוח מעט מוגבר אך עדיין עדין
       if (mouseRef.current.isPressed) {
         bubble.mouseForceX *= 1.15;
@@ -400,7 +400,7 @@ const FloatingBubbles = () => {
         bubble.radius = bubble.originalRadius * (1 + Math.sin(Date.now() * 0.05) * 0.02);
       }
     }
-    
+
     // החזרת כוחות לאפס בהדרגה
     bubble.mouseForceX *= 0.94;
     bubble.mouseForceY *= 0.94;
@@ -414,93 +414,93 @@ const FloatingBubbles = () => {
     bubble.radius = lerp(bubble.radius, bubble.targetRadius, 0.04);
     const wobbleX = Math.sin(time * bubble.wobbleSpeed + bubble.wobbleOffset) * bubble.wobbleAmount;
     const wobbleY = Math.cos(time * bubble.wobbleSpeed * 0.7 + bubble.wobbleOffset) * bubble.wobbleAmount * 0.5;
-    
+
     const x = bubble.x + wobbleX + bubble.mouseForceX + bubble.dragForceX;
     const y = bubble.y + wobbleY + bubble.mouseForceY + bubble.dragForceY;
-    
+
     ctx.save();
-    
+
     // שקיפות לפי עומק
     const alpha = bubble.opacity * (0.6 + bubble.depth * 0.4);
-    
+
     // צבעים דינמיים
     const shimmer = Math.sin(time * bubble.shimmerSpeed + bubble.shimmerOffset) * 0.2 + 0.65;
     const hue = bubble.hue + Math.sin(time * 0.001 + bubble.shimmerOffset) * 10;
-    
+
     // גרדיאנט מורכב עבור הבועה
     const mainGradient = ctx.createRadialGradient(
-      x - bubble.radius * 0.3, 
-      y - bubble.radius * 0.4, 
+      x - bubble.radius * 0.3,
+      y - bubble.radius * 0.4,
       0,
-      x, 
-      y, 
+      x,
+      y,
       bubble.radius
     );
-    
+
     mainGradient.addColorStop(0, `hsla(${hue}, ${bubble.saturation + 10}%, ${bubble.lightness + 22}%, ${alpha * shimmer})`);
     mainGradient.addColorStop(0.25, `hsla(${hue}, ${bubble.saturation}%, ${bubble.lightness + 8}%, ${alpha * 0.85})`);
     mainGradient.addColorStop(0.65, `hsla(${hue - 8}, ${bubble.saturation + 8}%, ${bubble.lightness}%, ${alpha * 0.6})`);
     mainGradient.addColorStop(0.92, `hsla(${hue - 16}, ${bubble.saturation + 12}%, ${bubble.lightness - 16}%, ${alpha * 0.38})`);
     mainGradient.addColorStop(1, `hsla(${hue - 24}, ${bubble.saturation + 16}%, ${bubble.lightness - 28}%, ${alpha * 0.25})`);
-    
+
     // ציור הבועה הראשית
     ctx.beginPath();
     ctx.arc(x, y, bubble.radius, 0, Math.PI * 2);
     ctx.fillStyle = mainGradient;
     ctx.fill();
-    
+
     // הברקה עליונה
     const highlightGradient = ctx.createRadialGradient(
-      x - bubble.radius * 0.35, 
-      y - bubble.radius * 0.45, 
+      x - bubble.radius * 0.35,
+      y - bubble.radius * 0.45,
       0,
-      x - bubble.radius * 0.35, 
-      y - bubble.radius * 0.45, 
+      x - bubble.radius * 0.35,
+      y - bubble.radius * 0.45,
       bubble.radius * 0.7
     );
-    
+
     const highlightAlpha = alpha * shimmer * 0.5;
     highlightGradient.addColorStop(0, `rgba(255, 255, 255, ${highlightAlpha})`);
     highlightGradient.addColorStop(0.3, `rgba(255, 255, 255, ${highlightAlpha * 0.6})`);
     highlightGradient.addColorStop(0.7, `rgba(200, 230, 255, ${highlightAlpha * 0.3})`);
     highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    
+
     ctx.beginPath();
     ctx.arc(x - bubble.radius * 0.25, y - bubble.radius * 0.35, bubble.radius * 0.45, 0, Math.PI * 2);
     ctx.fillStyle = highlightGradient;
     ctx.fill();
-    
+
     // קו היקפי דק
     ctx.beginPath();
     ctx.arc(x, y, bubble.radius, 0, Math.PI * 2);
     ctx.strokeStyle = `hsla(${hue + 30}, 70%, 80%, ${alpha * 0.4})`;
     ctx.lineWidth = 0.5;
     ctx.stroke();
-    
+
     // נקודת הברקה קטנה
     ctx.beginPath();
     ctx.arc(x - bubble.radius * 0.4, y - bubble.radius * 0.5, bubble.radius * 0.12, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.4})`;
     ctx.fill();
-    
+
     // רפלקציה תחתונה עדינה
     const bottomReflectionGradient = ctx.createRadialGradient(
-      x, 
-      y + bubble.radius * 0.6, 
+      x,
+      y + bubble.radius * 0.6,
       0,
-      x, 
-      y + bubble.radius * 0.6, 
+      x,
+      y + bubble.radius * 0.6,
       bubble.radius * 0.4
     );
-    
+
     bottomReflectionGradient.addColorStop(0, `rgba(255, 255, 255, ${alpha * 0.12})`);
     bottomReflectionGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    
+
     ctx.beginPath();
     ctx.arc(x, y + bubble.radius * 0.7, bubble.radius * 0.25, 0, Math.PI * 2);
     ctx.fillStyle = bottomReflectionGradient;
     ctx.fill();
-    
+
     // labels: number and short text by size (יותר "בועתי")
     const numberFontSize = Math.max(12, bubble.radius * 0.54);
     const textFontSize = Math.max(10, bubble.radius * 0.25);
@@ -555,20 +555,20 @@ const FloatingBubbles = () => {
     rippleRef.current.forEach((ripple, index) => {
       ripple.life += 0.02;
       ripple.radius = ripple.life * ripple.maxRadius;
-      
+
       if (ripple.life >= 1) {
         rippleRef.current.splice(index, 1);
         return;
       }
-      
+
       const alpha = (1 - ripple.life) * ripple.strength * 0.3;
-      
+
       ctx.beginPath();
       ctx.arc(ripple.x, ripple.y, ripple.radius, 0, Math.PI * 2);
       ctx.strokeStyle = `rgba(200, 230, 255, ${alpha})`;
       ctx.lineWidth = 2;
       ctx.stroke();
-      
+
       // גלים נוספים
       if (ripple.life > 0.3) {
         ctx.beginPath();
@@ -583,47 +583,47 @@ const FloatingBubbles = () => {
   const animate = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const time = Date.now();
-    
+
     // רקע מדרגי בהיר
     const backgroundGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    backgroundGradient.addColorStop(0, '#b9dcff');
-    backgroundGradient.addColorStop(0.35, '#cfe6ff');
-    backgroundGradient.addColorStop(0.7, '#f8d0e6');
-    backgroundGradient.addColorStop(1, '#e7f1ff');
-    
+    backgroundGradient.addColorStop(0, colors.blueLight);
+    backgroundGradient.addColorStop(0.35, colors.blueLight);
+    backgroundGradient.addColorStop(0.7, colors.pinkLight);
+    backgroundGradient.addColorStop(1, colors.backgroundTertiary);
+
     ctx.fillStyle = backgroundGradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+
     // מיון בועות לפי עומק לציור נכון
     const sortedBubbles = [...bubblesRef.current].sort((a, b) => a.depth - b.depth);
-    
+
     // עדכון ורישום בועות
     sortedBubbles.forEach((bubble) => {
       // תנועה טבעית איטית יותר
       bubble.life += 0.006;
       bubble.x += bubble.vx + Math.sin(bubble.life * bubble.speed) * 0.06;
       bubble.y += bubble.vy + Math.cos(bubble.life * bubble.speed * 0.7) * 0.045;
-      
+
       // כוחות עכבה במים מעט חזקים יותר
       bubble.vx *= 0.998;
       bubble.vy *= 0.998;
-      
+
       // כוחות עליה עדינים יותר
       bubble.vy -= 0.0008 * bubble.depth; // בועות קרובות עולות מעט יותר
-      
+
       // השפעת עכבר/מגע
       applyMouseForces(bubble);
-      
+
       // השפעת גלי הדף
       rippleRef.current.forEach(ripple => {
         const dx = bubble.x - ripple.x;
         const dy = bubble.y - ripple.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        
+
         if (distance < ripple.radius && ripple.life < 0.8) {
           const force = (ripple.radius - distance) / ripple.radius * ripple.strength * 0.5;
           const angle = Math.atan2(dy, dx);
@@ -631,41 +631,41 @@ const FloatingBubbles = () => {
           bubble.dragForceY += Math.sin(angle) * force * bubble.depth;
         }
       });
-      
+
       // גבולות המסך עם מעגלות, משאירים מרווח בתחתית לאזור הכפתור
       const bottomLimit = canvas.height - bubble.radius * 0.6;
       if (bubble.x < -bubble.radius) bubble.x = canvas.width + bubble.radius;
       if (bubble.x > canvas.width + bubble.radius) bubble.x = -bubble.radius;
       if (bubble.y < -bubble.radius) bubble.y = bottomLimit;
       if (bubble.y > bottomLimit) bubble.y = -bubble.radius;
-      
+
       // ציור הבועה
       drawBubble(ctx, bubble, time);
     });
-    
+
     // ציור גלי הדף
     drawRipples(ctx);
-    
+
     // חלקיקים קטנים נוספים באווירה
     for (let i = 0; i < 30; i++) {
       const particleX = (time * 0.01 + i * 50) % (canvas.width + 100) - 50;
       const particleY = (time * 0.005 + i * 80) % (canvas.height + 100) - 50;
       const particleSize = Math.sin(time * 0.003 + i) * 1 + 2;
       const particleAlpha = (Math.sin(time * 0.002 + i) + 1) * 0.1;
-      
+
       ctx.beginPath();
       ctx.arc(particleX, particleY, particleSize, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(180, 210, 240, ${particleAlpha})`;
       ctx.fill();
     }
-    
+
     animationRef.current = requestAnimationFrame(animate);
   }, [applyMouseForces, drawBubble, drawRipples]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
       canvas.height = Math.max(0, window.innerHeight - BOTTOM_SAFE_ZONE_PX);
@@ -673,10 +673,10 @@ const FloatingBubbles = () => {
       initializeBubbles(canvas);
       assignStatsToBubbles();
     };
-    
+
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
-    
+
     // הוספת מאזיני אירועים
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('mousedown', handleMouseDown);
@@ -684,9 +684,9 @@ const FloatingBubbles = () => {
     canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
     canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
-    
+
     animate();
-    
+
     return () => {
       window.removeEventListener('resize', resizeCanvas);
       canvas.removeEventListener('mousemove', handleMouseMove);
@@ -699,8 +699,8 @@ const FloatingBubbles = () => {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [animate, initializeBubbles, handleMouseMove, handleMouseDown, handleMouseUp, 
-      handleTouchMove, handleTouchStart, handleTouchEnd]);
+  }, [animate, initializeBubbles, handleMouseMove, handleMouseDown, handleMouseUp,
+    handleTouchMove, handleTouchStart, handleTouchEnd]);
 
   return (
     <div
@@ -710,8 +710,8 @@ const FloatingBubbles = () => {
       <canvas
         ref={canvasRef}
         className="absolute inset-0 touch-none"
-        style={{ 
-          background: 'linear-gradient(180deg, #b9dcff 0%, #cfe6ff 35%, #f8d0e6 70%, #e7f1ff 100%)'
+        style={{
+          background: `linear-gradient(180deg, ${colors.blueLight} 0%, ${colors.blueLight} 35%, ${colors.pinkLight} 70%, ${colors.backgroundTertiary} 100%)`
         }}
       />
 

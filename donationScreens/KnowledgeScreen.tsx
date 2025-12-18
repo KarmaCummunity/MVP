@@ -1,17 +1,16 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
   StatusBar,
-  ScrollView,
   TouchableOpacity,
   Image,
   Linking,
   Alert,
 } from 'react-native';
-import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
+import { NavigationProp, ParamListBase, useFocusEffect, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import DonationStatsFooter from '../components/DonationStatsFooter';
 import colors from '../globals/colors';
@@ -19,6 +18,8 @@ import { FontSizes } from '../globals/constants';
 import { useUser } from '../stores/userStore';
 import HeaderComp from '../components/HeaderComp';
 import { donationResources } from '../utils/donationResources';
+import AddLinkComponent from '../components/AddLinkComponent';
+import ScrollContainer from '../components/ScrollContainer';
 
 // Mock data for educational content
 const educationalLinks = [
@@ -73,7 +74,7 @@ const educationalLinks = [
     description: 'שיעורי אמנות ויצירה לכל הגילאים',
     url: 'https://www.youtube.com/c/ArtForKidsHub',
     icon: 'brush-outline',
-    color: colors.pinkDark,
+    color: colors.pinkDeep,
     category: 'אמנות',
   },
 ];
@@ -130,7 +131,31 @@ export default function KnowledgeScreen({
 }: {
   navigation: NavigationProp<ParamListBase>;
 }) {
+  const route = useRoute();
+  const routeParams = route.params as { mode?: string } | undefined;
+  
   const { selectedUser, isRealAuth } = useUser();
+  
+  // Get initial mode from URL (deep link) or default to search mode (מחפש)
+  // mode: true = offerer (wants to teach/share), false = seeker (needs learning)
+  // URL mode: 'offer' = true, 'search' = false or undefined = search
+  // Default is search mode (false)
+  const initialMode = routeParams?.mode === 'offer' ? true : false;
+  const [mode, setMode] = useState(initialMode);
+  
+  // If no mode in URL, set it to search (default) and update URL
+  useEffect(() => {
+    if (!routeParams?.mode || routeParams.mode === 'undefined' || routeParams.mode === 'null' || routeParams.mode === '') {
+      // URL doesn't have mode, so we're in default search mode
+      // Make sure state reflects this and update URL
+      if (mode !== false) {
+        setMode(false);
+      }
+      // Update URL to include /search
+      (navigation as any).setParams({ mode: 'search' });
+    }
+  }, [routeParams?.mode]);
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("");
   const [selectedSort, setSelectedSort] = useState("");
@@ -138,6 +163,34 @@ export default function KnowledgeScreen({
   const [filteredCommunityContent, setFilteredCommunityContent] = useState(communityContent);
   const [selectedMentorship, setSelectedMentorship] = useState<any>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Update mode when route params change (e.g., from deep link)
+  useEffect(() => {
+    if (routeParams?.mode && routeParams.mode !== 'undefined' && routeParams.mode !== 'null') {
+      const newMode = routeParams.mode === 'offer' ? true : false;
+      if (newMode !== mode) {
+        setMode(newMode);
+      }
+    }
+  }, [routeParams?.mode]);
+
+  // Update URL when mode changes (toggle button pressed) or when screen loads without mode
+  useEffect(() => {
+    const newMode = mode ? 'offer' : 'search';
+    const currentMode = routeParams?.mode;
+    
+    // If no mode in URL, set it to search (default)
+    if (!currentMode || currentMode === 'undefined' || currentMode === 'null') {
+      // Set initial mode to search in URL
+      (navigation as any).setParams({ mode: 'search' });
+      return;
+    }
+    
+    // Only update URL if mode actually changed
+    if (newMode !== currentMode) {
+      (navigation as any).setParams({ mode: newMode });
+    }
+  }, [mode, navigation, routeParams?.mode]);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -229,13 +282,13 @@ export default function KnowledgeScreen({
       
       // Filter by search query
       if (query.trim() !== "") {
-        filteredEducational = filteredEducational.filter(item => 
+        filteredEducational = filteredEducational.filter(item =>
           item.title.toLowerCase().includes(query.toLowerCase()) ||
           item.description.toLowerCase().includes(query.toLowerCase()) ||
           item.category.toLowerCase().includes(query.toLowerCase())
         );
         
-        filteredCommunity = filteredCommunity.filter(item => 
+        filteredCommunity = filteredCommunity.filter(item =>
           item.title.toLowerCase().includes(query.toLowerCase()) ||
           item.subject.toLowerCase().includes(query.toLowerCase()) ||
           item.description.toLowerCase().includes(query.toLowerCase()) ||
@@ -250,12 +303,12 @@ export default function KnowledgeScreen({
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.backgroundPrimary} />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       
       <HeaderComp
-        mode={true}
+        mode={mode}
         menuOptions={[]}
-        onToggleMode={() => {}}
+        onToggleMode={() => setMode(!mode)}
         onSelectMenuItem={() => {}}
         title=""
         placeholder="חפש קורסים ושיעורים..."
@@ -265,7 +318,11 @@ export default function KnowledgeScreen({
         onSearch={handleSearch}
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollContainer
+        style={styles.scrollView}
+        contentStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Educational Links Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>קישורים חינוכיים</Text>
@@ -366,7 +423,7 @@ export default function KnowledgeScreen({
                   </View>
                   
                   <View style={styles.communityTeacher}>
-                    <Ionicons name="person" size={16} color={colors.pink} />
+                    <Ionicons name="person" size={16} color={colors.secondary} />
                     <Text style={styles.communityTeacherText}>{content.teacher}</Text>
                   </View>
                 </View>
@@ -375,24 +432,13 @@ export default function KnowledgeScreen({
           </View>
         </View>
 
-        {/* Stats Section */}
-          {(() => {
-            const activeCourses = filteredEducationalLinks.length;
-            const totalStudents = filteredCommunityContent.reduce((s, c) => s + (c.students || 0), 0);
-            const avgRating = filteredCommunityContent.length > 0
-              ? (filteredCommunityContent.reduce((s, c) => s + (c.rating || 0), 0) / filteredCommunityContent.length).toFixed(1)
-              : '0.0';
-            return (
-              <DonationStatsFooter
-                stats={[
-                  { label: 'קורסים פעילים', value: activeCourses, icon: 'school-outline' },
-                  { label: 'תלמידים', value: totalStudents, icon: 'people-outline' },
-                  { label: 'דירוג ממוצע', value: avgRating, icon: 'star-outline' },
-                ]}
-              />
-            );
-          })()}
-      </ScrollView>
+
+        {/* Add Links Section */}
+        <View style={styles.sectionLinks}>
+          <Text style={styles.sectionTitle}>קישורים שימושיים</Text>
+          <AddLinkComponent category="knowledge" />
+        </View>
+      </ScrollContainer>
     </SafeAreaView>
   );
 };
@@ -400,17 +446,17 @@ export default function KnowledgeScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
   },
 
   header: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     paddingTop: 20,
     paddingBottom: 15,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    shadowColor: colors.shadowLight,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -448,13 +494,22 @@ const styles = StyleSheet.create({
   settingsButton: {
     padding: 8,
   },
-  content: {
+  scrollView: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  content: {
+    paddingBottom: 40,
   },
   section: {
     marginTop: 20,
     marginBottom: 30,
+    paddingHorizontal: 60,
+  },
+  sectionLinks: {
+    marginTop: 20,
+    marginBottom: 130,
+    paddingHorizontal: 60,
   },
   sectionTitle: {
     fontSize: FontSizes.medium,
@@ -471,11 +526,11 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   linkCard: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderRadius: 15,
     padding: 20,
     marginBottom: 15,
-    shadowColor: colors.shadowLight,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -518,11 +573,11 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   communityCard: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderRadius: 15,
     padding: 20,
     marginBottom: 15,
-    shadowColor: colors.shadowLight,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -558,7 +613,7 @@ const styles = StyleSheet.create({
   },
   communitySubject: {
     fontSize: FontSizes.small,
-    color: colors.pink,
+    color: colors.secondary,
     marginBottom: 6,
   },
   communityDescription: {
@@ -585,7 +640,7 @@ const styles = StyleSheet.create({
   communityPrice: {
     fontSize: FontSizes.body,
     fontWeight: '600',
-    color: colors.pink,
+    color: colors.secondary,
   },
   communityTeacher: {
     flexDirection: 'row',
@@ -593,7 +648,7 @@ const styles = StyleSheet.create({
   },
   communityTeacherText: {
     fontSize: FontSizes.small,
-    color: colors.pink,
+    color: colors.secondary,
     marginLeft: 4,
   },
   statsSection: {
@@ -606,11 +661,11 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     padding: 20,
     borderRadius: 15,
     alignItems: 'center',
-    shadowColor: colors.shadowLight,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -619,7 +674,7 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: FontSizes.heading1,
     fontWeight: 'bold',
-    color: colors.pink,
+    color: colors.secondary,
     marginTop: 8,
     marginBottom: 4,
   },

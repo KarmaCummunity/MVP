@@ -1,6 +1,6 @@
 // utils/firebaseClient.ts
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, Firestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import Constants from 'expo-constants';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
@@ -39,13 +39,19 @@ export function getFirebase() {
   }
 
   if (!db) {
-    db = getFirestore(app);
-    // Enable offline persistence (deprecation warning may appear in future Firebase versions; non-blocking)
+    // Initialize Firestore with persistent local cache (new recommended approach)
+    // This replaces the deprecated enableIndexedDbPersistence() method
     try {
-      enableIndexedDbPersistence(db);
+      db = initializeFirestore(app, {
+        localCache: persistentLocalCache({ 
+          tabManager: persistentMultipleTabManager() 
+        }),
+      });
     } catch (e) {
-      // May fail in Chrome/multiple tabs — non-blocking
-      console.warn('Firestore persistence not enabled:', (e as any)?.message);
+      // Fallback to getFirestore if initialization fails (e.g., already initialized)
+      // This can happen if Firestore was already initialized elsewhere
+      console.warn('Firestore initialization with cache failed, using default:', (e as any)?.message);
+      db = getFirestore(app);
     }
   }
   if (!storage) {

@@ -37,7 +37,7 @@ interface CommentsModalProps {
   postTitle: string;
   postUser: {
     id: string;
-    name: string;
+    name: string | null; // Can be null if name is not available (never use ID as name)
     avatar: string;
   };
 }
@@ -64,7 +64,7 @@ export default function CommentsModal({
         id: msg.id,
         text: msg.text,
         userId: msg.senderId,
-        userName: msg.senderId === postUser.id ? postUser.name : 'משתמש אחר',
+        userName: msg.senderId === postUser.id ? (postUser.name || 'משתמש') : 'משתמש אחר',
         userAvatar: msg.senderId === postUser.id ? postUser.avatar : 'https://picsum.photos/seed/user/100/100',
         timestamp: msg.timestamp,
         likes: Math.floor(Math.random() * 10),
@@ -109,7 +109,7 @@ export default function CommentsModal({
   };
 
   const handleLikeComment = (commentId: string) => {
-    setComments(prev => prev.map(comment => 
+    setComments(prev => prev.map(comment =>
       comment.id === commentId 
         ? { 
             ...comment, 
@@ -186,7 +186,7 @@ export default function CommentsModal({
         <View style={styles.postInfo}>
           <Image source={{ uri: postUser.avatar }} style={styles.postUserAvatar} />
           <View style={styles.postInfoContent}>
-            <Text style={styles.postUserName}>{postUser.name}</Text>
+            <Text style={styles.postUserName}>{postUser.name || 'משתמש'}</Text>
             <Text style={styles.postTitle}>{postTitle}</Text>
           </View>
         </View>
@@ -231,7 +231,7 @@ export default function CommentsModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',

@@ -105,7 +105,7 @@ export default function CommunityStatsPanel() {
           <Text style={styles.sectionTitle}>{t('home:statsDetails.realTimeData')}</Text>
           <View style={styles.statsGrid}>
             <StatItem icon="people" value="3,847" label={t('home:stats.activeMembers') as string} />
-            <StatItem icon="heart" value="12,456" label={t('home:stats.monthlyDonations') as string} color={colors.pink} />
+            <StatItem icon="heart" value="12,456" label={t('home:stats.monthlyDonations') as string} color={colors.secondary} />
             <StatItem icon="trending-up" value="+23%" label={t('home:stats.monthlyGrowth') as string} color={colors.success} />
             <StatItem icon="globe" value="42" label={t('home:stats.activeCities') as string} color={colors.info} />
           </View>
@@ -120,7 +120,7 @@ export default function CommunityStatsPanel() {
               <Text style={styles.impactText}>2,341 {t('home:stats.sharedRides')}</Text>
             </View>
             <View style={styles.impactRow}>
-              <Ionicons name="restaurant" size={24} color={colors.pink} />
+              <Ionicons name="restaurant" size={24} color={colors.secondary} />
               <Text style={styles.impactText}>5,678 {t('home:stats.donatedMeals')}</Text>
             </View>
             <View style={styles.impactRow}>

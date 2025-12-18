@@ -8,7 +8,7 @@ export default function DreamsScreen() {
       config={{
         id: 'dreams',
         icon: 'star-outline',
-        color: colors.pink,
+        color: colors.secondary,
         bgColor: colors.pinkLight,
       }}
     />

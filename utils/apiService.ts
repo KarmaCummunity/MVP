@@ -20,6 +20,7 @@ import { API_BASE_URL as CONFIG_API_BASE_URL } from './config.constants';
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
+  user?: any; // For resolveUserId endpoint compatibility
   error?: string;
   message?: string;
   version?: string;
@@ -156,6 +157,17 @@ class ApiService {
     return this.request(`/api/users/${userId}`);
   }
 
+  /**
+   * Resolve user ID from firebase_uid, google_id, or email to UUID
+   * This is used when the client has Firebase UID or Google ID and needs the database UUID
+   */
+  async resolveUserId(params: { firebase_uid?: string; google_id?: string; email?: string }): Promise<ApiResponse> {
+    return this.request('/api/users/resolve-id', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  }
+
   async getUsers(filters: {
     city?: string;
     search?: string;
@@ -168,7 +180,7 @@ class ApiService {
         params.append(key, value.toString());
       }
     });
-    
+
     return this.request(`/api/users?${params.toString()}`);
   }
 
@@ -185,6 +197,10 @@ class ApiService {
 
   async getUserActivities(userId: string, limit = 50): Promise<ApiResponse> {
     return this.request(`/api/users/${userId}/activities?limit=${limit}`);
+  }
+
+  async getUsersSummary(): Promise<ApiResponse> {
+    return this.request('/api/users/stats/summary');
   }
 
   async followUser(userId: string, followerId: string): Promise<ApiResponse> {
@@ -221,7 +237,7 @@ class ApiService {
         params.append(key, value.toString());
       }
     });
-    
+
     return this.request(`/api/donations?${params.toString()}`);
   }
 
@@ -265,6 +281,7 @@ class ApiService {
     status?: string;
     limit?: number;
     offset?: number;
+    include_past?: string;
   } = {}): Promise<ApiResponse> {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
@@ -272,7 +289,7 @@ class ApiService {
         params.append(key, value.toString());
       }
     });
-    
+
     return this.request(`/api/rides?${params.toString()}`);
   }
 
@@ -326,7 +343,7 @@ class ApiService {
         }
       }
     });
-    
+
     return this.request(`/api/stats/community?${params.toString()}`);
   }
 
@@ -340,7 +357,7 @@ class ApiService {
     if (city) {
       params.append('city', city);
     }
-    
+
     return this.request(`/api/stats/community/trends?${params.toString()}`);
   }
 
@@ -448,17 +465,76 @@ class ApiService {
     return this.request(`/api/chat/search?q=${encodeURIComponent(query)}&user_id=${userId}`);
   }
 
+  // Community Members APIs
+  async getCommunityMembers(filters: {
+    status?: 'active' | 'inactive';
+    search?: string;
+  } = {}): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && String(value).length > 0) {
+        params.append(key, String(value));
+      }
+    });
+    const qs = params.toString();
+    return this.request(`/api/community-members${qs ? `?${qs}` : ''}`);
+  }
+
+  async getCommunityMember(memberId: string): Promise<ApiResponse> {
+    return this.request(`/api/community-members/${memberId}`);
+  }
+
+  async createCommunityMember(memberData: {
+    name: string;
+    role: string;
+    description?: string;
+    contact_info?: {
+      email?: string;
+      phone?: string;
+      [key: string]: any;
+    };
+    status?: 'active' | 'inactive';
+    created_by?: string;
+  }): Promise<ApiResponse> {
+    return this.request('/api/community-members', {
+      method: 'POST',
+      body: JSON.stringify(memberData),
+    });
+  }
+
+  async updateCommunityMember(
+    memberId: string,
+    updateData: {
+      name?: string;
+      role?: string;
+      description?: string;
+      contact_info?: {
+        email?: string;
+        phone?: string;
+        [key: string]: any;
+      };
+      status?: 'active' | 'inactive';
+    }
+  ): Promise<ApiResponse> {
+    return this.request(`/api/community-members/${memberId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updateData),
+    });
+  }
+
+  async deleteCommunityMember(memberId: string): Promise<ApiResponse> {
+    return this.request(`/api/community-members/${memberId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Legacy API fallback
   async legacyRequest<T>(collection: string, userId: string, itemId?: string): Promise<T | null> {
-    if (!USE_BACKEND) {
-      return null;
-    }
-
     try {
-      const endpoint = itemId 
+      const endpoint = itemId
         ? `/api/items/${collection}/${userId}/${itemId}`
         : `/api/items/${collection}/${userId}`;
-        
+
       const response = await this.request<T>(endpoint);
       return response.success ? response.data || null : null;
     } catch (error) {
@@ -469,7 +545,7 @@ class ApiService {
 
   // Utility methods
   isBackendAvailable(): boolean {
-    return USE_BACKEND;
+    return true; // Backend is always available
   }
 
   async healthCheck(): Promise<boolean> {

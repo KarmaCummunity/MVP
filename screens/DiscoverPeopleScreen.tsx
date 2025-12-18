@@ -22,14 +22,16 @@ import { useNavigation, useFocusEffect, NavigationProp, ParamListBase } from '@r
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { UserPreview as CharacterType } from '../globals/types';
-import { 
-  getFollowSuggestions, 
+import {
+  getFollowSuggestions,
   getPopularUsers,
-  followUser, 
+  followUser,
   unfollowUser,
-  getFollowStats 
+  getFollowStats
 } from '../utils/followService';
+import { createConversation, conversationExists } from '../utils/chatService';
 import { useUser } from '../stores/userStore';
+import apiService from '../utils/apiService';
 
 import { getScreenInfo, isLandscape } from '../globals/responsive';
 
@@ -46,7 +48,6 @@ export default function DiscoverPeopleScreen() {
   const [popularUsers, setPopularUsers] = useState<CharacterType[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'suggestions' | 'popular'>('suggestions');
-  const [refreshKey, setRefreshKey] = useState(0);
   const [followStats, setFollowStats] = useState<Record<string, { isFollowing: boolean }>>({});
 
   useEffect(() => {
@@ -58,35 +59,116 @@ export default function DiscoverPeopleScreen() {
     React.useCallback(() => {
       console.log('🔍 DiscoverPeopleScreen - Screen focused, refreshing data...');
       loadUsers();
-      // Force re-render by updating refresh key
-      setRefreshKey(prev => prev + 1);
     }, [])
   );
+
+  // Helper function to check if a user is the current user
+  const isCurrentUserCheck = useCallback((
+    userId: string,
+    userEmail: string | undefined,
+    currentUserId: string,
+    currentUserEmail: string
+  ): boolean => {
+    const normalizedUserId = String(userId || '').trim().toLowerCase();
+    const normalizedUserEmail = userEmail ? String(userEmail).trim().toLowerCase() : '';
+
+    return normalizedUserId === currentUserId ||
+      (currentUserEmail && normalizedUserEmail === currentUserEmail) ||
+      normalizedUserId === '';
+  }, []);
 
   const loadUsers = async () => {
     setLoading(true);
     try {
-      if (selectedUser) {
-        const userSuggestions = await getFollowSuggestions(selectedUser.id, 20);
-        setSuggestions(userSuggestions as any);
-      } else {
+      if (!selectedUser) {
         setSuggestions([]);
+        setPopularUsers([]);
+        setLoading(false);
+        return;
       }
-      
-      const popular = await getPopularUsers(20);
-      setPopularUsers(popular as any);
-      
-      // Load follow stats for all users
-      const allUsersToCheck = [...(suggestions as any[]), ...(popular as any[])];
-      const stats: Record<string, { isFollowing: boolean }> = {};
-      
-      for (const user of allUsersToCheck) {
-        if (selectedUser) {
-          const userStats = await getFollowStats(user.id, selectedUser.id);
-          stats[user.id] = { isFollowing: userStats.isFollowing };
+
+      const currentUserId = String(selectedUser.id).trim().toLowerCase();
+      const currentUserEmail = selectedUser.email ? String(selectedUser.email).trim().toLowerCase() : '';
+
+      console.log('🔍 DiscoverPeopleScreen - Filtering users. Current user ID:', currentUserId, 'Email:', currentUserEmail);
+
+      let filteredSuggestions: any[] = [];
+      // Get ALL users (no limit) - use high limit to get all users from database
+      const userSuggestions = await getFollowSuggestions(currentUserId, 1000, currentUserEmail);
+      // Filter out current user from suggestions - check both ID and email
+      filteredSuggestions = (userSuggestions as any[]).filter((user) => {
+        const isCurrentUser = isCurrentUserCheck(user.id, user.email, currentUserId, currentUserEmail);
+
+        if (isCurrentUser) {
+          console.log('🚫 Filtered out current user from suggestions:', {
+            userId: user.id,
+            userEmail: user.email,
+            name: user.name
+          });
+        }
+
+        return !isCurrentUser;
+      });
+      setSuggestions(filteredSuggestions);
+
+      // Get popular users excluding current user - get ALL users (no limit)
+      const popular = await getPopularUsers(1000, currentUserId, currentUserEmail);
+      // Additional filter as safety measure - check both ID and email
+      const filteredPopular = (popular as any[]).filter((user) => {
+        const isCurrentUser = isCurrentUserCheck(user.id, user.email, currentUserId, currentUserEmail);
+
+        if (isCurrentUser) {
+          console.log('🚫 Filtered out current user from popular:', {
+            userId: user.id,
+            userEmail: user.email,
+            name: user.name
+          });
+        }
+
+        return !isCurrentUser;
+      });
+      setPopularUsers(filteredPopular);
+
+      // Get total users count from server
+      let totalUsersInDatabase = 0;
+      try {
+        const summaryResponse = await apiService.getUsersSummary();
+        if (summaryResponse && summaryResponse.success && summaryResponse.data) {
+          totalUsersInDatabase = parseInt(summaryResponse.data.total_users || '0', 10);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching users summary:', error);
+        // Try to get count from the actual response
+        try {
+          const allUsersResponse = await apiService.getUsers({ limit: 1000, offset: 0 });
+          if (allUsersResponse && allUsersResponse.success && allUsersResponse.data) {
+            totalUsersInDatabase = (allUsersResponse.data as any[]).length;
+          }
+        } catch (fallbackError) {
+          console.error('❌ Error fetching all users as fallback:', fallbackError);
         }
       }
-      
+
+      // Log total users found - ALWAYS log this, even if summary failed
+      const totalUsersFound = filteredSuggestions.length + filteredPopular.length;
+      const uniqueUsersCount = new Set([...filteredSuggestions.map(u => u.id), ...filteredPopular.map(u => u.id)]).size;
+      console.log('👥 DiscoverPeopleScreen - ספירת משתמשים:', {
+        סך_כול_יוזרים_במסד_נתונים: totalUsersInDatabase || 'לא זמין',
+        המלצות: filteredSuggestions.length,
+        פופולריים: filteredPopular.length,
+        סך_כול_נטענו: totalUsersFound,
+        משתמשים_ייחודיים: uniqueUsersCount
+      });
+
+      // Load follow stats for all users (use filtered lists)
+      const allUsersToCheck = [...filteredSuggestions, ...filteredPopular];
+      const stats: Record<string, { isFollowing: boolean }> = {};
+
+      for (const user of allUsersToCheck) {
+        const userStats = await getFollowStats(user.id, currentUserId);
+        stats[user.id] = { isFollowing: userStats.isFollowing };
+      }
+
       setFollowStats(stats);
     } catch (error) {
       console.error('Error loading users:', error);
@@ -104,7 +186,7 @@ export default function DiscoverPeopleScreen() {
 
     try {
       const currentStats = followStats[targetUserId] || { isFollowing: false };
-      
+
       if (currentStats.isFollowing) {
         const success = await unfollowUser(selectedUser.id, targetUserId);
         if (success) {
@@ -130,16 +212,46 @@ export default function DiscoverPeopleScreen() {
     }
   };
 
+  const handleMessage = async (targetUser: CharacterType) => {
+    if (!selectedUser) {
+      Alert.alert('שגיאה', 'יש להתחבר תחילה');
+      return;
+    }
+
+    try {
+      const existingConvId = await conversationExists(selectedUser.id, targetUser.id);
+      let conversationId: string;
+
+      if (existingConvId) {
+        console.log('💬 Conversation already exists:', existingConvId);
+        conversationId = existingConvId;
+      } else {
+        console.log('💬 Creating new conversation...');
+        conversationId = await createConversation([selectedUser.id, targetUser.id]);
+      }
+
+      navigation.navigate('ChatDetailScreen', {
+        conversationId,
+        otherUserId: targetUser.id,
+        userName: targetUser.name || 'ללא שם',
+        userAvatar: targetUser.avatar || 'https://i.pravatar.cc/150?img=1',
+      });
+    } catch (error) {
+      console.error('❌ Create chat error:', error);
+      Alert.alert('שגיאה', 'שגיאה ביצירת השיחה');
+    }
+  };
+
   const renderUserItem = ({ item }: { item: CharacterType }) => {
     const currentStats = followStats[item.id] || { isFollowing: false };
     const isCurrentUser = selectedUser?.id === item.id;
 
     return (
       <View style={styles.userItem}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.userInfo}
           onPress={() => {
-            navigation.navigate('UserProfileScreen' as any, {
+            navigation.navigate('UserProfileScreen', {
               userId: item.id,
               userName: item.name,
               characterData: item
@@ -176,20 +288,29 @@ export default function DiscoverPeopleScreen() {
         </TouchableOpacity>
 
         {!isCurrentUser && (
-          <TouchableOpacity
-            style={[
-              styles.followButton,
-              currentStats.isFollowing && styles.followingButton
-            ]}
-            onPress={() => handleFollowToggle(item.id)}
-          >
-            <Text style={[
-              styles.followButtonText,
-              currentStats.isFollowing && styles.followingButtonText
-            ]}>
-              {currentStats.isFollowing ? 'עוקב' : 'עקוב'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity
+              style={[
+                styles.followButton,
+                currentStats.isFollowing && styles.followingButton
+              ]}
+              onPress={() => handleFollowToggle(item.id)}
+            >
+              <Text style={[
+                styles.followButtonText,
+                currentStats.isFollowing && styles.followingButtonText
+              ]}>
+                {currentStats.isFollowing ? 'עוקב' : 'עקוב'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.messageButton}
+              onPress={() => handleMessage(item)}
+            >
+              <Ionicons name="chatbubble-outline" size={16} color={colors.textPrimary} />
+              <Text style={styles.messageButtonText}>הודעה</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
     );
@@ -228,6 +349,21 @@ export default function DiscoverPeopleScreen() {
     </View>
   );
 
+  const renderListHeader = () => (
+    <>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <View style={styles.headerSpacer} />
+      </View>
+      {renderTabBar()}
+    </>
+  );
+
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="people-outline" size={60} color={colors.textSecondary} />
@@ -238,58 +374,27 @@ export default function DiscoverPeopleScreen() {
     </View>
   );
 
+  // Data is already filtered in loadUsers, no need to filter again
   const currentData = activeTab === 'suggestions' ? suggestions : popularUsers;
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>גלה אנשים</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
-      {/* Tab Bar */}
-      {renderTabBar()}
-
-      {Platform.OS === 'web' ? (
-        <View style={styles.webScrollContainer}>
-          <View style={[styles.webScrollContent, { paddingBottom: bottomPadding }]}
-            onLayout={(e) => {
-              const h = e.nativeEvent.layout.height;
-              console.log('🧭 DiscoverPeopleScreen[WEB] content layout height:', h, 'window:', SCREEN_HEIGHT);
-            }}
-          >
-            <FlatList
-              data={currentData}
-              renderItem={renderUserItem}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={[styles.listContainer, { paddingBottom: bottomPadding }]}
-              showsVerticalScrollIndicator={false}
-              ListEmptyComponent={renderEmptyState}
-              refreshing={loading}
-              onRefresh={loadUsers}
-              scrollEnabled={false}
-            />
-          </View>
-        </View>
-      ) : (
-        <FlatList
-          data={currentData}
-          renderItem={renderUserItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={[styles.listContainer, { paddingBottom: bottomPadding }]}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={renderEmptyState}
-          refreshing={loading}
-          onRefresh={loadUsers}
-        />
-      )}
+      <FlatList
+        data={currentData}
+        renderItem={renderUserItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingBottom: bottomPadding }}
+        showsVerticalScrollIndicator={true}
+        ListHeaderComponent={renderListHeader}
+        ListEmptyComponent={renderEmptyState}
+        refreshing={loading}
+        onRefresh={loadUsers}
+        style={styles.flatList}
+        initialNumToRender={20}
+        maxToRenderPerBatch={10}
+        windowSize={21}
+        keyboardShouldPersistTaps="handled"
+      />
     </SafeAreaView>
   );
 }
@@ -299,21 +404,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.backgroundPrimary,
   },
-  // Web-specific scroll wrappers
-  webScrollContainer: {
+  flatList: {
     flex: 1,
-    ...(Platform.OS === 'web' && {
-      overflow: 'auto' as any,
-      WebkitOverflowScrolling: 'touch' as any,
-      overscrollBehavior: 'contain' as any,
-      height: SCREEN_HEIGHT as any,
-      maxHeight: SCREEN_HEIGHT as any,
-      width: '100%' as any,
-      touchAction: 'auto' as any,
-    }),
-  } as any,
-  webScrollContent: {
-    minHeight: SCREEN_HEIGHT * 1.2,
   },
   header: {
     flexDirection: 'row',
@@ -340,6 +432,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundSecondary,
     marginHorizontal: 16,
     marginVertical: 12,
+    minWidth: 200,
     borderRadius: 8,
     padding: 4,
   },
@@ -360,9 +453,6 @@ const styles = StyleSheet.create({
   activeTabButtonText: {
     color: colors.white,
     fontWeight: '600',
-  },
-  listContainer: {
-    flexGrow: 1,
   },
   userItem: {
     flexDirection: 'row',
@@ -427,6 +517,11 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '500',
   },
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   followButton: {
     backgroundColor: colors.pink,
     paddingHorizontal: 16,
@@ -447,6 +542,22 @@ const styles = StyleSheet.create({
   },
   followingButtonText: {
     color: colors.textPrimary,
+  },
+  messageButton: {
+    backgroundColor: colors.backgroundSecondary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  messageButtonText: {
+    color: colors.textPrimary,
+    fontSize: FontSizes.small,
+    fontWeight: '600',
   },
   emptyState: {
     flex: 1,

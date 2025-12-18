@@ -108,7 +108,7 @@ const generateStatsLayout = () => {
           name: "",
           icon: "",
           category: "background",
-          color: "#E0E0E0", 
+          color: colors.border, 
           directionX: Math.random() > 0.5 ? 1 : -1,
           directionY: Math.random() > 0.5 ? 1 : -1,
           delay: Math.random() * 2000,
@@ -435,7 +435,7 @@ const AnimatedStatsBubble: React.FC<AnimatedStatsBubbleProps> = ({
 const localStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
   },
   headerContainer: {
     paddingTop: 60,
@@ -445,7 +445,7 @@ const localStyles = StyleSheet.create({
     backgroundColor: colors.backgroundSecondary,
     borderBottomLeftRadius: 25,
     borderBottomRightRadius: 25,
-    shadowColor: colors.shadowMedium,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -514,13 +514,13 @@ const localStyles = StyleSheet.create({
     borderRadius: 25,
     paddingHorizontal: 20,
     paddingVertical: 15,
-    shadowColor: colors.shadowMedium,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 6,
     borderWidth: 1,
-    borderColor: colors.borderAccent,
+    borderColor: colors.secondary,
   },
   messageText: {
     fontSize: FontSizes.small,

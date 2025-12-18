@@ -15,7 +15,12 @@
     },
     "error": "Error",
     "errorTitle": "Error",
-    "time": { "now": "Now", "minutesAgo": "{{count}} minutes ago", "hoursAgo": "{{count}} hours ago", "daysAgo": "{{count}} days ago" },
+    "time": {
+      "now": "Now",
+      "minutesAgo": "{{count}} minutes ago",
+      "hoursAgo": "{{count}} hours ago",
+      "daysAgo": "{{count}} days ago"
+    },
     "offerer": "Offerer",
     "seeker": "Seeker",
     "close": "Close",
@@ -31,25 +36,51 @@
     "report": "Report",
     "cannotOpenLink": "Cannot open the link",
     "welcomeShort": "Welcome!",
+    "appName": "Karma Community",
     "freeAppNotice": "The app is completely free and non-profit",
     "genericTryAgain": "An error occurred. Please try again.",
     "labels": {
       "countryIsrael": "Israel"
-    }
+    },
+    "newChat": "New Chat",
+    "chat": "Chat",
+    "favorites": "Favorites",
+    "posts": "Posts",
+    "inactive": "Inactive"
   },
   "search": {
     "sortTitle": "Sort",
     "filterTitle": "Filter",
     "chooseFiltersTitle": "Choose filter options",
     "chooseSortsTitle": "Choose sort options",
-    "filterLabel": "Filter:",
-    "sortLabel": "Sort:",
-    "popularSearches": ["Food collection", "Blood donation", "Help the elderly", "Garden cleanup", "Teaching kids"],
-    "recentSearches": ["Volunteers", "Events", "Donations", "Urgent tasks"],
-    "tabs": { "all": "All", "donations": "Donations", "events": "Events", "users": "Users" },
+    "popularSearches": [
+      "Food collection",
+      "Blood donation",
+      "Help the elderly",
+      "Garden cleanup",
+      "Teaching kids"
+    ],
+    "recentSearches": [
+      "Volunteers",
+      "Events",
+      "Donations",
+      "Urgent tasks"
+    ],
+    "tabs": {
+      "all": "All",
+      "donations": "Donations",
+      "events": "Events",
+      "users": "Users"
+    },
     "userDefaultBio": "Community member",
-    "typeLabels": { "user": "User" },
-    "labels": { "category": "Category", "location": "Location", "date": "Date" },
+    "typeLabels": {
+      "user": "User"
+    },
+    "labels": {
+      "category": "Category",
+      "location": "Location",
+      "date": "Date"
+    },
     "moreDetails": "More details",
     "details": "Details",
     "openFullDetails": "Open full details page",
@@ -65,8 +96,23 @@
       "patients": "Patients",
       "familiesInDistress": "Families in distress",
       "immigrants": "Immigrants",
-      "community": "Community"
-
+      "community": "Community",
+      "בחינם": "Free",
+      "כמו חדש": "Like New",
+      "משומש": "Used",
+      "לחלפים": "For Parts",
+      "עם איסוף עצמי": "Self Pickup",
+      "משלוח בתשלום": "Paid Delivery",
+      "נגישות": "Accessibility",
+      "ספות": "Sofas",
+      "ארונות": "Wardrobes",
+      "מיטות": "Beds",
+      "גברים": "Men",
+      "נשים": "Women",
+      "ילדים": "Children",
+      "מטבח": "Kitchen",
+      "חשמל": "Electronics",
+      "צעצועים": "Toys"
     },
     "sort": {
       "alphabetical": "Alphabetical",
@@ -75,7 +121,12 @@
       "byEstablishedDate": "By established date",
       "byDonors": "By donors",
       "byRating": "By rating",
-      "byRelevance": "By relevance"
+      "byRelevance": "By relevance",
+      "אלפביתי": "Alphabetical",
+      "לפי מיקום": "By location",
+      "לפי תאריך": "By date",
+      "לפי דירוג": "By rating",
+      "לפי רלוונטיות": "By relevance"
     },
     "popularTitle": "Popular searches",
     "recentTitle": "Recent searches",
@@ -94,7 +145,28 @@
     "resultsCount": "Found {{count}} results for \"{{query}}\"",
     "noResultsFound": "No results found",
     "tryChangingSearchTerms": "Try changing the search terms",
-    "ai": { "fabLabel": "AI", "title": "AI Assistant", "placeholder": "Ask anything: where to find donations, how to publish, or navigating the app.", "assistantReply": "Got it! I'll get back with an answer soon." }
+    "ai": {
+      "fabLabel": "AI",
+      "title": "AI Assistant",
+      "placeholder": "Ask anything: where to find donations, how to publish, or navigating the app.",
+      "assistantReply": "Got it! I'll get back with an answer soon."
+    }
+  },
+  "webOverlay": {
+    "stats": "In Numbers",
+    "vision": "Vision",
+    "problems": "The Problems",
+    "features": "Features",
+    "about": "About",
+    "how": "How it Works",
+    "who": "For Whom",
+    "values": "Values",
+    "roadmap": "Roadmap",
+    "contact": "Contact",
+    "faq": "FAQ",
+    "siteMode": "About Site",
+    "appMode": "App",
+    "menu": "Menu"
   },
   "comments": {
     "title": "Comments",
@@ -104,6 +176,7 @@
     "sendError": "Failed to send comment"
   },
   "chat": {
+    "title": "Chats",
     "loadError": "Failed to load messages",
     "sendError": "Failed to send message",
     "fileInvalid": "The file is invalid",
@@ -127,6 +200,34 @@
     "noChats": "No conversations",
     "startNewOrClearSearch": "Start a new chat or clear search",
     "loadConversationsError": "Failed to load conversations"
+  },
+  "newChatScreen": {
+    "title": "New Chat",
+    "error": "Error",
+    "selectUserFirst": "Please select a user first",
+    "errorLoadingFriends": "Error loading friends list",
+    "welcomeMessage": "Hi {{name}}! 👋",
+    "errorCreatingChat": "Error creating conversation",
+    "noName": "No name",
+    "existingChat": "Existing chat",
+    "noBio": "No description",
+    "karmaPoints": "Karma Points",
+    "followers": "Followers",
+    "noFriendsYet": "No friends yet",
+    "startFollowingToChat": "Start following people to create new chats",
+    "discoverNewPeople": "Discover new people",
+    "searchFriends": "Search friends...",
+    "filter": "Filter",
+    "all": "All",
+    "online": "Online",
+    "highKarma": "High Karma",
+    "newFollowers": "New Followers",
+    "sortLabel": "Sort:",
+    "sortName": "Name",
+    "sortKarma": "Karma",
+    "sortFollowers": "Followers",
+    "sortActivity": "Activity",
+    "loadingFriends": "Loading friends..."
   },
   "home": {
     "title": "Home",
@@ -237,8 +338,7 @@
       "callsHandled": "Calls handled",
       "chatsHandled": "Chats handled",
       "treesWatered": "Trees watered"
-    }
-    ,
+    },
     "welcome": "Hello",
     "statsDetails": {
       "description": "Detailed overview of \"{{label}}\" in the community. Data is based on activity by users, charities and volunteers.",
@@ -258,10 +358,13 @@
   },
   "donations": {
     "title": "Community in action",
+    "searchCharitiesForHelp": "Search charities",
+    "searchCharitiesForDonation": "Search charities",
     "forYou": "Just for you",
     "popular": "Popular",
     "all": "All",
     "statistics": "Statistics",
+    "others": "Other categories",
     "allWays": "All ways to take action",
     "comingSoonTitle": "Soon",
     "comingSoonMessage": "This category will be available soon!",
@@ -271,10 +374,26 @@
     "categoriesTitle": "Donation categories",
     "share": "Share",
     "searchWithin": "Search within",
-    "filter": { "nearMe": "Near me", "popular": "Popular", "new": "New" },
-    "sort": { "name": "Name", "date": "Date", "rating": "Rating" },
-    "section": { "content": "Content", "contentBody": "This area will contain content tailored to the \"{{title}}\" category. We can show lists, forms, community projects and relevant info. This is initial content that can be expanded.", "relatedStats": "Related statistics" },
-    "stats": { "newPosts": "New posts", "activeRequests": "Active requests", "activePartners": "Active partners" },
+    "filter": {
+      "nearMe": "Near me",
+      "popular": "Popular",
+      "new": "New"
+    },
+    "sort": {
+      "name": "Name",
+      "date": "Date",
+      "rating": "Rating"
+    },
+    "section": {
+      "content": "Content",
+      "contentBody": "This area will contain content tailored to the \"{{title}}\" category. We can show lists, forms, community projects and relevant info. This is initial content that can be expanded.",
+      "relatedStats": "Related statistics"
+    },
+    "stats": {
+      "newPosts": "New posts",
+      "activeRequests": "Active requests",
+      "activePartners": "Active partners"
+    },
     "statsSummary": "Statistics summary for this screen",
     "statsScreen": {
       "title": "Donation statistics",
@@ -282,58 +401,164 @@
       "noQuotes": "No motivational quotes available"
     },
     "categories": {
-      "money": { "title": "Money", "subtitle": "Financial donation", "description": "Financial donation to organizations and projects" },
-      "trump": { "title": "Rides", "subtitle": "Transport and rides", "description": "Transporting people and rides for the community" },
-      "knowledge": { "title": "Knowledge", "subtitle": "Mentoring and learning", "description": "Mentoring, training and sharing knowledge" },
-      "time": { "title": "Time", "subtitle": "Volunteering", "description": "Volunteering and helping with time" },
-      "food": { "title": "Food", "subtitle": "Food donation", "description": "Donating food to those in need" },
-      "clothes": { "title": "Clothes", "subtitle": "Clothes donation", "description": "Donating clothes to those in need" },
-      "books": { "title": "Books", "subtitle": "Books donation", "description": "Donating books to libraries" },
-      "furniture": { "title": "Furniture", "subtitle": "Furniture donation", "description": "Donating furniture" },
-      "medical": { "title": "Medical", "subtitle": "Medical help", "description": "Medical help and treatments" },
-      "animals": { "title": "Animals", "subtitle": "Animal help", "description": "Adoption and support for stray animals" },
-      "housing": { "title": "Housing", "subtitle": "Housing help", "description": "Housing assistance" },
-      "support": { "title": "Support", "subtitle": "Emotional support", "description": "Emotional and mental support" },
-      "education": { "title": "Education", "subtitle": "Study help", "description": "Help with studies and courses" },
-      "environment": { "title": "Environment", "subtitle": "Green projects", "description": "Environmental projects, planting and cleaning" },
-      "technology": { "title": "Technology", "subtitle": "Technical help", "description": "Technical help and digital guidance" },
-      "music": { "title": "Music", "subtitle": "Music sharing", "description": "Playing, collaborations and performances" },
-      "games": { "title": "Games", "subtitle": "Activities and games", "description": "Community activities and games" },
-      "riddles": { "title": "Riddles", "subtitle": "Thinking and challenge", "description": "Riddles and challenges" },
-      "recipes": { "title": "Recipes", "subtitle": "Cooking and sharing", "description": "Sharing recipes and meals" },
-      "plants": { "title": "Plants", "subtitle": "Gardening and planting", "description": "Community gardening and plants" },
-      "waste": { "title": "Waste", "subtitle": "Recycling and separation", "description": "Cleaning and recycling projects" },
-      "art": { "title": "Art", "subtitle": "Creation and sharing", "description": "Artistic creation and workshops" },
-      "sports": { "title": "Sports", "subtitle": "Active lifestyle", "description": "Sports and activity" },
-      "items": { "title": "Items", "subtitle": "Objects", "description": "Donations of items" },
-      "dreams": { "title": "Make-A-Wish", "subtitle": "Create magical moments", "description": "Fulfilling wishes for children, teens and adults – experiences, meetings and surprises" },
-      "fertility": { "title": "Fertility", "subtitle": "Support on the path to parenthood", "description": "Support and assistance in the fertility journey: guidance, treatment funding, community and emotional support" },
-      "jobs": { "title": "Jobs", "subtitle": "Employment for the community", "description": "Help finding work, matching positions and partnerships with employers for the community" },
-      "matchmaking": { "title": "Matchmaking", "subtitle": "Meet good people for a meaningful relationship", "description": "Connections for quality relationships within the community: introductions, events, guidance and updates" },
-      "mentalHealth": { "title": "Mental health", "subtitle": "Emotional and mental support", "description": "Resources, community and emotional guidance: hotlines, support groups and accessible care" },
-      "goldenAge": { "title": "Golden age", "subtitle": "Active community for seniors", "description": "Activities, volunteering, guidance and assistance tailored for seniors and Holocaust survivors" },
-      "languages": { "title": "Languages", "subtitle": "Language learning and sharing", "description": "Community and support for learning languages: meetups, mentoring and practice together" }
+      "money": {
+        "title": "Money",
+        "subtitle": "Financial donation",
+        "description": "Financial donation to organizations and projects"
+      },
+      "trump": {
+        "title": "Rides",
+        "subtitle": "Transport and rides",
+        "description": "Transporting people and rides for the community"
+      },
+      "knowledge": {
+        "title": "Knowledge",
+        "subtitle": "Mentoring and learning",
+        "description": "Mentoring, training and sharing knowledge"
+      },
+      "time": {
+        "title": "Time",
+        "subtitle": "Volunteering",
+        "description": "Volunteering and helping with time"
+      },
+      "food": {
+        "title": "Food",
+        "subtitle": "Food donation",
+        "description": "Donating food to those in need"
+      },
+      "clothes": {
+        "title": "Clothes",
+        "subtitle": "Clothes donation",
+        "description": "Donating clothes to those in need"
+      },
+      "books": {
+        "title": "Books",
+        "subtitle": "Books donation",
+        "description": "Donating books to libraries"
+      },
+      "furniture": {
+        "title": "Furniture",
+        "subtitle": "Furniture donation",
+        "description": "Donating furniture"
+      },
+      "medical": {
+        "title": "Medical",
+        "subtitle": "Medical help",
+        "description": "Medical help and treatments"
+      },
+      "animals": {
+        "title": "Animals",
+        "subtitle": "Animal help",
+        "description": "Adoption and support for stray animals"
+      },
+      "housing": {
+        "title": "Housing",
+        "subtitle": "Housing help",
+        "description": "Housing assistance"
+      },
+      "support": {
+        "title": "Support",
+        "subtitle": "Emotional support",
+        "description": "Emotional and mental support"
+      },
+      "education": {
+        "title": "Education",
+        "subtitle": "Study help",
+        "description": "Help with studies and courses"
+      },
+      "environment": {
+        "title": "Environment",
+        "subtitle": "Green projects",
+        "description": "Environmental projects, planting and cleaning"
+      },
+      "technology": {
+        "title": "Technology",
+        "subtitle": "Technical help",
+        "description": "Technical help and digital guidance"
+      },
+      "music": {
+        "title": "Music",
+        "subtitle": "Music sharing",
+        "description": "Playing, collaborations and performances"
+      },
+      "games": {
+        "title": "Games",
+        "subtitle": "Activities and games",
+        "description": "Community activities and games"
+      },
+      "riddles": {
+        "title": "Riddles",
+        "subtitle": "Thinking and challenge",
+        "description": "Riddles and challenges"
+      },
+      "recipes": {
+        "title": "Recipes",
+        "subtitle": "Cooking and sharing",
+        "description": "Sharing recipes and meals"
+      },
+      "plants": {
+        "title": "Plants",
+        "subtitle": "Gardening and planting",
+        "description": "Community gardening and plants"
+      },
+      "waste": {
+        "title": "Waste",
+        "subtitle": "Recycling and separation",
+        "description": "Cleaning and recycling projects"
+      },
+      "art": {
+        "title": "Art",
+        "subtitle": "Creation and sharing",
+        "description": "Artistic creation and workshops"
+      },
+      "sports": {
+        "title": "Sports",
+        "subtitle": "Active lifestyle",
+        "description": "Sports and activity"
+      },
+      "items": {
+        "title": "Items",
+        "subtitle": "Objects",
+        "description": "Donations of items"
+      },
+      "dreams": {
+        "title": "Make-A-Wish",
+        "subtitle": "Create magical moments",
+        "description": "Fulfilling wishes for children, teens and adults – experiences, meetings and surprises"
+      },
+      "fertility": {
+        "title": "Fertility",
+        "subtitle": "Support on the path to parenthood",
+        "description": "Support and assistance in the fertility journey: guidance, treatment funding, community and emotional support"
+      },
+      "jobs": {
+        "title": "Jobs",
+        "subtitle": "Employment for the community",
+        "description": "Help finding work, matching positions and partnerships with employers for the community"
+      },
+      "matchmaking": {
+        "title": "Matchmaking",
+        "subtitle": "Meet good people for a meaningful relationship",
+        "description": "Connections for quality relationships within the community: introductions, events, guidance and updates"
+      },
+      "mentalHealth": {
+        "title": "Mental health",
+        "subtitle": "Emotional and mental support",
+        "description": "Resources, community and emotional guidance: hotlines, support groups and accessible care"
+      },
+      "goldenAge": {
+        "title": "Golden age",
+        "subtitle": "Active community for seniors",
+        "description": "Activities, volunteering, guidance and assistance tailored for seniors and Holocaust survivors"
+      },
+      "languages": {
+        "title": "Languages",
+        "subtitle": "Language learning and sharing",
+        "description": "Community and support for learning languages: meetups, mentoring and practice together"
+      }
     }
   },
   "trump": {
-    "filters": [
-      "No cost sharing",
-      "Gender: women only",
-      "Gender: men only",
-      "Age: 18-25",
-      "Age: 25-40",
-      "Age: 40+",
-      "No junctions",
-      "No buses",
-      "No smoking",
-      "With kids",
-      "With pets",
-      "Room for gear",
-      "Highway 6",
-      "AC",
-      "Music",
-      "Accessibility"
-    ],
     "sorts": [
       "Alphabetical",
       "By location",
@@ -352,7 +577,10 @@
       "byRating": "By rating",
       "byRelevance": "By relevance"
     },
-    "status": { "published": "Published", "completed": "Completed" },
+    "status": {
+      "published": "Published",
+      "completed": "Completed"
+    },
     "rideOf": "Ride by {{name}}",
     "from": "From",
     "to": "To",
@@ -365,7 +593,17 @@
     "requestSentTitle": "Request sent",
     "requestSentBody": "Request to join {{name}}'s ride was sent successfully!",
     "currentLocation": "Current location",
-    "category": { "other": "Other" },
+    "near": "Near",
+    "filters": {
+      "noCostSharing": "No cost sharing",
+      "noSmoking": "No smoking",
+      "withPets": "With pets",
+      "withKids": "With kids",
+      "includePast": "Include past rides"
+    },
+    "category": {
+      "other": "Other"
+    },
     "success": {
       "title": "Success",
       "ridePublished": "Ride published successfully!"
@@ -374,21 +612,46 @@
       "fillDestination": "Please enter a destination",
       "fillFromOrCurrent": "Please set 'From' or choose current location",
       "saveFailed": "Failed to save ride",
-      "noGroupLink": "Group link not available"
+      "noGroupLink": "Group link not available",
+      "locationNotResolved": "Please wait for location detection or enter address manually",
+      "locationPermissionDenied": "Location permission denied",
+      "locationFetchFailed": "Failed to fetch location"
     },
     "ui": {
       "timePickerPlaceholder": "Departure time",
       "immediateDeparture": "Immediate departure",
       "useCurrentLocation": "Use current location",
+      "fromLocationLabel": "Departure point",
       "fromPointLabel": "From",
       "fromPlaceholder": "Enter starting point",
+      "enterDepartureAddress": "Enter departure address",
+      "leavingToday": "Leaving today",
+      "selectDate": "Select date",
       "seatsLabel": "Seats",
       "fuelContributionLabel": "Fuel contribution",
       "publishRide": "Publish ride",
+      "recurringRide": "Recurring ride",
+      "recurrenceConfigLabel": "Recurrence settings",
+      "recurrenceFrequencyLabel": "Frequency",
+      "recurrenceUnitLabel": "Unit",
+      "recurrenceDay": "day",
+      "recurrenceWeek": "week",
+      "recurrenceMonth": "month",
+      "recurrenceDays": "days",
+      "recurrenceWeeks": "weeks",
+      "recurrenceMonths": "months",
+      "recurrencePreview": "Ride will repeat every {{frequency}} {{unit}}",
       "yourHistoryTitle": "Your recent rides",
+      "yourRecentRides": "Your recent rides",
       "ridesAvailableTitle": "Available rides",
       "ridesRecommendedTitle": "Recommended rides",
       "groupsTitle": "Groups",
+      "whatsappGroups": "WhatsApp groups",
+      "noRecentRides": "No recent rides",
+      "searchResultsPrefix": "Search results for",
+      "availableRides": "Available rides",
+      "noRidesFoundTitle": "No rides found",
+      "noRidesFoundBody": "Try changing your search criteria",
       "searchPlaceholder": {
         "offer": "Where to? Destination...",
         "seek": "Find a ride: destination..."
@@ -406,10 +669,15 @@
       "rideSelectedTitle": "Ride selected",
       "rideSelectedBody": "You selected {{name}}'s ride",
       "restoreDoneTitle": "Restored",
-      "restoreDoneBody": "From {{from}} to {{to}} restored to the form"
+      "restoreDoneBody": "From {{from}} to {{to}} restored to the form",
+      "deleteRideTitle": "Delete ride",
+      "deleteRideBody": "Are you sure you want to delete this ride?"
     },
     "restore": "Restore",
-    "groups": { "whatsapp": "WhatsApp groups", "facebook": "Facebook groups" },
+    "groups": {
+      "whatsapp": "WhatsApp groups",
+      "facebook": "Facebook groups"
+    },
     "stats": {
       "availableRides": "Available rides",
       "noCost": "No cost",
@@ -418,13 +686,32 @@
   },
   "profile": {
     "title": "Profile",
-    "tabs": { "posts": "Posts", "reels": "Reels", "tagged": "Tagged" },
-    "stats": { "posts": "Posts", "followers": "Followers", "following": "Following", "karmaPointsSuffix": "karma points" },
+    "tabs": {
+      "posts": "Posts",
+      "reels": "Reels",
+      "tagged": "Tagged"
+    },
+    "stats": {
+      "posts": "Posts",
+      "followers": "Followers",
+      "following": "Following",
+      "karmaPointsSuffix": "karma points"
+    },
     "followersTitle": "Followers",
     "followingTitle": "Following",
-    "sections": { "recentActivity": "Recent activity", "highlights": "Highlights" },
-    "reels": { "noReelsYet": "No reels yet", "createFirstReel": "Create your first reel to share with the community", "createReel": "Create reel" },
-    "tagged": { "noTagsYet": "No tags yet", "tagsAppearHere": "When people tag you, it will appear here" },
+    "sections": {
+      "recentActivity": "Recent activity",
+      "highlights": "Highlights"
+    },
+    "reels": {
+      "noReelsYet": "No reels yet",
+      "createFirstReel": "Create your first reel to share with the community",
+      "createReel": "Create reel"
+    },
+    "tagged": {
+      "noTagsYet": "No tags yet",
+      "tagsAppearHere": "When people tag you, it will appear here"
+    },
     "alerts": {
       "post": "Post",
       "postNumber": "Post number {{number}}",
@@ -459,8 +746,12 @@
     "history": "History",
     "favorites": "Favorites",
     "discoverPeople": "Discover people",
+    "discover": "Discover people",
     "notifications": "Notifications",
-    "highlights": { "new": "New", "highlightIndex": "Highlight {{index}}" },
+    "highlights": {
+      "new": "New",
+      "highlightIndex": "Highlight {{index}}"
+    },
     "users": {
       "loadError": "Failed to load users.",
       "selected": "Selected",
@@ -471,7 +762,11 @@
       "title": "Complete your profile for the full experience",
       "cta": "Edit profile",
       "editTitle": "Edit profile",
-      "missing": { "avatar": "Profile picture", "fullName": "Full name", "address": "Address" },
+      "missing": {
+        "avatar": "Profile picture",
+        "fullName": "Full name",
+        "address": "Address"
+      },
       "fields": {
         "fullName": "Full name",
         "avatar": "Profile picture URL",
@@ -512,6 +807,7 @@
     }
   },
   "notifications": {
+    "title": "Notifications",
     "loadError": "Failed to load notifications",
     "markAllDoneTitle": "Done",
     "markAllDoneBody": "All notifications marked as read",
@@ -521,11 +817,16 @@
     "clearAllDoneTitle": "Done",
     "clearAllDoneBody": "All notifications deleted",
     "clearAllError": "Failed to delete notifications",
-    "empty": { "title": "No notifications", "subtitle": "When you receive new notifications, they will appear here" },
+    "empty": {
+      "title": "No notifications",
+      "subtitle": "When you receive new notifications, they will appear here"
+    },
     "unreadBadge": "{{count}} new notifications",
     "welcomeSystem": "Welcome to Karma Community!"
   },
   "auth": {
+    "login": "Login",
+    "register": "Register",
     "title": "Welcome!",
     "subtitle": "The Capitalist Kibbutz of Israel",
     "continueAsGuest": "Continue as guest",
@@ -535,7 +836,9 @@
       "checkFailed": "Email check failed. Please try again.",
       "cta": "Sign up with email",
       "placeholder": "Enter email",
+      "placeholderExample": "name@example.com",
       "passwordPlaceholder": "Enter password",
+      "passwordPlaceholderExample": "******",
       "continue": "Continue",
       "submit": "Sign up / Login",
       "checking": "Checking...",
@@ -603,8 +906,23 @@
         "offering": "e.g., food distribution, courses, workshops",
         "description": "Tell about your org, goals and activities"
       },
-      "types": ["NGO","NPO","Public benefit company","Community initiative","Other"],
-      "areas": ["Education","Health","Welfare","Environment","Animals","Community","At-risk youth","Elderly"],
+      "types": [
+        "NGO",
+        "NPO",
+        "Public benefit company",
+        "Community initiative",
+        "Other"
+      ],
+      "areas": [
+        "Education",
+        "Health",
+        "Welfare",
+        "Environment",
+        "Animals",
+        "Community",
+        "At-risk youth",
+        "Elderly"
+      ],
       "submit": "Submit for approval",
       "sending": "Sending...",
       "sentTitle": "Sent",
@@ -655,7 +973,10 @@
     "themeTitle": "Theme",
     "themeComingSoon": "Theme selection coming soon",
     "language": "Language",
-    "lang": { "he": "עברית", "en": "English" },
+    "lang": {
+      "he": "עברית",
+      "en": "English"
+    },
     "privacySection": "Privacy & Security",
     "privacy": "Privacy settings",
     "privacyDesc": "Manage personal data",
@@ -666,6 +987,12 @@
     "clearCacheConfirm": "Are you sure you want to clear the cache?",
     "clear": "Clear",
     "cacheCleared": "Cache cleared successfully",
+    "resetLocalData": "Reset Data",
+    "resetLocalDataDesc": "Clear all local data and cache",
+    "resetLocalDataTitle": "Reset Local Data",
+    "resetLocalDataMessage": "Are you sure you want to clear all local data? This action cannot be undone.",
+    "resetLocalDataConfirm": "Reset",
+    "resetLocalDataSuccess": "Data reset successfully",
     "aboutSection": "About",
     "about": "About Karma Community",
     "aboutDesc": "Version, Terms of Service and more",
@@ -686,13 +1013,31 @@
   "landing": {
     "appName": "KarmaCommunity",
     "tagline": "A community that helps each other — donations, support, resources and human connections.",
-    "cta": { "primary": "Download the app", "secondary": "Contact me" },
-    "features": { "title": "What's inside the app?", "subtitle": "Powerful and simple community tools" },
+    "cta": {
+      "primary": "Download the app",
+      "secondary": "Contact me"
+    },
+    "features": {
+      "title": "What's inside the app?",
+      "subtitle": "Powerful and simple community tools"
+    },
     "feature": {
-      "1": { "title": "Mutual aid", "text": "Posts of requests/offers to help in any area: food, furniture, time, knowledge and more." },
-      "2": { "title": "Chats and community", "text": "Private and group chat, topic discussions, notifications for what matters to you." },
-      "3": { "title": "Proximity and discovery", "text": "Search by location and interests, tailored recommendations, follow orgs and people." },
-      "4": { "title": "Community organizations", "text": "Organizations have a dashboard, volunteers/resources management and approval flows." }
+      "1": {
+        "title": "Mutual aid",
+        "text": "Posts of requests/offers to help in any area: food, furniture, time, knowledge and more."
+      },
+      "2": {
+        "title": "Chats and community",
+        "text": "Private and group chat, topic discussions, notifications for what matters to you."
+      },
+      "3": {
+        "title": "Proximity and discovery",
+        "text": "Search by location and interests, tailored recommendations, follow orgs and people."
+      },
+      "4": {
+        "title": "Community organizations",
+        "text": "Organizations have a dashboard, volunteers/resources management and approval flows."
+      }
     },
     "about": {
       "me": {
@@ -703,7 +1048,11 @@
           "2": "to connect those in need with those who can help, transparently and simply. Happy to chat if you'd like to hear more."
         }
       },
-      "links": { "email": "Email", "linkedin": "LinkedIn", "github": "GitHub" }
+      "links": {
+        "email": "Email",
+        "linkedin": "LinkedIn",
+        "github": "GitHub"
+      }
     },
     "project": {
       "title": "About the project",
@@ -732,9 +1081,18 @@
       "title": "How it works",
       "subtitle": "3 simple steps",
       "step": {
-        "1": { "title": "Join", "text": "Sign up quickly, choose language and interests." },
-        "2": { "title": "Discover", "text": "Find requests/offers by location, topic and community." },
-        "3": { "title": "Act", "text": "Connect, help, share — and the community grows." }
+        "1": {
+          "title": "Join",
+          "text": "Sign up quickly, choose language and interests."
+        },
+        "2": {
+          "title": "Discover",
+          "text": "Find requests/offers by location, topic and community."
+        },
+        "3": {
+          "title": "Act",
+          "text": "Connect, help, share — and the community grows."
+        }
       }
     },
     "audience": {
@@ -743,17 +1101,40 @@
       "individuals": {
         "title": "Individuals",
         "text": "Sharing items, food donations, study help, small repairs, rides, emotional support, community discussion and more.",
-        "bullet": { "1": "Donations and sharing", "2": "Time and volunteering", "3": "Knowledge and learning" }
+        "bullet": {
+          "1": "Donations and sharing",
+          "2": "Time and volunteering",
+          "3": "Knowledge and learning"
+        }
       },
       "orgs": {
         "title": "Organizations",
         "text": "Unified dashboard for requests, volunteers and resources; trust and transparency; approval flows.",
-        "bullet": { "1": "Efficient dashboard", "2": "Community around the org", "3": "Trust and transparency" }
+        "bullet": {
+          "1": "Efficient dashboard",
+          "2": "Community around the org",
+          "3": "Trust and transparency"
+        }
       }
     },
-    "values": { "title": "Our values", "subtitle": "No ads, no harmful content, strong community" },
-    "roadmap": { "title": "Roadmap", "subtitle": "Where we're heading", "q3": "Pilot community launch", "q4": "First orgs and dashboard", "q1": "Nationwide scale and partnerships" },
-    "contact": { "title": "Contact", "subtitle": "We'd love to chat, collaborate or welcome you", "whatsappDirect": "Send WhatsApp", "instagram": "Follow on Instagram", "whatsappGroup": "Join WhatsApp group" },
+    "values": {
+      "title": "Our values",
+      "subtitle": "No ads, no harmful content, strong community"
+    },
+    "roadmap": {
+      "title": "Roadmap",
+      "subtitle": "Where we're heading",
+      "q3": "Pilot community launch",
+      "q4": "First orgs and dashboard",
+      "q1": "Nationwide scale and partnerships"
+    },
+    "contact": {
+      "title": "Contact",
+      "subtitle": "We'd love to chat, collaborate or welcome you",
+      "whatsappDirect": "Send WhatsApp",
+      "instagram": "Follow on Instagram",
+      "whatsappGroup": "Join WhatsApp group"
+    },
     "faq": {
       "q1": "Is it free to use?",
       "a1": "Yes. It's a community initiative aiming to remain accessible to everyone.",
@@ -766,10 +1147,22 @@
       "title": "In numbers",
       "subtitle": "Impact growing day by day",
       "card": {
-        "1": { "number": "10,000+", "label": "Donations and resources" },
-        "2": { "number": "3,500+", "label": "Volunteering and time" },
-        "3": { "number": "120+", "label": "Partner organizations" },
-        "4": { "number": "50K+", "label": "Connections between people" }
+        "1": {
+          "number": "10,000+",
+          "label": "Donations and resources"
+        },
+        "2": {
+          "number": "3,500+",
+          "label": "Volunteering and time"
+        },
+        "3": {
+          "number": "120+",
+          "label": "Partner organizations"
+        },
+        "4": {
+          "number": "50K+",
+          "label": "Connections between people"
+        }
       }
     },
     "useCases": {
@@ -787,21 +1180,108 @@
     "testimonials": {
       "title": "Community stories",
       "subtitle": "What our users say",
-      "1": { "text": "I found a volunteer who fixed my door in a day! Amazing to have a community that helps so fast.", "user": "— Dana, Tel Aviv" },
-      "2": { "text": "We donated furniture through the app to a local family. It was simple and transparent.", "user": "— Ido, Haifa" },
-      "3": { "text": "I found free math tutoring for an elderly neighbor. A wonderful connection formed.", "user": "— Rotem, Jerusalem" }
+      "1": {
+        "text": "I found a volunteer who fixed my door in a day! Amazing to have a community that helps so fast.",
+        "user": "— Dana, Tel Aviv"
+      },
+      "2": {
+        "text": "We donated furniture through the app to a local family. It was simple and transparent.",
+        "user": "— Ido, Haifa"
+      },
+      "3": {
+        "text": "I found free math tutoring for an elderly neighbor. A wonderful connection formed.",
+        "user": "— Rotem, Jerusalem"
+      }
     },
-    "gallery": { "title": "Gallery", "subtitle": "Small moments of good" },
-    "partners": { "title": "Partners and communities", "subtitle": "On the way, in action, by our side" },
-    "trust": { "title": "Trust & Transparency", "subtitle": "Healthy community starts with trust", "point": { "1": "No ads, no harmful content", "2": "Reporting and org approvals", "3": "Privacy and respect for every user" } },
-    "finalCta": { "title": "Join the community", "subtitle": "Everyone can make an impact", "primary": "Follow on Instagram", "secondary": "Send WhatsApp" },
-    "moreStats": { "title": "More stats", "subtitle": "Why it works", "card": { "1": "92% — report a great giving experience", "2": "78% — improved sense of belonging", "3": "5X — more repeat connections", "4": "24/7 — an active community" } },
-    "categoriesGrid": { "title": "Key giving categories", "subtitle": "What matters to you?", "item": { "food": "Food", "furniture": "Furniture", "clothing": "Clothing", "knowledge": "Knowledge", "time": "Time", "medical": "Medical", "environment": "Environment", "culture": "Culture" } },
-    "orgOnboarding": { "title": "Organizations: how to join?", "subtitle": "Short and transparent process", "step": { "1": "Fill a form — basic details, goals and needs.", "2": "Short verification — transparency check, documents and contact details.", "3": "Launch — dashboard, posts, volunteers and resources." } },
-    "manifesto": { "title": "Manifesto", "subtitle": "Why and what for", "paragraph": { "1": "In an era of noise, ads and interests — we choose community. A community that values action, solidarity and good spirit.", "2": "Together we can connect needs to abilities, hearts to hands. Good is infrastructure, not a product.", "3": "We commit to transparency, human dignity and a safe digital space. Together we build infrastructure that empowers community action — everywhere." } },
-    "moreTestimonials": { "title": "More stories from the field", "item1": "I met neighbors through KC, and suddenly there's a building community. Small things that make change. — Ilan, Petah Tikva", "item2": "As a small org we got massive exposure to quality volunteers. The dashboard saved us hours. — Yad LaLev NGO", "item3": "Gave a few hours a week, got a huge sense of meaning and new friends. — Sivan, Ramat Gan" },
-    "moreFaq": { "title": "More questions", "q1": "How is privacy preserved?", "a1": "We minimize data collection and give users control over visibility and exposure.", "q2": "Are there ads?", "a2": "No. The platform is ad-free and focuses solely on community content.", "q3": "How do I report an issue?", "a3": "There's a built-in reporting mechanism on every post/chat. You can also contact us directly via WhatsApp." },
-    "footer": { "text": "© {{year}} KarmaCommunity — Built with love." }
+    "gallery": {
+      "title": "Gallery",
+      "subtitle": "Small moments of good"
+    },
+    "partners": {
+      "title": "Partners and communities",
+      "subtitle": "On the way, in action, by our side"
+    },
+    "trust": {
+      "title": "Trust & Transparency",
+      "subtitle": "Healthy community starts with trust",
+      "point": {
+        "1": "No ads, no harmful content",
+        "2": "Reporting and org approvals",
+        "3": "Privacy and respect for every user"
+      }
+    },
+    "finalCta": {
+      "title": "Join the community",
+      "subtitle": "Everyone can make an impact",
+      "primary": "Follow on Instagram",
+      "secondary": "Send WhatsApp"
+    },
+    "moreStats": {
+      "title": "More stats",
+      "subtitle": "Why it works",
+      "card": {
+        "1": "92% — report a great giving experience",
+        "2": "78% — improved sense of belonging",
+        "3": "5X — more repeat connections",
+        "4": "24/7 — an active community"
+      }
+    },
+    "categoriesGrid": {
+      "title": "Key giving categories",
+      "subtitle": "What matters to you?",
+      "item": {
+        "food": "Food",
+        "furniture": "Furniture",
+        "clothing": "Clothing",
+        "knowledge": "Knowledge",
+        "time": "Time",
+        "medical": "Medical",
+        "environment": "Environment",
+        "culture": "Culture"
+      }
+    },
+    "orgOnboarding": {
+      "title": "Organizations: how to join?",
+      "subtitle": "Short and transparent process",
+      "step": {
+        "1": "Fill a form — basic details, goals and needs.",
+        "2": "Short verification — transparency check, documents and contact details.",
+        "3": "Launch — dashboard, posts, volunteers and resources."
+      }
+    },
+    "manifesto": {
+      "title": "Manifesto",
+      "subtitle": "Why and what for",
+      "paragraph": {
+        "1": "In an era of noise, ads and interests — we choose community. A community that values action, solidarity and good spirit.",
+        "2": "Together we can connect needs to abilities, hearts to hands. Good is infrastructure, not a product.",
+        "3": "We commit to transparency, human dignity and a safe digital space. Together we build infrastructure that empowers community action — everywhere."
+      }
+    },
+    "moreTestimonials": {
+      "title": "More stories from the field",
+      "item1": "I met neighbors through KC, and suddenly there's a building community. Small things that make change. — Ilan, Petah Tikva",
+      "item2": "As a small org we got massive exposure to quality volunteers. The dashboard saved us hours. — Yad LaLev NGO",
+      "item3": "Gave a few hours a week, got a huge sense of meaning and new friends. — Sivan, Ramat Gan"
+    },
+    "moreFaq": {
+      "title": "More questions",
+      "q1": "How is privacy preserved?",
+      "a1": "We minimize data collection and give users control over visibility and exposure.",
+      "q2": "Are there ads?",
+      "a2": "No. The platform is ad-free and focuses solely on community content.",
+      "q3": "How do I report an issue?",
+      "a3": "There's a built-in reporting mechanism on every post/chat. You can also contact us directly via WhatsApp."
+    },
+    "footer": {
+      "text": "© {{year}} KarmaCommunity — Built with love."
+    },
+    "quickMessage": {
+      "ride": "Is this ride still relevant?",
+      "item": "Is this item still relevant?",
+      "success": "Message sent successfully",
+      "error": "Error sending message",
+      "sendButton": "Send quick message"
+    }
   }
 }
-

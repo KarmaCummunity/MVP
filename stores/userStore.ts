@@ -46,7 +46,9 @@ interface UserState {
   isGuestMode: boolean;
   authMode: AuthMode;
   resetHomeScreenTrigger: number;
-  
+  isInitialized: boolean; // Flag to track if store has been initialized
+  lastHomeTabScreen: string | null; // Last screen visited in HomeTabStack before switching tabs
+
   // Actions
   setSelectedUser: (user: User | null) => Promise<void>;
   setSelectedUserWithMode: (user: User | null, mode: AuthMode) => Promise<void>;
@@ -55,8 +57,11 @@ interface UserState {
   setGuestMode: () => Promise<void>;
   setDemoUser: () => Promise<void>;
   resetHomeScreen: () => void;
+  setLastHomeTabScreen: (screen: string | null) => void;
+  clearLastHomeTabScreen: () => void;
   checkAuthStatus: () => Promise<void>;
   initialize: () => Promise<void>;
+  refreshUserRoles: () => Promise<void>; // Refresh user roles from database
 }
 
 const computeRole = (user: User | null, mode: AuthMode): Role => {
@@ -65,41 +70,58 @@ const computeRole = (user: User | null, mode: AuthMode): Role => {
   return (roles.includes('admin') || roles.includes('super_admin') || roles.includes('org_admin')) ? 'admin' : 'user';
 };
 
+
 const enrichUserWithOrgRoles = async (user: User): Promise<User> => {
   try {
     const emailKey = (user.email || '').toLowerCase();
     if (!emailKey) return user;
-    
-    // Super admin email - hardcoded for main admin
-    const SUPER_ADMIN_EMAIL = 'navesarussi@gmail.com';
-    const isSuperAdmin = emailKey === SUPER_ADMIN_EMAIL.toLowerCase();
-    
-    // Grant admin role by env config (comma-separated emails)
-    const adminEmailsEnv = (process.env.EXPO_PUBLIC_ADMIN_EMAILS || '').toLowerCase();
-    const adminEmails = adminEmailsEnv
-      .split(',')
-      .map((s: string) => s.trim())
-      .filter(Boolean);
-    const withAdmin = adminEmails.includes(emailKey) || isSuperAdmin;
-    
-    // Dynamic import to avoid circular dependency
+
+    // Super admin email - hardcoded ONLY for the main system admin
+    // DO NOT add other emails here - use database roles instead
+    const SUPER_ADMINS = ['navesarussi@gmail.com'];
+    const isSuperAdmin = SUPER_ADMINS.includes(emailKey);
+
+    // Fetch fresh user data from database to get current roles
+    const { apiService } = await import('../utils/apiService');
+    let dbRoles: string[] = [];
+
+    try {
+      const response = await apiService.getUserById(user.id);
+      if (response.success && response.data) {
+        dbRoles = response.data.roles || [];
+      }
+    } catch (err) {
+      console.log('🔐 enrichUserWithOrgRoles - Could not fetch user from DB, using existing roles');
+      dbRoles = user.roles || [];
+    }
+
+    // Check for approved org applications
     const { db } = await import('../utils/databaseService');
     const applications = await db.listOrgApplications(emailKey);
     const approved = (applications as any[]).find((a) => a.status === 'approved');
-    
-    if (approved || withAdmin) {
-      // Super admin gets super_admin role, others get admin
-      const adminRole = isSuperAdmin ? 'super_admin' : 'admin';
-      const extraRoles = [
-        approved ? 'org_admin' : null,
-        withAdmin ? adminRole : null
-      ].filter(Boolean) as string[];
-      const roles = Array.isArray(user.roles) 
-        ? Array.from(new Set([...user.roles, ...extraRoles])) 
-        : extraRoles;
-      return { ...user, roles, orgApplicationId: approved?.id, orgName: approved?.orgName };
+
+    // Build final roles list
+    let finalRoles = [...dbRoles];
+
+    // Add super_admin if applicable (hardcoded)
+    if (isSuperAdmin && !finalRoles.includes('super_admin')) {
+      finalRoles.push('super_admin');
     }
-    return user;
+
+    // Add org_admin if has approved application
+    if (approved && !finalRoles.includes('org_admin')) {
+      finalRoles.push('org_admin');
+    }
+
+    // Remove duplicates
+    finalRoles = Array.from(new Set(finalRoles));
+
+    return {
+      ...user,
+      roles: finalRoles,
+      orgApplicationId: approved?.id,
+      orgName: approved?.orgName
+    };
   } catch (err) {
     console.log('🔐 userStore - enrichUserWithOrgRoles - skipped (no backend or no data)', err);
     return user;
@@ -114,7 +136,9 @@ export const useUserStore = create<UserState>((set, get) => ({
   isGuestMode: false,
   authMode: 'guest',
   resetHomeScreenTrigger: 0,
-  
+  isInitialized: false,
+  lastHomeTabScreen: null,
+
   // Actions
   setCurrentPrincipal: async (principal: { user: User | null; role: Role }) => {
     try {
@@ -162,7 +186,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       }
     }
   },
-  
+
   setSelectedUserWithMode: async (user: User | null, mode: AuthMode) => {
     try {
       console.log('🔐 userStore - setSelectedUserWithMode:', { user: user?.name || 'null', mode });
@@ -175,44 +199,44 @@ export const useUserStore = create<UserState>((set, get) => ({
       await get().setCurrentPrincipal({ user, role });
     }
   },
-  
+
   setSelectedUser: async (user: User | null) => {
     await get().setSelectedUserWithMode(user, user ? 'real' as const : 'guest');
   },
-  
+
   checkAuthStatus: async () => {
     try {
       console.log('🔐 userStore - checkAuthStatus - Starting auth check');
       set({ isLoading: true });
-      
+
       // First, check for successful OAuth authentication
       console.log('🔐 userStore - checkAuthStatus - Checking for OAuth success');
       const oauthSuccess = await AsyncStorage.getItem('oauth_success_flag');
       const userData = await AsyncStorage.getItem('google_auth_user');
       const token = await AsyncStorage.getItem('google_auth_token');
-      
+
       if (oauthSuccess && userData && token) {
         try {
           console.log('🔐 userStore - checkAuthStatus - Found OAuth success data, processing');
           const parsedUserData = JSON.parse(userData);
-          
+
           // Validate the user data
           if (parsedUserData && parsedUserData.id && parsedUserData.email) {
             console.log('🔐 userStore - checkAuthStatus - Setting authenticated user from OAuth');
-            
+
             // Enrich user with org roles if applicable
             const enrichedUser = await enrichUserWithOrgRoles(parsedUserData);
-            
+
             set({
               selectedUser: enrichedUser,
               isAuthenticated: true,
               isGuestMode: false,
               authMode: 'real',
             });
-            
+
             // Clean up OAuth success flags since we've processed them
             await AsyncStorage.multiRemove(['oauth_success_flag', 'google_auth_user', 'google_auth_token']);
-            
+
             console.log('🔐 userStore - checkAuthStatus - OAuth authentication restored successfully');
             set({ isLoading: false });
             return; // Exit early - user is authenticated
@@ -223,13 +247,13 @@ export const useUserStore = create<UserState>((set, get) => ({
           console.error('🔐 userStore - checkAuthStatus - Error parsing OAuth user data:', parseError);
         }
       }
-      
+
       // Check for persistent user session
       console.log('🔐 userStore - checkAuthStatus - Checking for persistent session');
       const persistedUser = await AsyncStorage.getItem('current_user');
       const guestMode = await AsyncStorage.getItem('guest_mode');
       const authModeStored = await AsyncStorage.getItem('auth_mode');
-      
+
       if (persistedUser) {
         try {
           const parsedUser = JSON.parse(persistedUser);
@@ -250,7 +274,7 @@ export const useUserStore = create<UserState>((set, get) => ({
           console.error('🔐 userStore - checkAuthStatus - Error parsing persisted user:', parseError);
         }
       }
-      
+
       // No valid authentication found - clear any invalid data and set unauthenticated state
       console.log('🔐 userStore - checkAuthStatus - No valid authentication found, clearing data');
       await AsyncStorage.multiRemove([
@@ -262,7 +286,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         'google_auth_user',
         'google_auth_token'
       ]);
-      
+
       console.log('🔐 userStore - checkAuthStatus - Setting unauthenticated state');
       set({
         isAuthenticated: false,
@@ -271,7 +295,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         authMode: 'guest',
         isLoading: false,
       });
-      
+
     } catch (error) {
       console.error('🔐 userStore - checkAuthStatus - Error:', error);
       // On error, ensure clean unauthenticated state
@@ -284,12 +308,12 @@ export const useUserStore = create<UserState>((set, get) => ({
       });
     }
   },
-  
+
   signOut: async () => {
     try {
       console.log('🔐 userStore - signOut - Starting sign out process');
       set({ isLoading: true });
-      
+
       // Sign out from Firebase Auth
       try {
         const { app } = getFirebase();
@@ -299,7 +323,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       } catch (firebaseError) {
         console.warn('🔥 Firebase - Sign out error (non-fatal):', firebaseError);
       }
-      
+
       console.log('🔐 userStore - signOut - Removing all auth data from AsyncStorage');
       await AsyncStorage.multiRemove([
         'current_user',
@@ -311,7 +335,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         'google_auth_user',
         'google_auth_token'
       ]);
-      
+
       console.log('🔐 userStore - signOut - Setting user state to null');
       set({
         selectedUser: null,
@@ -319,8 +343,9 @@ export const useUserStore = create<UserState>((set, get) => ({
         isGuestMode: false,
         authMode: 'guest',
         isLoading: false,
+        isInitialized: true, // Keep initialized flag true after sign out
       });
-      
+
       console.log('🔐 userStore - signOut - Sign out completed successfully');
     } catch (error) {
       console.error('🔐 userStore - signOut - Error during sign out:', error);
@@ -333,15 +358,15 @@ export const useUserStore = create<UserState>((set, get) => ({
       });
     }
   },
-  
+
   setGuestMode: async () => {
     try {
       console.log('🔐 userStore - setGuestMode - Starting (session only)');
       set({ isLoading: true });
-      
+
       // DO NOT SAVE TO AsyncStorage - session only
       console.log('🔐 userStore - setGuestMode - Setting guest mode for session only');
-      
+
       // Update state for current session only
       set({
         selectedUser: null,
@@ -350,7 +375,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         isAuthenticated: true,
         isLoading: false,
       });
-      
+
       console.log('🔐 userStore - setGuestMode - Guest mode set successfully (session only)');
     } catch (error) {
       console.error('🔐 userStore - setGuestMode - Error:', error);
@@ -363,30 +388,81 @@ export const useUserStore = create<UserState>((set, get) => ({
       });
     }
   },
-  
+
   setDemoUser: async () => {
     // Demo mode removed – keep API for backward compatibility, but no-op
     console.log('🔐 userStore - setDemoUser called (no-op, demo removed)');
   },
-  
+
   resetHomeScreen: () => {
     console.log('🏠 userStore - resetHomeScreen called');
     set((state) => ({ resetHomeScreenTrigger: state.resetHomeScreenTrigger + 1 }));
   },
-  
+
+  setLastHomeTabScreen: (screen: string | null) => {
+    console.log('🏠 userStore - setLastHomeTabScreen called', { screen });
+    set({ lastHomeTabScreen: screen });
+  },
+
+  clearLastHomeTabScreen: () => {
+    console.log('🏠 userStore - clearLastHomeTabScreen called');
+    set({ lastHomeTabScreen: null });
+  },
+
+  refreshUserRoles: async () => {
+    const currentUser = get().selectedUser;
+    if (!currentUser) {
+      console.log('🔐 userStore - refreshUserRoles - No user to refresh');
+      return;
+    }
+
+    try {
+      console.log('🔐 userStore - refreshUserRoles - Refreshing roles for user:', currentUser.email);
+      const enrichedUser = await enrichUserWithOrgRoles(currentUser);
+
+      // Only update if roles actually changed to prevent infinite loops
+      const currentRoles = JSON.stringify((currentUser.roles || []).sort());
+      const newRoles = JSON.stringify((enrichedUser.roles || []).sort());
+
+      if (currentRoles !== newRoles) {
+        console.log('🔐 userStore - refreshUserRoles - Roles changed!', {
+          email: enrichedUser.email,
+          oldRoles: currentUser.roles,
+          newRoles: enrichedUser.roles
+        });
+
+        set({ selectedUser: enrichedUser });
+        await AsyncStorage.setItem('current_user', JSON.stringify(enrichedUser));
+      }
+    } catch (error) {
+      console.error('🔐 userStore - refreshUserRoles - Error:', error);
+    }
+  },
+
   initialize: async () => {
     console.log('🔐 userStore - initialize - Starting initialization');
-    
+
     // Check auth status
     await get().checkAuthStatus();
-    
+
+    // Mark as initialized after checkAuthStatus completes
+    set({ isInitialized: true });
+
     // Setup Firebase Auth State Listener
     console.log('🔥 userStore - Setting up Firebase Auth listener');
     try {
       const { app } = getFirebase();
       const auth = getAuth(app);
-      
+
       onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+        const state = get();
+
+        // Skip updates if store hasn't been initialized yet
+        if (!state.isInitialized) {
+          console.log('🔥 Firebase Auth State Changed - Skipping (not initialized yet)');
+          return;
+        }
+
         console.log('🔥 Firebase Auth State Changed:', {
           hasUser: !!firebaseUser,
           email: firebaseUser?.email,
@@ -397,49 +473,119 @@ export const useUserStore = create<UserState>((set, get) => ({
         if (firebaseUser) {
           // Firebase user is logged in - restore/create session
           console.log('🔥 Firebase user detected, restoring session');
-          
-          // Create or restore user data
-          const nowIso = new Date().toISOString();
-          const userData: User = {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-            email: firebaseUser.email || '',
-            phone: firebaseUser.phoneNumber || '+9720000000',
-            avatar: firebaseUser.photoURL || 'https://i.pravatar.cc/150?img=1',
-            bio: '',
-            karmaPoints: 0,
-            joinDate: nowIso,
-            isActive: true,
-            lastActive: nowIso,
-            location: { city: 'ישראל', country: 'IL' },
-            interests: [],
-            roles: ['user'],
-            postsCount: 0,
-            followersCount: 0,
-            followingCount: 0,
-            notifications: [],
-            settings: { language: 'he', darkMode: false, notificationsEnabled: true },
-          };
 
-          // Save to AsyncStorage for persistence
-          await AsyncStorage.setItem('current_user', JSON.stringify(userData));
-          await AsyncStorage.setItem('auth_mode', 'real');
-          await AsyncStorage.setItem('firebase_user_id', firebaseUser.uid);
-          
-          // Update store state
-          const enrichedUser = await enrichUserWithOrgRoles(userData);
-          set({
-            selectedUser: enrichedUser,
-            isAuthenticated: true,
-            isGuestMode: false,
-            authMode: 'real',
-          });
-          
-          console.log('🔥 Firebase session restored successfully');
+          try {
+            // Get UUID from server using firebase_uid
+            const { apiService } = await import('../utils/apiService');
+
+            const resolveResponse = await apiService.resolveUserId({
+              firebase_uid: firebaseUser.uid,
+              email: firebaseUser.email || undefined
+            });
+
+            if (!resolveResponse.success || !(resolveResponse as any).user) {
+              console.warn('🔥 Failed to resolve user ID from server, using fallback');
+              // Fallback: try to get user by email
+              if (firebaseUser.email) {
+                const userResponse = await apiService.getUserById(firebaseUser.email);
+                if (userResponse.success && userResponse.data) {
+                  const serverUser = userResponse.data;
+                  const nowIso = new Date().toISOString();
+                  const userData: User = {
+                    id: serverUser.id, // UUID from database
+                    name: serverUser.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+                    email: serverUser.email || firebaseUser.email || '',
+                    phone: serverUser.phone || firebaseUser.phoneNumber || '+9720000000',
+                    avatar: serverUser.avatar_url || firebaseUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+                    bio: serverUser.bio || '',
+                    karmaPoints: serverUser.karma_points || 0,
+                    joinDate: serverUser.join_date || serverUser.created_at || nowIso,
+                    isActive: serverUser.is_active !== false,
+                    lastActive: serverUser.last_active || nowIso,
+                    location: { city: serverUser.city || 'ישראל', country: serverUser.country || 'IL' },
+                    interests: serverUser.interests || [],
+                    roles: serverUser.roles || ['user'],
+                    postsCount: serverUser.posts_count || 0,
+                    followersCount: serverUser.followers_count || 0,
+                    followingCount: serverUser.following_count || 0,
+                    notifications: [],
+                    settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+                  };
+
+                  await AsyncStorage.setItem('current_user', JSON.stringify(userData));
+                  await AsyncStorage.setItem('auth_mode', 'real');
+                  await AsyncStorage.setItem('firebase_user_id', firebaseUser.uid);
+
+                  const enrichedUser = await enrichUserWithOrgRoles(userData);
+                  set({
+                    selectedUser: enrichedUser,
+                    isAuthenticated: true
+                  });
+                  console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
+                  return;
+                }
+              }
+              throw new Error('Failed to get user from server');
+            }
+
+            // Check if we already have this user loaded to prevent unnecessary updates
+            const currentState = get();
+            if (currentState.selectedUser?.id === (resolveResponse as any).user.id &&
+              currentState.isAuthenticated &&
+              currentState.authMode === 'real') {
+              console.log('🔥 Firebase Auth State Changed - User already loaded, skipping update');
+              return;
+            }
+
+            // Use UUID from server
+            const serverUser = (resolveResponse as any).user;
+            const nowIso = new Date().toISOString();
+            const userData: User = {
+              id: serverUser.id, // UUID from database - this is the primary identifier
+              name: serverUser.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+              email: serverUser.email || firebaseUser.email || '',
+              phone: serverUser.phone || firebaseUser.phoneNumber || '+9720000000',
+              avatar: serverUser.avatar || firebaseUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+              bio: serverUser.bio || '',
+              karmaPoints: serverUser.karmaPoints || 0,
+              joinDate: serverUser.createdAt || serverUser.joinDate || nowIso,
+              isActive: serverUser.isActive !== false,
+              lastActive: serverUser.lastActive || nowIso,
+              location: serverUser.location || { city: 'ישראל', country: 'IL' },
+              interests: serverUser.interests || [],
+              roles: serverUser.roles || ['user'],
+              postsCount: serverUser.postsCount || 0,
+              followersCount: serverUser.followersCount || 0,
+              followingCount: serverUser.followingCount || 0,
+              notifications: [],
+              settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+            };
+
+            // Save to AsyncStorage for persistence
+            await AsyncStorage.setItem('current_user', JSON.stringify(userData));
+            await AsyncStorage.setItem('auth_mode', 'real');
+            await AsyncStorage.setItem('firebase_user_id', firebaseUser.uid);
+
+            // Update store state
+            const enrichedUser = await enrichUserWithOrgRoles(userData);
+            set({
+              selectedUser: enrichedUser,
+              isAuthenticated: true,
+              authMode: 'real',
+              isGuestMode: false
+            });
+            console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
+          } catch (error) {
+            console.error('🔥 Failed to restore Firebase session:', error);
+            // Don't set user state if we can't get UUID from server
+          }
         } else {
           // No Firebase user - only clear if we had a Firebase user before
+          const currentState = get();
           const firebaseUserId = await AsyncStorage.getItem('firebase_user_id');
-          if (firebaseUserId) {
+
+          // Only clear if we actually had a Firebase user and we're not in guest mode
+          if (firebaseUserId && currentState.authMode === 'real' && currentState.isAuthenticated) {
             console.log('🔥 Firebase user logged out, clearing session');
             await AsyncStorage.multiRemove(['current_user', 'auth_mode', 'firebase_user_id']);
             set({
@@ -448,10 +594,12 @@ export const useUserStore = create<UserState>((set, get) => ({
               isGuestMode: false,
               authMode: 'guest',
             });
+          } else {
+            console.log('🔥 Firebase Auth State Changed - No user, but not clearing (guest mode or no previous Firebase user)');
           }
         }
       });
-      
+
       console.log('🔥 Firebase Auth listener set up successfully');
     } catch (error) {
       console.error('🔥 Error setting up Firebase Auth listener:', error);
@@ -484,6 +632,10 @@ export const useUser = () => {
     setDemoUser: store.setDemoUser,
     resetHomeScreen: store.resetHomeScreen,
     resetHomeScreenTrigger: store.resetHomeScreenTrigger,
+    lastHomeTabScreen: store.lastHomeTabScreen,
+    setLastHomeTabScreen: store.setLastHomeTabScreen,
+    clearLastHomeTabScreen: store.clearLastHomeTabScreen,
+    refreshUserRoles: store.refreshUserRoles,
   };
 };
 

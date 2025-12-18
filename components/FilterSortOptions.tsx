@@ -85,12 +85,12 @@ const FilterSortOptions: React.FC<FilterSortOptionsProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.orangeLight,
+    backgroundColor: colors.warningLight,
     padding: 10,
     borderRadius: 10,
     // marginBottom: 20,
     elevation: 1,
-    // shadowColor: '#000',
+    // shadowColor: colors.black,
     shadowOffset: { width: 0, height: 0.5 },
     shadowOpacity: 0.1,
     shadowRadius: 1,

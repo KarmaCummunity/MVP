@@ -8,7 +8,7 @@ export default function AnimalsScreen() {
       config={{
         id: 'animals',
         icon: 'paw-outline',
-        color: colors.orangeDark,
+        color: colors.warning,
         bgColor: colors.backgroundTertiary,
       }}
     />

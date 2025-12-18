@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Modal } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
@@ -25,13 +25,17 @@ type AdminTask = {
   updated_at?: string;
 };
 
+import { useAdminProtection } from '../hooks/useAdminProtection';
+
 export default function AdminTasksScreen() {
+  useAdminProtection();
   const { selectedUser } = useUser();
   const [tasks, setTasks] = useState<AdminTask[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [newTitle, setNewTitle] = useState('');
   const [creating, setCreating] = useState<boolean>(false);
+  const [updating, setUpdating] = useState<string | null>(null); // Track which task is being updated
+  const [deleting, setDeleting] = useState<string | null>(null); // Track which task is being deleted
   const [showForm, setShowForm] = useState<boolean>(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -47,6 +51,7 @@ export default function AdminTasksScreen() {
   const [filterStatus, setFilterStatus] = useState<TaskStatus | ''>('');
   const [filterPriority, setFilterPriority] = useState<TaskPriority | ''>('');
   const [filterCategory, setFilterCategory] = useState<string | ''>('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const sortedTasks = useMemo(() => {
     const priorityOrder: Record<TaskPriority, number> = { high: 0, medium: 1, low: 2 };
@@ -59,26 +64,47 @@ export default function AdminTasksScreen() {
     });
   }, [tasks]);
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const res: ApiResponse<AdminTask[]> = await apiService.getTasks({
-      q: query || undefined,
-      status: filterStatus || undefined,
-      priority: filterPriority || undefined,
-      category: filterCategory || undefined,
-    });
-    if (!res.success) {
-      setError(res.error || 'שגיאה בטעינת משימות');
-    } else {
-      setTasks(res.data || []);
+    try {
+      const res: ApiResponse<AdminTask[]> = await apiService.getTasks({
+        q: query || undefined,
+        status: filterStatus || undefined,
+        priority: filterPriority || undefined,
+        category: filterCategory || undefined,
+      });
+      if (!res.success) {
+        setError(res.error || 'שגיאה בטעינת משימות');
+      } else {
+        setTasks(res.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching tasks:', err);
+      setError('שגיאה בטעינת משימות - נסה שוב');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, [query, filterStatus, filterPriority, filterCategory]);
 
+  // Debounce search query - fetch immediately for filters, debounce for text search
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+
+    if (query) {
+      // Debounce text search
+      timeout = setTimeout(() => {
+        fetchTasks();
+      }, 500);
+    } else {
+      // Immediate fetch for filters
+      fetchTasks();
+    }
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [query, filterStatus, filterPriority, filterCategory, fetchTasks]);
 
   const resetForm = () => {
     setFormData({
@@ -91,42 +117,74 @@ export default function AdminTasksScreen() {
       assigneesEmails: '',
       tagsText: '',
     });
+    setEditingId(null);
   };
 
   const createTask = async () => {
     if (!formData.title.trim()) return;
     setCreating(true);
-    const body = {
-      title: formData.title.trim(),
-      description: formData.description.trim() || undefined,
-      priority: formData.priority,
-      status: formData.status,
-      category: formData.category,
-      due_date: formData.due_date ? new Date(formData.due_date).toISOString() : undefined,
-      assigneesEmails: formData.assigneesEmails
-        ? formData.assigneesEmails.split(',').map((e) => e.trim()).filter(Boolean)
-        : [],
-      tags: formData.tagsText
-        ? formData.tagsText.split(',').map((t) => t.trim()).filter(Boolean)
-        : [],
-      created_by: selectedUser?.id || null,
-    };
-    const res: ApiResponse<AdminTask> = await apiService.createTask(body);
-    if (!res.success) {
-      setError(res.error || 'שגיאה ביצירת משימה');
-    } else if (res.data) {
-      setTasks((prev) => [res.data as AdminTask, ...prev]);
-      resetForm();
-      setShowForm(false);
+    setError(null);
+    try {
+      // Validate date if provided
+      let parsedDueDate = null;
+      if (formData.due_date.trim()) {
+        const date = new Date(formData.due_date);
+        if (isNaN(date.getTime())) {
+          setError('תאריך לא תקין - אנא השתמש בפורמט YYYY-MM-DD');
+          setCreating(false);
+          return;
+        }
+        parsedDueDate = date.toISOString();
+      }
+
+      const body = {
+        title: formData.title.trim(),
+        description: formData.description.trim() || null,
+        priority: formData.priority,
+        status: formData.status,
+        category: formData.category || null,
+        due_date: parsedDueDate,
+        assigneesEmails: formData.assigneesEmails.trim()
+          ? formData.assigneesEmails.split(',').map((e) => e.trim()).filter(Boolean)
+          : [],
+        tags: formData.tagsText.trim()
+          ? formData.tagsText.split(',').map((t) => t.trim()).filter(Boolean)
+          : [],
+        created_by: selectedUser?.id || null,
+      };
+      const res: ApiResponse<AdminTask> = await apiService.createTask(body);
+      if (!res.success) {
+        setError(res.error || 'שגיאה ביצירת משימה');
+      } else if (res.data) {
+        // Refresh tasks from server to ensure consistency
+        await fetchTasks();
+        resetForm();
+        setShowForm(false);
+      }
+    } catch (err) {
+      console.error('Error creating task:', err);
+      setError('שגיאה ביצירת משימה - נסה שוב');
+    } finally {
+      setCreating(false);
     }
-    setCreating(false);
   };
 
   const toggleDone = async (task: AdminTask) => {
-    const nextStatus: TaskStatus = task.status === 'done' ? 'open' : 'done';
-    const res: ApiResponse<AdminTask> = await apiService.updateTask(task.id, { status: nextStatus });
-    if (res.success && res.data) {
-      setTasks((prev) => prev.map((t) => (t.id === task.id ? (res.data as AdminTask) : t)));
+    setUpdating(task.id);
+    setError(null);
+    try {
+      const nextStatus: TaskStatus = task.status === 'done' ? 'open' : 'done';
+      const res: ApiResponse<AdminTask> = await apiService.updateTask(task.id, { status: nextStatus });
+      if (res.success && res.data) {
+        setTasks((prev) => prev.map((t) => (t.id === task.id ? (res.data as AdminTask) : t)));
+      } else {
+        setError(res.error || 'שגיאה בעדכון סטטוס המשימה');
+      }
+    } catch (err) {
+      console.error('Error toggling task status:', err);
+      setError('שגיאה בעדכון סטטוס המשימה - נסה שוב');
+    } finally {
+      setUpdating(null);
     }
   };
 
@@ -134,8 +192,16 @@ export default function AdminTasksScreen() {
     const isDone = item.status === 'done';
     return (
       <View style={[styles.taskItem, isDone && styles.taskItemDone]}>
-        <TouchableOpacity style={styles.checkbox} onPress={() => toggleDone(item)}>
-          <Ionicons name={isDone ? 'checkbox' : 'square-outline'} size={24} color={isDone ? colors.green : colors.textSecondary} />
+        <TouchableOpacity
+          style={styles.checkbox}
+          onPress={() => toggleDone(item)}
+          disabled={updating === item.id}
+        >
+          {updating === item.id ? (
+            <ActivityIndicator size="small" color={colors.textSecondary} />
+          ) : (
+            <Ionicons name={isDone ? 'checkbox' : 'square-outline'} size={24} color={isDone ? colors.success : colors.textSecondary} />
+          )}
         </TouchableOpacity>
         <View style={styles.taskContent}>
           <Text style={[styles.taskTitle, isDone && styles.taskTitleDone]} numberOfLines={2}>
@@ -155,7 +221,7 @@ export default function AdminTasksScreen() {
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{item.status === 'open' ? 'פתוחה' : item.status === 'in_progress' ? 'בתהליך' : item.status === 'done' ? 'בוצעה' : 'בארכיון'}</Text>
             </View>
-            {!!item.assignees?.length && (
+            {Array.isArray(item.assignees) && item.assignees.length > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{item.assignees.length} מוקצים</Text>
               </View>
@@ -166,9 +232,19 @@ export default function AdminTasksScreen() {
               <Ionicons name="create-outline" size={18} color={colors.textPrimary} />
               <Text style={styles.actionText}>ערוך</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtn} onPress={() => deleteTask(item.id)}>
-              <Ionicons name="trash-outline" size={18} color={colors.error} />
-              <Text style={[styles.actionText, { color: colors.error }]}>מחק</Text>
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => deleteTask(item.id)}
+              disabled={deleting === item.id}
+            >
+              {deleting === item.id ? (
+                <ActivityIndicator size="small" color={colors.error} />
+              ) : (
+                <>
+                  <Ionicons name="trash-outline" size={18} color={colors.error} />
+                  <Text style={[styles.actionText, { color: colors.error }]}>מחק</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -177,6 +253,8 @@ export default function AdminTasksScreen() {
   };
 
   const openEdit = (task: AdminTask) => {
+    // Note: assigneesEmails will be empty when editing - user needs to re-enter emails
+    // This is a limitation - we'd need an API to get user emails by UUIDs
     setFormData({
       title: task.title || '',
       description: task.description || '',
@@ -184,50 +262,81 @@ export default function AdminTasksScreen() {
       status: task.status,
       category: task.category || 'development',
       due_date: task.due_date ? new Date(task.due_date).toISOString().slice(0, 10) : '',
-      assigneesEmails: '',
+      assigneesEmails: '', // Empty - user needs to re-enter if they want to change assignees
       tagsText: (task.tags || []).join(', '),
     });
-    (formData as any)._editingId = task.id;
+    setEditingId(task.id);
     setShowForm(true);
   };
 
   const saveEdit = async () => {
-    const editingId = (formData as any)._editingId;
     if (!editingId) return;
-    const body: any = {
-      title: formData.title.trim(),
-      description: formData.description.trim(),
-      priority: formData.priority,
-      status: formData.status,
-      category: formData.category,
-      due_date: formData.due_date ? new Date(formData.due_date).toISOString() : null,
-      tags: formData.tagsText ? formData.tagsText.split(',').map((t) => t.trim()).filter(Boolean) : [],
-    };
-    if (formData.assigneesEmails) {
-      body.assigneesEmails = formData.assigneesEmails.split(',').map((e) => e.trim()).filter(Boolean);
-    }
-    const res = await apiService.updateTask(editingId, body);
-    if (res.success && res.data) {
-      setTasks((prev) => prev.map((t) => (t.id === editingId ? (res.data as AdminTask) : t)));
-      setShowForm(false);
-      resetForm();
-      delete (formData as any)._editingId;
-    } else {
-      setError(res.error || 'שגיאה בעדכון משימה');
+    setUpdating(editingId);
+    setError(null);
+    try {
+      // Validate date if provided
+      let parsedDueDate = null;
+      if (formData.due_date.trim()) {
+        const date = new Date(formData.due_date);
+        if (isNaN(date.getTime())) {
+          setError('תאריך לא תקין - אנא השתמש בפורמט YYYY-MM-DD');
+          setUpdating(null);
+          return;
+        }
+        parsedDueDate = date.toISOString();
+      }
+
+      const body: any = {
+        title: formData.title.trim(),
+        description: formData.description.trim() || null,
+        priority: formData.priority,
+        status: formData.status,
+        category: formData.category || null,
+        due_date: parsedDueDate,
+        tags: formData.tagsText ? formData.tagsText.split(',').map((t) => t.trim()).filter(Boolean) : [],
+      };
+      if (formData.assigneesEmails.trim()) {
+        body.assigneesEmails = formData.assigneesEmails.split(',').map((e) => e.trim()).filter(Boolean);
+      }
+      const res = await apiService.updateTask(editingId, body);
+      if (res.success && res.data) {
+        // Refresh tasks from server to ensure consistency
+        await fetchTasks();
+        setShowForm(false);
+        resetForm();
+        setEditingId(null);
+      } else {
+        setError(res.error || 'שגיאה בעדכון משימה');
+      }
+    } catch (err) {
+      console.error('Error updating task:', err);
+      setError('שגיאה בעדכון משימה - נסה שוב');
+    } finally {
+      setUpdating(null);
     }
   };
 
   const deleteTask = async (taskId: string) => {
-    const res = await apiService.deleteTask(taskId);
-    if (res.success) {
-      setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    } else {
-      setError(res.error || 'שגיאה במחיקת משימה');
+    setDeleting(taskId);
+    setError(null);
+    try {
+      const res = await apiService.deleteTask(taskId);
+      if (res.success) {
+        // Refresh tasks from server to ensure consistency
+        await fetchTasks();
+      } else {
+        setError(res.error || 'שגיאה במחיקת משימה');
+      }
+    } catch (err) {
+      console.error('Error deleting task:', err);
+      setError('שגיאה במחיקת משימה - נסה שוב');
+    } finally {
+      setDeleting(null);
     }
   };
 
-  return (
-    <View style={styles.container}>
+  const renderHeader = () => (
+    <>
       <Text style={styles.header}>ניהול משימות</Text>
 
       <View style={styles.filtersRow}>
@@ -241,7 +350,7 @@ export default function AdminTasksScreen() {
           onSubmitEditing={fetchTasks}
         />
         <TouchableOpacity style={styles.refreshBtn} onPress={fetchTasks}>
-          <Ionicons name="search-outline" size={22} color="#fff" />
+          <Ionicons name="search-outline" size={22} color={colors.white} />
         </TouchableOpacity>
       </View>
 
@@ -266,36 +375,50 @@ export default function AdminTasksScreen() {
           { value: 'operations', label: 'תפעול' },
           { value: 'design', label: 'עיצוב' },
         ]} />
-        <TouchableOpacity style={styles.addButton} onPress={() => { resetForm(); setShowForm(true); }}>
-          <Ionicons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
       </View>
+    </>
+  );
 
-      {loading ? (
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        {renderHeader()}
         <View style={styles.loader}>
           <ActivityIndicator size="large" color={colors.info} />
         </View>
-      ) : error ? (
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        {renderHeader()}
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity onPress={fetchTasks} style={styles.retryBtn}>
             <Text style={styles.retryText}>נסה שוב</Text>
           </TouchableOpacity>
         </View>
-      ) : (
-        <FlatList
-          data={sortedTasks}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={<Text style={styles.emptyText}>אין משימות כרגע</Text>}
-        />
-      )}
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={sortedTasks}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={<Text style={styles.emptyText}>אין משימות כרגע</Text>}
+      />
 
       <Modal visible={showForm} animationType="slide" transparent onRequestClose={() => setShowForm(false)}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>{(formData as any)._editingId ? 'עריכת משימה' : 'משימה חדשה'}</Text>
+            <Text style={styles.modalTitle}>{editingId ? 'עריכת משימה' : 'משימה חדשה'}</Text>
             <TextInput style={styles.modalInput} placeholder="כותרת" value={formData.title} onChangeText={(v) => setFormData({ ...formData, title: v })} />
             <TextInput style={[styles.modalInput, { height: 80 }]} placeholder="תיאור" multiline value={formData.description} onChangeText={(v) => setFormData({ ...formData, description: v })} />
             <View style={styles.row2}>
@@ -341,19 +464,23 @@ export default function AdminTasksScreen() {
               <TouchableOpacity style={[styles.modalBtn, styles.modalCancel]} onPress={() => { setShowForm(false); resetForm(); }}>
                 <Text style={styles.modalBtnText}>ביטול</Text>
               </TouchableOpacity>
-              {(formData as any)._editingId ? (
-                <TouchableOpacity style={[styles.modalBtn, styles.modalSave]} onPress={saveEdit} disabled={creating}>
-                  {creating ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>שמירה</Text>}
+              {editingId ? (
+                <TouchableOpacity style={[styles.modalBtn, styles.modalSave]} onPress={saveEdit} disabled={updating === editingId}>
+                  {updating === editingId ? <ActivityIndicator color={colors.white} /> : <Text style={styles.modalBtnText}>שמירה</Text>}
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity style={[styles.modalBtn, styles.modalSave]} onPress={createTask} disabled={creating || !formData.title.trim()}>
-                  {creating ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnText}>יצירה</Text>}
+                  {creating ? <ActivityIndicator color={colors.white} /> : <Text style={styles.modalBtnText}>יצירה</Text>}
                 </TouchableOpacity>
               )}
             </View>
           </View>
         </View>
       </Modal>
+
+      <TouchableOpacity style={styles.addButton} onPress={() => { resetForm(); setShowForm(true); }}>
+        <Ionicons name="add" size={24} color={colors.white} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -397,6 +524,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.backgroundSecondary,
     padding: LAYOUT_CONSTANTS.SPACING.LG,
+    position: 'relative',
   },
   header: {
     fontSize: FontSizes.heading2,
@@ -416,7 +544,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
     paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     color: colors.textPrimary,
     borderWidth: 1,
     borderColor: colors.border,
@@ -425,7 +553,7 @@ const styles = StyleSheet.create({
     height: 48,
     width: 48,
     borderRadius: 12,
-    backgroundColor: colors.blue,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -435,18 +563,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: LAYOUT_CONSTANTS.SPACING.SM,
     marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
+    flexWrap: 'wrap',
   },
   addButton: {
-    height: 48,
-    width: 48,
-    borderRadius: 12,
-    backgroundColor: colors.green,
+    position: 'absolute',
+    right: LAYOUT_CONSTANTS.SPACING.LG,
+    bottom: 100,
+    height: 56,
+    width: 56,
+    borderRadius: 28,
+    backgroundColor: colors.success,
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: 8,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    zIndex: 1000,
   },
   listContent: {
     paddingBottom: LAYOUT_CONSTANTS.SPACING.XL,
     gap: LAYOUT_CONSTANTS.SPACING.SM,
+    flexGrow: 1,
+    minHeight: '150%', // Ensure content is always scrollable
   },
   loader: {
     flex: 1,
@@ -458,7 +598,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: LAYOUT_CONSTANTS.SPACING.MD,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -513,16 +653,16 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   priority_high: {
-    backgroundColor: '#ffebee',
-    borderColor: '#ffcdd2',
+    backgroundColor: colors.pinkLight,
+    borderColor: colors.pinkLight,
   },
   priority_medium: {
-    backgroundColor: '#fff8e1',
-    borderColor: '#ffecb3',
+    backgroundColor: colors.warningLight,
+    borderColor: colors.warningLight,
   },
   priority_low: {
-    backgroundColor: '#e8f5e9',
-    borderColor: '#c8e6c9',
+    backgroundColor: colors.successLight,
+    borderColor: colors.successLight,
   },
   errorBox: {
     backgroundColor: colors.errorLight,
@@ -546,7 +686,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryText: {
-    color: '#fff',
+    color: colors.white,
     fontWeight: '600',
   },
   emptyText: {
@@ -559,7 +699,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -585,7 +725,7 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     borderRadius: 16,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     padding: 16,
   },
   modalTitle: {
@@ -654,10 +794,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   modalSave: {
-    backgroundColor: colors.green,
+    backgroundColor: colors.success,
   },
   modalBtnText: {
-    color: '#fff',
+    color: colors.white,
     fontWeight: '600',
   },
 });

@@ -1,10 +1,14 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { useUser } from '../stores/userStore';
+import { useWebMode } from '../stores/webModeStore';
 import { useTranslation } from 'react-i18next';
+import { navigationQueue } from '../utils/navigationQueue';
+import { checkNavigationGuards } from '../utils/navigationGuards';
+import { logger } from '../utils/loggerService';
 
 interface GuestModeNoticeProps {
   variant?: 'default' | 'compact';
@@ -17,20 +21,54 @@ const GuestModeNotice: React.FC<GuestModeNoticeProps> = ({
 }) => {
   const navigation = useNavigation<any>();
   const { signOut } = useUser();
+  const { mode } = useWebMode();
   const { t } = useTranslation(['common']);
 
   const handleLoginPress = async () => {
-    console.log('🔐 GuestModeNotice - Login button pressed, performing sign out');
+    logger.debug('GuestModeNotice', 'Login button pressed, performing sign out');
     try {
       await signOut();
-      console.log('🔐 GuestModeNotice - Sign out completed');
-      setTimeout(() => {
-        console.log('🔐 GuestModeNotice - Navigating to LoginScreen');
-        navigation.navigate('LoginScreen');
-      }, 100);
+      logger.debug('GuestModeNotice', 'Sign out completed');
+      
+      // Determine target route based on web mode
+      const targetRoute = (Platform.OS === 'web' && mode === 'site') 
+        ? 'LandingSiteScreen' 
+        : 'LoginScreen';
+      
+      // Check guards before navigation
+      const guardContext = {
+        isAuthenticated: false, // After sign out
+        isGuestMode: false,
+        isAdmin: false,
+        mode,
+      };
+
+      const guardResult = await checkNavigationGuards(
+        {
+          type: 'reset',
+          index: 0,
+          routes: [{ name: targetRoute }],
+        },
+        guardContext
+      );
+
+      if (!guardResult.allowed) {
+        // If guard blocks, try redirect if provided
+        if (guardResult.redirectTo) {
+          await navigationQueue.reset(0, [{ name: guardResult.redirectTo }], 2);
+        }
+        return;
+      }
+
+      // Use navigation queue with high priority (2) for auth changes
+      await navigationQueue.reset(0, [{ name: targetRoute }], 2);
     } catch (error) {
-      console.error('🔐 GuestModeNotice - Error during sign out:', error);
-      navigation.navigate('LoginScreen');
+      logger.error('GuestModeNotice', 'Error during sign out', { error });
+      // Fallback navigation
+      const targetRoute = (Platform.OS === 'web' && mode === 'site') 
+        ? 'LandingSiteScreen' 
+        : 'LoginScreen';
+      await navigationQueue.reset(0, [{ name: targetRoute }], 2);
     }
   };
 
@@ -71,7 +109,7 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     margin: 10,
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
     borderRadius: 8,
     paddingVertical: 5,
     paddingHorizontal: 10,

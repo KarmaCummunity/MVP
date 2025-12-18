@@ -28,7 +28,7 @@
     
     <style>
       /* Loading screen and mobile web optimizations */
-      html, body, #root {
+      html, body {
         width: 100%;
         -webkit-overflow-scrolling: touch;
         margin: 0px;
@@ -41,6 +41,7 @@
       }
       
       #root {
+        width: 100%;
         flex-shrink: 0;
         flex-basis: auto;
         flex-grow: 1;
@@ -49,6 +50,10 @@
         /* Ensure full height on mobile */
         min-height: 100vh;
         position: relative;
+        /* Center content horizontally */
+        justify-content: center;
+        align-items: flex-start;
+        background-color: #F0F8FF;
       }
       
       html {

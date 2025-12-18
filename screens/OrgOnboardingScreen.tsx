@@ -211,8 +211,7 @@ const styles = StyleSheet.create({
   webScrollContent: {
     padding: 16,
     paddingBottom: 80,
-    maxWidth: 900,
-    alignSelf: 'center',
+    width: '100%',
     minHeight: '100%',
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
@@ -231,7 +230,7 @@ const styles = StyleSheet.create({
   tagTextSelected: { color: colors.primary, fontWeight: '700' },
   submitBtn: { backgroundColor: colors.primary, padding: 14, borderRadius: 12, alignItems: 'center', marginTop: 20 },
   submitBtnDisabled: { opacity: 0.6 },
-  submitText: { color: '#fff', fontSize: FontSizes.body, fontWeight: '700' },
+  submitText: { color: colors.white, fontSize: FontSizes.body, fontWeight: '700' },
   hint: { color: colors.textSecondary, fontSize: FontSizes.small, textAlign: 'center', marginTop: 8 },
 });
 

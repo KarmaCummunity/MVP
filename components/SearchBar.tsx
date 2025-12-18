@@ -15,7 +15,7 @@ import colors from "../globals/colors"; // Ensure this path is correct
 import { FontSizes, filterOptions as defaultFilterOptions, sortOptions as defaultSortOptions } from "../globals/constants";
 import { useTranslation } from 'react-i18next';
 import { createShadowStyle } from "../globals/styles";
-import { biDiTextAlign, rowDirection, getResponsiveModalStyles, responsiveSpacing, responsiveFontSize, getScreenInfo, BREAKPOINTS } from "../globals/responsive";
+import { biDiTextAlign, rowDirection, getResponsiveModalStyles, responsiveSpacing, responsiveFontSize, getScreenInfo, BREAKPOINTS, scaleSize } from "../globals/responsive";
 
 interface SearchBarProps {
   onHasActiveConditionsChange?: (isActive: boolean) => void;
@@ -25,49 +25,65 @@ interface SearchBarProps {
   filterOptions?: string[];
   sortOptions?: string[];
   searchData?: any[];
+  // Props to expose selected filters/sorts to parent
+  onFiltersChange?: (filters: string[]) => void;
+  onSortsChange?: (sorts: string[]) => void;
+  // Callbacks to expose remove functions to parent
+  onRemoveFilterRequested?: (removeFn: (filter: string) => void) => void;
+  onRemoveSortRequested?: (removeFn: () => void) => void;
+  // Whether to render the selected filters/sorts row (false = parent will render it)
+  renderSelectedRow?: boolean;
+  // Whether to hide the sort button explicitly
+  hideSortButton?: boolean;
 }
 
-const SearchBar = ({ 
-  onHasActiveConditionsChange, 
-  onSearch, 
+const SearchBar = ({
+  onHasActiveConditionsChange,
+  onSearch,
   placeholder,
   filterOptions = defaultFilterOptions,
   sortOptions = defaultSortOptions,
-  searchData = []
+  searchData = [],
+  onFiltersChange,
+  onSortsChange,
+  onRemoveFilterRequested,
+  onRemoveSortRequested,
+  renderSelectedRow = true,
+  hideSortButton = false,
 }: SearchBarProps) => {
   const [searchText, setSearchText] = useState("");
-  const { t } = useTranslation(['search','common']);
+  const { t } = useTranslation(['search', 'common', 'trump']);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [isSortModalVisible, setIsSortModalVisible] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [selectedSorts, setSelectedSorts] = useState<string[]>([]);
- // New state to track if SearchBar has active filters/sorts
- const [hasActiveConditions, setHasActiveConditions] = useState<boolean>(false);
+  // New state to track if SearchBar has active filters/sorts
+  const [hasActiveConditions, setHasActiveConditions] = useState<boolean>(false);
 
- // Callback function to be passed to SearchBar
- const handleHasActiveConditionsChange = (isActive: boolean) => {
-   setHasActiveConditions(isActive);
-   onHasActiveConditionsChange?.(isActive);
- };
+  // Callback function to be passed to SearchBar
+  const handleHasActiveConditionsChange = (isActive: boolean) => {
+    setHasActiveConditions(isActive);
+    onHasActiveConditionsChange?.(isActive);
+  };
 
- // Determine paddingBottom based on hasActiveConditions
- const getPaddingBottom = () => {
-   if (hasActiveConditions) {
-     // If there are filters/sorts, provide less padding to avoid excessive space
-     return Platform.select({
-       ios: 20,
-       android: 0,
-       web: 0,
-     });
-   } else {
-     // If no filters/sorts, provide more padding for the static buttons row
-     return Platform.select({
-       ios: 80,
-       android: 0,
-       web: 0, // Assuming web might handle spacing differently
-     });
-   }
- };
+  // Determine paddingBottom based on hasActiveConditions
+  const getPaddingBottom = () => {
+    if (hasActiveConditions) {
+      // If there are filters/sorts, provide less padding to avoid excessive space
+      return Platform.select({
+        ios: 20,
+        android: 0,
+        web: 0,
+      });
+    } else {
+      // If no filters/sorts, provide more padding for the static buttons row
+      return Platform.select({
+        ios: 80,
+        android: 0,
+        web: 0, // Assuming web might handle spacing differently
+      });
+    }
+  };
 
   // Effect to inform parent about active conditions
   useEffect(() => {
@@ -82,10 +98,10 @@ const SearchBar = ({
       onSearch?.(query, filters, sorts, []);
       return;
     }
-    
+
     // Perform search on the provided data
     let results = [...searchData];
-    
+
     // Filter by search text if provided
     if (query.trim() !== "") {
       results = results.filter(item => {
@@ -108,13 +124,13 @@ const SearchBar = ({
         if (item.title && item.title.toLowerCase().includes(query.toLowerCase())) {
           return true;
         }
-        
+
         // Fallback to generic search for other properties
         const itemStr = JSON.stringify(item).toLowerCase();
         return itemStr.includes(query.toLowerCase());
       });
     }
-    
+
     // Apply filters if any are selected
     if (filters.length > 0) {
       results = results.filter(item => {
@@ -138,11 +154,11 @@ const SearchBar = ({
         });
       });
     }
-    
+
     // Apply sorting if any is selected
     if (sorts.length > 0) {
       const sortOption = sorts[0]; // Only one sort at a time
-      
+
       // Enhanced sorting logic for charities
       if (sortOption === 'alphabetical') {
         results.sort((a, b) => {
@@ -183,7 +199,7 @@ const SearchBar = ({
         });
       }
     }
-    
+
     // Call the parent's search handler with all the parameters
     onSearch?.(query, filters, sorts, results);
   };
@@ -194,13 +210,16 @@ const SearchBar = ({
 
   const handleFilterSelection = (option: string) => {
     setSelectedFilters((prevFilters) => {
-      const newFilters = prevFilters.includes(option) 
+      const newFilters = prevFilters.includes(option)
         ? prevFilters.filter((item) => item !== option)
         : [...prevFilters, option];
-      
+
+      // Notify parent of filter changes
+      onFiltersChange?.(newFilters);
+
       // Perform real-time search with new filters
       performSearch(searchText, newFilters, selectedSorts);
-      
+
       return newFilters;
     });
   };
@@ -208,10 +227,13 @@ const SearchBar = ({
   const handleSortSelection = (option: string) => {
     setSelectedSorts((prevSorts) => {
       const newSorts = prevSorts.includes(option) ? [] : [option];
-      
+
+      // Notify parent of sort changes
+      onSortsChange?.(newSorts);
+
       // Perform real-time search with new sorts
       performSearch(searchText, selectedFilters, newSorts);
-      
+
       return newSorts;
     });
   };
@@ -219,17 +241,23 @@ const SearchBar = ({
   const removeFilter = (filterToRemove: string) => {
     setSelectedFilters((prevFilters) => {
       const newFilters = prevFilters.filter((filter) => filter !== filterToRemove);
-      
+
+      // Notify parent of filter changes
+      onFiltersChange?.(newFilters);
+
       // Perform real-time search with updated filters
       performSearch(searchText, newFilters, selectedSorts);
-      
+
       return newFilters;
     });
   };
 
   const removeSort = (sortToRemove: string) => {
     setSelectedSorts([]); // Remove all sorts, as typically only one can be active
-    
+
+    // Notify parent of sort changes
+    onSortsChange?.([]);
+
     // Perform real-time search with updated sorts
     performSearch(searchText, selectedFilters, []);
   };
@@ -240,7 +268,7 @@ const SearchBar = ({
   // Handle text input changes
   const handleTextChange = (text: string) => {
     setSearchText(text);
-    
+
     // Perform real-time search as user types
     performSearch(text, selectedFilters, selectedSorts);
   };
@@ -254,46 +282,58 @@ const SearchBar = ({
   const modalStyles = getResponsiveModalStyles();
   const { isTablet, isDesktop, isLargeDesktop, width } = getScreenInfo();
   const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
-  const iconSize = isLargeDesktop ? 28 : isDesktopWeb ? 26 : isTablet ? 24 : 22;
+  const isMobileWeb = Platform.OS === 'web' && width <= BREAKPOINTS.TABLET;
+  // Icon size optimized for mobile web - smaller for better proportions
+  const iconSize = isLargeDesktop ? 28 : isDesktopWeb ? 26 : isTablet ? 24 : isMobileWeb ? 20 : 22;
+  // Default placeholder if none provided
+  const searchPlaceholder = placeholder || t('donations:searchCharitiesForHelp');
+
+  // Expose remove functions to parent component
+  React.useEffect(() => {
+    onRemoveFilterRequested?.(removeFilter);
+    onRemoveSortRequested?.(() => removeSort(''));
+  }, [selectedFilters, selectedSorts]);
 
   return (
     <View style={localStyles.container}>
       {/* --- Main Search Bar Row --- */}
       <View style={[localStyles.searchBarContainer, { flexDirection: rowDirection('row-reverse') }]}>
-        {/* Sort Button (opens sort modal) */}
-        <TouchableOpacity
-          style={localStyles.buttonContainer}
-          onPress={() => setIsSortModalVisible(true)}
-        >
-                      <Text style={localStyles.buttonText}>{t('search:sortTitle')}</Text>
-        </TouchableOpacity>
+        {/* Sort Button (opens sort modal) - Inside search bar, smaller */}
+        {!hideSortButton && (
+          <TouchableOpacity
+            style={localStyles.buttonContainer}
+            onPress={() => setIsSortModalVisible(true)}
+          >
+            <Text style={localStyles.buttonText}>{t('search:sortTitle')}</Text>
+          </TouchableOpacity>
+        )}
 
-        {/* Filter Button (opens filter modal) */}
+        {/* Filter Button (opens filter modal) - Inside search bar, smaller */}
         <TouchableOpacity
           style={localStyles.buttonContainer}
           onPress={() => setIsFilterModalVisible(true)}
         >
-                      <Text style={localStyles.buttonText}>{t('search:filterTitle')}</Text>
+          <Text style={localStyles.buttonText}>{t('search:filterTitle')}</Text>
         </TouchableOpacity>
 
         {/* Search Input Field */}
         <TextInput
-          style={[localStyles.searchInput, { textAlign: biDiTextAlign('center') }]}
-          placeholder={placeholder}
-          placeholderTextColor="black"
+          style={[localStyles.searchInput, { textAlign: biDiTextAlign('right') }]}
+          placeholder={searchPlaceholder}
+          placeholderTextColor={colors.textTertiary}
           value={searchText}
           onChangeText={handleTextChange}
           onSubmitEditing={handleSubmitEditing}
           returnKeyType="search"
-          textAlign="center"
         />
 
-        {/* Search Icon Button */}
+        {/* Search Icon - Inside search bar, before input */}
         <TouchableOpacity
           onPress={handleSearch}
           style={localStyles.searchIconContainer}
+          activeOpacity={0.7}
         >
-          <Ionicons name="search" size={iconSize} color="#333" />
+          <Ionicons name="search" size={iconSize} color={colors.textSecondary} />
         </TouchableOpacity>
 
         {/* --- Filter Options Modal --- */}
@@ -335,13 +375,14 @@ const SearchBar = ({
                         isFilterSelected(option) && localStyles.modalOptionTextSelected,
                       ]}
                     >
-                       {t(`search:filters.${option}`)}
+                      {/* Try trump:filters first (for trump screen), then search:filters */}
+                      {t(`trump:filters.${option}`, { defaultValue: t(`search:filters.${option}`, { defaultValue: option }) })}
                     </Text>
                     {isFilterSelected(option) && (
                       <Ionicons
                         name="checkmark-circle"
                         size={20}
-                        color={colors.pink}
+                        color={colors.secondary}
                         style={localStyles.modalCheckmark}
                       />
                     )}
@@ -397,13 +438,13 @@ const SearchBar = ({
                         isSortSelected(option) && localStyles.modalOptionTextSelected,
                       ]}
                     >
-                       {t(`search:sort.${option}`)}
+                      {t(`search:sort.${option}`)}
                     </Text>
                     {isSortSelected(option) && (
                       <Ionicons
                         name="checkmark-circle"
                         size={20}
-                        color={colors.pink}
+                        color={colors.secondary}
                         style={localStyles.modalCheckmark}
                       />
                     )}
@@ -421,58 +462,61 @@ const SearchBar = ({
         </Modal>
       </View>
 
-      {/* --- Selected Filters Row --- */}
-      {selectedFilters.length > 0 && (
+      {/* --- Selected Filters & Sorts Row (Combined, thin, scrollable) --- */}
+      {renderSelectedRow && (selectedFilters.length > 0 || selectedSorts.length > 0) && (
         <View style={localStyles.selectedRowWrapper}>
           <ScrollView
             horizontal={true}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={localStyles.selectedButtonsContainer}
+            style={localStyles.selectedScrollView}
           >
-            {selectedFilters.map((filter) => (
-              <TouchableOpacity
-                key={filter}
-                style={localStyles.selectedFilterSortButton}
-                onPress={() => removeFilter(filter)}
-              >
-                <Text style={localStyles.selectedFilterSortButtonText}>
-                  {filter}
-                </Text>
-                <Ionicons name="close-circle" size={15} color={colors.white} />
-              </TouchableOpacity>
-            ))}
+            {/* Sort items */}
+            {selectedSorts.length > 0 && (
+              <>
+                <Text style={localStyles.rowLabelInline}>{t('search:sortTitle')}:</Text>
+                {selectedSorts.map((sort) => (
+                  <TouchableOpacity
+                    key={sort}
+                    style={localStyles.selectedFilterSortButton}
+                    onPress={() => removeSort(sort)}
+                  >
+                    <Text style={localStyles.selectedFilterSortButtonText}>
+                      {t(`search:sort.${sort}`)}
+                    </Text>
+                    <Ionicons name="close-circle" size={12} color={colors.black} style={localStyles.removeIcon} />
+                  </TouchableOpacity>
+                ))}
+              </>
+            )}
+
+            {/* Filter items */}
+            {selectedFilters.length > 0 && (
+              <>
+                {selectedSorts.length > 0 && (
+                  <Text style={localStyles.separator}>•</Text>
+                )}
+                <Text style={localStyles.rowLabelInline}>{t('search:filterTitle')}:</Text>
+                {selectedFilters.map((filter) => (
+                  <TouchableOpacity
+                    key={filter}
+                    style={localStyles.selectedFilterSortButton}
+                    onPress={() => removeFilter(filter)}
+                  >
+                    <Text style={localStyles.selectedFilterSortButtonText}>
+                      {/* Try trump:filters first (for trump screen), then search:filters */}
+                      {t(`trump:filters.${filter}`, { defaultValue: t(`search:filters.${filter}`, { defaultValue: filter }) })}
+                    </Text>
+                    <Ionicons name="close-circle" size={12} color={colors.black} style={localStyles.removeIcon} />
+                  </TouchableOpacity>
+                ))}
+              </>
+            )}
           </ScrollView>
-          <Text style={localStyles.rowLabel}>{t('search:filterLabel')}</Text>
         </View>
       )}
 
-      {/* --- Selected Sorts Row --- */}
-      {selectedSorts.length > 0 && (
-        <View style={localStyles.selectedRowWrapper}>
-          <ScrollView
-            horizontal={true}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={localStyles.selectedButtonsContainer}
-          >
-            {selectedSorts.map((sort) => (
-              <TouchableOpacity
-                key={sort}
-                style={localStyles.selectedFilterSortButton}
-                onPress={() => removeSort(sort)}
-              >
-                <Text style={localStyles.selectedFilterSortButtonText}>
-                  {sort}
-                </Text>
-                <Ionicons name="close-circle" size={16} color={colors.white} />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          <Text style={localStyles.rowLabel}>{t('search:sortLabel')}</Text>
 
-        </View>
-      )}
-
-     
     </View>
   );
 };
@@ -480,48 +524,59 @@ const SearchBar = ({
 const localStyles = StyleSheet.create({
   container: {
     backgroundColor: "transparent",
-    width: "100%",
-    // paddingBottom: 10,
-    // Note: flex: 1 removed as it can interfere with parent layout if not carefully managed.
-    // The height of SearchBar will be determined by its content.
+    flex: 1, // Take available space instead of fixed 60%
+    minWidth: 0, // Allow shrinking below content size
   },
   searchBarContainer: {
     flexDirection: "row-reverse",
     alignItems: "center",
-    alignSelf: "center",
     backgroundColor: colors.backgroundSecondary,
-    borderRadius: responsiveSpacing(25, 27, 30),
-    marginHorizontal: responsiveSpacing(20, 24, 28),
-    marginTop: responsiveSpacing(8, 10, 12),
-    ...createShadowStyle("#000", { width: 0, height: 2 }, 0.1, 4),
-    elevation: 3,
-    paddingVertical: responsiveSpacing(2, 3, 4),
-    borderWidth: 1,
-    borderColor: colors.searchBorder,
-    maxWidth: '100%',
+    borderRadius: responsiveSpacing(18, 20, 22),
+    ...createShadowStyle(colors.black, { width: 0, height: 1 }, 0.08, 2),
+    elevation: 2,
+    height: scaleSize(32), // Match the height of ModeToggleButton
+    paddingVertical: 5, // No vertical padding, height is fixed
+    paddingHorizontal: responsiveSpacing(4, 6, 8), // Optimized horizontal padding for mobile web
+    borderWidth: 0.5,
+    borderColor: colors.black,
+    width: '100%',
   },
   buttonContainer: {
-    backgroundColor: colors.moneyFormBackground,
-    borderRadius: responsiveSpacing(18, 20, 22),
-    paddingVertical: responsiveSpacing(4, 5, 6),
-    paddingHorizontal: responsiveSpacing(12, 14, 16),
-    marginHorizontal: responsiveSpacing(4, 5, 6),
+    backgroundColor: colors.pinkLight,
+    borderRadius: responsiveSpacing(12, 14, 16),
+    paddingVertical: responsiveSpacing(1, 2, 3), // Reduced padding to fit in 32px height
+    paddingHorizontal: responsiveSpacing(5, 6, 7), // Optimized padding for mobile web
+    marginLeft: responsiveSpacing(4, 5, 6), // Better spacing for mobile web
+    flexShrink: 0, // Don't shrink buttons
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%', // Match container height
   },
   buttonText: {
-    fontSize: responsiveFontSize(FontSizes.caption, 13, 15),
-    color: colors.searchText,
-    fontWeight: "bold",
+    fontSize: responsiveFontSize(FontSizes.caption, 9, 11), // Smaller font for mobile
+    color: colors.textSecondary,
+    fontWeight: "600",
     writingDirection: "rtl",
   },
   searchInput: {
     flex: 1,
-    height: "100%",
-    fontSize: responsiveFontSize(FontSizes.small, 15, 17),
-    color: colors.searchText,
-    paddingHorizontal: responsiveSpacing(10, 12, 14),
+    fontSize: responsiveFontSize(FontSizes.small, 13, 15),
+    color: colors.textSecondary,
+    paddingLeft: responsiveSpacing(4, 6, 8),
+    paddingRight: responsiveSpacing(2, 3, 4), // Space between input and icon
+    paddingVertical: 0,
+    minWidth: 0, // Allow shrinking
+    height: '100%', // Take full height of container
   },
   searchIconContainer: {
-    paddingLeft: responsiveSpacing(10, 12, 14),
+    paddingRight: responsiveSpacing(6, 8, 10), // More padding for better touch target
+    paddingLeft: responsiveSpacing(2, 3, 4),
+    paddingVertical: 0, // No vertical padding, container height is fixed
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0, // Don't shrink icon container
+    minWidth: scaleSize(32), // Minimum touch target size for mobile web
+    height: '100%', // Match container height
   },
 
   // --- Modals Styles ---
@@ -534,7 +589,7 @@ const localStyles = StyleSheet.create({
   modalContent: {
     backgroundColor: "white",
     // Dynamic styles applied in JSX for responsive sizing
-    ...createShadowStyle("#000", { width: 0, height: 2 }, 0.25, 4),
+    ...createShadowStyle(colors.black, { width: 0, height: 2 }, 0.25, 4),
     elevation: 5,
   },
   modalTitle: {
@@ -550,32 +605,32 @@ const localStyles = StyleSheet.create({
   modalOption: {
     paddingVertical: responsiveSpacing(15, 18, 20),
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: colors.border,
     flexDirection: rowDirection("row-reverse"),
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: responsiveSpacing(10, 12, 14),
   },
   modalOptionSelected: {
-    backgroundColor: colors.orangeLight,
+    backgroundColor: colors.warning,
   },
   modalOptionText: {
     fontSize: responsiveFontSize(FontSizes.medium, 16, 18),
     textAlign: "right",
     writingDirection: "rtl",
-    color: "#333",
+    color: colors.textPrimary,
     flex: 1,
   },
   modalOptionTextSelected: {
     fontWeight: "bold",
-    color: colors.pink,
+    color: colors.secondary,
   },
   modalCheckmark: {
     marginLeft: responsiveSpacing(10, 12, 14),
   },
   modalCloseButton: {
     marginTop: responsiveSpacing(20, 24, 28),
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
     paddingVertical: responsiveSpacing(12, 14, 16),
     borderRadius: responsiveSpacing(8, 10, 12),
     alignItems: "center",
@@ -586,43 +641,53 @@ const localStyles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  // --- Selected Filter/Sort Rows Styles ---
+  // --- Selected Filter/Sort Rows Styles (Thin, scrollable, single row) ---
   selectedRowWrapper: {
-    flexDirection: "row-reverse",
-    marginHorizontal: 10,
-    marginTop: 5,
-    // minHeight: 20,
+    marginTop: responsiveSpacing(4, 5, 6),
+    marginHorizontal: responsiveSpacing(8, 10, 12),
+    maxHeight: responsiveSpacing(28, 32, 36),
   },
-  rowLabel: {
-    fontSize: responsiveFontSize(FontSizes.small, 14, 16),
-    fontWeight: "bold",
+  selectedScrollView: {
+    maxHeight: responsiveSpacing(28, 32, 36),
+  },
+  rowLabelInline: {
+    fontSize: responsiveFontSize(FontSizes.caption, 10, 12),
+    fontWeight: "600",
     color: colors.textSecondary,
-    marginRight: responsiveSpacing(8, 10, 12),
-    paddingVertical: responsiveSpacing(5, 6, 7),
-    paddingLeft: responsiveSpacing(10, 12, 14),
+    marginLeft: responsiveSpacing(4, 5, 6),
+    alignSelf: 'center',
+  },
+  separator: {
+    fontSize: responsiveFontSize(FontSizes.caption, 10, 12),
+    color: colors.textTertiary,
+    marginHorizontal: responsiveSpacing(4, 5, 6),
+    alignSelf: 'center',
   },
   selectedButtonsContainer: {
-    flexDirection: "row",
-    gap: responsiveSpacing(8, 10, 12),
-    paddingRight: responsiveSpacing(10, 12, 14),
+    flexDirection: "row-reverse",
+    gap: responsiveSpacing(4, 5, 6),
+    paddingRight: responsiveSpacing(4, 5, 6),
     alignItems: 'center',
     flexGrow: 1,
   },
   selectedFilterSortButton: {
     backgroundColor: colors.pinkLight,
     paddingVertical: responsiveSpacing(2, 3, 4),
-    paddingHorizontal: responsiveSpacing(5, 6, 7),
-    borderRadius: responsiveSpacing(18, 20, 22),
+    paddingHorizontal: responsiveSpacing(4, 5, 6),
+    borderRadius: responsiveSpacing(12, 14, 16),
     flexDirection: "row-reverse",
     alignItems: "center",
-    ...createShadowStyle("#000", { width: 0, height: 1 }, 0.1, 2),
-    elevation: 2,
+    gap: responsiveSpacing(3, 4, 5),
+    ...createShadowStyle(colors.black, { width: 0, height: 0.5 }, 0.05, 1),
+    elevation: 1,
   },
   selectedFilterSortButtonText: {
-    fontSize: responsiveFontSize(FontSizes.caption, 12, 14),
-    fontWeight: 'bold',
+    fontSize: responsiveFontSize(FontSizes.caption, 10, 12),
+    fontWeight: '600',
     color: colors.black,
-    marginLeft: responsiveSpacing(4, 5, 6),
+  },
+  removeIcon: {
+    margin: 0,
   },
 
   // --- Static Filter Buttons Row Styles ---
@@ -640,7 +705,7 @@ const localStyles = StyleSheet.create({
     flexGrow: 1,
   },
   staticFilterButton: {
-    backgroundColor: colors.orange,
+    backgroundColor: colors.accent,
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 20,

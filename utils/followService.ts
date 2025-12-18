@@ -115,9 +115,71 @@ export const unfollowUser = async (followerId: string, followingId: string): Pro
 export const getFollowers = async (userId: string): Promise<any[]> => {
   try {
     const followers = await db.getFollowers(userId);
-    // TODO: Replace with real user fetch from backend
     const followerIds = (followers as any[]).map((rel: any) => rel.followerId);
-    return followerIds.map((id: string) => ({ id }));
+    
+    if (followerIds.length === 0) {
+      return [];
+    }
+
+    // Fetch full user data from backend for each follower
+    if (USE_BACKEND) {
+      try {
+        const userPromises = followerIds.map(async (id: string) => {
+          try {
+            const response = await apiService.getUserById(id);
+            if (response.success && response.data) {
+              const user = response.data;
+              return {
+                id: user.id || id,
+                name: user.name || 'ללא שם',
+                avatar: user.avatar_url || user.avatar || 'https://i.pravatar.cc/150?img=1',
+                bio: user.bio || '',
+                karmaPoints: user.karma_points || 0,
+                followersCount: user.followers_count || 0,
+                completedTasks: 0, // TODO: Get from backend if available
+                roles: user.roles || ['user'],
+                isVerified: false, // TODO: Get from backend if available
+                isActive: user.is_active !== false,
+              };
+            }
+          } catch (error) {
+            console.warn(`Failed to fetch follower ${id}:`, error);
+          }
+          // Fallback to minimal data if fetch fails
+          return {
+            id,
+            name: 'ללא שם',
+            avatar: 'https://i.pravatar.cc/150?img=1',
+            bio: '',
+            karmaPoints: 0,
+            followersCount: 0,
+            completedTasks: 0,
+            roles: ['user'],
+            isVerified: false,
+            isActive: false,
+          };
+        });
+
+        const users = await Promise.all(userPromises);
+        return users.filter(user => user !== null);
+      } catch (error) {
+        console.error('❌ Get followers from backend error:', error);
+      }
+    }
+
+    // Fallback: return minimal data with IDs only
+    return followerIds.map((id: string) => ({
+      id,
+      name: 'ללא שם',
+      avatar: 'https://i.pravatar.cc/150?img=1',
+      bio: '',
+      karmaPoints: 0,
+      followersCount: 0,
+      completedTasks: 0,
+      roles: ['user'],
+      isVerified: false,
+      isActive: false,
+    }));
   } catch (error) {
     console.error('❌ Get followers error:', error);
     return [];
@@ -127,29 +189,108 @@ export const getFollowers = async (userId: string): Promise<any[]> => {
 export const getFollowing = async (userId: string): Promise<any[]> => {
   try {
     const following = await db.getFollowing(userId);
-    // TODO: Replace with real user fetch from backend
     const followingIds = (following as any[]).map((rel: any) => rel.followingId);
-    return followingIds.map((id: string) => ({ id }));
+    
+    if (followingIds.length === 0) {
+      return [];
+    }
+
+    // Fetch full user data from backend for each following user
+    if (USE_BACKEND) {
+      try {
+        const userPromises = followingIds.map(async (id: string) => {
+          try {
+            const response = await apiService.getUserById(id);
+            if (response.success && response.data) {
+              const user = response.data;
+              return {
+                id: user.id || id,
+                name: user.name || 'ללא שם',
+                avatar: user.avatar_url || user.avatar || 'https://i.pravatar.cc/150?img=1',
+                bio: user.bio || '',
+                karmaPoints: user.karma_points || 0,
+                followersCount: user.followers_count || 0,
+                completedTasks: 0, // TODO: Get from backend if available
+                roles: user.roles || ['user'],
+                isVerified: false, // TODO: Get from backend if available
+                isActive: user.is_active !== false,
+              };
+            }
+          } catch (error) {
+            console.warn(`Failed to fetch following user ${id}:`, error);
+          }
+          // Fallback to minimal data if fetch fails
+          return {
+            id,
+            name: 'ללא שם',
+            avatar: 'https://i.pravatar.cc/150?img=1',
+            bio: '',
+            karmaPoints: 0,
+            followersCount: 0,
+            completedTasks: 0,
+            roles: ['user'],
+            isVerified: false,
+            isActive: false,
+          };
+        });
+
+        const users = await Promise.all(userPromises);
+        return users.filter(user => user !== null);
+      } catch (error) {
+        console.error('❌ Get following from backend error:', error);
+      }
+    }
+
+    // Fallback: return minimal data with IDs only
+    return followingIds.map((id: string) => ({
+      id,
+      name: 'ללא שם',
+      avatar: 'https://i.pravatar.cc/150?img=1',
+      bio: '',
+      karmaPoints: 0,
+      followersCount: 0,
+      completedTasks: 0,
+      roles: ['user'],
+      isVerified: false,
+      isActive: false,
+    }));
   } catch (error) {
     console.error('❌ Get following error:', error);
     return [];
   }
 };
 
-export const getFollowSuggestions = async (currentUserId: string, limit: number = 10): Promise<any[]> => {
+export const getFollowSuggestions = async (currentUserId: string, limit: number = 10, currentUserEmail?: string): Promise<any[]> => {
   try {
     if (USE_BACKEND) {
-      // Get active users from backend, excluding current user
-      const response = await apiService.getUsers({ limit, offset: 0 });
+      // Get ALL users (use high limit to get all users from database)
+      // This ensures we show all users, not just a subset
+      const fetchLimit = 1000; // High limit to get all users
+      const response = await apiService.getUsers({ limit: fetchLimit, offset: 0 });
       if (response.success && response.data) {
-        // Filter out current user and map to UserPreview format
+        // Filter out current user using strict string comparison (case-insensitive)
+        const excludeId = String(currentUserId).trim().toLowerCase();
+        const excludeEmail = currentUserEmail ? String(currentUserEmail).trim().toLowerCase() : '';
         const users = (response.data as any[])
-          .filter((user: any) => user.id !== currentUserId)
+          .filter((user: any) => {
+            const userId = String(user.id || '').trim().toLowerCase();
+            const userEmail = user.email ? String(user.email).trim().toLowerCase() : '';
+            const isCurrentUser = userId === excludeId || 
+                                 (excludeEmail && userEmail === excludeEmail) ||
+                                 userId === '';
+            
+            if (isCurrentUser) {
+              console.log('🚫 getFollowSuggestions - Filtered out current user:', { userId, userEmail, name: user.name });
+            }
+            
+            return !isCurrentUser;
+          })
           .map((user: any) => ({
             id: user.id,
             name: user.name || 'ללא שם',
             avatar: user.avatar_url || 'https://i.pravatar.cc/150?img=1',
             bio: user.bio || '',
+            email: user.email || '', // Include email for additional filtering
             karmaPoints: user.karma_points || 0,
             completedTasks: 0, // TODO: Get from backend if available
             roles: ['user'], // TODO: Get from backend if available
@@ -201,19 +342,39 @@ export const getFollowHistory = async (userId: string): Promise<FollowRelationsh
   }
 };
 
-export const getPopularUsers = async (limit: number = 10): Promise<any[]> => {
+export const getPopularUsers = async (limit: number = 10, excludeUserId?: string, excludeUserEmail?: string): Promise<any[]> => {
   try {
     if (USE_BACKEND) {
+      // Get ALL users (use high limit to get all users from database)
+      // This ensures we show all users, not just a subset
+      const fetchLimit = 1000; // High limit to get all users
       // Get popular users from backend (sorted by karma_points and last_active)
-      const response = await apiService.getUsers({ limit, offset: 0 });
+      const response = await apiService.getUsers({ limit: fetchLimit, offset: 0 });
       if (response.success && response.data) {
-        // Map to UserPreview format
+        // Map to UserPreview format and filter out current user if provided (case-insensitive)
+        const excludeId = excludeUserId ? String(excludeUserId).trim().toLowerCase() : null;
+        const excludeEmail = excludeUserEmail ? String(excludeUserEmail).trim().toLowerCase() : '';
         const users = (response.data as any[])
+          .filter((user: any) => {
+            if (!excludeId) return true;
+            const userId = String(user.id || '').trim().toLowerCase();
+            const userEmail = user.email ? String(user.email).trim().toLowerCase() : '';
+            const isCurrentUser = userId === excludeId || 
+                                 (excludeEmail && userEmail === excludeEmail) ||
+                                 userId === '';
+            
+            if (isCurrentUser) {
+              console.log('🚫 getPopularUsers - Filtered out current user:', { userId, userEmail, name: user.name });
+            }
+            
+            return !isCurrentUser;
+          })
           .map((user: any) => ({
             id: user.id,
             name: user.name || 'ללא שם',
             avatar: user.avatar_url || 'https://i.pravatar.cc/150?img=1',
             bio: user.bio || '',
+            email: user.email || '', // Include email for additional filtering
             karmaPoints: user.karma_points || 0,
             completedTasks: 0, // TODO: Get from backend if available
             roles: ['user'], // TODO: Get from backend if available

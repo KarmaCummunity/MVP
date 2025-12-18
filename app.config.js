@@ -1,20 +1,36 @@
-const DEFAULT_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://kc-mvp-server-production.up.railway.app';
+// Environment detection
+const ENVIRONMENT = process.env.EXPO_PUBLIC_ENVIRONMENT || 'production';
+const IS_DEV = ENVIRONMENT === 'development';
+
+// API URL based on environment
+const DEFAULT_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ||
+  (IS_DEV
+    ? 'https://kc-mvp-server-dev.up.railway.app'
+    : 'https://kc-mvp-server-production.up.railway.app');
+
+// Define colors locally for config usage (colors.tsx cannot be imported in JS config)
+const colors = {
+  secondary: '#FFB6C1',     // Soft Pink - Secondary brand color
+  backgroundTertiary: '#E3F2FD', // Very light blue for highlights
+};
+
+
 
 export default {
   expo: {
-    name: "KC - הקיבוץ הקפיטליסטי",
+    name: IS_DEV ? "KC - DEV 🟢" : "KC - הקיבוץ הקפיטליסטי",
     slug: "karma-community",
     version: "1.9.5",
     orientation: "portrait",
-    icon: "./assets/images/pink_logo.png",
+    icon: "./assets/images/לוגו_חדש_שחור.png",
     scheme: "karma-community",
     userInterfaceStyle: "automatic",
     // שמירה על primaryColor שהיה ב-app.json
-    primaryColor: "#FF69B4",
+    primaryColor: colors.secondary,
     splash: {
-      image: "./assets/images/pink_logo.png",
+      image: "./assets/images/לוגו_חדש_שחור.png",
       resizeMode: "contain",
-      backgroundColor: "#F0F8FF"
+      backgroundColor: colors.backgroundTertiary
     },
     assetBundlePatterns: [
       "**/*"
@@ -22,6 +38,11 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.navesarussi1.KarmaCommunity",
+      // Associated domains for Universal Links
+      associatedDomains: [
+        "applinks:karma-community-kc.com",
+        "applinks:www.karma-community-kc.com"
+      ],
       // איחוד הרשאות ו־ATS שהיו ב-app.json
       infoPlist: {
         NSAppTransportSecurity: {
@@ -35,8 +56,8 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/images/pink_logo.png",
-        backgroundColor: "#F0F8FF"
+        foregroundImage: "./assets/images/לוגו_חדש_שחור.png",
+        backgroundColor: colors.backgroundTertiary
       },
       package: "com.navesarussi1.KarmaCommunity",
       intentFilters: [
@@ -73,8 +94,8 @@ export default {
       description: "פלטפורמה חינמית ללא מטרות רווח לקהילה הישראלית",
       lang: "he",
       dir: "rtl",
-      themeColor: "#FF69B4",
-      backgroundColor: "#F0F8FF",
+      themeColor: colors.secondary,
+      backgroundColor: colors.backgroundTertiary,
       // הגדרות meta ו-build מה-app.json
       meta: {
         viewport: "width=device-width, initial-scale=1, shrink-to-fit=no"
@@ -90,8 +111,8 @@ export default {
       [
         "expo-notifications",
         {
-          icon: "./assets/images/pink_logo.png",
-          color: "#FF69B4",
+          icon: "./assets/images/לוגו_חדש_שחור.png",
+          color: colors.secondary,
           mode: "production",
           androidMode: "default",
           androidCollapsedTitle: "התראה חדשה"
@@ -105,6 +126,7 @@ export default {
     // שמירה על owner מ-app.json
     owner: "navesarussi1",
     extra: {
+      EXPO_PUBLIC_ENVIRONMENT: ENVIRONMENT,
       EXPO_PUBLIC_API_BASE_URL: DEFAULT_API_BASE_URL,
       EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID: "430191522654-jno2tkl1dotil0mkf4h4hahfk4e4gas8.apps.googleusercontent.com",
       EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: "430191522654-o70t2qnqc4bvpvmbpak7unog7pvp9c95.apps.googleusercontent.com",

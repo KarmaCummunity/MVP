@@ -1,1212 +1,908 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
-  TouchableOpacity,
   Alert,
-
-  TextInput,
+  ScrollView,
+  Dimensions,
   Platform,
-  Linking,
 } from 'react-native';
-import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
+import { NavigationProp, ParamListBase, useFocusEffect, useRoute } from '@react-navigation/native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useTranslation } from 'react-i18next';
+import * as Location from 'expo-location';
+
 import colors from '../globals/colors';
-import { FontSizes } from '../globals/constants';  
-import { Ionicons as Icon } from '@expo/vector-icons';
+import { FontSizes } from '../globals/constants';
 import HeaderComp from '../components/HeaderComp';
 import DonationStatsFooter from '../components/DonationStatsFooter';
-import TimePicker from '../components/TimePicker';
+import ItemDetailsModal from '../components/ItemDetailsModal';
 import { db } from '../utils/databaseService';
 import { useUser } from '../stores/userStore';
 import ScrollContainer from '../components/ScrollContainer';
+import AddLinkComponent from '../components/AddLinkComponent';
+import { useToast } from '../utils/toastService';
+import { getScreenInfo, BREAKPOINTS } from '../globals/responsive';
+
+// New Modular Components
+import RideCard from '../components/rides/RideCard';
+import RideHistoryCard from '../components/rides/RideHistoryCard';
+import RideOfferForm from '../components/rides/RideOfferForm';
+import VerticalGridSlider from '../components/VerticalGridSlider';
 
 export default function TrumpScreen({
   navigation,
 }: {
   navigation: NavigationProp<ParamListBase>;
 }) {
-  // Debug log for TrumpScreen
-  console.log('🚗 TrumpScreen - Component rendered');
-  console.log('🚗 TrumpScreen - Navigation object:', navigation);
-  
-  const [mode, setMode] = useState(true); // false = seeker (needs ride), true = offerer (offers ride)
-  const { t } = useTranslation(['donations','common','trump']);
+  console.log('🚗 TrumpScreen - Refactored Component Rendered');
+
+  const { ToastComponent } = useToast();
+  const route = useRoute();
+  const routeParams = route.params as { mode?: string } | undefined;
+
+  // Get initial mode from URL (deep link) or default to search mode (מחפש)
+  // mode: false = Offer Mode (Driver/פרסום), true = Search Mode (Passenger/חיפוש)
+  // URL mode: 'offer' = false, 'search' = true
+  // Default is search mode (true)
+  const initialMode = routeParams?.mode === 'offer' ? false : true;
+
+  const [mode, setMode] = useState(initialMode); // false = Offer Mode (Driver/פרסום), true = Search Mode (Passenger/חיפוש)
+  const { t } = useTranslation(['donations', 'common', 'trump', 'search']);
+
+  // Update mode when route params change (e.g., from deep link)
+  useEffect(() => {
+    if (routeParams?.mode && routeParams.mode !== 'undefined' && routeParams.mode !== 'null') {
+      const newMode = routeParams.mode === 'search';
+      if (newMode !== mode) {
+        setMode(newMode);
+      }
+    }
+  }, [routeParams?.mode]);
+
+  // Update URL when mode changes (toggle button pressed) or when screen loads without mode
+  useEffect(() => {
+    const newMode = mode ? 'search' : 'offer';
+    const currentMode = routeParams?.mode;
+
+    // If no mode in URL, set it to search (default)
+    if (!currentMode || currentMode === 'undefined' || currentMode === 'null') {
+      // Set initial mode to search in URL
+      (navigation as any).setParams({ mode: 'search' });
+      return;
+    }
+
+    // Only update URL if mode actually changed
+    if (newMode !== currentMode) {
+      (navigation as any).setParams({ mode: newMode });
+    }
+  }, [mode, navigation, routeParams?.mode]);
+
+  // === Shared State ===
+  const { selectedUser } = useUser();
+  const tabBarHeight = useBottomTabBarHeight() || 0;
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // === Data State ===
+  const [allRides, setAllRides] = useState<any[]>([]); // Active rides for search
+  const [filteredRides, setFilteredRides] = useState<any[]>([]); // Filtered active rides
+  const [recentRides, setRecentRides] = useState<any[]>([]); // User's Published History
+
+  // === Modal State ===
+  const [selectedRide, setSelectedRide] = useState<any | null>(null);
+  const [showRideModal, setShowRideModal] = useState(false);
+
+  // === Search Mode State ===
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [selectedSorts, setSelectedSorts] = useState<string[]>([]);
-  const [fromLocation, setFromLocation] = useState("");
+
+  // === Offer Mode Form State ===
   const [toLocation, setToLocation] = useState("");
-  const [departureTime, setDepartureTime] = useState("");
-  const [immediateDeparture, setImmediateDeparture] = useState(false);
+  const [fromLocation, setFromLocation] = useState("");
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
-  const [seats, setSeats] = useState<number>(3);
-  const [price, setPrice] = useState<string>('0');
-  const [need_to_pay, setNeedToPay] = useState<boolean>(false);
-  const priceInputRef = useRef<TextInput | null>(null);
-  const [allRides, setAllRides] = useState<any[]>([]);
-  const [filteredRides, setFilteredRides] = useState<any[]>([]);
-  const [recentRides, setRecentRides] = useState<any[]>([]);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const { selectedUser, isRealAuth } = useUser();
+  const [detectedAddress, setDetectedAddress] = useState<string>("");
+  const [isLocating, setIsLocating] = useState(false);
+  const [isLocationError, setIsLocationError] = useState(false);
 
-  // Refresh data when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      console.log('🚗 TrumpScreen - Screen focused, refreshing data...');
-      // Reset form when returning to screen
-      setFromLocation('');
-      setToLocation('');
-      setDepartureTime('');
-      // Force re-render by updating refresh key
-      setRefreshKey(prev => prev + 1);
-    }, [])
-  );
+  // Location Fetching Effect - Only run if mounted
+  useEffect(() => {
+    if (!isMounted) return;
 
-  // Filter options
-  const trumpFilterOptions = (t('trump:filters', { returnObjects: true }) as unknown as string[]) || [];
+    let isMountedLocal = true;
+
+    const getLocation = async () => {
+      if (!useCurrentLocation) {
+        setDetectedAddress("");
+        setIsLocationError(false);
+        return;
+      }
+
+      setIsLocating(true);
+      setIsLocationError(false);
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          if (isMountedLocal) {
+            setDetectedAddress(t('trump:errors.locationPermissionDenied') || "Permission denied");
+            setIsLocationError(true);
+            setIsLocating(false);
+          }
+          return;
+        }
+
+        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        const reverseGeocode = await Location.reverseGeocodeAsync({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude
+        });
+
+        console.log('📍 Reverse Geocode Result:', JSON.stringify(reverseGeocode, null, 2));
+
+        if (isMountedLocal && reverseGeocode && reverseGeocode.length > 0) {
+          const addr = reverseGeocode[0];
+
+          // Construct a robust address string
+          // 1. Street + Number
+          const streetPart = [addr.street, addr.streetNumber].filter(Boolean).join(' ');
+
+          // 2. Fallback to 'name' if street is missing (often 'name' contains the PoI or street equivalent)
+          const firstPart = streetPart || addr.name || '';
+
+          // 3. City hierarchy: City -> Subregion -> District -> Region
+          const cityPart = addr.city || addr.subregion || addr.district || addr.region || '';
+
+          // 4. Combine
+          let formattedAddress = [firstPart, cityPart].filter(Boolean).join(', ');
+
+          // 5. Final fallback if empty
+          if (!formattedAddress.trim()) {
+            formattedAddress = `${t('trump:near')} ${location.coords.latitude.toFixed(4)}, ${location.coords.longitude.toFixed(4)}`;
+          }
+
+          setDetectedAddress(formattedAddress);
+          setIsLocationError(false);
+        } else {
+          if (isMountedLocal) {
+            setDetectedAddress(t('trump:errors.locationFetchFailed') || "Address not found");
+            setIsLocationError(true);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching location:", error);
+        if (isMountedLocal) {
+          setDetectedAddress(t('trump:errors.locationFetchFailed') || "Location unavailable");
+          setIsLocationError(true);
+        }
+      } finally {
+        if (isMountedLocal) setIsLocating(false);
+      }
+    };
+
+    if (useCurrentLocation) {
+      getLocation();
+    }
+
+    return () => { isMountedLocal = false; };
+  }, [useCurrentLocation, t, isMounted]);
+
+  // Advanced Scheduling State
+  const [immediateDeparture, setImmediateDeparture] = useState(true); // 1. Immediate?
+  const [departureTime, setDepartureTime] = useState("");           // 2. If not, what time?
+  const [leavingToday, setLeavingToday] = useState(true);           // 3. If time set, is it today?
+  const [rideDate, setRideDate] = useState<Date>(new Date());       // 4. If not today, what date?
+  const [isRecurring, setIsRecurring] = useState(false);            // 5. Recurring?
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState(1);
+  const [recurrenceUnit, setRecurrenceUnit] = useState<'day' | 'week' | 'month' | null>(null);
+
+  // Ensure rideDate is always valid
+  const handleDateChange = (date: Date) => {
+    if (date && date instanceof Date && !isNaN(date.getTime())) {
+      setRideDate(date);
+    } else {
+      setRideDate(new Date());
+    }
+  };
+
+  // Other Offer Details
+  const [seats, setSeats] = useState(3);
+  const [price, setPrice] = useState("0");
+  const [needToPay, setNeedToPay] = useState(false);
+  const [selectedFormTags, setSelectedFormTags] = useState<string[]>([]);
+
+  // Static Options (Now Translated Keys mapped to Labels)
+  // trump:filters is now an object with keys like {noCostSharing: "...", noSmoking: "...", ...}
+  const filtersObj = (t('trump:filters', { returnObjects: true }) as Record<string, string>) || {};
+  // Use keys instead of values so SearchBar can translate them properly
+  const trumpFilterOptions = Object.keys(filtersObj);
 
   const trumpSortOptions = (t('trump:sorts', { returnObjects: true }) as unknown as string[]) || [];
 
-  // Mock data for rides (moved before use)
-  const dummyRides = [
-    {
-      id: 1,
-      driverName: t('trump:mock.driver1') as string,
-      from: t('trump:mock.tlv') as string,
-      to: t('trump:mock.jerusalem') as string,
-      date: "15.12.2023",
-      time: "08:30",
-      seats: 3,
-      price: 25,
-      rating: 4.8,
-      image: "👨‍💼",
-      category: t('trump:mock.category.work') as string,
-    },
-    {
-      id: 2,
-      driverName: t('trump:mock.driver2') as string,
-      from: t('trump:mock.haifa') as string,
-      to: t('trump:mock.tlv') as string,
-      date: "15.12.2023",
-      time: "07:00",
-      seats: 2,
-      price: 30,
-      rating: 4.9,
-      image: "👩‍💼",
-      category: t('trump:mock.category.work') as string,
-    },
-    {
-      id: 3,
-      driverName: t('trump:mock.driver3') as string,
-      from: t('trump:mock.beerSheva') as string,
-      to: t('trump:mock.tlv') as string,
-      date: "16.12.2023",
-      time: "09:15",
-      seats: 4,
-      price: 35,
-      rating: 4.7,
-      image: "👨‍🎓",
-      category: t('trump:mock.category.study') as string,
-    },
-    {
-      id: 4,
-      driverName: t('trump:mock.driver4') as string,
-      from: t('trump:mock.ashdod') as string,
-      to: t('trump:mock.jerusalem') as string,
-      date: "15.12.2023",
-      time: "10:00",
-      seats: 1,
-      price: 20,
-      rating: 4.6,
-      image: "👩‍⚕️",
-      category: t('trump:mock.category.health') as string,
-    },
-    {
-      id: 5,
-      driverName: t('trump:mock.driver5') as string,
-      from: t('trump:mock.petahTikva') as string,
-      to: t('trump:mock.haifa') as string,
-      date: "16.12.2023",
-      time: "14:30",
-      seats: 3,
-      price: 40,
-      rating: 4.8,
-      image: "👨‍🔧",
-      category: t('trump:mock.category.work') as string,
-    },
-    {
-      id: 6,
-      driverName: t('trump:mock.driver6') as string,
-      from: t('trump:mock.ramatGan') as string,
-      to: t('trump:mock.beerSheva') as string,
-      date: "15.12.2023",
-      time: "16:00",
-      seats: 2,
-      price: 45,
-      rating: 4.9,
-      image: "👩‍🎨",
-      category: t('trump:mock.category.leisure') as string,
-    },
-    {
-      id: 5,
-      name: 'טרמפים בישראל (טלגרם) — קבוצה נוספת',
-      members: 0,
-      image: "🚗",
-      type: "telegram",
-      link: 'https://t.me/joinchat/Arw4c0AUY5IVdWf3MLqEHg'
-    },
-  ];
+  // Inside render / HeaderComp prop:
+  // placeholder={mode ? t('trump:ui.searchPlaceholder.offer') : t('trump:ui.searchPlaceholder.seek')}
 
-  useEffect(() => {
-    const loadRides = async () => {
-      try {
-        const uid = selectedUser?.id || 'guest';
-        const userRides = await db.listRides(uid);
-        const merged = isRealAuth ? userRides : [...userRides, ...dummyRides];
-        setAllRides(merged);
-        setFilteredRides(merged);
-        const userRecent = (userRides || []).map((r: any) => ({
-          id: r.id,
-          driverName: r.driverName || selectedUser?.name || (t('common:unknownUser', { defaultValue: 'User' }) as string),
-          from: r.from,
-          to: r.to,
-          date: r.date,
-          status: t('trump:status.published') as string,
-          price: r.price || 0,
-        }));
-        setRecentRides(userRecent);
-      } catch (e) {
-         if (!isRealAuth) {
-           setAllRides(dummyRides);
-           setFilteredRides(dummyRides);
-         } else {
-           setAllRides([]);
-           setFilteredRides([]);
-         }
-        setRecentRides([]);
+  // --- 1. Data Loading ---
+  const loadRides = useCallback(async (includePastOverride?: boolean) => {
+    try {
+      const uid = selectedUser?.id || 'guest';
+      console.log('🔄 Loading rides for user:', uid);
+
+      // Check if includePast filter is selected, or use override
+      const shouldIncludePast = includePastOverride !== undefined
+        ? includePastOverride
+        : selectedFilters.includes('includePast');
+
+      const [activeRides, myHistory] = await Promise.all([
+        db.listRides(uid, { includePast: shouldIncludePast }), // Active Search Data - include past only if filter is selected
+        selectedUser?.id ? db.getUserRides(selectedUser.id, 'driver') : Promise.resolve([]) // History Data
+      ]);
+
+      console.log('📊 Loaded rides - Active:', activeRides?.length || 0, 'History:', myHistory?.length || 0);
+      if (activeRides && activeRides.length > 0) {
+        console.log('📋 Sample active ride:', JSON.stringify(activeRides[0], null, 2));
       }
-    };
-    loadRides();
+      if (myHistory && myHistory.length > 0) {
+        console.log('📋 Sample history ride:', JSON.stringify(myHistory[0], null, 2));
+      }
+
+      // Enrich activeRides with real user names
+      const enrichedRides = await Promise.all((activeRides || []).map(async (ride: any) => {
+        // If driverName is missing or looks like an ID (matches driverId or is a UUID), try to fetch user
+        const driverId = ride.driverId;
+
+        // Simple heuristic: if name equals ID, or is "Driver", or missing, we want to fetch
+        const needsFetch = !ride.driverName || ride.driverName === driverId || ride.driverName === 'Driver';
+
+        if (needsFetch && driverId) {
+          try {
+            // Try fetching user from DB/API
+            const user = await db.getUser(driverId) as any;
+            if (user && user.name && user.name !== driverId) {
+              return { ...ride, driverName: user.name };
+            }
+          } catch (e) {
+            // Ignore error, keep original
+          }
+        }
+        return ride;
+      }));
+
+      console.log('✅ Enriched rides count:', enrichedRides.length);
+      if (enrichedRides.length > 0) {
+        console.log('📋 Sample enriched ride:', {
+          id: enrichedRides[0].id,
+          from: enrichedRides[0].from,
+          to: enrichedRides[0].to,
+          date: enrichedRides[0].date,
+          time: enrichedRides[0].time,
+          driverId: enrichedRides[0].driverId,
+          driverName: enrichedRides[0].driverName
+        });
+      }
+      setAllRides(enrichedRides);
+
+      // Map history to UI format if needed (or ensure backend consistency)
+      const userRecent = (myHistory || []).map((r: any) => ({
+        ...r,
+        status: r.status || 'active', // Changed from 'published' to 'active'
+        price: r.price || 0,
+      }));
+      setRecentRides(userRecent);
+    } catch (e) {
+      console.error("❌ Failed to load rides", e);
+      setAllRides([]);
+      setRecentRides([]);
+    }
+  }, [selectedUser?.id, t, selectedFilters]);
+
+  // Reload rides when includePast filter changes
+  useEffect(() => {
+    if (mode) { // Only in search mode
+      const shouldIncludePast = selectedFilters.includes('includePast');
+      loadRides(shouldIncludePast);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedUser]);
+  }, [selectedFilters, mode]); // Reload when filters change
 
-  // Mock data for recent rides
-  const dummyRecentRides = [
-    {
-      id: 1,
-      driverName: t('trump:mock.driver1') as string,
-      from: t('trump:mock.tlv') as string,
-      to: t('trump:mock.jerusalem') as string,
-      date: "10.12.2023",
-      status: t('trump:status.completed') as string,
-      price: 0,
-    },
-    {
-      id: 2,
-      driverName: t('trump:mock.driver2') as string,
-      from: t('trump:mock.haifa') as string,
-      to: t('trump:mock.tlv') as string,
-      date: "08.12.2023",
-      status: t('trump:status.completed') as string,
-      price: 0,
-    },
-    {
-      id: 3,
-      driverName: t('trump:mock.driver3') as string,
-      from: t('trump:mock.beerSheva') as string,
-      to: t('trump:mock.tlv') as string,
-      date: "05.12.2023",
-      status: t('trump:status.completed') as string,
-      price: 3,
-    },
-  ];
+  useFocusEffect(
+    useCallback(() => {
+      console.log('🔄 useFocusEffect triggered, refreshKey:', refreshKey);
+      loadRides();
+    }, [loadRides, refreshKey])
+  );
 
-  // Mock data for groups
-  const dummyGroups = [
-    {
-      id: 1,
-      name: 'טרמפים בישראל (טלגרם)',
-      members: 0,
-      image: "🚗",
-      type: "telegram",
-      link: 'https://t.me/joinchat/SlQOMOekjOi2IWxo'
-    },
-    {
-      id: 2,
-      name: 'אתר הטרמפים הישראלי',
-      members: 0,
-      image: "🚙",
-      type: "web",
-      link: 'https://www.tremp.co.il/'
-    },
-    {
-      id: 3,
-      name: 'Trempist',
-      members: 0,
-      image: "🚐",
-      type: "web",
-      link: 'https://www.trempist.com/'
-    },
-    
-  ];
-
-
-  const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
-    console.log('🚗 TrumpScreen - Search received:', { 
-      query, 
-      filters: filters || [], 
-      sorts: sorts || [], 
-      resultsCount: results?.length || 0 
-    });
-    
-    // Update state with search results
-    setSearchQuery(query);
-    setSelectedFilters(filters || []);
-    setSelectedSorts(sorts || []);
-    
-    const filtered = getFilteredRides();
-    setFilteredRides(filtered);
-  };
-
-
-  const getFilteredRides = () => {
+  // --- 2. Search Logic (Search Mode) ---
+  const getFilteredRides = useCallback(() => {
     let filtered = [...allRides];
 
-    // Filter by search
+    console.log('🔍 Filtering rides - Total:', allRides.length, 'Search query:', searchQuery, 'Filters:', selectedFilters.length);
+
+    // Filter by text
     if (searchQuery) {
+      const q = searchQuery.toLowerCase();
       filtered = filtered.filter(ride =>
-        (ride.driverName?.toLowerCase()?.includes(searchQuery.toLowerCase()) ?? false) ||
-        (ride.from?.toLowerCase()?.includes(searchQuery.toLowerCase()) ?? false) ||
-        (ride.to?.toLowerCase()?.includes(searchQuery.toLowerCase()) ?? false) ||
-        (ride.category?.toLowerCase()?.includes(searchQuery.toLowerCase()) ?? false)
+        (ride.driverName?.toLowerCase()?.includes(q) ?? false) ||
+        (ride.from?.toLowerCase()?.includes(q) ?? false) ||
+        (ride.to?.toLowerCase()?.includes(q) ?? false) ||
+        (ride.category?.toLowerCase()?.includes(q) ?? false)
       );
+      console.log('🔍 After text filter:', filtered.length);
     }
 
-    // Apply selected filters (basic examples)
+    // Apply Filters (Search Mode Tags)
     if (selectedFilters.length > 0) {
-      const filterNoCost = t('trump:filters.noCostSharing') as string;
-      const filterNoSmoking = t('trump:filters.noSmoking') as string;
-      const filterWithPets = t('trump:filters.withPets') as string;
-      const filterWithKids = t('trump:filters.withKids') as string;
       selectedFilters.forEach(f => {
-        if (f === filterNoCost) {
-          filtered = filtered.filter((ride: any) => (ride.price ?? 0) === 0);
-        }
-        if (f === filterNoSmoking) {
-          filtered = filtered.filter((ride: any) => ride.noSmoking);
-        }
-        if (f === filterWithPets) {
-          filtered = filtered.filter((ride: any) => ride.petsAllowed);
-        }
-        if (f === filterWithKids) {
-          filtered = filtered.filter((ride: any) => ride.kidsFriendly);
+        // f is now a key like 'noCostSharing', not the translated value
+        if (f === 'noCostSharing') filtered = filtered.filter(r => (r.price ?? 0) === 0);
+        if (f === 'noSmoking') filtered = filtered.filter(r => r.noSmoking);
+        if (f === 'withPets') filtered = filtered.filter(r => r.petsAllowed);
+        if (f === 'withKids') filtered = filtered.filter(r => r.kidsFriendly);
+        if (f === 'includePast') {
+          // Include past rides - don't filter them out
+          // This filter is handled by the server, so we don't need to filter here
+          // But we can add a visual indicator if needed
         }
       });
+      console.log('🔍 After tag filters:', filtered.length);
     }
 
     // Sorting
     const selectedSort = selectedSorts[0];
-    switch (selectedSort) {
-      case (t('trump:sort.alphabetical') as string):
-        filtered.sort((a, b) => (a.driverName || '').localeCompare(b.driverName || ''));
-        break;
-      case (t('trump:sort.byLocation') as string):
-        filtered.sort((a, b) => (a.from || '').localeCompare(b.from || ''));
-        break;
-      case (t('trump:sort.byCategory') as string):
-        filtered.sort((a, b) => (a.category || '').localeCompare(b.category || ''));
-        break;
-      case (t('trump:sort.byDate') as string):
-        filtered.sort((a, b) => {
-          const dateA = a.date ? new Date(a.date).getTime() : 0;
-          const dateB = b.date ? new Date(b.date).getTime() : 0;
-          return dateA - dateB;
-        });
-        break;
-      case (t('trump:sort.byTime') as string):
-        filtered.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-        break;
-      case (t('trump:sort.byPrice') as string):
-        filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
-        break;
-      case (t('trump:sort.byRating') as string):
-        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      case (t('trump:sort.byRelevance') as string):
-        // Default - by rating
-        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
+    if (selectedSort) {
+      if (selectedSort === t('trump:sort.byPrice')) filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
+      else if (selectedSort === t('trump:sort.byDate')) filtered.sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
+      // Add other sorts as needed
     }
 
+    console.log('✅ Final filtered rides:', filtered.length);
     return filtered;
+  }, [allRides, searchQuery, selectedFilters, selectedSorts, t]);
+
+  useEffect(() => {
+    setFilteredRides(getFilteredRides());
+  }, [getFilteredRides]);
+
+  const handleSearch = (query: string, filters?: string[], sorts?: string[]) => {
+    if (!mode) {
+      // Offer Mode: Header search input acts as "Destination"
+      setToLocation(query);
+    } else {
+      // Search Mode: Standard search
+      setSearchQuery(query);
+      setSelectedFilters(filters || []);
+      setSelectedSorts(sorts || []);
+    }
+  };
+
+  // --- 3. Offer Logic (Create Ride) ---
+  const isFormValid = (): boolean => {
+    const hasDest = Boolean(toLocation && toLocation.trim().length > 0);
+    // Origin validity:
+    // If using current location, we MUST have a detected address.
+    // Otherwise, we need a manual fromLocation.
+    const hasOrigin = useCurrentLocation
+      ? Boolean(detectedAddress && detectedAddress.length > 0 && !isLocationError)
+      : Boolean(fromLocation && fromLocation.trim().length > 0);
+
+    // Time validity:
+    // If immediate, valid.
+    // If not immediate, must have time.
+    // If not immediate and not today, Date is technically always present (default), but conceptually checked.
+    const hasTime = immediateDeparture || Boolean(departureTime && departureTime.trim().length > 0);
+
+    // If recurring is selected, recurrence unit must be selected
+    const hasRecurrenceUnit = !isRecurring || Boolean(recurrenceUnit);
+
+    return Boolean(hasDest && hasOrigin && hasTime && hasRecurrenceUnit);
   };
 
   const handleCreateRide = async () => {
+    if (!isFormValid()) {
+      // Provide detailed error messages
+      const errors: string[] = [];
+
+      if (!toLocation || !toLocation.trim()) {
+        errors.push('יש להזין יעד');
+      }
+
+      if (useCurrentLocation) {
+        if (!detectedAddress || isLocationError) {
+          errors.push('אנא המתן לזיהוי המיקום או הזן כתובת ידנית');
+        }
+      } else {
+        if (!fromLocation || !fromLocation.trim()) {
+          errors.push('יש להזין כתובת יציאה');
+        }
+      }
+
+      if (!immediateDeparture && (!departureTime || !departureTime.trim())) {
+        errors.push('יש להזין שעת יציאה');
+      }
+
+      if (isRecurring && !recurrenceUnit) {
+        errors.push('יש לבחור תדירות לנסיעה חוזרת');
+      }
+
+      Alert.alert(
+        t('common:errorTitle') || 'שגיאה',
+        errors.length > 0 ? errors.join('\n') : (t('trump:errors.formInvalid') || 'יש למלא את כל השדות הנדרשים')
+      );
+      return;
+    }
+
     try {
-      if (!searchQuery) {
-        Alert.alert(t('common:errorTitle') as string, t('trump:errors.fillDestination') as string);
-        return;
-      }
-      if (!useCurrentLocation && !fromLocation) {
-        Alert.alert(t('common:errorTitle') as string, t('trump:errors.fillFromOrCurrent') as string);
-        return;
-      }
       const uid = selectedUser?.id || 'guest';
-      const rideId = `${Date.now()}`;
-      const timeToSave = immediateDeparture
-        ? new Date().toTimeString().slice(0, 5)
-        : (departureTime || new Date().toTimeString().slice(0, 5));
-      const ride = {
-        id: rideId,
+      const rideId = `${Date.now()}`; // Or DB generated
+
+      // --- Calculate Final Date ---
+      let dateToSave: string;
+      if (immediateDeparture || leavingToday) {
+        dateToSave = new Date().toISOString().split('T')[0]; // Current date YYYY-MM-DD
+      } else {
+        // Ensure rideDate is valid before using toISOString
+        const validDate = rideDate && rideDate instanceof Date && !isNaN(rideDate.getTime())
+          ? rideDate
+          : new Date();
+        dateToSave = validDate.toISOString().split('T')[0]; // Selected date YYYY-MM-DD
+      }
+
+      // --- Calculate Final Time ---
+      let timeToSave: string;
+      if (immediateDeparture) {
+        // Current time HH:MM in local timezone (not UTC)
+        const now = new Date();
+        // Use local time, not UTC
+        const localHours = now.getHours();
+        const localMinutes = now.getMinutes();
+        timeToSave = `${String(localHours).padStart(2, '0')}:${String(localMinutes).padStart(2, '0')}`;
+        console.log('⏰ Immediate departure time (local):', timeToSave);
+      } else {
+        timeToSave = departureTime; // Selected HH:MM
+        console.log('⏰ Selected departure time:', timeToSave);
+      }
+
+      const baseRideData = {
         driverId: uid,
-        driverName: selectedUser?.name || (t('common:unknownUser', { defaultValue: 'User' }) as string),
-        from: useCurrentLocation ? (fromLocation || (t('trump:currentLocation') as string)) : fromLocation,
-        to: searchQuery,
-        date: new Date().toISOString().split('T')[0],
+        driverName: selectedUser?.name || 'Me', // Fallback name
+        from: useCurrentLocation ? (detectedAddress || (t('trump:currentLocation') as string)) : fromLocation,
+        to: toLocation,
+        date: dateToSave,
         time: timeToSave,
         seats: seats,
         price: Number(price) || 0,
-        rating: 5,
-        image: '🚗',
-        category: t('trump:category.other') as string,
-        timestamp: new Date().toISOString(),
-        noSmoking: selectedFilters.includes(t('trump:filters.noSmoking') as string),
-        petsAllowed: selectedFilters.includes(t('trump:filters.withPets') as string),
-        kidsFriendly: selectedFilters.includes(t('trump:filters.withKids') as string),
-      } as any;
+        noSmoking: selectedFormTags.includes('noSmoking') || selectedFormTags.includes(t('trump:filters.noSmoking') as string),
+        petsAllowed: selectedFormTags.includes('withPets') || selectedFormTags.includes(t('trump:filters.withPets') as string),
+        kidsFriendly: selectedFormTags.includes('withKids') || selectedFormTags.includes(t('trump:filters.withKids') as string),
+        isRecurring: isRecurring,
+        recurrenceFrequency: recurrenceFrequency,
+        recurrenceUnit: recurrenceUnit,
+        status: 'active' // Changed from 'published' to 'active' to match server filter
+      };
 
-      await db.createRide(uid, rideId, ride);
-      setFilteredRides(prev => [ride, ...prev]);
-      setRecentRides(prev => [
-        {
-          id: rideId,
-          driverName: ride.driverName,
-          from: ride.from,
-          to: ride.to,
-          date: ride.date,
-          status: t('trump:status.published') as string,
-          price: ride.price,
-        },
-        ...prev,
-      ]);
+      // Calculate base departure datetime for recurring rides
+      // Use local timezone, not UTC
+      const [hours, minutes] = timeToSave.split(':').map(Number);
+      const baseDate = new Date(dateToSave + 'T00:00:00'); // Create date in local timezone
+      baseDate.setHours(hours, minutes, 0, 0);
+      console.log('📅 Base date calculated:', baseDate.toISOString(), 'Local:', baseDate.toLocaleString('he-IL'));
+
+      // Create the first ride
+      console.log('🚗 Creating ride with data:', JSON.stringify(baseRideData, null, 2));
+      await db.createRide(uid, rideId, baseRideData);
+      console.log('✅ Ride created successfully');
+
+      // If recurring, create 5 future instances
+      if (isRecurring && recurrenceUnit) {
+        const instancesToCreate = 5;
+        for (let i = 1; i <= instancesToCreate; i++) {
+          const nextDate = new Date(baseDate);
+
+          // Calculate next occurrence based on frequency and unit
+          switch (recurrenceUnit) {
+            case 'day':
+              // Every X days
+              nextDate.setDate(nextDate.getDate() + (recurrenceFrequency * i));
+              break;
+            case 'week':
+              // Every X weeks
+              nextDate.setDate(nextDate.getDate() + (recurrenceFrequency * 7 * i));
+              break;
+            case 'month':
+              // Every X months
+              nextDate.setMonth(nextDate.getMonth() + (recurrenceFrequency * i));
+              break;
+          }
+
+          const nextDateStr = nextDate.toISOString().split('T')[0];
+          const nextTimeStr = `${String(nextDate.getHours()).padStart(2, '0')}:${String(nextDate.getMinutes()).padStart(2, '0')}`;
+
+          const recurringRideData = {
+            ...baseRideData,
+            date: nextDateStr,
+            time: nextTimeStr,
+          };
+
+          const recurringRideId = `${Date.now()}_${i}`;
+          await db.createRide(uid, recurringRideId, recurringRideData);
+        }
+      }
+
+      // Reset Form
+      setToLocation('');
       setFromLocation('');
       setDepartureTime('');
-      setImmediateDeparture(false);
+      setImmediateDeparture(true); // Default back to immediate
+      setLeavingToday(true);         // Default back to today
+      setRideDate(new Date());       // Reset date
+      setIsRecurring(false);         // Reset recurring
+      setRecurrenceFrequency(1);     // Reset recurrence frequency
+      setRecurrenceUnit(null);       // Reset recurrence unit
       setUseCurrentLocation(true);
       setSeats(3);
       setPrice('0');
+      setSelectedFormTags([]);
+
+      // Also clear header search if possible via searchQuery state if it was bound
+      if (!mode) setSearchQuery('');
 
       Alert.alert(t('trump:success.title') as string, t('trump:success.ridePublished') as string);
 
-      if (immediateDeparture && useCurrentLocation && searchQuery) {
-        const encodedDest = encodeURIComponent(searchQuery);
-        const wazeUrl = `waze://?q=${encodedDest}&navigate=yes`;
-        const fallback = `https://waze.com/ul?q=${encodedDest}&navigate=yes`;
-        try {
-          const canOpen = await Linking.canOpenURL(wazeUrl);
-          if (canOpen) {
-            await Linking.openURL(wazeUrl);
-          } else {
-            await Linking.openURL(fallback);
-          }
-        } catch {}
-      }
+      // Refresh Data - wait a bit for backend to update cache
+      setTimeout(() => {
+        setRefreshKey(prev => prev + 1);
+      }, 1500);
+
     } catch (e) {
-      Alert.alert(t('common:errorTitle') as string, t('trump:errors.saveFailed') as string);
+      console.error("Failed to create ride", e);
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      Alert.alert(
+        t('common:errorTitle') as string,
+        `${t('trump:errors.saveFailed') as string}\n${errorMessage}`
+      );
     }
   };
 
-  /**
-   * Show ride details in a dialog
-   * Displays full ride details and allows the user to join or cancel
-   * @param {any} ride - The ride object to display
-   */
-  const showRideDetailsModal = (ride: any) => {
+  // --- 4. History Actions ---
+  const handleDeleteRide = async (ride: any) => {
     Alert.alert(
-      t('trump:rideOf', { name: ride.driverName }) as string,
-      `${t('trump:from')}: ${ride.from}\n${t('trump:to')}: ${ride.to}\n${t('trump:date')}: ${ride.date}\n${t('trump:time')}: ${ride.time}\n${t('trump:price')}: ₪${ride.price}\n${t('trump:seatsAvailable')}: ${ride.seats}\n\n${t('trump:joinQuestion')}`,
+      t('trump:alerts.deleteRideTitle') || 'מחיקת טרמפ',
+      t('trump:alerts.deleteRideBody') || 'האם למחוק טרמפ זה?',
       [
+        { text: t('common:cancel') as string, style: 'cancel' },
         {
-          text: t('common:cancel') as string,
-          style: 'cancel',
-        },
-        {
-          text: t('trump:joinRide') as string,
-          onPress: () => {
-            Alert.alert(
-              t('trump:requestSentTitle') as string,
-              t('trump:requestSentBody', { name: ride.driverName }) as string
-            );
-          },
-        },
+          text: t('common:delete') as string,
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await db.updateRide(selectedUser?.id || 'guest', ride.id, { status: 'cancelled' });
+              // Optimistic UI Update
+              setRecentRides(prev => prev.map(r => r.id === ride.id ? { ...r, status: 'cancelled' } : r));
+            } catch (e) {
+              console.error('Delete ride failed', e);
+              Alert.alert('Error', 'Failed to delete ride');
+            }
+          }
+        }
       ]
     );
   };
 
-  const menuOptions = [
-    t('trump:menu.history') as string,
-    t('trump:menu.settings') as string,
-    t('trump:menu.help') as string,
-    t('trump:menu.contact') as string,
-  ];
+  const handleRestoreRide = (ride: any) => {
+    // Populate form with ride data
+    setToLocation(ride.to || '');
+    setFromLocation(ride.from || '');
+    setUseCurrentLocation(ride.from === t('trump:currentLocation'));
+    setDepartureTime(ride.time || '');
 
-  const handleToggleMode = useCallback(() => {
-    setMode(!mode);
-    console.log('Mode toggled:', !mode ? 'seeker' : 'offerer');
-  }, [mode]);
+    // Logic for restoring specific time vs immediate is tricky, default to explicit time
+    setImmediateDeparture(false);
+    setSeats(ride.seats || 3);
+    setPrice(String(ride.price || 0));
+    // If date is in future, we set it, otherwise default to today logic or keep it old? 
+    // Usually restore is for convenience, so let's default to logic that user can adjust.
+    // Let's assume user wants to repost for today or same settings
+    setLeavingToday(true);
+    setRideDate(new Date());
 
-  const handleSelectMenuItem = useCallback((option: string) => {
-    console.log('Menu option selected:', option);
-    Alert.alert(t('trump:menu.title') as string, t('trump:menu.selected', { option }) as string);
-  }, []);
+    Alert.alert(t('trump:alerts.restoreDoneTitle') || 'שוחזר', 'פרטי הטרמפ הועתקו לטופס');
+  };
 
-  const renderRideCard = ({ item }: { item: any }) => (
-    <TouchableOpacity 
-      style={localStyles.rideCard}
-      onPress={() => {
-        if (mode) {
-          // Donor mode - select ride to join
-          Alert.alert(t('trump:alerts.rideSelectedTitle') as string, t('trump:alerts.rideSelectedBody', { name: item.driverName }) as string);
-        } else {
-          // Beneficiary mode - show ride details with join option
-          showRideDetailsModal(item);
-        }
-      }}
-    >
-      {/* Row 1: emoji + driver name | rating */}
-      <View style={localStyles.rideRow}>
-        <View style={localStyles.rideRowLeft}>
-          <Text style={localStyles.rideEmoji}>{item.image}</Text>
-          <Text style={localStyles.rideDriverName}>{item.driverName}</Text>
-        </View>
-        <View style={localStyles.rideRating}>
-          <Text style={localStyles.ratingText}>⭐ {item.rating}</Text>
-        </View>
-      </View>
+  // --- Render Helpers ---
+  const handleToggleMode = () => setMode(!mode);
 
-      {/* Row 2: route | seats + price */}
-      <View style={localStyles.rideRow}>
-        <View style={localStyles.rideRowLeft}>
-          <Text numberOfLines={1} style={localStyles.rideRouteText}>{`${item.from} → ${item.to}`}</Text>
-        </View>
-        <View style={localStyles.rideRowRight}>
-          <Text style={localStyles.rideSeats}>💺 {item.seats}</Text>
-          <Text style={localStyles.ridePrice}>₪{item.price}</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+  const handleSelectRide = (ride: any) => {
+    setSelectedRide(ride);
+    setShowRideModal(true);
+  };
 
-  const renderRecentRideCard = ({ item }: { item: any }) => (
-    <View style={localStyles.rideCard}>
-      {/* Row 1: emoji + driver name | status */}
-      <View style={localStyles.rideRow}>
-        <View style={localStyles.rideRowLeft}>
-          <Text style={localStyles.rideEmoji}>🚗</Text>
-          <Text style={localStyles.rideDriverName}>{item.driverName}</Text>
-        </View>
-        <View style={localStyles.rideRating}>
-          <Text style={localStyles.ratingText}>{item.status}</Text>
-        </View>
-      </View>
+  // Calculate grid layout for search mode
+  const { width } = Dimensions.get('window');
+  const { isTablet, isDesktop } = getScreenInfo();
+  const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
 
-      {/* Row 2: route | date + restore */}
-      <View style={localStyles.rideRow}>
-        <View style={localStyles.rideRowLeft}>
-          <Text numberOfLines={1} style={localStyles.rideRouteText}>{`${item.from} → ${item.to}`}</Text>
-        </View>
-        <View style={localStyles.rideRowRight}>
-          {typeof item.price === 'number' && item.price > 0 && (
-            <Text style={localStyles.ridePrice}>₪{item.price}</Text>
-          )}
-          <Text style={localStyles.recentRideDateCompact}>📅 {item.date}</Text>
-          <TouchableOpacity
-            style={localStyles.restoreChip}
-            onPress={() => {
-              setFromLocation(item.from);
-              setToLocation(item.to);
-              Alert.alert(t('trump:alerts.restoreDoneTitle') as string, t('trump:alerts.restoreDoneBody', { from: item.from, to: item.to }) as string);
-            }}
-          >
-            <Text style={localStyles.restoreChipText}>{t('trump:restore')}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
+  // Initialize with appropriate default, but allow user control via slider
+  const [numColumns, setNumColumns] = useState(() => (isTablet || isDesktop || isDesktopWeb) ? 3 : 2);
 
-  const renderGroupCard = ({ item }: { item: any }) => (
-    <TouchableOpacity 
-      style={localStyles.groupButton}
-      onPress={async () => {
-        if (item.link && typeof item.link === 'string') {
-          try {
-            const supported = await Linking.canOpenURL(item.link);
-            if (supported) {
-              await Linking.openURL(item.link);
-            } else {
-              Alert.alert(t('common:error') as string, t('common:cannotOpenLink') as string);
-            }
-          } catch {
-            Alert.alert(t('common:error') as string, t('common:cannotOpenLink') as string);
-          }
-        } else {
-          Alert.alert(t('common:errorTitle') as string, t('trump:errors.noGroupLink') as string);
-        }
-      }}>
-      <View style={localStyles.groupButtonHeader}>
-        <Text style={localStyles.groupButtonTitle}>{item.name}</Text>
-        <Text style={localStyles.groupButtonPill}>{item.type === 'telegram' ? 'Telegram' : item.type === 'whatsapp' ? 'WhatsApp' : 'Web'}</Text>
-      </View>
-    </TouchableOpacity>
-  );
+  const screenPadding = 20;
+  const cardGap = isTablet || isDesktop || isDesktopWeb ? 16 : 14;
+  const cardWidth = (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
 
-  const FormHeader = () => (
-    <View>
-      {mode ? (
-        <View style={localStyles.formContainer}>
-          <View style={localStyles.row}>
-            <View style={[localStyles.field, { flex: 1 }]}>
-              <View style={localStyles.timeRow}>
-                <View style={{ flex: 1 }}>
-                  <TimePicker
-                    value={departureTime}
-                    onTimeChange={setDepartureTime}
-                    placeholder={t('trump:ui.timePickerPlaceholder') as string}
-                  />
-                </View>
-                <View>
-                <TouchableOpacity
-                  onPress={() => {
-                    const newVal = !immediateDeparture;
-                    setImmediateDeparture(newVal);
-                    if (newVal) {
-                      const now = new Date();
-                      const t = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                      setDepartureTime(t);
-                    }
-                  }}
-                  style={localStyles.checkbox}
-                >
-                  <Icon
-                    name={immediateDeparture ? 'checkbox' : 'square-outline'}
-                    size={22}
-                    color={colors.pink}
-                    />
-                  <Text style={localStyles.checkboxLabel}>{t('trump:ui.immediateDeparture')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setUseCurrentLocation(!useCurrentLocation)}
-                  style={localStyles.checkbox}
-                  >
-                  <Icon
-                    name={useCurrentLocation ? 'checkbox' : 'square-outline'}
-                    size={22}
-                    color={colors.pink}
-                    />
-                  <Text style={localStyles.checkboxLabel}>{t('trump:ui.useCurrentLocation')}</Text>
-                </TouchableOpacity>
-                    </View>
-              </View>
-            </View>
-          </View>
+  const handleCloseRideModal = () => {
+    setShowRideModal(false);
+    setSelectedRide(null);
+  };
 
-          {!useCurrentLocation && (
-            <View style={localStyles.row}>
-              <View style={localStyles.field}>
-                <Text style={localStyles.label}>{t('trump:ui.fromPointLabel')}</Text>
-                <TextInput
-                  style={localStyles.input}
-                  value={fromLocation}
-                  onChangeText={setFromLocation}
-                  placeholder={t('trump:ui.fromPlaceholder') as string}
-                />
-              </View>
-            </View>
-          )}
+  const handleSelectRideOld = (ride: any) => {
+    // In Search Mode: Show join details/contact
+    Alert.alert(
+      t('trump:rideOf', { name: ride.driverName }) as string,
+      `${ride.from} ➝ ${ride.to}\n⏰ ${ride.time}\n💰 ₪${ride.price}\n\n${t('trump:joinQuestion')}`,
+      [
+        { text: t('common:cancel') as string, style: 'cancel' },
+        { text: t('trump:joinRide') as string, onPress: () => Alert.alert('בקשה נשלחה') }
+      ]
+    );
+  };
 
-          <View style={localStyles.row}>
-            <View style={localStyles.fieldSmall}>
-              <Text style={localStyles.label}>{t('trump:ui.seatsLabel')}</Text>
-              <View style={localStyles.counterRow}>
-                <TouchableOpacity style={localStyles.counterBtn} onPress={() => setSeats(Math.max(1, seats - 1))}>
-                  <Text style={localStyles.counterText}>-</Text>
-                </TouchableOpacity>
-                <Text style={localStyles.counterValue}>{seats}</Text>
-                <TouchableOpacity style={localStyles.counterBtn} onPress={() => setSeats(seats + 1)}>
-                  <Text style={localStyles.counterText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            <View style={localStyles.fieldSmall}>
-              <TouchableOpacity onPress={() => setNeedToPay(p => !p)} activeOpacity={0.8}>
-                <Text
-                  style={[
-                    localStyles.label,
-                    { color: need_to_pay ? colors.textPrimary : colors.textSecondary },
-                  ]}
-                >
-                  {t('trump:ui.fuelContributionLabel')}
-                </Text>
-              </TouchableOpacity>
-              {need_to_pay && (
-                <View style={localStyles.inputWrapper}>
-                  <TextInput
-                    style={[localStyles.input, localStyles.inputWithAdornment]}
-                    keyboardType="number-pad"
-                    value={price}
-                    onChangeText={(t) => {
-                      const v = t.replace(/[^0-9]/g, '');
-                      setPrice(v);
-                      requestAnimationFrame(() => priceInputRef.current?.focus());
-                    }}
-                    placeholder="0"
-                    returnKeyType="done"
-                    blurOnSubmit={false}
-                  />
-                  <Text pointerEvents="none" style={localStyles.inputAdornment}>₪</Text>
-                </View>
-              )}
-            </View>
-          </View>
+  if (!isMounted) {
+    return <View style={localStyles.safeArea} />;
+  }
 
-          <TouchableOpacity
-            style={[
-              localStyles.offerButton,
-              !searchQuery && { opacity: 0.5 },
-            ]}
-            onPress={handleCreateRide}
-            disabled={!searchQuery}
-          >
-            <Text style={localStyles.offerButtonText}>{t('trump:ui.publishRide')}</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={localStyles.formContainer}>
-          <View style={localStyles.row}>
-            <View style={[localStyles.field, { flex: 1 }]}>
-              <View style={localStyles.timeRow}>
-                <View style={{ flex: 1 }}>
-                  <TimePicker
-                    value={departureTime}
-                    onTimeChange={setDepartureTime}
-                    placeholder={t('trump:ui.timePickerPlaceholder') as string}
-                  />
-                </View>
-                <TouchableOpacity
-                  onPress={() => {
-                    const newVal = !immediateDeparture;
-                    setImmediateDeparture(newVal);
-                    if (newVal) {
-                      const now = new Date();
-                      const t = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                      setDepartureTime(t);
-                    }
-                  }}
-                  style={localStyles.checkbox}
-                >
-                  <Icon
-                    name={immediateDeparture ? 'checkbox' : 'square-outline'}
-                    size={22}
-                    color={colors.pink}
-                  />
-                  <Text style={localStyles.checkboxLabel}>{t('trump:ui.immediateDeparture')}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </View>
-      )}
-    </View>
-  );
-  
   return (
     <SafeAreaView style={localStyles.safeArea}>
+      {/* Header handles Search Mode inputs & Mode Toggle */}
       <HeaderComp
         mode={mode}
-        menuOptions={menuOptions}
+        menuOptions={['היסטוריה', 'הגדרות']}
         onToggleMode={handleToggleMode}
-        onSelectMenuItem={handleSelectMenuItem}
+        onSelectMenuItem={() => { }}
         title=""
-        placeholder={mode ? (t('trump:ui.searchPlaceholder.offer') as string) : (t('trump:ui.searchPlaceholder.seek') as string)}
+        // Dynamic placeholder based on mode
+        placeholder={mode ? t('trump:ui.searchPlaceholder.seek') : t('trump:ui.searchPlaceholder.offer')}
         filterOptions={trumpFilterOptions}
         sortOptions={trumpSortOptions}
-        searchData={dummyRides}
+        searchData={allRides}
         onSearch={handleSearch}
+        // Hide sort button in offer mode (mode === false)
+        hideSortButton={!mode}
       />
 
-      <FormHeader />
-
-      {mode ? (
+      {!mode ? (
+        // === OFFER MODE (Driver) - Show Form ===
         <ScrollContainer
           style={localStyles.container}
           contentStyle={localStyles.scrollContent}
-          showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="always"
         >
+          {/* 1. Form */}
+          <RideOfferForm
+            destination={toLocation}
+            onDestinationChange={setToLocation}
+
+            fromLocation={fromLocation}
+            onFromLocationChange={setFromLocation}
+            useCurrentLocation={useCurrentLocation}
+            onToggleCurrentLocation={setUseCurrentLocation}
+            detectedAddress={detectedAddress}
+            isLocating={isLocating}
+            isLocationError={isLocationError}
+
+            // Scheduling
+            departureTime={departureTime}
+            onDepartureTimeChange={setDepartureTime}
+            immediateDeparture={immediateDeparture}
+            onToggleImmediateDeparture={setImmediateDeparture}
+            leavingToday={leavingToday}
+            onToggleLeavingToday={setLeavingToday}
+            rideDate={rideDate}
+            onDateChange={handleDateChange}
+            isRecurring={isRecurring}
+            onToggleRecurring={setIsRecurring}
+            recurrenceFrequency={recurrenceFrequency}
+            onRecurrenceFrequencyChange={setRecurrenceFrequency}
+            recurrenceUnit={recurrenceUnit}
+            onRecurrenceUnitChange={setRecurrenceUnit}
+
+            seats={seats}
+            onSeatsChange={setSeats}
+            price={price}
+            onPriceChange={setPrice}
+
+            selectedTags={selectedFormTags}
+            onToggleTag={(tag) => {
+              setSelectedFormTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+            }}
+            availableTags={trumpFilterOptions}
+
+            onSubmit={handleCreateRide}
+            isValid={isFormValid()}
+            hideDestinationInput={true} // New prop to hide internal input
+          />
+
+          {/* 2. History */}
           <View style={localStyles.section}>
-            <Text style={localStyles.sectionTitle}>{t('trump:ui.yourHistoryTitle')}</Text>
-            <View style={localStyles.recentRidesContainer}>
-              {(recentRides.length > 0 ? recentRides : dummyRecentRides).map((ride, idx) => (
-                <View key={`recent-${ride.id ?? idx}`} style={localStyles.recentRideCardWrapper}>
-                  {renderRecentRideCard({ item: ride })}
-                </View>
-              ))}
-            </View>
+            <Text style={localStyles.sectionTitle}>{t('trump:ui.yourRecentRides')}</Text>
+            {recentRides.length === 0 ? (
+              <Text style={localStyles.emptyStateText}>{t('trump:ui.noRecentRides')}</Text>
+            ) : (
+              recentRides.map((ride, idx) => (
+                <RideHistoryCard
+                  key={ride.id || idx}
+                  ride={ride}
+                  onDelete={handleDeleteRide}
+                  onRestore={handleRestoreRide}
+                />
+              ))
+            )}
           </View>
 
-          {/* Footer stats */}
-          {(() => {
-            const totalRides = filteredRides.length || allRides.length;
-            const freeRides = (filteredRides.length ? filteredRides : allRides).filter((r: any) => (r.price ?? 0) === 0).length;
-            const totalGroupMembers = dummyGroups.reduce((s, g) => s + (g.members || 0), 0);
-            return (
-                <DonationStatsFooter
-                  stats={[
-                    { label: t('trump:stats.availableRides'), value: totalRides, icon: 'car-outline' },
-                    { label: t('trump:stats.noCost'), value: freeRides, icon: 'pricetag-outline' },
-                    { label: t('trump:stats.groupMembers'), value: totalGroupMembers, icon: 'people-outline' },
-                  ]}
-                />
-            );
-          })()}
+          {/* 3. Groups Section */}
+          <View style={[localStyles.section, { marginTop: 30, paddingBottom: 20 }]}>
+            <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={localStyles.sectionTitle}>{t('trump:ui.whatsappGroups')}</Text>
+            </View>
+            <AddLinkComponent category="trump" />
+          </View>
         </ScrollContainer>
       ) : (
-        // Beneficiary (seeker) mode - two independent vertical scroll sections
-          <View style={[localStyles.container, localStyles.noOuterScrollContainer]}> 
-            <View style={localStyles.sectionsContainer}>
-            {/* Rides section */}
-            <View style={localStyles.sectionWithScroller}>
-              <Text style={localStyles.sectionTitle}>
-                {searchQuery || selectedFilters.length > 0 ? t('trump:ui.ridesAvailableTitle') : t('trump:ui.ridesRecommendedTitle')}
-              </Text>
-              <ScrollView
-                style={localStyles.innerScroll}
-                contentContainerStyle={localStyles.ridesGridContainer}
-                showsVerticalScrollIndicator
-                nestedScrollEnabled
-                keyboardShouldPersistTaps="handled"
-              >
-                 {filteredRides.map((ride, idx) => (
-                  <View key={`ride-${ride.id ?? idx}`} style={localStyles.rideCardWrapper}>
-                    {renderRideCard({ item: ride })}
+        // === SEARCH MODE (Passenger) - Show Search Results ===
+        <View style={localStyles.searchContainer}>
+          <VerticalGridSlider
+            numColumns={numColumns}
+            onNumColumnsChange={setNumColumns}
+            style={{
+              top: 10, // Relative to searchContainer
+              left: 4,
+              height: 160 // Pass height if needed by style? No, it's defined inside.
+            }}
+          />
+          <View style={localStyles.resultsHeader}>
+            <Text style={localStyles.resultsTitle}>
+              {searchQuery ? `${t('trump:ui.searchResultsPrefix')} "${searchQuery}"` : t('trump:ui.availableRides')} ({filteredRides.length})
+            </Text>
+          </View>
+
+          <ScrollContainer
+            contentStyle={localStyles.resultsList}
+            showsVerticalScrollIndicator={false}
+          >
+            {filteredRides.length === 0 ? (
+              <View style={localStyles.emptyState}>
+                <Text style={localStyles.emptyStateTitle}>{t('trump:ui.noRidesFoundTitle')}</Text>
+                <Text style={localStyles.emptyStateText}>{t('trump:ui.noRidesFoundBody')}</Text>
+              </View>
+            ) : (
+              <View style={[
+                localStyles.ridesGrid,
+                {
+                  paddingHorizontal: screenPadding,
+                }
+              ]}>
+                {filteredRides.map((ride, idx) => (
+                  <View
+                    key={ride.id || idx}
+                    style={{
+                      width: cardWidth,
+                      marginBottom: cardGap,
+                      marginLeft: idx % numColumns === 0 ? 0 : cardGap,
+                    }}
+                  >
+                    <RideCard
+                      ride={ride}
+                      onPress={handleSelectRide}
+                    />
                   </View>
                 ))}
-              </ScrollView>
+              </View>
+            )}
+
+            {/* Groups Section (Restored) */}
+            <View style={[localStyles.section, { marginTop: 30, paddingBottom: 40 }]}>
+              <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <Text style={localStyles.sectionTitle}>
+                  {t('trump:ui.whatsappGroups')}
+                </Text>
+              </View>
+              <AddLinkComponent category="trump" />
             </View>
 
-            {/* Groups section */}
-            <View style={localStyles.sectionWithScroller}>
-              <Text style={localStyles.sectionTitle}>{t('trump:ui.groupsTitle')}</Text>
-              <ScrollView
-                style={localStyles.innerScroll}
-                contentContainerStyle={localStyles.groupsContainer}
-                showsVerticalScrollIndicator
-                nestedScrollEnabled
-                keyboardShouldPersistTaps="handled"
-              >
-                <View style={localStyles.groupsTwoCols}>
-                  <View style={localStyles.groupColumn}>
-                    <Text style={localStyles.groupColumnTitle}>{t('trump:groups.whatsapp')}</Text>
-                     {dummyGroups
-                      .filter(g => g.type === 'whatsapp')
-                      .filter(g => !searchQuery || (g.name?.includes(searchQuery) ?? false))
-                      .map((group) => (
-                         <View style={localStyles.groupLinkWrapper}>
-                          {renderGroupCard({ item: group })}
-                        </View>
-                      ))}
-                  </View>
-                  <View style={localStyles.groupColumn}>
-                    <Text style={localStyles.groupColumnTitle}>{t('trump:groups.facebook')}</Text>
-                     {dummyGroups
-                      .filter(g => g.type === 'facebook')
-                      .filter(g => !searchQuery || (g.name?.includes(searchQuery) ?? false))
-                      .map((group) => (
-                         <View style={localStyles.groupLinkWrapper}>
-                          {renderGroupCard({ item: group })}
-                        </View>
-                      ))}
-                  </View>
-                </View>
-              </ScrollView>
-            </View>
-          </View>
-          {/* Footer stats */}
-          {(() => {
-          const totalRides = filteredRides.length || allRides.length;
-          const freeRides = (filteredRides.length ? filteredRides : allRides).filter((r: any) => (r.price ?? 0) === 0).length;
-          const totalGroupMembers = dummyGroups.reduce((s, g) => s + (g.members || 0), 0);
-          return (
-              <DonationStatsFooter
-                stats={[
-                  { label: t('trump:stats.availableRides'), value: totalRides, icon: 'car-outline' },
-                  { label: t('trump:stats.noCost'), value: freeRides, icon: 'pricetag-outline' },
-                  { label: t('trump:stats.groupMembers'), value: totalGroupMembers, icon: 'people-outline' },
-                ]}
-              />
-          );
-          })()}
+          </ScrollContainer>
         </View>
       )}
+
+      {/* Ride Details Modal */}
+      <ItemDetailsModal
+        visible={showRideModal}
+        onClose={handleCloseRideModal}
+        item={selectedRide}
+        type="ride"
+        navigation={navigation}
+      />
+
+      {/* Footer Stats (Visible in Search Mode usually, or always) */}
+      {!mode && (
+        <DonationStatsFooter
+          stats={[
+            { label: t('trump:stats.availableRides') || 'זמינים', value: filteredRides.length, icon: 'car-outline' },
+            { label: t('trump:stats.noCost') || 'חינם', value: filteredRides.filter(r => (r.price || 0) === 0).length, icon: 'pricetag-outline' },
+          ]}
+        />
+      )}
+      {ToastComponent}
     </SafeAreaView>
   );
 }
 
 const localStyles = StyleSheet.create({
-    safeArea: {
-      flex: 1,
-      backgroundColor: colors.backgroundSecondary_2,
-    },
-    container: {
-        flex: 1,
-        paddingHorizontal: 16,
-        paddingTop: 4,
-    },
-    scrollContent: {
-        paddingBottom: 100, // Bottom margin for screen
-    },
-    formContainer: {
-      padding: 5,
-      alignItems: 'center',
-      borderRadius: 15,
-      marginBottom: 15,
-    },
-    row: {
-      flexDirection: 'row-reverse',
-      gap: 10,
-      width: '100%',
-      paddingHorizontal: 8,
-    },
-    field: {
-      flex: 1,
-    },
-    fieldSmall: {
-      flex: 0.5,
-    },
-    timeRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: "15%",
-    },
-    checkbox: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      marginVertical: 3,
-      paddingHorizontal: 8,
-      paddingVertical: 6,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: colors.moneyFormBorder,
-      backgroundColor: colors.moneyInputBackground,
-      marginLeft: 8,
-    },
-    checkboxLabel: {
-      fontSize: FontSizes.small,
-      color: colors.textPrimary,
-      fontWeight: '600',
-    },
-    locationContainer: {
-        marginBottom: 20,
-    },
-    timeContainer: {
-        marginBottom: 20,
-    },
-    label: {
-        fontSize: FontSizes.medium,
-        fontWeight: '600',
-        color: colors.textPrimary,
-        marginBottom: 10,
-        textAlign: 'center',
-    },
-    input: {
-        backgroundColor: colors.moneyInputBackground,
-        borderRadius: 10,
-        padding: 15,
-        fontSize: FontSizes.body,
-        textAlign: 'right',
-        color: colors.textPrimary,
-        borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
-    },
-    inputWrapper: {
-        position: 'relative',
-        justifyContent: 'center',
-    },
-    inputWithAdornment: {
-        paddingRight: 36,
-    },
-    inputAdornment: {
-        position: 'absolute',
-        right: 12,
-        color: colors.textSecondary,
-        fontSize: FontSizes.body,
-    },
-    counterRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: colors.moneyInputBackground,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: colors.moneyFormBorder,
-      paddingHorizontal: 8,
-      paddingVertical: 6,
-    },
-    counterBtn: {
-      backgroundColor: colors.moneyFormBackground,
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 8,
-    },
-    counterText: {
-      fontSize: FontSizes.medium,
-      fontWeight: 'bold',
-      color: colors.textPrimary,
-    },
-    counterValue: {
-      fontSize: FontSizes.medium,
-      fontWeight: 'bold',
-      color: colors.textPrimary,
-      minWidth: 30,
-      textAlign: 'center',
-    },
-    offerButton: {
-        backgroundColor: colors.moneyButtonBackground,
-        padding: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    offerButtonText: {
-        color: colors.backgroundPrimary,
-        fontSize: FontSizes.medium,
-        fontWeight: 'bold',
-    },
-    section: {
-        marginBottom: 10,
-    },
-    sectionTitle: {
-        fontSize: FontSizes.body,
-        fontWeight: 'bold',
-        alignSelf: 'center',
-        color: colors.textPrimary,
-        textAlign: 'right',
-    },
-    // Container that disables outer scroll in seeker mode
-    noOuterScrollContainer: {
-        flex: 1,
-    },
-    sectionsContainer: {
-        flex: 1,
-        gap: 5,
-    },
-    sectionWithScroller: {
-        flex: 1,
-        backgroundColor: colors.moneyFormBackground,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
-        paddingVertical: 8,
-        paddingHorizontal: 8,
-    },
-    innerScroll: {
-        flex: 1,
-    },
-    // Ride Cards Styles
-    ridesGridContainer: {
-        // paddingHorizontal: 8,
-        // paddingVertical: 8,
-        // paddingBottom: 8,
-    },
-    rideCardWrapper: {
-        marginBottom: 8,
-        width: '100%',
-    },
-    rideCard: {
-        backgroundColor: colors.moneyCardBackground,
-        borderRadius: 10,
-        padding: 8,
-        borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
-    },
-    rideRow: {
-        flexDirection: 'row-reverse',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 4,
-    },
-    rideRowLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        flexShrink: 1,
-    },
-    rideRowRight: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    rideEmoji: {
-        fontSize: FontSizes.heading2,
-    },
-    rideRating: {
-        backgroundColor: colors.moneyStatusBackground,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 6,
-    },
-    ratingText: {
-        fontSize: FontSizes.small,
-        color: colors.moneyStatusText,
-        fontWeight: 'bold',
-    },
-    rideDriverName: {
-        fontSize: FontSizes.small,
-        fontWeight: 'bold',
-        color: colors.textPrimary,
-        textAlign: 'right',
-    },
-    rideRouteText: {
-        fontSize: FontSizes.small,
-        color: colors.textSecondary,
-        flex: 1,
-        textAlign: 'right',
-        marginLeft: 6,
-    },
-    rideSeats: {
-        fontSize: FontSizes.small,
-        color: colors.moneyHistoryAmount,
-        fontWeight: '600',
-    },
-    ridePrice: {
-        fontSize: FontSizes.small,
-        color: colors.moneyHistoryAmount,
-        fontWeight: '600',
-    },
-    // Recent Rides Styles
-    recentRidesContainer: {
-        paddingHorizontal: 8,
-        paddingVertical: 8,
-    },
-    recentRideCardWrapper: {
-        marginBottom: 8,
-        width: '100%',
-    },
-    recentRideDateCompact: {
-        fontSize: FontSizes.small,
-        color: colors.textSecondary,
-    },
-    restoreChip: {
-        backgroundColor: colors.moneyFormBackground,
-        borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
-        borderRadius: 999,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-    },
-    restoreChipText: {
-        fontSize: FontSizes.small,
-        color: colors.textPrimary,
-        fontWeight: '600',
-    },
-    // Groups Styles (compact two columns)
-    groupsContainer: {
-      paddingHorizontal: 8,
-      paddingVertical: 8,
-      paddingBottom: 8,
-    },
-    groupsTwoCols: {
-      flexDirection: 'row-reverse',
-      gap: 16,
-      paddingHorizontal: 16,
-    },
-    groupColumn: {
-      flex: 1,
-    },
-    groupColumnTitle: {
-      fontSize: FontSizes.body,
-      color: colors.textSecondary,
-      marginBottom: 6,
-      textAlign: 'right',
-    },
-    groupLinkWrapper: {
-      paddingVertical: 6,
-      borderBottomWidth: 0,
-    },
-    groupButton: {
-      backgroundColor: colors.moneyCardBackground,
-      borderWidth: 1,
-      borderColor: colors.moneyFormBorder,
-      borderRadius: 10,
-      padding: 10,
-    },
-    groupButtonHeader: {
-      flexDirection: 'row-reverse',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    groupButtonTitle: {
-      fontSize: FontSizes.body,
-      color: colors.textPrimary,
-      fontWeight: '600',
-      textAlign: 'right',
-      flex: 1,
-      marginLeft: 8,
-    },
-    groupButtonPill: {
-      borderWidth: 1,
-      borderColor: colors.headerBorder,
-      borderRadius: 999,
-      paddingHorizontal: 8,
-      paddingVertical: 2,
-      color: colors.textSecondary,
-      fontSize: FontSizes.caption,
-    },
-    // Search Help Styles
-    searchHelpContainer: {
-        alignItems: 'center',
-        paddingVertical: 20,
-    },
-    searchHelpTitle: {
-        fontSize: FontSizes.heading2,
-        fontWeight: 'bold',
-        color: colors.textPrimary,
-        marginBottom: 12,
-        textAlign: 'center',
-    },
-    searchHelpText: {
-        fontSize: FontSizes.body,
-        color: colors.textSecondary,
-        textAlign: 'center',
-        marginBottom: 20,
-        lineHeight: 24,
-    },
-    searchHelpTipsContainer: {
-        backgroundColor: colors.moneyInputBackground,
-        borderRadius: 12,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
-        width: '100%',
-    },
-    searchHelpTipsTitle: {
-        fontSize: FontSizes.body,
-        fontWeight: 'bold',
-        color: colors.textPrimary,
-        marginBottom: 10,
-        textAlign: 'right',
-    },
-    searchHelpTip: {
-        fontSize: FontSizes.body,
-        color: colors.textSecondary,
-        marginBottom: 6,
-        textAlign: 'right',
-        lineHeight: 20,
-    },
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.backgroundSecondary_2,
+  },
+  container: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  scrollContent: {
+    paddingBottom: 100,
+  },
+  section: {
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: FontSizes.body,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptyStateText: {
+    textAlign: 'center',
+    color: colors.textSecondary,
+    marginTop: 20,
+  },
+  // Search Mode Styles
+  searchContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    // paddingBottom: 80, // Removed to allow full usage of space; footer is in-flow
+  },
+  resultsHeader: {
+    marginBottom: 10,
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  resultsTitle: {
+    fontSize: FontSizes.body,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+  },
+  resultsList: {
+    paddingBottom: 20,
+    flexGrow: 1, // ensure it fills space if needed
+  },
+  emptyState: {
+    alignItems: 'center',
+    marginTop: 60,
+  },
+  emptyStateTitle: {
+    fontSize: FontSizes.heading3,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  ridesGrid: {
+    flexDirection: 'row-reverse',
+    flexWrap: 'wrap',
+    paddingHorizontal: 0,
+  },
 });
-

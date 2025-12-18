@@ -21,7 +21,7 @@
 // TODO: Add crash reporting integration (Sentry, Bugsnag)
 // TODO: Remove magic numbers for padding (48px) - use constants file
 // TODO: Add proper accessibility support throughout the app
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo, memo } from 'react';
 import { View, Text, ActivityIndicator, Platform, StyleSheet } from 'react-native';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import * as Font from 'expo-font';
@@ -44,25 +44,31 @@ import { useWebMode } from './stores/webModeStore';
 import { useAppLoading } from './stores/appLoadingStore';
 import { useUser } from './stores/userStore';
 import WebModeToggleOverlay from './components/WebModeToggleOverlay';
+import DevEnvironmentBanner from './components/DevEnvironmentBanner';
 import { FontSizes } from "./globals/constants";
 import { logger } from './utils/loggerService';
 import ErrorBoundary from './components/ErrorBoundary';
+import { saveNavigationState, loadNavigationState, clearNavigationState } from './utils/navigationPersistence';
+import { NavigationState } from '@react-navigation/native';
+import { navigationQueue } from './utils/navigationQueue';
+import { RootStackParamList } from './globals/types';
+import { linking } from './utils/linkingConfig';
 // RTL is controlled via selected language in i18n and Settings
 
 // Initialize notifications only on supported platforms
 type NotificationService = {
   setupNotificationResponseListener: (
-    callback: (response: { 
-      notification: { 
-        request: { 
-          content: { 
-            data?: { 
-              type?: string; 
-              conversationId?: string; 
-            } 
-          } 
-        } 
-      } 
+    callback: (response: {
+      notification: {
+        request: {
+          content: {
+            data?: {
+              type?: string;
+              conversationId?: string;
+            }
+          }
+        }
+      }
     }) => void
   ) => { remove?: () => void } | null;
 } | null;
@@ -77,7 +83,7 @@ if (Platform.OS !== 'web') {
 }
 
 // Complete auth session results as early as possible (important for Web OAuth flows)
-try { WebBrowser.maybeCompleteAuthSession(); } catch {}
+try { WebBrowser.maybeCompleteAuthSession(); } catch { }
 
 SplashScreen.preventAutoHideAsync();
 
@@ -86,52 +92,70 @@ SplashScreen.preventAutoHideAsync();
 
 function AppContent() {
   const { t } = useTranslation(['common']);
-  // Define proper navigation param list type
-  type RootParamList = {
-    ChatDetailScreen: { conversationId: string };
-    NotificationsScreen: undefined;
-    [key: string]: any; // Allow other routes for now
-  };
-  
-  const navigationRef = useRef<NavigationContainerRef<RootParamList>>(null);
-  
+  const { selectedUser } = useUser();
+
+  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
+  // Initialize with null - will be loaded before NavigationContainer renders
+  const [initialNavigationState, setInitialNavigationState] = React.useState<NavigationState | undefined>(undefined);
+  const [isNavigationStateLoaded, setIsNavigationStateLoaded] = React.useState(false);
+
   // Use centralized loading state instead of local state
-  const { 
-    state: { isAppReady }, 
-    setLoading, 
-    setError, 
+  const {
+    state: { isAppReady },
+    setLoading,
+    setError,
     markAppReady,
-    getCriticalError 
+    getCriticalError
   } = useAppLoading();
-  
-  // Initialize stores on mount
+
+  // Initialize stores and load navigation state on mount
+  // This must happen before NavigationContainer is rendered
   useEffect(() => {
-    const initializeStores = async () => {
+    const initializeStoresAndLoadState = async () => {
       try {
-        logger.info('App', 'Initializing Zustand stores');
-        
+        logger.info('App', 'Initializing Zustand stores and loading navigation state');
+
         // Initialize web mode store (reads from localStorage synchronously on creation)
         if (Platform.OS === 'web') {
           const { useWebModeStore } = await import('./stores/webModeStore');
           useWebModeStore.getState().initialize();
         }
-        
+
         // Initialize user store
         const { useUserStore } = await import('./stores/userStore');
         await useUserStore.getState().initialize();
-        
+
         logger.info('App', 'Zustand stores initialized');
+
+        // Load navigation state after stores are ready
+        const { useWebModeStore } = await import('./stores/webModeStore');
+        const mode = useWebModeStore.getState().mode;
+        const userId = useUserStore.getState().selectedUser?.id || null;
+
+        const savedState = await loadNavigationState(mode, userId);
+        if (savedState) {
+          setInitialNavigationState(savedState);
+          logger.info('App', 'Navigation state loaded successfully', {
+            mode,
+            hasUserId: !!userId,
+            routeNames: savedState.routes?.map((r: any) => r.name) || []
+          });
+        } else {
+          logger.info('App', 'No saved navigation state found', { mode, hasUserId: !!userId });
+        }
+        setIsNavigationStateLoaded(true);
       } catch (error) {
-        logger.error('App', 'Failed to initialize stores', { error });
+        logger.error('App', 'Failed to initialize stores or load navigation state', { error });
+        setIsNavigationStateLoaded(true); // Continue even if loading fails
       }
     };
-    
+
     // Initialize immediately - no delay needed
-    initializeStores();
+    initializeStoresAndLoadState();
   }, []);
 
   logger.info('App', 'App component mounted');
-  
+
   // TODO: Move notification setup to dedicated notification service/hook
   // TODO: Add proper error handling for notification permission failures
   // TODO: Test notification handling on all platforms (iOS/Android/Web)
@@ -147,10 +171,18 @@ function AppContent() {
         const conversationId = data?.conversationId;
 
         if (navigationRef.current?.isReady()) {
+          // Use navigation queue for deep link navigation to ensure proper sequencing
           if (type === 'message' && conversationId) {
-            navigationRef.current.navigate('ChatDetailScreen', { conversationId });
+            // Navigate to ChatDetailScreen - note that it requires full params according to RootStackParamList
+            // For notifications, we'll need userName, userAvatar, and otherUserId
+            // For now, we'll navigate to NotificationsScreen if we don't have full params
+            navigationQueue.navigate('NotificationsScreen', undefined, 1).catch((error) => {
+              logger.warn('App', 'Failed to navigate to NotificationsScreen from notification', { error });
+            });
           } else {
-            navigationRef.current.navigate('NotificationsScreen');
+            navigationQueue.navigate('NotificationsScreen', undefined, 1).catch((error) => {
+              logger.warn('App', 'Failed to navigate to NotificationsScreen from notification', { error });
+            });
           }
         }
       } catch (err) {
@@ -165,6 +197,39 @@ function AppContent() {
     };
   }, []);
 
+  // Start global notification listener for the current user
+  useEffect(() => {
+    if (!selectedUser) return;
+
+    // Dynamically import to avoid circular dependencies if any, or just use the required module
+    // We can use the notificationService variable we already required at the top if it's available
+    // But startNotificationListener is a named export, so we might need to require it specifically or import it at top
+
+    // Since we are in App.tsx and it's already using require for notificationService, let's use that pattern or import at top.
+    // However, startNotificationListener is a new export. Let's add it to the require at the top or just import it if we can.
+    // The file uses `import` for other things, so let's add an import at the top.
+
+    // Actually, I'll add the import at the top in a separate edit, and here just use it.
+    // Wait, I can't add import at top easily with replace_file_content if I'm editing the middle.
+    // I will use `require` here to be safe and consistent with the conditional logic at the top of App.tsx
+
+    let cleanupListener: (() => void) | undefined;
+
+    if (Platform.OS !== 'web') {
+      try {
+        const { startNotificationListener } = require('./utils/notificationService');
+        cleanupListener = startNotificationListener(selectedUser.id);
+      } catch (e) {
+        logger.warn('App', 'Failed to start notification listener', { error: e });
+      }
+    }
+
+    return () => {
+      if (cleanupListener) cleanupListener();
+    };
+  }, [selectedUser?.id]); // React to user changes
+
+
   // Fast initial setup to show the UI as quickly as possible
   useEffect(() => {
     const showUiQuickly = async () => {
@@ -178,7 +243,7 @@ function AppContent() {
         setError('app', e instanceof Error ? e : new Error('Unknown error during fast setup'));
       }
     };
-    
+
     showUiQuickly();
   }, [markAppReady, setError]);
 
@@ -214,7 +279,7 @@ function AppContent() {
       } finally {
         setLoading('language', false);
       }
-      
+
       // Loading fonts
       try {
         setLoading('fonts', true);
@@ -255,60 +320,155 @@ function AppContent() {
     );
   }
 
-  if (!isAppReady) {
+  // Don't render NavigationContainer until navigation state is loaded
+  // This ensures initialState is set before first render
+  if (!isAppReady || !isNavigationStateLoaded) {
     return (
       <View style={loadingStyles.container}>
-          <ActivityIndicator size="large" color={colors.info}/>
-          <Text style={loadingStyles.loadingText}>{t('common:loading')}</Text>
+        <ActivityIndicator size="large" color={colors.info} />
+        <Text style={loadingStyles.loadingText}>{t('common:loading')}</Text>
       </View>
     );
   }
 
-  const AppNavigationRoot: React.FC = () => {
+  const AppNavigationRoot = memo(({ initialState }: { initialState: NavigationState | undefined }) => {
     const { mode } = useWebMode();
     const { isAuthenticated, isGuestMode, selectedUser } = useUser();
-    
+    const prevModeRef = useRef<string>(mode);
+    const prevUserIdRef = useRef<string | null>(selectedUser?.id || null);
+
     /**
      * Determine if web mode toggle button should be visible
      * Toggle is hidden for authenticated users (users who created an account)
      * Toggle is shown for guest users and non-authenticated users
      */
-    const shouldShowToggle = !(isAuthenticated && !isGuestMode && selectedUser);
-    
+    const shouldShowToggle = useMemo(
+      () => !(isAuthenticated && !isGuestMode && selectedUser),
+      [isAuthenticated, isGuestMode, selectedUser]
+    );
+
     /**
      * Add top padding in app mode to make room for toggle button
      * Only add padding if toggle button is visible (not for authenticated users)
      * This prevents unnecessary spacing when the toggle is hidden
      */
-    const containerStyle = {
+    const containerStyle = useMemo(() => ({
       flex: 1,
-      paddingTop: Platform.OS === 'web' && mode === 'app' && shouldShowToggle ? 48 : 0 // Space for toggle button in app mode
-    };
-    
+      paddingTop: Platform.OS === 'web' && shouldShowToggle ? 64 : 0 // Space for top bar
+    }), [mode, shouldShowToggle]);
+
+    // Wrapper style for web - full width without maxWidth constraint
+    const webWrapperStyle = useMemo(() => Platform.OS === 'web' ? {
+      width: '100%' as const,
+      flex: 1,
+      backgroundColor: colors.backgroundSecondary,
+    } : {}, []);
+
+    // Navigation container key - only change when mode actually changes (not on auth state changes)
+    // This prevents unnecessary re-mounts when auth state updates
+    const navKey = useMemo(() => `nav-${mode}`, [mode]);
+
+    // Save navigation state before unmount (when mode or user changes)
+    useEffect(() => {
+      return () => {
+        // Cleanup: save state before unmount
+        if (navigationRef.current?.isReady()) {
+          const currentState = navigationRef.current.getRootState();
+          if (currentState) {
+            saveNavigationState(currentState, prevModeRef.current, prevUserIdRef.current);
+            logger.debug('App', 'Navigation state saved before unmount', {
+              mode: prevModeRef.current,
+              hasUserId: !!prevUserIdRef.current,
+            });
+          }
+        }
+      };
+    }, []);
+
+    // Save navigation state when it changes
+    const handleNavigationStateChange = useCallback(
+      (state: NavigationState | undefined) => {
+        if (state) {
+          const currentRoute = state.routes?.[state.index || 0];
+          const routeName = currentRoute?.name || 'unknown';
+          logger.debug('App', 'Navigation state changed, saving...', {
+            routeName,
+            mode,
+            hasUserId: !!selectedUser?.id,
+            routesCount: state.routes?.length || 0,
+          });
+          saveNavigationState(state, mode, selectedUser?.id || null);
+        }
+      },
+      [mode, selectedUser?.id]
+    );
+
+    // Initialize navigation queue with ref when container is ready
+    useEffect(() => {
+      if (navigationRef.current?.isReady()) {
+        navigationQueue.initialize(navigationRef.current);
+      }
+    }, []);
+
+    // Update refs when mode or userId changes
+    useEffect(() => {
+      const prevMode = prevModeRef.current;
+      const prevUserId = prevUserIdRef.current;
+
+      // If mode or userId changed, clear old navigation state
+      if (prevMode !== mode || prevUserId !== selectedUser?.id) {
+        if (prevMode && prevUserId !== undefined) {
+          // Clear old state asynchronously (don't block)
+          clearNavigationState(prevMode, prevUserId).catch((error) => {
+            logger.warn('App', 'Failed to clear old navigation state', { error });
+          });
+        }
+      }
+
+      prevModeRef.current = mode;
+      prevUserIdRef.current = selectedUser?.id || null;
+    }, [mode, selectedUser?.id]);
+
     return (
-      <NavigationContainer
-        key={`nav-${mode}`}
-        ref={navigationRef}
+      <NavigationContainer<RootStackParamList>
+        key={navKey}
+        ref={(ref) => {
+          navigationRef.current = ref;
+          if (ref?.isReady()) {
+            navigationQueue.initialize(ref);
+          }
+        }}
+        onReady={() => {
+          if (navigationRef.current?.isReady()) {
+            navigationQueue.initialize(navigationRef.current);
+          }
+        }}
+        linking={linking}
+        initialState={initialState}
+        onStateChange={handleNavigationStateChange}
         children={
-          <View style={containerStyle}>
-            <MainNavigator />
-            <WebModeToggleOverlay />
-            <StatusBar style="auto" />
+          <View style={Platform.OS === 'web' ? { flex: 1, backgroundColor: colors.black } : { flex: 1 }}>
+            <View style={[containerStyle, webWrapperStyle]}>
+              <DevEnvironmentBanner />
+              <MainNavigator />
+              <WebModeToggleOverlay />
+              <StatusBar style="auto" />
+            </View>
           </View>
         }
       />
     );
-  };
+  });
 
   return (
-    <AppNavigationRoot />
+    <AppNavigationRoot initialState={initialNavigationState} />
   );
 }
 
 // Main App component (no providers needed with Zustand)
 export default function App() {
   return (
-    <ErrorBoundary 
+    <ErrorBoundary
       onError={(error, errorInfo) => {
         logger.error('App', 'React component tree crashed', {
           error: {
@@ -336,7 +496,7 @@ const loadingStyles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.black,
   },
   loadingText: {
     marginTop: 10,

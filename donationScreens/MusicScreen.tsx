@@ -8,7 +8,7 @@ export default function MusicScreen() {
       config={{
         id: 'music',
         icon: 'musical-notes-outline',
-        color: colors.pink,
+        color: colors.secondary,
         bgColor: colors.pinkLight,
       }}
     />

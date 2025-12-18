@@ -7,16 +7,6 @@ module.exports = function(api) {
   return {
     presets: ['babel-preset-expo'],
     plugins: [
-      [
-        'module-resolver',
-        {
-          alias: {
-            // Resolve to CJS build that exposes named exports on module.exports
-            tslib: 'tslib/tslib.js',
-          },
-          extensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']
-        }
-      ],
       // CRITICAL: react-native-reanimated/plugin MUST be the last plugin
       [
         'react-native-reanimated/plugin',

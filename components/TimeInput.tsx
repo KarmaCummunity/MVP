@@ -11,6 +11,7 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { useTranslation } from 'react-i18next';
+import colors from '../globals/colors';
 
 // 1. Define Props Interface
 interface TimeInputProps {
@@ -84,7 +85,7 @@ export default function TimeInput({
           style={{
             ...styles.input,
             fontSize: 12,
-            direction: "rtl",
+            ...(Platform.OS === 'web' ? { direction: "rtl" } : { writingDirection: "rtl" }),
             appearance: 'auto',
             WebkitAppearance: "none",
             MozAppearance: "none",
@@ -133,17 +134,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderWidth: 1,
     borderRadius: 6,
-    borderColor: "#ccc",
-    backgroundColor: "#f9f9f9",
+    borderColor: colors.border,
+    backgroundColor: colors.backgroundSecondary,
     justifyContent: "center",
     alignItems: "center",
   },
   selectedTimeText: {
-    color: "#000",
+    color: colors.black,
     fontSize: 18,
   },
   placeholderText: {
-    color: "#888",
+    color: colors.textTertiary,
     fontSize: 14,
   },
 });

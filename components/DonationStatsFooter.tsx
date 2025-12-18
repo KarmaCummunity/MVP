@@ -48,7 +48,7 @@ const DonationStatsFooter: React.FC<DonationStatsFooterProps> = ({ stats, contai
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.moneyFormBackground,
+    backgroundColor: colors.pinkLight,
     marginTop: 8,
   },
   containerCompact: {
@@ -64,10 +64,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   sectionPanel: {
-    backgroundColor: colors.moneyFormBackground,
+    backgroundColor: colors.pinkLight,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.moneyFormBorder,
+    borderColor: colors.secondary,
     paddingVertical: 8,
     paddingHorizontal: 8,
     marginVertical: 10,
@@ -84,14 +84,14 @@ const styles = StyleSheet.create({
   },
   statChip: {
     flex: 1,
-    backgroundColor: colors.moneyInputBackground,
+    backgroundColor: colors.white,
     paddingVertical: 8,
     paddingHorizontal: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.moneyFormBorder,
+    borderColor: colors.secondary,
   },
   statChipCompact: {
     paddingVertical: 6,

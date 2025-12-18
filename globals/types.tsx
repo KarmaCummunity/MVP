@@ -48,9 +48,13 @@ export type DonationsStackParamList = {
   CategoryScreen: undefined;
   // Top bar accessible screens that are also used inside the Donations stack
   ChatListScreen: undefined;
+  ChatDetailScreen: { chatId?: string } | undefined;
+  NewChatScreen: undefined;
   NotificationsScreen: undefined;
   AboutKarmaCommunityScreen: undefined;
+  LandingSiteScreen: undefined;
   SettingsScreen: undefined;
+  DiscoverPeopleScreen: undefined;
   // Category screens
   FoodScreen: undefined;
   ClothesScreen: undefined;
@@ -78,6 +82,8 @@ export type DonationsStackParamList = {
   MentalHealthScreen: undefined;
   GoldenAgeScreen: undefined;
   LanguagesScreen: undefined;
+  UserProfileScreen: { userId: string; userName?: string; characterData?: any } | undefined;
+  FollowersScreen: { userId: string; type: 'followers' | 'following'; title: string } | undefined;
 };
 
 export type SettingItemType = "navigate" | "toggle" | "button" | "value";
@@ -156,7 +162,11 @@ export type RootStackParamList = {
   WebViewScreen: undefined;
   PostsReelsScreen: undefined; // ADD THIS LINE - this was probably missing
   BookmarksScreen: undefined;
-  UserProfileScreen: undefined;
+  UserProfileScreen: {
+    userId: string;
+    userName: string;
+    userAvatar?: string;
+  };
   FollowersScreen: {
     userId: string;
     type: 'followers' | 'following';
@@ -174,7 +184,7 @@ export type RootStackParamList = {
 export type BottomTabNavigatorParamList = {
   DonationsTab: undefined; // Renamed to avoid nested name collision with DonationsStack's DonationsScreen
   HomeScreen: undefined; // This is the HomeScreen with the drag handle
-  SearchScreen: undefined;
+  SearchTab: undefined; // Renamed to avoid nested name collision with SearchTabStack's SearchScreen
   ProfileScreen: undefined;
   AdminTab: undefined; // Admin management tab (only visible to admins)
   SettingsScreen: undefined;
@@ -203,7 +213,21 @@ export type AdminStackParamList = {
   AdminMoney: undefined;
   AdminTasks: undefined;
   AdminPeople: undefined;
+  AdminAdmins: undefined;
   AdminReview: undefined;
+  ChatListScreen: undefined;
+  ChatDetailScreen: {
+    conversationId: string;
+    userName: string;
+    userAvatar: string;
+    otherUserId: string;
+  };
+  NewChatScreen: undefined;
+  SettingsScreen: undefined;
+  NotificationsScreen: undefined;
+  AboutKarmaCommunityScreen: undefined;
+  DiscoverPeopleScreen: undefined;
+  LandingSiteScreen: undefined;
 };
 
 // --- Helper Types for Navigation Props ---
@@ -226,6 +250,7 @@ export type BottomTabNavigationPropType<
 export interface UserPreview {
   id: string;
   name: string;
+  email?: string; // Added for filtering current user by email
   avatar?: string;
   bio?: string;
   karmaPoints?: number;
@@ -234,4 +259,10 @@ export interface UserPreview {
   roles?: string[];
   isVerified?: boolean;
   isActive?: boolean;
+  location?: {
+    city: string;
+    country: string;
+  };
+  joinDate?: string;
+  interests?: string[];
 }

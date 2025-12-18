@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   SafeAreaView,
-  FlatList,
   TouchableOpacity,
   Modal,
   TextInput,
@@ -12,6 +11,8 @@ import {
   ScrollView,
   Platform,
   Switch,
+  RefreshControl,
+  Dimensions,
 } from 'react-native';
 import { NavigationProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,8 @@ import { enhancedDB, wipeAllDataAdmin, DonationData } from '../utils/enhancedDat
 import { USE_BACKEND } from '../utils/dbConfig';
 import { useUser } from '../stores/userStore';
 import { logger } from '../utils/loggerService';
+import ScrollContainer from '../components/ScrollContainer';
+import DatePicker from '../components/DatePicker';
 
 interface Donation {
   id: string;
@@ -73,7 +76,10 @@ const DONATION_CATEGORIES = [
 
 const LOG_SOURCE = 'AdminMoneyScreen';
 
+import { useAdminProtection } from '../hooks/useAdminProtection';
+
 export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) {
+  useAdminProtection();
   const { isAdmin } = useUser();
   const [donationsList, setDonationsList] = useState<Donation[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -195,7 +201,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
     // נרמול תאריך בטוח: נסה לקחת מתאריך שנבחר על ידי המשתמש (metadata), אחרת מ-createdAt
     let normalizedDate = '';
     let dateToUse: string | null = null;
-    
+
     // Try to get date from metadata first (user-selected date)
     if (donation.metadata && typeof donation.metadata === 'object' && donation.metadata !== null) {
       const metadata = donation.metadata as Record<string, unknown>;
@@ -203,12 +209,12 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
         dateToUse = metadata.selectedDate;
       }
     }
-    
+
     // Fallback to createdAt if metadata not available
     if (!dateToUse) {
       dateToUse = donation.createdAt;
     }
-    
+
     try {
       const parsed = new Date(dateToUse);
       normalizedDate = isNaN(parsed.getTime())
@@ -238,27 +244,27 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
       Alert.alert('שגיאה', 'אנא הזן סכום תקין');
       return;
     }
-    
+
     // Validate date - must be in YYYY-MM-DD format and valid date
     if (!formData.date || !formData.date.trim()) {
       Alert.alert('שגיאה', 'אנא הזן תאריך');
       return;
     }
-    
+
     // Check if date is in correct format (YYYY-MM-DD)
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(formData.date.trim())) {
       Alert.alert('שגיאה', 'אנא הזן תאריך בפורמט YYYY-MM-DD (למשל: 2024-01-15)');
       return;
     }
-    
+
     // Check if date is valid
     const dateParts = formData.date.trim().split('-');
     const year = parseInt(dateParts[0], 10);
     const month = parseInt(dateParts[1], 10);
     const day = parseInt(dateParts[2], 10);
     const testDate = new Date(year, month - 1, day);
-    
+
     if (
       testDate.getFullYear() !== year ||
       testDate.getMonth() !== month - 1 ||
@@ -270,7 +276,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
 
     try {
       setIsMutating(true);
-      
+
       // Convert date from YYYY-MM-DD to ISO string format
       let createdAtISO: string;
       try {
@@ -285,7 +291,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
         logger.warn(LOG_SOURCE, 'Error parsing date, using current date', { error, date: formData.date });
         createdAtISO = new Date().toISOString();
       }
-      
+
       const basePayload = {
         title: `תרומה מ-${formData.donorName}`,
         description: formData.notes || '',
@@ -350,28 +356,28 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
 
   const handleDeleteDonation = async (donationId: string) => {
     logger.info(LOG_SOURCE, 'Prompting delete donation', { donationId });
-    
+
     // Use confirm for web compatibility
-    const confirmed = Platform.OS === 'web' 
+    const confirmed = Platform.OS === 'web'
       ? (typeof window !== 'undefined' && window.confirm('האם אתה בטוח שברצונך למחוק תרומה זו?'))
       : await new Promise<boolean>((resolve) => {
-          Alert.alert(
-            'מחיקת תרומה',
-            'האם אתה בטוח שברצונך למחוק תרומה זו?',
-            [
-              { 
-                text: 'ביטול', 
-                style: 'cancel',
-                onPress: () => resolve(false)
-              },
-              {
-                text: 'מחק',
-                style: 'destructive',
-                onPress: () => resolve(true)
-              },
-            ]
-          );
-        });
+        Alert.alert(
+          'מחיקת תרומה',
+          'האם אתה בטוח שברצונך למחוק תרומה זו?',
+          [
+            {
+              text: 'ביטול',
+              style: 'cancel',
+              onPress: () => resolve(false)
+            },
+            {
+              text: 'מחק',
+              style: 'destructive',
+              onPress: () => resolve(true)
+            },
+          ]
+        );
+      });
 
     if (!confirmed) {
       logger.info(LOG_SOURCE, 'Delete cancelled by user', { donationId });
@@ -382,26 +388,26 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
     // Optimistic UI with rollback
     const prev = donationsList;
     setDonationsList((p) => p.filter((d) => d.id !== donationId));
-    
+
     try {
       setIsMutating(true);
       logger.info(LOG_SOURCE, 'Calling deleteDonation API', { donationId });
       const res = await enhancedDB.deleteDonation(donationId);
-      
+
       logger.info(LOG_SOURCE, 'deleteDonation API response', { donationId, success: res.success, error: res.error });
-      
+
       if (!res.success) {
         throw new Error(res.error || 'delete failed');
       }
-      
+
       // נקה קאש כדי למנוע נתונים מיושנים
       logger.info(LOG_SOURCE, 'Clearing cache after deletion', { donationId });
       await enhancedDB.clearAllCache();
-      
+
       // Force refresh from server, ignoring cache
       logger.info(LOG_SOURCE, 'Loading donations with force refresh', { donationId });
       await loadDonations(true);
-      
+
       logger.info(LOG_SOURCE, 'Donation deleted successfully', { donationId });
       Alert.alert('הצלחה', 'התרומה נמחקה בהצלחה');
     } catch (e) {
@@ -424,12 +430,12 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
           dateString = metadata.selectedDate;
         }
       }
-      
+
       // Fallback to createdAt if metadata not available
       if (!dateString) {
         dateString = donation.createdAt;
       }
-      
+
       if (!dateString || typeof dateString !== 'string' || dateString.trim() === '') {
         return 'תאריך לא זמין';
       }
@@ -499,7 +505,6 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>ניהול תרומות</Text>
-          
         </View>
 
         {isLoading && donationsList.length === 0 ? (
@@ -513,17 +518,36 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
             <Text style={styles.emptySubtext}>הוסף תרומה חדשה כדי להתחיל</Text>
           </View>
         ) : (
-          <FlatList
-            data={donationsList}
-            renderItem={renderDonationItem}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
-            refreshing={isLoading || isMutating}
-            onRefresh={loadDonations}
+          <ScrollContainer
+            contentStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
-          />
+            refreshControl={
+              <RefreshControl
+                refreshing={isLoading || isMutating}
+                onRefresh={loadDonations}
+                tintColor={colors.secondary}
+              />
+            }
+          >
+            {donationsList.map((item) => (
+              <React.Fragment key={item.id}>
+                {renderDonationItem({ item })}
+              </React.Fragment>
+            ))}
+          </ScrollContainer>
         )}
       </View>
+
+      {/* Floating Add Donation Button - Always visible on top */}
+      <TouchableOpacity
+        style={styles.fabButton}
+        onPress={handleAddDonation}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={28} color="white" />
+        <Text style={styles.fabButtonText}>הוסף תרומה</Text>
+      </TouchableOpacity>
+
 
       {/* Add Donation Modal */}
       <Modal
@@ -552,7 +576,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
                   value={formData.donorName}
                   onChangeText={(text) => setFormData({ ...formData, donorName: text })}
                   placeholder="הזן שם תורם"
-                  placeholderTextColor={colors.textPlaceholder}
+                  placeholderTextColor={colors.textTertiary}
                 />
               </View>
 
@@ -564,7 +588,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
                   onChangeText={(text) => setFormData({ ...formData, amount: text })}
                   placeholder="הזן סכום"
                   keyboardType="numeric"
-                  placeholderTextColor={colors.textPlaceholder}
+                  placeholderTextColor={colors.textTertiary}
                 />
               </View>
 
@@ -595,51 +619,16 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
 
               <View style={styles.formGroup}>
                 <Text style={styles.label}>תאריך *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.date}
-                  onChangeText={(text) => {
-                    // Allow only digits and hyphens, enforce YYYY-MM-DD format
-                    let cleaned = text.replace(/[^\d-]/g, '');
-                    // Auto-format: YYYY-MM-DD
-                    if (cleaned.length > 4 && cleaned[4] !== '-') {
-                      cleaned = cleaned.slice(0, 4) + '-' + cleaned.slice(4);
-                    }
-                    if (cleaned.length > 7 && cleaned[7] !== '-') {
-                      cleaned = cleaned.slice(0, 7) + '-' + cleaned.slice(7);
-                    }
-                    // Limit to YYYY-MM-DD format (10 characters)
-                    if (cleaned.length <= 10) {
-                      setFormData({ ...formData, date: cleaned });
+                <DatePicker
+                  value={formData.date ? new Date(formData.date + 'T00:00:00') : new Date()}
+                  onChange={(date) => {
+                    if (date && date instanceof Date && !isNaN(date.getTime())) {
+                      const dateStr = date.toISOString().split('T')[0];
+                      setFormData({ ...formData, date: dateStr });
                     }
                   }}
-                  placeholder="YYYY-MM-DD (למשל: 2024-01-15)"
-                  placeholderTextColor={colors.textPlaceholder}
-                  maxLength={10}
+                  placeholder="בחר תאריך"
                 />
-                {formData.date && formData.date.length > 0 && (
-                  <Text style={[styles.label, { fontSize: FontSizes.caption, color: colors.textSecondary, marginTop: 4 }]}>
-                    {(() => {
-                      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-                      if (!dateRegex.test(formData.date)) {
-                        return '⚠️ אנא הזן תאריך בפורמט YYYY-MM-DD';
-                      }
-                      const dateParts = formData.date.split('-');
-                      const year = parseInt(dateParts[0], 10);
-                      const month = parseInt(dateParts[1], 10);
-                      const day = parseInt(dateParts[2], 10);
-                      const testDate = new Date(year, month - 1, day);
-                      if (
-                        testDate.getFullYear() !== year ||
-                        testDate.getMonth() !== month - 1 ||
-                        testDate.getDate() !== day
-                      ) {
-                        return '⚠️ התאריך שהוזן לא תקין';
-                      }
-                      return `✓ ${testDate.toLocaleDateString('he-IL')}`;
-                    })()}
-                  </Text>
-                )}
               </View>
 
               <View style={[styles.formGroup, styles.recurringGroup]}>
@@ -648,8 +637,8 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
                   <Switch
                     value={formData.isRecurring}
                     onValueChange={(value) => setFormData({ ...formData, isRecurring: value })}
-                    thumbColor="#FFFFFF"
-                    trackColor={{ false: '#CBD5F5', true: colors.info }}
+                    thumbColor={colors.white}
+                    trackColor={{ false: colors.border, true: colors.info }}
                   />
                 </View>
                 <Text style={styles.helperText}>
@@ -666,7 +655,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
                   placeholder="הערות נוספות (אופציונלי)"
                   multiline
                   numberOfLines={4}
-                  placeholderTextColor={colors.textPlaceholder}
+                  placeholderTextColor={colors.textTertiary}
                 />
               </View>
             </ScrollView>
@@ -718,7 +707,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
                 onChangeText={setConfirmText}
                 placeholder="CONFIRM"
                 autoCapitalize="characters"
-                placeholderTextColor={colors.textPlaceholder}
+                placeholderTextColor={colors.textTertiary}
               />
             </View>
             <View style={styles.modalFooter}>
@@ -739,16 +728,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
           </View>
         </View>
       </Modal>
-      
-      {/* Floating Add Donation Button */}
-      <TouchableOpacity
-        style={styles.fabButton}
-        onPress={handleAddDonation}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="add" size={28} color="white" />
-        <Text style={styles.fabButtonText}>הוסף תרומה</Text>
-      </TouchableOpacity>
+
     </SafeAreaView>
   );
 }
@@ -766,6 +746,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    alignSelf: 'center',
     marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
   },
   title: {
@@ -776,7 +757,7 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
     paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
     paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
@@ -792,14 +773,14 @@ const styles = StyleSheet.create({
     marginLeft: LAYOUT_CONSTANTS.SPACING.SM,
   },
   listContent: {
-    paddingBottom: LAYOUT_CONSTANTS.SPACING.LG,
+    paddingBottom: 120, // מקום לכפתור FAB + מרווח נוסף
   },
   donationCard: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
     padding: LAYOUT_CONSTANTS.SPACING.MD,
     marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
-    shadowColor: colors.shadowLight,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -876,7 +857,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderTopLeftRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
     borderTopRightRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
     maxHeight: '90%',
@@ -887,7 +868,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: LAYOUT_CONSTANTS.SPACING.LG,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderSecondary,
+    borderBottomColor: colors.border,
   },
   modalTitle: {
     fontSize: FontSizes.heading2,
@@ -906,7 +887,7 @@ const styles = StyleSheet.create({
   },
   recurringGroup: {
     borderTopWidth: 1,
-    borderTopColor: '#EEF2FF',
+    borderTopColor: colors.backgroundTertiary,
     paddingTop: LAYOUT_CONSTANTS.SPACING.SM,
   },
   recurringRow: {
@@ -933,7 +914,7 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.body,
     color: colors.textPrimary,
     borderWidth: 1,
-    borderColor: colors.borderSecondary,
+    borderColor: colors.border,
   },
   textArea: {
     minHeight: 100,
@@ -950,11 +931,11 @@ const styles = StyleSheet.create({
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
     backgroundColor: colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: colors.borderSecondary,
+    borderColor: colors.border,
   },
   categoryChipSelected: {
-    backgroundColor: colors.pink,
-    borderColor: colors.pink,
+    backgroundColor: colors.secondary,
+    borderColor: colors.secondary,
   },
   categoryChipText: {
     fontSize: FontSizes.small,
@@ -969,7 +950,7 @@ const styles = StyleSheet.create({
     gap: LAYOUT_CONSTANTS.SPACING.MD,
     padding: LAYOUT_CONSTANTS.SPACING.LG,
     borderTopWidth: 1,
-    borderTopColor: colors.borderSecondary,
+    borderTopColor: colors.border,
   },
   modalButton: {
     flex: 1,
@@ -986,7 +967,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   saveButton: {
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
   },
   saveButtonText: {
     fontSize: FontSizes.medium,
@@ -995,20 +976,24 @@ const styles = StyleSheet.create({
   },
   fabButton: {
     position: 'absolute',
-    right: LAYOUT_CONSTANTS.SPACING.LG,
-    bottom: LAYOUT_CONSTANTS.SPACING.XL,
+    right: LAYOUT_CONSTANTS.SPACING.XL,
+    bottom: 200, // מרווח מה-bottom bar
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: LAYOUT_CONSTANTS.SPACING.XS,
-    backgroundColor: colors.pink,
+    backgroundColor: colors.secondary,
     paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
-    paddingVertical: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.MD,
     borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
-    shadowColor: colors.shadowLight,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
-    elevation: 6,
+    elevation: 10,
+    opacity: 0.8,
+    zIndex: 1000,
+    minWidth: 140,
   },
   fabButtonText: {
     color: 'white',

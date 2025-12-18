@@ -148,7 +148,27 @@ export class EnhancedStatsService {
     try {
       if (USE_BACKEND) {
         const stats = await enhancedDB.getCommunityStats(filters, forceRefresh);
-        return this.mapBackendStats(stats);
+        
+        // Check if stats is empty or invalid
+        if (!stats || typeof stats !== 'object' || Object.keys(stats).length === 0) {
+          console.warn('EnhancedStatsService', 'Received empty stats from backend, using default stats');
+          return DEFAULT_STATS;
+        }
+        
+        const mappedStats = this.mapBackendStats(stats);
+        
+        // Verify that we got some actual data (not all zeros)
+        const hasData = Object.values(mappedStats).some((value: any) => {
+          if (typeof value === 'number') return value > 0;
+          return false;
+        });
+        
+        if (!hasData && forceRefresh) {
+          // If we forced refresh and got all zeros, something might be wrong
+          console.warn('EnhancedStatsService', 'Mapped stats are all zeros after force refresh');
+        }
+        
+        return mappedStats;
       }
 
       // Fallback to local stats
@@ -156,6 +176,7 @@ export class EnhancedStatsService {
       return localStats || DEFAULT_STATS;
     } catch (error) {
       console.error('Get community stats error:', error);
+      // Return default stats instead of throwing to prevent UI from getting stuck
       return DEFAULT_STATS;
     }
   }

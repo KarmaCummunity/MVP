@@ -6,13 +6,15 @@
 // - Params on navigate to detail: `{ conversationId, otherUserId, userName, userAvatar }`.
 // - External deps/services: `chatService` (get/subscribe), i18n, Haptics, static users from `fakeData` and `characterTypes`.
 // ChatListScreen – professional, concise, with in-file demo support and live updates
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, RefreshControl, Alert, TextInput, TouchableOpacity, Platform } from 'react-native';
 import ScrollContainer from '../components/ScrollContainer';
 import { useNavigation, NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import ChatListItem from '../components/ChatListItem';
 import { useUser } from '../stores/userStore';
 import { getConversations, Conversation as ChatConversation, subscribeToConversations } from '../utils/chatService';
+import { apiService } from '../utils/apiService';
+import { USE_BACKEND } from '../utils/config.constants';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import ScreenWrapper from '../components/ScreenWrapper';
@@ -28,7 +30,9 @@ export default function ChatListScreen() {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const { t } = useTranslation(['chat','common']);
+  const [usersMap, setUsersMap] = useState<Map<string, ChatUser>>(new Map());
+  const usersMapRef = useRef<Map<string, ChatUser>>(new Map());
+  const { t } = useTranslation(['chat', 'common']);
 
   // Local ChatUser type for display only
   interface ChatUser {
@@ -40,6 +44,58 @@ export default function ChatListScreen() {
     status?: string;
   }
 
+  // Update ref when usersMap changes
+  useEffect(() => {
+    usersMapRef.current = usersMap;
+  }, [usersMap]);
+
+  // Load user profiles for participants
+  const loadUserProfiles = useCallback(async (participantIds: string[]): Promise<void> => {
+    if (!USE_BACKEND || participantIds.length === 0) return;
+
+    // Check which users are missing using ref to avoid setState in setState
+    const currentMap = usersMapRef.current;
+    const missingIds = participantIds.filter(id => !currentMap.has(id) && id !== selectedUser?.id);
+
+    if (missingIds.length === 0) return;
+
+    // Load user profiles in parallel
+    try {
+      const loadedUsers = await Promise.all(missingIds.map(async (userId) => {
+        try {
+          const response = await apiService.getUserById(userId);
+          if (response.success && response.data) {
+            const userData = response.data;
+            return {
+              id: userId,
+              name: userData.name || t('chat:unknownUser'),
+              avatar: userData.avatar_url || userData.avatar || '',
+              isOnline: false,
+              lastSeen: userData.last_active || new Date().toISOString(),
+              status: userData.bio || '',
+            } as ChatUser;
+          }
+        } catch (error) {
+          console.warn(`Failed to load user ${userId}:`, error);
+        }
+        return null;
+      }));
+
+      const validUsers = loadedUsers.filter(Boolean) as ChatUser[];
+      if (validUsers.length > 0) {
+        setUsersMap(prev => {
+          const updated = new Map(prev);
+          validUsers.forEach(user => {
+            updated.set(user.id, user);
+          });
+          return updated;
+        });
+      }
+    } catch (error) {
+      console.error('Error loading user profiles:', error);
+    }
+  }, [selectedUser, t]);
+
   // Load conversations (real + demo)
   const loadConversations = useCallback(async () => {
     if (!selectedUser) {
@@ -49,6 +105,25 @@ export default function ChatListScreen() {
     setRefreshing(true);
     try {
       const realConversations = await getConversations(selectedUser.id);
+
+      // Load user profiles for all participants BEFORE setting conversations
+      const allParticipantIds = new Set<string>();
+      realConversations.forEach(conv => {
+        if (conv.participants && Array.isArray(conv.participants)) {
+          conv.participants.forEach(id => {
+            if (id !== selectedUser.id) {
+              allParticipantIds.add(id);
+            }
+          });
+        }
+      });
+
+      // Wait for user profiles to load before showing conversations
+      if (allParticipantIds.size > 0) {
+        await loadUserProfiles(Array.from(allParticipantIds));
+      }
+
+      // Set conversations after profiles are loaded
       setConversations(realConversations);
     } catch (error) {
       console.error('❌ Load conversations error:', error);
@@ -56,27 +131,41 @@ export default function ChatListScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [selectedUser]);
+  }, [selectedUser, loadUserProfiles, t]);
 
   // Subscribe to live updates while screen focused
   useFocusEffect(
     useCallback(() => {
       loadConversations();
       if (!selectedUser) return;
-       const unsubscribe = subscribeToConversations(selectedUser.id, updated => {
-        setConversations(prev => {
-          const updatedIds = new Set(updated.map(c => c.id));
-          return [
-            ...prev.filter(c => !updatedIds.has(c.id)),
-            ...updated,
-          ];
-        });
+      const unsubscribe = subscribeToConversations(selectedUser.id, updated => {
+        setConversations(updated);
       });
-       return () => unsubscribe();
+      return () => unsubscribe();
     }, [selectedUser, loadConversations])
   );
 
   const onRefresh = useCallback(() => loadConversations(), [loadConversations]);
+
+  // Load missing user profiles when conversations change
+  useEffect(() => {
+    if (!USE_BACKEND || !selectedUser || conversations.length === 0) return;
+
+    const allParticipantIds = new Set<string>();
+    conversations.forEach(conv => {
+      if (conv.participants && Array.isArray(conv.participants)) {
+        conv.participants.forEach(id => {
+          if (id !== selectedUser.id && !usersMap.has(id)) {
+            allParticipantIds.add(id);
+          }
+        });
+      }
+    });
+
+    if (allParticipantIds.size > 0) {
+      loadUserProfiles(Array.from(allParticipantIds)).catch(console.error);
+    }
+  }, [conversations, selectedUser, usersMap, loadUserProfiles]);
 
   // Resolve display data for conversations (other user, last message, unread)
   const combinedUsers = useMemo(() => {
@@ -93,10 +182,10 @@ export default function ChatListScreen() {
       if (!conv.participants || !Array.isArray(conv.participants)) return false;
       const otherId = conv.participants.find(id => id !== selectedUser.id);
       if (!otherId) return false;
-      const other = combinedUsers.find(u => u.id === otherId);
+      const other = usersMap.get(otherId);
       return other?.name?.toLowerCase().includes(q);
     });
-  }, [conversations, searchQuery, combinedUsers, selectedUser]);
+  }, [conversations, searchQuery, usersMap, selectedUser]);
 
   const handlePressChat = (conversationId: string, otherUserId: string, userName: string, userAvatar: string) => {
     navigation.navigate('ChatDetailScreen', { conversationId, otherUserId, userName, userAvatar });
@@ -105,7 +194,7 @@ export default function ChatListScreen() {
   // Create new chat – simple CTA next to the search bar
   const handleNewChat = () => {
     if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
     }
     navigation.navigate('NewChatScreen');
   };
@@ -137,18 +226,23 @@ export default function ChatListScreen() {
             if (!otherId) {
               return null;
             }
-            let chattingUser = combinedUsers.find(u => u.id === otherId);
+
+            // Get user from loaded profiles - only show if we have valid user data
+            const chattingUser = usersMap.get(otherId);
+
+            // Don't show items without valid user data
             if (!chattingUser) {
-              // Fallback user if not present in any static dataset
-              chattingUser = {
-                id: otherId || 'unknown',
-                name: t('chat:unknownUser'),
-                avatar: '',
-                isOnline: false,
-                lastSeen: new Date().toISOString(),
-                status: '',
-              };
+              return null;
             }
+
+            // Check if user has valid name (not "unknown user" or empty)
+            const unknownUserText = t('chat:unknownUser');
+            if (!chattingUser.name ||
+              chattingUser.name === unknownUserText ||
+              chattingUser.name.trim() === '') {
+              return null;
+            }
+
             const chatUser: ChatUser = {
               id: chattingUser.id,
               name: chattingUser.name,
@@ -164,6 +258,7 @@ export default function ChatListScreen() {
               lastMessageTimestamp: item.lastMessageTime,
               lastMessageText: item.lastMessageText,
               unreadCount: item.unreadCount,
+              participants: item.participants || [],
             };
             return (
               <ChatListItem
@@ -205,10 +300,10 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 12,
     paddingHorizontal: 12,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
-    color: colors.text,
+    color: colors.textPrimary,
     textAlign: 'right',
     fontSize: FontSizes.body,
     flex: 1,
@@ -234,7 +329,7 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: FontSizes.heading2,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: 6,
   },
   emptyStateSubtitle: {

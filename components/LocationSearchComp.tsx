@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import colors from "../globals/colors";
 import { FontSizes } from "../globals/constants";
-import logger from '../utils/logger';
+import { logger } from '../utils/loggerService';
 import { useTranslation } from 'react-i18next';
 
 interface PlacePrediction {
@@ -52,9 +52,7 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
           )}&key=${GOOGLE_API_KEY}&language=he&components=country:il`;
 
     try {
-      logger.info('Google Places API call started', {
-        screen: 'LocationSearch',
-        action: 'search_places',
+      logger.info('LocationSearch', 'Google Places API call started', {
         input: inputText,
         platform: Platform.OS
       });
@@ -63,18 +61,14 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
       const json = await response.json();
       const duration = Date.now() - startTime;
 
-      logger.info('Google Places API call completed', {
-        screen: 'LocationSearch',
-        action: 'search_places_complete',
+      logger.info('LocationSearch', 'Google Places API call completed', {
         status: response.status,
         duration,
         resultsCount: Platform.OS === "web" ? json.length : json.predictions?.length || 0
       });
 
       if (Platform.OS !== "web" && json.status !== "OK") {
-        logger.warn('Google Places API error', {
-          screen: 'LocationSearch',
-          action: 'search_places_error',
+        logger.warn('LocationSearch', 'Google Places API error', {
           status: json.status,
           errorMessage: json.error_message
         });
@@ -87,9 +81,7 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
       setResults(Platform.OS === "web" ? json : json.predictions);
     } catch (error) {
       const duration = Date.now() - startTime;
-      logger.error('Google Places API call failed', {
-        screen: 'LocationSearch',
-        action: 'search_places_failed',
+      logger.error('LocationSearch', 'Google Places API call failed', {
         error: error instanceof Error ? error.message : 'Unknown error',
         duration
       });
@@ -108,9 +100,7 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
 
     const timer = setTimeout(() => {
       if (text.length > 1) {
-        logger.info('Location search triggered', {
-          screen: 'LocationSearch',
-          action: 'search_triggered',
+        logger.info('LocationSearch', 'Location search triggered', {
           queryLength: text.length
         });
         searchGooglePlaces(text);

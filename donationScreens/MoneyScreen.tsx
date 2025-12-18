@@ -15,7 +15,7 @@ import {
   Linking,
   PanResponder,
 } from 'react-native';
-import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
+import { NavigationProp, ParamListBase, useFocusEffect, useRoute } from '@react-navigation/native';
 import { FontSizes } from '../globals/constants';
 // Empty arrays - replace with real data from API
 const charityNames: string[] = [];
@@ -57,6 +57,7 @@ import { Ionicons as Icon } from '@expo/vector-icons';
 import { Slider } from '@miblanchard/react-native-slider';
 import HeaderComp from '../components/HeaderComp';
 import DonationStatsFooter from '../components/DonationStatsFooter';
+import AddLinkComponent from '../components/AddLinkComponent';
 
 // Slider component using @miblanchard/react-native-slider
 const DonationAmountSlider: React.FC<{
@@ -78,7 +79,7 @@ const DonationAmountSlider: React.FC<{
         trackClickable
         containerStyle={{ paddingHorizontal: 0 }}
         trackStyle={localStyles.sliderTrack}
-        minimumTrackTintColor={colors.pink}
+        minimumTrackTintColor={colors.secondary}
         maximumTrackTintColor="transparent"
         thumbStyle={localStyles.sliderThumb}
         renderThumbComponent={() => <View style={localStyles.sliderThumbInner} />}
@@ -97,6 +98,9 @@ export default function MoneyScreen({
 }: {
   navigation: NavigationProp<ParamListBase>;
 }) {
+  const route = useRoute();
+  const routeParams = route.params as { mode?: string } | undefined;
+  
   const { isRealAuth } = useUser();
   const { t } = useTranslation(['donations','common']);
   // Debug log for MoneyScreen
@@ -105,7 +109,41 @@ export default function MoneyScreen({
   // console.log('💰 MoneyScreen - Navigation state:', JSON.stringify(navigation.getState(), null, 2));
   const [selectedRecipient, setSelectedRecipient] = useState<string>('');
   const [amount, setAmount] = useState<string>('50');
-  const [mode, setMode] = useState(true); // false = seeker (needs help), true = offerer (wants to donate)
+  
+  // Get initial mode from URL (deep link) or default to search mode (מחפש)
+  // mode: true = offerer (wants to donate), false = seeker (needs help)
+  // URL mode: 'offer' = true, 'search' = false
+  // Default is search mode (false)
+  const initialMode = routeParams?.mode === 'offer' ? true : false;
+  const [mode, setMode] = useState(initialMode);
+
+  // Update mode when route params change (e.g., from deep link)
+  useEffect(() => {
+    if (routeParams?.mode && routeParams.mode !== 'undefined' && routeParams.mode !== 'null') {
+      const newMode = routeParams.mode === 'offer' ? true : false;
+      if (newMode !== mode) {
+        setMode(newMode);
+      }
+    }
+  }, [routeParams?.mode]);
+
+  // Update URL when mode changes (toggle button pressed) or when screen loads without mode
+  useEffect(() => {
+    const newMode = mode ? 'offer' : 'search';
+    const currentMode = routeParams?.mode;
+    
+    // If no mode in URL, set it to search (default)
+    if (!currentMode || currentMode === 'undefined' || currentMode === 'null') {
+      // Set initial mode to search in URL
+      (navigation as any).setParams({ mode: 'search' });
+      return;
+    }
+    
+    // Only update URL if mode actually changed
+    if (newMode !== currentMode) {
+      (navigation as any).setParams({ mode: newMode });
+    }
+  }, [mode, navigation, routeParams?.mode]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("");
   const [selectedSort, setSelectedSort] = useState("");
@@ -704,6 +742,7 @@ export default function MoneyScreen({
             </View>
 
             {/* Bottom small stats */}
+            <View style={[localStyles.section, localStyles.sectionPanel]}>
               <DonationStatsFooter
                 stats={[
                   { label: 'תרמת עד עכשיו', value: `₪${getFilteredRecentDonations().reduce((s, d) => s + (Number(d.amount) || 0), 0)}`, icon: 'cash-outline' },
@@ -712,6 +751,13 @@ export default function MoneyScreen({
                 ]}
               />
             </View>
+
+            {/* Add Links Section */}
+            <View style={[localStyles.section, localStyles.sectionPanel]}>
+              <Text style={localStyles.sectionTitle}>קישורים שימושיים</Text>
+              <AddLinkComponent category="money" />
+            </View>
+          </View>
         ) : (
           // Beneficiary mode - show charities that can help
           <View style={localStyles.sectionsContainer}>
@@ -733,6 +779,7 @@ export default function MoneyScreen({
             </View>
 
             {/* Bottom small stats */}
+            <View style={[localStyles.section, localStyles.sectionPanel]}>
               <DonationStatsFooter
                 stats={[
                   { label: 'תרמת עד עכשיו', value: `₪${getFilteredRecentDonations().reduce((s, d) => s + (Number(d.amount) || 0), 0)}`, icon: 'cash-outline' },
@@ -740,6 +787,13 @@ export default function MoneyScreen({
                   { label: 'עמותות שנתמכו', value: new Set(getFilteredRecentDonations().map(d => d.charityName)).size, icon: 'business-outline' },
                 ]}
               />
+            </View>
+
+            {/* Add Links Section */}
+            <View style={[localStyles.section, localStyles.sectionPanel]}>
+              <Text style={localStyles.sectionTitle}>קישורים שימושיים</Text>
+              <AddLinkComponent category="money" />
+            </View>
           </View>
         )}
       </ScrollContainer>
@@ -843,7 +897,7 @@ export default function MoneyScreen({
             <Text style={localStyles.modalTitle}>קבלות ודוחות</Text>
             <Text style={localStyles.modalDescription}>ייצוא קבלות שנתיות, צפייה בסיכום חודשי והשוואת תרומות.</Text>
             <View style={localStyles.modalActionsRow}>
-              <TouchableOpacity style={localStyles.modalPrimaryButton} onPress={() => Alert.alert('קבלות', 'קובץ קבלות ירוכז כאן')}> 
+              <TouchableOpacity style={localStyles.modalPrimaryButton} onPress={() => Alert.alert('קבלות', 'קובץ קבלות ירוכז כאן')}>
                 <Text style={localStyles.modalPrimaryButtonText}>ייצא קבלות</Text>
               </TouchableOpacity>
               <TouchableOpacity style={localStyles.bitButton} onPress={() => Alert.alert('דוח חודשי', 'נסכם עבורך את החודש האחרון')}>
@@ -860,7 +914,7 @@ export default function MoneyScreen({
 const localStyles = StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: colors.backgroundSecondary_2,
+      backgroundColor: colors.backgroundTertiary,
     },
     container: {
         flex: 1,
@@ -871,12 +925,12 @@ const localStyles = StyleSheet.create({
         paddingBottom: 100, // Bottom margin for screen
     },
     formContainer: {
-      backgroundColor: colors.moneyFormBackground,
+      backgroundColor: colors.pinkLight,
       padding: 16,
       borderRadius: 15,
       marginBottom: 24,
       borderWidth: 1,
-      borderColor: colors.moneyFormBorder,
+      borderColor: colors.secondary,
     },
     inputContainer: {
         marginBottom: 20,
@@ -889,14 +943,14 @@ const localStyles = StyleSheet.create({
         textAlign: 'right',
     },
     input: {
-        backgroundColor: colors.moneyInputBackground,
+        backgroundColor: colors.white,
         borderRadius: 10,
         padding: 15,
         fontSize: FontSizes.body,
         textAlign: 'right',
         color: colors.textPrimary,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
     },
     amountContainer: {
         marginBottom: 25,
@@ -907,16 +961,16 @@ const localStyles = StyleSheet.create({
         marginBottom: 15,
     },
     amountButton: {
-        backgroundColor: colors.moneyInputBackground,
+        backgroundColor: colors.white,
         paddingVertical: 12,
         paddingHorizontal: 20,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
     },
     selectedAmount: {
-        backgroundColor: colors.moneyButtonSelected,
-        borderColor: colors.moneyButtonSelected,
+        backgroundColor: colors.secondary,
+        borderColor: colors.secondary,
     },
     amountButtonText: {
         fontSize: FontSizes.body,
@@ -924,20 +978,20 @@ const localStyles = StyleSheet.create({
         color: colors.textPrimary,
     },
     selectedAmountText: {
-        color: colors.backgroundPrimary,
+        color: colors.background,
     },
     customAmountInput: {
         textAlign: 'center',
     },
     donateButton: {
-        // backgroundColor: colors.moneyButtonBackground,
+        // backgroundColor: colors.accent,
         padding: 16,
         borderRadius: 12,
         alignItems: 'center',
         marginTop: 10,
     },
     donateButtonText: {
-        color: colors.backgroundPrimary,
+        color: colors.background,
         fontSize: FontSizes.medium,
         fontWeight: 'bold',
     },
@@ -956,22 +1010,22 @@ const localStyles = StyleSheet.create({
         gap: 5,
     },
     sectionPanel: {
-        backgroundColor: colors.moneyFormBackground,
+        backgroundColor: colors.pinkLight,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
         paddingVertical: 8,
         paddingHorizontal: 8,
     },
     recommendationCard: {
-        backgroundColor: colors.moneyCardBackground,
+        backgroundColor: colors.pinkLight,
         borderRadius: 15,
         padding: 15,
         marginRight: 15,
         width: 150,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
     },
     cardImage: {
         width: 60,
@@ -990,12 +1044,12 @@ const localStyles = StyleSheet.create({
         textAlign: 'center',
     },
     historyCard: {
-        backgroundColor: colors.moneyCardBackground,
+        backgroundColor: colors.pinkLight,
         borderRadius: 12,
         padding: 16,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -1012,7 +1066,7 @@ const localStyles = StyleSheet.create({
     historyAmount: {
         fontSize: FontSizes.medium,
         fontWeight: 'bold',
-        color: colors.moneyHistoryAmount,
+        color: colors.accent,
         marginBottom: 2,
     },
     historyDate: {
@@ -1020,14 +1074,14 @@ const localStyles = StyleSheet.create({
         color: colors.textSecondary,
     },
     historyStatus: {
-        backgroundColor: colors.moneyStatusBackground,
+        backgroundColor: colors.successLight,
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 8,
     },
     historyStatusText: {
         fontSize: FontSizes.small,
-        color: colors.moneyStatusText,
+        color: colors.success,
         fontWeight: '600',
     },
     searchContainer: {
@@ -1037,14 +1091,14 @@ const localStyles = StyleSheet.create({
         marginBottom: 15,
     },
     searchButton: {
-        backgroundColor: colors.moneyButtonBackground,
+        backgroundColor: colors.accent,
         padding: 16,
         borderRadius: 12,
         alignItems: 'center',
         marginTop: 10,
     },
     searchButtonText: {
-        color: colors.backgroundPrimary,
+        color: colors.background,
         fontSize: FontSizes.medium,
         fontWeight: 'bold',
     },
@@ -1076,11 +1130,11 @@ const localStyles = StyleSheet.create({
         lineHeight: 24,
     },
     searchTipsContainer: {
-        backgroundColor: colors.moneyInputBackground,
+        backgroundColor: colors.white,
         borderRadius: 12,
         padding: 16,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
     },
     searchTipsTitle: {
         fontSize: FontSizes.body,
@@ -1108,11 +1162,11 @@ const localStyles = StyleSheet.create({
         width: 220,
     },
     charityCard: {
-        backgroundColor: colors.moneyCardBackground,
+        backgroundColor: colors.pinkLight,
         borderRadius: 12,
         padding: 16,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
         minHeight: 200,
     },
     charityCardHeader: {
@@ -1125,14 +1179,14 @@ const localStyles = StyleSheet.create({
         fontSize: FontSizes.displayLarge,
     },
     charityRating: {
-        backgroundColor: colors.moneyStatusBackground,
+        backgroundColor: colors.successLight,
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 8,
     },
     ratingText: {
         fontSize: FontSizes.small,
-        color: colors.moneyStatusText,
+        color: colors.success,
         fontWeight: 'bold',
     },
     charityName: {
@@ -1173,12 +1227,12 @@ const localStyles = StyleSheet.create({
     },
     charityDonors: {
         fontSize: FontSizes.small,
-        color: colors.moneyHistoryAmount,
+        color: colors.accent,
         fontWeight: '600',
     },
     charityMinDonation: {
         fontSize: FontSizes.small,
-        color: colors.moneyHistoryAmount,
+        color: colors.accent,
         fontWeight: '600',
     },
     // Recent Donations Styles
@@ -1191,11 +1245,11 @@ const localStyles = StyleSheet.create({
         width: 200,
     },
     recentDonationCard: {
-        backgroundColor: colors.moneyCardBackground,
+        backgroundColor: colors.pinkLight,
         borderRadius: 12,
         padding: 12,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
         minHeight: 120,
     },
     recentDonationHeader: {
@@ -1214,7 +1268,7 @@ const localStyles = StyleSheet.create({
     recentDonationAmount: {
         fontSize: FontSizes.body,
         fontWeight: 'bold',
-        color: colors.moneyHistoryAmount,
+        color: colors.accent,
     },
     recentDonationDetails: {
         flexDirection: 'row',
@@ -1234,15 +1288,15 @@ const localStyles = StyleSheet.create({
     },
     recentDonationStatusText: {
         fontSize: FontSizes.small,
-        color: colors.moneyStatusText,
+        color: colors.success,
         fontWeight: '600',
     },
     // Quick Donate Panel
     quickDonatePanel: {
-      backgroundColor: colors.moneyFormBackground,
+      backgroundColor: colors.pinkLight,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
 
       marginHorizontal: 0,
       paddingVertical: 10,
@@ -1285,9 +1339,9 @@ const localStyles = StyleSheet.create({
       marginBottom: 6,
     },
     quickAmountButton: {
-      backgroundColor: colors.moneyInputBackground,
+      backgroundColor: colors.white,
       borderWidth: 1,
-      borderColor: colors.moneyFormBorder,
+      borderColor: colors.secondary,
       borderRadius: 999,
       paddingHorizontal: 12,
       paddingVertical: 6,
@@ -1315,19 +1369,19 @@ const localStyles = StyleSheet.create({
       borderRadius: 999,
       backgroundColor: 'rgba(255, 255, 255, 0.85)',
       borderWidth: 1,
-      borderColor: colors.headerBorder,
+      borderColor: colors.border,
       overflow: 'hidden',
     },
     sliderFill: {
-      backgroundColor: colors.pink,
+      backgroundColor: colors.secondary,
     },
     sliderThumb: {
       // height: 30,
       borderRadius: 14,
-      backgroundColor: colors.pink,
+      backgroundColor: colors.secondary,
       borderWidth: 2,
-      borderColor: '#9C1B5E',
-      shadowColor: '#000',
+      borderColor: colors.pinkDeep,
+      shadowColor: colors.black,
       shadowOpacity: 0.08,
       shadowRadius: 4,
       shadowOffset: { width: 0, height: 2 },
@@ -1411,11 +1465,11 @@ const localStyles = StyleSheet.create({
         lineHeight: 24,
     },
     searchHelpTipsContainer: {
-        backgroundColor: colors.moneyInputBackground,
+        backgroundColor: colors.white,
         borderRadius: 12,
         padding: 16,
         borderWidth: 1,
-        borderColor: colors.moneyFormBorder,
+        borderColor: colors.secondary,
         width: '100%',
     },
     searchHelpTipsTitle: {
@@ -1440,9 +1494,9 @@ const localStyles = StyleSheet.create({
     },
     statChip: {
       flex: 1,
-      backgroundColor: colors.moneyInputBackground,
+      backgroundColor: colors.white,
       borderWidth: 1,
-      borderColor: colors.moneyFormBorder,
+      borderColor: colors.secondary,
       borderRadius: 10,
       paddingVertical: 8,
       paddingHorizontal: 10,
@@ -1471,10 +1525,10 @@ const localStyles = StyleSheet.create({
     centerModalContent: {
       width: '85%',
       maxHeight: '75%',
-      backgroundColor: colors.cardBackground,
+      backgroundColor: colors.surface,
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: colors.moneyFormBorder,
+      borderColor: colors.secondary,
       padding: 14,
     },
     modalTitle: {
@@ -1517,14 +1571,14 @@ const localStyles = StyleSheet.create({
     },
     // Dedicated modal primary button styles to avoid duplicate keys
     modalPrimaryButton: {
-      backgroundColor: colors.moneyButtonBackground,
+      backgroundColor: colors.accent,
       padding: 12,
       borderRadius: 10,
       alignItems: 'center',
       flex: 1,
     },
     modalPrimaryButtonText: {
-      color: colors.backgroundPrimary,
+      color: colors.background,
       fontSize: FontSizes.medium,
       fontWeight: 'bold',
     },
@@ -1535,7 +1589,7 @@ const localStyles = StyleSheet.create({
       alignItems: 'center',
       flex: 1,
       borderWidth: 1,
-      borderColor: colors.headerBorder,
+      borderColor: colors.border,
     },
     bitButtonText: {
       color: 'rgba(44,44,44,0.85)',
@@ -1543,9 +1597,9 @@ const localStyles = StyleSheet.create({
       fontWeight: 'bold',
     },
     contactButton: {
-      backgroundColor: colors.moneyInputBackground,
+      backgroundColor: colors.white,
       borderWidth: 1,
-      borderColor: colors.moneyFormBorder,
+      borderColor: colors.secondary,
       padding: 12,
       borderRadius: 10,
       alignItems: 'center',

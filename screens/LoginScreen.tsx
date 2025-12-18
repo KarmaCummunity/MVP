@@ -28,9 +28,12 @@ import {
   I18nManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { createShadowStyle } from '../globals/styles';
 import { useUser } from '../stores/userStore';
 import { db } from '../utils/databaseService';
 import { restAdapter } from '../utils/restAdapter';
+import { navigationQueue } from '../utils/navigationQueue';
+import { checkNavigationGuards } from '../utils/navigationGuards';
 import { getSignInMethods, signInWithEmail as fbSignInWithEmail, signUpWithEmail as fbSignUpWithEmail, sendVerification as fbSendVerification, isEmailVerified as fbIsEmailVerified, sendPasswordReset } from '../utils/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -39,12 +42,14 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../app/i18n';
 import ScrollContainer from '../components/ScrollContainer';
 import { getScreenInfo, scaleSize } from '../globals/responsive';
+import { APP_VERSION } from '../globals/constants';
+import colors from '../globals/colors';
 
 export default function LoginScreen() {
-  
-  const { setCurrentPrincipal } = useUser(); // new API to set user identity and role
+
+  const { setCurrentPrincipal, isAuthenticated, isGuestMode } = useUser(); // new API to set user identity and role
   const { t } = useTranslation(['auth', 'common', 'settings']); // translations for the login screen
-  
+
   // Get responsive values for dynamic styles in JSX
   const { width } = Dimensions.get('window');
   const { isTablet, isDesktop } = getScreenInfo();
@@ -52,7 +57,7 @@ export default function LoginScreen() {
   const buttonMinWidth = isDesktopWeb ? 280 : isTablet ? 240 : 200;
   const expandedRowMaxWidth = isDesktopWeb ? 400 : isTablet ? 360 : '100%';
   const navigation = useNavigation<any>();
- 
+
   // Org login UI state
   const [orgLoginOpen, setOrgLoginOpen] = useState(false);
   const [orgQuery, setOrgQuery] = useState('');
@@ -68,7 +73,7 @@ export default function LoginScreen() {
   const [isEmailBusy, setIsEmailBusy] = useState(false);
   const emailOpenAnim = React.useRef(new Animated.Value(0)).current; // 0 closed, 1 open
   const [emailStatusMessage, setEmailStatusMessage] = useState<string | null>(null);
-  const [emailStatusColor, setEmailStatusColor] = useState<string>('#4CAF50');
+  const [emailStatusColor, setEmailStatusColor] = useState<string>(colors.success);
   const [passwordVisible, setPasswordVisible] = useState<boolean>(true);
   const [recentEmails, setRecentEmails] = useState<string[]>([]);
   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
@@ -99,17 +104,37 @@ export default function LoginScreen() {
   const handleGuestMode = async () => {
     try {
       await setCurrentPrincipal({ user: null as any, role: 'guest' });
-      // Force immediate navigation to home
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'HomeStack' }],
-      });
+
+      // Check guards before navigation
+      // After setCurrentPrincipal, user is authenticated as guest
+      const guardContext = {
+        isAuthenticated: true,
+        isGuestMode: true,
+        isAdmin: false,
+      };
+
+      const guardResult = await checkNavigationGuards(
+        {
+          type: 'reset',
+          index: 0,
+          routes: [{ name: 'HomeStack' }],
+        },
+        guardContext
+      );
+
+      if (!guardResult.allowed) {
+        // If guard blocks, try redirect if provided
+        if (guardResult.redirectTo) {
+          await navigationQueue.reset(0, [{ name: guardResult.redirectTo }], 2);
+        }
+        return;
+      }
+
+      // Use navigation queue with high priority (2) for auth changes
+      await navigationQueue.reset(0, [{ name: 'HomeStack' }], 2);
     } catch (error) {
       // Even if there's an error, try to navigate (fallback)
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'HomeStack' }],
-      });
+      await navigationQueue.reset(0, [{ name: 'HomeStack' }], 2);
     }
   };
 
@@ -172,7 +197,7 @@ export default function LoginScreen() {
           const list = JSON.parse(knownRaw);
           if (Array.isArray(list)) setRecentEmails(list);
         }
-      } catch (_) {}
+      } catch (_) { }
     })();
   }, []);
 
@@ -184,7 +209,7 @@ export default function LoginScreen() {
       setRecentEmails(list);
       await AsyncStorage.setItem('recent_emails', JSON.stringify(list));
       await AsyncStorage.setItem(KNOWN_EMAILS_KEY, JSON.stringify(list));
-    } catch (_) {}
+    } catch (_) { }
   };
 
   const isKnownEmail = async (email: string): Promise<boolean> => {
@@ -227,42 +252,42 @@ export default function LoginScreen() {
   }, [orgQuery, orgLoginOpen, recentEmails]);
 
   const handleEmailContinue = async () => {
-      try {
-        const email = emailValue.trim().toLowerCase();
-        if (!email || !validateEmailFormat(email)) {
-          Alert.alert(t('common:error') as string, t('auth:email.invalidFormat') as string);
-          return;
-        }
+    try {
+      const email = emailValue.trim().toLowerCase();
+      if (!email || !validateEmailFormat(email)) {
+        Alert.alert(t('common:error') as string, t('auth:email.invalidFormat') as string);
+        return;
+      }
       setIsEmailBusy(true);
       const exists = await isKnownEmail(email);
       setEmailExists(exists);
       if (exists) {
         setEmailStatusMessage(`${email} • ${t('auth:email.knownUser')}`);
-        setEmailStatusColor('#2E7D32');
+        setEmailStatusColor(colors.success);
       } else {
         setEmailStatusMessage(`${email} • ${t('auth:email.unknownEmail')}`);
-        setEmailStatusColor('#C62828');
+        setEmailStatusColor(colors.error);
       }
       setEmailStep('password');
       setPasswordValue('');
     } catch (err) {
-        Alert.alert(t('common:error') as string, t('common:genericTryAgain') as string);
+      Alert.alert(t('common:error') as string, t('common:genericTryAgain') as string);
     } finally {
       setIsEmailBusy(false);
     }
   };
 
   const handleEmailSubmit = async () => {
-      try {
-        const email = emailValue.trim().toLowerCase();
-        if (!email || !validateEmailFormat(email)) {
-          Alert.alert(t('common:error') as string, t('auth:email.invalidFormat') as string);
-          return;
-        }
-        if (!passwordValue || passwordValue.length < 6) {
-          Alert.alert(t('common:error') as string, t('auth:email.passwordTooShort') as string);
-          return;
-        }
+    try {
+      const email = emailValue.trim().toLowerCase();
+      if (!email || !validateEmailFormat(email)) {
+        Alert.alert(t('common:error') as string, t('auth:email.invalidFormat') as string);
+        return;
+      }
+      if (!passwordValue || passwordValue.length < 6) {
+        Alert.alert(t('common:error') as string, t('auth:email.passwordTooShort') as string);
+        return;
+      }
       setIsEmailBusy(true);
 
       const exists = await isKnownEmail(email);
@@ -275,34 +300,76 @@ export default function LoginScreen() {
           fbUser = await fbSignInWithEmail(email, passwordValue);
         } catch (e: any) {
           setEmailStatusMessage(t('auth:email.invalidPassword') as string);
-          setEmailStatusColor('#C62828');
+          setEmailStatusColor(colors.error);
           return;
         }
-        const userData = {
-          id: fbUser.uid,
-          name: fbUser.displayName || email.split('@')[0],
-          email: fbUser.email || email,
-          phone: fbUser.phoneNumber || '+9720000000',
-          avatar: fbUser.photoURL || 'https://i.pravatar.cc/150?img=1',
-          bio: '',
-          karmaPoints: 0,
-          joinDate: nowIso,
-          isActive: true,
-          lastActive: nowIso,
-          location: { city: t('common:labels.countryIsrael') as string, country: 'IL' },
-          interests: [],
-          roles: ['user'],
-          postsCount: 0,
-          followersCount: 0,
-          followingCount: 0,
-          notifications: [],
-          settings: { language: 'he', darkMode: false, notificationsEnabled: true },
-        } as any;
+        // Get UUID from server using firebase_uid
         try {
-          await restAdapter.create('users', userData.id, userData.id, userData);
-        } catch (e) {
-        }
+          const { apiService } = await import('../utils/apiService');
+          const resolveResponse = await apiService.resolveUserId({ 
+            firebase_uid: fbUser.uid,
+            email: fbUser.email || email 
+          });
+          
+          if (!resolveResponse.success || !(resolveResponse as any).user) {
+            // Fallback: try to get user by email
+            const userResponse = await apiService.getUserById(fbUser.email || email);
+            if (userResponse.success && userResponse.data) {
+              const serverUser = userResponse.data;
+              const userData = {
+                id: serverUser.id, // UUID from database
+                name: serverUser.name || fbUser.displayName || email.split('@')[0],
+                email: serverUser.email || fbUser.email || email,
+                phone: serverUser.phone || fbUser.phoneNumber || '+9720000000',
+                avatar: serverUser.avatar_url || fbUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+                bio: serverUser.bio || '',
+                karmaPoints: serverUser.karma_points || 0,
+                joinDate: serverUser.join_date || serverUser.created_at || nowIso,
+                isActive: serverUser.is_active !== false,
+                lastActive: serverUser.last_active || nowIso,
+                location: { city: serverUser.city || t('common:labels.countryIsrael') as string, country: serverUser.country || 'IL' },
+                interests: serverUser.interests || [],
+                roles: serverUser.roles || ['user'],
+                postsCount: serverUser.posts_count || 0,
+                followersCount: serverUser.followers_count || 0,
+                followingCount: serverUser.following_count || 0,
+                notifications: [],
+                settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+              } as any;
+              await setCurrentPrincipal({ user: userData as any, role: 'user' });
+              return;
+            }
+            throw new Error('Failed to get user from server');
+          }
+          
+          // Use UUID from server
+          const serverUser = (resolveResponse as any).user;
+          const userData = {
+            id: serverUser.id, // UUID from database - this is the primary identifier
+            name: serverUser.name || fbUser.displayName || email.split('@')[0],
+            email: serverUser.email || fbUser.email || email,
+            phone: serverUser.phone || fbUser.phoneNumber || '+9720000000',
+            avatar: serverUser.avatar || fbUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+            bio: serverUser.bio || '',
+            karmaPoints: serverUser.karmaPoints || 0,
+            joinDate: serverUser.createdAt || serverUser.joinDate || nowIso,
+            isActive: serverUser.isActive !== false,
+            lastActive: serverUser.lastActive || nowIso,
+            location: serverUser.location || { city: t('common:labels.countryIsrael') as string, country: 'IL' },
+            interests: serverUser.interests || [],
+            roles: serverUser.roles || ['user'],
+            postsCount: serverUser.postsCount || 0,
+            followersCount: serverUser.followersCount || 0,
+            followingCount: serverUser.followingCount || 0,
+            notifications: [],
+            settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+          } as any;
           await setCurrentPrincipal({ user: userData as any, role: 'user' });
+        } catch (error) {
+          console.error('Failed to get user UUID from server:', error);
+          setEmailStatusMessage(t('auth:email.invalidPassword') as string);
+          setEmailStatusColor(colors.error);
+        }
       } else {
         try {
           const fbUser = await fbSignUpWithEmail(email, passwordValue);
@@ -312,32 +379,75 @@ export default function LoginScreen() {
           if (String(e?.code || '').includes('auth/email-already-in-use')) {
             try {
               const fbUser = await fbSignInWithEmail(email, passwordValue);
+              
+              // Get UUID from server using firebase_uid
+              const { apiService } = await import('../utils/apiService');
+              const resolveResponse = await apiService.resolveUserId({ 
+                firebase_uid: fbUser.uid,
+                email: fbUser.email || email 
+              });
+              
+              if (!resolveResponse.success || !(resolveResponse as any).user) {
+                // Fallback: try to get user by email
+                const userResponse = await apiService.getUserById(fbUser.email || email);
+                if (userResponse.success && userResponse.data) {
+                  const serverUser = userResponse.data;
+                  const userData = {
+                    id: serverUser.id, // UUID from database
+                    name: serverUser.name || fbUser.displayName || email.split('@')[0],
+                    email: serverUser.email || fbUser.email || email,
+                    phone: serverUser.phone || fbUser.phoneNumber || '+9720000000',
+                    avatar: serverUser.avatar_url || fbUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+                    bio: serverUser.bio || '',
+                    karmaPoints: serverUser.karma_points || 0,
+                    joinDate: serverUser.join_date || serverUser.created_at || nowIso,
+                    isActive: serverUser.is_active !== false,
+                    lastActive: serverUser.last_active || nowIso,
+                    location: { city: serverUser.city || t('common:labels.countryIsrael') as string, country: serverUser.country || 'IL' },
+                    interests: serverUser.interests || [],
+                    roles: serverUser.roles || ['user'],
+                    postsCount: serverUser.posts_count || 0,
+                    followersCount: serverUser.followers_count || 0,
+                    followingCount: serverUser.following_count || 0,
+                    notifications: [],
+                    settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+                  } as any;
+                  // User is already in database from resolveUserId/getUserById - no need to create via restAdapter
+                  await saveRecentEmail(email);
+                  await setCurrentPrincipal({ user: userData as any, role: 'user' });
+                  return;
+                }
+                throw new Error('Failed to get user from server');
+              }
+              
+              // Use UUID from server
+              const serverUser = (resolveResponse as any).user;
               const userData = {
-                id: fbUser.uid,
-                name: fbUser.displayName || email.split('@')[0],
-                email: fbUser.email || email,
-                phone: fbUser.phoneNumber || '+9720000000',
-                avatar: fbUser.photoURL || 'https://i.pravatar.cc/150?img=1',
-                bio: '',
-                karmaPoints: 0,
-                joinDate: nowIso,
-                isActive: true,
-                lastActive: nowIso,
-                location: { city: t('common:labels.countryIsrael') as string, country: 'IL' },
-                interests: [],
-                roles: ['user'],
-                postsCount: 0,
-                followersCount: 0,
-                followingCount: 0,
+                id: serverUser.id, // UUID from database - this is the primary identifier
+                name: serverUser.name || fbUser.displayName || email.split('@')[0],
+                email: serverUser.email || fbUser.email || email,
+                phone: serverUser.phone || fbUser.phoneNumber || '+9720000000',
+                avatar: serverUser.avatar || fbUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+                bio: serverUser.bio || '',
+                karmaPoints: serverUser.karmaPoints || 0,
+                joinDate: serverUser.createdAt || serverUser.joinDate || nowIso,
+                isActive: serverUser.isActive !== false,
+                lastActive: serverUser.lastActive || nowIso,
+                location: serverUser.location || { city: t('common:labels.countryIsrael') as string, country: 'IL' },
+                interests: serverUser.interests || [],
+                roles: serverUser.roles || ['user'],
+                postsCount: serverUser.postsCount || 0,
+                followersCount: serverUser.followersCount || 0,
+                followingCount: serverUser.followingCount || 0,
                 notifications: [],
-                settings: { language: 'he', darkMode: false, notificationsEnabled: true },
+                settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
               } as any;
-              try { await restAdapter.create('users', userData.id, userData.id, userData); } catch (_) {}
+              // User is already in database from resolveUserId/getUserById - no need to create via restAdapter
               await saveRecentEmail(email);
               await setCurrentPrincipal({ user: userData as any, role: 'user' });
-            } catch (signinErr) {
+            } catch (signinErr: any) {
               setEmailStatusMessage(t('auth:email.invalidPassword') as string);
-              setEmailStatusColor('#C62828');
+              setEmailStatusColor(colors.error);
             }
           } else {
             Alert.alert(t('common:error') as string, t('auth:email.signupFailed') as string);
@@ -352,12 +462,12 @@ export default function LoginScreen() {
   };
 
   const handleOrgConfirm = async () => {
-      try {
-        const query = orgQuery.trim();
-        if (!query) {
-          Alert.alert(t('common:error') as string, t('auth:org.enterNameOrEmail') as string);
-          return;
-        }
+    try {
+      const query = orgQuery.trim();
+      if (!query) {
+        Alert.alert(t('common:error') as string, t('auth:org.enterNameOrEmail') as string);
+        return;
+      }
       setIsCheckingOrg(true);
 
       // 1) Search by email (primary key), otherwise by name from admin queue
@@ -381,16 +491,16 @@ export default function LoginScreen() {
         const email = String(approved.contactEmail || (isEmail ? query : '')).toLowerCase();
         const orgUser = {
           id: `org_${approved.id}`,
-            name: approved.orgName || (t('auth:org.defaultName') as string),
+          name: approved.orgName || (t('auth:org.defaultName') as string),
           email: email || `org_${approved.id}@example.org`,
           phone: approved.contactPhone || '+9720000000',
           avatar: 'https://i.pravatar.cc/150?img=12',
-            bio: t('auth:org.defaultBio') as string,
+          bio: t('auth:org.defaultBio') as string,
           karmaPoints: 0,
           joinDate: new Date().toISOString(),
           isActive: true,
           lastActive: new Date().toISOString(),
-            location: { city: approved.city || (t('common:labels.countryIsrael') as string), country: 'IL' },
+          location: { city: approved.city || (t('common:labels.countryIsrael') as string), country: 'IL' },
           interests: [],
           roles: ['org_admin'],
           postsCount: 0,
@@ -412,7 +522,7 @@ export default function LoginScreen() {
       // 3) Not found — navigate to org onboarding screen
       navigation.navigate('OrgOnboardingScreen' as never);
     } catch (err) {
-        Alert.alert(t('common:error') as string, t('auth:org.checkFailed') as string);
+      Alert.alert(t('common:error') as string, t('auth:org.checkFailed') as string);
     } finally {
       setIsCheckingOrg(false);
     }
@@ -421,319 +531,308 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }} 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         accessible={true}
         accessibilityViewIsModal={false}
       >
-        <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
+        <StatusBar backgroundColor={colors.white} barStyle="dark-content" />
         <ScrollContainer
-          contentStyle={{ flexGrow: 1 }}
+          contentStyle={{ flexGrow: 1, paddingBottom: 0 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'interactive'}
           contentInsetAdjustmentBehavior="always"
         >
-      
-      <View style={styles.container}>
-        {/* Background Logo */}
-        <View style={styles.backgroundLogoContainer} pointerEvents="none">
-          <Image 
-            source={require('../assets/images/pink_logo.png')} 
-            style={styles.backgroundLogo} 
-            resizeMode="contain"
-          />
-        </View>
-        
-        {/* Header Section */}
-         <View style={styles.headerSection}>
-          <Text style={styles.title}>{t('auth:title') || t('common:welcomeShort')}</Text>
-          <Text style={styles.subtitle}>{t('auth:subtitle') || ''}</Text>
-          
-          {/* Version Number */}
-          <View style={styles.versionContainer}>
-            <Text style={styles.versionText}>v1.9.0</Text>
-          </View>
-          
-          <View style={styles.buttonsContainer}>
-            <FirebaseGoogleButton />
-            
 
+          <View style={styles.container}>
+            {/* Header Section */}
+            <View style={styles.headerSection}>
+              {/* Mode Toggle Button */}
+              <View style={styles.topButtonsContainer}>
+                {/* Language switcher */}
+                <View pointerEvents="box-none" style={styles.languageButtonContainer}>
+                  <TouchableOpacity
+                    style={styles.languageButton}
+                    activeOpacity={0.8}
+                    onPress={() => setLanguageMenuOpen((prev) => !prev)}
+                  >
+                    <Ionicons name="globe-outline" size={22} color={colors.textPrimary} />
+                  </TouchableOpacity>
+                  {languageMenuOpen && (
+                    <View style={styles.languageMenu}>
+                      <TouchableOpacity
+                        style={styles.languageMenuItem}
+                        onPress={() => applyLanguage('he')}
+                      >
+                        <Text style={styles.languageMenuText}>{t('common:languages.he')}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.languageMenuItem}
+                        onPress={() => applyLanguage('en')}
+                      >
+                        <Text style={styles.languageMenuText}>{t('common:languages.en')}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              </View>
 
+              <Text style={styles.title}>{t('auth:title') || t('common:welcomeShort')}</Text>
+              <Text style={styles.subtitle}>{t('auth:subtitle') || ''}</Text>
 
-            {/* Email Register/Login CTA - collapsible with input + status line */}
-            <View 
-              style={styles.orgLoginContainer}
-              accessible={true}
-              
-              importantForAccessibility="yes"
-            >
-              {!emailLoginOpen && (
-                <TouchableOpacity
-                  style={[styles.guestButton, styles.emailButton]}
-                  onPress={toggleEmailLogin}
-                  activeOpacity={0.85}
-                >
-                  <Text style={[styles.guestButtonText, { color: '#4C7EFF', fontWeight: '700' }]}>
-                    {t('auth:email.cta') }
-                  </Text>
-                </TouchableOpacity>
-              )}
+              {/* Logo */}
+              <View style={styles.logoContainer}>
+                <Image
+                  source={require('../assets/images/new_logo_black.png')}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
+              </View>
 
-              {emailLoginOpen && (
-                <View 
-                  style={[
-                    styles.orgExpandedRow,
-                    (isDesktopWeb || isTablet) && {
-                      alignSelf: 'center',
-                      minWidth: buttonMinWidth,
-                      maxWidth: expandedRowMaxWidth,
-                    },
-                    !isDesktopWeb && !isTablet && {
-                      width: '100%',
-                    },
-                  ]}
+              <View style={styles.buttonsContainer}>
+                <FirebaseGoogleButton />
+
+                {/* Email Register/Login CTA - collapsible with input + status line */}
+                <View
+                  style={styles.orgLoginContainer}
                   accessible={true}
-                  
+
                   importantForAccessibility="yes"
                 >
-                  <Animated.View style={[styles.orgMiniButton, { opacity: emailOpenAnim }] }>
-                    <TouchableOpacity onPress={toggleEmailLogin} activeOpacity={0.8}>
-                      <Ionicons name="mail-outline" size={20} color="#4C7EFF" />
+                  {!emailLoginOpen && (
+                    <TouchableOpacity
+                      style={[styles.guestButton, styles.emailButton]}
+                      onPress={toggleEmailLogin}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={[styles.guestButtonText, { color: colors.primary, fontWeight: '700' }]}>
+                        {t('auth:email.cta')}
+                      </Text>
                     </TouchableOpacity>
-                  </Animated.View>
-                  {emailStep === 'email' ? (
-                    <TextInput
-                      style={styles.orgInput}
-                      placeholder={t('auth:email.placeholder')}
-                      placeholderTextColor="#B0B0B0"
-                      value={emailValue}
-                      textAlign="right"
-                      onChangeText={setEmailValue}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      autoComplete="email"
-                      textContentType="emailAddress"
-                      inputMode="email"
-                      keyboardType="email-address"
-                      returnKeyType="done"
-                      onSubmitEditing={handleEmailContinue}
+                  )}
+
+                  {emailLoginOpen && (
+                    <View
+                      style={[
+                        styles.orgExpandedRow,
+                        {
+                          width: '100%',
+                        },
+                      ]}
                       accessible={true}
-                      accessibilityLabel={t('auth:email.placeholder')}
-                      accessibilityHint={t('auth:email.accessibilityHint') || 'Enter your email address'}
+
                       importantForAccessibility="yes"
-                    />
-                  ) : (
-                    <View style={styles.inputWrapper}>
+                    >
+                      <Animated.View style={[styles.orgMiniButton, { opacity: emailOpenAnim }]}>
+                        <TouchableOpacity onPress={toggleEmailLogin} activeOpacity={0.8}>
+                          <Ionicons name="mail-outline" size={20} color={colors.primary} />
+                        </TouchableOpacity>
+                      </Animated.View>
+                      {emailStep === 'email' ? (
+                        <TextInput
+                          style={styles.orgInput}
+                          placeholder={t('auth:email.placeholder')}
+                          placeholderTextColor={colors.textTertiary}
+                          value={emailValue}
+                          textAlign="right"
+                          onChangeText={setEmailValue}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          autoComplete="email"
+                          textContentType="emailAddress"
+                          inputMode="email"
+                          keyboardType="email-address"
+                          returnKeyType="done"
+                          onSubmitEditing={handleEmailContinue}
+                          accessible={true}
+                          accessibilityLabel={t('auth:email.placeholder')}
+                          accessibilityHint={t('auth:email.accessibilityHint') || 'Enter your email address'}
+                          importantForAccessibility="yes"
+                        />
+                      ) : (
+                        <View style={styles.inputWrapper}>
+                          <TextInput
+                            style={[styles.orgInput, { paddingRight: 40 }]}
+                            placeholder={t('auth:email.passwordPlaceholder')}
+                            placeholderTextColor={colors.textTertiary}
+                            value={passwordValue}
+                            onChangeText={setPasswordValue}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            textAlign="right"
+                            secureTextEntry={!passwordVisible}
+                            returnKeyType="done"
+                            onSubmitEditing={handleEmailSubmit}
+                            accessible={true}
+                            accessibilityLabel={t('auth:email.passwordPlaceholder')}
+                            accessibilityHint={t('auth:email.passwordAccessibilityHint') || 'Enter your password'}
+                            importantForAccessibility="yes"
+                          />
+                          <TouchableOpacity onPress={() => setPasswordVisible(v => !v)} style={styles.eyeToggle}>
+                            <Ionicons name={passwordVisible ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.textSecondary} />
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                      {emailStep === 'email' ? (
+                        <TouchableOpacity
+                          style={[styles.orgActionButton, isEmailBusy && styles.disabledButton]}
+                          onPress={handleEmailContinue}
+                          disabled={isEmailBusy}
+                          activeOpacity={0.85}
+                        >
+                          <Text style={styles.orgActionButtonText}>{isEmailBusy ? t('auth:email.checking') : t('auth:email.continue')}</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity
+                          style={[styles.orgActionButton, isEmailBusy && styles.disabledButton]}
+                          onPress={handleEmailSubmit}
+                          disabled={isEmailBusy}
+                          activeOpacity={0.85}
+                        >
+                          <Text style={styles.orgActionButtonText}>{isEmailBusy ? t('auth:email.submitting') : t('auth:email.submit')}</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+
+                  {/* Suggestions dropdown */}
+                  {emailLoginOpen && emailStep === 'email' && emailSuggestions.length > 0 && (
+                    <View style={styles.suggestionsBox}>
+                      {emailSuggestions.map((sug) => (
+                        <TouchableOpacity key={sug} style={styles.suggestionItem} onPress={() => { setEmailValue(sug); setEmailSuggestions([]); }}>
+                          <Text style={styles.suggestionText}>{sug}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Status line under email block */}
+                  {emailStatusMessage && (
+                    <>
+                      <View style={styles.emailStatusRow}>
+                        <Text style={[styles.emailStatusText, { color: emailStatusColor }]}>
+                          {emailStatusMessage}
+                        </Text>
+                      </View>
+                      {emailStatusColor === colors.error && emailStep === 'password' && (
+                        <View style={styles.smallResetContainer}>
+                          <TouchableOpacity
+                            style={styles.smallResetButton}
+                            onPress={async () => {
+                              try {
+                                await sendPasswordReset(emailValue.trim().toLowerCase());
+                              } catch (_) { }
+                              Linking.openURL('https://mail.google.com/mail');
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.smallResetText}>{t('auth:email.resetPassword')}</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </>
+                  )}
+                </View>
+
+                {/* Enter Organization CTA - collapsible with input */}
+                <View
+                  style={styles.orgLoginContainer}
+                  accessible={true}
+
+                  importantForAccessibility="yes"
+                >
+                  {!orgLoginOpen && (
+                    <TouchableOpacity
+                      style={[styles.guestButton, styles.orgButton]}
+                      onPress={toggleOrgLogin}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={[styles.guestButtonText, { color: colors.secondary, fontWeight: '700' }]}>
+                        {t('auth:org.cta')}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {orgLoginOpen && (
+                    <View
+                      style={[
+                        styles.orgExpandedRow,
+                        {
+                          width: '100%',
+                        },
+                      ]}
+                      accessible={true}
+
+                      importantForAccessibility="yes"
+                    >
+                      <Animated.View style={[styles.orgMiniButton, { opacity: orgOpenAnim }]}>
+                        <TouchableOpacity onPress={toggleOrgLogin} activeOpacity={0.8}>
+                          <Ionicons name="business-outline" size={20} color={colors.secondary} />
+                        </TouchableOpacity>
+                      </Animated.View>
                       <TextInput
-                        style={[styles.orgInput, { paddingRight: 40 }]}
-                        placeholder={t('auth:email.passwordPlaceholder')}
-                        placeholderTextColor="#B0B0B0"
-                        value={passwordValue}
-                        onChangeText={setPasswordValue}
+                        style={styles.orgInput}
+                        placeholder={t('auth:org.placeholder')}
+                        placeholderTextColor={colors.textTertiary}
+                        value={orgQuery}
+                        onChangeText={setOrgQuery}
                         autoCapitalize="none"
                         autoCorrect={false}
                         textAlign="right"
-                        secureTextEntry={!passwordVisible}
+                        autoComplete="email"
+                        textContentType="emailAddress"
+                        inputMode="email"
                         returnKeyType="done"
-                        onSubmitEditing={handleEmailSubmit}
+                        onSubmitEditing={handleOrgConfirm}
                         accessible={true}
-                        accessibilityLabel={t('auth:email.passwordPlaceholder')}
-                        accessibilityHint={t('auth:email.passwordAccessibilityHint') || 'Enter your password'}
+                        accessibilityLabel={t('auth:org.placeholder')}
+                        accessibilityHint={t('auth:org.accessibilityHint') || 'Enter your organization email'}
                         importantForAccessibility="yes"
                       />
-                      <TouchableOpacity onPress={() => setPasswordVisible(v => !v)} style={styles.eyeToggle}>
-                        <Ionicons name={passwordVisible ? 'eye-outline' : 'eye-off-outline'} size={20} color="#666" />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                  {emailStep === 'email' ? (
-                    <TouchableOpacity
-                      style={[styles.orgActionButton, isEmailBusy && styles.disabledButton]}
-                      onPress={handleEmailContinue}
-                      disabled={isEmailBusy}
-                      activeOpacity={0.85}
-                    >
-                      <Text style={styles.orgActionButtonText}>{isEmailBusy ? t('auth:email.checking') : t('auth:email.continue')}</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={[styles.orgActionButton, isEmailBusy && styles.disabledButton]}
-                      onPress={handleEmailSubmit}
-                      disabled={isEmailBusy}
-                      activeOpacity={0.85}
-                    >
-                      <Text style={styles.orgActionButtonText}>{isEmailBusy ? t('auth:email.submitting') : t('auth:email.submit')}</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
-
-              {/* Suggestions dropdown */}
-              {emailLoginOpen && emailStep === 'email' && emailSuggestions.length > 0 && (
-                <View style={styles.suggestionsBox}>
-                  {emailSuggestions.map((sug) => (
-                    <TouchableOpacity key={sug} style={styles.suggestionItem} onPress={() => { setEmailValue(sug); setEmailSuggestions([]); }}>
-                      <Text style={styles.suggestionText}>{sug}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-
-              {/* Status line under email block */}
-              {emailStatusMessage && (
-                <>
-                  <View style={styles.emailStatusRow}>
-                    <Text style={[styles.emailStatusText, { color: emailStatusColor }]}>
-                      {emailStatusMessage}
-                    </Text>
-                  </View>
-                  {emailStatusColor === '#C62828' && emailStep === 'password' && (
-                    <View style={styles.smallResetContainer}>
                       <TouchableOpacity
-                        style={styles.smallResetButton}
-                        onPress={async () => {
-                          try {
-                            await sendPasswordReset(emailValue.trim().toLowerCase());
-                          } catch (_) {}
-                          Linking.openURL('https://mail.google.com/mail');
-                        }}
-                        activeOpacity={0.7}
+                        style={[styles.orgActionButton, isCheckingOrg && styles.disabledButton]}
+                        onPress={handleOrgConfirm}
+                        disabled={isCheckingOrg}
+                        activeOpacity={0.85}
                       >
-                        <Text style={styles.smallResetText}>{t('auth:email.resetPassword')}</Text>
+                        <Text style={styles.orgActionButtonText}>{isCheckingOrg ? t('auth:org.checking') : t('auth:org.continue')}</Text>
                       </TouchableOpacity>
                     </View>
                   )}
-                </>
-              )}
-            </View>
+                  {orgLoginOpen && orgEmailSuggestions.length > 0 && (
+                    <View style={styles.suggestionsBox}>
+                      {orgEmailSuggestions.map((sug) => (
+                        <TouchableOpacity key={sug} style={styles.suggestionItem} onPress={() => { setOrgQuery(sug); setOrgEmailSuggestions([]); }}>
+                          <Text style={styles.suggestionText}>{sug}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
 
-            {/* Enter Organization CTA - collapsible with input */}
-            <View 
-              style={styles.orgLoginContainer}
-              accessible={true}
-              
-              importantForAccessibility="yes"
-            >
-              {!orgLoginOpen && (
+
                 <TouchableOpacity
-                  style={[styles.guestButton, styles.orgButton]}
-                  onPress={toggleOrgLogin}
-                  activeOpacity={0.85}
+                  style={styles.guestButton}
+                  onPress={handleGuestMode}
+                  activeOpacity={0.8}
                 >
-                  <Text style={[styles.guestButtonText, { color: '#FF6B9D', fontWeight: '700' }]}>
-                    {t('auth:org.cta')}
-                  </Text>
+                  <Text style={styles.guestButtonText}>{t('auth:continueAsGuest')}</Text>
                 </TouchableOpacity>
-              )}
 
-              {orgLoginOpen && (
-                <View 
-                  style={[
-                    styles.orgExpandedRow,
-                    (isDesktopWeb || isTablet) && {
-                      alignSelf: 'center',
-                      minWidth: buttonMinWidth,
-                      maxWidth: expandedRowMaxWidth,
-                    },
-                    !isDesktopWeb && !isTablet && {
-                      width: '100%',
-                    },
-                  ]}
-                  accessible={true}
-                  
-                  importantForAccessibility="yes"
-                >
-                  <Animated.View style={[styles.orgMiniButton, { opacity: orgOpenAnim }] }>
-                    <TouchableOpacity onPress={toggleOrgLogin} activeOpacity={0.8}>
-                      <Ionicons name="business-outline" size={20} color="#FF6B9D" />
-                    </TouchableOpacity>
-                  </Animated.View>
-                  <TextInput
-                    style={styles.orgInput}
-                    placeholder={t('auth:org.placeholder')}
-                    placeholderTextColor="#B0B0B0"
-                    value={orgQuery}
-                    onChangeText={setOrgQuery}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    textAlign="right"
-                    autoComplete="email"
-                    textContentType="emailAddress"
-                    inputMode="email"
-                    returnKeyType="done"
-                    onSubmitEditing={handleOrgConfirm}
-                    accessible={true}
-                    accessibilityLabel={t('auth:org.placeholder')}
-                    accessibilityHint={t('auth:org.accessibilityHint') || 'Enter your organization email'}
-                    importantForAccessibility="yes"
-                  />
-                  <TouchableOpacity
-                    style={[styles.orgActionButton, isCheckingOrg && styles.disabledButton]}
-                    onPress={handleOrgConfirm}
-                    disabled={isCheckingOrg}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={styles.orgActionButtonText}>{isCheckingOrg ? t('auth:org.checking') : t('auth:org.continue')}</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-              {orgLoginOpen && orgEmailSuggestions.length > 0 && (
-                <View style={styles.suggestionsBox}>
-                  {orgEmailSuggestions.map((sug) => (
-                    <TouchableOpacity key={sug} style={styles.suggestionItem} onPress={() => { setOrgQuery(sug); setOrgEmailSuggestions([]); }}>
-                      <Text style={styles.suggestionText}>{sug}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
+              </View>
             </View>
 
 
-            <TouchableOpacity
-              style={styles.guestButton}
-              onPress={handleGuestMode}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.guestButtonText}>{t('auth:continueAsGuest')}</Text>
-            </TouchableOpacity>
-
+            {/* Footer Section */}
+            <View style={styles.footerSection}>
+              <Text style={styles.infoText}>{t('common:freeAppNotice')}</Text>
+              <View style={styles.versionContainer}>
+                <Text style={styles.versionText}>v{APP_VERSION}</Text>
+              </View>
+            </View>
           </View>
-        </View>
-
-
-        {/* Footer Section */}
-        <View style={styles.footerSection}>
-          <Text style={styles.infoText}>{t('common:freeAppNotice')}</Text>
-        </View>
-      </View>
         </ScrollContainer>
-        {/* Language switcher (top-right) */}
-        <View pointerEvents="box-none" style={styles.languageFabContainer}>
-          <TouchableOpacity
-            style={styles.languageFab}
-            activeOpacity={0.8}
-            onPress={() => setLanguageMenuOpen((prev) => !prev)}
-          >
-            <Ionicons name="globe-outline" size={22} color="#333" />
-          </TouchableOpacity>
-          {languageMenuOpen && (
-            <View style={styles.languageMenu}>
-              <TouchableOpacity
-                style={styles.languageMenuItem}
-                onPress={() => applyLanguage('he')}
-              >
-                <Text style={styles.languageMenuText}>{t('common:languages.he')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.languageMenuItem}
-                onPress={() => applyLanguage('en')}
-              >
-                <Text style={styles.languageMenuText}>{t('common:languages.en')}</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -745,7 +844,7 @@ const createLoginScreenStyles = () => {
   const { isTablet, isDesktop } = getScreenInfo();
   const isDesktopWeb = Platform.OS === 'web' && width > 1024;
   const isMobileWeb = Platform.OS === 'web' && width <= 768;
-  
+
   // Responsive button values
   const buttonPaddingH = isDesktopWeb ? 32 : isTablet ? 28 : 24;
   const buttonPaddingV = isDesktopWeb ? 16 : isTablet ? 14 : 12;
@@ -755,34 +854,34 @@ const createLoginScreenStyles = () => {
   const buttonFontSize = isDesktopWeb ? 18 : isTablet ? 17 : scaleSize(16);
   const buttonMarginBottom = isDesktopWeb ? 16 : isTablet ? 14 : 12;
   const buttonMarginVertical = isDesktopWeb ? 8 : isTablet ? 7 : 6;
-  
+
   // Expanded row values
   const expandedRowMaxWidth = isDesktopWeb ? 400 : isTablet ? 360 : '100%';
   const expandedRowPadding = isDesktopWeb ? 8 : isTablet ? 7 : 6;
   const expandedRowGap = isDesktopWeb ? 10 : isTablet ? 9 : 8;
   const expandedRowBorderRadius = isDesktopWeb ? 14 : isTablet ? 13 : 12;
-  
+
   // Input values
   const inputPaddingH = isDesktopWeb ? 16 : isTablet ? 14 : 12;
   const inputPaddingV = isDesktopWeb ? 12 : isTablet ? 11 : 10;
   const inputFontSize = isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14);
   const inputBorderRadius = isDesktopWeb ? 12 : isTablet ? 11 : 10;
-  
+
   // Action button values
   const actionButtonPaddingH = isDesktopWeb ? 20 : isTablet ? 18 : 16;
   const actionButtonPaddingV = isDesktopWeb ? 14 : isTablet ? 13 : 12;
   const actionButtonFontSize = isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14);
   const actionButtonBorderRadius = isDesktopWeb ? 12 : isTablet ? 11 : 10;
-  
+
   // Mini button values
   const miniButtonSize = isDesktopWeb ? 44 : isTablet ? 42 : 40;
   const miniButtonBorderRadius = isDesktopWeb ? 11 : isTablet ? 10.5 : 10;
-  
+
   // Suggestions box values
   const suggestionsBoxMaxWidth = isDesktopWeb ? 400 : isTablet ? 360 : '100%';
   const suggestionsBoxBorderRadius = isDesktopWeb ? 12 : isTablet ? 11 : 10;
   const suggestionsBoxMargin = isDesktopWeb ? 8 : isTablet ? 7 : 6;
-  
+
   // Status row values
   const statusRowMaxWidth = isDesktopWeb ? 400 : isTablet ? 360 : '100%';
   const statusRowPadding = isDesktopWeb ? 8 : isTablet ? 7 : 6;
@@ -791,50 +890,29 @@ const createLoginScreenStyles = () => {
   return StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: '#F5F9FF',
+      backgroundColor: colors.backgroundTertiary,
     },
     container: {
       flex: 1,
-      padding: isDesktopWeb ? 40 : isTablet ? 32 : 20,
+      paddingTop: isDesktopWeb ? 20 : isTablet ? 20 : 20,
+      paddingHorizontal: isDesktopWeb ? 40 : isTablet ? 32 : 20,
       position: 'relative',
-      ...(isDesktopWeb && {
-        maxWidth: 600,
-        alignSelf: 'center',
-        width: '100%',
-      }),
-    },
-    backgroundLogoContainer: {
-      position: 'absolute',
-      top: isDesktopWeb ? 40 : isTablet ? 30 : Platform.OS === 'web' ? 30 : 50,
-      left: 0,
-      right: 0,
-      height: isDesktopWeb ? '35%' : Platform.OS === 'web' ? '40%' : '50%',
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#E3F2FD',
-      opacity: 0.4,
-    },
-    backgroundLogo: {
-      width: isDesktopWeb ? '100%' : Platform.OS === 'web' ? '120%' : '145%',
-      height: isDesktopWeb ? '100%' : Platform.OS === 'web' ? '120%' : '145%',
-    },
-    headerSection: {
-      marginBottom: isDesktopWeb ? 40 : isTablet ? 35 : 30,
-      alignItems: 'center',
-      zIndex: 1,
       width: '100%',
+      justifyContent: 'space-between',
     },
-    footerSection: {
-      marginTop: isDesktopWeb ? 30 : isTablet ? 25 : 20,
+    topButtonsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      width: '100%',
+      marginBottom: isDesktopWeb ? 20 : isTablet ? 18 : 16,
+      paddingHorizontal: isDesktopWeb ? 0 : isTablet ? 0 : 0,
     },
-    languageFabContainer: {
-      position: 'absolute',
-      top: isDesktopWeb ? 16 : isTablet ? 14 : 12,
-      right: isDesktopWeb ? 20 : isTablet ? 18 : 16,
-      alignItems: 'flex-end',
+    languageButtonContainer: {
+      alignItems: 'flex-start',
       zIndex: 20,
     },
-    languageFab: {
+    languageButton: {
       width: isDesktopWeb ? 40 : isTablet ? 38 : 36,
       height: isDesktopWeb ? 40 : isTablet ? 38 : 36,
       borderRadius: isDesktopWeb ? 20 : isTablet ? 19 : 18,
@@ -842,10 +920,32 @@ const createLoginScreenStyles = () => {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    logoContainer: {
+      width: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: isDesktopWeb ? 30 : isTablet ? 25 : 20,
+      marginTop: isDesktopWeb ? 20 : isTablet ? 18 : 16,
+    },
+    logo: {
+      width: isDesktopWeb ? 280 : isTablet ? 250 : 220,
+      height: isDesktopWeb ? 280 : isTablet ? 250 : 220,
+    },
+    headerSection: {
+      // marginBottom: isDesktopWeb ? 40 : isTablet ? 35 : 30,
+      alignItems: 'center',
+      zIndex: 1,
+      width: '100%',
+      // paddingTop: isDesktopWeb ? 20 : isTablet ? 16 : 12,
+    },
+    footerSection: {
+      marginBottom: isDesktopWeb ? 8 : isTablet ? 7 : 6,
+      marginTop: isDesktopWeb ? 20 : isTablet ? 18 : 16,
+    },
     languageMenu: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.white,
       borderWidth: 1,
-      borderColor: '#E8E8E8',
+      borderColor: colors.border,
       borderRadius: isDesktopWeb ? 12 : isTablet ? 11 : 10,
       paddingVertical: isDesktopWeb ? 8 : isTablet ? 7 : 6,
       marginTop: isDesktopWeb ? 6 : isTablet ? 5.5 : 5,
@@ -857,22 +957,22 @@ const createLoginScreenStyles = () => {
     },
     languageMenuText: {
       fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
-      color: '#333333',
+      color: colors.textPrimary,
       textAlign: 'right',
     },
     title: {
-      marginTop: isDesktopWeb ? 20 : isTablet ? 15 : Platform.OS === 'web' ? 10 : 20,
+      marginTop: 0,
       fontSize: isDesktopWeb ? 42 : isTablet ? 36 : scaleSize(32),
       fontWeight: 'bold',
-      color: '#2C2C2C',
+      color: colors.textPrimary,
       marginBottom: isDesktopWeb ? 12 : isTablet ? 11 : 10,
       textAlign: 'center',
     },
     subtitle: {
       fontSize: isDesktopWeb ? 20 : isTablet ? 18 : scaleSize(16),
-      color: '#444444',
+      color: colors.textPrimary,
       textAlign: 'center',
-      marginBottom: isDesktopWeb ? 50 : isTablet ? 45 : Platform.OS === 'web' ? 40 : 100,
+      marginBottom: isDesktopWeb ? 20 : isTablet ? 18 : 16,
       fontWeight: '600',
       paddingHorizontal: isDesktopWeb ? 20 : 0,
     },
@@ -882,12 +982,12 @@ const createLoginScreenStyles = () => {
     },
     errorText: {
       fontSize: isDesktopWeb ? 18 : isTablet ? 17 : scaleSize(16),
-      color: '#FF4444',
+      color: colors.error,
       textAlign: 'center',
     },
     errorSubtext: {
       fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
-      color: '#888888',
+      color: colors.textSecondary,
       textAlign: 'center',
       marginTop: isDesktopWeb ? 8 : isTablet ? 6 : 5,
     },
@@ -899,86 +999,82 @@ const createLoginScreenStyles = () => {
       position: 'absolute',
       top: isDesktopWeb ? -6 : isTablet ? -5.5 : -5,
       right: isDesktopWeb ? -6 : isTablet ? -5.5 : -5,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.white,
       borderRadius: isDesktopWeb ? 14 : isTablet ? 13 : 12,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.2,
-      shadowRadius: 2,
+      ...createShadowStyle('colors.black', { width: 0, height: 1 }, 0.2, 2),
       elevation: 2,
     },
     // 🔥 buttonsContainer - מרכז את כל הכפתורים
     buttonsContainer: {
+      marginTop: isDesktopWeb ? 40 : isTablet ? 40 : 30,
       marginBottom: isDesktopWeb ? 30 : isTablet ? 25 : 20,
       width: '100%',
-      alignItems: 'center', // Center all buttons instead of stretch
+      alignItems: 'stretch', // Stretch buttons to full width
+      gap: isDesktopWeb ? 16 : isTablet ? 14 : 12, // Equal spacing between buttons
     },
     disabledButton: {
-      backgroundColor: '#CCCCCC',
+      backgroundColor: colors.textTertiary,
       opacity: 0.6,
     },
     disabledButtonText: {
-      color: '#999999',
+      color: colors.textTertiary,
     },
     // 🔥 guestButton - responsive, מותאם לטקסט, לא מרוח!
     guestButton: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.white,
       borderWidth: 1,
-      borderColor: '#E8E8E8',
+      borderColor: colors.border,
       borderRadius: buttonBorderRadius,
       paddingHorizontal: buttonPaddingH,
       paddingVertical: buttonPaddingV,
       alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
+      ...createShadowStyle('colors.black', { width: 0, height: 2 }, 0.1, 4),
       elevation: 3,
-      alignSelf: 'center', // Center button instead of full width
-      marginVertical: buttonMarginVertical,
-      marginBottom: isDesktopWeb ? 28 : isTablet ? 25 : 22,
-      minWidth: buttonMinWidth,
-      maxWidth: buttonMaxWidth,
+      width: '100%', // Full width instead of centered
+      marginVertical: 0, // Remove vertical margin, use gap in container instead
+      marginBottom: 0, // Remove bottom margin, use gap in container instead
     },
     // 🔥 guestButtonText - ללא width: '100%'
     guestButtonText: {
       fontSize: buttonFontSize,
       fontWeight: '600',
-      color: '#666666',
+      color: colors.textSecondary,
       textAlign: 'center',
       // Removed width: '100%' - let text determine width
     },
     infoText: {
       fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
-      color: '#666666',
+      color: colors.textSecondary,
       textAlign: 'center',
     },
     clearDataButton: {
-      backgroundColor: '#FF4444',
+      backgroundColor: colors.error,
       borderRadius: isDesktopWeb ? 10 : isTablet ? 9 : 8,
       padding: isDesktopWeb ? 12 : isTablet ? 11 : 10,
       alignItems: 'center',
     },
     clearDataButtonText: {
       fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
-      color: '#FFFFFF',
+      color: colors.white,
       fontWeight: '600',
     },
     // 🔥 orgLoginContainer - מרכז את הכפתורים
     orgLoginContainer: {
-      marginVertical: isDesktopWeb ? 4 : isTablet ? 3.5 : 3,
-      alignItems: 'center', // Center container
-      width: '100%',
+      alignSelf: 'center',
+      marginTop: "1%",
+      // alignItems: 'stretch', // Stretch to full width
+      width: '80%',
+      height: '50%',
     },
     // 🔥 orgButton - ללא width: '100%'
     orgButton: {
-      borderColor: '#FF6B9D',
+      borderColor: colors.secondary,
       // Removed width: '100%' - button will use guestButton styles
     },
     // 🔥 emailButton - ללא width: '100%'
     emailButton: {
-      borderColor: '#4C7EFF',
-      marginTop: isDesktopWeb ? 16 : isTablet ? 14 : 12,
+      borderColor: colors.primary,
+      marginTop: 0, // Remove top margin, use gap in container instead
       // Removed width: '100%' - button will use guestButton styles
     },
     // 🔥 orgExpandedRow - responsive, מותאם לכפתורים
@@ -986,9 +1082,9 @@ const createLoginScreenStyles = () => {
     orgExpandedRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.white,
       borderWidth: 1,
-      borderColor: '#E8E8E8',
+      borderColor: colors.border,
       borderRadius: expandedRowBorderRadius,
       padding: expandedRowPadding,
       marginHorizontal: 0,
@@ -1007,9 +1103,9 @@ const createLoginScreenStyles = () => {
     // 🔥 orgInput - responsive
     orgInput: {
       flex: 1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.white,
       borderWidth: 1,
-      borderColor: '#E8E8E8',
+      borderColor: colors.border,
       borderRadius: inputBorderRadius,
       paddingHorizontal: inputPaddingH,
       paddingVertical: inputPaddingV,
@@ -1017,28 +1113,26 @@ const createLoginScreenStyles = () => {
     },
     // 🔥 orgActionButton - responsive
     orgActionButton: {
-      backgroundColor: '#FF6B9D',
+      backgroundColor: colors.secondary,
       paddingHorizontal: actionButtonPaddingH,
       paddingVertical: actionButtonPaddingV,
       borderRadius: actionButtonBorderRadius,
     },
     orgActionButtonText: {
-      color: '#FFFFFF',
+      color: colors.white,
       fontWeight: '700',
       fontSize: actionButtonFontSize,
     },
     // 🔥 suggestionsBox - responsive, מותאם לכפתורים
     suggestionsBox: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.white,
       borderWidth: 1,
-      borderColor: '#E8E8E8',
+      borderColor: colors.border,
       borderRadius: suggestionsBoxBorderRadius,
       marginTop: suggestionsBoxMargin,
       marginBottom: suggestionsBoxMargin,
       overflow: 'hidden',
-      alignSelf: 'center', // Center suggestions box
-      minWidth: buttonMinWidth,
-      maxWidth: suggestionsBoxMaxWidth,
+      width: '100%', // Full width instead of centered
     },
     suggestionItem: {
       paddingVertical: isDesktopWeb ? 10 : isTablet ? 9 : 8,
@@ -1046,7 +1140,7 @@ const createLoginScreenStyles = () => {
     },
     suggestionText: {
       fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
-      color: '#333333',
+      color: colors.textPrimary,
       textAlign: 'right',
     },
     inputWrapper: {
@@ -1071,9 +1165,7 @@ const createLoginScreenStyles = () => {
       flexDirection: 'row',
       alignItems: 'flex-end',
       justifyContent: 'flex-start',
-      alignSelf: 'center', // Center status row
-      minWidth: buttonMinWidth,
-      maxWidth: statusRowMaxWidth,
+      width: '100%', // Full width instead of centered
     },
     emailStatusText: {
       fontSize: statusRowFontSize,
@@ -1097,7 +1189,7 @@ const createLoginScreenStyles = () => {
     },
     smallResetText: {
       fontSize: isDesktopWeb ? 15 : isTablet ? 14 : scaleSize(13),
-      color: '#1976D2',
+      color: colors.primary,
       fontWeight: '700',
       textDecorationLine: 'underline',
     },
@@ -1110,12 +1202,12 @@ const createLoginScreenStyles = () => {
     },
     // Version styles
     versionContainer: {
-      marginBottom: isDesktopWeb ? 24 : isTablet ? 22 : 20,
+      marginTop: isDesktopWeb ? 12 : isTablet ? 10 : 8,
       alignItems: 'center',
     },
     versionText: {
-      fontSize: isDesktopWeb ? 16 : isTablet ? 15 : scaleSize(14),
-      color: '#888888',
+      fontSize: isDesktopWeb ? 14 : isTablet ? 13 : scaleSize(12),
+      color: colors.textSecondary,
       textAlign: 'center',
       fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
       fontWeight: '500',

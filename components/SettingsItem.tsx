@@ -45,8 +45,8 @@ const SettingsItem: React.FC<SettingsItemProps> = memo((props) => {
           <Switch
             value={value}
             onValueChange={onValueChange}
-            trackColor={{ false: colors.border, true: colors.blue }}
-            thumbColor={value ? colors.blue : colors.backgroundSecondary}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor={value ? colors.primary : colors.backgroundSecondary}
             ios_backgroundColor={colors.border}
           />
         );

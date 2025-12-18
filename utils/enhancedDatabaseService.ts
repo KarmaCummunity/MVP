@@ -23,6 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService, ApiResponse } from './apiService';
 import { USE_BACKEND, CACHE_CONFIG, OFFLINE_CONFIG, STORAGE_KEYS } from './dbConfig';
 import { DB_COLLECTIONS } from './dbCollections';
+import { db } from './databaseService';
 
 // TODO: Move all interfaces to proper types directory
 // TODO: Add comprehensive validation for all interface fields
@@ -53,7 +54,7 @@ export interface DonationData {
   createdBy: string;
   createdAt: string;
   status?: string;
-   isRecurring?: boolean;
+  isRecurring?: boolean;
   [key: string]: unknown; // Allow additional fields
 }
 
@@ -146,7 +147,7 @@ export class EnhancedDatabaseService {
       }
 
       const response = await apiService.registerUser(userData);
-      
+
       if (response.success && response.data) {
         await this.setCache('user_profile', response.data.id, response.data);
         await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(response.data));
@@ -172,7 +173,7 @@ export class EnhancedDatabaseService {
       }
 
       const response = await apiService.loginUser(credentials);
-      
+
       if (response.success && response.data) {
         await this.setCache('user_profile', response.data.id, response.data);
         await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(response.data));
@@ -209,7 +210,7 @@ export class EnhancedDatabaseService {
       }
 
       const response = await apiService.updateUser(userId, updateData);
-      
+
       if (response.success && response.data) {
         await this.setCache('user_profile', userId, response.data);
         await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(response.data));
@@ -218,7 +219,7 @@ export class EnhancedDatabaseService {
       return response;
     } catch (error) {
       logger.error('EnhancedDatabaseService', 'Update user profile error', { error });
-      
+
       // Queue for offline sync
       await this.queueOfflineAction('update_user_profile', { userId, updateData });
       return { success: false, error: 'Failed to update profile, queued for later' };
@@ -257,7 +258,7 @@ export class EnhancedDatabaseService {
       }
 
       const response = await apiService.getDonationCategories();
-      
+
       if (response.success && response.data) {
         await this.setCache('donation_categories', 'all', response.data);
         logger.info('EnhancedDatabaseService', 'Donation categories fetched from backend', {
@@ -308,7 +309,7 @@ export class EnhancedDatabaseService {
         filters,
         success: response.success,
       });
-      
+
       if (response.success && response.data) {
         await this.setCache('donations_list', cacheKey, response.data);
         logger.info('EnhancedDatabaseService', 'Donations fetched from backend', {
@@ -338,14 +339,34 @@ export class EnhancedDatabaseService {
           ...donationData,
           created_at: new Date().toISOString(),
           status: 'active',
+          donor_id: donationData.donor_id || donationData.donorId,
         };
+
+        // Create post from donation even in local mode
+        try {
+          await this.createPostFromDonation(donation);
+        } catch (postError) {
+          logger.error('EnhancedDatabaseService', 'Failed to create post from donation (local)', { error: postError });
+        }
+
         logger.debug('EnhancedDatabaseService', 'Donation created locally (no backend)');
         return { success: true, data: donation };
       }
 
       const response = await apiService.createDonation(donationData);
-      
+
       if (response.success) {
+        // Create a post from the donation
+        try {
+          const donation = response.data;
+          if (donation && donation.donor_id) {
+            await this.createPostFromDonation(donation);
+          }
+        } catch (postError) {
+          logger.error('EnhancedDatabaseService', 'Failed to create post from donation', { error: postError });
+          // Don't fail the donation creation if post creation fails
+        }
+
         // Clear relevant caches
         await this.clearCachePattern('donations_list');
         await this.clearCachePattern('user_donations');
@@ -357,7 +378,7 @@ export class EnhancedDatabaseService {
       return response;
     } catch (error) {
       logger.error('EnhancedDatabaseService', 'Create donation error', { error });
-      
+
       // Queue for offline sync
       await this.queueOfflineAction('create_donation', donationData);
       return { success: false, error: 'Failed to create donation, queued for later' };
@@ -421,7 +442,7 @@ export class EnhancedDatabaseService {
       if (!forceRefresh) {
         const cached = await this.getCache('community_stats', cacheKey);
         if (cached) {
-          logger.debug('EnhancedDatabaseService', 'Community stats cache hit', { cacheKey });
+          // Cache hit - no need to log (reduces excessive logging)
           return cached as Record<string, unknown>; // Type assertion for cached data
         }
       } else {
@@ -444,17 +465,29 @@ export class EnhancedDatabaseService {
       // Pass forceRefresh to API to bypass server-side Redis cache
       const apiFilters = { ...filters, forceRefresh };
       const response = await apiService.getCommunityStats(apiFilters);
-      
+
       if (response.success && response.data) {
-        await this.setCache('community_stats', cacheKey, response.data);
-        logger.info('EnhancedDatabaseService', 'Community stats fetched from backend', { cacheKey, forceRefresh });
-        return response.data as Record<string, unknown>;
+        // Check if data is not empty
+        const hasData = Object.keys(response.data).length > 0;
+        if (hasData) {
+          await this.setCache('community_stats', cacheKey, response.data);
+          logger.info('EnhancedDatabaseService', 'Community stats fetched from backend', { cacheKey, forceRefresh });
+          return response.data as Record<string, unknown>;
+        } else {
+          logger.warn('EnhancedDatabaseService', 'Backend returned empty stats data', { cacheKey, forceRefresh });
+          // Throw error to trigger retry or fallback
+          throw new Error('Backend returned empty stats data');
+        }
       }
 
-      return {} as Record<string, unknown>;
+      // If response was not successful, throw error to trigger retry
+      logger.warn('EnhancedDatabaseService', 'Backend request failed', { cacheKey, forceRefresh, error: response.error });
+      throw new Error(response.error || 'Failed to fetch community stats from backend');
     } catch (error) {
       logger.error('EnhancedDatabaseService', 'Get community stats error', { error });
-      return {} as Record<string, unknown>;
+      // שינוי: זריקת שגיאה במקום החזרת אובייקט ריק כדי שהקוד יוכל לטפל בשגיאה
+      // Change: Throw error instead of returning empty object so code can handle the error
+      throw error instanceof Error ? error : new Error('Failed to fetch community stats');
     }
   }
 
@@ -466,12 +499,12 @@ export class EnhancedDatabaseService {
       }
 
       await apiService.incrementStat({ stat_type: statType, value, city });
-      
+
       // Clear stats cache to force refresh
       await this.clearCachePattern('community_stats');
     } catch (error) {
       logger.error('EnhancedDatabaseService', 'Increment stat error', { error });
-      
+
       // Queue for offline sync
       await this.queueOfflineAction('increment_stat', { statType, value, city });
     }
@@ -492,7 +525,7 @@ export class EnhancedDatabaseService {
       }
 
       const response = await apiService.getRides(filters);
-      
+
       if (response.success && response.data) {
         await this.setCache('rides_list', cacheKey, response.data);
         return response.data;
@@ -518,18 +551,45 @@ export class EnhancedDatabaseService {
       }
 
       const response = await apiService.createRide(rideData);
-      
+
       if (response.success) {
         await this.clearCachePattern('rides_list');
+        await this.clearCachePattern('user_rides');
       }
 
       return response;
     } catch (error) {
       logger.error('EnhancedDatabaseService', 'Create ride error', { error });
-      
+
       // Queue for offline sync
       await this.queueOfflineAction('create_ride', rideData);
       return { success: false, error: 'Failed to create ride, queued for later' };
+    }
+  }
+
+  async getUserRides(userId: string, type: 'driver' | 'passenger' = 'driver'): Promise<RideData[]> {
+    try {
+      const cacheKey = `user_rides_${userId}_${type}`;
+      const cached = await this.getCache('user_rides', cacheKey);
+      if (cached) {
+        return cached as RideData[];
+      }
+
+      if (!USE_BACKEND) {
+        return [] as RideData[];
+      }
+
+      const response = await apiService.getUserRides(userId, type);
+
+      if (response.success && response.data) {
+        await this.setCache('user_rides', cacheKey, response.data);
+        return response.data;
+      }
+
+      return [];
+    } catch (error) {
+      logger.error('EnhancedDatabaseService', 'Get user rides error', { error });
+      return [] as RideData[];
     }
   }
 
@@ -539,13 +599,13 @@ export class EnhancedDatabaseService {
     try {
       const cacheKey = `${collection}_${key}`;
       const cached = await AsyncStorage.getItem(cacheKey);
-      
+
       if (!cached) {
         return null;
       }
 
       const cacheItem: CacheItem<T> = JSON.parse(cached);
-      
+
       // Check if cache is expired
       if (Date.now() > cacheItem.expiresAt) {
         await AsyncStorage.removeItem(cacheKey);
@@ -563,7 +623,7 @@ export class EnhancedDatabaseService {
     try {
       const cacheKey = `${collection}_${key}`;
       const expiryDuration = (CACHE_CONFIG as any)[collection as string] || 5 * 60 * 1000; // Default 5 minutes
-      
+
       const cacheItem: CacheItem<T> = {
         data,
         timestamp: Date.now(),
@@ -580,7 +640,7 @@ export class EnhancedDatabaseService {
     try {
       const keys = await AsyncStorage.getAllKeys();
       const matchingKeys = keys.filter(key => key.includes(pattern));
-      
+
       await AsyncStorage.multiRemove(matchingKeys);
     } catch (error) {
       logger.error('EnhancedDatabaseService', 'Clear cache pattern error', { error });
@@ -702,17 +762,70 @@ export class EnhancedDatabaseService {
   async clearAllCache(): Promise<void> {
     try {
       const keys = await AsyncStorage.getAllKeys();
-      const cacheKeys = keys.filter(key => 
-        key.includes('donation') || 
-        key.includes('rides') || 
+      const cacheKeys = keys.filter(key =>
+        key.includes('donation') ||
+        key.includes('rides') ||
         key.includes('community_stats') ||
         key.includes('user_profile')
       );
-      
+
       await AsyncStorage.multiRemove(cacheKeys);
       logger.info('EnhancedDatabaseService', 'All cache cleared');
     } catch (error) {
       logger.error('EnhancedDatabaseService', 'Clear all cache error', { error });
+    }
+  }
+
+  /**
+   * Create a post from a donation
+   * This automatically creates a post when a donation is made
+   */
+  private async createPostFromDonation(donation: any): Promise<void> {
+    try {
+      if (!donation.donor_id) {
+        logger.warn('EnhancedDatabaseService', 'Cannot create post from donation - no donor_id');
+        return;
+      }
+
+      const postId = `post_${donation.id || Date.now().toString()}`;
+      const postTitle = donation.title || `תרומה ${donation.type === 'money' ? 'כספית' : donation.type === 'time' ? 'זמן' : donation.type === 'rides' ? 'טרמפ' : 'פריט'}`;
+
+      let postDescription = '';
+      if (donation.type === 'money' && donation.amount) {
+        postDescription = `תרמתי ${donation.amount} ${donation.currency || '₪'} ${donation.category ? `לקטגוריה: ${donation.category}` : ''}`;
+      } else if (donation.type === 'time') {
+        postDescription = `תרמתי מזמני ${donation.description || ''}`;
+      } else if (donation.type === 'rides') {
+        postDescription = `הצעתי טרמפ ${donation.description || ''}`;
+      } else {
+        postDescription = donation.description || postTitle;
+      }
+
+      if (donation.description) {
+        postDescription += `\n\n${donation.description}`;
+      }
+
+      const postData = {
+        id: postId,
+        title: postTitle,
+        description: postDescription,
+        type: 'post',
+        thumbnail: donation.images && donation.images.length > 0 ? donation.images[0] : null,
+        image: donation.images && donation.images.length > 0 ? donation.images[0] : null,
+        likes: 0,
+        comments: 0,
+        isLiked: false,
+        timestamp: donation.created_at || new Date().toISOString(),
+        createdAt: donation.created_at || new Date().toISOString(),
+        donationId: donation.id,
+        donationType: donation.type,
+      };
+
+      await db.createPost(donation.donor_id, postId, postData);
+      logger.info('EnhancedDatabaseService', 'Post created from donation', { donationId: donation.id, postId });
+    } catch (error) {
+      logger.error('EnhancedDatabaseService', 'Error creating post from donation', { error, donationId: donation.id });
+      throw error;
     }
   }
 
@@ -760,7 +873,7 @@ export async function wipeAllDataAdmin(): Promise<ApiResponse> {
       try {
         const keys = await AsyncStorage.getAllKeys();
         await AsyncStorage.multiRemove(keys);
-      } catch {}
+      } catch { }
       logger.info('EnhancedDatabaseService', 'Local data cleared (no backend)');
       return { success: true, message: 'Local data cleared (no backend enabled)' };
     }
@@ -771,7 +884,7 @@ export async function wipeAllDataAdmin(): Promise<ApiResponse> {
       try {
         const keys = await AsyncStorage.getAllKeys();
         await AsyncStorage.multiRemove(keys);
-      } catch {}
+      } catch { }
       logger.info('EnhancedDatabaseService', 'Backend wipe successful - local caches cleared');
     } else {
       logger.warn('EnhancedDatabaseService', 'Backend wipe failed', { error: result.error });
