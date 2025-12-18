@@ -31,6 +31,7 @@ import {
 } from '../utils/followService';
 import { createConversation, conversationExists } from '../utils/chatService';
 import { useUser } from '../stores/userStore';
+import apiService from '../utils/apiService';
 
 import { getScreenInfo, isLandscape } from '../globals/responsive';
 
@@ -119,13 +120,34 @@ export default function DiscoverPeopleScreen() {
       );
       setPopularUsers(filteredPopular);
       
-      // Log total users found
+      // Get total users count from server
+      let totalUsersInDatabase = 0;
+      try {
+        const summaryResponse = await apiService.getUsersSummary();
+        if (summaryResponse && summaryResponse.success && summaryResponse.data) {
+          totalUsersInDatabase = parseInt(summaryResponse.data.total_users || '0', 10);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching users summary:', error);
+        // Try to get count from the actual response
+        try {
+          const allUsersResponse = await apiService.getUsers({ limit: 1000, offset: 0 });
+          if (allUsersResponse && allUsersResponse.success && allUsersResponse.data) {
+            totalUsersInDatabase = (allUsersResponse.data as any[]).length;
+          }
+        } catch (fallbackError) {
+          console.error('❌ Error fetching all users as fallback:', fallbackError);
+        }
+      }
+      
+      // Log total users found - ALWAYS log this, even if summary failed
       const totalUsersFound = filteredSuggestions.length + filteredPopular.length;
       const uniqueUsersCount = new Set([...filteredSuggestions.map(u => u.id), ...filteredPopular.map(u => u.id)]).size;
       console.log('👥 DiscoverPeopleScreen - ספירת משתמשים:', {
+        סך_כול_יוזרים_במסד_נתונים: totalUsersInDatabase || 'לא זמין',
         המלצות: filteredSuggestions.length,
         פופולריים: filteredPopular.length,
-        סך_כול: totalUsersFound,
+        סך_כול_נטענו: totalUsersFound,
         משתמשים_ייחודיים: uniqueUsersCount
       });
       

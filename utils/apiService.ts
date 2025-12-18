@@ -198,6 +198,10 @@ class ApiService {
     return this.request(`/api/users/${userId}/activities?limit=${limit}`);
   }
 
+  async getUsersSummary(): Promise<ApiResponse> {
+    return this.request('/api/users/stats/summary');
+  }
+
   async followUser(userId: string, followerId: string): Promise<ApiResponse> {
     return this.request(`/api/users/${userId}/follow`, {
       method: 'POST',

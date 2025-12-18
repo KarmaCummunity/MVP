@@ -263,8 +263,9 @@ export const getFollowing = async (userId: string): Promise<any[]> => {
 export const getFollowSuggestions = async (currentUserId: string, limit: number = 10, currentUserEmail?: string): Promise<any[]> => {
   try {
     if (USE_BACKEND) {
-      // Get more users than needed to filter out current user and get enough results
-      const fetchLimit = limit + 10;
+      // Get ALL users (use high limit to get all users from database)
+      // This ensures we show all users, not just a subset
+      const fetchLimit = 1000; // High limit to get all users
       const response = await apiService.getUsers({ limit: fetchLimit, offset: 0 });
       if (response.success && response.data) {
         // Filter out current user using strict string comparison (case-insensitive)
@@ -344,8 +345,9 @@ export const getFollowHistory = async (userId: string): Promise<FollowRelationsh
 export const getPopularUsers = async (limit: number = 10, excludeUserId?: string, excludeUserEmail?: string): Promise<any[]> => {
   try {
     if (USE_BACKEND) {
-      // Get more users than needed to account for filtering out current user
-      const fetchLimit = excludeUserId ? limit + 5 : limit;
+      // Get ALL users (use high limit to get all users from database)
+      // This ensures we show all users, not just a subset
+      const fetchLimit = 1000; // High limit to get all users
       // Get popular users from backend (sorted by karma_points and last_active)
       const response = await apiService.getUsers({ limit: fetchLimit, offset: 0 });
       if (response.success && response.data) {
