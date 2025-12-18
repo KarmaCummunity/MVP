@@ -48,7 +48,6 @@ export default function DiscoverPeopleScreen() {
   const [popularUsers, setPopularUsers] = useState<CharacterType[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'suggestions' | 'popular'>('suggestions');
-  const [refreshKey, setRefreshKey] = useState(0);
   const [followStats, setFollowStats] = useState<Record<string, { isFollowing: boolean }>>({});
 
   useEffect(() => {
@@ -60,10 +59,23 @@ export default function DiscoverPeopleScreen() {
     React.useCallback(() => {
       console.log('🔍 DiscoverPeopleScreen - Screen focused, refreshing data...');
       loadUsers();
-      // Force re-render by updating refresh key
-      setRefreshKey(prev => prev + 1);
     }, [])
   );
+
+  // Helper function to check if a user is the current user
+  const isCurrentUserCheck = useCallback((
+    userId: string,
+    userEmail: string | undefined,
+    currentUserId: string,
+    currentUserEmail: string
+  ): boolean => {
+    const normalizedUserId = String(userId || '').trim().toLowerCase();
+    const normalizedUserEmail = userEmail ? String(userEmail).trim().toLowerCase() : '';
+
+    return normalizedUserId === currentUserId ||
+      (currentUserEmail && normalizedUserEmail === currentUserEmail) ||
+      normalizedUserId === '';
+  }, []);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -84,41 +96,37 @@ export default function DiscoverPeopleScreen() {
       // Get ALL users (no limit) - use high limit to get all users from database
       const userSuggestions = await getFollowSuggestions(currentUserId, 1000, currentUserEmail);
       // Filter out current user from suggestions - check both ID and email
-      filteredSuggestions = (userSuggestions as any[]).filter(
-        (user) => {
-          const userId = String(user.id || '').trim().toLowerCase();
-          const userEmail = user.email ? String(user.email).trim().toLowerCase() : '';
-          const isCurrentUser = userId === currentUserId ||
-            (currentUserEmail && userEmail === currentUserEmail) ||
-            userId === '';
+      filteredSuggestions = (userSuggestions as any[]).filter((user) => {
+        const isCurrentUser = isCurrentUserCheck(user.id, user.email, currentUserId, currentUserEmail);
 
-          if (isCurrentUser) {
-            console.log('🚫 Filtered out current user from suggestions:', { userId, userEmail, name: user.name });
-          }
-
-          return !isCurrentUser;
+        if (isCurrentUser) {
+          console.log('🚫 Filtered out current user from suggestions:', {
+            userId: user.id,
+            userEmail: user.email,
+            name: user.name
+          });
         }
-      );
+
+        return !isCurrentUser;
+      });
       setSuggestions(filteredSuggestions);
 
       // Get popular users excluding current user - get ALL users (no limit)
       const popular = await getPopularUsers(1000, currentUserId, currentUserEmail);
       // Additional filter as safety measure - check both ID and email
-      const filteredPopular = (popular as any[]).filter(
-        (user) => {
-          const userId = String(user.id || '').trim().toLowerCase();
-          const userEmail = user.email ? String(user.email).trim().toLowerCase() : '';
-          const isCurrentUser = userId === currentUserId ||
-            (currentUserEmail && userEmail === currentUserEmail) ||
-            userId === '';
+      const filteredPopular = (popular as any[]).filter((user) => {
+        const isCurrentUser = isCurrentUserCheck(user.id, user.email, currentUserId, currentUserEmail);
 
-          if (isCurrentUser) {
-            console.log('🚫 Filtered out current user from popular:', { userId, userEmail, name: user.name });
-          }
-
-          return !isCurrentUser;
+        if (isCurrentUser) {
+          console.log('🚫 Filtered out current user from popular:', {
+            userId: user.id,
+            userEmail: user.email,
+            name: user.name
+          });
         }
-      );
+
+        return !isCurrentUser;
+      });
       setPopularUsers(filteredPopular);
 
       // Get total users count from server
@@ -222,7 +230,7 @@ export default function DiscoverPeopleScreen() {
         conversationId = await createConversation([selectedUser.id, targetUser.id]);
       }
 
-      navigation.navigate('ChatDetailScreen' as any, {
+      navigation.navigate('ChatDetailScreen', {
         conversationId,
         otherUserId: targetUser.id,
         userName: targetUser.name || 'ללא שם',
@@ -243,7 +251,7 @@ export default function DiscoverPeopleScreen() {
         <TouchableOpacity
           style={styles.userInfo}
           onPress={() => {
-            navigation.navigate('UserProfileScreen' as any, {
+            navigation.navigate('UserProfileScreen', {
               userId: item.id,
               userName: item.name,
               characterData: item
@@ -366,26 +374,8 @@ export default function DiscoverPeopleScreen() {
     </View>
   );
 
-  // Filter out current user from displayed data (double-check to ensure current user is never shown)
-  const rawData = activeTab === 'suggestions' ? suggestions : popularUsers;
-  const currentData = selectedUser
-    ? rawData.filter((user) => {
-      const userId = String(user.id || '').trim().toLowerCase();
-      const userEmail = user.email ? String(user.email).trim().toLowerCase() : '';
-      const currentUserId = String(selectedUser.id || '').trim().toLowerCase();
-      const currentUserEmail = selectedUser.email ? String(selectedUser.email).trim().toLowerCase() : '';
-
-      const isCurrentUser = userId === currentUserId ||
-        (currentUserEmail && userEmail === currentUserEmail) ||
-        userId === '';
-
-      if (isCurrentUser) {
-        console.log('🚫 Filtered out current user from display:', { userId, userEmail, name: user.name });
-      }
-
-      return !isCurrentUser;
-    })
-    : rawData;
+  // Data is already filtered in loadUsers, no need to filter again
+  const currentData = activeTab === 'suggestions' ? suggestions : popularUsers;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -393,7 +383,7 @@ export default function DiscoverPeopleScreen() {
         data={currentData}
         renderItem={renderUserItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={[styles.listContainer, { paddingBottom: bottomPadding }]}
+        contentContainerStyle={{ paddingBottom: bottomPadding }}
         showsVerticalScrollIndicator={true}
         ListHeaderComponent={renderListHeader}
         ListEmptyComponent={renderEmptyState}
@@ -403,6 +393,7 @@ export default function DiscoverPeopleScreen() {
         initialNumToRender={20}
         maxToRenderPerBatch={10}
         windowSize={21}
+        keyboardShouldPersistTaps="handled"
       />
     </SafeAreaView>
   );
@@ -462,9 +453,6 @@ const styles = StyleSheet.create({
   activeTabButtonText: {
     color: colors.white,
     fontWeight: '600',
-  },
-  listContainer: {
-    flexGrow: 1,
   },
   userItem: {
     flexDirection: 'row',
