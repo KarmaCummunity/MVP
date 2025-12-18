@@ -77,12 +77,29 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
   const loadStats = async () => {
     try {
       setLoading(true);
+      console.log('📊 AdminDashboard - Loading stats...');
       const res = await import('../utils/apiService').then(m => m.apiService.getDashboardStats());
+      console.log('📊 AdminDashboard - API Response:', res);
+
       if (res.success && res.data) {
-        setStats(res.data);
+        // Convert string values to numbers for proper display
+        const processedData = {
+          ...res.data,
+          metrics: {
+            ...res.data.metrics,
+            total_users: Number(res.data.metrics.total_users || 0),
+            total_donations: Number(res.data.metrics.total_donations || 0),
+            total_rides: Number(res.data.metrics.total_rides || 0),
+            total_money_donated: Number(res.data.metrics.total_money_donated || 0),
+          }
+        };
+        console.log('📊 AdminDashboard - Processed stats:', processedData);
+        setStats(processedData);
+      } else {
+        console.warn('⚠️ AdminDashboard - API call failed or returned no data:', res);
       }
     } catch (error) {
-      console.error('Failed to load dashboard stats', error);
+      console.error('❌ AdminDashboard - Failed to load dashboard stats:', error);
     } finally {
       setLoading(false);
     }
@@ -125,26 +142,40 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
           </Text>
         </View>
 
+        {loading && !stats && (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>טוען סטטיסטיקות...</Text>
+          </View>
+        )}
+
+        {!loading && !stats && (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="stats-chart-outline" size={48} color={colors.textSecondary} />
+            <Text style={styles.emptyText}>לא ניתן לטעון סטטיסטיקות</Text>
+            <Text style={styles.emptySubtext}>משוך למטה לרענון</Text>
+          </View>
+        )}
+
         {stats && stats.metrics && (
           <View style={styles.statsContainer}>
             <View style={styles.statCard}>
               <Ionicons name="cash-outline" size={24} color={colors.success} />
-              <Text style={styles.statValue}>{formatMoney(Number(stats.metrics.total_money_donated || 0))}</Text>
+              <Text style={styles.statValue}>{formatMoney(stats.metrics.total_money_donated)}</Text>
               <Text style={styles.statLabel}>סה"כ תרומות</Text>
             </View>
             <View style={styles.statCard}>
               <Ionicons name="people-outline" size={24} color={colors.primary} />
-              <Text style={styles.statValue}>{stats.metrics.total_users || 0}</Text>
+              <Text style={styles.statValue}>{stats.metrics.total_users}</Text>
               <Text style={styles.statLabel}>משתמשים</Text>
             </View>
             <View style={styles.statCard}>
               <Ionicons name="gift-outline" size={24} color={colors.secondary} />
-              <Text style={styles.statValue}>{stats.metrics.total_donations || 0}</Text>
+              <Text style={styles.statValue}>{stats.metrics.total_donations}</Text>
               <Text style={styles.statLabel}>תרומות</Text>
             </View>
             <View style={styles.statCard}>
               <Ionicons name="car-outline" size={24} color={colors.warning} />
-              <Text style={styles.statValue}>{stats.metrics.total_rides || 0}</Text>
+              <Text style={styles.statValue}>{stats.metrics.total_rides}</Text>
               <Text style={styles.statLabel}>נסיעות</Text>
             </View>
           </View>
@@ -277,6 +308,34 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.textPrimary,
     textAlign: 'center',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: LAYOUT_CONSTANTS.SPACING.XL,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XL,
+  },
+  loadingText: {
+    fontSize: FontSizes.medium,
+    color: colors.textSecondary,
+    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: LAYOUT_CONSTANTS.SPACING.XL,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XL,
+  },
+  emptyText: {
+    fontSize: FontSizes.medium,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginTop: LAYOUT_CONSTANTS.SPACING.MD,
+  },
+  emptySubtext: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+    marginTop: LAYOUT_CONSTANTS.SPACING.XS,
   },
 });
 

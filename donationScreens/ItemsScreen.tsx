@@ -398,8 +398,8 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   // Initialize with appropriate default, but allow user control via slider
   const [numColumns, setNumColumns] = useState(() => (isTablet || isDesktop || isDesktopWeb) ? 3 : 2);
 
-  const screenPadding = 16;
-  const cardGap = isTablet || isDesktop || isDesktopWeb ? 16 : 12;
+  const screenPadding = 20;
+  const cardGap = isTablet || isDesktop || isDesktopWeb ? 16 : 14;
   const cardWidth = (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
 
   const handleSearch = (query: string, filters: string[] = [], sorts: string[] = [], _results?: any[]) => {
@@ -768,13 +768,18 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
               <View style={[
                 localStyles.itemsGrid,
                 {
-                  gap: cardGap,
-                  // Shift content for slider
-                  paddingLeft: 40
+                  paddingHorizontal: screenPadding,
                 }
               ]}>
-                {filteredItems.map((item) => (
-                  <View key={item.id} style={{ width: cardWidth }}>
+                {filteredItems.map((item, idx) => (
+                  <View
+                    key={item.id}
+                    style={{
+                      width: cardWidth,
+                      marginBottom: cardGap,
+                      marginLeft: idx % numColumns === 0 ? 0 : cardGap,
+                    }}
+                  >
                     {renderItemCard({ item })}
                   </View>
                 ))}

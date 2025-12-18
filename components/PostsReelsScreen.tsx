@@ -1341,12 +1341,12 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
   }, [numColumns]);
 
   // Calculate card dimensions based on number of columns
-  const screenPadding = 16;
+  const screenPadding = 20;
   // Dynamic gap based on number of columns - smaller gaps for more columns
   const cardGap = numColumns === 1 ? 0 :
-    numColumns === 2 ? 12 :
-      numColumns === 3 ? 12 :
-        numColumns === 4 ? 10 : 8;
+    numColumns === 2 ? 16 :
+      numColumns === 3 ? 14 :
+        numColumns === 4 ? 12 : 10;
   const cardWidth = numColumns === 1
     ? width - (screenPadding * 2)
     : (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
@@ -1455,15 +1455,20 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
         numColumns={numColumns}
         columnWrapperStyle={numColumns > 1 ? {
           paddingHorizontal: screenPadding,
-          gap: cardGap,
-          marginBottom: cardGap,
         } : undefined}
-        renderItem={({ item }) => <PostReelItem item={item} cardWidth={cardWidth} numColumns={numColumns} />}
+        renderItem={({ item, index }) => (
+          <View style={{
+            marginBottom: cardGap,
+            marginLeft: numColumns > 1 && index % numColumns !== 0 ? cardGap : 0,
+          }}>
+            <PostReelItem item={item} cardWidth={cardWidth} numColumns={numColumns} />
+          </View>
+        )}
         contentContainerStyle={{
           paddingTop: 70, // Space for floating header
           paddingBottom: 20,
           paddingHorizontal: numColumns === 1 ? screenPadding : 0,
-          paddingLeft: numColumns === 1 ? screenPadding : (screenPadding + 50), // Make room for slider
+          paddingLeft: numColumns === 1 ? screenPadding : 0,
           flexGrow: 1,
           minHeight: '150%' // Force content to be taller than viewport
         }}
@@ -1520,24 +1525,22 @@ const styles = StyleSheet.create({
     overflow: 'visible', // Ensure slider is not clipped
   },
   itemContainer: {
-    marginBottom: 16,
-    marginHorizontal: 16,
-    borderRadius: 12,
+    marginBottom: 20,
+    borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: colors.background,
-    elevation: 2,
+    elevation: 3,
     ...(Platform.OS === 'web' ? {
-      boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)'
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
     } : {
       shadowColor: colors.shadow,
-      shadowOpacity: 0.1,
-      shadowOffset: { width: 0, height: 1 },
-      shadowRadius: 4,
+      shadowOpacity: 0.2,
+      shadowOffset: { width: 0, height: 3 },
+      shadowRadius: 10,
     }),
   },
   itemContainerGrid: {
-    marginHorizontal: 0,
-    marginBottom: 0,
+    marginBottom: 16,
   },
   reelItem: {
     backgroundColor: colors.infoLight,

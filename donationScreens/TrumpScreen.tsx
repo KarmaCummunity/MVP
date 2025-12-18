@@ -630,8 +630,8 @@ export default function TrumpScreen({
   // Initialize with appropriate default, but allow user control via slider
   const [numColumns, setNumColumns] = useState(() => (isTablet || isDesktop || isDesktopWeb) ? 3 : 2);
 
-  const screenPadding = 16;
-  const cardGap = isTablet || isDesktop || isDesktopWeb ? 16 : 12;
+  const screenPadding = 20;
+  const cardGap = isTablet || isDesktop || isDesktopWeb ? 16 : 14;
   const cardWidth = (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
 
   const handleCloseRideModal = () => {
@@ -782,13 +782,18 @@ export default function TrumpScreen({
               <View style={[
                 localStyles.ridesGrid,
                 {
-                  gap: cardGap,
-                  // If slider is visible (always visible here?), shift content
-                  paddingLeft: 40
+                  paddingHorizontal: screenPadding,
                 }
               ]}>
                 {filteredRides.map((ride, idx) => (
-                  <View key={ride.id || idx} style={{ width: cardWidth }}>
+                  <View
+                    key={ride.id || idx}
+                    style={{
+                      width: cardWidth,
+                      marginBottom: cardGap,
+                      marginLeft: idx % numColumns === 0 ? 0 : cardGap,
+                    }}
+                  >
                     <RideCard
                       ride={ride}
                       onPress={handleSelectRide}

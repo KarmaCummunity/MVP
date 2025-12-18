@@ -226,7 +226,7 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
             <FlatList
                 data={filteredUsers}
                 keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.listContentContainer}
+                contentContainerStyle={[styles.listContentContainer, { minHeight: '150%' }]}
                 refreshControl={<RefreshControl refreshing={isLoading} onRefresh={loadUsers} />}
                 ListHeaderComponent={renderHeader}
                 ListEmptyComponent={
@@ -236,6 +236,7 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                         </Text>
                     </View>
                 }
+                showsVerticalScrollIndicator={true}
                 renderItem={({ item: user }) => {
                     const currentRoles = Array.isArray(user.roles) ? user.roles : [];
                     const isAdmin = currentRoles.includes('admin') || currentRoles.includes('super_admin');

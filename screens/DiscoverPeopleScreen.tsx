@@ -22,12 +22,12 @@ import { useNavigation, useFocusEffect, NavigationProp, ParamListBase } from '@r
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { UserPreview as CharacterType } from '../globals/types';
-import { 
-  getFollowSuggestions, 
+import {
+  getFollowSuggestions,
   getPopularUsers,
-  followUser, 
+  followUser,
   unfollowUser,
-  getFollowStats 
+  getFollowStats
 } from '../utils/followService';
 import { createConversation, conversationExists } from '../utils/chatService';
 import { useUser } from '../stores/userStore';
@@ -77,9 +77,9 @@ export default function DiscoverPeopleScreen() {
 
       const currentUserId = String(selectedUser.id).trim().toLowerCase();
       const currentUserEmail = selectedUser.email ? String(selectedUser.email).trim().toLowerCase() : '';
-      
+
       console.log('🔍 DiscoverPeopleScreen - Filtering users. Current user ID:', currentUserId, 'Email:', currentUserEmail);
-      
+
       let filteredSuggestions: any[] = [];
       // Get ALL users (no limit) - use high limit to get all users from database
       const userSuggestions = await getFollowSuggestions(currentUserId, 1000, currentUserEmail);
@@ -88,19 +88,19 @@ export default function DiscoverPeopleScreen() {
         (user) => {
           const userId = String(user.id || '').trim().toLowerCase();
           const userEmail = user.email ? String(user.email).trim().toLowerCase() : '';
-          const isCurrentUser = userId === currentUserId || 
-                               (currentUserEmail && userEmail === currentUserEmail) ||
-                               userId === '';
-          
+          const isCurrentUser = userId === currentUserId ||
+            (currentUserEmail && userEmail === currentUserEmail) ||
+            userId === '';
+
           if (isCurrentUser) {
             console.log('🚫 Filtered out current user from suggestions:', { userId, userEmail, name: user.name });
           }
-          
+
           return !isCurrentUser;
         }
       );
       setSuggestions(filteredSuggestions);
-      
+
       // Get popular users excluding current user - get ALL users (no limit)
       const popular = await getPopularUsers(1000, currentUserId, currentUserEmail);
       // Additional filter as safety measure - check both ID and email
@@ -108,19 +108,19 @@ export default function DiscoverPeopleScreen() {
         (user) => {
           const userId = String(user.id || '').trim().toLowerCase();
           const userEmail = user.email ? String(user.email).trim().toLowerCase() : '';
-          const isCurrentUser = userId === currentUserId || 
-                               (currentUserEmail && userEmail === currentUserEmail) ||
-                               userId === '';
-          
+          const isCurrentUser = userId === currentUserId ||
+            (currentUserEmail && userEmail === currentUserEmail) ||
+            userId === '';
+
           if (isCurrentUser) {
             console.log('🚫 Filtered out current user from popular:', { userId, userEmail, name: user.name });
           }
-          
+
           return !isCurrentUser;
         }
       );
       setPopularUsers(filteredPopular);
-      
+
       // Get total users count from server
       let totalUsersInDatabase = 0;
       try {
@@ -140,7 +140,7 @@ export default function DiscoverPeopleScreen() {
           console.error('❌ Error fetching all users as fallback:', fallbackError);
         }
       }
-      
+
       // Log total users found - ALWAYS log this, even if summary failed
       const totalUsersFound = filteredSuggestions.length + filteredPopular.length;
       const uniqueUsersCount = new Set([...filteredSuggestions.map(u => u.id), ...filteredPopular.map(u => u.id)]).size;
@@ -151,16 +151,16 @@ export default function DiscoverPeopleScreen() {
         סך_כול_נטענו: totalUsersFound,
         משתמשים_ייחודיים: uniqueUsersCount
       });
-      
+
       // Load follow stats for all users (use filtered lists)
       const allUsersToCheck = [...filteredSuggestions, ...filteredPopular];
       const stats: Record<string, { isFollowing: boolean }> = {};
-      
+
       for (const user of allUsersToCheck) {
         const userStats = await getFollowStats(user.id, currentUserId);
         stats[user.id] = { isFollowing: userStats.isFollowing };
       }
-      
+
       setFollowStats(stats);
     } catch (error) {
       console.error('Error loading users:', error);
@@ -178,7 +178,7 @@ export default function DiscoverPeopleScreen() {
 
     try {
       const currentStats = followStats[targetUserId] || { isFollowing: false };
-      
+
       if (currentStats.isFollowing) {
         const success = await unfollowUser(selectedUser.id, targetUserId);
         if (success) {
@@ -213,7 +213,7 @@ export default function DiscoverPeopleScreen() {
     try {
       const existingConvId = await conversationExists(selectedUser.id, targetUser.id);
       let conversationId: string;
-      
+
       if (existingConvId) {
         console.log('💬 Conversation already exists:', existingConvId);
         conversationId = existingConvId;
@@ -221,7 +221,7 @@ export default function DiscoverPeopleScreen() {
         console.log('💬 Creating new conversation...');
         conversationId = await createConversation([selectedUser.id, targetUser.id]);
       }
-      
+
       navigation.navigate('ChatDetailScreen' as any, {
         conversationId,
         otherUserId: targetUser.id,
@@ -240,7 +240,7 @@ export default function DiscoverPeopleScreen() {
 
     return (
       <View style={styles.userItem}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.userInfo}
           onPress={() => {
             navigation.navigate('UserProfileScreen' as any, {
@@ -341,6 +341,21 @@ export default function DiscoverPeopleScreen() {
     </View>
   );
 
+  const renderListHeader = () => (
+    <>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <View style={styles.headerSpacer} />
+      </View>
+      {renderTabBar()}
+    </>
+  );
+
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="people-outline" size={60} color={colors.textSecondary} />
@@ -353,57 +368,41 @@ export default function DiscoverPeopleScreen() {
 
   // Filter out current user from displayed data (double-check to ensure current user is never shown)
   const rawData = activeTab === 'suggestions' ? suggestions : popularUsers;
-  const currentData = selectedUser 
+  const currentData = selectedUser
     ? rawData.filter((user) => {
-        const userId = String(user.id || '').trim().toLowerCase();
-        const userEmail = user.email ? String(user.email).trim().toLowerCase() : '';
-        const currentUserId = String(selectedUser.id || '').trim().toLowerCase();
-        const currentUserEmail = selectedUser.email ? String(selectedUser.email).trim().toLowerCase() : '';
-        
-        const isCurrentUser = userId === currentUserId || 
-                             (currentUserEmail && userEmail === currentUserEmail) ||
-                             userId === '';
-        
-        if (isCurrentUser) {
-          console.log('🚫 Filtered out current user from display:', { userId, userEmail, name: user.name });
-        }
-        
-        return !isCurrentUser;
-      })
+      const userId = String(user.id || '').trim().toLowerCase();
+      const userEmail = user.email ? String(user.email).trim().toLowerCase() : '';
+      const currentUserId = String(selectedUser.id || '').trim().toLowerCase();
+      const currentUserEmail = selectedUser.email ? String(selectedUser.email).trim().toLowerCase() : '';
+
+      const isCurrentUser = userId === currentUserId ||
+        (currentUserEmail && userEmail === currentUserEmail) ||
+        userId === '';
+
+      if (isCurrentUser) {
+        console.log('🚫 Filtered out current user from display:', { userId, userEmail, name: user.name });
+      }
+
+      return !isCurrentUser;
+    })
     : rawData;
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <View style={styles.headerSpacer} />
-      {/* Tab Bar */}
-      {renderTabBar()}
-      </View>
-
-
       <FlatList
         data={currentData}
         renderItem={renderUserItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={[styles.listContainer, { paddingBottom: bottomPadding }]}
         showsVerticalScrollIndicator={true}
+        ListHeaderComponent={renderListHeader}
         ListEmptyComponent={renderEmptyState}
         refreshing={loading}
         onRefresh={loadUsers}
         style={styles.flatList}
-        // Fix for web: ensure all items are rendered, not just visible ones
-        initialNumToRender={Platform.OS === 'web' ? currentData.length : 20}
-        maxToRenderPerBatch={Platform.OS === 'web' ? currentData.length : 10}
-        windowSize={Platform.OS === 'web' ? 1 : 21}
-        removeClippedSubviews={Platform.OS !== 'web'}
-        updateCellsBatchingPeriod={Platform.OS === 'web' ? 0 : 50}
+        initialNumToRender={20}
+        maxToRenderPerBatch={10}
+        windowSize={21}
       />
     </SafeAreaView>
   );

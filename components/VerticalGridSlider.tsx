@@ -48,13 +48,16 @@ export default function VerticalGridSlider({
     const handleTouch = (y: number) => {
         // y is relative to the top of the track (0 to 160)
 
-        // Calculate raw index (0 to 4)
-        const rawIndex = y / (sliderHeight / 4);
-        let index = Math.round(rawIndex);
+        // Clamp y to valid range first
+        let clampedY = y;
+        if (clampedY < 0) clampedY = 0;
+        if (clampedY > sliderHeight) clampedY = sliderHeight;
 
-        // Clamp
-        if (index < 0) index = 0;
-        if (index > 4) index = 4;
+        // Calculate which step we're closest to
+        // We have 5 steps (0, 1, 2, 3, 4) at positions (0, 40, 80, 120, 160)
+        const stepSize = sliderHeight / 4; // 40px per step
+        const rawStep = clampedY / stepSize;
+        const index = Math.round(rawStep);
 
         const newCols = index + 1;
 
@@ -68,10 +71,12 @@ export default function VerticalGridSlider({
         <View
             style={[styles.columnSliderContainer, style]}
             collapsable={false}
+            pointerEvents="box-none"
         >
             {/* Combined Touch & Visual Area with PanResponder */}
             <View
                 style={styles.touchArea}
+                pointerEvents="auto"
                 {...panResponder.panHandlers}
             >
                 {/* Visuals Layer */}
