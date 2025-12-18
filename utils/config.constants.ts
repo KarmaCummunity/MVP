@@ -2,10 +2,12 @@
 // This file ONLY exports constants with no logic to avoid circular dependencies
 
 // Simple environment detection
-const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : false;
+const projectEnv = (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_ENVIRONMENT)
+  || (typeof __DEV__ !== 'undefined' && __DEV__ ? 'development' : 'production');
 
-export const IS_DEVELOPMENT = isDev;
-export const IS_PRODUCTION = !isDev;
+export const IS_DEVELOPMENT = projectEnv === 'development';
+export const IS_PRODUCTION = projectEnv === 'production';
+export const CURRENT_ENVIRONMENT = projectEnv;
 
 // Simple API URL resolution - no complex logic
 const getSimpleApiUrl = (): string => {
@@ -13,11 +15,11 @@ const getSimpleApiUrl = (): string => {
   if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_BASE_URL) {
     return process.env.EXPO_PUBLIC_API_BASE_URL;
   }
-  
-  // Fallback to production URL
-  return IS_PRODUCTION 
+
+  // Fallback to appropriate environment URL
+  return IS_PRODUCTION
     ? 'https://kc-mvp-server-production.up.railway.app'
-    : 'http://localhost:3001';
+    : 'https://kc-mvp-server-dev.up.railway.app';
 };
 
 // Export as constant, evaluated once

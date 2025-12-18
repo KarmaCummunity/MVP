@@ -44,6 +44,7 @@ import { useWebMode } from './stores/webModeStore';
 import { useAppLoading } from './stores/appLoadingStore';
 import { useUser } from './stores/userStore';
 import WebModeToggleOverlay from './components/WebModeToggleOverlay';
+import DevEnvironmentBanner from './components/DevEnvironmentBanner';
 import { FontSizes } from "./globals/constants";
 import { logger } from './utils/loggerService';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -448,6 +449,7 @@ function AppContent() {
         children={
           <View style={Platform.OS === 'web' ? { flex: 1, backgroundColor: colors.black } : { flex: 1 }}>
             <View style={[containerStyle, webWrapperStyle]}>
+              <DevEnvironmentBanner />
               <MainNavigator />
               <WebModeToggleOverlay />
               <StatusBar style="auto" />

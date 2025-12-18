@@ -1,4 +1,12 @@
-const DEFAULT_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://kc-mvp-server-production.up.railway.app';
+// Environment detection
+const ENVIRONMENT = process.env.EXPO_PUBLIC_ENVIRONMENT || 'production';
+const IS_DEV = ENVIRONMENT === 'development';
+
+// API URL based on environment
+const DEFAULT_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ||
+  (IS_DEV
+    ? 'https://kc-mvp-server-dev.up.railway.app'
+    : 'https://kc-mvp-server-production.up.railway.app');
 
 // Define colors locally for config usage (colors.tsx cannot be imported in JS config)
 const colors = {
@@ -10,7 +18,7 @@ const colors = {
 
 export default {
   expo: {
-    name: "KC - הקיבוץ הקפיטליסטי",
+    name: IS_DEV ? "KC - DEV 🟢" : "KC - הקיבוץ הקפיטליסטי",
     slug: "karma-community",
     version: "1.9.5",
     orientation: "portrait",
@@ -118,6 +126,7 @@ export default {
     // שמירה על owner מ-app.json
     owner: "navesarussi1",
     extra: {
+      EXPO_PUBLIC_ENVIRONMENT: ENVIRONMENT,
       EXPO_PUBLIC_API_BASE_URL: DEFAULT_API_BASE_URL,
       EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID: "430191522654-jno2tkl1dotil0mkf4h4hahfk4e4gas8.apps.googleusercontent.com",
       EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: "430191522654-o70t2qnqc4bvpvmbpak7unog7pvp9c95.apps.googleusercontent.com",
