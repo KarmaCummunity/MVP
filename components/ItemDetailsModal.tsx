@@ -219,9 +219,6 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         
         if (bottomNavigator) {
           // Navigate through HomeScreen to UserProfileScreen (which is in HomeTabStack)
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ItemDetailsModal.tsx:219', message: 'Navigating via BottomNavigator to HomeScreen', data: { userId: itemOwner.id, userName: itemOwner.name, foundBottomNavigator: true }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
-          // #endregion
           bottomNavigator.navigate('HomeScreen', {
             screen: 'UserProfileScreen',
             params: {
@@ -233,20 +230,11 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
           logger.debug('ItemDetailsModal', 'Navigated to UserProfileScreen via HomeTabStack');
           return;
         }
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ItemDetailsModal.tsx:231', message: 'BottomNavigator not found', data: { userId: itemOwner.id, depth }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
-        // #endregion
         
         // Fallback: try direct navigation to HomeScreen if available
         const parentNavigator = (navigation as any).getParent();
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ItemDetailsModal.tsx:234', message: 'Fallback navigation attempt', data: { hasParentNavigator: !!parentNavigator, userId: itemOwner.id }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'D' }) }).catch(() => { });
-        // #endregion
         if (parentNavigator) {
           try {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ItemDetailsModal.tsx:238', message: 'Trying parentNavigator.navigate to HomeScreen', data: { userId: itemOwner.id }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'D' }) }).catch(() => { });
-            // #endregion
             parentNavigator.navigate('HomeScreen', {
               screen: 'UserProfileScreen',
               params: {
@@ -255,15 +243,9 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                 characterData: null
               }
             });
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ItemDetailsModal.tsx:246', message: 'ParentNavigator navigate to HomeScreen succeeded', data: { userId: itemOwner.id }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'D' }) }).catch(() => { });
-            // #endregion
             return;
           } catch (e) {
             // If that fails, try UserProfileScreen directly as fallback
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ItemDetailsModal.tsx:250', message: 'ParentNavigator navigate to HomeScreen failed, trying direct UserProfileScreen', data: { error: String(e), userId: itemOwner.id }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'D' }) }).catch(() => { });
-            // #endregion
             parentNavigator.navigate('UserProfileScreen', {
               userId: itemOwner.id,
               userName: itemOwner.name,
@@ -272,9 +254,6 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
           }
         } else {
           // Last resort: direct navigation
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ItemDetailsModal.tsx:259', message: 'No parent navigator, using direct navigation', data: { userId: itemOwner.id }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'D' }) }).catch(() => { });
-          // #endregion
           (navigation as any).navigate('UserProfileScreen', {
             userId: itemOwner.id,
             userName: itemOwner.name,

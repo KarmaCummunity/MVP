@@ -63,3 +63,4 @@ export const isValidCategory = (category: string | null | undefined): boolean =>
   return validCategories.includes(category);
 };
 
+

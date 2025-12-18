@@ -6,6 +6,8 @@ import {
   SafeAreaView,
   Alert,
   ScrollView,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { NavigationProp, ParamListBase, useFocusEffect, useRoute } from '@react-navigation/native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -22,6 +24,7 @@ import { useUser } from '../stores/userStore';
 import ScrollContainer from '../components/ScrollContainer';
 import AddLinkComponent from '../components/AddLinkComponent';
 import { useToast } from '../utils/toastService';
+import { getScreenInfo, BREAKPOINTS } from '../globals/responsive';
 
 // New Modular Components
 import RideCard from '../components/rides/RideCard';
@@ -618,6 +621,15 @@ export default function TrumpScreen({
     setShowRideModal(true);
   };
 
+  // Calculate grid layout for search mode
+  const { width } = Dimensions.get('window');
+  const { isTablet, isDesktop } = getScreenInfo();
+  const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
+  const numColumns = (isTablet || isDesktop || isDesktopWeb) ? 3 : 2;
+  const screenPadding = 16;
+  const cardGap = isTablet || isDesktop || isDesktopWeb ? 16 : 12;
+  const cardWidth = (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
+
   const handleCloseRideModal = () => {
     setShowRideModal(false);
     setSelectedRide(null);
@@ -754,13 +766,16 @@ export default function TrumpScreen({
                 <Text style={localStyles.emptyStateText}>{t('trump:ui.noRidesFoundBody')}</Text>
               </View>
             ) : (
-              filteredRides.map((ride, idx) => (
-                <RideCard
-                  key={ride.id || idx}
-                  ride={ride}
-                  onPress={handleSelectRide}
-                />
-              ))
+              <View style={[localStyles.ridesGrid, { gap: cardGap }]}>
+                {filteredRides.map((ride, idx) => (
+                  <View key={ride.id || idx} style={{ width: cardWidth }}>
+                    <RideCard
+                      ride={ride}
+                      onPress={handleSelectRide}
+                    />
+                  </View>
+                ))}
+              </View>
             )}
 
             {/* Groups Section (Restored) */}
@@ -859,5 +874,10 @@ const localStyles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.textPrimary,
     marginBottom: 8,
+  },
+  ridesGrid: {
+    flexDirection: 'row-reverse',
+    flexWrap: 'wrap',
+    paddingHorizontal: 0,
   },
 });

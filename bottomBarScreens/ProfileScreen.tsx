@@ -324,61 +324,34 @@ function ProfileScreenContent({
   
   // On Web, handle refresh (F5) by restoring params from localStorage if route params are missing
   const STORAGE_KEY = 'profileScreenParams';
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:327', message: 'localStorage check start', data: { hasRouteParams: !!routeParams, hasManualParams: !!manualParams, platformOS: Platform.OS, hasWindow: typeof window !== 'undefined' }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
-  // #endregion
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     if (!routeParams && !manualParams) {
       // Try to restore from localStorage
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:330', message: 'Attempting to restore from localStorage', data: { storageKey: STORAGE_KEY }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
-      // #endregion
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:333', message: 'localStorage getItem result', data: { hasStored: !!stored, storedLength: stored?.length, storedValue: stored }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
-        // #endregion
         if (stored) {
           const parsedParams = JSON.parse(stored);
           routeParams = parsedParams;
           console.log('👤 ProfileScreen - Restored params from localStorage:', parsedParams);
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:337', message: 'Restored params from localStorage', data: { restoredUserId: parsedParams?.userId, restoredUserName: parsedParams?.userName }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
-          // #endregion
         }
       } catch (error) {
         console.warn('Failed to restore params from localStorage:', error);
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:340', message: 'Failed to restore from localStorage', data: { error: String(error) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
-        // #endregion
       }
     } else if (routeParams?.userId) {
       // Save params to localStorage when viewing other user's profile
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:343', message: 'Saving params to localStorage', data: { userId: routeParams.userId, userName: routeParams.userName }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
-      // #endregion
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
           userId: routeParams.userId,
           userName: routeParams.userName,
           // Don't save characterData as it might be large
         }));
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:350', message: 'Successfully saved to localStorage', data: { userId: routeParams.userId }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
-        // #endregion
       } catch (error) {
         console.warn('Failed to save params to localStorage:', error);
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:353', message: 'Failed to save to localStorage', data: { error: String(error) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
-        // #endregion
       }
     }
   }
   
   const { userId: externalUserId, userName: externalUserName, characterData: externalCharacterData } = routeParams || {};
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:356', message: 'Extracted route params', data: { externalUserId, externalUserName, hasCharacterData: !!externalCharacterData, selectedUserId: selectedUser?.id }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
-  // #endregion
 
   // Determine if viewing own profile or other user's profile
   // CRITICAL: If externalUserId exists and equals selectedUser.id, it's OWN profile!
@@ -395,9 +368,6 @@ function ProfileScreenContent({
   const isOwnProfile = !forceOtherProfile &&
     (!normalizedExternalUserId ||
       (normalizedExternalUserId === normalizedSelectedUserId));
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:371', message: 'isOwnProfile calculation', data: { isOwnProfile, forceOtherProfile, normalizedExternalUserId, normalizedSelectedUserId, areEqual: normalizedExternalUserId === normalizedSelectedUserId }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
-  // #endregion
 
   const targetUserId = externalUserId || selectedUser?.id;
 
@@ -450,27 +420,15 @@ function ProfileScreenContent({
 
   // Load user data from backend if viewing other user's profile
   useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:424', message: 'loadUser useEffect triggered', data: { isOwnProfile, externalUserId, externalCharacterData: !!externalCharacterData, USE_BACKEND }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'E' }) }).catch(() => { });
-    // #endregion
     const loadUser = async () => {
       if (isOwnProfile || !externalUserId) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:426', message: 'loadUser early return', data: { isOwnProfile, hasExternalUserId: !!externalUserId }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'E' }) }).catch(() => { });
-        // #endregion
         return;
       }
 
       if (!externalCharacterData && externalUserId && USE_BACKEND) {
         try {
           setLoadingUser(true);
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:315', message: 'Loading user profile', data: { externalUserId, externalUserIdType: typeof externalUserId, selectedUserId: selectedUser?.id }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
-          // #endregion
           const response = await apiService.getUserById(externalUserId);
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:316', message: 'User profile response', data: { success: response.success, hasData: !!response.data, userId: response.data?.id, userEmail: response.data?.email, userAvatar: response.data?.avatar_url, externalUserId }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
-          // #endregion
           if (response.success && response.data) {
             const userData = response.data as any;
             const mappedUser: CharacterType = {
@@ -896,12 +854,6 @@ function ProfileScreenContent({
   // Recent Activities are now loaded from database (see loadRecentActivities function)
 
   // Derived display values
-  // #region agent log
-  const logAvatar = () => {
-    fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:734', message: 'Avatar source determination', data: { displayUserId: displayUser?.id, displayUserAvatar: displayUser?.avatar, hasAvatar: !!displayUser?.avatar, isOwnProfile, selectedUserAvatar: selectedUser?.avatar }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
-  };
-  logAvatar();
-  // #endregion
   const avatarSource = displayUser?.avatar ? { uri: displayUser.avatar } : defaultLogo;
 
   // Show error if viewing other user's profile and user not found
@@ -1954,29 +1906,17 @@ export default function ProfileScreen(props: any) {
 
   // On Web, handle refresh (F5) by restoring params from localStorage if route params are missing
   const STORAGE_KEY = 'profileScreenParams';
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:1952', message: 'ProfileScreen - localStorage check start', data: { hasRouteParams: !!routeParams, hasProps: !!props?.userId, platformOS: Platform.OS, hasWindow: typeof window !== 'undefined' }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run2', hypothesisId: 'A' }) }).catch(() => { });
-  // #endregion
   if (Platform.OS === 'web' && typeof window !== 'undefined' && !routeParams && !props?.userId) {
     // Try to restore from localStorage when route params are missing (after refresh)
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:1958', message: 'ProfileScreen - Attempting to restore from localStorage', data: { hasStored: !!stored, storedLength: stored?.length }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run2', hypothesisId: 'A' }) }).catch(() => { });
-      // #endregion
       if (stored) {
         const parsedParams = JSON.parse(stored);
         routeParams = parsedParams;
         console.log('👤 ProfileScreen - Restored params from localStorage:', parsedParams);
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:1964', message: 'ProfileScreen - Restored params from localStorage', data: { restoredUserId: parsedParams?.userId, restoredUserName: parsedParams?.userName }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run2', hypothesisId: 'A' }) }).catch(() => { });
-        // #endregion
       }
     } catch (error) {
       console.warn('Failed to restore params from localStorage:', error);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:1969', message: 'ProfileScreen - Failed to restore from localStorage', data: { error: String(error) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run2', hypothesisId: 'A' }) }).catch(() => { });
-      // #endregion
     }
   }
 
@@ -2028,9 +1968,6 @@ export default function ProfileScreen(props: any) {
     userName: propUserName || routeParams?.userName,
     characterData: propCharacterData || routeParams?.characterData
   };
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ProfileScreen.tsx:2006', message: 'ProfileScreen - Determining view mode', data: { isViewingOtherUser, externalUserId, propUserId, hasRouteParams: !!routeParams, hasManualParams: !!props?.userId }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run2', hypothesisId: 'B' }) }).catch(() => { });
-  // #endregion
 
   if (isViewingOtherUser) {
     // Viewing another user's profile - not in bottom tab navigator

@@ -134,7 +134,7 @@ export default {
       EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: "430191522654-q05j71a8lu3e1vgf75c2r2jscgckb4mm.apps.googleusercontent.com",
       EXPO_PUBLIC_USE_BACKEND: "1",
       EXPO_PUBLIC_USE_FIRESTORE: "0",
-      EXPO_PUBLIC_ADMIN_EMAILS: "navesarussi@gmail.com",
+      EXPO_PUBLIC_ADMIN_EMAILS: "navesarussi@gmail.com,mahalalel100@gmail.com,matan7491@gmail.com,ichai1306@gmail.com,lianbh2004@gmail.com",
       EXPO_PUBLIC_FIREBASE_API_KEY: "AIzaSyCDwgAVr5IbjXe2vqSEacn_p-ruATfvqIU",
       EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: "karma-community-app.firebaseapp.com",
       EXPO_PUBLIC_FIREBASE_PROJECT_ID: "karma-community-app",

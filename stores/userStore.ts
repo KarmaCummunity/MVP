@@ -442,17 +442,11 @@ export const useUserStore = create<UserState>((set, get) => ({
               // Use the resolved UUID to get full user data
               const resolvedUserId = (resolveResponse as any).user.id;
               userResponse = await apiService.getUserById(resolvedUserId);
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'userStore.ts:437',message:'getUserById after resolveUserId',data:{success:userResponse.success,hasData:!!userResponse.data,resolvedUserId,serverUserKeys:userResponse.data?Object.keys(userResponse.data):null,serverUserBio:userResponse.data?.bio,serverUserCity:userResponse.data?.city,serverUserCountry:userResponse.data?.country,serverUserAvatarUrl:userResponse.data?.avatar_url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-              // #endregion
             } else {
               console.warn('🔥 Failed to resolve user ID from server, using fallback');
               // Fallback: try to get user by email
               if (firebaseUser.email) {
                 userResponse = await apiService.getUserById(firebaseUser.email);
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'userStore.ts:442',message:'getUserById response after login (fallback)',data:{success:userResponse.success,hasData:!!userResponse.data,serverUserKeys:userResponse.data?Object.keys(userResponse.data):null,serverUserBio:userResponse.data?.bio,serverUserCity:userResponse.data?.city,serverUserCountry:userResponse.data?.country,serverUserAvatarUrl:userResponse.data?.avatar_url,email:firebaseUser.email},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-                // #endregion
               }
             }
             
@@ -484,9 +478,6 @@ export const useUserStore = create<UserState>((set, get) => ({
                     settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
                   };
                   
-                  // #region agent log
-                  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'userStore.ts:471',message:'Mapped userData after login',data:{userId:userData.id,userDataBio:userData.bio,userDataCity:userData.location.city,userDataCountry:userData.location.country,serverUserBio:serverUser.bio,serverUserCity:serverUser.city,serverUserCountry:serverUser.country,serverUserBioType:typeof serverUser.bio,serverUserCityType:typeof serverUser.city},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-                  // #endregion
                   // Log loaded user data for debugging
                   console.log('🔐 userStore - Loaded user data from API:', {
                     id: userData.id,

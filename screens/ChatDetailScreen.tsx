@@ -59,13 +59,6 @@ export default function ChatDetailScreen() {
     ? screenHeight - tabBarHeight - inputHeight - headerHeight 
     : undefined;
   
-  // #region agent log
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ChatDetailScreen.tsx:53',message:'tabBarHeight value',data:{tabBarHeight,platform:'web'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    }
-  }, [tabBarHeight]);
-  // #endregion
   const [conversationId, setConversationId] = useState(initialConversationId);
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -369,14 +362,6 @@ export default function ChatDetailScreen() {
       <Text style={styles.loadingText}>טוען הודעות...</Text>
     </View>
   );
-
-  // #region agent log
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ChatDetailScreen.tsx:358',message:'Component render - SafeAreaView',data:{platform:'web',tabBarHeight,showMediaOptions},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    }
-  }, [tabBarHeight, showMediaOptions]);
-  // #endregion
   
   return (
     <SafeAreaView style={[styles.safeArea, Platform.OS === 'web' && { position: 'relative' }]}>
@@ -445,47 +430,23 @@ export default function ChatDetailScreen() {
                 const paddingBottom = Platform.OS === 'web' 
                   ? tabBarHeight + inputHeight + 40  // Extra 40px for web to ensure scrolling works
                   : tabBarHeight + (showMediaOptions ? 150 : 70);
-                // #region agent log
-                if (Platform.OS === 'web') {
-                  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ChatDetailScreen.tsx:424',message:'FlatList paddingBottom calculation - increased padding',data:{paddingBottom,tabBarHeight,showMediaOptions,inputHeight,platform:'web'},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-scroll-v2',hypothesisId:'I'})}).catch(()=>{});
-                }
-                // #endregion
                 return { paddingBottom };
               })()
             ]}
             onContentSizeChange={(contentWidth, contentHeight) => {
-              // #region agent log
-              if (Platform.OS === 'web') {
-                fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ChatDetailScreen.tsx:436',message:'FlatList onContentSizeChange',data:{messagesCount:messages.length,contentWidth,contentHeight},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-scroll-v2',hypothesisId:'J'})}).catch(()=>{});
-              }
-              // #endregion
               // Use setTimeout to ensure scroll happens after layout
               setTimeout(() => {
                 flatListRef.current?.scrollToEnd({ animated: true });
               }, 100);
             }}
             onLayout={(event) => {
-              // #region agent log
-              if (Platform.OS === 'web') {
-                const { height, width } = event.nativeEvent.layout;
-                fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ChatDetailScreen.tsx:437',message:'FlatList onLayout',data:{height,width},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-scroll',hypothesisId:'H'})}).catch(()=>{});
-              }
-              // #endregion
               flatListRef.current?.scrollToEnd({ animated: true });
             }}
             showsVerticalScrollIndicator={false}
             style={styles.messagesList}
             scrollEnabled={true}
             nestedScrollEnabled={Platform.OS === 'web' ? true : undefined}
-            // #region agent log
-            onScroll={(event) => {
-              if (Platform.OS === 'web') {
-                const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-                fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ChatDetailScreen.tsx:462',message:'FlatList onScroll',data:{scrollY:contentOffset.y,contentHeight:contentSize.height,layoutHeight:layoutMeasurement.height,canScroll:contentSize.height>layoutMeasurement.height},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-scroll-v3',hypothesisId:'K'})}).catch(()=>{});
-              }
-            }}
             scrollEventThrottle={16}
-            // #endregion
           />
         )}
       </View>
@@ -527,9 +488,6 @@ export default function ChatDetailScreen() {
               zIndex: 999,
               backgroundColor: 'transparent'
             };
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ChatDetailScreen.tsx:507',message:'Input container style - fixed position',data:{bottom:inputStyle.bottom,tabBarHeight,zIndex:inputStyle.zIndex,position:'fixed'},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-limit-height',hypothesisId:'M'})}).catch(()=>{});
-            // #endregion
             return inputStyle;
           })()}
         >
@@ -539,9 +497,6 @@ export default function ChatDetailScreen() {
               if (Platform.OS === 'web') {
                 const { height } = event.nativeEvent.layout;
                 setInputHeight(height);
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ChatDetailScreen.tsx:520',message:'Input container layout - measured height',data:{height,width:event.nativeEvent.layout.width,x:event.nativeEvent.layout.x,y:event.nativeEvent.layout.y,bottom:tabBarHeight},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-dynamic',hypothesisId:'N'})}).catch(()=>{});
-                // #endregion
               }
             }}
           >
@@ -622,9 +577,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.backgroundSecondary,
     position: 'relative', // Ensure absolute children are positioned relative to this
-    // #region agent log
-    // Logging safeArea style for web debugging
-    // #endregion
   },
   header: {
     flexDirection: 'row',

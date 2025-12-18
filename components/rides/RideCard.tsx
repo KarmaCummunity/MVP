@@ -56,7 +56,6 @@ const styles = StyleSheet.create({
         backgroundColor: colors.moneyCardBackground,
         borderRadius: 12,
         padding: 12,
-        marginBottom: 10,
         borderWidth: 1,
         borderColor: colors.moneyFormBorder,
         shadowColor: "#000",
@@ -64,6 +63,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 2,
         elevation: 2,
+        width: '100%',
     },
     header: {
         flexDirection: 'row-reverse',

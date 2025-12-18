@@ -119,6 +119,16 @@ export default function DiscoverPeopleScreen() {
       );
       setPopularUsers(filteredPopular);
       
+      // Log total users found
+      const totalUsersFound = filteredSuggestions.length + filteredPopular.length;
+      const uniqueUsersCount = new Set([...filteredSuggestions.map(u => u.id), ...filteredPopular.map(u => u.id)]).size;
+      console.log('👥 DiscoverPeopleScreen - ספירת משתמשים:', {
+        המלצות: filteredSuggestions.length,
+        פופולריים: filteredPopular.length,
+        סך_כול: totalUsersFound,
+        משתמשים_ייחודיים: uniqueUsersCount
+      });
+      
       // Load follow stats for all users (use filtered lists)
       const allUsersToCheck = [...filteredSuggestions, ...filteredPopular];
       const stats: Record<string, { isFollowing: boolean }> = {};

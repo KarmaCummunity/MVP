@@ -123,9 +123,6 @@ export default function FirebaseGoogleButton() {
       // Use server-verified user data
       const serverUser = serverResponse.user;
       
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FirebaseGoogleButton.tsx:124',message:'Server user received',data:{serverUserId:serverUser.id,serverUserAvatar:serverUser.avatar,serverUserAvatarUrl:serverUser.avatar_url,firebasePhotoURL:user.photoURL,hasServerAvatar:!!serverUser.avatar,hasServerAvatarUrl:!!serverUser.avatar_url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
       
       const userData = {
         id: serverUser.id,

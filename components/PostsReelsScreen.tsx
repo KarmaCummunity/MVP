@@ -39,6 +39,7 @@ import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { db } from '../utils/databaseService';
 import { getCategoryLabel } from '../utils/itemCategoryUtils';
+import { getScreenInfo, BREAKPOINTS } from '../globals/responsive';
 
 const { width } = Dimensions.get('window');
 
@@ -79,8 +80,10 @@ const data = generateFakeData();
 /**
  * קומפוננטת פריט בודד - פוסט או ריל
  * @param item - הפריט להצגה
+ * @param cardWidth - רוחב הכרטיס (למצב grid)
+ * @param numColumns - מספר העמודות (לקביעת יחס גובה-רוחב)
  */
-const PostReelItem = ({ item }: { item: Item }) => {
+const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWidth?: number; numColumns?: number }) => {
   const navigation = useNavigation();
   // No changes here, matching original to insert t
   // Wait, I can't match easily inside PostComponent without seeing it.
@@ -176,10 +179,6 @@ const PostReelItem = ({ item }: { item: Item }) => {
   const handleProfilePress = () => {
     const targetUserId = item.user.id;
     const targetUserName = (item.user.name && item.user.name !== item.user.id) ? item.user.name : 'משתמש';
-
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'PostsReelsScreen.tsx:167', message: 'Profile press - navigating to profile', data: { targetUserId, targetUserIdType: typeof targetUserId, targetUserIdLength: targetUserId?.length, currentUserId: selectedUser?.id, currentUserIdType: typeof selectedUser?.id, itemId: item.id, isOwnProfile: targetUserId === selectedUser?.id }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
-    // #endregion
 
     logger.logScreenNavigation('PostsReelsScreen', 'UserProfileScreen', selectedUser?.id);
     logger.debug('PostsReelsScreen', 'Navigating to profile', {
@@ -308,9 +307,6 @@ const PostReelItem = ({ item }: { item: Item }) => {
         
         if (bottomNavigator) {
           // Navigate through HomeScreen to UserProfileScreen (which is in HomeTabStack)
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'PostsReelsScreen.tsx:297', message: 'Navigating via BottomNavigator to HomeScreen (from user press)', data: { userId: targetUserId, userName: targetUserName, foundBottomNavigator: true }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
-          // #endregion
           bottomNavigator.navigate('HomeScreen', {
             screen: 'UserProfileScreen',
             params: {
@@ -324,9 +320,6 @@ const PostReelItem = ({ item }: { item: Item }) => {
         }
         
         // Fallback: try direct navigation to HomeScreen if available
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'PostsReelsScreen.tsx:312', message: 'BottomNavigator not found (from user press)', data: { userId: targetUserId, depth }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
-        // #endregion
         const parentNavigator = (navigation as any).getParent();
         if (parentNavigator) {
           try {
@@ -527,9 +520,6 @@ const PostReelItem = ({ item }: { item: Item }) => {
         
         if (bottomNavigator) {
           // Navigate through HomeScreen to UserProfileScreen (which is in HomeTabStack)
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'PostsReelsScreen.tsx:442', message: 'Navigating via BottomNavigator to HomeScreen (from post)', data: { userId: targetUserId, userName: targetUserName, foundBottomNavigator: true }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
-          // #endregion
           bottomNavigator.navigate('HomeScreen', {
             screen: 'UserProfileScreen',
             params: {
@@ -680,18 +670,16 @@ const PostReelItem = ({ item }: { item: Item }) => {
     checkBookmarkStatus();
   }, [selectedUser, item.id]);
 
+  const containerStyle = cardWidth 
+    ? [styles.itemContainer, styles.itemContainerGrid, { width: cardWidth }, item.type === 'reel' && styles.reelItem]
+    : [styles.itemContainer, item.type === 'reel' && styles.reelItem];
+
   return (
-    <View style={[styles.itemContainer, item.type === 'reel' && styles.reelItem]}>
+    <View style={containerStyle}>
       {/* Header with User Profile */}
       <View style={styles.header}>
         <View style={styles.headerSpacer} />
         <TouchableOpacity style={styles.userInfo} onPress={handleProfilePress}>
-          {/* #region agent log */}
-          {(() => {
-            fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'PostsReelsScreen.tsx:328', message: 'Rendering user avatar in post', data: { itemUserId: item.user.id, itemUserAvatar: item.user.avatar, hasAvatar: !!item.user.avatar, itemUserName: item.user.name }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
-            return null;
-          })()}
-          {/* #endregion */}
           <Image source={{ uri: item.user.avatar }} style={styles.userAvatar} />
           <Text style={styles.userName} numberOfLines={1}>
             {item.user.name && item.user.name !== item.user.id ? item.user.name : 'משתמש'}
@@ -702,7 +690,17 @@ const PostReelItem = ({ item }: { item: Item }) => {
       {/* Content */}
       {item.thumbnail ? (
         <TouchableOpacity onPress={handlePostPress} activeOpacity={0.9}>
-          <Image source={{ uri: item.thumbnail }} style={styles.thumbnail} />
+          <Image 
+            source={{ uri: item.thumbnail }} 
+            style={[
+              styles.thumbnail,
+              cardWidth && {
+                width: cardWidth,
+                height: numColumns === 1 ? 300 : (numColumns === 2 ? cardWidth * 0.75 : cardWidth * 0.9)
+              }
+            ]} 
+            resizeMode="cover"
+          />
         </TouchableOpacity>
       ) : null}
 
@@ -933,9 +931,6 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
                 const userResponse = await axios.get(`${API_BASE_URL}/api/users/${uid}`);
                 if (userResponse.data?.success && userResponse.data.data) {
                   const userData = userResponse.data.data;
-                  // #region agent log
-                  fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'PostsReelsScreen.tsx:563', message: 'Loading user for feed', data: { uid, userName: userData.name, userAvatar: userData.avatar_url, hasAvatar: !!userData.avatar_url }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
-                  // #endregion
                   userIdToUser[uid] = {
                     id: uid,
                     name: userData.name && userData.name !== uid && userData.name.trim() ? userData.name : null,
@@ -1209,9 +1204,6 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
           }
 
           // Determine final user avatar
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'PostsReelsScreen.tsx:835', message: 'Determining final user avatar', data: { ownerId, itemOwnerAvatar: item.owner_avatar, userAvatar: user?.avatar, hasItemAvatar: !!item.owner_avatar, hasUserAvatar: !!user?.avatar }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
-          // #endregion
           const finalUserAvatar = (item.owner_avatar && item.owner_avatar.trim() && !item.owner_avatar.includes('pravatar'))
             ? item.owner_avatar
             : (user && user.avatar && !user.avatar.includes('pravatar'))
@@ -1336,6 +1328,27 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
   );
 
   const [lastOffsetY, setLastOffsetY] = useState(0);
+  const [numColumns, setNumColumns] = useState(() => {
+    const { isTablet, isDesktop } = getScreenInfo();
+    const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
+    const initialValue = (isTablet || isDesktop || isDesktopWeb) ? 3 : 2;
+    return initialValue;
+  });
+  
+  // Track numColumns changes
+  React.useEffect(() => {
+  }, [numColumns]);
+
+  // Calculate card dimensions based on number of columns
+  const screenPadding = 16;
+  // Dynamic gap based on number of columns - smaller gaps for more columns
+  const cardGap = numColumns === 1 ? 0 : 
+                  numColumns === 2 ? 12 : 
+                  numColumns === 3 ? 12 : 
+                  numColumns === 4 ? 10 : 8;
+  const cardWidth = numColumns === 1 
+    ? width - (screenPadding * 2)
+    : (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
 
   const handleScroll = (event: any) => {
     const offsetY = event.nativeEvent.contentOffset.y;
@@ -1418,20 +1431,84 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
     </View>
   );
 
+  // Vertical slider component for column control
+  const handleSliderPress = (index: number) => {
+    setNumColumns(index + 1);
+  };
+
+  // Memoize slider to prevent re-renders
+  const columnSlider = React.useMemo(() => {
+    const sliderHeight = 200;
+    const trackHeight = sliderHeight - 40;
+    const stepHeight = trackHeight / 4;
+    
+    return (
+      <View style={styles.columnSliderContainer} key="column-slider-fixed">
+        <View style={styles.columnSliderTrack}>
+          {[1, 2, 3, 4, 5].map((value, index) => {
+            const position = index * stepHeight;
+            const isActive = numColumns === value;
+            return (
+              <TouchableOpacity
+                key={`slider-thumb-${value}`}
+                style={[
+                  styles.columnSliderThumb,
+                  {
+                    top: position,
+                    backgroundColor: isActive ? colors.primary : colors.white,
+                    borderColor: isActive ? colors.primary : colors.border,
+                    borderWidth: isActive ? 2.5 : 2,
+                    shadowOpacity: isActive ? 0.3 : 0.1,
+                    elevation: isActive ? 6 : 2,
+                  }
+                ]}
+                onPress={() => handleSliderPress(index)}
+                activeOpacity={0.8}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <View style={[
+                  styles.columnSliderThumbInner,
+                  { 
+                    backgroundColor: isActive ? colors.white : colors.textSecondary,
+                    width: isActive ? 10 : 6,
+                    height: isActive ? 10 : 6,
+                    borderRadius: isActive ? 5 : 3,
+                  }
+                ]} />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+    );
+  }, [numColumns]);
+
   return (
     <View style={styles.container}>
       <View style={styles.floatingHeaderContainer}>
         {renderFloatingHeader()}
       </View>
+      
+      {/* Column Slider - Memoized to prevent re-renders */}
+      {columnSlider}
+      
       <FlatList
         ref={flatListRef}
         data={isRealAuth ? realFeed : data}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <PostReelItem item={item} />}
+        numColumns={numColumns}
+        columnWrapperStyle={numColumns > 1 ? {
+          paddingHorizontal: screenPadding,
+          gap: cardGap,
+          marginBottom: cardGap,
+        } : undefined}
+        key={`grid-${numColumns}`}
+        renderItem={({ item }) => <PostReelItem item={item} cardWidth={cardWidth} numColumns={numColumns} />}
         contentContainerStyle={{
           paddingTop: 70, // Space for floating header
           paddingBottom: 20,
-
+          paddingHorizontal: numColumns === 1 ? screenPadding : 0,
+          paddingLeft: numColumns === 1 ? screenPadding : (screenPadding + 50), // Make room for slider
           flexGrow: 1,
           minHeight: '150%' // Force content to be taller than viewport
         }}
@@ -1502,11 +1579,15 @@ const styles = StyleSheet.create({
       shadowRadius: 4,
     }),
   },
+  itemContainerGrid: {
+    marginHorizontal: 0,
+    marginBottom: 0,
+  },
   reelItem: {
     backgroundColor: colors.infoLight,
   },
   thumbnail: {
-    width: width - 32,
+    width: '100%',
     height: 180,
   },
   thumbnailPlaceholder: {
@@ -1688,5 +1769,47 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.body,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  columnSliderContainer: {
+    position: 'absolute',
+    left: 12,
+    top: '50%',
+    marginTop: -100, // Center the slider (half of slider height)
+    zIndex: 99999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 99999,
+    pointerEvents: 'box-none',
+    ...(Platform.OS === 'android' ? {
+      elevation: 99999,
+    } : {}),
+  },
+  columnSliderTrack: {
+    width: 3,
+    height: 200,
+    backgroundColor: colors.border,
+    borderRadius: 2,
+    position: 'relative',
+    opacity: 0.8,
+    backgroundColor: colors.textSecondary + '40', // More visible
+  },
+  columnSliderThumb: {
+    position: 'absolute',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    left: -14.5,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    transition: 'all 0.2s ease',
+    ...(Platform.OS === 'web' ? {
+      cursor: 'pointer',
+    } : {}),
+  },
+  columnSliderThumbInner: {
+    transition: 'all 0.2s ease',
   },
 });

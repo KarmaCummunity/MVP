@@ -432,26 +432,9 @@ export default function KnowledgeScreen({
           </View>
         </View>
 
-        {/* Stats Section */}
-          {(() => {
-            const activeCourses = filteredEducationalLinks.length;
-            const totalStudents = filteredCommunityContent.reduce((s, c) => s + (c.students || 0), 0);
-            const avgRating = filteredCommunityContent.length > 0
-              ? (filteredCommunityContent.reduce((s, c) => s + (c.rating || 0), 0) / filteredCommunityContent.length).toFixed(1)
-              : '0.0';
-            return (
-              <DonationStatsFooter
-                stats={[
-                  { label: 'קורסים פעילים', value: activeCourses, icon: 'school-outline' },
-                  { label: 'תלמידים', value: totalStudents, icon: 'people-outline' },
-                  { label: 'דירוג ממוצע', value: avgRating, icon: 'star-outline' },
-                ]}
-              />
-            );
-          })()}
 
         {/* Add Links Section */}
-        <View style={styles.section}>
+        <View style={styles.sectionLinks}>
           <Text style={styles.sectionTitle}>קישורים שימושיים</Text>
           <AddLinkComponent category="knowledge" />
         </View>
@@ -521,6 +504,12 @@ const styles = StyleSheet.create({
   section: {
     marginTop: 20,
     marginBottom: 30,
+    paddingHorizontal: 60,
+  },
+  sectionLinks: {
+    marginTop: 20,
+    marginBottom: 130,
+    paddingHorizontal: 60,
   },
   sectionTitle: {
     fontSize: FontSizes.medium,

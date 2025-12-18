@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, TextInput, Alert, Image, Modal, FlatList } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, TextInput, Alert, Image, Modal, FlatList, Dimensions, Platform } from 'react-native';
 import { NavigationProp, ParamListBase, useFocusEffect, useRoute } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import colors from '../globals/colors';
@@ -12,7 +12,7 @@ import AddLinkComponent from '../components/AddLinkComponent';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { db } from '../utils/databaseService';
 import { useUser } from '../stores/userStore';
-import { biDiTextAlign, rowDirection, isLandscape, marginStartEnd } from '../globals/responsive';
+import { biDiTextAlign, rowDirection, isLandscape, marginStartEnd, getScreenInfo, BREAKPOINTS } from '../globals/responsive';
 import { getCategoryLabel } from '../utils/itemCategoryUtils';
 import { useToast } from '../utils/toastService';
 
@@ -389,6 +389,15 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
     setFilteredItems(getFilteredItems());
   }, [getFilteredItems]);
 
+  // Calculate grid layout for search mode
+  const { width } = Dimensions.get('window');
+  const { isTablet, isDesktop } = getScreenInfo();
+  const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
+  const numColumns = (isTablet || isDesktop || isDesktopWeb) ? 3 : 2;
+  const screenPadding = 16;
+  const cardGap = isTablet || isDesktop || isDesktopWeb ? 16 : 12;
+  const cardWidth = (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
+
   const handleSearch = (query: string, filters: string[] = [], sorts: string[] = [], _results?: any[]) => {
     setSearchQuery(query);
     setSelectedFilters(filters);
@@ -477,7 +486,12 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
 
       console.log('🔵 מתחיל תהליך שמירת פריט...');
 
-      const uid = selectedUser?.id || 'guest';
+      // Ensure we have a valid UUID - guests cannot create items
+      if (!selectedUser?.id) {
+        Alert.alert('שגיאה', 'נא להתחבר כדי ליצור פריט');
+        return;
+      }
+      const uid = selectedUser.id; // This is already a UUID from the server
       const id = `${Date.now()}`;
 
       // המרת תמונה ל-base64
@@ -738,11 +752,13 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
               )}
             </View>
           ) : (
-            filteredItems.map((item) => (
-              <View key={item.id} style={localStyles.itemCardWrapper}>
-                {renderItemCard({ item })}
-              </View>
-            ))
+            <View style={[localStyles.itemsGrid, { gap: cardGap }]}>
+              {filteredItems.map((item) => (
+                <View key={item.id} style={{ width: cardWidth }}>
+                  {renderItemCard({ item })}
+                </View>
+              ))}
+            </View>
           )}
 
           {/* Footer Stats */}
@@ -1037,6 +1053,11 @@ const localStyles = StyleSheet.create({
   sectionWithScroller: { flex: 1, backgroundColor: colors.pinkLight, borderRadius: 12, borderWidth: 1, borderColor: colors.secondary, paddingVertical: 8, paddingHorizontal: 8 },
   innerScroll: { flex: 1 },
   itemsGridContainer: {},
+  itemsGrid: {
+    flexDirection: 'row-reverse',
+    flexWrap: 'wrap',
+    paddingHorizontal: 0,
+  },
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
   emptyStateTitle: { fontSize: FontSizes.body, fontWeight: 'bold', color: colors.textPrimary, marginTop: 16, marginBottom: 8 },
   emptyStateText: { fontSize: FontSizes.small, color: colors.textSecondary, textAlign: 'center', marginBottom: 16 },

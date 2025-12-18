@@ -199,9 +199,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
             
             // Update context state
             const enrichedUser = await enrichUserWithOrgRoles(userData);
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'UserContext.tsx:145',message:'Setting selected user with UUID',data:{userId:userData.id,userIdType:typeof userData.id,userEmail:userData.email,firebaseUid:firebaseUser.uid},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-            // #endregion
             setSelectedUserState(enrichedUser);
             setIsAuthenticated(true);
             setIsGuestMode(false);

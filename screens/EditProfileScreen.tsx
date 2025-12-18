@@ -73,9 +73,6 @@ export default function EditProfileScreen() {
         logger.info('EditProfileScreen', 'Save response', { success: response.success, hasData: !!response.data, error: response.error });
         
         if (response.success && response.data) {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d972b032-7acf-44cf-988d-02bf836f69e8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'EditProfileScreen.tsx:75',message:'API response.data after save',data:{success:response.success,hasData:!!response.data,responseDataKeys:response.data?Object.keys(response.data):null,responseDataBio:response.data?.bio,responseDataCity:response.data?.city,responseDataCountry:response.data?.country,responseDataAvatarUrl:response.data?.avatar_url,updateDataSent:updateData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-          // #endregion
           // Update local state with the response from server (includes all computed fields)
           // Map server response fields to client User interface
           const updatedUser = {

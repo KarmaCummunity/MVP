@@ -958,68 +958,8 @@ export const db = {
     return response.data;
   },
 
-  // Links (for groups and organizations)
-  createLink: (userId: string, linkId: string, linkData: any) =>
-    DatabaseService.create(DB_COLLECTIONS.LINKS, userId, linkId, linkData),
-
-  getLink: (userId: string, linkId: string) =>
-    DatabaseService.read(DB_COLLECTIONS.LINKS, userId, linkId),
-
-  listLinks: (userId: string) =>
-    DatabaseService.list(DB_COLLECTIONS.LINKS, userId),
-
-  listAllLinks: async () => {
-    try {
-      if (USE_BACKEND) {
-        // Fetch all links from the backend using 'all' as userId
-        return await restAdapter.list(DB_COLLECTIONS.LINKS, 'all');
-      } else if (USE_FIRESTORE) {
-        // For Firestore, we need to get all links across all users
-        // This is a simplified version - you may need to adjust based on your Firestore setup
-        const keys = await AsyncStorage.getAllKeys();
-        const linkKeys = keys.filter(key => key.startsWith(`${DB_COLLECTIONS.LINKS}_`));
-
-        if (linkKeys.length === 0) return [];
-
-        const items = await AsyncStorage.multiGet(linkKeys);
-        return items
-          .map(([key, value]) => value ? JSON.parse(value) : null)
-          .filter((item): item is any => item !== null)
-          .sort((a, b) => {
-            if (a.createdAt && b.createdAt) {
-              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-            }
-            return 0;
-          });
-      } else {
-        // For AsyncStorage, get all links across all users
-        const keys = await AsyncStorage.getAllKeys();
-        const linkKeys = keys.filter(key => key.startsWith(`${DB_COLLECTIONS.LINKS}_`));
-
-        if (linkKeys.length === 0) return [];
-
-        const items = await AsyncStorage.multiGet(linkKeys);
-        return items
-          .map(([key, value]) => value ? JSON.parse(value) : null)
-          .filter((item): item is any => item !== null)
-          .sort((a, b) => {
-            if (a.createdAt && b.createdAt) {
-              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-            }
-            return 0;
-          });
-      }
-    } catch (error) {
-      console.error('❌ DatabaseService - List all links error:', error);
-      return [];
-    }
-  },
-
-  updateLink: (userId: string, linkId: string, linkData: Partial<any>) =>
-    DatabaseService.update(DB_COLLECTIONS.LINKS, userId, linkId, linkData),
-
-  deleteLink: (userId: string, linkId: string) =>
-    DatabaseService.delete(DB_COLLECTIONS.LINKS, userId, linkId),
+  // NOTE: Links functionality has been removed - links table was deleted from database
+  // All user data is now unified in user_profiles table with UUID identifiers
 
   deleteDedicatedItem: async (id: string) => {
     console.log('🗑️ API: Deleting item:', id);

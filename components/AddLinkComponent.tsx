@@ -47,18 +47,15 @@ export default function AddLinkComponent({ onLinkAdded, category }: AddLinkCompo
   const loadAllLinks = async () => {
     setIsLoading(true);
     try {
-      const allLinksData = await db.listAllLinks();
-      console.log('🔗 Loaded all links:', allLinksData);
-      console.log('🔗 Links count:', allLinksData?.length || 0);
+      // NOTE: Links functionality has been removed - links table was deleted
+      // All user data is now unified in user_profiles table with UUID identifiers
+      // TODO: Implement alternative storage if links functionality is still needed
+      const allLinksData: any[] = []; // db.listAllLinks() is no longer available
+      console.log('⚠️ Links functionality has been removed');
       
       // Filter by category if provided
-      // If category is provided, only show links with that category
-      // If category is not provided, show all links (for backward compatibility)
-      const filteredLinks = category 
-        ? (allLinksData || []).filter(link => link.category === category)
-        : (allLinksData || []);
+      const filteredLinks: any[] = [];
       
-      console.log(`🔗 Filtered links for category "${category || 'all'}":`, filteredLinks.length);
       setAllLinks(filteredLinks);
     } catch (error) {
       console.error('Error loading links:', error);
@@ -135,8 +132,10 @@ export default function AddLinkComponent({ onLinkAdded, category }: AddLinkCompo
         createdBy: uid,
       };
 
-      // Save to database
-      await db.createLink(uid, linkId, linkData);
+      // NOTE: Links functionality has been removed - links table was deleted
+      // All user data is now unified in user_profiles table with UUID identifiers
+      // TODO: Implement alternative storage if links functionality is still needed
+      console.warn('⚠️ Links functionality has been removed - link not saved');
 
       // Reload all links to show the new one
       await loadAllLinks();
