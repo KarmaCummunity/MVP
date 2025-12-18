@@ -52,7 +52,10 @@ interface MemberFormData {
 
 const LOG_SOURCE = 'AdminPeopleScreen';
 
+import { useAdminProtection } from '../hooks/useAdminProtection';
+
 export default function AdminPeopleScreen({ navigation }: AdminPeopleScreenProps) {
+  useAdminProtection();
   const { selectedUser, isAdmin } = useUser();
   const [membersList, setMembersList] = useState<CommunityMember[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -98,7 +101,7 @@ export default function AdminPeopleScreen({ navigation }: AdminPeopleScreenProps
           count: response.data.length,
         });
       } else {
-        logger.warn(LOG_SOURCE, 'Failed to load members', response);
+        logger.warn(LOG_SOURCE, 'Failed to load members', { response });
         setMembersList([]);
       }
     } catch (error) {

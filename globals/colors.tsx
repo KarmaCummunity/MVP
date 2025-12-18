@@ -60,6 +60,8 @@ const colors = {
   navigationBackground: palette.white,
   navigationActive: palette.tealDark,
   navigationInactive: palette.greyMedium,
+  bottomNavActive: palette.tealDark,
+  bottomNavInactive: palette.greyMedium,
 
   // Status
   success: palette.tealDark, // Teal works as success
@@ -69,6 +71,7 @@ const colors = {
   info: palette.tealLight,
   infoLight: palette.greyLight, // Light info background
   warning: palette.brownDeep, // Warning color
+  warningLight: palette.greyLight, // Light warning background
 
   // --- Domain Specific ---
 

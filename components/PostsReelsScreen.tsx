@@ -28,6 +28,7 @@ import {
 // TODO: Remove hardcoded constants and use configuration file
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
+import VerticalGridSlider from './VerticalGridSlider';
 import { useUser } from '../stores/userStore';
 import CommentsModal from './CommentsModal';
 import { logger } from '../utils/loggerService';
@@ -289,7 +290,7 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
         let currentNav = navigation as any;
         let depth = 0;
         const maxDepth = 5;
-        
+
         while (currentNav && depth < maxDepth) {
           const state = currentNav.getState?.();
           if (state?.routeNames?.includes('HomeScreen')) {
@@ -304,7 +305,7 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
             break;
           }
         }
-        
+
         if (bottomNavigator) {
           // Navigate through HomeScreen to UserProfileScreen (which is in HomeTabStack)
           bottomNavigator.navigate('HomeScreen', {
@@ -318,7 +319,7 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
           logger.debug('PostsReelsScreen', 'Navigated to UserProfileScreen via HomeTabStack (from user press)');
           return;
         }
-        
+
         // Fallback: try direct navigation to HomeScreen if available
         const parentNavigator = (navigation as any).getParent();
         if (parentNavigator) {
@@ -502,7 +503,7 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
         let currentNav = navigation as any;
         let depth = 0;
         const maxDepth = 5;
-        
+
         while (currentNav && depth < maxDepth) {
           const state = currentNav.getState?.();
           if (state?.routeNames?.includes('HomeScreen')) {
@@ -517,7 +518,7 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
             break;
           }
         }
-        
+
         if (bottomNavigator) {
           // Navigate through HomeScreen to UserProfileScreen (which is in HomeTabStack)
           bottomNavigator.navigate('HomeScreen', {
@@ -531,7 +532,7 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
           logger.debug('PostsReelsScreen', 'Navigated to UserProfileScreen via HomeTabStack (from post)');
           return;
         }
-        
+
         // Fallback: try direct navigation to HomeScreen if available
         const parentNavigator = (navigation as any).getParent();
         if (parentNavigator) {
@@ -616,7 +617,7 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
       const rideText = t('quickMessage:ride', { defaultValue: 'האם טרמפ זה רלוונטי?' });
       const itemText = t('quickMessage:item', { defaultValue: 'האם פריט זה רלוונטי?' });
       let messageText = isRide ? rideText : itemText;
-      
+
       // Fallback if translation returns the key itself or empty
       if (!messageText || messageText === 'quickMessage:ride' || messageText === 'quickMessage:item' || messageText === 'ride' || messageText === 'item') {
         messageText = isRide ? 'האם טרמפ זה רלוונטי?' : 'האם פריט זה רלוונטי?';
@@ -670,7 +671,7 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
     checkBookmarkStatus();
   }, [selectedUser, item.id]);
 
-  const containerStyle = cardWidth 
+  const containerStyle = cardWidth
     ? [styles.itemContainer, styles.itemContainerGrid, { width: cardWidth }, item.type === 'reel' && styles.reelItem]
     : [styles.itemContainer, item.type === 'reel' && styles.reelItem];
 
@@ -690,15 +691,15 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
       {/* Content */}
       {item.thumbnail ? (
         <TouchableOpacity onPress={handlePostPress} activeOpacity={0.9}>
-          <Image 
-            source={{ uri: item.thumbnail }} 
+          <Image
+            source={{ uri: item.thumbnail }}
             style={[
               styles.thumbnail,
-              cardWidth && {
+              cardWidth ? {
                 width: cardWidth,
                 height: numColumns === 1 ? 300 : (numColumns === 2 ? cardWidth * 0.75 : cardWidth * 0.9)
-              }
-            ]} 
+              } : undefined
+            ]}
             resizeMode="cover"
           />
         </TouchableOpacity>
@@ -1334,7 +1335,7 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
     const initialValue = (isTablet || isDesktop || isDesktopWeb) ? 3 : 2;
     return initialValue;
   });
-  
+
   // Track numColumns changes
   React.useEffect(() => {
   }, [numColumns]);
@@ -1342,11 +1343,11 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
   // Calculate card dimensions based on number of columns
   const screenPadding = 16;
   // Dynamic gap based on number of columns - smaller gaps for more columns
-  const cardGap = numColumns === 1 ? 0 : 
-                  numColumns === 2 ? 12 : 
-                  numColumns === 3 ? 12 : 
-                  numColumns === 4 ? 10 : 8;
-  const cardWidth = numColumns === 1 
+  const cardGap = numColumns === 1 ? 0 :
+    numColumns === 2 ? 12 :
+      numColumns === 3 ? 12 :
+        numColumns === 4 ? 10 : 8;
+  const cardWidth = numColumns === 1
     ? width - (screenPadding * 2)
     : (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
 
@@ -1431,68 +1432,23 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
     </View>
   );
 
-  // Vertical slider component for column control
-  const handleSliderPress = (index: number) => {
-    setNumColumns(index + 1);
-  };
 
-  // Memoize slider to prevent re-renders
-  const columnSlider = React.useMemo(() => {
-    const sliderHeight = 200;
-    const trackHeight = sliderHeight - 40;
-    const stepHeight = trackHeight / 4;
-    
-    return (
-      <View style={styles.columnSliderContainer} key="column-slider-fixed">
-        <View style={styles.columnSliderTrack}>
-          {[1, 2, 3, 4, 5].map((value, index) => {
-            const position = index * stepHeight;
-            const isActive = numColumns === value;
-            return (
-              <TouchableOpacity
-                key={`slider-thumb-${value}`}
-                style={[
-                  styles.columnSliderThumb,
-                  {
-                    top: position,
-                    backgroundColor: isActive ? colors.primary : colors.white,
-                    borderColor: isActive ? colors.primary : colors.border,
-                    borderWidth: isActive ? 2.5 : 2,
-                    shadowOpacity: isActive ? 0.3 : 0.1,
-                    elevation: isActive ? 6 : 2,
-                  }
-                ]}
-                onPress={() => handleSliderPress(index)}
-                activeOpacity={0.8}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <View style={[
-                  styles.columnSliderThumbInner,
-                  { 
-                    backgroundColor: isActive ? colors.white : colors.textSecondary,
-                    width: isActive ? 10 : 6,
-                    height: isActive ? 10 : 6,
-                    borderRadius: isActive ? 5 : 3,
-                  }
-                ]} />
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
-    );
-  }, [numColumns]);
 
   return (
     <View style={styles.container}>
       <View style={styles.floatingHeaderContainer}>
         {renderFloatingHeader()}
       </View>
-      
-      {/* Column Slider - Memoized to prevent re-renders */}
-      {columnSlider}
-      
+
+      {/* Column Slider */}
+      <VerticalGridSlider
+        numColumns={numColumns}
+        onNumColumnsChange={setNumColumns}
+        style={{ top: 200 }} // Custom position if needed, or rely on default
+      />
+
       <FlatList
+        key={`grid-cols-${numColumns}`}
         ref={flatListRef}
         data={isRealAuth ? realFeed : data}
         keyExtractor={(item) => item.id}
@@ -1502,7 +1458,6 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
           gap: cardGap,
           marginBottom: cardGap,
         } : undefined}
-        key={`grid-${numColumns}`}
         renderItem={({ item }) => <PostReelItem item={item} cardWidth={cardWidth} numColumns={numColumns} />}
         contentContainerStyle={{
           paddingTop: 70, // Space for floating header
@@ -1562,6 +1517,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    overflow: 'visible', // Ensure slider is not clipped
   },
   itemContainer: {
     marginBottom: 16,
@@ -1770,46 +1726,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
-  columnSliderContainer: {
-    position: 'absolute',
-    left: 12,
-    top: '50%',
-    marginTop: -100, // Center the slider (half of slider height)
-    zIndex: 99999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 99999,
-    pointerEvents: 'box-none',
-    ...(Platform.OS === 'android' ? {
-      elevation: 99999,
-    } : {}),
-  },
-  columnSliderTrack: {
-    width: 3,
-    height: 200,
-    backgroundColor: colors.border,
-    borderRadius: 2,
-    position: 'relative',
-    opacity: 0.8,
-    backgroundColor: colors.textSecondary + '40', // More visible
-  },
-  columnSliderThumb: {
-    position: 'absolute',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    left: -14.5,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    transition: 'all 0.2s ease',
-    ...(Platform.OS === 'web' ? {
-      cursor: 'pointer',
-    } : {}),
-  },
-  columnSliderThumbInner: {
-    transition: 'all 0.2s ease',
-  },
+
+  // Removed old styles
 });

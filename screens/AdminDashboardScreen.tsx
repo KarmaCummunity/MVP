@@ -6,6 +6,8 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
+  RefreshControl,
+  Alert
 } from 'react-native';
 import { NavigationProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,7 +15,6 @@ import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { AdminStackParamList } from '../globals/types';
 import { useUser } from '../stores/userStore';
-import { useScrollPositionWithHandler } from '../hooks/useScrollPosition';
 
 interface AdminDashboardScreenProps {
   navigation: NavigationProp<AdminStackParamList>;
@@ -63,28 +64,59 @@ const adminButtons: AdminButton[] = [
   }
 ];
 
+import { useAdminProtection } from '../hooks/useAdminProtection';
+
 export default function AdminDashboardScreen({ navigation }: AdminDashboardScreenProps) {
   const { selectedUser } = useUser();
-  const { ref: scrollRef, onScroll } = useScrollPositionWithHandler('AdminDashboardScreen', {
-    enabled: true,
-  });
+  useAdminProtection();
+
+  const [stats, setStats] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  const loadStats = async () => {
+    try {
+      setLoading(true);
+      const res = await import('../utils/apiService').then(m => m.apiService.getDashboardStats());
+      if (res.success && res.data) {
+        setStats(res.data);
+      }
+    } catch (error) {
+      console.error('Failed to load dashboard stats', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await loadStats();
+    setRefreshing(false);
+  }, []);
+
+  React.useEffect(() => {
+    loadStats();
+  }, []);
 
   const handleButtonPress = (button: AdminButton) => {
     if (button.route === 'AdminDashboard') {
-      // Placeholder for settings - could navigate to settings screen in the future
       return;
     }
-    navigation.navigate(button.route);
+    (navigation as any).navigate(button.route);
+  };
+
+  const formatMoney = (amount: number) => {
+    return new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', maximumFractionDigits: 0 }).format(amount);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView
-        ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+        }
       >
         <View style={styles.header}>
           <Text style={styles.welcomeText}>לוח בקרה</Text>
@@ -92,6 +124,31 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
             {selectedUser?.name ? `שלום ${selectedUser.name}` : 'מנהל'}
           </Text>
         </View>
+
+        {stats && stats.metrics && (
+          <View style={styles.statsContainer}>
+            <View style={styles.statCard}>
+              <Ionicons name="cash-outline" size={24} color={colors.success} />
+              <Text style={styles.statValue}>{formatMoney(Number(stats.metrics.total_money_donated || 0))}</Text>
+              <Text style={styles.statLabel}>סה"כ תרומות</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="people-outline" size={24} color={colors.primary} />
+              <Text style={styles.statValue}>{stats.metrics.total_users || 0}</Text>
+              <Text style={styles.statLabel}>משתמשים</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="gift-outline" size={24} color={colors.secondary} />
+              <Text style={styles.statValue}>{stats.metrics.total_donations || 0}</Text>
+              <Text style={styles.statLabel}>תרומות</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="car-outline" size={24} color={colors.warning} />
+              <Text style={styles.statValue}>{stats.metrics.total_rides || 0}</Text>
+              <Text style={styles.statLabel}>נסיעות</Text>
+            </View>
+          </View>
+        )}
 
         <View style={styles.buttonsContainer}>
           {adminButtons.map((button) => (
@@ -102,14 +159,29 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
               activeOpacity={0.7}
             >
               <View style={[styles.iconContainer, { backgroundColor: button.color }]}>
-                <Ionicons name={button.icon} size={40} color="white" />
+                <Ionicons name={button.icon} size={32} color="white" />
               </View>
               <Text style={styles.buttonText}>{button.title}</Text>
             </TouchableOpacity>
           ))}
+
+          {/* Only the super admin can manage other admins */}
+          {selectedUser?.email?.toLowerCase() === 'navesarussi@gmail.com' && (
+            <TouchableOpacity
+              key="admins"
+              style={[styles.button, { backgroundColor: colors.errorLight }]}
+              onPress={() => (navigation as any).navigate('AdminAdmins')}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.iconContainer, { backgroundColor: colors.error }]}>
+                <Ionicons name="shield-outline" size={40} color="white" />
+              </View>
+              <Text style={styles.buttonText}>ניהול מנהלים</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -119,9 +191,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundSecondary,
   },
   scrollContent: {
-    flexGrow: 1,
     padding: LAYOUT_CONSTANTS.SPACING.LG,
-    minHeight: '150%', // Ensure content is always scrollable
+    paddingBottom: 150,
+    flexGrow: 1,
+    minHeight: '150%', // Ensure content is always scrollable, especially on web
   },
   header: {
     alignItems: 'center',
@@ -136,6 +209,35 @@ const styles = StyleSheet.create({
   },
   subtitleText: {
     fontSize: FontSizes.medium,
+    color: colors.textSecondary,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: LAYOUT_CONSTANTS.SPACING.SM,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XL,
+  },
+  statCard: {
+    width: '48%',
+    backgroundColor: colors.background,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
+    padding: LAYOUT_CONSTANTS.SPACING.MD,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: FontSizes.heading3,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginVertical: 4,
+  },
+  statLabel: {
+    fontSize: FontSizes.small,
     color: colors.textSecondary,
   },
   buttonsContainer: {
@@ -158,9 +260,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
@@ -171,7 +273,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buttonText: {
-    fontSize: FontSizes.large,
+    fontSize: FontSizes.medium,
     fontWeight: 'bold',
     color: colors.textPrimary,
     textAlign: 'center',

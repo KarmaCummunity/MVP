@@ -25,7 +25,10 @@ type AdminTask = {
   updated_at?: string;
 };
 
+import { useAdminProtection } from '../hooks/useAdminProtection';
+
 export default function AdminTasksScreen() {
+  useAdminProtection();
   const { selectedUser } = useUser();
   const [tasks, setTasks] = useState<AdminTask[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -332,8 +335,8 @@ export default function AdminTasksScreen() {
     }
   };
 
-  return (
-    <View style={styles.container}>
+  const renderHeader = () => (
+    <>
       <Text style={styles.header}>ניהול משימות</Text>
 
       <View style={styles.filtersRow}>
@@ -373,27 +376,44 @@ export default function AdminTasksScreen() {
           { value: 'design', label: 'עיצוב' },
         ]} />
       </View>
+    </>
+  );
 
-      {loading ? (
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        {renderHeader()}
         <View style={styles.loader}>
           <ActivityIndicator size="large" color={colors.info} />
         </View>
-      ) : error ? (
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        {renderHeader()}
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity onPress={fetchTasks} style={styles.retryBtn}>
             <Text style={styles.retryText}>נסה שוב</Text>
           </TouchableOpacity>
         </View>
-      ) : (
-        <FlatList
-          data={sortedTasks}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={<Text style={styles.emptyText}>אין משימות כרגע</Text>}
-        />
-      )}
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={sortedTasks}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={<Text style={styles.emptyText}>אין משימות כרגע</Text>}
+      />
 
       <Modal visible={showForm} animationType="slide" transparent onRequestClose={() => setShowForm(false)}>
         <View style={styles.modalBackdrop}>

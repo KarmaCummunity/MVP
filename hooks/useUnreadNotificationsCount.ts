@@ -1,21 +1,19 @@
-// File overview:
-// - Purpose: Custom hook to track and update unread notification count
-// - Reached from: TopBarNavigator and other components that need notification count
-// - Provides: Real-time unread notification count with automatic updates
 import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../stores/userStore';
 import { getUnreadNotificationCount, subscribeToNotificationEvents } from '../utils/notificationService';
 
 /**
- * Hook that returns the current unread notification count and automatically updates
- * when notifications change (via event subscription and focus polling)
+ * Hook to get and maintain the count of unread notifications for the current user.
+ * Updates in real-time when new notifications arrive.
+ * 
+ * @returns {number} The count of unread notifications
  */
-export function useUnreadNotificationsCount(): number {
+export const useUnreadNotificationsCount = (): number => {
   const { selectedUser } = useUser();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const loadCount = useCallback(async () => {
+  const loadUnreadCount = useCallback(async () => {
     if (!selectedUser) {
       setUnreadCount(0);
       return;
@@ -25,54 +23,44 @@ export function useUnreadNotificationsCount(): number {
       const count = await getUnreadNotificationCount(selectedUser.id);
       setUnreadCount(count);
     } catch (error) {
-      console.error('❌ Error loading unread notification count:', error);
+      console.error('❌ Failed to load unread notification count:', error);
       setUnreadCount(0);
     }
   }, [selectedUser]);
 
-  // Load count when screen comes into focus
+  // Load initial count when user changes
+  useEffect(() => {
+    loadUnreadCount();
+  }, [loadUnreadCount]);
+
+  // Refresh count when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      loadCount();
-
-      // Subscribe to real-time notification events
-      const unsubscribe = subscribeToNotificationEvents((notification) => {
-        if (!selectedUser) return;
-        if (notification.userId !== selectedUser.id) return;
-
-        // Update count based on notification read status
-        if (!notification.read) {
-          setUnreadCount((prev) => prev + 1);
-        } else {
-          // If notification was marked as read, reload count to be accurate
-          loadCount();
-        }
-      });
-
-      // Poll every 5 seconds to ensure count stays in sync
-      const interval = setInterval(() => {
-        loadCount();
-      }, 5000);
-
-      return () => {
-        unsubscribe?.();
-        clearInterval(interval);
-      };
-    }, [loadCount, selectedUser])
+      loadUnreadCount();
+    }, [loadUnreadCount])
   );
 
-  // Also load count when selectedUser changes
+  // Subscribe to real-time notification events
   useEffect(() => {
-    loadCount();
-  }, [loadCount]);
+    if (!selectedUser) {
+      return;
+    }
+
+    const unsubscribe = subscribeToNotificationEvents((notification) => {
+      // Only process notifications for the current user
+      if (notification.userId !== selectedUser.id) {
+        return;
+      }
+
+      // Reload count to ensure accuracy when notifications change
+      // This is more reliable than trying to track individual notification states
+      loadUnreadCount();
+    });
+
+    return () => {
+      unsubscribe?.();
+    };
+  }, [selectedUser, loadUnreadCount]);
 
   return unreadCount;
-}
-
-
-
-
-
-
-
-
+};

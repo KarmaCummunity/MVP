@@ -15,6 +15,7 @@ import { useUser } from '../stores/userStore';
 import { biDiTextAlign, rowDirection, isLandscape, marginStartEnd, getScreenInfo, BREAKPOINTS } from '../globals/responsive';
 import { getCategoryLabel } from '../utils/itemCategoryUtils';
 import { useToast } from '../utils/toastService';
+import VerticalGridSlider from '../components/VerticalGridSlider';
 
 type ItemType = 'furniture' | 'clothes' | 'general' | 'books' | 'dry_food' | 'games' | 'electronics' | 'toys' | 'sports' | 'art' | 'kitchen' | 'bathroom' | 'garden' | 'tools' | 'baby' | 'pet' | 'other';
 
@@ -393,7 +394,10 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   const { width } = Dimensions.get('window');
   const { isTablet, isDesktop } = getScreenInfo();
   const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
-  const numColumns = (isTablet || isDesktop || isDesktopWeb) ? 3 : 2;
+
+  // Initialize with appropriate default, but allow user control via slider
+  const [numColumns, setNumColumns] = useState(() => (isTablet || isDesktop || isDesktopWeb) ? 3 : 2);
+
   const screenPadding = 16;
   const cardGap = isTablet || isDesktop || isDesktopWeb ? 16 : 12;
   const cardWidth = (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
@@ -720,64 +724,81 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
       />
 
       {mode ? (
-        <ScrollContainer
-          style={localStyles.container}
-          contentStyle={[
-            localStyles.scrollContent,
-            isLandscape() && { paddingHorizontal: 32 }
-          ]}
-        >
-          {/* Header */}
-          <View style={localStyles.headerRow}>
-            <Text style={localStyles.sectionTitle}>
-              {searchQuery || selectedFilters.length > 0 ? 'פריטים זמינים' : 'פריטים מומלצים'}
-            </Text>
-            {(searchQuery || selectedFilters.length > 0 || selectedSorts.length > 0) && (
-              <TouchableOpacity style={localStyles.clearButton} onPress={handleClearAll}>
-                <Text style={localStyles.clearButtonText}>נקה הכל</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Items List or Empty State */}
-          {filteredItems.length === 0 ? (
-            <View style={localStyles.emptyState}>
-              <Icon name="search-outline" size={48} color={colors.textSecondary} />
-              <Text style={localStyles.emptyStateTitle}>לא נמצאו פריטים</Text>
-              <Text style={localStyles.emptyStateText}>נסה לשנות את הפילטרים או החיפוש</Text>
+        <View style={{ flex: 1 }}>
+          <VerticalGridSlider
+            numColumns={numColumns}
+            onNumColumnsChange={setNumColumns}
+            style={{
+              top: 10, // Relative to container below header
+              left: 4,
+            }}
+          />
+          <ScrollContainer
+            style={localStyles.container}
+            contentStyle={[
+              localStyles.scrollContent,
+              isLandscape() && { paddingHorizontal: 32 }
+            ]}
+          >
+            {/* Header */}
+            <View style={localStyles.headerRow}>
+              <Text style={localStyles.sectionTitle}>
+                {searchQuery || selectedFilters.length > 0 ? 'פריטים זמינים' : 'פריטים מומלצים'}
+              </Text>
               {(searchQuery || selectedFilters.length > 0 || selectedSorts.length > 0) && (
-                <TouchableOpacity style={localStyles.emptyStateClearButton} onPress={handleClearAll}>
-                  <Text style={localStyles.emptyStateClearButtonText}>נקה הכל</Text>
+                <TouchableOpacity style={localStyles.clearButton} onPress={handleClearAll}>
+                  <Text style={localStyles.clearButtonText}>נקה הכל</Text>
                 </TouchableOpacity>
               )}
             </View>
-          ) : (
-            <View style={[localStyles.itemsGrid, { gap: cardGap }]}>
-              {filteredItems.map((item) => (
-                <View key={item.id} style={{ width: cardWidth }}>
-                  {renderItemCard({ item })}
-                </View>
-              ))}
+
+            {/* Items List or Empty State */}
+            {filteredItems.length === 0 ? (
+              <View style={localStyles.emptyState}>
+                <Icon name="search-outline" size={48} color={colors.textSecondary} />
+                <Text style={localStyles.emptyStateTitle}>לא נמצאו פריטים</Text>
+                <Text style={localStyles.emptyStateText}>נסה לשנות את הפילטרים או החיפוש</Text>
+                {(searchQuery || selectedFilters.length > 0 || selectedSorts.length > 0) && (
+                  <TouchableOpacity style={localStyles.emptyStateClearButton} onPress={handleClearAll}>
+                    <Text style={localStyles.emptyStateClearButtonText}>נקה הכל</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              <View style={[
+                localStyles.itemsGrid,
+                {
+                  gap: cardGap,
+                  // Shift content for slider
+                  paddingLeft: 40
+                }
+              ]}>
+                {filteredItems.map((item) => (
+                  <View key={item.id} style={{ width: cardWidth }}>
+                    {renderItemCard({ item })}
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Footer Stats */}
+            <View style={localStyles.section}>
+              <DonationStatsFooter
+                stats={[
+                  { label: 'פריטים שפורסמו', value: filteredItems.length, icon: 'cube-outline' },
+                  { label: 'פריטים בחינם', value: filteredItems.filter(i => (i.price ?? 0) === 0).length, icon: 'pricetag-outline' },
+                  { label: 'מיקומים ייחודיים', value: new Set(filteredItems.map(i => i.city || 'לא צויין')).size, icon: 'pin-outline' },
+                ]}
+              />
             </View>
-          )}
 
-          {/* Footer Stats */}
-          <View style={localStyles.section}>
-            <DonationStatsFooter
-              stats={[
-                { label: 'פריטים שפורסמו', value: filteredItems.length, icon: 'cube-outline' },
-                { label: 'פריטים בחינם', value: filteredItems.filter(i => (i.price ?? 0) === 0).length, icon: 'pricetag-outline' },
-                { label: 'מיקומים ייחודיים', value: new Set(filteredItems.map(i => i.city || 'לא צויין')).size, icon: 'pin-outline' },
-              ]}
-            />
-          </View>
-
-          {/* Add Links Section */}
-          <View style={localStyles.section}>
-            <Text style={localStyles.sectionTitle}>קישורים שימושיים</Text>
-            <AddLinkComponent category="items" />
-          </View>
-        </ScrollContainer>
+            {/* Add Links Section */}
+            <View style={localStyles.section}>
+              <Text style={localStyles.sectionTitle}>קישורים שימושיים</Text>
+              <AddLinkComponent category="items" />
+            </View>
+          </ScrollContainer>
+        </View>
       ) : (
         <ScrollContainer
           style={localStyles.container}

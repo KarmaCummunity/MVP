@@ -20,6 +20,7 @@ import { API_BASE_URL as CONFIG_API_BASE_URL } from './config.constants';
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
+  user?: any; // For resolveUserId endpoint compatibility
   error?: string;
   message?: string;
   version?: string;
@@ -179,7 +180,7 @@ class ApiService {
         params.append(key, value.toString());
       }
     });
-    
+
     return this.request(`/api/users?${params.toString()}`);
   }
 
@@ -236,7 +237,7 @@ class ApiService {
         params.append(key, value.toString());
       }
     });
-    
+
     return this.request(`/api/donations?${params.toString()}`);
   }
 
@@ -288,7 +289,7 @@ class ApiService {
         params.append(key, value.toString());
       }
     });
-    
+
     return this.request(`/api/rides?${params.toString()}`);
   }
 
@@ -342,7 +343,7 @@ class ApiService {
         }
       }
     });
-    
+
     return this.request(`/api/stats/community?${params.toString()}`);
   }
 
@@ -356,7 +357,7 @@ class ApiService {
     if (city) {
       params.append('city', city);
     }
-    
+
     return this.request(`/api/stats/community/trends?${params.toString()}`);
   }
 
@@ -529,15 +530,11 @@ class ApiService {
 
   // Legacy API fallback
   async legacyRequest<T>(collection: string, userId: string, itemId?: string): Promise<T | null> {
-    if (!USE_BACKEND) {
-      return null;
-    }
-
     try {
-      const endpoint = itemId 
+      const endpoint = itemId
         ? `/api/items/${collection}/${userId}/${itemId}`
         : `/api/items/${collection}/${userId}`;
-        
+
       const response = await this.request<T>(endpoint);
       return response.success ? response.data || null : null;
     } catch (error) {
@@ -548,7 +545,7 @@ class ApiService {
 
   // Utility methods
   isBackendAvailable(): boolean {
-    return USE_BACKEND;
+    return true; // Backend is always available
   }
 
   async healthCheck(): Promise<boolean> {

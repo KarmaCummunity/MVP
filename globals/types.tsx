@@ -213,6 +213,7 @@ export type AdminStackParamList = {
   AdminMoney: undefined;
   AdminTasks: undefined;
   AdminPeople: undefined;
+  AdminAdmins: undefined;
   AdminReview: undefined;
   ChatListScreen: undefined;
   ChatDetailScreen: {

@@ -76,7 +76,10 @@ const DONATION_CATEGORIES = [
 
 const LOG_SOURCE = 'AdminMoneyScreen';
 
+import { useAdminProtection } from '../hooks/useAdminProtection';
+
 export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) {
+  useAdminProtection();
   const { isAdmin } = useUser();
   const [donationsList, setDonationsList] = useState<Donation[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -198,7 +201,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
     // נרמול תאריך בטוח: נסה לקחת מתאריך שנבחר על ידי המשתמש (metadata), אחרת מ-createdAt
     let normalizedDate = '';
     let dateToUse: string | null = null;
-    
+
     // Try to get date from metadata first (user-selected date)
     if (donation.metadata && typeof donation.metadata === 'object' && donation.metadata !== null) {
       const metadata = donation.metadata as Record<string, unknown>;
@@ -206,12 +209,12 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
         dateToUse = metadata.selectedDate;
       }
     }
-    
+
     // Fallback to createdAt if metadata not available
     if (!dateToUse) {
       dateToUse = donation.createdAt;
     }
-    
+
     try {
       const parsed = new Date(dateToUse);
       normalizedDate = isNaN(parsed.getTime())
@@ -241,27 +244,27 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
       Alert.alert('שגיאה', 'אנא הזן סכום תקין');
       return;
     }
-    
+
     // Validate date - must be in YYYY-MM-DD format and valid date
     if (!formData.date || !formData.date.trim()) {
       Alert.alert('שגיאה', 'אנא הזן תאריך');
       return;
     }
-    
+
     // Check if date is in correct format (YYYY-MM-DD)
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(formData.date.trim())) {
       Alert.alert('שגיאה', 'אנא הזן תאריך בפורמט YYYY-MM-DD (למשל: 2024-01-15)');
       return;
     }
-    
+
     // Check if date is valid
     const dateParts = formData.date.trim().split('-');
     const year = parseInt(dateParts[0], 10);
     const month = parseInt(dateParts[1], 10);
     const day = parseInt(dateParts[2], 10);
     const testDate = new Date(year, month - 1, day);
-    
+
     if (
       testDate.getFullYear() !== year ||
       testDate.getMonth() !== month - 1 ||
@@ -273,7 +276,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
 
     try {
       setIsMutating(true);
-      
+
       // Convert date from YYYY-MM-DD to ISO string format
       let createdAtISO: string;
       try {
@@ -288,7 +291,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
         logger.warn(LOG_SOURCE, 'Error parsing date, using current date', { error, date: formData.date });
         createdAtISO = new Date().toISOString();
       }
-      
+
       const basePayload = {
         title: `תרומה מ-${formData.donorName}`,
         description: formData.notes || '',
@@ -353,28 +356,28 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
 
   const handleDeleteDonation = async (donationId: string) => {
     logger.info(LOG_SOURCE, 'Prompting delete donation', { donationId });
-    
+
     // Use confirm for web compatibility
-    const confirmed = Platform.OS === 'web' 
+    const confirmed = Platform.OS === 'web'
       ? (typeof window !== 'undefined' && window.confirm('האם אתה בטוח שברצונך למחוק תרומה זו?'))
       : await new Promise<boolean>((resolve) => {
-          Alert.alert(
-            'מחיקת תרומה',
-            'האם אתה בטוח שברצונך למחוק תרומה זו?',
-            [
-              { 
-                text: 'ביטול', 
-                style: 'cancel',
-                onPress: () => resolve(false)
-              },
-              {
-                text: 'מחק',
-                style: 'destructive',
-                onPress: () => resolve(true)
-              },
-            ]
-          );
-        });
+        Alert.alert(
+          'מחיקת תרומה',
+          'האם אתה בטוח שברצונך למחוק תרומה זו?',
+          [
+            {
+              text: 'ביטול',
+              style: 'cancel',
+              onPress: () => resolve(false)
+            },
+            {
+              text: 'מחק',
+              style: 'destructive',
+              onPress: () => resolve(true)
+            },
+          ]
+        );
+      });
 
     if (!confirmed) {
       logger.info(LOG_SOURCE, 'Delete cancelled by user', { donationId });
@@ -385,26 +388,26 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
     // Optimistic UI with rollback
     const prev = donationsList;
     setDonationsList((p) => p.filter((d) => d.id !== donationId));
-    
+
     try {
       setIsMutating(true);
       logger.info(LOG_SOURCE, 'Calling deleteDonation API', { donationId });
       const res = await enhancedDB.deleteDonation(donationId);
-      
+
       logger.info(LOG_SOURCE, 'deleteDonation API response', { donationId, success: res.success, error: res.error });
-      
+
       if (!res.success) {
         throw new Error(res.error || 'delete failed');
       }
-      
+
       // נקה קאש כדי למנוע נתונים מיושנים
       logger.info(LOG_SOURCE, 'Clearing cache after deletion', { donationId });
       await enhancedDB.clearAllCache();
-      
+
       // Force refresh from server, ignoring cache
       logger.info(LOG_SOURCE, 'Loading donations with force refresh', { donationId });
       await loadDonations(true);
-      
+
       logger.info(LOG_SOURCE, 'Donation deleted successfully', { donationId });
       Alert.alert('הצלחה', 'התרומה נמחקה בהצלחה');
     } catch (e) {
@@ -427,12 +430,12 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
           dateString = metadata.selectedDate;
         }
       }
-      
+
       // Fallback to createdAt if metadata not available
       if (!dateString) {
         dateString = donation.createdAt;
       }
-      
+
       if (!dateString || typeof dateString !== 'string' || dateString.trim() === '') {
         return 'תאריך לא זמין';
       }
@@ -725,7 +728,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
           </View>
         </View>
       </Modal>
-      
+
     </SafeAreaView>
   );
 }

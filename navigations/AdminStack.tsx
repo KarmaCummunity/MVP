@@ -11,6 +11,7 @@ import AdminDashboardScreen from "../screens/AdminDashboardScreen";
 import AdminMoneyScreen from "../screens/AdminMoneyScreen";
 import AdminPeopleScreen from "../screens/AdminPeopleScreen";
 import AdminReviewScreen from "../screens/AdminReviewScreen";
+import AdminAdminsScreen from "../screens/AdminAdminsScreen";
 import AdminTasksScreen from "../screens/AdminTasksScreen";
 import ChatListScreen from "../topBarScreens/ChatListScreen";
 import ChatDetailScreen from "../screens/ChatDetailScreen";
@@ -48,7 +49,7 @@ export default function AdminStack() {
         ),
         // Fix for aria-hidden warning: prevent focus on inactive screens
         // detachInactiveScreens already handles this, but we keep cardStyle for web compatibility
-        cardStyle: Platform.OS === 'web' ? { 
+        cardStyle: Platform.OS === 'web' ? {
           // On web, ensure inactive screens don't interfere with focus
           // This prevents elements in hidden screens from receiving focus
         } : undefined,
@@ -58,6 +59,7 @@ export default function AdminStack() {
       <Stack.Screen name="AdminMoney" component={AdminMoneyScreen} />
       <Stack.Screen name="AdminPeople" component={AdminPeopleScreen} />
       <Stack.Screen name="AdminReview" component={AdminReviewScreen} />
+      <Stack.Screen name="AdminAdmins" component={AdminAdminsScreen} />
       <Stack.Screen name="AdminTasks" component={AdminTasksScreen} />
       <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
       <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />

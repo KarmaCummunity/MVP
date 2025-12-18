@@ -32,7 +32,7 @@ export default function ChatListScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [usersMap, setUsersMap] = useState<Map<string, ChatUser>>(new Map());
   const usersMapRef = useRef<Map<string, ChatUser>>(new Map());
-  const { t } = useTranslation(['chat','common']);
+  const { t } = useTranslation(['chat', 'common']);
 
   // Local ChatUser type for display only
   interface ChatUser {
@@ -105,7 +105,7 @@ export default function ChatListScreen() {
     setRefreshing(true);
     try {
       const realConversations = await getConversations(selectedUser.id);
-      
+
       // Load user profiles for all participants BEFORE setting conversations
       const allParticipantIds = new Set<string>();
       realConversations.forEach(conv => {
@@ -117,12 +117,12 @@ export default function ChatListScreen() {
           });
         }
       });
-      
+
       // Wait for user profiles to load before showing conversations
       if (allParticipantIds.size > 0) {
         await loadUserProfiles(Array.from(allParticipantIds));
       }
-      
+
       // Set conversations after profiles are loaded
       setConversations(realConversations);
     } catch (error) {
@@ -138,16 +138,10 @@ export default function ChatListScreen() {
     useCallback(() => {
       loadConversations();
       if (!selectedUser) return;
-       const unsubscribe = subscribeToConversations(selectedUser.id, updated => {
-        setConversations(prev => {
-          const updatedIds = new Set(updated.map(c => c.id));
-          return [
-            ...prev.filter(c => !updatedIds.has(c.id)),
-            ...updated,
-          ];
-        });
+      const unsubscribe = subscribeToConversations(selectedUser.id, updated => {
+        setConversations(updated);
       });
-       return () => unsubscribe();
+      return () => unsubscribe();
     }, [selectedUser, loadConversations])
   );
 
@@ -200,7 +194,7 @@ export default function ChatListScreen() {
   // Create new chat – simple CTA next to the search bar
   const handleNewChat = () => {
     if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
     }
     navigation.navigate('NewChatScreen');
   };
@@ -232,23 +226,23 @@ export default function ChatListScreen() {
             if (!otherId) {
               return null;
             }
-            
+
             // Get user from loaded profiles - only show if we have valid user data
             const chattingUser = usersMap.get(otherId);
-            
+
             // Don't show items without valid user data
             if (!chattingUser) {
               return null;
             }
-            
+
             // Check if user has valid name (not "unknown user" or empty)
             const unknownUserText = t('chat:unknownUser');
-            if (!chattingUser.name || 
-                chattingUser.name === unknownUserText || 
-                chattingUser.name.trim() === '') {
+            if (!chattingUser.name ||
+              chattingUser.name === unknownUserText ||
+              chattingUser.name.trim() === '') {
               return null;
             }
-            
+
             const chatUser: ChatUser = {
               id: chattingUser.id,
               name: chattingUser.name,

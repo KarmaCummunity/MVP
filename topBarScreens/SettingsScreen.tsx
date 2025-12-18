@@ -29,6 +29,8 @@ import {
   Alert,
   Platform,
   Dimensions,
+  TextInput,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,6 +49,8 @@ import { useScrollPositionWithHandler } from '../hooks/useScrollPosition';
 import { navigationQueue } from '../utils/navigationQueue';
 import { checkNavigationGuards } from '../utils/navigationGuards';
 import { logger } from '../utils/loggerService';
+import { apiService } from '../utils/apiService';
+import { createConversation, sendMessage } from '../utils/chatService';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -59,10 +63,13 @@ export default function SettingsScreen() {
   });
   const scrollViewRef = scrollRef;
   const [refreshKey, setRefreshKey] = useState(0);
-  const { t } = useTranslation(['settings','common']);
+  const { t } = useTranslation(['settings', 'common']);
   const [currentLang, setCurrentLang] = useState(i18n.language || 'he');
   const [showLangModal, setShowLangModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportText, setReportText] = useState('');
+  const [isSendingReport, setIsSendingReport] = useState(false);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -81,15 +88,15 @@ export default function SettingsScreen() {
       selectedUser: selectedUser?.name || 'null',
       mode
     });
-    
+
     // If user is no longer authenticated, navigate based on web mode
     if (!isAuthenticated && !isGuestMode) {
-      const targetRoute = (Platform.OS === 'web' && mode === 'site') 
-        ? 'LandingSiteScreen' 
+      const targetRoute = (Platform.OS === 'web' && mode === 'site')
+        ? 'LandingSiteScreen'
         : 'LoginScreen';
-      
+
       logger.debug('SettingsScreen', 'User logged out, navigating', { targetRoute, mode });
-      
+
       // Check guards before navigation
       const guardContext = {
         isAuthenticated: false,
@@ -130,17 +137,17 @@ export default function SettingsScreen() {
     navigation.navigate('LandingSiteScreen' as never);
   };
 
-    /**
-   * מטפל בלחיצה על כפתור היציאה
-   * לוגיקה שונה למצב אורח ולמשתמש מחובר:
-   * - מצב אורח: יציאה ישירה ללא התראה (רק חזרה למסך הכניסה)
-   * - משתמש מחובר: הצגת התראה לפני היציאה (פעולה מסוכנת)
-   */
+  /**
+ * מטפל בלחיצה על כפתור היציאה
+ * לוגיקה שונה למצב אורח ולמשתמש מחובר:
+ * - מצב אורח: יציאה ישירה ללא התראה (רק חזרה למסך הכניסה)
+ * - משתמש מחובר: הצגת התראה לפני היציאה (פעולה מסוכנת)
+ */
   const handleLogoutPress = () => {
     console.log('⚙️ 14SettingsScreen - Logout pressed');
     console.log('⚙️ SettingsScreen - Platform:', Platform.OS);
     console.log('⚙️ SettingsScreen - isGuestMode:', isGuestMode);
-    
+
     // Guest mode - direct logout without warning as it's not dangerous
     if (isGuestMode) {
       console.log('⚙️ SettingsScreen - Guest mode detected, direct logout without confirmation');
@@ -152,7 +159,7 @@ export default function SettingsScreen() {
       });
       return;
     }
-    
+
     // Authenticated user - show warning as this is a dangerous action
     // Use Modal for both web and native for consistent behavior
     console.log('⚙️ SettingsScreen - Showing logout confirmation modal');
@@ -161,12 +168,12 @@ export default function SettingsScreen() {
 
   // Helper function to navigate after logout based on web mode
   const navigateAfterLogout = async () => {
-    const targetRoute = (Platform.OS === 'web' && mode === 'site') 
-      ? 'LandingSiteScreen' 
+    const targetRoute = (Platform.OS === 'web' && mode === 'site')
+      ? 'LandingSiteScreen'
       : 'LoginScreen';
-    
+
     logger.debug('SettingsScreen', 'Navigating after logout', { targetRoute, mode });
-    
+
     // Check guards before navigation
     const guardContext = {
       isAuthenticated: false,
@@ -198,7 +205,7 @@ export default function SettingsScreen() {
     console.log('⚙️ SettingsScreen - Calling signOut()');
     await signOut();
     console.log('⚙️ SettingsScreen - signOut() completed');
-    
+
     // Short delay to ensure state is updated before navigation
     setTimeout(() => {
       navigateAfterLogout();
@@ -259,7 +266,7 @@ export default function SettingsScreen() {
 
   const handleClearCachePress = () => {
     console.log('⚙️ SettingsScreen - Clear cache pressed');
-    
+
     if (Platform.OS === 'web') {
       const confirmed = window.confirm(t('settings:clearCacheConfirm'));
       if (confirmed) {
@@ -288,6 +295,109 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleReportPress = () => {
+    if (!isAuthenticated) {
+      if (Platform.OS === 'web') {
+        alert(t('common:guestLoginHint'));
+      } else {
+        Alert.alert(t('common:error'), t('common:guestLoginHint'));
+      }
+      return;
+    }
+    setShowReportModal(true);
+  };
+
+  const handleSendReport = async () => {
+    if (!reportText.trim()) return;
+
+    setIsSendingReport(true);
+    try {
+      const adminEmail = 'navesarussi@gmail.com';
+
+      // Resolve admin ID - try multiple methods
+      let adminId: string | null = null;
+
+      try {
+        // Method 1: Try resolving by email directly
+        const resolveRes = await apiService.resolveUserId({ email: adminEmail });
+        if (resolveRes.success && resolveRes.data?.id) {
+          adminId = resolveRes.data.id;
+        }
+      } catch (e) {
+        console.warn('Method 1 (resolveUserId) failed', e);
+      }
+
+      if (!adminId) {
+        try {
+          // Method 2: Search for user by email
+          const searchRes = await apiService.getUsers({ search: adminEmail, limit: 1 });
+          if (searchRes.success && searchRes.data && Array.isArray(searchRes.data) && searchRes.data.length > 0) {
+            // Verify exact email match to be safe
+            const adminUser = searchRes.data.find((u: any) => u.email?.toLowerCase() === adminEmail.toLowerCase());
+            if (adminUser) {
+              adminId = adminUser.id;
+            } else {
+              // Fallback to first result if it looks close enough (or just take it as the search should be specific)
+              adminId = searchRes.data[0].id;
+            }
+          }
+        } catch (e) {
+          console.warn('Method 2 (getUsers) failed', e);
+        }
+      }
+
+      if (!adminId) {
+        console.error('Admin user not found for report via any method');
+        // Fallback for development/testing if needed, or throw
+        throw new Error('Admin not found');
+      }
+
+      // const adminId = resolveRes.data.id; // Correctly assigned above
+      const currentUserId = selectedUser?.id;
+
+      if (!currentUserId) {
+        throw new Error('User not logged in');
+      }
+
+      // Create task for admin
+      const taskData = {
+        title: `Report from ${selectedUser?.name || 'User'}`,
+        description: `User Email: ${selectedUser?.email}\nUser ID: ${currentUserId}\n\nReport Content:\n${reportText}`,
+        status: 'open',
+        priority: 'high',
+        category: 'report',
+        assignee_id: adminId,
+        created_by: currentUserId,
+        due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // Due in 1 week
+      };
+
+      const taskRes = await apiService.createTask(taskData);
+
+      if (!taskRes.success) {
+        throw new Error(taskRes.error || 'Failed to create report task');
+      }
+
+      setReportText('');
+      setShowReportModal(false);
+
+      if (Platform.OS === 'web') {
+        alert(t('settings:reportSuccess'));
+      } else {
+        Alert.alert(t('common:done'), t('settings:reportSuccess'));
+      }
+
+    } catch (error) {
+      console.error('Failed to send report:', error);
+      if (Platform.OS === 'web') {
+        alert(t('settings:reportError'));
+      } else {
+        Alert.alert(t('common:error'), t('settings:reportError'));
+      }
+    } finally {
+      setIsSendingReport(false);
+    }
+  };
+
 
   // Test function for scroll functionality (development only)
   const handleScrollTest = () => {
@@ -304,14 +414,14 @@ export default function SettingsScreen() {
     }
   };
 
-  const SettingsItem = ({ 
-    icon, 
-    title, 
-    subtitle, 
-    onPress, 
+  const SettingsItem = ({
+    icon,
+    title,
+    subtitle,
+    onPress,
     showArrow = true,
     color = colors.textPrimary,
-    dangerous = false 
+    dangerous = false
   }: {
     icon: string;
     title: string;
@@ -328,12 +438,12 @@ export default function SettingsScreen() {
     >
       <View style={styles.settingsItemLeft}>
         <View style={[styles.iconContainer, dangerous && styles.dangerousIconContainer]}>
-          <Ionicons 
-            name={icon as any} 
-            size={22} 
-            color={dangerous ? colors.error : colors.primary} 
+          <Ionicons
+            name={icon as any}
+            size={22}
+            color={dangerous ? colors.error : colors.primary}
           />
-              </View>
+        </View>
         <View style={styles.textContainer}>
           <Text style={[styles.settingsTitle, { color: dangerous ? colors.error : color }]}>
             {title}
@@ -342,12 +452,12 @@ export default function SettingsScreen() {
             <Text style={styles.settingsSubtitle}>{subtitle}</Text>
           )}
         </View>
-          </View>
+      </View>
       {showArrow && (
-        <Ionicons 
-          name="chevron-forward" 
-          size={20} 
-          color={colors.textSecondary} 
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={colors.textSecondary}
         />
       )}
     </TouchableOpacity>
@@ -380,14 +490,14 @@ export default function SettingsScreen() {
             <Text style={styles.logoutModalTitle}>{t('settings:logoutTitle')}</Text>
             <Text style={styles.logoutModalMessage}>{t('settings:logoutMessage')}</Text>
             <View style={styles.logoutModalButtons}>
-              <TouchableOpacity 
-                style={[styles.logoutModalButton, styles.logoutModalButtonCancel]} 
+              <TouchableOpacity
+                style={[styles.logoutModalButton, styles.logoutModalButtonCancel]}
                 onPress={handleLogoutCancel}
               >
                 <Text style={styles.logoutModalButtonTextCancel}>{t('common:cancel')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.logoutModalButton, styles.logoutModalButtonConfirm]} 
+              <TouchableOpacity
+                style={[styles.logoutModalButton, styles.logoutModalButtonConfirm]}
                 onPress={handleLogoutConfirm}
               >
                 <Text style={styles.logoutModalButtonTextConfirm}>{t('settings:logoutConfirm')}</Text>
@@ -395,6 +505,47 @@ export default function SettingsScreen() {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* Report Modal */}
+      <Modal visible={showReportModal} transparent animationType="slide" onRequestClose={() => setShowReportModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalBackdrop}>
+          <View style={styles.reportModalCard}>
+            <Text style={styles.reportModalTitle}>{t('settings:reportTitle')}</Text>
+            <Text style={styles.reportModalSubtitle}>{t('settings:reportIssueDesc')}</Text>
+
+            <TextInput
+              style={styles.reportInput}
+              multiline
+              numberOfLines={4}
+              placeholder={t('settings:reportPlaceholder')}
+              placeholderTextColor={colors.textSecondary}
+              value={reportText}
+              onChangeText={setReportText}
+              textAlignVertical="top"
+              textAlign={biDiTextAlign('right')}
+            />
+
+            <View style={styles.logoutModalButtons}>
+              <TouchableOpacity
+                style={[styles.logoutModalButton, styles.logoutModalButtonCancel]}
+                onPress={() => setShowReportModal(false)}
+                disabled={isSendingReport}
+              >
+                <Text style={styles.logoutModalButtonTextCancel}>{t('common:cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.logoutModalButton, styles.logoutModalButtonConfirm, { backgroundColor: colors.primary, opacity: isSendingReport ? 0.7 : 1 }]}
+                onPress={handleSendReport}
+                disabled={isSendingReport || !reportText.trim()}
+              >
+                <Text style={[styles.logoutModalButtonTextConfirm, { color: colors.white }]}>
+                  {isSendingReport ? t('common:loading') : t('settings:reportSend')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* User Info Section - Only for logged in users */}
@@ -421,21 +572,21 @@ export default function SettingsScreen() {
             {/* App Settings Section */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t('settings:appSettings')}</Text>
-              
+
               <SettingsItem
                 icon="notifications-outline"
                 title={t('settings:notifications')}
                 subtitle={t('settings:notificationsDesc')}
                 onPress={handleNotificationsPress}
               />
-              
+
               <SettingsItem
                 icon="color-palette-outline"
                 title={t('settings:theme')}
                 subtitle={t('settings:themeDesc')}
                 onPress={handleThemePress}
               />
-              
+
               <SettingsItem
                 icon="language-outline"
                 title={t('settings:language')}
@@ -447,21 +598,21 @@ export default function SettingsScreen() {
             {/* Privacy & Security Section */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t('settings:privacySection')}</Text>
-              
+
               <SettingsItem
                 icon="shield-outline"
                 title={t('settings:privacy')}
                 subtitle={t('settings:privacyDesc')}
                 onPress={handlePrivacyPress}
               />
-              
+
               <SettingsItem
                 icon="trash-outline"
                 title={t('settings:clearCache')}
                 subtitle={t('settings:clearCacheDesc')}
                 onPress={handleClearCachePress}
               />
-              
+
               <SettingsItem
                 icon="flask-outline"
                 title={t('settings:scrollTestTitle')}
@@ -473,12 +624,19 @@ export default function SettingsScreen() {
             {/* About Section */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t('settings:aboutSection')}</Text>
-              
+
               <SettingsItem
                 icon="information-circle-outline"
                 title={t('settings:about')}
                 subtitle={t('settings:aboutDesc')}
                 onPress={handleAboutPress}
+              />
+
+              <SettingsItem
+                icon="warning-outline"
+                title={t('settings:reportIssue')}
+                subtitle={t('settings:reportIssueDesc')}
+                onPress={handleReportPress}
               />
             </View>
 
@@ -497,7 +655,7 @@ export default function SettingsScreen() {
         </View>
       ) : (
         // Native: Standard ScrollView for iOS/Android
-        <ScrollView 
+        <ScrollView
           ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -534,100 +692,107 @@ export default function SettingsScreen() {
           }}
           scrollEventThrottle={16}
         >
-        {/* App Settings Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('settings:appSettings')}</Text>
-          {/* Org Dashboard (for org admins) */}
-          {selectedUser && selectedUser.roles?.includes('org_admin') && (
+          {/* App Settings Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('settings:appSettings')}</Text>
+            {/* Org Dashboard (for org admins) */}
+            {selectedUser && selectedUser.roles?.includes('org_admin') && (
+              <SettingsItem
+                icon="briefcase-outline"
+                title={t('settings:orgDashboardTitle')}
+                subtitle={t('settings:orgDashboardSubtitle')}
+                onPress={() => navigation.navigate('OrgDashboardScreen' as never)}
+              />
+            )}
+
+            {/* Admin approvals (for admins) */}
+            {selectedUser && selectedUser.roles?.includes('admin') && (
+              <SettingsItem
+                icon="checkmark-done-outline"
+                title={t('settings:adminApprovalsTitle')}
+                subtitle={t('settings:adminApprovalsSubtitle')}
+                onPress={() => navigation.navigate('AdminOrgApprovalsScreen' as never)}
+              />
+            )}
+
             <SettingsItem
-              icon="briefcase-outline"
-              title={t('settings:orgDashboardTitle')}
-              subtitle={t('settings:orgDashboardSubtitle')}
-              onPress={() => navigation.navigate('OrgDashboardScreen' as never)}
+              icon="notifications-outline"
+              title={t('settings:notifications')}
+              subtitle={t('settings:notificationsDesc')}
+              onPress={handleNotificationsPress}
             />
-          )}
 
-          {/* Admin approvals (for admins) */}
-          {selectedUser && selectedUser.roles?.includes('admin') && (
             <SettingsItem
-              icon="checkmark-done-outline"
-              title={t('settings:adminApprovalsTitle')}
-              subtitle={t('settings:adminApprovalsSubtitle')}
-              onPress={() => navigation.navigate('AdminOrgApprovalsScreen' as never)}
+              icon="color-palette-outline"
+              title={t('settings:theme')}
+              subtitle={t('settings:themeDesc')}
+              onPress={handleThemePress}
             />
-          )}
-          
-          <SettingsItem
-            icon="notifications-outline"
-            title={t('settings:notifications')}
-            subtitle={t('settings:notificationsDesc')}
-            onPress={handleNotificationsPress}
-          />
-          
-          <SettingsItem
-            icon="color-palette-outline"
-            title={t('settings:theme')}
-            subtitle={t('settings:themeDesc')}
-            onPress={handleThemePress}
-          />
-          
-          <SettingsItem
-            icon="language-outline"
-            title={t('settings:language')}
-            subtitle={currentLang === 'he' ? t('settings:lang.he') : t('settings:lang.en')}
-            onPress={handleLanguagePress}
-          />
-        </View>
 
-        {/* Privacy & Security Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('settings:privacySection')}</Text>
-          
-          <SettingsItem
-            icon="shield-outline"
-            title={t('settings:privacy')}
-            subtitle={t('settings:privacyDesc')}
-            onPress={handlePrivacyPress}
-          />
-          
-          <SettingsItem
-            icon="trash-outline"
-            title={t('settings:clearCache')}
-            subtitle={t('settings:clearCacheDesc')}
-            onPress={handleClearCachePress}
-          />
-          
-          <SettingsItem
-            icon="flask-outline"
-            title={t('settings:scrollTestTitle')}
-            subtitle={t('settings:scrollTestSubtitle')}
-            onPress={handleScrollTest}
-          />
-        </View>
+            <SettingsItem
+              icon="language-outline"
+              title={t('settings:language')}
+              subtitle={currentLang === 'he' ? t('settings:lang.he') : t('settings:lang.en')}
+              onPress={handleLanguagePress}
+            />
+          </View>
 
-        {/* About Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('settings:aboutSection')}</Text>
-          
-          <SettingsItem
-            icon="information-circle-outline"
-            title={t('settings:about')}
-            subtitle={t('settings:aboutDesc')}
-            onPress={handleAboutPress}
-          />
-        </View>
+          {/* Privacy & Security Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('settings:privacySection')}</Text>
 
-        {/* Logout Section - different behavior for guest mode and authenticated user */}
-        <View style={styles.section}>
-          <SettingsItem
-            icon={isGuestMode ? "arrow-back-outline" : "log-out-outline"}
-            title={isGuestMode ? t('settings:guestBack') : t('settings:logout')}
-            subtitle={isGuestMode ? t('settings:guestBackDesc') : t('settings:logoutDesc')}
-            onPress={handleLogoutPress}
-            showArrow={false}
-            dangerous={!isGuestMode} // Red only for authenticated user (dangerous action)
-          />
-        </View>
+            <SettingsItem
+              icon="shield-outline"
+              title={t('settings:privacy')}
+              subtitle={t('settings:privacyDesc')}
+              onPress={handlePrivacyPress}
+            />
+
+            <SettingsItem
+              icon="trash-outline"
+              title={t('settings:clearCache')}
+              subtitle={t('settings:clearCacheDesc')}
+              onPress={handleClearCachePress}
+            />
+
+            <SettingsItem
+              icon="flask-outline"
+              title={t('settings:scrollTestTitle')}
+              subtitle={t('settings:scrollTestSubtitle')}
+              onPress={handleScrollTest}
+            />
+          </View>
+
+          {/* About Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('settings:aboutSection')}</Text>
+
+            <SettingsItem
+              icon="information-circle-outline"
+              title={t('settings:about')}
+              subtitle={t('settings:aboutDesc')}
+              onPress={handleAboutPress}
+            />
+
+            <SettingsItem
+              icon="warning-outline"
+              title={t('settings:reportIssue')}
+              subtitle={t('settings:reportIssueDesc')}
+              onPress={handleReportPress}
+            />
+          </View>
+
+          {/* Logout Section - different behavior for guest mode and authenticated user */}
+          <View style={styles.section}>
+            <SettingsItem
+              icon={isGuestMode ? "arrow-back-outline" : "log-out-outline"}
+              title={isGuestMode ? t('settings:guestBack') : t('settings:logout')}
+              subtitle={isGuestMode ? t('settings:guestBackDesc') : t('settings:logoutDesc')}
+              onPress={handleLogoutPress}
+              showArrow={false}
+              dangerous={!isGuestMode} // Red only for authenticated user (dangerous action)
+            />
+          </View>
         </ScrollView>
       )}
     </ScreenWrapper>
@@ -777,26 +942,26 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: FontSizes.medium, color: colors.textPrimary, textAlign: 'center', marginBottom: 8 },
   modalOption: { paddingVertical: 10 },
   modalOptionText: { fontSize: FontSizes.body, color: colors.textPrimary, textAlign: 'center' },
-  logoutModalCard: { 
-    backgroundColor: colors.background, 
-    width: 320, 
-    borderRadius: 16, 
+  logoutModalCard: {
+    backgroundColor: colors.background,
+    width: 320,
+    borderRadius: 16,
     padding: 24,
     ...(Platform.OS === 'web' && {
       boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
     }),
   },
-  logoutModalTitle: { 
-    fontSize: FontSizes.heading2, 
-    color: colors.textPrimary, 
-    textAlign: biDiTextAlign('center'), 
+  logoutModalTitle: {
+    fontSize: FontSizes.heading2,
+    color: colors.textPrimary,
+    textAlign: biDiTextAlign('center'),
     marginBottom: 12,
     fontWeight: '700',
   },
-  logoutModalMessage: { 
-    fontSize: FontSizes.body, 
-    color: colors.textSecondary, 
-    textAlign: biDiTextAlign('center'), 
+  logoutModalMessage: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+    textAlign: biDiTextAlign('center'),
     marginBottom: 24,
     lineHeight: 22,
   },
@@ -828,5 +993,40 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.body,
     color: colors.white,
     fontWeight: '600',
+  },
+  reportModalCard: {
+    backgroundColor: colors.background,
+    width: '90%',
+    maxWidth: 400,
+    borderRadius: 16,
+    padding: 24,
+    ...(Platform.OS === 'web' && {
+      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+    }),
+  },
+  reportModalTitle: {
+    fontSize: FontSizes.heading2,
+    color: colors.textPrimary,
+    textAlign: biDiTextAlign('center'),
+    marginBottom: 8,
+    fontWeight: '700',
+  },
+  reportModalSubtitle: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+    textAlign: biDiTextAlign('center'),
+    marginBottom: 20,
+  },
+  reportInput: {
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 12,
+    padding: 12,
+    minHeight: 120,
+    fontSize: FontSizes.body,
+    color: colors.textPrimary,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    textAlignVertical: 'top',
   },
 });

@@ -1013,6 +1013,13 @@
     "orgDashboardTitle": "לוח בקרה לארגון",
     "orgDashboardSubtitle": "ניהול ארגון מאושר",
     "adminApprovalsTitle": "אישורי ארגונים",
+    "reportIssue": "דיווח על בעיה",
+    "reportIssueDesc": "נתקלתם בבעיה? דווחו לנו",
+    "reportTitle": "דיווח למנהל",
+    "reportPlaceholder": "תאר את הדיווח שלך כאן...",
+    "reportSend": "שלח דיווח",
+    "reportSuccess": "הדיווח נשלח בהצלחה",
+    "reportError": "שליחת הדיווח נכשלה. נסו שוב.",
     "adminApprovalsSubtitle": "ניהול בקשות ארגונים"
   },
   "landing": {

@@ -96,11 +96,11 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   useEffect(() => {
     console.log('🔥 UserContext - Setting up Firebase Auth listener');
     let unsubscribe: (() => void) | undefined;
-    
+
     try {
       const { app } = getFirebase();
       const auth = getAuth(app);
-      
+
       unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
         console.log('🔥 Firebase Auth State Changed:', {
           hasUser: !!firebaseUser,
@@ -112,18 +112,18 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         if (firebaseUser) {
           // Firebase user is logged in - restore/create session
           console.log('🔥 Firebase user detected, restoring session');
-          
+
           try {
             // Get UUID from server using firebase_uid
             const { API_BASE_URL } = await import('../utils/config.constants');
             const { apiService } = await import('../utils/apiService');
-            
-            const resolveResponse = await apiService.resolveUserId({ 
+
+            const resolveResponse = await apiService.resolveUserId({
               firebase_uid: firebaseUser.uid,
-              email: firebaseUser.email || undefined 
+              email: firebaseUser.email || undefined
             });
-            
-            if (!resolveResponse.success || !resolveResponse.user) {
+
+            if (!resolveResponse.success || !resolveResponse.data) {
               console.warn('🔥 Failed to resolve user ID from server, using fallback');
               // Fallback: try to get user by email
               if (firebaseUser.email) {
@@ -150,26 +150,26 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
                     notifications: [],
                     settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
                   };
-                  
+
                   await AsyncStorage.setItem('current_user', JSON.stringify(userData));
                   await AsyncStorage.setItem('auth_mode', 'real');
                   await AsyncStorage.setItem('firebase_user_id', firebaseUser.uid);
-                  
+
                   const enrichedUser = await enrichUserWithOrgRoles(userData);
                   setSelectedUserState(enrichedUser);
                   setIsAuthenticated(true);
                   setIsGuestMode(false);
                   setAuthMode('real');
-                  
+
                   console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
                   return;
                 }
               }
               throw new Error('Failed to get user from server');
             }
-            
+
             // Use UUID from server
-            const serverUser = resolveResponse.user;
+            const serverUser = resolveResponse.data;
             const nowIso = new Date().toISOString();
             const userData: User = {
               id: serverUser.id, // UUID from database - this is the primary identifier
@@ -196,14 +196,14 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
             await AsyncStorage.setItem('current_user', JSON.stringify(userData));
             await AsyncStorage.setItem('auth_mode', 'real');
             await AsyncStorage.setItem('firebase_user_id', firebaseUser.uid);
-            
+
             // Update context state
             const enrichedUser = await enrichUserWithOrgRoles(userData);
             setSelectedUserState(enrichedUser);
             setIsAuthenticated(true);
             setIsGuestMode(false);
             setAuthMode('real');
-            
+
             console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
           } catch (error) {
             console.error('🔥 Failed to restore Firebase session:', error);
@@ -222,7 +222,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           }
         }
       });
-      
+
       console.log('🔥 Firebase Auth listener set up successfully');
     } catch (error) {
       console.error('🔥 Error setting up Firebase Auth listener:', error);
@@ -247,33 +247,33 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     try {
       console.log('🔐 UserContext - checkAuthStatus - Starting auth check');
       setIsLoading(true);
-      
+
       // First, check for successful OAuth authentication
       console.log('🔐 UserContext - checkAuthStatus - Checking for OAuth success');
       const oauthSuccess = await AsyncStorage.getItem('oauth_success_flag');
       const userData = await AsyncStorage.getItem('google_auth_user');
       const token = await AsyncStorage.getItem('google_auth_token');
-      
+
       if (oauthSuccess && userData && token) {
         try {
           console.log('🔐 UserContext - checkAuthStatus - Found OAuth success data, processing');
           const parsedUserData = JSON.parse(userData);
-          
+
           // Validate the user data
           if (parsedUserData && parsedUserData.id && parsedUserData.email) {
             console.log('🔐 UserContext - checkAuthStatus - Setting authenticated user from OAuth');
-            
+
             // Enrich user with org roles if applicable
             const enrichedUser = await enrichUserWithOrgRoles(parsedUserData);
-            
+
             setSelectedUserState(enrichedUser);
             setIsAuthenticated(true);
             setIsGuestMode(false);
             setAuthMode('real');
-            
+
             // Clean up OAuth success flags since we've processed them
             await AsyncStorage.multiRemove(['oauth_success_flag', 'google_auth_user', 'google_auth_token']);
-            
+
             console.log('🔐 UserContext - checkAuthStatus - OAuth authentication restored successfully');
             return; // Exit early - user is authenticated
           } else {
@@ -283,13 +283,13 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           console.error('🔐 UserContext - checkAuthStatus - Error parsing OAuth user data:', parseError);
         }
       }
-      
+
       // Check for persistent user session (if implemented in the future)
       console.log('🔐 UserContext - checkAuthStatus - Checking for persistent session');
       const persistedUser = await AsyncStorage.getItem('current_user');
       const guestMode = await AsyncStorage.getItem('guest_mode');
       const authModeStored = await AsyncStorage.getItem('auth_mode');
-      
+
       if (persistedUser) {
         try {
           const parsedUser = JSON.parse(persistedUser);
@@ -307,7 +307,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           console.error('🔐 UserContext - checkAuthStatus - Error parsing persisted user:', parseError);
         }
       }
-      
+
       // No valid authentication found - clear any invalid data and set unauthenticated state
       console.log('🔐 UserContext - checkAuthStatus - No valid authentication found, clearing data');
       await AsyncStorage.multiRemove([
@@ -319,13 +319,13 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         'google_auth_user',
         'google_auth_token'
       ]);
-      
+
       console.log('🔐 UserContext - checkAuthStatus - Setting unauthenticated state');
       setIsAuthenticated(false);
       setIsGuestMode(false);
       setSelectedUserState(null);
       setAuthMode('guest');
-      
+
     } catch (error) {
       console.error('🔐 UserContext - checkAuthStatus - Error:', error);
       // On error, ensure clean unauthenticated state
@@ -404,11 +404,11 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     try {
       const emailKey = (user.email || '').toLowerCase();
       if (!emailKey) return user;
-      
+
       // Super admin email - hardcoded for main admin
-      const SUPER_ADMIN_EMAIL = 'navesarussi@gmail.com';
-      const isSuperAdmin = emailKey === SUPER_ADMIN_EMAIL.toLowerCase();
-      
+      const SUPER_ADMINS = ['navesarussi@gmail.com', 'karmacommunity2.0@gmail.com'];
+      const isSuperAdmin = SUPER_ADMINS.includes(emailKey);
+
       // Grant admin role by env config (comma-separated emails)
       const adminEmailsEnv = (process.env.EXPO_PUBLIC_ADMIN_EMAILS || '').toLowerCase();
       const adminEmails = adminEmailsEnv
@@ -416,10 +416,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         .map((s: string) => s.trim())
         .filter(Boolean);
       const withAdmin = adminEmails.includes(emailKey) || isSuperAdmin;
-      
+
       const applications = await db.listOrgApplications(emailKey);
       const approved = (applications as any[]).find((a) => a.status === 'approved');
-      
+
       if (approved || withAdmin) {
         // Super admin gets super_admin role, others get admin
         const adminRole = isSuperAdmin ? 'super_admin' : 'admin';
@@ -427,8 +427,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           approved ? 'org_admin' : null,
           withAdmin ? adminRole : null
         ].filter(Boolean) as string[];
-        const roles = Array.isArray(user.roles) 
-          ? Array.from(new Set([...user.roles, ...extraRoles])) 
+        const roles = Array.isArray(user.roles)
+          ? Array.from(new Set([...user.roles, ...extraRoles]))
           : extraRoles;
         return { ...user, roles, orgApplicationId: approved?.id, orgName: approved?.orgName };
       }
@@ -443,7 +443,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     try {
       console.log('🔐 UserContext - signOut - Starting sign out process');
       setIsLoading(true);
-      
+
       // Sign out from Firebase Auth
       try {
         const { app } = getFirebase();
@@ -453,7 +453,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       } catch (firebaseError) {
         console.warn('🔥 Firebase - Sign out error (non-fatal):', firebaseError);
       }
-      
+
       console.log('🔐 UserContext - signOut - Removing all auth data from AsyncStorage');
       await AsyncStorage.multiRemove([
         'current_user',
@@ -465,19 +465,19 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         'google_auth_user',
         'google_auth_token'
       ]);
-      
+
       console.log('🔐 UserContext - signOut - Setting user state to null');
       setSelectedUserState(null);
-      
+
       console.log('🔐 UserContext - signOut - Setting isAuthenticated to false');
       setIsAuthenticated(false);
-      
+
       console.log('🔐 UserContext - signOut - Setting isGuestMode to false');
       setIsGuestMode(false);
-      
+
       console.log('🔐 UserContext - signOut - Setting authMode to guest');
       setAuthMode('guest');
-      
+
       console.log('🔐 UserContext - signOut - Sign out completed successfully');
     } catch (error) {
       console.error('🔐 UserContext - signOut - Error during sign out:', error);
@@ -495,16 +495,16 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     try {
       console.log('🔐 UserContext - setGuestMode - Starting (session only)');
       setIsLoading(true);
-      
+
       // DO NOT SAVE TO AsyncStorage - session only
       console.log('🔐 UserContext - setGuestMode - Setting guest mode for session only');
-      
+
       // Update state for current session only
       setSelectedUserState(null);
       setAuthMode('guest');
       setIsGuestMode(true);
       setIsAuthenticated(true);
-      
+
       console.log('🔐 UserContext - setGuestMode - Guest mode set successfully (session only)');
     } catch (error) {
       console.error('🔐 UserContext - setGuestMode - Error:', error);

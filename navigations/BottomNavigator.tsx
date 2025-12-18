@@ -151,25 +151,19 @@ const styles = StyleSheet.create({
  * @returns {React.FC} A React component rendering the Bottom Tab Navigator.
  */
 export default function BottomNavigator(): React.ReactElement {
-  const { isGuestMode, isAdmin } = useUser();
+  const { isGuestMode, resetHomeScreen, isAdmin, refreshUserRoles, isAuthenticated } = useUser();
   const { mode } = useWebMode();
   const navigation = useNavigation();
-
-  // Log render for debugging
-  React.useEffect(() => {
-    logger.debug('BottomNavigator', 'Component rendered', {
-      isGuestMode,
-      isAdmin,
-      mode,
-    });
-  }, [isGuestMode, isAdmin, mode]);
 
   // Refresh data when navigator comes into focus
   useFocusEffect(
     React.useCallback(() => {
       logger.debug('BottomNavigator', 'Navigator focused');
-      // This will trigger re-renders of child screens when needed
-    }, [])
+      // Refresh user roles when navigator comes into focus to detect admin changes
+      if (isAuthenticated && !isGuestMode) {
+        refreshUserRoles();
+      }
+    }, [isAuthenticated, isGuestMode, refreshUserRoles])
   );
 
 
@@ -241,7 +235,7 @@ export default function BottomNavigator(): React.ReactElement {
             borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.XLARGE,
             elevation: LAYOUT_CONSTANTS.SHADOW.MEDIUM.elevation,
             height: barHeight,
-            backgroundColor: colors.surface,
+            backgroundColor: colors.cardBackground,
             display: shouldHideTabBar ? 'none' as const : 'flex' as const,
           },
         });
@@ -256,30 +250,49 @@ export default function BottomNavigator(): React.ReactElement {
         component={HomeTabStack}
         listeners={({ navigation }) => ({
           tabPress: (e) => {
+            logger.debug('BottomNavigator', 'HomeScreen tab pressed');
             try {
-              const state = navigation.getState();
-              const currentTabIndex = state?.index ?? -1;
-              const currentTabRoute = state?.routes?.[currentTabIndex];
-              const isHomeTabFocused = currentTabRoute?.name === 'HomeScreen';
-              
-              if (isHomeTabFocused) {
-                // Tab is already focused - check if we're in a nested screen
-                const homeTabState = currentTabRoute?.state;
-                const homeTabRoutes = homeTabState?.routes;
-                const homeTabIndex = homeTabState?.index ?? 0;
-                const currentScreen = homeTabRoutes?.[homeTabIndex];
-                const currentScreenName = currentScreen?.name;
-                
-                if (currentScreenName && currentScreenName !== 'HomeMain') {
-                  // We're in a nested screen - navigate to HomeMain using nested navigation syntax
+              // Get current navigation state
+              const state = (navigation as any).getState();
+              const currentRoute = state?.routes?.[state?.index || 0];
+              const currentRouteName = currentRoute?.name;
+
+              logger.debug('BottomNavigator', 'Tab press check', { currentRouteName });
+
+              if (currentRouteName === 'HomeScreen') {
+                // Already on Home tab - check if we're on HomeMain inside the stack
+                const stackState = currentRoute?.state;
+                const stackRoute = stackState?.routes?.[stackState?.index || 0];
+                const innerRouteName = stackRoute?.name;
+
+                logger.debug('BottomNavigator', 'Already on HomeScreen, checking inner route', { innerRouteName });
+
+                if (innerRouteName === 'HomeMain') {
+                  // Already on HomeMain - just refresh without navigating
+                  // This prevents opening ChatListScreen or other screens
+                  logger.debug('BottomNavigator', 'Already on HomeMain, just refreshing');
+                  resetHomeScreen();
+                  // Don't navigate - just let the reset trigger refresh the screen
                   e.preventDefault();
-                  (navigation as any).navigate('HomeScreen', { screen: 'HomeMain' });
+                } else {
+                  // On a different screen inside HomeTabStack - reset to HomeMain
+                  logger.debug('BottomNavigator', 'On different screen in HomeTabStack, resetting to HomeMain', {
+                    currentScreen: innerRouteName
+                  });
+                  // Use resetHomeScreen trigger which will be handled by HomeTabStack
+                  // This is the most reliable way to reset the stack to HomeMain
+                  resetHomeScreen();
+                  e.preventDefault(); // Prevent default navigation since we handled it
                 }
-                // If already at HomeMain, let default behavior handle it (do nothing)
+              } else {
+                // Switching tabs - just navigate
+                logger.debug('BottomNavigator', 'Switching to HomeScreen');
+                (navigation as any).navigate('HomeScreen');
               }
-              // If tab is not focused, let default behavior switch to Home tab
             } catch (error) {
               logger.error('BottomNavigator', 'Error handling HomeScreen tab press', { error });
+              // Fallback: standard navigation
+              (navigation as any).navigate('HomeScreen');
             }
           },
         })}

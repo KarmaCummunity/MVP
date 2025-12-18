@@ -30,6 +30,7 @@ import { getScreenInfo, BREAKPOINTS } from '../globals/responsive';
 import RideCard from '../components/rides/RideCard';
 import RideHistoryCard from '../components/rides/RideHistoryCard';
 import RideOfferForm from '../components/rides/RideOfferForm';
+import VerticalGridSlider from '../components/VerticalGridSlider';
 
 export default function TrumpScreen({
   navigation,
@@ -625,7 +626,10 @@ export default function TrumpScreen({
   const { width } = Dimensions.get('window');
   const { isTablet, isDesktop } = getScreenInfo();
   const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
-  const numColumns = (isTablet || isDesktop || isDesktopWeb) ? 3 : 2;
+
+  // Initialize with appropriate default, but allow user control via slider
+  const [numColumns, setNumColumns] = useState(() => (isTablet || isDesktop || isDesktopWeb) ? 3 : 2);
+
   const screenPadding = 16;
   const cardGap = isTablet || isDesktop || isDesktopWeb ? 16 : 12;
   const cardWidth = (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
@@ -750,6 +754,15 @@ export default function TrumpScreen({
       ) : (
         // === SEARCH MODE (Passenger) - Show Search Results ===
         <View style={localStyles.searchContainer}>
+          <VerticalGridSlider
+            numColumns={numColumns}
+            onNumColumnsChange={setNumColumns}
+            style={{
+              top: 10, // Relative to searchContainer
+              left: 4,
+              height: 160 // Pass height if needed by style? No, it's defined inside.
+            }}
+          />
           <View style={localStyles.resultsHeader}>
             <Text style={localStyles.resultsTitle}>
               {searchQuery ? `${t('trump:ui.searchResultsPrefix')} "${searchQuery}"` : t('trump:ui.availableRides')} ({filteredRides.length})
@@ -766,7 +779,14 @@ export default function TrumpScreen({
                 <Text style={localStyles.emptyStateText}>{t('trump:ui.noRidesFoundBody')}</Text>
               </View>
             ) : (
-              <View style={[localStyles.ridesGrid, { gap: cardGap }]}>
+              <View style={[
+                localStyles.ridesGrid,
+                {
+                  gap: cardGap,
+                  // If slider is visible (always visible here?), shift content
+                  paddingLeft: 40
+                }
+              ]}>
                 {filteredRides.map((ride, idx) => (
                   <View key={ride.id || idx} style={{ width: cardWidth }}>
                     <RideCard

@@ -90,7 +90,7 @@ export const createConversation = async (participants: string[]): Promise<string
   // TODO: Add proper logging and monitoring for conversation creation
   try {
     let conversationId: string;
-    
+
     if (USE_BACKEND && participants.length > 0) {
       // Create conversation on backend
       const response = await apiService.createConversation({
@@ -98,11 +98,11 @@ export const createConversation = async (participants: string[]): Promise<string
         type: 'direct',
         created_by: participants[0], // First participant is the creator
       });
-      
+
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Failed to create conversation on backend');
       }
-      
+
       conversationId = response.data.id;
       logger.info('ChatService', 'Conversation created on backend', { conversationId });
     } else {
@@ -110,7 +110,7 @@ export const createConversation = async (participants: string[]): Promise<string
       conversationId = generateId('conv');
       logger.info('ChatService', 'Conversation created locally', { conversationId });
     }
-    
+
     const newConversation: Conversation = {
       id: conversationId,
       participants,
@@ -124,12 +124,12 @@ export const createConversation = async (participants: string[]): Promise<string
     for (const participantId of participants) {
       await db.createChat(participantId, conversationId, { ...newConversation, unreadCount: 0 });
     }
-    
+
     // Notify conversation listeners for all participants
     participants.forEach(participantId => {
       notifyConversationListeners(participantId);
     });
-    
+
     return conversationId;
   } catch (error) {
     logger.error('ChatService', 'Create conversation error', { error });
@@ -140,11 +140,11 @@ export const createConversation = async (participants: string[]): Promise<string
 export const getConversations = async (userId: string): Promise<Conversation[]> => {
   try {
     logger.info('ChatService', 'Getting conversations for user', { userId });
-    
+
     if (USE_BACKEND) {
       // Get conversations from backend
       const response = await apiService.getUserConversations(userId);
-      
+
       if (response.success && response.data && Array.isArray(response.data)) {
         // Map backend format to frontend format
         const conversations: Conversation[] = response.data.map((conv: any) => ({
@@ -155,28 +155,54 @@ export const getConversations = async (userId: string): Promise<Conversation[]> 
           unreadCount: conv.unread_count || 0,
           createdAt: conv.created_at,
         }));
-        
+
+        // Deduplicate conversations: keep only one conversation per set of participants
+        // Prefer the one with the most recent message
+        const uniqueMap = new Map<string, Conversation>();
+
+        conversations.forEach(conv => {
+          // Sort participants to ensure consistent key
+          const key = [...(conv.participants || [])].sort().join(',');
+
+          if (!uniqueMap.has(key)) {
+            uniqueMap.set(key, conv);
+          } else {
+            const existing = uniqueMap.get(key)!;
+            const existingTime = new Date(existing.lastMessageTime).getTime();
+            const newTime = new Date(conv.lastMessageTime).getTime();
+
+            // Should we replace?
+            // 1. If new one is newer
+            // 2. If timestamps are equal but new one has content and existing doesn't
+            if (newTime > existingTime || (newTime === existingTime && conv.lastMessageText && !existing.lastMessageText)) {
+              uniqueMap.set(key, conv);
+            }
+          }
+        });
+
+        const uniqueConversations = Array.from(uniqueMap.values());
+
         // Also save locally for offline support
-        for (const conv of conversations) {
+        for (const conv of uniqueConversations) {
           await db.createChat(userId, conv.id, conv);
         }
-        
-        logger.debug('ChatService', 'Got conversations from backend', { count: conversations.length });
-        return conversations;
+
+        logger.debug('ChatService', 'Got conversations from backend', { count: uniqueConversations.length, originalCount: conversations.length });
+        return uniqueConversations;
       } else {
         logger.warn('ChatService', 'Backend returned invalid response, falling back to local', { response });
       }
     }
-    
+
     // Fallback to local storage
     const conversations = await db.getUserChats(userId);
     logger.debug('ChatService', 'Raw conversations from DB', { count: conversations.length, conversations });
-    
+
     // Don't filter empty conversations - show all
-    const sorted = (conversations as Conversation[]).sort((a, b) => 
+    const sorted = (conversations as Conversation[]).sort((a, b) =>
       new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
     );
-    
+
     logger.debug('ChatService', 'Sorted conversations', { count: sorted.length, conversations: sorted.map(c => ({ id: c.id, lastMessage: c.lastMessageText || 'שיחה חדשה' })) });
     return sorted;
   } catch (error) {
@@ -184,12 +210,12 @@ export const getConversations = async (userId: string): Promise<Conversation[]> 
     // Fallback to local storage on error
     try {
       const conversations = await db.getUserChats(userId);
-      return (conversations as Conversation[]).sort((a, b) => 
+      return (conversations as Conversation[]).sort((a, b) =>
         new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
       );
     } catch (fallbackError) {
       logger.error('ChatService', 'Fallback to local storage also failed', { error: fallbackError });
-    return [];
+      return [];
     }
   }
 };
@@ -215,7 +241,7 @@ export const sendMessage = async (
     // Get conversation to find participants
     let senderView = await getConversationById(message.conversationId, message.senderId);
     let participants = senderView?.participants || [];
-    
+
     // If conversation not found locally, try to get from backend
     if (participants.length === 0 && USE_BACKEND) {
       try {
@@ -241,25 +267,25 @@ export const sendMessage = async (
         logger.warn('ChatService', 'Failed to get conversation from backend', { error });
       }
     }
-    
+
     // If still no participants, try to get from backend or reconstruct
     if (participants.length === 0) {
-      logger.warn('ChatService', 'No participants found for conversation, attempting to recover', { 
+      logger.warn('ChatService', 'No participants found for conversation, attempting to recover', {
         conversationId: message.conversationId,
-        senderId: message.senderId 
+        senderId: message.senderId
       });
-      
+
       // Try to get conversation from backend by checking all user conversations
       if (USE_BACKEND) {
         try {
           const allConvsResponse = await apiService.getUserConversations(message.senderId);
           if (allConvsResponse.success && allConvsResponse.data && Array.isArray(allConvsResponse.data)) {
             // Look for conversation by ID or by legacy_id in metadata
-            const foundConv = allConvsResponse.data.find((c: any) => 
-              c.id === message.conversationId || 
+            const foundConv = allConvsResponse.data.find((c: any) =>
+              c.id === message.conversationId ||
               (c.metadata && c.metadata.legacy_id === message.conversationId)
             );
-            
+
             if (foundConv && foundConv.participants && foundConv.participants.length > 0) {
               participants = foundConv.participants;
               logger.info('ChatService', 'Recovered participants from backend', { participants });
@@ -269,12 +295,12 @@ export const sendMessage = async (
           logger.warn('ChatService', 'Failed to recover participants from backend', { error });
         }
       }
-      
+
       // If still no participants, try to use fallback participants if provided
       if (participants.length === 0 && fallbackParticipants && fallbackParticipants.length > 0) {
         participants = fallbackParticipants;
         logger.info('ChatService', 'Using fallback participants', { participants });
-        
+
         // Save conversation locally with fallback participants
         const fallbackConversation: Conversation = {
           id: message.conversationId,
@@ -284,12 +310,12 @@ export const sendMessage = async (
           unreadCount: 0,
           createdAt: new Date().toISOString(),
         };
-        
+
         for (const participantId of fallbackParticipants) {
           await db.createChat(participantId, message.conversationId, fallbackConversation);
         }
       }
-      
+
       // If still no participants, we can't send the message
       if (participants.length === 0) {
         throw new Error('Conversation not found or has no participants. Please create a new conversation.');
@@ -315,7 +341,7 @@ export const sendMessage = async (
           backendMessageData.file_name = message.fileData.name;
           backendMessageData.file_size = message.fileData.size || null;
           backendMessageData.file_type = message.fileData.mimeType || message.fileData.type;
-          
+
           // Store additional metadata in metadata field
           if (message.fileData.thumbnail || message.fileData.duration || message.fileData.dimensions) {
             backendMessageData.metadata = JSON.stringify({
@@ -327,19 +353,19 @@ export const sendMessage = async (
         }
 
         const response = await apiService.sendMessage(backendMessageData);
-        
+
         if (response.success && response.data) {
           backendMessage = response.data;
           messageId = response.data.id;
-          
+
           // If backend created a new conversation (with new UUID), update local storage
           if (response.data.conversation_created && response.data.conversation_id) {
             const newConversationId = response.data.conversation_id;
-            logger.info('ChatService', 'Backend created new conversation', { 
-              oldId: message.conversationId, 
-              newId: newConversationId 
+            logger.info('ChatService', 'Backend created new conversation', {
+              oldId: message.conversationId,
+              newId: newConversationId
             });
-            
+
             // Get the conversation details from backend to save locally
             try {
               const convResponse = await apiService.getUserConversations(message.senderId);
@@ -355,7 +381,7 @@ export const sendMessage = async (
                     unreadCount: newConv.unread_count || 0,
                     createdAt: newConv.created_at || new Date().toISOString(),
                   };
-                  
+
                   // Save new conversation for all participants
                   const finalParticipants = newConv.participants || participants;
                   for (const participantId of finalParticipants) {
@@ -367,15 +393,15 @@ export const sendMessage = async (
                       // Ignore if doesn't exist
                     }
                   }
-                  
+
                   // Update message conversationId to new UUID - IMPORTANT: This updates the conversation ID for the rest of the function
                   message.conversationId = newConversationId;
-                  
-                  logger.info('ChatService', 'Updated local storage with new conversation UUID', { 
+
+                  logger.info('ChatService', 'Updated local storage with new conversation UUID', {
                     newConversationId,
-                    participants: finalParticipants 
+                    participants: finalParticipants
                   });
-                  
+
                   // Notify listeners about the new conversation - this will refresh ChatListScreen
                   finalParticipants.forEach((participantId: string) => {
                     notifyConversationListeners(participantId);
@@ -395,18 +421,18 @@ export const sendMessage = async (
                 unreadCount: 0,
                 createdAt: new Date().toISOString(),
               };
-              
+
               for (const participantId of participants) {
                 await db.createChat(participantId, newConversationId, updatedConversation);
               }
-              
+
               message.conversationId = newConversationId;
               participants.forEach(participantId => {
                 notifyConversationListeners(participantId);
               });
             }
           }
-          
+
           logger.info('ChatService', 'Message sent to backend', { messageId });
         } else {
           throw new Error(response.error || 'Failed to send message to backend');
@@ -465,26 +491,26 @@ export const sendMessage = async (
 
     logger.info('ChatService', 'Message sent', { messageId });
     logger.debug('ChatService', 'Conversation participants', { participants });
-    
+
     // Notify listeners about the new message for each participant
     for (const participantId of participants) {
       notifyMessageListeners(message.conversationId, participantId);
     }
-    
+
     // Notify conversation listeners for all participants
     // This will trigger ChatListScreen to refresh and show the new conversation
     logger.debug('ChatService', 'Notifying conversation listeners', { participants });
     participants.forEach(participantId => {
       logger.debug('ChatService', 'Notifying participant', { participantId });
       notifyConversationListeners(participantId);
-      
+
       // Send notification to other participants (not the sender)
       if (participantId !== message.senderId) {
         const senderName = 'משתמש'; // TODO: Get actual sender name
         sendMessageNotification(senderName, message.text, message.conversationId, participantId);
       }
     });
-    
+
     // Force refresh conversations from backend to ensure new conversation appears
     if (USE_BACKEND && backendMessage) {
       // Trigger a refresh of conversations for all participants
@@ -499,7 +525,7 @@ export const sendMessage = async (
         }
       }, 500); // Small delay to ensure backend has processed the message
     }
-    
+
     return messageId;
   } catch (error) {
     logger.error('ChatService', 'Send message error', { error });
@@ -513,7 +539,7 @@ export const getMessages = async (conversationId: string, userId: string): Promi
       try {
         // Get messages from backend
         const response = await apiService.getConversationMessages(conversationId, 100, 0);
-        
+
         if (response.success && response.data && Array.isArray(response.data)) {
           // Map backend format to frontend format
           const messages: Message[] = response.data.map((msg: any) => {
@@ -578,7 +604,7 @@ export const getMessages = async (conversationId: string, userId: string): Promi
 
     // Fallback to local storage
     const messages = await db.getChatMessages(userId, conversationId);
-    return (messages as Message[]).sort((a, b) => 
+    return (messages as Message[]).sort((a, b) =>
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
   } catch (error) {
@@ -590,18 +616,18 @@ export const getMessages = async (conversationId: string, userId: string): Promi
 export const markMessagesAsRead = async (conversationId: string, userId: string): Promise<void> => {
   try {
     logger.info('ChatService', 'Marking messages as read', { conversationId, userId });
-    
+
     // If backend is enabled, use backend API for read receipts
     if (USE_BACKEND) {
       try {
         const response = await apiService.markAllMessagesAsRead(conversationId, userId);
-        
+
         if (response.success) {
-          logger.info('ChatService', 'Messages marked as read on backend', { 
-            conversationId, 
-            markedCount: response.data?.marked_read || 0 
+          logger.info('ChatService', 'Messages marked as read on backend', {
+            conversationId,
+            markedCount: response.data?.marked_read || 0
           });
-          
+
           // Update local cache - mark all messages as read
           const messages = await getMessages(conversationId, userId);
           for (const msg of messages) {
@@ -617,11 +643,11 @@ export const markMessagesAsRead = async (conversationId: string, userId: string)
             await db.createChat(userId, conversationId, updatedConversation);
             logger.debug('ChatService', 'Conversation unread count reset to 0');
           }
-          
+
           return;
         } else {
-          logger.warn('ChatService', 'Backend mark as read failed, falling back to local', { 
-            error: response.error 
+          logger.warn('ChatService', 'Backend mark as read failed, falling back to local', {
+            error: response.error
           });
           // Fall through to local-only mode
         }
@@ -630,11 +656,11 @@ export const markMessagesAsRead = async (conversationId: string, userId: string)
         // Fall through to local-only mode
       }
     }
-    
+
     // Local-only mode or backend failed
     const messages = await getMessages(conversationId, userId);
     logger.debug('ChatService', 'Found total messages', { count: messages.length });
-    
+
     for (const msg of messages) {
       if (msg.conversationId === conversationId && msg.senderId !== userId && !msg.read) {
         logger.debug('ChatService', 'Marking message as read locally', { messageId: msg.id });
@@ -820,7 +846,7 @@ export const createSampleData = async (): Promise<void> => {
 export const createSampleChatData = async (userId: string): Promise<void> => {
   try {
     logger.info('ChatService', 'Creating sample chat data for user', { userId });
-    
+
     const sampleConversations: Conversation[] = [
       {
         id: 'conv_sample_1',
@@ -890,11 +916,11 @@ export const createSampleChatData = async (userId: string): Promise<void> => {
     for (const conversation of sampleConversations) {
       await db.createChat(userId, conversation.id, conversation);
     }
-    
+
     for (const message of sampleMessages) {
       await db.createMessage(userId, message.id, message);
     }
-    
+
     logger.info('ChatService', 'Sample chat data created for user', { userId, conversationCount: sampleConversations.length, messageCount: sampleMessages.length });
   } catch (error) {
     logger.error('ChatService', 'Create sample chat data error', { error });
@@ -915,10 +941,10 @@ export const editMessage = async (
       edited: true,
       editedAt: new Date().toISOString(),
     });
-    
+
     // Note: We would need the conversationId to notify listeners properly
     // For now, we'll skip notification as we don't have access to conversationId from messageId alone
-    
+
     logger.info('ChatService', 'Message edited', { messageId });
   } catch (error) {
     logger.error('ChatService', 'Edit message error', { error });
@@ -944,7 +970,7 @@ export const deleteMessage = async (
       // Remove only for current user
       await db.deleteMessage(userId, messageId);
     }
-    
+
     logger.info('ChatService', 'Message deleted', { messageId });
   } catch (error) {
     logger.error('ChatService', 'Delete message error', { error });
@@ -967,7 +993,7 @@ export const addMessageReaction = async (
       emoji,
       timestamp: new Date().toISOString(),
     });
-    
+
     logger.info('ChatService', 'Reaction added', { reactionId });
   } catch (error) {
     logger.error('ChatService', 'Add reaction error', { error });
@@ -1002,7 +1028,7 @@ export const sendVoiceMessage = async (
   try {
     const voiceId = generateId('voice');
     const messageId = generateId('msg');
-    
+
     // Save voice data
     await db.saveVoiceMessage(senderId, voiceId, {
       id: voiceId,
@@ -1011,7 +1037,7 @@ export const sendVoiceMessage = async (
       mimeType: voiceData.mimeType,
       timestamp: new Date().toISOString(),
     });
-    
+
     // Create message with voice reference
     const message: Message = {
       id: messageId,
@@ -1031,7 +1057,7 @@ export const sendVoiceMessage = async (
         mimeType: voiceData.mimeType,
       },
     };
-    
+
     await sendMessage(message);
     return messageId;
   } catch (error) {
@@ -1109,8 +1135,8 @@ export const conversationExists = async (
   try {
     // Use getAllConversations which already handles backend/local
     const conversations = await getAllConversations(userId);
-    const existingConv = conversations.find(conv => 
-      conv.participants.includes(userId) && 
+    const existingConv = conversations.find(conv =>
+      conv.participants.includes(userId) &&
       conv.participants.includes(otherUserId) &&
       conv.participants.length === 2
     );
@@ -1126,7 +1152,7 @@ export const debugDatabaseContent = async (userId: string) => {
   try {
     logger.debug('ChatService', '=== DATABASE DEBUG ===');
     logger.debug('ChatService', 'User ID', { userId });
-    
+
     // Get all chats
     const chats = await db.getUserChats(userId);
     logger.debug('ChatService', 'Total Chats', { count: chats.length });
@@ -1138,11 +1164,11 @@ export const debugDatabaseContent = async (userId: string) => {
         lastTime: chat.lastMessageTime,
       });
     });
-    
+
     // Get all messages
     const messages = await DatabaseService.list(DB_COLLECTIONS.MESSAGES, userId);
     logger.debug('ChatService', 'Total Messages', { count: messages.length });
-    
+
     logger.debug('ChatService', '=== END DEBUG ===');
   } catch (error) {
     logger.error('ChatService', 'Debug error', { error });

@@ -259,7 +259,12 @@ const HeroSection: React.FC<{ onDonate: () => void }> = ({ onDonate }) => {
           }
         ]}>
 
-          <Text style={styles.welcomeTitle}>המקום בו טוב קורה</Text>
+          <Text style={styles.welcomeTitle}>
+            <Text style={styles.welcomeTitleLarge}>המקום </Text>
+            <Text style={styles.welcomeTitleSmall}> בו  </Text>
+            <Text style={styles.welcomeTitleLarge}>הטוב </Text>
+            <Text style={styles.welcomeTitleSmall}> קורה </Text>
+          </Text>
           <View style={styles.logoContainer}>
             <Image source={require('../assets/images/new_logo_black.png')} style={styles.logo} resizeMode="contain" />
             <View style={styles.logoGlow} />
@@ -1818,6 +1823,16 @@ const styles = StyleSheet.create({
     marginBottom: isMobileWeb ? 16 : (isWeb ? 24 : 32),
     letterSpacing: -1,
     lineHeight: isMobileWeb ? 34 : (isWeb ? (isTablet ? 64 : 50) : 72),
+  },
+  welcomeTitleLarge: {
+    fontSize: isMobileWeb ? 32 : (isWeb ? (isTablet ? 64 : 48) : 72),
+    fontWeight: '900',
+    color: colors.textPrimary,
+  },
+  welcomeTitleSmall: {
+    fontSize: isMobileWeb ? 24 : (isWeb ? (isTablet ? 48 : 36) : 56),
+    fontWeight: '900',
+    color: colors.textPrimary,
   },
   logoContainer: {
     position: 'relative',

@@ -14,13 +14,13 @@ export default {
     slug: "karma-community",
     version: "1.9.5",
     orientation: "portrait",
-    icon: "./assets/images/new_logo_black.png",
+    icon: "./assets/images/לוגו_חדש_שחור.png",
     scheme: "karma-community",
     userInterfaceStyle: "automatic",
     // שמירה על primaryColor שהיה ב-app.json
     primaryColor: colors.secondary,
     splash: {
-      image: "./assets/images/new_logo_black.png",
+      image: "./assets/images/לוגו_חדש_שחור.png",
       resizeMode: "contain",
       backgroundColor: colors.backgroundTertiary
     },
@@ -43,14 +43,12 @@ export default {
         },
         NSCameraUsageDescription: "האפליקציה זקוקה לגישה למצלמה כדי לצלם תמונות וסרטונים",
         NSMicrophoneUsageDescription: "האפליקציה זקוקה לגישה למיקרופון לצורך הקלטת אודיו",
-        NSPhotoLibraryUsageDescription: "האפליקציה זקוקה לגישה לספריית התמונות כדי לבחור ולהעלות קבצים",
-        NSLocationWhenInUseUsageDescription: "האפליקציה זקוקה לגישה למיקום כדי לזהות את מיקומך הנוכחי",
-        NSLocationAlwaysAndWhenInUseUsageDescription: "האפליקציה זקוקה לגישה למיקום כדי לזהות את מיקומך הנוכחי"
+        NSPhotoLibraryUsageDescription: "האפליקציה זקוקה לגישה לספריית התמונות כדי לבחור ולהעלות קבצים"
       }
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/images/new_logo_black.png",
+        foregroundImage: "./assets/images/לוגו_חדש_שחור.png",
         backgroundColor: colors.backgroundTertiary
       },
       package: "com.navesarussi1.KarmaCommunity",
@@ -76,9 +74,7 @@ export default {
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.WAKE_LOCK",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
-        "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION"
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
       ]
     },
     web: {
@@ -107,17 +103,11 @@ export default {
       [
         "expo-notifications",
         {
-          icon: "./assets/images/new_logo_black.png",
+          icon: "./assets/images/לוגו_חדש_שחור.png",
           color: colors.secondary,
           mode: "production",
           androidMode: "default",
           androidCollapsedTitle: "התראה חדשה"
-        }
-      ],
-      [
-        "expo-location",
-        {
-          locationAlwaysAndWhenInUsePermission: "האפליקציה זקוקה לגישה למיקום כדי לזהות את מיקומך הנוכחי"
         }
       ]
     ],
@@ -134,7 +124,7 @@ export default {
       EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: "430191522654-q05j71a8lu3e1vgf75c2r2jscgckb4mm.apps.googleusercontent.com",
       EXPO_PUBLIC_USE_BACKEND: "1",
       EXPO_PUBLIC_USE_FIRESTORE: "0",
-      EXPO_PUBLIC_ADMIN_EMAILS: "navesarussi@gmail.com,mahalalel100@gmail.com,matan7491@gmail.com,ichai1306@gmail.com,lianbh2004@gmail.com",
+      EXPO_PUBLIC_ADMIN_EMAILS: "navesarussi@gmail.com",
       EXPO_PUBLIC_FIREBASE_API_KEY: "AIzaSyCDwgAVr5IbjXe2vqSEacn_p-ruATfvqIU",
       EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: "karma-community-app.firebaseapp.com",
       EXPO_PUBLIC_FIREBASE_PROJECT_ID: "karma-community-app",
