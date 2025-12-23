@@ -213,7 +213,7 @@ export default function ScrollContainer({
         {...{ "data-scroll-container": "true" } as any}
       >
         <View style={[styles.webScrollContent, contentStyle]}>
-          {children}
+          {children || null}
         </View>
       </View>
     );
@@ -235,7 +235,7 @@ export default function ScrollContainer({
       onScroll={handleScroll}
       {...scrollViewProps}
     >
-      {children}
+      {children || null}
     </ScrollView>
   );
 }

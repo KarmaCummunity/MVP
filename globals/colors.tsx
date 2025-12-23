@@ -6,6 +6,7 @@
 const palette = {
   tealDark: '#16808C',    // Primary Brand
   tealLight: '#0DA6A6',   // Secondary Brand
+  greenBright: '#B8DB80', // Bright pleasant green that complements the teal
   brownDeep: '#591E08',   // Accent / CTA
   greyMedium: '#B4BEBF',  // Neutral / Borders
   greyLight: '#D0D8D9',   // Backgrounds / Surfaces
@@ -19,6 +20,7 @@ const colors = {
   primary: palette.tealDark,
   secondary: palette.tealLight,
   accent: palette.brownDeep,
+  greenBright: palette.greenBright, // Bright pleasant green
 
   // --- Backgrounds (60%) ---
   background: palette.white,

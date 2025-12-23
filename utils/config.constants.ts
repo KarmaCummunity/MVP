@@ -17,9 +17,10 @@ const getSimpleApiUrl = (): string => {
   }
 
   // Fallback to appropriate environment URL
-  return IS_PRODUCTION
-    ? 'https://kc-mvp-server-production.up.railway.app'
-    : 'https://kc-mvp-server-dev.up.railway.app';
+  // In development, use localhost; in production, use Railway
+  return IS_DEVELOPMENT
+    ? 'http://localhost:3001'
+    : 'https://kc-mvp-server-production.up.railway.app';
 };
 
 // Export as constant, evaluated once

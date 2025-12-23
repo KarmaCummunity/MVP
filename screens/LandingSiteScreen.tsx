@@ -75,12 +75,12 @@ const Section: React.FC<{ id?: string; title: string; subtitle?: string; childre
     <Text style={styles.sectionTitle}>{title}</Text>
     <View style={styles.titleDecorator} />
     {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
-    {children}
+    {children || null}
   </View>
 );
 
-const Feature: React.FC<{ emoji: string; title: string; text: string }> = ({ emoji, title, text }) => (
-  <View style={styles.feature}>
+const Feature: React.FC<{ emoji: string; title: string; text: string; greenAccent?: boolean }> = ({ emoji, title, text, greenAccent }) => (
+  <View style={[styles.feature, greenAccent && { backgroundColor: colors.greenBright + '12', borderColor: colors.greenBright + '30' }]}>
     <Text style={styles.featureEmoji}>{emoji}</Text>
     <Text style={styles.featureTitle}>{title}</Text>
     <Text style={styles.featureText}>{text}</Text>
@@ -246,6 +246,7 @@ const HeroSection: React.FC<{ onDonate: () => void }> = ({ onDonate }) => {
       <View style={styles.heroGradient}>
         <View style={styles.decoCircle1} />
         <View style={styles.decoCircle2} />
+        <View style={styles.decoCircle3} />
         <Animated.View style={[
           styles.heroContent,
           {
@@ -266,30 +267,26 @@ const HeroSection: React.FC<{ onDonate: () => void }> = ({ onDonate }) => {
             <Text style={styles.welcomeTitleSmall}> קורה </Text>
           </Text>
           <View style={styles.logoContainer}>
-            <Image source={require('../assets/images/new_logo_black.png')} style={styles.logo} resizeMode="contain" />
-            <View style={styles.logoGlow} />
+            <View style={styles.logoBackground}>
+              <Image source={require('../assets/images/new_logo_black.png')} style={styles.logo} resizeMode="contain" />
+            </View>
           </View>
           <Text style={styles.title}>Karma Community</Text>
-          <Text style={styles.subtitle}>רשת חברתית שמחברת בין אנשים שצריכים עזרה, לאנשים שרוצים לעזור. פשוט, שקוף ומהלב.</Text>
-
-          <View style={styles.heroMottosContainer}>
-
-            <View style={styles.mottoItem}>
-              <Ionicons name="sparkles" size={isMobileWeb ? 18 : 24} color={colors.accent} style={styles.mottoItemIcon} />
-              <Text style={styles.mottoSubtitle}>השאריות של האחד יכול להיות האוצר של מישהו אחר</Text>
+          <View style={styles.subtitlesRow}>
+            <View style={styles.subtitleItem}>
+              <Ionicons name="people-circle-outline" size={isMobileWeb ? 18 : 24} color={colors.info} style={styles.subtitleIcon} />
+              <Text style={styles.subtitleText}>אחדות</Text>
             </View>
-
-            <View style={styles.mottoItem}>
-              <Ionicons name="heart-circle" size={isMobileWeb ? 18 : 24} color={colors.secondary} style={styles.mottoItemIcon} />
-              <Text style={styles.mottoSubtitle}>לכל אחד מאיתנו יש משהו לתת וגם משהו שהוא היה שמח לקבל</Text>
+            <View style={[styles.subtitleItem, styles.subtitleItemGreen]}>
+              <Ionicons name="eye-outline" size={isMobileWeb ? 18 : 24} color={colors.greenBright} style={styles.subtitleIcon} />
+              <Text style={styles.subtitleText}>שקיפות</Text>
             </View>
-
-            <View style={styles.mottoItem}>
-              <Ionicons name="swap-horizontal" size={isMobileWeb ? 18 : 24} color={colors.info} style={styles.mottoItemIcon} />
-              <Text style={styles.mottoSubtitle}>לתת זה גם לקבל</Text>
+            <View style={styles.subtitleItem}>
+              <Ionicons name="checkmark-circle-outline" size={isMobileWeb ? 18 : 24} color={colors.info} style={styles.subtitleIcon} />
+              <Text style={styles.subtitleText}>סדר</Text>
             </View>
-
           </View>
+          <Text style={styles.subtitle}>רשת חברתית שמחברת בין אנשים שצריכים עזרה, לאנשים שרוצים לעזור. פשוט, שקוף ומהלב.</Text>
 
 
           <View style={styles.ctaRow}>
@@ -299,7 +296,7 @@ const HeroSection: React.FC<{ onDonate: () => void }> = ({ onDonate }) => {
           </View>
           {/* Donation Button */}
           <TouchableOpacity
-            style={styles.donationCtaButton}
+            style={[styles.donationCtaButton, { backgroundColor: colors.greenBright }]}
             onPress={onDonate}
             activeOpacity={0.8}
           >
@@ -327,8 +324,8 @@ const VisionSection: React.FC<{ onGoToApp: () => void }> = ({ onGoToApp }) => (
         <Ionicons name="swap-horizontal-outline" size={isMobileWeb ? 24 : 32} color={colors.info} style={styles.mottoIcon} />
         <Text style={styles.mottoText}>"לתת זה גם לקבל"</Text>
       </View>
-      <View style={styles.mottoCard}>
-        <Ionicons name="gift-outline" size={isMobileWeb ? 24 : 32} color={colors.secondary} style={styles.mottoIcon} />
+      <View style={[styles.mottoCard, { backgroundColor: colors.greenBright + '15', borderColor: colors.greenBright + '40' }]}>
+        <Ionicons name="gift-outline" size={isMobileWeb ? 24 : 32} color={colors.greenBright} style={styles.mottoIcon} />
         <Text style={styles.mottoText}>"לכל אחד יש משהו שהוא צריך ומשהו שהוא ישמח לתת"</Text>
       </View>
     </View>
@@ -349,7 +346,7 @@ const VisionSection: React.FC<{ onGoToApp: () => void }> = ({ onGoToApp }) => (
         <Text style={styles.visionHighlightText}>חברתי ומחבר</Text>
       </View>
       <View style={styles.visionHighlight}>
-        <Ionicons name="globe" size={isMobileWeb ? 20 : 28} color={colors.success} />
+        <Ionicons name="globe" size={isMobileWeb ? 20 : 28} color={colors.greenBright} />
         <Text style={styles.visionHighlightText}>שינוי עולמי אמיתי</Text>
       </View>
     </View>
@@ -719,11 +716,11 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onG
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.statCard}
-            onPress={() => handleStatPress('completedRides', 'נסיעות קהילתיות', stats.completedRides, 'car-outline', colors.accent)}
+            style={[styles.statCard, { backgroundColor: colors.greenBright + '15', borderColor: colors.greenBright + '40' }]}
+            onPress={() => handleStatPress('completedRides', 'נסיעות קהילתיות', stats.completedRides, 'car-outline', colors.greenBright)}
             activeOpacity={0.7}
           >
-            <Ionicons name="car-outline" size={isMobileWeb ? 24 : 32} color={colors.accent} style={styles.statIcon} />
+            <Ionicons name="car-outline" size={isMobileWeb ? 24 : 32} color={colors.greenBright} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.completedRides.toLocaleString('he-IL')}</Text>
             <Text style={styles.statLabel}>נסיעות קהילתיות</Text>
             <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
@@ -808,7 +805,7 @@ const FeaturesSection = () => (
     <View style={styles.featuresGrid}>
       <Feature emoji="🤝" title="צריכים עזרה? רוצים לעזור?" text="פרסמו בקלות בקשה או הצעה, וקבלו מענה מהקהילה סביבכם. משיעורי עזר ועד תיקונים קטנים בבית." />
       <Feature emoji="💬" title="התחברו לאנשים כמוכם" text="מצאו קבוצות עניין, הצטרפו לדיונים, וצרו קשרים חדשים עם אנשים שאכפת להם." />
-      <Feature emoji="📍" title="גלו הזדמנויות סביבכם" text="המפה החכמה שלנו תראה לכם איפה צריכים אתכם, ממש ליד הבית." />
+      <Feature emoji="📍" title="גלו הזדמנויות סביבכם" text="המפה החכמה שלנו תראה לכם איפה צריכים אתכם, ממש ליד הבית." greenAccent />
       <Feature emoji="🔒" title="פלטפורמה בטוחה ושקופה" text="בלי פרסומות, בלי תוכן פוגעני, רק קהילתיות אמיתית ואמון הדדי." />
     </View>
   </Section>
@@ -860,11 +857,11 @@ const HowItWorksSection = () => (
           ראיתם משהו שמעניין אתכם? שלחו הודעה ישירה, תאמו פרטים, הכירו את האדם שמאחורי הבקשה או ההצעה. הכל שקוף, בטוח ופשוט.
         </Text>
       </View>
-      <View style={styles.stepCard}>
-        <View style={styles.stepNumberBadge}>
+      <View style={[styles.stepCard, { backgroundColor: colors.greenBright + '12', borderColor: colors.greenBright + '40' }]}>
+        <View style={[styles.stepNumberBadge, { backgroundColor: colors.greenBright }]}>
           <Text style={styles.stepNumber}>5</Text>
         </View>
-        <Ionicons name="heart-outline" size={isMobileWeb ? 24 : 32} color={colors.success} style={styles.stepIcon} />
+        <Ionicons name="heart-outline" size={isMobileWeb ? 24 : 32} color={colors.greenBright} style={styles.stepIcon} />
         <Text style={styles.stepTitle}>עשו טוב והרגישו את ההבדל</Text>
         <Text style={styles.stepText}>
           תאמו, פגשו, עזרו או קבלו עזרה. כל פעולה כזו יוצרת קשר אנושי אמיתי ומחזקת את הקהילה. אתם תראו את ההשפעה שלכם, והקהילה תראה את התרומה שלכם.
@@ -896,7 +893,7 @@ const WhoIsItForSection: React.FC<{ onDonate: () => void }> = ({ onDonate }) => 
           <View style={styles.iconBulletRow}><Ionicons name="gift-outline" size={isMobileWeb ? 14 : 18} color={colors.secondary} /><Text style={styles.iconBulletText}>שיתוף חפצים, מזון וציוד</Text></View>
           <View style={styles.iconBulletRow}><Ionicons name="time-outline" size={isMobileWeb ? 14 : 18} color={colors.accent} /><Text style={styles.iconBulletText}>התנדבות וסיוע נקודתי</Text></View>
           <View style={styles.iconBulletRow}><Ionicons name="school-outline" size={isMobileWeb ? 14 : 18} color={colors.info} /><Text style={styles.iconBulletText}>שיתוף ידע ושיעורי עזר</Text></View>
-          <View style={styles.iconBulletRow}><Ionicons name="heart-outline" size={isMobileWeb ? 14 : 18} color={colors.secondary} /><Text style={styles.iconBulletText}>יצירת קשרים אנושיים אמיתיים</Text></View>
+          <View style={styles.iconBulletRow}><Ionicons name="heart-outline" size={isMobileWeb ? 14 : 18} color={colors.greenBright} /><Text style={styles.iconBulletText}>יצירת קשרים אנושיים אמיתיים</Text></View>
           <View style={styles.iconBulletRow}><Ionicons name="people-outline" size={isMobileWeb ? 14 : 18} color={colors.success} /><Text style={styles.iconBulletText}>כמובן כולם מוזמנים להתנדב ולתרום גם לקהילה עצמה ולהיות חלק מהמייסדים</Text></View>
         </View>
 
@@ -934,7 +931,7 @@ const ValuesSection = () => {
   const commitments = [
     { icon: 'shield-checkmark-outline', text: 'אימות משתמשים וארגונים לפני עלייה לאוויר', color: colors.success },
     { icon: 'sparkles-outline', text: 'חוויית שימוש נוחה ונקייה מהסחות דעת', color: colors.secondary },
-    { icon: 'leaf-outline', text: 'התפתחות ברת קיימא – בלי פרסומות ובלי דאטה מיותר', color: colors.accent },
+    { icon: 'leaf-outline', text: 'התפתחות ברת קיימא – בלי פרסומות ובלי דאטה מיותר', color: colors.greenBright },
   ];
 
   return (
@@ -960,6 +957,27 @@ const ValuesSection = () => {
     </Section>
   );
 };
+
+const CoreMottosSection = () => (
+  <Section id="section-core-mottos" title="העקרונות המנחים שלנו" subtitle="מה שמניע אותנו קדימה">
+    <View style={styles.coreMottosContainer}>
+      <View style={styles.coreMottoItem}>
+        <Ionicons name="sparkles" size={isMobileWeb ? 24 : 32} color={colors.accent} style={styles.coreMottoIcon} />
+        <Text style={styles.coreMottoText}>השאריות של האחד יכול להיות האוצר של מישהו אחר</Text>
+      </View>
+
+      <View style={[styles.coreMottoItem, { backgroundColor: colors.greenBright + '15', borderColor: colors.greenBright + '50' }]}>
+        <Ionicons name="heart-circle" size={isMobileWeb ? 24 : 32} color={colors.greenBright} style={styles.coreMottoIcon} />
+        <Text style={styles.coreMottoText}>לכל אחד מאיתנו יש משהו לתת וגם משהו שהוא היה שמח לקבל</Text>
+      </View>
+
+      <View style={styles.coreMottoItem}>
+        <Ionicons name="swap-horizontal" size={isMobileWeb ? 24 : 32} color={colors.info} style={styles.coreMottoIcon} />
+        <Text style={styles.coreMottoText}>לתת זה גם לקבל</Text>
+      </View>
+    </View>
+  </Section>
+);
 
 const RoadmapSection = () => {
   const roadmapSteps = [
@@ -1671,7 +1689,7 @@ const LandingSiteScreen: React.FC = () => {
   useEffect(() => {
     if (!isWeb) return; // Works on all web screens including mobile
 
-    const sectionIds = ['stats', 'vision', 'problems', 'features', 'about', 'how', 'who', 'values', 'roadmap', 'contact', 'faq'];
+    const sectionIds = ['stats', 'vision', 'problems', 'features', 'about', 'how', 'who', 'values', 'core-mottos', 'roadmap', 'contact', 'faq'];
 
     // Create Intersection Observer
     const observerOptions = {
@@ -1776,6 +1794,7 @@ const LandingSiteScreen: React.FC = () => {
         <LazySection section={HowItWorksSection} />
         <LazySection section={WhoIsItForSection} onDonate={() => setShowDonationModal(true)} />
         <LazySection section={ValuesSection} />
+        <LazySection section={CoreMottosSection} />
         <LazySection section={RoadmapSection} />
         <LazySection section={ContactSection} />
         <LazySection section={FAQSection} />
@@ -1839,21 +1858,21 @@ const styles = StyleSheet.create({
     marginBottom: isMobileWeb ? 12 : (isWeb ? 20 : 28),
     alignItems: 'center',
     justifyContent: 'center',
-    width: isMobileWeb ? 100 : (isWeb ? (isTablet ? 180 : 160) : 200),
-    height: isMobileWeb ? 100 : (isWeb ? (isTablet ? 180 : 160) : 200),
+    width: '100%',
+    height: isMobileWeb ? 140 : (isWeb ? (isTablet ? 240 : 220) : 260),
+    overflow: 'hidden',
+  },
+  logoBackground: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logo: {
-    width: isMobileWeb ? 80 : (isWeb ? (isTablet ? 140 : 120) : 160),
-    height: isMobileWeb ? 80 : (isWeb ? (isTablet ? 140 : 120) : 160),
-    zIndex: 2,
-  },
-  logoGlow: {
-    position: 'absolute',
-    width: isMobileWeb ? 100 : (isWeb ? (isTablet ? 180 : 160) : 200),
-    height: isMobileWeb ? 100 : (isWeb ? (isTablet ? 180 : 160) : 200),
-    borderRadius: isMobileWeb ? 50 : (isWeb ? (isTablet ? 90 : 80) : 100),
-    backgroundColor: 'rgba(65, 105, 225, 0.15)',
-    zIndex: 1,
+    width: isMobileWeb ? 180 : (isWeb ? (isTablet ? 320 : 280) : 360),
+    height: isMobileWeb ? 180 : (isWeb ? (isTablet ? 320 : 280) : 360),
+    opacity: 0.35,
   },
   title: {
     fontSize: isMobileWeb ? 24 : (isWeb ? (isTablet ? 48 : 36) : 56),
@@ -1862,6 +1881,39 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: isMobileWeb ? 12 : (isWeb ? 16 : 20),
     letterSpacing: -0.5,
+  },
+  subtitlesRow: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: isMobileWeb ? 12 : (isWeb ? (isTablet ? 28 : 20) : 32),
+    marginBottom: isMobileWeb ? 8 : (isWeb ? 12 : 16),
+    flexWrap: 'wrap',
+  },
+  subtitleItem: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: isMobileWeb ? 6 : (isWeb ? (isTablet ? 12 : 10) : 14),
+    paddingHorizontal: isMobileWeb ? 8 : (isWeb ? (isTablet ? 16 : 12) : 20),
+    paddingVertical: isMobileWeb ? 6 : (isWeb ? (isTablet ? 10 : 8) : 12),
+    borderRadius: isMobileWeb ? 12 : (isWeb ? (isTablet ? 20 : 16) : 24),
+    backgroundColor: colors.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: colors.info + '30',
+  },
+  subtitleItemGreen: {
+    backgroundColor: colors.greenBright + '18',
+    borderColor: colors.greenBright + '50',
+  },
+  subtitleIcon: {
+    marginTop: isMobileWeb ? 1 : 2,
+  },
+  subtitleText: {
+    fontSize: isMobileWeb ? 12 : (isWeb ? (isTablet ? 24 : 18) : 28),
+    fontWeight: '800',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: isMobileWeb ? 14 : (isWeb ? (isTablet ? 20 : 18) : 24),
@@ -2676,6 +2728,15 @@ const styles = StyleSheet.create({
     bottom: isMobileWeb ? -25 : -50,
     right: isMobileWeb ? -50 : -100,
   },
+  decoCircle3: {
+    position: 'absolute',
+    width: isMobileWeb ? 120 : 240,
+    height: isMobileWeb ? 120 : 240,
+    borderRadius: isMobileWeb ? 60 : 120,
+    backgroundColor: colors.greenBright + '20',
+    top: isMobileWeb ? 40 : 80,
+    right: isMobileWeb ? -30 : -60,
+  },
   titleDecorator: {
     width: isMobileWeb ? 40 : 60,
     height: isMobileWeb ? 3 : 4,
@@ -2873,6 +2934,42 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     lineHeight: isMobileWeb ? 22 : 30,
+  },
+  coreMottosContainer: {
+    marginTop: isMobileWeb ? 20 : 32,
+    width: '100%',
+    maxWidth: isTablet ? 900 : '100%',
+    alignSelf: 'center',
+    gap: isMobileWeb ? 20 : 28,
+  },
+  coreMottoItem: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: isMobileWeb ? 12 : 16,
+    backgroundColor: colors.white,
+    borderRadius: isMobileWeb ? 16 : 24,
+    padding: isMobileWeb ? 20 : 32,
+    borderWidth: 2,
+    borderColor: colors.backgroundTertiary,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  coreMottoIcon: {
+    marginLeft: isMobileWeb ? 8 : 12,
+    flexShrink: 0,
+  },
+  coreMottoText: {
+    fontSize: isMobileWeb ? 16 : (isWeb ? (isTablet ? 22 : 20) : 24),
+    color: colors.textPrimary,
+    textAlign: 'right',
+    fontWeight: '700',
+    lineHeight: isMobileWeb ? 24 : (isWeb ? 32 : 36),
+    fontStyle: 'italic',
+    flex: 1,
   },
   stepNumberBadge: {
     position: 'absolute',

@@ -215,6 +215,8 @@ export type AdminStackParamList = {
   AdminPeople: undefined;
   AdminAdmins: undefined;
   AdminReview: undefined;
+  AdminFiles: undefined;
+  AdminCRM: undefined;
   ChatListScreen: undefined;
   ChatDetailScreen: {
     conversationId: string;
@@ -265,4 +267,5 @@ export interface UserPreview {
   };
   joinDate?: string;
   interests?: string[];
+  parentManagerId?: string | null;
 }

@@ -300,16 +300,26 @@ export default function NotificationsScreen() {
       <ScreenWrapper navigation={navigation} style={styles.safeArea}>
         {/* Additional header actions for notifications */}
         <View style={styles.additionalHeaderSection}>
-          {unreadCount > 0 && (
-            <TouchableOpacity onPress={handleMarkAllAsRead} style={styles.headerButton}>
-              <Icon name="checkmark-done" size={24} color={colors.primary} />
-            </TouchableOpacity>
-          )}
-          {notifications.length > 0 && (
-            <TouchableOpacity onPress={handleClearAllNotifications} style={styles.headerButton}>
-              <Icon name="trash-outline" size={24} color={colors.error} />
-            </TouchableOpacity>
-          )}
+          {[
+            unreadCount > 0 && (
+              <TouchableOpacity 
+                key="mark-all-read"
+                onPress={handleMarkAllAsRead} 
+                style={styles.headerButton}
+              >
+                <Icon name="checkmark-done" size={24} color={colors.primary} />
+              </TouchableOpacity>
+            ),
+            notifications.length > 0 && (
+              <TouchableOpacity 
+                key="clear-all"
+                onPress={handleClearAllNotifications} 
+                style={styles.headerButton}
+              >
+                <Icon name="trash-outline" size={24} color={colors.error} />
+              </TouchableOpacity>
+            ),
+          ].filter(Boolean)}
         </View>
 
         {unreadCount > 0 && (

@@ -38,6 +38,7 @@ import { toastService } from '../utils/toastService';
 import { useTranslation } from 'react-i18next';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
+import { apiService } from '../utils/apiService';
 import { db } from '../utils/databaseService';
 import { getCategoryLabel } from '../utils/itemCategoryUtils';
 import { getScreenInfo, BREAKPOINTS } from '../globals/responsive';
@@ -1123,10 +1124,44 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
         );
       }
 
+
+      // Load NEW posts from Postgres DB (Task Completions, etc.)
+      let newPostsList: any[] = [];
+      try {
+        const res = await apiService.getPosts(20, 0);
+        if (res.success && Array.isArray(res.data)) {
+          newPostsList = res.data;
+        }
+      } catch (err) {
+        logger.error('PostsReelsScreen', 'Error loading new posts', { err });
+      }
+
       const merged: Item[] = [];
+
+      // Add NEW posts first (high priority)
+      newPostsList.forEach((p) => {
+        merged.push({
+          id: p.id,
+          type: 'post',
+          title: p.title,
+          description: p.description || '',
+          thumbnail: (p.images && p.images.length > 0) ? p.images[0] : '',
+          user: {
+            id: p.author.id,
+            name: p.author.name,
+            avatar: p.author.avatar_url || `https://i.pravatar.cc/150?u=${p.author.id}`,
+            karmaPoints: 0
+          },
+          likes: p.likes || 0,
+          comments: p.comments || 0,
+          isLiked: false,
+          timestamp: p.created_at
+        });
+      });
 
       // Add posts to feed
       postsLists.forEach((posts, idx) => {
+
         const uid = userIds[idx];
         const user = userIdToUser[uid] || { id: uid };
         (posts as any[]).forEach((p) => merged.push(mapPostToItem(p, user)));

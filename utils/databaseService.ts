@@ -183,6 +183,10 @@ export class DatabaseService {
   ): Promise<T[]> {
     try {
       if (USE_BACKEND) {
+        if (collection === DB_COLLECTIONS.POSTS) {
+          const res = await apiService.getUserPosts(userId);
+          return res.success ? (res.data as unknown as T[]) : [];
+        }
         return await restAdapter.list<T>(collection, userId);
       } else if (USE_FIRESTORE) {
         return await firestoreAdapter.list<T>(collection, userId);
@@ -611,16 +615,16 @@ export const db = {
 
             // Parse time components
             const [hours, minutes] = timeStr.split(':').map(Number);
-            
+
             // Create date in local timezone (not UTC)
             // Use the date string and set hours/minutes in local timezone
             const localDate = new Date(dateStr + 'T00:00:00');
             localDate.setHours(hours, minutes, 0, 0);
-            
+
             // Convert to ISO string (this will be in UTC, but we preserve the local time intent)
             // The server should store this as-is, treating it as the intended local time
             const isoString = localDate.toISOString();
-            
+
             console.log('🕐 Converting time:', { dateStr, timeStr, localDate: localDate.toLocaleString('he-IL'), isoString });
 
             // Check if date is valid
@@ -748,7 +752,7 @@ export const db = {
           // Convert UTC time to local time for display
           let dateStr = '';
           let timeStr = '00:00';
-          
+
           if (r.departure_time) {
             const departureDate = new Date(r.departure_time);
             // Get local date and time (not UTC)
@@ -760,7 +764,7 @@ export const db = {
             dateStr = r.date || new Date().toISOString().slice(0, 10);
             timeStr = r.time || '00:00';
           }
-          
+
           return {
             id: r.id,
             driverId: r.driver_id || r.driverId || r.createdBy,
@@ -797,7 +801,7 @@ export const db = {
           // Convert UTC time to local time for display
           let dateStr = '';
           let timeStr = '00:00';
-          
+
           if (r.departure_time) {
             const departureDate = new Date(r.departure_time);
             // Get local date and time (not UTC)
@@ -809,7 +813,7 @@ export const db = {
             dateStr = r.date || new Date().toISOString().slice(0, 10);
             timeStr = r.time || '00:00';
           }
-          
+
           return {
             id: r.id,
             driverId: r.driver_id || r.driverId || r.createdBy,

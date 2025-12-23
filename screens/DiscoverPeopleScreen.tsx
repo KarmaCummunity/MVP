@@ -2,7 +2,7 @@
 // - Purpose: Discover/suggest people to follow and view popular users; follow/unfollow inline.
 // - Reached from: Profile actions and navigation routes as 'DiscoverPeopleScreen'.
 // - Provides: Two tabs (suggestions/popular), list items navigate to 'UserProfileScreen'.
-// - Reads from context: `useUser()` -> `selectedUser`, `isRealAuth` controls demo data fallbacks.
+// - Reads from context: `useUser()` -> `selectedUser`.
 // - External deps/services: `followService` (suggestions/popular/follow/unfollow/stats).
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -16,6 +16,7 @@ import {
   Alert,
   Platform,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect, NavigationProp, ParamListBase } from '@react-navigation/native';
@@ -34,8 +35,73 @@ import { useUser } from '../stores/userStore';
 import apiService from '../utils/apiService';
 
 import { getScreenInfo, isLandscape } from '../globals/responsive';
+import { IS_DEVELOPMENT } from '../utils/dbConfig';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+// Helper function to generate mock users for testing scroll in development
+const generateMockUsers = (count: number, excludeId?: string): CharacterType[] => {
+  const names = [
+    'שרה כהן', 'דוד לוי', 'רחל אברהם', 'יוסף יצחק', 'מרים משה',
+    'אברהם יעקב', 'חיה דוד', 'ישראל נחום', 'דינה שמעון', 'בנימין ראובן',
+    'לאה רחל', 'גד אשר', 'דן נפתלי', 'זבולון יששכר', 'יוסף בנימין',
+    'משה אהרן', 'שלמה דוד', 'יהודה יוסף', 'אפרים מנשה', 'רונן אמיר',
+    'יעל טל', 'נועה אור', 'רומי גיל', 'תמר דניאל', 'מיכל אמיר',
+    'עדי יהל', 'ליה גיא', 'שירה אדם', 'מור אורי', 'יערה רון'
+  ];
+  
+  const bios = [
+    'אוהב לעזור לאחרים ולהתנדב בקהילה',
+    'פעיל חברתי ומוביל שינוי בחברה',
+    'מתנדב במספר ארגונים ותומך בפרויקטים קהילתיים',
+    'מחויב לשיפור החברה והסביבה',
+    'מאמין בנתינה ובעשייה למען הכלל',
+    'פעיל סביבתי ומתנדב בקהילה',
+    'עובד למען שוויון וצדק חברתי',
+    'תומך בפרויקטים קהילתיים וחברתיים'
+  ];
+
+  const rolesOptions = [
+    ['user'],
+    ['user', 'volunteer'],
+    ['user', 'donor'],
+    ['user', 'organizer'],
+  ];
+
+  const mockUsers: CharacterType[] = [];
+  let userIdCounter = 1;
+  
+  for (let i = 0; i < count; i++) {
+    const baseId = `mock-user-${userIdCounter}`;
+    // Skip if this is the excluded user
+    if (excludeId && baseId === excludeId) {
+      userIdCounter++;
+      continue;
+    }
+    
+    const name = names[i % names.length] + ` ${Math.floor(i / names.length) + 1}`;
+    const bio = bios[i % bios.length];
+    const roles = rolesOptions[i % rolesOptions.length];
+    const karmaPoints = Math.floor(Math.random() * 1000) + 50;
+    const completedTasks = Math.floor(Math.random() * 50);
+    
+    mockUsers.push({
+      id: baseId,
+      name,
+      avatar: `https://i.pravatar.cc/150?img=${(i % 70) + 1}`,
+      bio,
+      email: `mock${userIdCounter}@test.local`,
+      karmaPoints,
+      completedTasks,
+      followersCount: Math.floor(Math.random() * 100),
+      roles,
+      isVerified: Math.random() > 0.9,
+      isActive: true,
+    });
+    
+    userIdCounter++;
+  }
+  
+  return mockUsers;
+};
 
 export default function DiscoverPeopleScreen() {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -43,24 +109,13 @@ export default function DiscoverPeopleScreen() {
   const landscape = isLandscape();
   const estimatedTabBarHeight = landscape ? 40 : (isDesktop ? 56 : isTablet ? 54 : 46);
   const bottomPadding = (Platform.OS === 'web' ? estimatedTabBarHeight : 0) + 24;
-  const { selectedUser, isRealAuth } = useUser();
+  const { selectedUser } = useUser();
   const [suggestions, setSuggestions] = useState<CharacterType[]>([]);
   const [popularUsers, setPopularUsers] = useState<CharacterType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'suggestions' | 'popular'>('suggestions');
   const [followStats, setFollowStats] = useState<Record<string, { isFollowing: boolean }>>({});
-
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  // Refresh data when screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      console.log('🔍 DiscoverPeopleScreen - Screen focused, refreshing data...');
-      loadUsers();
-    }, [])
-  );
 
   // Helper function to check if a user is the current user
   const isCurrentUserCheck = useCallback((
@@ -77,13 +132,19 @@ export default function DiscoverPeopleScreen() {
       normalizedUserId === '';
   }, []);
 
-  const loadUsers = async () => {
-    setLoading(true);
+  const loadUsers = useCallback(async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     try {
       if (!selectedUser) {
         setSuggestions([]);
         setPopularUsers([]);
+        setFollowStats({});
         setLoading(false);
+        setRefreshing(false);
         return;
       }
 
@@ -109,6 +170,14 @@ export default function DiscoverPeopleScreen() {
 
         return !isCurrentUser;
       });
+      // In development, add mock users if we have less than 30 users to test scrolling
+      if (IS_DEVELOPMENT && filteredSuggestions.length < 30) {
+        const mockCount = 30 - filteredSuggestions.length;
+        const mockUsers = generateMockUsers(mockCount, currentUserId);
+        console.log(`🧪 Development mode: Adding ${mockCount} mock users for scroll testing`);
+        filteredSuggestions = [...filteredSuggestions, ...mockUsers];
+      }
+      
       setSuggestions(filteredSuggestions);
 
       // Get popular users excluding current user - get ALL users (no limit)
@@ -127,6 +196,15 @@ export default function DiscoverPeopleScreen() {
 
         return !isCurrentUser;
       });
+      
+      // In development, add mock users if we have less than 30 users to test scrolling
+      if (IS_DEVELOPMENT && filteredPopular.length < 30) {
+        const mockCount = 30 - filteredPopular.length;
+        const mockUsers = generateMockUsers(mockCount, currentUserId);
+        console.log(`🧪 Development mode: Adding ${mockCount} mock users to popular for scroll testing`);
+        filteredPopular.push(...mockUsers);
+      }
+      
       setPopularUsers(filteredPopular);
 
       // Get total users count from server
@@ -161,26 +239,94 @@ export default function DiscoverPeopleScreen() {
       });
 
       // Load follow stats for all users (use filtered lists)
+      // Mock users always have isFollowing: false by default (no need to check backend)
       const allUsersToCheck = [...filteredSuggestions, ...filteredPopular];
       const stats: Record<string, { isFollowing: boolean }> = {};
 
       for (const user of allUsersToCheck) {
-        const userStats = await getFollowStats(user.id, currentUserId);
-        stats[user.id] = { isFollowing: userStats.isFollowing };
+        // Mock users have IDs starting with "mock-user-", skip backend check for them
+        if (IS_DEVELOPMENT && user.id.startsWith('mock-user-')) {
+          stats[user.id] = { isFollowing: false };
+        } else {
+          try {
+            const userStats = await getFollowStats(user.id, currentUserId);
+            stats[user.id] = { isFollowing: userStats.isFollowing };
+          } catch (error) {
+            console.warn(`Failed to get follow stats for user ${user.id}:`, error);
+            stats[user.id] = { isFollowing: false };
+          }
+        }
       }
 
       setFollowStats(stats);
     } catch (error) {
       console.error('Error loading users:', error);
-      Alert.alert('שגיאה', 'שגיאה בטעינת המשתמשים');
+      if (!isRefresh) {
+        Alert.alert('שגיאה', 'שגיאה בטעינת המשתמשים');
+      }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  };
+  }, [selectedUser, isCurrentUserCheck]);
+
+  useEffect(() => {
+    loadUsers(false);
+  }, [loadUsers]);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔍 DiscoverPeopleScreen - Screen focused, refreshing data...');
+      loadUsers(false);
+    }, [loadUsers])
+  );
+
+  const onRefresh = useCallback(() => {
+    loadUsers(true);
+  }, [loadUsers]);
 
   const handleFollowToggle = async (targetUserId: string) => {
     if (!selectedUser) {
       Alert.alert('שגיאה', 'יש להתחבר תחילה');
+      return;
+    }
+
+    // Handle mock users in development (just update UI state, don't call backend)
+    if (IS_DEVELOPMENT && targetUserId.startsWith('mock-user-')) {
+      const currentStats = followStats[targetUserId] || { isFollowing: false };
+      const willBeFollowing = !currentStats.isFollowing;
+      
+      if (willBeFollowing) {
+        // Create updated follow stats that includes the newly followed mock user
+        const updatedFollowStats = {
+          ...followStats,
+          [targetUserId]: { isFollowing: true }
+        };
+        
+        // Update follow stats state
+        setFollowStats(updatedFollowStats);
+        
+        // Remove mock users we're following from both lists (same as real users)
+        const filterUsersWeFollow = (users: CharacterType[]) => {
+          return users.filter(user => {
+            // Remove users we're already following (including mock users)
+            const userStats = updatedFollowStats[user.id] || { isFollowing: false };
+            return !userStats.isFollowing;
+          });
+        };
+        
+        setSuggestions(prev => filterUsersWeFollow(prev));
+        setPopularUsers(prev => filterUsersWeFollow(prev));
+        console.log(`🧪 Development: Mock follow toggle for ${targetUserId} - user removed from list`);
+      } else {
+        // Unfollow - just update stats
+        setFollowStats(prev => ({
+          ...prev,
+          [targetUserId]: { isFollowing: false }
+        }));
+        console.log(`🧪 Development: Mock unfollow toggle for ${targetUserId}`);
+      }
       return;
     }
 
@@ -199,10 +345,29 @@ export default function DiscoverPeopleScreen() {
       } else {
         const success = await followUser(selectedUser.id, targetUserId);
         if (success) {
-          setFollowStats(prev => ({
-            ...prev,
+          // Create updated follow stats that includes the newly followed user
+          const updatedFollowStats = {
+            ...followStats,
             [targetUserId]: { isFollowing: true }
-          }));
+          };
+          
+          // Update follow stats state
+          setFollowStats(updatedFollowStats);
+          
+          // Remove the followed user and all users we're already following from both lists
+          // (because we don't need to show users we're already following)
+          const filterUsersWeFollow = (users: CharacterType[]) => {
+            return users.filter(user => {
+              // Remove users we're already following (including the one we just followed)
+              // This applies to both real users and mock users
+              const userStats = updatedFollowStats[user.id] || { isFollowing: false };
+              return !userStats.isFollowing;
+            });
+          };
+          
+          setSuggestions(prev => filterUsersWeFollow(prev));
+          setPopularUsers(prev => filterUsersWeFollow(prev));
+          
           Alert.alert('עקיבה', 'התחלת לעקוב בהצלחה');
         }
       }
@@ -215,6 +380,12 @@ export default function DiscoverPeopleScreen() {
   const handleMessage = async (targetUser: CharacterType) => {
     if (!selectedUser) {
       Alert.alert('שגיאה', 'יש להתחבר תחילה');
+      return;
+    }
+
+    // Mock users can't receive messages in development
+    if (IS_DEVELOPMENT && targetUser.id.startsWith('mock-user-')) {
+      Alert.alert('מידע', 'זהו משתמש בדיקה. לא ניתן לשלוח הודעה למשתמש בדיקה.');
       return;
     }
 
@@ -383,13 +554,24 @@ export default function DiscoverPeopleScreen() {
         data={currentData}
         renderItem={renderUserItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: bottomPadding }}
+        contentContainerStyle={[
+          styles.listContentContainer,
+          { paddingBottom: bottomPadding },
+          currentData.length === 0 && styles.emptyListContainer
+        ]}
         showsVerticalScrollIndicator={true}
         ListHeaderComponent={renderListHeader}
         ListEmptyComponent={renderEmptyState}
-        refreshing={loading}
-        onRefresh={loadUsers}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
         style={styles.flatList}
+        scrollEnabled={true}
         initialNumToRender={20}
         maxToRenderPerBatch={10}
         windowSize={21}
@@ -405,6 +587,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundPrimary,
   },
   flatList: {
+    flex: 1,
+  },
+  listContentContainer: {
+    flexGrow: 1,
+  },
+  emptyListContainer: {
     flex: 1,
   },
   header: {

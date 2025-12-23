@@ -131,6 +131,10 @@ export default function MainNavigator() {
 
           {/* Removed UserProfileScreen from MainNavigator - it should only be accessed via HomeTabStack or SearchTabStack 
               to ensure bottom bar and top bar remain visible */}
+          <Stack.Screen
+            name="UserProfileScreen"
+            component={require('../bottomBarScreens/ProfileScreen').default}
+          />
           <Stack.Screen name="FollowersScreen" component={FollowersScreen} />
           <Stack.Screen name="DiscoverPeopleScreen" component={DiscoverPeopleScreen} />
 
