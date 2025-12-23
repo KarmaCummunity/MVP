@@ -213,8 +213,8 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
             </TouchableOpacity>
           ))}
 
-          {/* Only the super admin can manage other admins */}
-          {selectedUser?.email?.toLowerCase() === 'navesarussi@gmail.com' && (
+          {/* Admin management - visible to all admins (admin or super_admin role) */}
+          {(selectedUser?.roles?.includes('admin') || selectedUser?.roles?.includes('super_admin') || selectedUser?.email?.toLowerCase() === 'navesarussi@gmail.com') && (
             <TouchableOpacity
               key="admins"
               style={[styles.button, { backgroundColor: colors.errorLight }]}
