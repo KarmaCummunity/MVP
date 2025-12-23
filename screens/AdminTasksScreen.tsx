@@ -1,13 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Modal, Image } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { Ionicons } from '@expo/vector-icons';
 import apiService, { ApiResponse } from '../utils/apiService';
 import { useUser } from '../stores/userStore';
+import { useAdminProtection } from '../hooks/useAdminProtection';
+import UserSelector from '../components/UserSelector';
 
 type TaskStatus = 'open' | 'in_progress' | 'done' | 'archived';
 type TaskPriority = 'low' | 'medium' | 'high';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar_url?: string;
+}
 
 type AdminTask = {
   id: string;
@@ -17,15 +26,16 @@ type AdminTask = {
   priority: TaskPriority;
   category?: string | null;
   due_date?: string | null;
-  assignees: string[];
+  assignees: string[]; // UUIDs
+  assignees_details?: User[]; // Full objects
+  creator_details?: User;
   tags: string[];
   checklist?: { id: string; text: string; done: boolean }[];
   created_by?: string | null;
+  parent_task_id?: string | null;
   created_at?: string;
   updated_at?: string;
 };
-
-import { useAdminProtection } from '../hooks/useAdminProtection';
 
 export default function AdminTasksScreen() {
   useAdminProtection();
@@ -34,9 +44,11 @@ export default function AdminTasksScreen() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState<boolean>(false);
-  const [updating, setUpdating] = useState<string | null>(null); // Track which task is being updated
-  const [deleting, setDeleting] = useState<string | null>(null); // Track which task is being deleted
+  const [updating, setUpdating] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [showForm, setShowForm] = useState<boolean>(false);
+
+  // Form State
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -44,18 +56,26 @@ export default function AdminTasksScreen() {
     status: 'open' as TaskStatus,
     category: 'development',
     due_date: '',
-    assigneesEmails: '' as string, // comma separated emails
-    tagsText: '' as string, // comma separated tags
+    assignees: [] as User[],
+    tagsText: '' as string,
+    parent_task_id: '' as string,
   });
+
   const [query, setQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<TaskStatus | ''>('');
   const [filterPriority, setFilterPriority] = useState<TaskPriority | ''>('');
   const [filterCategory, setFilterCategory] = useState<string | ''>('');
+  const [filterAssignee, setFilterAssignee] = useState<'all' | 'me'>('all');
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    console.log('📋 Tasks List Updated in Component:', tasks.map(t => `${t.id.substring(0, 8)}:${t.title}`).join(', '));
+  }, [tasks]);
 
   const sortedTasks = useMemo(() => {
     const priorityOrder: Record<TaskPriority, number> = { high: 0, medium: 1, low: 2 };
     return [...tasks].sort((a, b) => {
+      // First sort by ownership if "My Tasks" is NOT active (to bring mine to top implicitly? No, sticking to date/priority)
       if (a.status === b.status) {
         return priorityOrder[a.priority] - priorityOrder[b.priority];
       }
@@ -67,13 +87,16 @@ export default function AdminTasksScreen() {
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     setError(null);
+    console.log('🔄 Fetching tasks...', { query, filterStatus, filterPriority, filterCategory, filterAssignee, selectedUserId: selectedUser?.id });
     try {
       const res: ApiResponse<AdminTask[]> = await apiService.getTasks({
         q: query || undefined,
         status: filterStatus || undefined,
         priority: filterPriority || undefined,
         category: filterCategory || undefined,
+        assignee: filterAssignee === 'me' ? selectedUser?.id : undefined,
       });
+      console.log('✅ Fetch tasks response:', res.success, res.data?.length);
       if (!res.success) {
         setError(res.error || 'שגיאה בטעינת משימות');
       } else {
@@ -85,26 +108,17 @@ export default function AdminTasksScreen() {
     } finally {
       setLoading(false);
     }
-  }, [query, filterStatus, filterPriority, filterCategory]);
+  }, [query, filterStatus, filterPriority, filterCategory, filterAssignee, selectedUser]);
 
-  // Debounce search query - fetch immediately for filters, debounce for text search
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout> | undefined;
-
     if (query) {
-      // Debounce text search
-      timeout = setTimeout(() => {
-        fetchTasks();
-      }, 500);
+      timeout = setTimeout(() => fetchTasks(), 500);
     } else {
-      // Immediate fetch for filters
       fetchTasks();
     }
-
-    return () => {
-      if (timeout) clearTimeout(timeout);
-    };
-  }, [query, filterStatus, filterPriority, filterCategory, fetchTasks]);
+    return () => { if (timeout) clearTimeout(timeout); };
+  }, [query, filterStatus, filterPriority, filterCategory, filterAssignee, fetchTasks]);
 
   const resetForm = () => {
     setFormData({
@@ -114,8 +128,9 @@ export default function AdminTasksScreen() {
       status: 'open',
       category: 'development',
       due_date: '',
-      assigneesEmails: '',
+      assignees: [],
       tagsText: '',
+      parent_task_id: '',
     });
     setEditingId(null);
   };
@@ -125,7 +140,6 @@ export default function AdminTasksScreen() {
     setCreating(true);
     setError(null);
     try {
-      // Validate date if provided
       let parsedDueDate = null;
       if (formData.due_date.trim()) {
         const date = new Date(formData.due_date);
@@ -144,19 +158,20 @@ export default function AdminTasksScreen() {
         status: formData.status,
         category: formData.category || null,
         due_date: parsedDueDate,
-        assigneesEmails: formData.assigneesEmails.trim()
-          ? formData.assigneesEmails.split(',').map((e) => e.trim()).filter(Boolean)
-          : [],
+        assignees: formData.assignees.map(u => u.id), // UUIDs
         tags: formData.tagsText.trim()
           ? formData.tagsText.split(',').map((t) => t.trim()).filter(Boolean)
           : [],
         created_by: selectedUser?.id || null,
+        parent_task_id: formData.parent_task_id || null,
       };
+
+      console.log('📤 Creating task with payload:', body);
+
       const res: ApiResponse<AdminTask> = await apiService.createTask(body);
       if (!res.success) {
         setError(res.error || 'שגיאה ביצירת משימה');
       } else if (res.data) {
-        // Refresh tasks from server to ensure consistency
         await fetchTasks();
         resetForm();
         setShowForm(false);
@@ -176,7 +191,7 @@ export default function AdminTasksScreen() {
       const nextStatus: TaskStatus = task.status === 'done' ? 'open' : 'done';
       const res: ApiResponse<AdminTask> = await apiService.updateTask(task.id, { status: nextStatus });
       if (res.success && res.data) {
-        setTasks((prev) => prev.map((t) => (t.id === task.id ? (res.data as AdminTask) : t)));
+        await fetchTasks();
       } else {
         setError(res.error || 'שגיאה בעדכון סטטוס המשימה');
       }
@@ -189,6 +204,10 @@ export default function AdminTasksScreen() {
   };
 
   const renderItem = ({ item }: { item: AdminTask }) => {
+    // Debug log for each rendered item (throttled/limited if possible, but for now just one-off)
+    // Actually, spamming logs per item render in React Native is messy, but if requested...
+    // Better to log ONCE the list of IDs being rendered in the parent component.
+    // I will skip logging here and log in the main body (see next tool call).
     const isDone = item.status === 'done';
     return (
       <View style={[styles.taskItem, isDone && styles.taskItemDone]}>
@@ -207,26 +226,55 @@ export default function AdminTasksScreen() {
           <Text style={[styles.taskTitle, isDone && styles.taskTitleDone]} numberOfLines={2}>
             {item.title}
           </Text>
+          {item.description ? (
+            <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
+          ) : null}
+
           <View style={styles.metaRow}>
+            {/* Priority Badge */}
             <View style={[styles.badge, styles[`priority_${item.priority}` as const]]}>
               <Text style={styles.badgeText}>
                 {item.priority === 'high' ? 'גבוהה' : item.priority === 'medium' ? 'בינונית' : 'נמוכה'}
               </Text>
             </View>
-            {!!item.category && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{item.category}</Text>
-              </View>
-            )}
+
+            {/* Status Badge */}
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{item.status === 'open' ? 'פתוחה' : item.status === 'in_progress' ? 'בתהליך' : item.status === 'done' ? 'בוצעה' : 'בארכיון'}</Text>
             </View>
-            {Array.isArray(item.assignees) && item.assignees.length > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{item.assignees.length} מוקצים</Text>
-              </View>
-            )}
+
+            {/* Assignees */}
+            <View style={styles.assigneesContainer}>
+              {item.assignees_details && item.assignees_details.length > 0 ? (
+                <View style={styles.assigneesContent}>
+                  <Text style={styles.assigneeText} numberOfLines={1}>
+                    משוייך ל: {item.assignees_details.map(u => u.name).join(', ')}
+                  </Text>
+                  <View style={styles.avatarsRow}>
+                    {item.assignees_details.slice(0, 3).map((u, i) => (
+                      <Image
+                        key={u.id}
+                        source={{ uri: u.avatar_url || `https://ui-avatars.com/api/?name=${u.name}` }}
+                        style={[styles.avatarSmall, { marginRight: i > 0 ? -10 : 0, zIndex: 3 - i }]}
+                      />
+                    ))}
+                    {item.assignees_details.length > 3 && (
+                      <View style={[styles.avatarSmall, styles.moreAvatar]}>
+                        <Text style={styles.moreAvatarText}>+{item.assignees_details.length - 3}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              ) : (
+                <Text style={styles.unassignedText}>⚠️ המשימה לא שוייכה לאף אחד</Text>
+              )}
+            </View>
           </View>
+
+          {item.creator_details && (
+            <Text style={styles.creatorText}>נוצר ע"י {item.creator_details.name}</Text>
+          )}
+
           <View style={styles.actionsRow}>
             <TouchableOpacity style={styles.actionBtn} onPress={() => openEdit(item)}>
               <Ionicons name="create-outline" size={18} color={colors.textPrimary} />
@@ -253,8 +301,6 @@ export default function AdminTasksScreen() {
   };
 
   const openEdit = (task: AdminTask) => {
-    // Note: assigneesEmails will be empty when editing - user needs to re-enter emails
-    // This is a limitation - we'd need an API to get user emails by UUIDs
     setFormData({
       title: task.title || '',
       description: task.description || '',
@@ -262,8 +308,9 @@ export default function AdminTasksScreen() {
       status: task.status,
       category: task.category || 'development',
       due_date: task.due_date ? new Date(task.due_date).toISOString().slice(0, 10) : '',
-      assigneesEmails: '', // Empty - user needs to re-enter if they want to change assignees
+      assignees: task.assignees_details || [],
       tagsText: (task.tags || []).join(', '),
+      parent_task_id: task.parent_task_id || '',
     });
     setEditingId(task.id);
     setShowForm(true);
@@ -274,7 +321,6 @@ export default function AdminTasksScreen() {
     setUpdating(editingId);
     setError(null);
     try {
-      // Validate date if provided
       let parsedDueDate = null;
       if (formData.due_date.trim()) {
         const date = new Date(formData.due_date);
@@ -294,13 +340,11 @@ export default function AdminTasksScreen() {
         category: formData.category || null,
         due_date: parsedDueDate,
         tags: formData.tagsText ? formData.tagsText.split(',').map((t) => t.trim()).filter(Boolean) : [],
+        assignees: formData.assignees.map(u => u.id),
       };
-      if (formData.assigneesEmails.trim()) {
-        body.assigneesEmails = formData.assigneesEmails.split(',').map((e) => e.trim()).filter(Boolean);
-      }
+
       const res = await apiService.updateTask(editingId, body);
       if (res.success && res.data) {
-        // Refresh tasks from server to ensure consistency
         await fetchTasks();
         setShowForm(false);
         resetForm();
@@ -322,7 +366,6 @@ export default function AdminTasksScreen() {
     try {
       const res = await apiService.deleteTask(taskId);
       if (res.success) {
-        // Refresh tasks from server to ensure consistency
         await fetchTasks();
       } else {
         setError(res.error || 'שגיאה במחיקת משימה');
@@ -337,72 +380,45 @@ export default function AdminTasksScreen() {
 
   const renderHeader = () => (
     <>
-      <Text style={styles.header}>ניהול משימות</Text>
+      <Text style={styles.header}>ניהול משימות וצוות</Text>
 
       <View style={styles.filtersRow}>
         <TextInput
           style={styles.input}
-          placeholder="חיפוש לפי כותרת/תיאור..."
+          placeholder="חיפוש משימות..."
           placeholderTextColor={colors.textSecondary}
           value={query}
           onChangeText={setQuery}
-          returnKeyType="search"
-          onSubmitEditing={fetchTasks}
         />
         <TouchableOpacity style={styles.refreshBtn} onPress={fetchTasks}>
           <Ionicons name="search-outline" size={22} color={colors.white} />
         </TouchableOpacity>
       </View>
 
+      {error && (
+        <Text style={{ color: colors.error, textAlign: 'right', marginBottom: 8, fontWeight: 'bold' }}>{error}</Text>
+      )}
+
+
       <View style={styles.chipsRow}>
+        <FilterChip label="למי מוקצה" value={filterAssignee} setValue={setFilterAssignee} options={[
+          { value: 'all', label: 'כולם' },
+          { value: 'me', label: 'רק שלי' },
+        ]} />
         <FilterChip label="סטטוס" value={filterStatus} setValue={setFilterStatus} options={[
           { value: '', label: 'הכל' },
           { value: 'open', label: 'פתוחה' },
           { value: 'in_progress', label: 'בתהליך' },
           { value: 'done', label: 'בוצעה' },
-          { value: 'archived', label: 'בארכיון' },
         ]} />
         <FilterChip label="עדיפות" value={filterPriority} setValue={setFilterPriority} options={[
           { value: '', label: 'הכל' },
           { value: 'high', label: 'גבוהה' },
           { value: 'medium', label: 'בינונית' },
-          { value: 'low', label: 'נמוכה' },
-        ]} />
-        <FilterChip label="קטגוריה" value={filterCategory} setValue={setFilterCategory} options={[
-          { value: '', label: 'הכל' },
-          { value: 'development', label: 'פיתוח' },
-          { value: 'marketing', label: 'שיווק' },
-          { value: 'operations', label: 'תפעול' },
-          { value: 'design', label: 'עיצוב' },
         ]} />
       </View>
     </>
   );
-
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        {renderHeader()}
-        <View style={styles.loader}>
-          <ActivityIndicator size="large" color={colors.info} />
-        </View>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.container}>
-        {renderHeader()}
-        <View style={styles.errorBox}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={fetchTasks} style={styles.retryBtn}>
-            <Text style={styles.retryText}>נסה שוב</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -415,17 +431,19 @@ export default function AdminTasksScreen() {
         ListEmptyComponent={<Text style={styles.emptyText}>אין משימות כרגע</Text>}
       />
 
-      <Modal visible={showForm} animationType="slide" transparent onRequestClose={() => setShowForm(false)}>
+      <Modal visible={showForm} animationType="slide" transparent>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>{editingId ? 'עריכת משימה' : 'משימה חדשה'}</Text>
+
             <TextInput style={styles.modalInput} placeholder="כותרת" value={formData.title} onChangeText={(v) => setFormData({ ...formData, title: v })} />
-            <TextInput style={[styles.modalInput, { height: 80 }]} placeholder="תיאור" multiline value={formData.description} onChangeText={(v) => setFormData({ ...formData, description: v })} />
+            <TextInput style={[styles.modalInput, { height: 60 }]} placeholder="תיאור" multiline value={formData.description} onChangeText={(v) => setFormData({ ...formData, description: v })} />
+
             <View style={styles.row2}>
               <PickerField
                 label="עדיפות"
                 value={formData.priority}
-                onChange={(v) => setFormData({ ...formData, priority: v as TaskPriority })}
+                onChange={(v: string) => setFormData({ ...formData, priority: v as TaskPriority })}
                 options={[
                   { value: 'high', label: 'גבוהה' },
                   { value: 'medium', label: 'בינונית' },
@@ -435,44 +453,30 @@ export default function AdminTasksScreen() {
               <PickerField
                 label="סטטוס"
                 value={formData.status}
-                onChange={(v) => setFormData({ ...formData, status: v as TaskStatus })}
+                onChange={(v: string) => setFormData({ ...formData, status: v as TaskStatus })}
                 options={[
                   { value: 'open', label: 'פתוחה' },
-                  { value: 'in_progress', label: 'בתהליך' },
                   { value: 'done', label: 'בוצעה' },
-                  { value: 'archived', label: 'בארכיון' },
                 ]}
               />
             </View>
-            <View style={styles.row2}>
-              <PickerField
-                label="קטגוריה"
-                value={formData.category}
-                onChange={(v) => setFormData({ ...formData, category: v })}
-                options={[
-                  { value: 'development', label: 'פיתוח' },
-                  { value: 'marketing', label: 'שיווק' },
-                  { value: 'operations', label: 'תפעול' },
-                  { value: 'design', label: 'עיצוב' },
-                ]}
-              />
-              <TextInput style={styles.modalInput} placeholder="תאריך יעד (YYYY-MM-DD)" value={formData.due_date} onChangeText={(v) => setFormData({ ...formData, due_date: v })} />
-            </View>
-            <TextInput style={styles.modalInput} placeholder="מוקצים (אימיילים מופרדים בפסיק)" value={formData.assigneesEmails} onChangeText={(v) => setFormData({ ...formData, assigneesEmails: v })} />
-            <TextInput style={styles.modalInput} placeholder="תגיות (מופרדות בפסיק)" value={formData.tagsText} onChangeText={(v) => setFormData({ ...formData, tagsText: v })} />
+
+            {/* User Selector for Assignees */}
+            <UserSelector
+              selectedUsers={formData.assignees}
+              onSelect={(u) => setFormData({ ...formData, assignees: [...formData.assignees, u] })}
+              onRemove={(id) => setFormData({ ...formData, assignees: formData.assignees.filter(u => u.id !== id) })}
+            />
+
+            <TextInput style={styles.modalInput} placeholder="תגיות (מופרדות אות)" value={formData.tagsText} onChangeText={(v) => setFormData({ ...formData, tagsText: v })} />
+
             <View style={styles.modalActions}>
               <TouchableOpacity style={[styles.modalBtn, styles.modalCancel]} onPress={() => { setShowForm(false); resetForm(); }}>
                 <Text style={styles.modalBtnText}>ביטול</Text>
               </TouchableOpacity>
-              {editingId ? (
-                <TouchableOpacity style={[styles.modalBtn, styles.modalSave]} onPress={saveEdit} disabled={updating === editingId}>
-                  {updating === editingId ? <ActivityIndicator color={colors.white} /> : <Text style={styles.modalBtnText}>שמירה</Text>}
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity style={[styles.modalBtn, styles.modalSave]} onPress={createTask} disabled={creating || !formData.title.trim()}>
-                  {creating ? <ActivityIndicator color={colors.white} /> : <Text style={styles.modalBtnText}>יצירה</Text>}
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity style={[styles.modalBtn, styles.modalSave]} onPress={editingId ? saveEdit : createTask}>
+                <Text style={styles.modalBtnText}>{editingId ? 'שמור' : 'צור'}</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -485,16 +489,13 @@ export default function AdminTasksScreen() {
   );
 }
 
-type PickerOption = { value: string; label: string };
-function PickerField({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: PickerOption[] }) {
+// Sub-components
+function PickerField({ label, value, onChange, options }: any) {
   return (
     <View style={{ flex: 1 }}>
       <Text style={styles.pickerLabel}>{label}</Text>
-      <View style={styles.pickerBox}>
-        <Text style={styles.pickerValue}>{options.find((o) => o.value === value)?.label || 'בחר'}</Text>
-      </View>
       <View style={styles.pickerOptions}>
-        {options.map((opt) => (
+        {options.map((opt: any) => (
           <TouchableOpacity key={opt.value} onPress={() => onChange(opt.value)} style={[styles.chip, value === opt.value && styles.chipActive]}>
             <Text style={[styles.chipText, value === opt.value && styles.chipTextActive]}>{opt.label}</Text>
           </TouchableOpacity>
@@ -504,13 +505,13 @@ function PickerField({ label, value, onChange, options }: { label: string; value
   );
 }
 
-function FilterChip<T extends string>({ label, value, setValue, options }: { label: string; value: T | ''; setValue: (v: T | '') => void; options: { value: T | ''; label: string }[] }) {
+function FilterChip({ label, value, setValue, options }: any) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
       <Text style={{ color: colors.textSecondary }}>{label}:</Text>
       <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
-        {options.map((opt) => (
-          <TouchableOpacity key={`${label}-${String(opt.value)}`} onPress={() => setValue(opt.value)} style={[styles.chip, value === opt.value && styles.chipActive]}>
+        {options.map((opt: any) => (
+          <TouchableOpacity key={`${label}-${opt.value}`} onPress={() => setValue(opt.value)} style={[styles.chip, value === opt.value && styles.chipActive]}>
             <Text style={[styles.chipText, value === opt.value && styles.chipTextActive]}>{opt.label}</Text>
           </TouchableOpacity>
         ))}
@@ -524,7 +525,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.backgroundSecondary,
     padding: LAYOUT_CONSTANTS.SPACING.LG,
-    position: 'relative',
   },
   header: {
     fontSize: FontSizes.heading2,
@@ -533,273 +533,61 @@ const styles = StyleSheet.create({
     marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
     textAlign: 'right',
   },
-  filtersRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: LAYOUT_CONSTANTS.SPACING.SM,
-    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
-  },
-  input: {
-    flex: 1,
-    height: 48,
-    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
-    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.MD,
-    backgroundColor: colors.background,
-    color: colors.textPrimary,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  refreshBtn: {
-    height: 48,
-    width: 48,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: LAYOUT_CONSTANTS.SPACING.SM,
-    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
-    flexWrap: 'wrap',
-  },
-  addButton: {
-    position: 'absolute',
-    right: LAYOUT_CONSTANTS.SPACING.LG,
-    bottom: 100,
-    height: 56,
-    width: 56,
-    borderRadius: 28,
-    backgroundColor: colors.success,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 8,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    zIndex: 1000,
-  },
-  listContent: {
-    paddingBottom: LAYOUT_CONSTANTS.SPACING.XL,
-    gap: LAYOUT_CONSTANTS.SPACING.SM,
-    flexGrow: 1,
-    minHeight: '150%', // Ensure content is always scrollable
-  },
-  loader: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  taskItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: LAYOUT_CONSTANTS.SPACING.MD,
-    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  taskItemDone: {
-    opacity: 0.7,
-  },
-  checkbox: {
-    marginRight: LAYOUT_CONSTANTS.SPACING.MD,
-  },
-  taskContent: {
-    flex: 1,
-  },
-  taskTitle: {
-    fontSize: FontSizes.large,
-    color: colors.textPrimary,
-    fontWeight: '600',
-    marginBottom: 6,
-    textAlign: 'right',
-  },
-  taskTitleDone: {
-    textDecorationLine: 'line-through',
-    color: colors.textSecondary,
-  },
-  metaRow: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: 8,
-  },
-  actionsRow: {
-    marginTop: 8,
-    flexDirection: 'row-reverse',
-    gap: 12,
-  },
-  actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  actionText: {
-    color: colors.textPrimary,
-  },
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: colors.backgroundSecondary,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  badgeText: {
-    fontSize: FontSizes.small,
-    color: colors.textSecondary,
-  },
-  priority_high: {
-    backgroundColor: colors.pinkLight,
-    borderColor: colors.pinkLight,
-  },
-  priority_medium: {
-    backgroundColor: colors.warningLight,
-    borderColor: colors.warningLight,
-  },
-  priority_low: {
-    backgroundColor: colors.successLight,
-    borderColor: colors.successLight,
-  },
-  errorBox: {
-    backgroundColor: colors.errorLight,
-    borderColor: colors.error,
-    borderWidth: 1,
-    padding: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  errorText: {
-    color: colors.error,
-    fontSize: FontSizes.medium,
-    textAlign: 'center',
-  },
-  retryBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: colors.error,
-    borderRadius: 8,
-  },
-  retryText: {
-    color: colors.white,
-    fontWeight: '600',
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: colors.textSecondary,
-    fontSize: FontSizes.medium,
-    marginTop: LAYOUT_CONSTANTS.SPACING.LG,
-  },
-  chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: {
-    backgroundColor: colors.infoLight,
-    borderColor: colors.info,
-  },
-  chipText: {
-    color: colors.textSecondary,
-    fontSize: FontSizes.small,
-  },
-  chipTextActive: {
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  modalCard: {
-    width: '100%',
-    borderRadius: 16,
-    backgroundColor: colors.background,
-    padding: 16,
-  },
-  modalTitle: {
-    fontSize: FontSizes.heading3,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-    marginBottom: 12,
-    textAlign: 'right',
-  },
-  modalInput: {
-    height: 44,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    backgroundColor: colors.backgroundSecondary,
-    color: colors.textPrimary,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 10,
-    textAlign: 'right',
-  },
-  row2: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 10,
-  },
-  pickerLabel: {
-    color: colors.textSecondary,
-    marginBottom: 6,
-    textAlign: 'right',
-  },
-  pickerBox: {
-    height: 44,
-    borderRadius: 10,
-    backgroundColor: colors.backgroundSecondary,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 12,
-    justifyContent: 'center',
-  },
-  pickerValue: {
-    color: colors.textPrimary,
-    textAlign: 'right',
-  },
-  pickerOptions: {
-    flexDirection: 'row',
-    gap: 6,
-    flexWrap: 'wrap',
-    marginTop: 6,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
-    marginTop: 6,
-  },
-  modalBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalCancel: {
-    backgroundColor: colors.backgroundSecondary,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  modalSave: {
-    backgroundColor: colors.success,
-  },
-  modalBtnText: {
-    color: colors.white,
-    fontWeight: '600',
-  },
+  filtersRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  input: { flex: 1, height: 44, backgroundColor: colors.background, borderRadius: 8, paddingHorizontal: 10, textAlign: 'right', color: colors.textPrimary },
+  refreshBtn: { width: 44, height: 44, backgroundColor: colors.primary, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
+  listContent: { paddingBottom: 100, gap: 12 },
+  emptyText: { textAlign: 'center', color: colors.textSecondary, marginTop: 40 },
+
+  taskItem: { flexDirection: 'row', padding: 12, backgroundColor: colors.background, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
+  taskItemDone: { opacity: 0.6 },
+  checkbox: { marginRight: 12, paddingTop: 4 },
+  taskContent: { flex: 1 },
+  taskTitle: { fontSize: 16, fontWeight: 'bold', color: colors.textPrimary, textAlign: 'right' },
+  taskTitleDone: { textDecorationLine: 'line-through', color: colors.textSecondary },
+  description: { fontSize: 14, color: colors.textSecondary, textAlign: 'right', marginBottom: 6 },
+
+  metaRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' },
+  badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, backgroundColor: colors.backgroundSecondary, borderWidth: 1, borderColor: colors.border },
+  badgeText: { fontSize: 12, color: colors.textSecondary },
+  priority_high: { backgroundColor: colors.pinkLight, borderColor: colors.pinkLight },
+  priority_medium: { backgroundColor: colors.warningLight, borderColor: colors.warningLight },
+  priority_low: { backgroundColor: colors.successLight, borderColor: colors.successLight },
+
+  avatarsRow: { flexDirection: 'row-reverse', alignItems: 'center' },
+  avatarSmall: { width: 24, height: 24, borderRadius: 12, borderWidth: 1, borderColor: colors.white },
+  moreAvatar: { backgroundColor: colors.textSecondary, alignItems: 'center', justifyContent: 'center' },
+  moreAvatarText: { color: colors.white, fontSize: 10, fontWeight: 'bold' },
+
+  creatorText: { fontSize: 11, color: colors.textSecondary, textAlign: 'right', marginTop: 4 },
+
+  actionsRow: { flexDirection: 'row-reverse', gap: 16, marginTop: 8 },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  actionText: { fontSize: 12, color: colors.textPrimary },
+
+  assigneesContainer: { marginTop: 4 },
+  assigneesContent: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
+  assigneeText: { fontSize: 12, color: colors.textSecondary },
+  unassignedText: { fontSize: 12, color: colors.error, fontWeight: 'bold' },
+
+  addButton: { position: 'absolute', left: 20, bottom: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.success, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 },
+
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+  modalCard: { backgroundColor: colors.background, borderRadius: 16, padding: 20 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', textAlign: 'right', marginBottom: 16, color: colors.textPrimary },
+  modalInput: { height: 44, backgroundColor: colors.backgroundSecondary, borderRadius: 8, paddingHorizontal: 12, textAlign: 'right', marginBottom: 12, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border },
+  row2: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  pickerLabel: { textAlign: 'right', marginBottom: 4, color: colors.textSecondary },
+  pickerOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background },
+  chipActive: { backgroundColor: colors.infoLight, borderColor: colors.info },
+  chipText: { fontSize: 12, color: colors.textSecondary },
+  chipTextActive: { color: colors.textPrimary, fontWeight: 'bold' },
+
+  modalActions: { flexDirection: 'row', gap: 12, marginTop: 16 },
+  modalBtn: { flex: 1, height: 44, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  modalCancel: { backgroundColor: colors.backgroundSecondary, borderWidth: 1, borderColor: colors.border },
+  modalSave: { backgroundColor: colors.primary },
+  modalBtnText: { color: colors.white, fontWeight: 'bold' },
 });
-
-

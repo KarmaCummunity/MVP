@@ -21,7 +21,7 @@ export default function ScreenWrapper({
 }: ScreenWrapperProps) {
   return (
     <SafeAreaView style={[styles.safeArea, style]}>
-      {children}
+      {children || null}
     </SafeAreaView>
   );
 }

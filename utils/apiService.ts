@@ -38,6 +38,10 @@ class ApiService {
   }
 
   // Tasks APIs
+  async getTaskHierarchy(taskId: string): Promise<ApiResponse> {
+    return this.request(`/api/tasks/${taskId}/hierarchy`); // Will be implemented in backend if needed
+  }
+
   async getTasks(filters: {
     status?: 'open' | 'in_progress' | 'done' | 'archived';
     priority?: 'low' | 'medium' | 'high';
@@ -139,6 +143,28 @@ class ApiService {
   }
 
   // User APIs
+  async searchUsers(query: string): Promise<ApiResponse> {
+    return this.request(`/api/users/search?q=${encodeURIComponent(query)}`);
+  }
+
+  async setManager(userId: string, managerId: string | null): Promise<ApiResponse> {
+    return this.request(`/api/users/${userId}/set-manager`, {
+      method: 'POST',
+      body: JSON.stringify({ managerId }),
+    });
+  }
+
+  async getUserHierarchy(userId: string): Promise<ApiResponse> {
+    return this.request(`/api/users/${userId}/hierarchy`);
+  }
+
+  async manageHierarchy(subordinateId: string, action: 'add' | 'remove', managerId: string): Promise<ApiResponse> {
+    return this.request(`/api/users/${subordinateId}/hierarchy/manage`, {
+      method: 'POST',
+      body: JSON.stringify({ action, managerId }),
+    });
+  }
+
   async registerUser(userData: any): Promise<ApiResponse> {
     return this.request('/api/users/register', {
       method: 'POST',
@@ -409,6 +435,15 @@ class ApiService {
     return this.request(`/api/stats/details/${statType}`);
   }
 
+  // Posts APIs
+  async getPosts(limit = 20, offset = 0): Promise<ApiResponse> {
+    return this.request(`/api/posts?limit=${limit}&offset=${offset}`);
+  }
+
+  async getUserPosts(userId: string, limit = 20): Promise<ApiResponse> {
+    return this.request(`/api/posts/user/${userId}?limit=${limit}`);
+  }
+
   // Admin APIs
   async adminWipeAllData(): Promise<ApiResponse> {
     // WARNING: This should be protected by server-side admin auth
@@ -526,6 +561,41 @@ class ApiService {
     return this.request(`/api/community-members/${memberId}`, {
       method: 'DELETE',
     });
+  }
+
+  // CRM APIs
+  get crm() {
+    return {
+      getAll: (filters: any) => {
+        const params = new URLSearchParams();
+        Object.entries(filters || {}).forEach(([k, v]) => {
+          if (v !== undefined && v !== null && String(v).length > 0) {
+            params.append(k, String(v));
+          }
+        });
+        return this.request(`/api/crm?${params.toString()}`);
+      },
+      create: (data: any) => this.request('/api/crm', { method: 'POST', body: JSON.stringify(data) }),
+      update: (id: string, data: any) => this.request(`/api/crm/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      delete: (id: string) => this.request(`/api/crm/${id}`, { method: 'DELETE' }),
+    };
+  }
+
+  // Admin Files APIs
+  get adminFiles() {
+    return {
+      getAll: (filters: any) => {
+        const params = new URLSearchParams();
+        Object.entries(filters || {}).forEach(([k, v]) => {
+          if (v !== undefined && v !== null && String(v).length > 0) {
+            params.append(k, String(v));
+          }
+        });
+        return this.request(`/api/admin-files?${params.toString()}`);
+      },
+      create: (data: any) => this.request('/api/admin-files', { method: 'POST', body: JSON.stringify(data) }),
+      delete: (id: string) => this.request(`/api/admin-files/${id}`, { method: 'DELETE' }),
+    };
   }
 
   // Legacy API fallback

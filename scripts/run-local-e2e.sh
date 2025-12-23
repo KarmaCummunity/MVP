@@ -167,7 +167,9 @@ fi
 
 # Free other common ports that might interfere
 kill_port 8080
+kill_port 8080
 kill_port 3000
+kill_port 5432 # Free Postgres port to ensure we connect to Docker, not local DB
 
 log_success "Ports are ready"
 
@@ -176,6 +178,14 @@ log_success "Ports are ready"
 # ============================================================================
 
 log_info "Starting Docker services (Postgres & Redis)..."
+
+# MODIFIED: Preserve data between runs - only stop containers, don't delete volumes
+log_info "Stopping existing Docker containers (preserving data)..."
+(cd "$SERVER_DIR" && docker compose down >/dev/null 2>&1 || true)
+# NOTE: Volume deletion commented out to preserve data between runs
+# Uncomment the following lines if you need a fresh database:
+# (cd "$SERVER_DIR" && docker compose down -v >/dev/null 2>&1 || true)
+# docker volume rm kc-mvp-server_pgdata 2>/dev/null || true
 
 if docker compose version >/dev/null 2>&1; then
   (cd "$SERVER_DIR" && docker compose up -d || {
@@ -355,8 +365,8 @@ log_info "Configuring environment variables..."
 
 # Database configuration
 export REDIS_URL=${REDIS_URL:-redis://localhost:6379}
-export POSTGRES_HOST=${POSTGRES_HOST:-localhost}
-export POSTGRES_PORT=${POSTGRES_PORT:-5432}
+export POSTGRES_HOST=${POSTGRES_HOST:-127.0.0.1}
+export POSTGRES_PORT=${POSTGRES_PORT:-5435}
 export POSTGRES_USER=${POSTGRES_USER:-kc}
 export POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-kc_password}
 export POSTGRES_DB=${POSTGRES_DB:-kc_db}
@@ -403,6 +413,7 @@ echo "   Web Client ID: ${EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID:0:20}..."
 # ============================================================================
 
 log_info "Ensuring DB tables (init script)..."
+
 if ! SKIP_FULL_SCHEMA=1 NODE_OPTIONS= \
   POSTGRES_HOST="$POSTGRES_HOST" \
   POSTGRES_PORT="$POSTGRES_PORT" \
@@ -444,6 +455,163 @@ else
   else
     log_warning "Postgres container not found - skipping UUID migration"
   fi
+fi
+
+# ============================================================================
+# Database Migration: Ensure Required Columns (google_id, roles)
+# ============================================================================
+
+log_info "Ensuring required columns exist in user_profiles..."
+COLUMN_MIGRATION_FILE="$SERVER_DIR/src/database/migration-ensure-columns.sql"
+if [[ ! -f "$COLUMN_MIGRATION_FILE" ]]; then
+  log_warning "Column migration file not found: $COLUMN_MIGRATION_FILE - skipping"
+else
+  POSTGRES_CONTAINER=$(docker ps -q -f name=postgres)
+  if [[ -n "$POSTGRES_CONTAINER" ]]; then
+    # Run migration (it's safe to run multiple times - it checks if columns exist)
+    if docker exec -i "$POSTGRES_CONTAINER" psql -U kc -d kc_db < "$COLUMN_MIGRATION_FILE" 2>/dev/null; then
+      log_success "Required columns migration completed"
+    else
+      log_warning "Column migration had errors (columns may already exist)"
+    fi
+  else
+    log_warning "Postgres container not found - skipping column migration"
+  fi
+fi
+
+# ============================================================================
+# Database Migration: Add Missing Columns (parent_manager_id, settings, etc.)
+# ============================================================================
+
+log_info "Running missing columns migration..."
+MISSING_COLUMNS_MIGRATION_FILE="$SERVER_DIR/src/database/migration-add-missing-columns.sql"
+if [[ ! -f "$MISSING_COLUMNS_MIGRATION_FILE" ]]; then
+  log_warning "Missing columns migration file not found: $MISSING_COLUMNS_MIGRATION_FILE - skipping"
+else
+  POSTGRES_CONTAINER=$(docker ps -q -f name=postgres)
+  if [[ -n "$POSTGRES_CONTAINER" ]]; then
+    # Run migration (it's safe to run multiple times - it checks if columns exist)
+    if docker exec -i "$POSTGRES_CONTAINER" psql -U kc -d kc_db < "$MISSING_COLUMNS_MIGRATION_FILE" 2>/dev/null; then
+      log_success "Missing columns migration completed"
+    else
+      log_warning "Missing columns migration had warnings (columns may already exist)"
+    fi
+  else
+    log_warning "Postgres container not found - skipping missing columns migration"
+  fi
+fi
+
+# ============================================================================
+# Database Migration: Fix Schema Synchronization (avatar_url, tasks table)
+# ============================================================================
+
+log_info "Running schema synchronization migration..."
+SCHEMA_SYNC_MIGRATION_FILE="$SERVER_DIR/src/database/migration-fix-schema-sync.sql"
+if [[ ! -f "$SCHEMA_SYNC_MIGRATION_FILE" ]]; then
+  log_warning "Schema sync migration file not found: $SCHEMA_SYNC_MIGRATION_FILE - skipping"
+else
+  POSTGRES_CONTAINER=$(docker ps -q -f name=postgres)
+  if [[ -n "$POSTGRES_CONTAINER" ]]; then
+    # Run migration (it's safe to run multiple times - it checks if columns/tables exist)
+    if docker exec -i "$POSTGRES_CONTAINER" psql -U kc -d kc_db < "$SCHEMA_SYNC_MIGRATION_FILE" 2>/dev/null; then
+      log_success "Schema synchronization migration completed"
+    else
+      log_warning "Schema sync migration had warnings (schema may already be correct)"
+    fi
+  else
+    log_warning "Postgres container not found - skipping schema sync migration"
+  fi
+fi
+
+# ============================================================================
+# Database Migration: Posts Table (ensure posts table exists with correct schema)
+# ============================================================================
+
+log_info "Ensuring posts table exists with correct schema..."
+POSTGRES_CONTAINER=$(docker ps -q -f name=postgres)
+if [[ -n "$POSTGRES_CONTAINER" ]]; then
+  # Check if posts table exists and has correct structure
+  POSTS_TABLE_EXISTS=$(docker exec "$POSTGRES_CONTAINER" psql -U kc -d kc_db -tAc \
+    "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='posts');" 2>/dev/null || echo "false")
+  
+  POSTS_HAS_AUTHOR_ID=$(docker exec "$POSTGRES_CONTAINER" psql -U kc -d kc_db -tAc \
+    "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='author_id');" 2>/dev/null || echo "false")
+  
+  if [[ "$POSTS_TABLE_EXISTS" == "t" ]] && [[ "$POSTS_HAS_AUTHOR_ID" == "t" ]]; then
+    log_success "Posts table already exists with correct schema - no migration needed"
+  else
+    # Table doesn't exist or has wrong structure - create/update it safely
+    log_info "Creating or updating posts table..."
+    
+    # Check if table exists but has wrong structure (legacy table with user_id/item_id/data)
+    POSTS_HAS_LEGACY_STRUCTURE=$(docker exec "$POSTGRES_CONTAINER" psql -U kc -d kc_db -tAc \
+      "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='user_id');" 2>/dev/null || echo "false")
+    
+    if [[ "$POSTS_HAS_LEGACY_STRUCTURE" == "t" ]]; then
+      log_warning "Detected legacy posts table structure - migrating to new schema..."
+      # Backup data if exists (though legacy table likely has different structure)
+      POSTS_COUNT=$(docker exec "$POSTGRES_CONTAINER" psql -U kc -d kc_db -tAc \
+        "SELECT COUNT(*) FROM posts;" 2>/dev/null || echo "0")
+      if [[ "$POSTS_COUNT" -gt "0" ]]; then
+        log_warning "Posts table has $POSTS_COUNT rows - these will be lost due to schema change"
+        log_warning "If you need to preserve this data, please export it manually before running this script"
+      fi
+    fi
+    
+    # Create posts table with correct schema (safe to run multiple times)
+    docker exec -i "$POSTGRES_CONTAINER" psql -U kc -d kc_db <<EOF 2>/dev/null || true
+-- Create posts table if it doesn't exist, or recreate if it has wrong structure
+DO \$\$
+BEGIN
+    -- Drop table only if it has wrong structure (legacy)
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name='posts' AND column_name='user_id'
+    ) THEN
+        DROP TABLE IF EXISTS posts CASCADE;
+    END IF;
+    
+    -- Create table if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.tables WHERE table_name='posts'
+    ) THEN
+        CREATE TABLE posts (
+            id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+            author_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+            task_id UUID REFERENCES tasks(id) ON DELETE SET NULL,
+            title VARCHAR(255) NOT NULL,
+            description TEXT,
+            images TEXT[],
+            likes INTEGER DEFAULT 0,
+            comments INTEGER DEFAULT 0,
+            post_type VARCHAR(50) DEFAULT 'task_completion',
+            metadata JSONB DEFAULT '{}'::jsonb,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        
+        CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id);
+        CREATE INDEX IF NOT EXISTS idx_posts_task_id ON posts(task_id);
+        CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_posts_post_type ON posts(post_type);
+        
+        DROP TRIGGER IF EXISTS update_posts_updated_at ON posts;
+        CREATE TRIGGER update_posts_updated_at 
+            BEFORE UPDATE ON posts 
+            FOR EACH ROW 
+            EXECUTE FUNCTION update_updated_at_column();
+    END IF;
+END \$\$;
+EOF
+    
+    if [[ $? -eq 0 ]]; then
+      log_success "Posts table ensured with correct schema"
+    else
+      log_warning "Posts table creation had warnings (table may already exist)"
+    fi
+  fi
+else
+  log_warning "Postgres container not found - skipping posts table creation"
 fi
 
 # Final check: ensure dependencies are installed before starting server

@@ -61,6 +61,22 @@ const adminButtons: AdminButton[] = [
     color: colors.secondary,
     bgColor: colors.pinkLight,
     route: 'AdminReview',
+  },
+  {
+    id: 'files',
+    title: 'קבצים',
+    icon: 'folder-open-outline',
+    color: colors.info,
+    bgColor: colors.infoLight,
+    route: 'AdminFiles',
+  },
+  {
+    id: 'crm',
+    title: 'ניהול קשרים',
+    icon: 'people-circle-outline',
+    color: colors.warning,
+    bgColor: colors.warningLight,
+    route: 'AdminCRM',
   }
 ];
 

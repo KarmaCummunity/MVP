@@ -70,11 +70,38 @@ const getRoleDisplayName = (role: string): string => {
 
 
 // --- Tab Components ---
-const PostsRoute = ({ userId }: { userId?: string }) => {
+// Helper function to check if status is "open"
+const isOpenStatus = (status: string, type: string): boolean => {
+  if (type === 'item') {
+    return status === 'available' || status === 'reserved';
+  } else if (type === 'ride') {
+    return status === 'active' || status === 'full';
+  } else if (type === 'task') {
+    return status === 'open' || status === 'in_progress';
+  } else if (type === 'donation') {
+    return status === 'active';
+  }
+  return true; // Posts are always shown
+};
+
+// Helper function to check if status is "closed"
+const isClosedStatus = (status: string, type: string): boolean => {
+  if (type === 'item') {
+    return status === 'delivered' || status === 'completed';
+  } else if (type === 'ride') {
+    return status === 'completed';
+  } else if (type === 'task') {
+    return status === 'done' || status === 'archived';
+  } else if (type === 'donation') {
+    return status === 'completed';
+  }
+  return false; // Posts are not shown in closed
+};
+
+const OpenRoute = ({ userId }: { userId?: string }) => {
   const { t } = useTranslation(['profile']);
   const { selectedUser } = useUser();
   const [posts, setPosts] = useState<any[]>([]);
-  const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { db } = require('../utils/databaseService');
 
@@ -82,7 +109,7 @@ const PostsRoute = ({ userId }: { userId?: string }) => {
   const targetUserId = userId || selectedUser?.id;
 
   useEffect(() => {
-    const loadUserPosts = async () => {
+    const loadOpenContent = async () => {
       if (!targetUserId) {
         setLoading(false);
         return;
@@ -90,125 +117,176 @@ const PostsRoute = ({ userId }: { userId?: string }) => {
 
       try {
         setLoading(true);
-        console.log('📱 PostsRoute - Loading posts for userId:', targetUserId);
+        console.log('📱 OpenRoute - Loading open content for userId:', targetUserId);
 
-        // Load posts from database
-        let userPosts: any[] = [];
+        const { USE_BACKEND, API_BASE_URL } = await import('../utils/dbConfig');
+        const allContent: any[] = [];
+
+        // Load posts from API
         try {
-          userPosts = await db.getUserPosts(targetUserId) || [];
-          console.log('📱 PostsRoute - Loaded posts from DB:', userPosts.length);
+          const res = await apiService.getUserPosts(targetUserId, 50);
+          if (res.success && Array.isArray(res.data)) {
+            const userPosts = res.data.map((p: any) => ({
+              id: p.id,
+              title: p.title,
+              thumbnail: (p.images && p.images.length > 0) ? p.images[0] : '',
+              likes: p.likes || 0,
+              comments: p.comments || 0,
+              type: 'post',
+              description: p.description,
+              timestamp: p.created_at,
+              status: 'active' // Posts are always active
+            }));
+            allContent.push(...userPosts);
+            console.log('📱 OpenRoute - Loaded posts from API:', userPosts.length);
+          }
         } catch (error) {
-          console.error('Error loading posts from DB:', error);
+          console.error('Error loading posts from API:', error);
         }
 
-        // Load items from API
-        const { USE_BACKEND, API_BASE_URL } = await import('../utils/dbConfig');
+        // Load items from API (available, reserved)
         let userItems: any[] = [];
         if (USE_BACKEND && API_BASE_URL) {
           try {
             const axios = (await import('axios')).default;
-            console.log('📱 PostsRoute - Loading items from API for owner_id:', targetUserId);
-            const response = await axios.get(`${API_BASE_URL}/api/items-delivery/search`, {
-              params: {
-                owner_id: targetUserId,
-                status: 'available',
-                limit: 50,
-              }
+            // Load available items
+            const availableResponse = await axios.get(`${API_BASE_URL}/api/items-delivery/search`, {
+              params: { owner_id: targetUserId, status: 'available', limit: 50 }
             });
-            if (response.data?.success && Array.isArray(response.data.data)) {
-              userItems = response.data.data;
-              console.log('📱 PostsRoute - Loaded items from API:', userItems.length);
-            } else {
-              console.warn('📱 PostsRoute - API response not successful or not array:', response.data);
+            if (availableResponse.data?.success && Array.isArray(availableResponse.data.data)) {
+              userItems.push(...availableResponse.data.data);
+            }
+            // Load reserved items
+            const reservedResponse = await axios.get(`${API_BASE_URL}/api/items-delivery/search`, {
+              params: { owner_id: targetUserId, status: 'reserved', limit: 50 }
+            });
+            if (reservedResponse.data?.success && Array.isArray(reservedResponse.data.data)) {
+              userItems.push(...reservedResponse.data.data);
             }
           } catch (error) {
             console.error('Error loading items from API:', error);
           }
         } else {
-          // Fallback to local database
           try {
-            userItems = await db.getDedicatedItemsByOwner(targetUserId) || [];
-            console.log('📱 PostsRoute - Loaded items from local DB:', userItems.length);
+            const allItems = await db.getDedicatedItemsByOwner(targetUserId) || [];
+            userItems = allItems.filter((item: any) => 
+              item.status === 'available' || item.status === 'reserved'
+            );
           } catch (error) {
             console.error('Error loading items from local DB:', error);
           }
         }
 
-        // Load rides
-        let userRides: any[] = [];
+        // Process items
+        userItems.forEach((item: any) => {
+          let thumbnail = '';
+          if (item.image_base64) {
+            const imageData = item.image_base64;
+            if (imageData.startsWith('data:image') || imageData.startsWith('http')) {
+              thumbnail = imageData;
+            } else if (imageData.length > 100) {
+              thumbnail = `data:image/jpeg;base64,${imageData}`;
+            }
+          }
+          allContent.push({
+            id: `item_${item.id}`,
+            title: item.title,
+            thumbnail: thumbnail,
+            likes: 0,
+            type: 'item',
+            status: item.status,
+            rawData: item
+          });
+        });
+
+        // Load rides (active, full)
         try {
           const allRides = await enhancedDB.getRides({});
-          userRides = allRides.filter((ride: any) => {
+          const userRides = allRides.filter((ride: any) => {
             const createdBy = ride.createdBy || ride.created_by || ride.driver_id || ride.driverId;
-            return createdBy === targetUserId;
+            const status = ride.status || 'active';
+            return createdBy === targetUserId && (status === 'active' || status === 'full');
           });
-          console.log('📱 PostsRoute - Loaded rides:', userRides.length);
+          userRides.forEach((ride: any) => {
+            const fromLocation = ride.from || ride.from_location?.name || ride.from_location?.city || '';
+            const toLocation = ride.to || ride.to_location?.name || ride.to_location?.city || '';
+            allContent.push({
+              id: `ride_${ride.id}`,
+              title: `טרמפ: ${fromLocation} ➝ ${toLocation}`,
+              thumbnail: ride.image || '',
+              likes: 0,
+              type: 'ride',
+              status: ride.status || 'active',
+              from: fromLocation,
+              to: toLocation,
+              rawData: ride
+            });
+          });
         } catch (error) {
           console.error('Error loading rides:', error);
         }
 
-        // Combine posts, items, and rides
-        const allPosts = [
-          ...(userPosts || []),
-          ...userItems.map((item: any) => {
-            // Process image_base64 - check if prefix already exists
-            let thumbnail = '';
-            if (item.image_base64) {
-              const imageData = item.image_base64;
-              // Check if it's already a data URI or URL
-              if (imageData.startsWith('data:image') || imageData.startsWith('http')) {
-                // Already has prefix or is a URL - use as is
-                thumbnail = imageData;
-              } else if (imageData.length > 100) {
-                // Valid base64 string without prefix - add prefix
-                thumbnail = `data:image/jpeg;base64,${imageData}`;
-              }
-              // If image_base64 is too short or invalid, thumbnail remains empty
-            }
-
-            return {
-              id: `item_${item.id}`,
-              title: item.title,
-              thumbnail: thumbnail,
+        // Load tasks (open, in_progress)
+        try {
+          const openTasksRes = await apiService.getTasks({ assignee: targetUserId, status: 'open', limit: 50 });
+          const inProgressTasksRes = await apiService.getTasks({ assignee: targetUserId, status: 'in_progress', limit: 50 });
+          const tasks = [
+            ...(openTasksRes.success && Array.isArray(openTasksRes.data) ? openTasksRes.data : []),
+            ...(inProgressTasksRes.success && Array.isArray(inProgressTasksRes.data) ? inProgressTasksRes.data : [])
+          ];
+          tasks.forEach((task: any) => {
+            allContent.push({
+              id: `task_${task.id}`,
+              title: task.title,
+              thumbnail: '',
               likes: 0,
-              type: 'item'
-            };
-          }),
-          ...userRides.map((ride: any) => {
-            const fromLocation = ride.from || ride.from_location?.name || ride.from_location?.city || '';
-            const toLocation = ride.to || ride.to_location?.name || ride.to_location?.city || '';
-            return {
-              id: `ride_${ride.id}`,
-              title: `טרמפ: ${fromLocation} ➝ ${toLocation}`,
-              thumbnail: ride.image || '', // Rides usually don't have images
-              likes: 0,
-              type: 'ride',
-              from: fromLocation,
-              to: toLocation,
-              rawData: ride
-            };
-          })
-        ];
+              type: 'task',
+              status: task.status,
+              rawData: task
+            });
+          });
+        } catch (error) {
+          console.error('Error loading tasks:', error);
+        }
 
-        console.log('📱 PostsRoute - Total posts/items:', allPosts.length);
-        setPosts(allPosts);
-        setItems(userItems);
+        // Load donations (active)
+        try {
+          const donationsRes = await apiService.getUserDonations(targetUserId);
+          if (donationsRes.success && Array.isArray(donationsRes.data)) {
+            const activeDonations = donationsRes.data.filter((donation: any) => donation.status === 'active');
+            activeDonations.forEach((donation: any) => {
+              allContent.push({
+                id: `donation_${donation.id}`,
+                title: donation.title,
+                thumbnail: (donation.images && donation.images.length > 0) ? donation.images[0] : '',
+                likes: 0,
+                type: 'donation',
+                status: donation.status,
+                rawData: donation
+              });
+            });
+          }
+        } catch (error) {
+          console.error('Error loading donations:', error);
+        }
+
+        console.log('📱 OpenRoute - Total open content:', allContent.length);
+        setPosts(allContent);
       } catch (error) {
-        console.error('Error loading user posts:', error);
+        console.error('Error loading open content:', error);
         setPosts([]);
-        setItems([]);
       } finally {
         setLoading(false);
       }
     };
 
-    loadUserPosts();
+    loadOpenContent();
   }, [targetUserId]);
 
   if (loading) {
     return (
       <View style={styles.tabContentPlaceholder}>
-        <Text style={styles.placeholderText}>{t('profile:posts.loading', 'טוען פוסטים...')}</Text>
+        <Text style={styles.placeholderText}>טוען תוכן פתוח...</Text>
       </View>
     );
   }
@@ -216,9 +294,9 @@ const PostsRoute = ({ userId }: { userId?: string }) => {
   if (posts.length === 0) {
     return (
       <View style={styles.tabContentPlaceholder}>
-        <Ionicons name="images-outline" size={60} color={colors.textSecondary} />
-        <Text style={styles.placeholderText}>{t('profile:posts.noPostsYet', 'אין פוסטים עדיין')}</Text>
-        <Text style={styles.placeholderSubtext}>{t('profile:posts.createFirstPost', 'הפוסטים שלך יופיעו כאן')}</Text>
+        <Ionicons name="folder-open-outline" size={60} color={colors.textSecondary} />
+        <Text style={styles.placeholderText}>אין תוכן פתוח עדיין</Text>
+        <Text style={styles.placeholderSubtext}>התוכן הפתוח שלך יופיע כאן</Text>
       </View>
     );
   }
@@ -230,7 +308,7 @@ const PostsRoute = ({ userId }: { userId?: string }) => {
           <TouchableOpacity
             key={post.id || i}
             style={styles.postContainer}
-            onPress={() => Alert.alert(t('profile:alerts.post'), post.title || t('profile:alerts.postNumber', { number: (i + 1).toString() }))}
+            onPress={() => Alert.alert('פוסט', post.title || `פוסט ${i + 1}`)}
           >
             {post.thumbnail || post.image ? (
               <Image
@@ -238,7 +316,6 @@ const PostsRoute = ({ userId }: { userId?: string }) => {
                 style={styles.postImage}
               />
             ) : post.type === 'ride' ? (
-              // Special display for rides without image
               <View style={[styles.postImage, styles.ridePlaceholder]}>
                 <Ionicons name="car-sport" size={scaleSize(32)} color={colors.info} />
                 {post.from && post.to && (
@@ -252,6 +329,14 @@ const PostsRoute = ({ userId }: { userId?: string }) => {
                     </Text>
                   </View>
                 )}
+              </View>
+            ) : post.type === 'task' ? (
+              <View style={[styles.postImage, { backgroundColor: colors.primary + '20', justifyContent: 'center', alignItems: 'center' }]}>
+                <Ionicons name="checkmark-circle-outline" size={32} color={colors.primary} />
+              </View>
+            ) : post.type === 'donation' ? (
+              <View style={[styles.postImage, { backgroundColor: colors.error + '20', justifyContent: 'center', alignItems: 'center' }]}>
+                <Ionicons name="heart-outline" size={32} color={colors.error} />
               </View>
             ) : (
               <View style={[styles.postImage, { backgroundColor: colors.backgroundTertiary, justifyContent: 'center', alignItems: 'center' }]}>
@@ -271,28 +356,247 @@ const PostsRoute = ({ userId }: { userId?: string }) => {
   );
 };
 
-const ReelsRoute = () => {
+const ClosedRoute = ({ userId }: { userId?: string }) => {
   const { t } = useTranslation(['profile']);
+  const { selectedUser } = useUser();
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { db } = require('../utils/databaseService');
+
+  // Use provided userId or fallback to selectedUser.id
+  const targetUserId = userId || selectedUser?.id;
+
+  useEffect(() => {
+    const loadClosedContent = async () => {
+      if (!targetUserId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        console.log('📱 ClosedRoute - Loading closed content for userId:', targetUserId);
+
+        const { USE_BACKEND, API_BASE_URL } = await import('../utils/dbConfig');
+        const allContent: any[] = [];
+
+        // Load items from API (delivered, completed)
+        let userItems: any[] = [];
+        if (USE_BACKEND && API_BASE_URL) {
+          try {
+            const axios = (await import('axios')).default;
+            // Load delivered items
+            const deliveredResponse = await axios.get(`${API_BASE_URL}/api/items-delivery/search`, {
+              params: { owner_id: targetUserId, status: 'delivered', limit: 50 }
+            });
+            if (deliveredResponse.data?.success && Array.isArray(deliveredResponse.data.data)) {
+              userItems.push(...deliveredResponse.data.data);
+            }
+            // Load completed items
+            const completedResponse = await axios.get(`${API_BASE_URL}/api/items-delivery/search`, {
+              params: { owner_id: targetUserId, status: 'completed', limit: 50 }
+            });
+            if (completedResponse.data?.success && Array.isArray(completedResponse.data.data)) {
+              userItems.push(...completedResponse.data.data);
+            }
+          } catch (error) {
+            console.error('Error loading items from API:', error);
+          }
+        } else {
+          try {
+            const allItems = await db.getDedicatedItemsByOwner(targetUserId) || [];
+            userItems = allItems.filter((item: any) => 
+              item.status === 'delivered' || item.status === 'completed'
+            );
+          } catch (error) {
+            console.error('Error loading items from local DB:', error);
+          }
+        }
+
+        // Process items
+        userItems.forEach((item: any) => {
+          let thumbnail = '';
+          if (item.image_base64) {
+            const imageData = item.image_base64;
+            if (imageData.startsWith('data:image') || imageData.startsWith('http')) {
+              thumbnail = imageData;
+            } else if (imageData.length > 100) {
+              thumbnail = `data:image/jpeg;base64,${imageData}`;
+            }
+          }
+          allContent.push({
+            id: `item_${item.id}`,
+            title: item.title,
+            thumbnail: thumbnail,
+            likes: 0,
+            type: 'item',
+            status: item.status,
+            rawData: item
+          });
+        });
+
+        // Load rides (completed)
+        try {
+          const allRides = await enhancedDB.getRides({});
+          const userRides = allRides.filter((ride: any) => {
+            const createdBy = ride.createdBy || ride.created_by || ride.driver_id || ride.driverId;
+            const status = ride.status || 'active';
+            return createdBy === targetUserId && status === 'completed';
+          });
+          userRides.forEach((ride: any) => {
+            const fromLocation = ride.from || ride.from_location?.name || ride.from_location?.city || '';
+            const toLocation = ride.to || ride.to_location?.name || ride.to_location?.city || '';
+            allContent.push({
+              id: `ride_${ride.id}`,
+              title: `טרמפ: ${fromLocation} ➝ ${toLocation}`,
+              thumbnail: ride.image || '',
+              likes: 0,
+              type: 'ride',
+              status: ride.status || 'completed',
+              from: fromLocation,
+              to: toLocation,
+              rawData: ride
+            });
+          });
+        } catch (error) {
+          console.error('Error loading rides:', error);
+        }
+
+        // Load tasks (done, archived)
+        try {
+          const doneTasksRes = await apiService.getTasks({ assignee: targetUserId, status: 'done', limit: 50 });
+          const archivedTasksRes = await apiService.getTasks({ assignee: targetUserId, status: 'archived', limit: 50 });
+          const tasks = [
+            ...(doneTasksRes.success && Array.isArray(doneTasksRes.data) ? doneTasksRes.data : []),
+            ...(archivedTasksRes.success && Array.isArray(archivedTasksRes.data) ? archivedTasksRes.data : [])
+          ];
+          tasks.forEach((task: any) => {
+            allContent.push({
+              id: `task_${task.id}`,
+              title: task.title,
+              thumbnail: '',
+              likes: 0,
+              type: 'task',
+              status: task.status,
+              rawData: task
+            });
+          });
+        } catch (error) {
+          console.error('Error loading tasks:', error);
+        }
+
+        // Load donations (completed)
+        try {
+          const donationsRes = await apiService.getUserDonations(targetUserId);
+          if (donationsRes.success && Array.isArray(donationsRes.data)) {
+            const completedDonations = donationsRes.data.filter((donation: any) => donation.status === 'completed');
+            completedDonations.forEach((donation: any) => {
+              allContent.push({
+                id: `donation_${donation.id}`,
+                title: donation.title,
+                thumbnail: (donation.images && donation.images.length > 0) ? donation.images[0] : '',
+                likes: 0,
+                type: 'donation',
+                status: donation.status,
+                rawData: donation
+              });
+            });
+          }
+        } catch (error) {
+          console.error('Error loading donations:', error);
+        }
+
+        console.log('📱 ClosedRoute - Total closed content:', allContent.length);
+        setPosts(allContent);
+      } catch (error) {
+        console.error('Error loading closed content:', error);
+        setPosts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadClosedContent();
+  }, [targetUserId]);
+
+  if (loading) {
+    return (
+      <View style={styles.tabContentPlaceholder}>
+        <Text style={styles.placeholderText}>טוען תוכן סגור...</Text>
+      </View>
+    );
+  }
+
+  if (posts.length === 0) {
+    return (
+      <View style={styles.tabContentPlaceholder}>
+        <Ionicons name="checkmark-done-circle-outline" size={60} color={colors.textSecondary} />
+        <Text style={styles.placeholderText}>אין תוכן סגור עדיין</Text>
+        <Text style={styles.placeholderSubtext}>התוכן הסגור שלך יופיע כאן</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.tabContentPlaceholder}>
-      <Ionicons name="videocam-outline" size={60} color={colors.textSecondary} />
-      <Text style={styles.placeholderText}>{t('profile:reels.noReelsYet')}</Text>
-      <Text style={styles.placeholderSubtext}>{t('profile:reels.createFirstReel')}</Text>
-      <TouchableOpacity style={styles.createButton}>
-        <Ionicons name="add" size={20} color={colors.white} />
-        <Text style={styles.createButtonText}>{t('profile:reels.createReel')}</Text>
-      </TouchableOpacity>
-    </View>
+    <ScrollView contentContainerStyle={styles.tabContentContainer}>
+      <View style={styles.postsGrid}>
+        {posts.map((post, i) => (
+          <TouchableOpacity
+            key={post.id || i}
+            style={styles.postContainer}
+            onPress={() => Alert.alert('פוסט', post.title || `פוסט ${i + 1}`)}
+          >
+            {post.thumbnail || post.image ? (
+              <Image
+                source={{ uri: post.thumbnail || post.image }}
+                style={styles.postImage}
+              />
+            ) : post.type === 'ride' ? (
+              <View style={[styles.postImage, styles.ridePlaceholder]}>
+                <Ionicons name="car-sport" size={scaleSize(32)} color={colors.info} />
+                {post.from && post.to && (
+                  <View style={styles.rideDetailsContainer}>
+                    <Text style={styles.rideDetailsText} numberOfLines={1}>
+                      {post.from}
+                    </Text>
+                    <Ionicons name="arrow-forward" size={scaleSize(12)} color={colors.textSecondary} style={styles.rideArrow} />
+                    <Text style={styles.rideDetailsText} numberOfLines={1}>
+                      {post.to}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ) : post.type === 'task' ? (
+              <View style={[styles.postImage, { backgroundColor: colors.primary + '20', justifyContent: 'center', alignItems: 'center' }]}>
+                <Ionicons name="checkmark-circle" size={32} color={colors.primary} />
+              </View>
+            ) : post.type === 'donation' ? (
+              <View style={[styles.postImage, { backgroundColor: colors.error + '20', justifyContent: 'center', alignItems: 'center' }]}>
+                <Ionicons name="heart" size={32} color={colors.error} />
+              </View>
+            ) : (
+              <View style={[styles.postImage, { backgroundColor: colors.backgroundTertiary, justifyContent: 'center', alignItems: 'center' }]}>
+                <Ionicons name="image-outline" size={32} color={colors.textSecondary} />
+              </View>
+            )}
+            <View style={styles.postOverlay}>
+              <View style={styles.postStats}>
+                <Ionicons name="heart" size={16} color={colors.white} />
+                <Text style={styles.postStatsText}>{post.likes || 0}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </ScrollView>
   );
 };
 
 const TaggedRoute = () => {
-  const { t } = useTranslation(['profile']);
   return (
     <View style={styles.tabContentPlaceholder}>
       <Ionicons name="person-outline" size={60} color={colors.textSecondary} />
-      <Text style={styles.placeholderText}>{t('profile:tagged.noTagsYet')}</Text>
-      <Text style={styles.placeholderSubtext}>{t('profile:tagged.tagsAppearHere')}</Text>
+      <Text style={styles.placeholderText}>תיוגים יהיה פעיל בהמשך</Text>
     </View>
   );
 };
@@ -321,7 +625,7 @@ function ProfileScreenContent({
   // Get route params for viewing other users' profiles
   // Use manualParams if provided (from props), otherwise route.params
   let routeParams = manualParams || (route.params as ProfileScreenRouteParams | undefined);
-  
+
   // On Web, handle refresh (F5) by restoring params from localStorage if route params are missing
   const STORAGE_KEY = 'profileScreenParams';
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -350,7 +654,7 @@ function ProfileScreenContent({
       }
     }
   }
-  
+
   const { userId: externalUserId, userName: externalUserName, characterData: externalCharacterData } = routeParams || {};
 
   // Determine if viewing own profile or other user's profile
@@ -446,6 +750,7 @@ function ProfileScreenContent({
               } : { city: 'ישראל', country: 'IL' },
               joinDate: userData.join_date || userData.created_at || new Date().toISOString(),
               interests: userData.interests || [],
+              parentManagerId: userData.parent_manager_id || null,
             };
             setViewingUser(mappedUser);
             // Save userId to localStorage after successful load (Web only)
@@ -753,9 +1058,9 @@ function ProfileScreenContent({
     Alert.alert(t('profile:alerts.sampleDataTitle'), t('profile:alerts.sampleDataCreated'));
   };
   const [routes] = useState<TabRoute[]>([
-    { key: 'posts', title: 'posts' },
-    { key: 'reels', title: 'reels' },
-    { key: 'tagged', title: 'tagged' },
+    { key: 'open', title: 'פתוח' },
+    { key: 'closed', title: 'סגור' },
+    { key: 'tagged', title: 'תיוגים' },
   ]);
 
   // Update stats when user changes
@@ -807,10 +1112,10 @@ function ProfileScreenContent({
 
   const renderScene = ({ route: sceneRoute }: SceneRendererProps & { route: TabRoute }) => {
     switch (sceneRoute.key) {
-      case 'posts':
-        return <PostsRoute userId={targetUserId} />;
-      case 'reels':
-        return <ReelsRoute />;
+      case 'open':
+        return <OpenRoute userId={targetUserId} />;
+      case 'closed':
+        return <ClosedRoute userId={targetUserId} />;
       case 'tagged':
         return <TaggedRoute />;
       default:
@@ -840,7 +1145,7 @@ function ProfileScreenContent({
                   }
                 ]}
               >
-                {t(`profile:tabs.${route.key}`, route.title)}
+                {route.title}
               </Text>
               {isFocused && <View style={styles.tabBarIndicator} />}
             </TouchableOpacity>
@@ -1288,6 +1593,94 @@ function ProfileScreenContent({
                         <Ionicons name="chatbubble-outline" size={20} color={colors.textPrimary} />
                         <Text style={styles.messageButtonText}>הודעה</Text>
                       </TouchableOpacity>
+
+                      {/* Hierarchy Management Button */}
+                      {(() => {
+                        const isSubordinate = (displayUser as any).parentManagerId === selectedUser.id;
+                        const isMyManager = (selectedUser as any).parentManagerId === displayUser.id;
+
+                        // If they are my manager -> Request Task
+                        if (isMyManager) {
+                          return (
+                            <TouchableOpacity
+                              style={[styles.messageButton, { borderColor: colors.primary, backgroundColor: colors.primary + '10' }]}
+                              onPress={() => {
+                                Alert.alert('בקשת משימה', 'האם לשלוח בקשת משימה למנהל זה?', [
+                                  { text: 'ביטול', style: 'cancel' },
+                                  {
+                                    text: 'שלח', onPress: async () => {
+                                      // Create conversation and send message
+                                      try {
+                                        const existingConvId = await conversationExists(selectedUser.id, displayUser.id!);
+                                        let conversationId = existingConvId;
+                                        if (!conversationId) {
+                                          conversationId = await createConversation([selectedUser.id, displayUser.id!]);
+                                        }
+                                        // Send "I'd look to help" message
+                                        // TODO: implement sendMessage in chatService or apiService
+                                        // For now just navigate to chat
+                                        (navigation as any).navigate('ChatDetailScreen', {
+                                          conversationId,
+                                          otherUserId: displayUser.id,
+                                          userName: displayUser.name,
+                                          userAvatar: displayUser.avatar,
+                                          initialMessage: 'אשמח לעזור במה שצריך' // Pass this if ChatDetail supports it, or handle locally
+                                        });
+                                      } catch (e) { console.error(e); }
+                                    }
+                                  }
+                                ]);
+                              }}
+                            >
+                              <Ionicons name="briefcase-outline" size={20} color={colors.primary} />
+                              <Text style={[styles.messageButtonText, { color: colors.primary }]}>בקש משימה</Text>
+                            </TouchableOpacity>
+                          );
+                        }
+
+                        // Otherwise (Subordinate or unrelated) -> Manage Subordinate
+                        return (
+                          <TouchableOpacity
+                            style={[
+                              styles.messageButton,
+                              isSubordinate ? { backgroundColor: '#ff444410', borderColor: '#ff4444' } : { backgroundColor: colors.secondary + '10', borderColor: colors.secondary }
+                            ]}
+                            onPress={() => {
+                              const action = isSubordinate ? 'remove' : 'add';
+                              const title = isSubordinate ? 'הסר מנהל' : 'הפוך למנהל בצוות';
+                              const msg = isSubordinate
+                                ? 'האם אתה בטוח שברצונך להסיר משתמש זה מניהול תחתיך? המשימות יועברו אליך.'
+                                : 'האם אתה בטוח שברצונך להפוך משתמש זה למנהל תחתיך?';
+
+                              Alert.alert(title, msg, [
+                                { text: 'ביטול', style: 'cancel' },
+                                {
+                                  text: 'אישור', style: isSubordinate ? 'destructive' : 'default', onPress: async () => {
+                                    try {
+                                      const res = await apiService.manageHierarchy(displayUser.id!, action, selectedUser.id);
+                                      if (res.success) {
+                                        Alert.alert('הצלחה', res.message);
+                                        // Update local state to reflect change immediately
+                                        setViewingUser(prev => prev ? ({ ...prev, parentManagerId: action === 'add' ? selectedUser.id : null }) : null);
+                                      } else {
+                                        Alert.alert('שגיאה', res.error || 'פעולה נכשלה');
+                                      }
+                                    } catch (err) {
+                                      console.error(err);
+                                      Alert.alert('שגיאה', 'שגיאה בתקשורת');
+                                    }
+                                  }
+                                }
+                              ]);
+                            }}
+                          >
+                            <Ionicons name={isSubordinate ? "person-remove-outline" : "person-add-outline"} size={20} color={isSubordinate ? '#ff4444' : colors.secondary} />
+                            <Text style={[styles.messageButtonText, { color: isSubordinate ? '#ff4444' : colors.secondary }]}>
+                              {isSubordinate ? 'הסר מנהל' : 'הפוך למנהל'}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })()}
                     </>
                   )}
                 </>

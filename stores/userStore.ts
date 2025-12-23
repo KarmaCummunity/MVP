@@ -475,11 +475,24 @@ export const useUserStore = create<UserState>((set, get) => ({
           console.log('🔥 Firebase user detected, restoring session');
 
           try {
-            // Get UUID from server using firebase_uid
+            // Get UUID from server using firebase_uid and google_id
             const { apiService } = await import('../utils/apiService');
+
+            // Extract google_id from providerData if available
+            const googleProvider = firebaseUser.providerData?.find(
+              (provider) => provider.providerId === 'google.com'
+            );
+            const googleId = googleProvider?.uid || undefined;
+
+            console.log('🔥 Resolving user with identifiers:', {
+              firebase_uid: firebaseUser.uid,
+              google_id: googleId,
+              email: firebaseUser.email
+            });
 
             const resolveResponse = await apiService.resolveUserId({
               firebase_uid: firebaseUser.uid,
+              google_id: googleId,
               email: firebaseUser.email || undefined
             });
 
