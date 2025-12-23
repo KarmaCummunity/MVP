@@ -975,7 +975,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   fabButton: {
-    position: 'absolute',
+    ...(Platform.OS === 'web' ? { position: 'fixed' as any } : { position: 'absolute' }),
     right: LAYOUT_CONSTANTS.SPACING.XL,
     bottom: 200, // מרווח מה-bottom bar
     flexDirection: 'row',

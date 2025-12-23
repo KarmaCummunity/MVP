@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Modal, Image, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Modal, Image, SafeAreaView, Platform } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { Ionicons } from '@expo/vector-icons';
@@ -544,9 +544,15 @@ export default function AdminTasksScreen() {
         data={sortedTasks}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          Platform.OS === 'web' && { paddingBottom: 120 }
+        ]}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={<Text style={styles.emptyText}>אין משימות כרגע</Text>}
+        scrollEnabled={true}
+        nestedScrollEnabled={Platform.OS === 'web' ? true : undefined}
+        style={styles.flatList}
       />
 
       <Modal visible={showForm} animationType="slide" transparent>
@@ -643,6 +649,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.backgroundSecondary,
     padding: LAYOUT_CONSTANTS.SPACING.LG,
+    ...(Platform.OS === 'web' && {
+      position: 'relative' as any,
+    }),
   },
   header: {
     fontSize: FontSizes.heading2,
@@ -732,8 +741,11 @@ const styles = StyleSheet.create({
     color: colors.info,
   },
 
+  flatList: {
+    flex: 1,
+  },
   addButton: { 
-    position: 'absolute', 
+    ...(Platform.OS === 'web' ? { position: 'fixed' as any } : { position: 'absolute' }),
     left: 20, 
     bottom: 20, 
     width: 56, 

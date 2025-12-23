@@ -301,9 +301,15 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
             <FlatList
                 data={filteredUsers}
                 keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.listContentContainer}
+                contentContainerStyle={[
+                    styles.listContentContainer,
+                    Platform.OS === 'web' && { paddingBottom: 120 }
+                ]}
                 refreshControl={<RefreshControl refreshing={isLoading} onRefresh={loadUsers} />}
                 ListHeaderComponent={renderHeader}
+                scrollEnabled={true}
+                nestedScrollEnabled={Platform.OS === 'web' ? true : undefined}
+                style={styles.flatList}
                 renderItem={({ item: user }) => {
                     const isAdmin = (user.roles || []).includes('admin') || (user.roles || []).includes('super_admin');
                     const isSuperAdmin = user.email === 'navesarussi@gmail.com';
@@ -454,7 +460,16 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.backgroundSecondary },
+    container: { 
+        flex: 1, 
+        backgroundColor: colors.backgroundSecondary,
+        ...(Platform.OS === 'web' && {
+            position: 'relative' as any,
+        }),
+    },
+    flatList: {
+        flex: 1,
+    },
     header: { padding: LAYOUT_CONSTANTS.SPACING.LG, backgroundColor: colors.background, alignItems: 'center' },
     title: { fontSize: FontSizes.heading1, fontWeight: 'bold', color: colors.textPrimary },
     tabsContainer: { flexDirection: 'row', padding: 8, margin: 16, backgroundColor: colors.background, borderRadius: 8 },
