@@ -552,6 +552,8 @@ export default function AdminTasksScreen() {
         ListEmptyComponent={<Text style={styles.emptyText}>אין משימות כרגע</Text>}
         scrollEnabled={true}
         nestedScrollEnabled={Platform.OS === 'web' ? true : undefined}
+        showsVerticalScrollIndicator={true}
+        removeClippedSubviews={Platform.OS !== 'web'}
         style={styles.flatList}
       />
 
@@ -648,9 +650,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundSecondary,
-    padding: LAYOUT_CONSTANTS.SPACING.LG,
-    ...(Platform.OS === 'web' && {
+    ...(Platform.OS === 'web' ? {
       position: 'relative' as any,
+      overflow: 'hidden' as any,
+      height: '100vh' as any,
+    } : {
+      padding: LAYOUT_CONSTANTS.SPACING.LG,
     }),
   },
   header: {
@@ -664,7 +669,14 @@ const styles = StyleSheet.create({
   input: { flex: 1, height: 44, backgroundColor: colors.background, borderRadius: 8, paddingHorizontal: 10, textAlign: 'right', color: colors.textPrimary },
   refreshBtn: { width: 44, height: 44, backgroundColor: colors.primary, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
-  listContent: { paddingBottom: 100, gap: 12 },
+  listContent: { 
+    paddingBottom: 100, 
+    gap: 12,
+    ...(Platform.OS === 'web' && {
+      paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+      paddingTop: LAYOUT_CONSTANTS.SPACING.LG,
+    }),
+  },
   emptyText: { textAlign: 'center', color: colors.textSecondary, marginTop: 40 },
 
   taskItem: { flexDirection: 'row', padding: 12, backgroundColor: colors.background, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
@@ -743,6 +755,10 @@ const styles = StyleSheet.create({
 
   flatList: {
     flex: 1,
+    ...(Platform.OS === 'web' && {
+      overflowY: 'auto' as any,
+      WebkitOverflowScrolling: 'touch' as any,
+    }),
   },
   addButton: { 
     ...(Platform.OS === 'web' ? { position: 'fixed' as any } : { position: 'absolute' }),

@@ -309,6 +309,8 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                 ListHeaderComponent={renderHeader}
                 scrollEnabled={true}
                 nestedScrollEnabled={Platform.OS === 'web' ? true : undefined}
+                showsVerticalScrollIndicator={true}
+                removeClippedSubviews={Platform.OS !== 'web'}
                 style={styles.flatList}
                 renderItem={({ item: user }) => {
                     const isAdmin = (user.roles || []).includes('admin') || (user.roles || []).includes('super_admin');
@@ -465,10 +467,16 @@ const styles = StyleSheet.create({
         backgroundColor: colors.backgroundSecondary,
         ...(Platform.OS === 'web' && {
             position: 'relative' as any,
+            overflow: 'hidden' as any,
+            height: '100vh' as any,
         }),
     },
     flatList: {
         flex: 1,
+        ...(Platform.OS === 'web' && {
+            overflowY: 'auto' as any,
+            WebkitOverflowScrolling: 'touch' as any,
+        }),
     },
     header: { padding: LAYOUT_CONSTANTS.SPACING.LG, backgroundColor: colors.background, alignItems: 'center' },
     title: { fontSize: FontSizes.heading1, fontWeight: 'bold', color: colors.textPrimary },
