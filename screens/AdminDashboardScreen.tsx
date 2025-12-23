@@ -15,6 +15,7 @@ import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { AdminStackParamList } from '../globals/types';
 import { useUser } from '../stores/userStore';
+import AdminHierarchyTree from '../components/AdminHierarchyTree';
 
 interface AdminDashboardScreenProps {
   navigation: NavigationProp<AdminStackParamList>;
@@ -206,7 +207,7 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
               activeOpacity={0.7}
             >
               <View style={[styles.iconContainer, { backgroundColor: button.color }]}>
-                <Ionicons name={button.icon} size={32} color="white" />
+                <Ionicons name={button.icon} size={24} color="white" />
               </View>
               <Text style={styles.buttonText}>{button.title}</Text>
             </TouchableOpacity>
@@ -221,11 +222,23 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
               activeOpacity={0.7}
             >
               <View style={[styles.iconContainer, { backgroundColor: colors.error }]}>
-                <Ionicons name="shield-outline" size={40} color="white" />
+                <Ionicons name="shield-outline" size={24} color="white" />
               </View>
               <Text style={styles.buttonText}>ניהול מנהלים</Text>
             </TouchableOpacity>
           )}
+        </View>
+
+        {/* Management Hierarchy Section */}
+        <View style={styles.hierarchySection}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="git-network-outline" size={24} color={colors.primary} />
+            <Text style={styles.sectionTitle}>מבנה הניהול</Text>
+          </View>
+          <Text style={styles.sectionSubtitle}>עץ היררכיית המנהלים בקהילה</Text>
+          <View style={styles.hierarchyCard}>
+            <AdminHierarchyTree />
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -290,14 +303,14 @@ const styles = StyleSheet.create({
   buttonsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: LAYOUT_CONSTANTS.SPACING.MD,
+    justifyContent: 'flex-start',
+    gap: LAYOUT_CONSTANTS.SPACING.SM,
   },
   button: {
-    width: '47%',
-    aspectRatio: 1,
-    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
-    padding: LAYOUT_CONSTANTS.SPACING.LG,
+    width: '31%',
+    minHeight: 100,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
+    padding: LAYOUT_CONSTANTS.SPACING.MD,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.shadow,
@@ -307,12 +320,12 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: LAYOUT_CONSTANTS.SPACING.MD,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.SM,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -320,8 +333,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buttonText: {
-    fontSize: FontSizes.medium,
-    fontWeight: 'bold',
+    fontSize: FontSizes.small,
+    fontWeight: '600',
     color: colors.textPrimary,
     textAlign: 'center',
   },
@@ -352,6 +365,41 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.small,
     color: colors.textSecondary,
     marginTop: LAYOUT_CONSTANTS.SPACING.XS,
+  },
+  hierarchySection: {
+    marginTop: LAYOUT_CONSTANTS.SPACING.XL,
+    paddingTop: LAYOUT_CONSTANTS.SPACING.LG,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderSecondary,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: LAYOUT_CONSTANTS.SPACING.SM,
+    marginBottom: LAYOUT_CONSTANTS.SPACING.XS,
+  },
+  sectionTitle: {
+    fontSize: FontSizes.heading2,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  sectionSubtitle: {
+    fontSize: FontSizes.medium,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: LAYOUT_CONSTANTS.SPACING.LG,
+  },
+  hierarchyCard: {
+    backgroundColor: colors.background,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.LARGE,
+    padding: LAYOUT_CONSTANTS.SPACING.MD,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
 });
 

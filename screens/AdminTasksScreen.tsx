@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Modal, Image, SafeAreaView } from 'react-native';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,6 +33,8 @@ type AdminTask = {
   checklist?: { id: string; text: string; done: boolean }[];
   created_by?: string | null;
   parent_task_id?: string | null;
+  parent_task_details?: { id: string; title: string } | null;
+  subtask_count?: number;
   created_at?: string;
   updated_at?: string;
 };
@@ -67,6 +69,9 @@ export default function AdminTasksScreen() {
   const [filterCategory, setFilterCategory] = useState<string | ''>('');
   const [filterAssignee, setFilterAssignee] = useState<'all' | 'me'>('all');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+  const [subtasks, setSubtasks] = useState<Record<string, AdminTask[]>>({});
+  const [loadingSubtasks, setLoadingSubtasks] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('📋 Tasks List Updated in Component:', tasks.map(t => `${t.id.substring(0, 8)}:${t.title}`).join(', '));
@@ -135,8 +140,56 @@ export default function AdminTasksScreen() {
     setEditingId(null);
   };
 
+  const toggleSubtasks = async (taskId: string) => {
+    if (expandedTasks.has(taskId)) {
+      // Collapse
+      const newExpanded = new Set(expandedTasks);
+      newExpanded.delete(taskId);
+      setExpandedTasks(newExpanded);
+    } else {
+      // Expand and load subtasks
+      setLoadingSubtasks(taskId);
+      try {
+        const res = await apiService.getSubtasks(taskId);
+        if (res.success && res.data) {
+          setSubtasks(prev => ({ ...prev, [taskId]: res.data }));
+        }
+        const newExpanded = new Set(expandedTasks);
+        newExpanded.add(taskId);
+        setExpandedTasks(newExpanded);
+      } catch (err) {
+        console.error('Failed to load subtasks:', err);
+      } finally {
+        setLoadingSubtasks(null);
+      }
+    }
+  };
+
+  const createSubtask = (parentTask: AdminTask) => {
+    setFormData({
+      title: '',
+      description: '',
+      priority: parentTask.priority,
+      status: 'open',
+      category: parentTask.category || 'development',
+      due_date: '',
+      assignees: parentTask.assignees_details || [],
+      tagsText: '',
+      parent_task_id: parentTask.id,
+    });
+    setEditingId(null);
+    setShowForm(true);
+  };
+
   const createTask = async () => {
     if (!formData.title.trim()) return;
+    
+    // Validate created_by is available
+    if (!selectedUser?.id) {
+      setError('שגיאה: לא ניתן לזהות את המשתמש הנוכחי. נסה להתחבר מחדש.');
+      return;
+    }
+    
     setCreating(true);
     setError(null);
     try {
@@ -158,11 +211,11 @@ export default function AdminTasksScreen() {
         status: formData.status,
         category: formData.category || null,
         due_date: parsedDueDate,
-        assignees: formData.assignees.map(u => u.id), // UUIDs
+        assignees: formData.assignees.map(u => u.id), // UUIDs - server will set defaults if empty
         tags: formData.tagsText.trim()
           ? formData.tagsText.split(',').map((t) => t.trim()).filter(Boolean)
           : [],
-        created_by: selectedUser?.id || null,
+        created_by: selectedUser.id, // Always required
         parent_task_id: formData.parent_task_id || null,
       };
 
@@ -170,7 +223,12 @@ export default function AdminTasksScreen() {
 
       const res: ApiResponse<AdminTask> = await apiService.createTask(body);
       if (!res.success) {
-        setError(res.error || 'שגיאה ביצירת משימה');
+        // Handle specific permission error
+        if (res.error?.includes('הרשאה')) {
+          setError('אין לך הרשאה להקצות משימה למשתמשים אלה. ניתן להקצות משימות רק לעובדים שלך.');
+        } else {
+          setError(res.error || 'שגיאה ביצירת משימה');
+        }
       } else if (res.data) {
         await fetchTasks();
         resetForm();
@@ -203,83 +261,126 @@ export default function AdminTasksScreen() {
     }
   };
 
-  const renderItem = ({ item }: { item: AdminTask }) => {
-    // Debug log for each rendered item (throttled/limited if possible, but for now just one-off)
-    // Actually, spamming logs per item render in React Native is messy, but if requested...
-    // Better to log ONCE the list of IDs being rendered in the parent component.
-    // I will skip logging here and log in the main body (see next tool call).
+  const renderItem = ({ item, isSubtask = false }: { item: AdminTask; isSubtask?: boolean }) => {
     const isDone = item.status === 'done';
+    const hasSubtasks = (item.subtask_count || 0) > 0;
+    const isExpanded = expandedTasks.has(item.id);
+    const taskSubtasks = subtasks[item.id] || [];
+
     return (
-      <View style={[styles.taskItem, isDone && styles.taskItemDone]}>
-        <TouchableOpacity
-          style={styles.checkbox}
-          onPress={() => toggleDone(item)}
-          disabled={updating === item.id}
-        >
-          {updating === item.id ? (
-            <ActivityIndicator size="small" color={colors.textSecondary} />
-          ) : (
-            <Ionicons name={isDone ? 'checkbox' : 'square-outline'} size={24} color={isDone ? colors.success : colors.textSecondary} />
+      <View>
+        <View style={[styles.taskItem, isDone && styles.taskItemDone, isSubtask && styles.subtaskItem]}>
+          {/* Subtask Indicator */}
+          {isSubtask && (
+            <View style={styles.subtaskIndicator}>
+              <Ionicons name="return-down-forward" size={16} color={colors.textSecondary} />
+            </View>
           )}
-        </TouchableOpacity>
-        <View style={styles.taskContent}>
-          <Text style={[styles.taskTitle, isDone && styles.taskTitleDone]} numberOfLines={2}>
-            {item.title}
-          </Text>
-          {item.description ? (
-            <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
-          ) : null}
 
-          <View style={styles.metaRow}>
-            {/* Priority Badge */}
-            <View style={[styles.badge, styles[`priority_${item.priority}` as const]]}>
-              <Text style={styles.badgeText}>
-                {item.priority === 'high' ? 'גבוהה' : item.priority === 'medium' ? 'בינונית' : 'נמוכה'}
-              </Text>
-            </View>
+          <TouchableOpacity
+            style={styles.checkbox}
+            onPress={() => toggleDone(item)}
+            disabled={updating === item.id}
+          >
+            {updating === item.id ? (
+              <ActivityIndicator size="small" color={colors.textSecondary} />
+            ) : (
+              <Ionicons name={isDone ? 'checkbox' : 'square-outline'} size={24} color={isDone ? colors.success : colors.textSecondary} />
+            )}
+          </TouchableOpacity>
+          <View style={styles.taskContent}>
+            {/* Parent Task Reference */}
+            {item.parent_task_details && (
+              <View style={styles.parentBadge}>
+                <Ionicons name="git-branch-outline" size={12} color={colors.info} />
+                <Text style={styles.parentText}>תת-משימה של: {item.parent_task_details.title}</Text>
+              </View>
+            )}
 
-            {/* Status Badge */}
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{item.status === 'open' ? 'פתוחה' : item.status === 'in_progress' ? 'בתהליך' : item.status === 'done' ? 'בוצעה' : 'בארכיון'}</Text>
-            </View>
+            <Text style={[styles.taskTitle, isDone && styles.taskTitleDone]} numberOfLines={2}>
+              {item.title}
+            </Text>
+            {item.description ? (
+              <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
+            ) : null}
 
-            {/* Assignees */}
-            <View style={styles.assigneesContainer}>
-              {item.assignees_details && item.assignees_details.length > 0 ? (
-                <View style={styles.assigneesContent}>
-                  <Text style={styles.assigneeText} numberOfLines={1}>
-                    משוייך ל: {item.assignees_details.map(u => u.name).join(', ')}
-                  </Text>
-                  <View style={styles.avatarsRow}>
-                    {item.assignees_details.slice(0, 3).map((u, i) => (
-                      <Image
-                        key={u.id}
-                        source={{ uri: u.avatar_url || `https://ui-avatars.com/api/?name=${u.name}` }}
-                        style={[styles.avatarSmall, { marginRight: i > 0 ? -10 : 0, zIndex: 3 - i }]}
+            <View style={styles.metaRow}>
+              {/* Priority Badge */}
+              <View style={[styles.badge, styles[`priority_${item.priority}` as const]]}>
+                <Text style={styles.badgeText}>
+                  {item.priority === 'high' ? 'גבוהה' : item.priority === 'medium' ? 'בינונית' : 'נמוכה'}
+                </Text>
+              </View>
+
+              {/* Status Badge */}
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{item.status === 'open' ? 'פתוחה' : item.status === 'in_progress' ? 'בתהליך' : item.status === 'done' ? 'בוצעה' : 'בארכיון'}</Text>
+              </View>
+
+              {/* Subtasks Count Badge */}
+              {hasSubtasks && (
+                <TouchableOpacity 
+                  style={[styles.badge, styles.subtaskBadge]}
+                  onPress={() => toggleSubtasks(item.id)}
+                >
+                  {loadingSubtasks === item.id ? (
+                    <ActivityIndicator size="small" color={colors.info} />
+                  ) : (
+                    <>
+                      <Ionicons 
+                        name={isExpanded ? 'chevron-up' : 'chevron-down'} 
+                        size={12} 
+                        color={colors.info} 
                       />
-                    ))}
-                    {item.assignees_details.length > 3 && (
-                      <View style={[styles.avatarSmall, styles.moreAvatar]}>
-                        <Text style={styles.moreAvatarText}>+{item.assignees_details.length - 3}</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              ) : (
-                <Text style={styles.unassignedText}>⚠️ המשימה לא שוייכה לאף אחד</Text>
+                      <Text style={styles.subtaskBadgeText}>{item.subtask_count} תת-משימות</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
               )}
-            </View>
-          </View>
 
-          {item.creator_details && (
-            <Text style={styles.creatorText}>נוצר ע"י {item.creator_details.name}</Text>
-          )}
+              {/* Assignees */}
+              <View style={styles.assigneesContainer}>
+                {item.assignees_details && item.assignees_details.length > 0 ? (
+                  <View style={styles.assigneesContent}>
+                    <Text style={styles.assigneeText} numberOfLines={1}>
+                      משוייך ל: {item.assignees_details.map(u => u.name).join(', ')}
+                    </Text>
+                    <View style={styles.avatarsRow}>
+                      {item.assignees_details.slice(0, 3).map((u, i) => (
+                        <Image
+                          key={u.id}
+                          source={{ uri: u.avatar_url || `https://ui-avatars.com/api/?name=${u.name}` }}
+                          style={[styles.avatarSmall, { marginRight: i > 0 ? -10 : 0, zIndex: 3 - i }]}
+                        />
+                      ))}
+                      {item.assignees_details.length > 3 && (
+                        <View style={[styles.avatarSmall, styles.moreAvatar]}>
+                          <Text style={styles.moreAvatarText}>+{item.assignees_details.length - 3}</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                ) : (
+                  <Text style={styles.unassignedText}>⚠️ המשימה לא שוייכה לאף אחד</Text>
+                )}
+              </View>
+            </View>
+
+            {item.creator_details && (
+              <Text style={styles.creatorText}>נוצר ע"י {item.creator_details.name}</Text>
+            )}
 
           <View style={styles.actionsRow}>
             <TouchableOpacity style={styles.actionBtn} onPress={() => openEdit(item)}>
               <Ionicons name="create-outline" size={18} color={colors.textPrimary} />
               <Text style={styles.actionText}>ערוך</Text>
             </TouchableOpacity>
+            {!isSubtask && (
+              <TouchableOpacity style={styles.actionBtn} onPress={() => createSubtask(item)}>
+                <Ionicons name="add-circle-outline" size={18} color={colors.info} />
+                <Text style={[styles.actionText, { color: colors.info }]}>תת-משימה</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               style={styles.actionBtn}
               onPress={() => deleteTask(item.id)}
@@ -297,6 +398,18 @@ export default function AdminTasksScreen() {
           </View>
         </View>
       </View>
+
+      {/* Subtasks List */}
+      {isExpanded && taskSubtasks.length > 0 && (
+        <View style={styles.subtasksList}>
+          {taskSubtasks.map((subtask) => (
+            <View key={subtask.id}>
+              {renderItem({ item: subtask, isSubtask: true })}
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
     );
   };
 
@@ -350,7 +463,12 @@ export default function AdminTasksScreen() {
         resetForm();
         setEditingId(null);
       } else {
-        setError(res.error || 'שגיאה בעדכון משימה');
+        // Handle specific permission error
+        if (res.error?.includes('הרשאה')) {
+          setError('אין לך הרשאה להקצות משימה למשתמשים אלה. ניתן להקצות משימות רק לעובדים שלך.');
+        } else {
+          setError(res.error || 'שגיאה בעדכון משימה');
+        }
       }
     } catch (err) {
       console.error('Error updating task:', err);
@@ -421,7 +539,7 @@ export default function AdminTasksScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <FlatList
         data={sortedTasks}
         keyExtractor={(item) => item.id}
@@ -485,7 +603,7 @@ export default function AdminTasksScreen() {
       <TouchableOpacity style={styles.addButton} onPress={() => { resetForm(); setShowForm(true); }}>
         <Ionicons name="add" size={24} color={colors.white} />
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -571,7 +689,66 @@ const styles = StyleSheet.create({
   assigneeText: { fontSize: 12, color: colors.textSecondary },
   unassignedText: { fontSize: 12, color: colors.error, fontWeight: 'bold' },
 
-  addButton: { position: 'absolute', left: 20, bottom: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.success, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 },
+  // Subtask styles
+  subtaskItem: { 
+    marginLeft: 24, 
+    borderLeftWidth: 2, 
+    borderLeftColor: colors.info,
+    backgroundColor: colors.backgroundSecondary,
+  },
+  subtaskIndicator: { 
+    paddingRight: 8, 
+    justifyContent: 'center',
+  },
+  subtasksList: { 
+    marginTop: 8, 
+    gap: 8,
+  },
+  subtaskBadge: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 4, 
+    backgroundColor: colors.infoLight,
+    borderColor: colors.info,
+  },
+  subtaskBadgeText: { 
+    fontSize: 11, 
+    color: colors.info, 
+    fontWeight: '600',
+  },
+  parentBadge: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 4, 
+    marginBottom: 4,
+    backgroundColor: colors.infoLight,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    alignSelf: 'flex-end',
+  },
+  parentText: { 
+    fontSize: 10, 
+    color: colors.info,
+  },
+
+  addButton: { 
+    position: 'absolute', 
+    left: 20, 
+    bottom: 20, 
+    width: 56, 
+    height: 56, 
+    borderRadius: 28, 
+    backgroundColor: colors.success, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    shadowColor: '#000', 
+    shadowOpacity: 0.3, 
+    shadowRadius: 4, 
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 5,
+    zIndex: 1000
+  },
 
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
   modalCard: { backgroundColor: colors.background, borderRadius: 16, padding: 20 },

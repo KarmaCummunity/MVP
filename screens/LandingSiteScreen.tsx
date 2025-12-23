@@ -17,6 +17,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../stores/userStore';
 import { navigationQueue } from '../utils/navigationQueue';
 import { checkNavigationGuards } from '../utils/navigationGuards';
+import AdminHierarchyTree from '../components/AdminHierarchyTree';
 
 interface LandingStats {
   siteVisits: number;
@@ -104,6 +105,7 @@ const FloatingMenu: React.FC<{
     { id: 'how', label: 'איך זה עובד', icon: 'help-circle-outline' },
     { id: 'who', label: 'למי זה מתאים', icon: 'people-outline' },
     { id: 'values', label: 'ערכים', icon: 'heart-outline' },
+    { id: 'hierarchy', label: 'מבנה ניהול', icon: 'git-network-outline' },
     { id: 'roadmap', label: 'מפת דרכים', icon: 'map-outline' },
     { id: 'contact', label: 'יצירת קשר', icon: 'mail-outline' },
     { id: 'faq', label: 'שאלות נפוצות', icon: 'chatbubble-ellipses-outline' },
@@ -979,6 +981,15 @@ const CoreMottosSection = () => (
   </Section>
 );
 
+// Admin Hierarchy Section - Visual tree of the management structure
+const AdminHierarchySection = () => (
+  <Section id="section-hierarchy" title="מבנה הניהול" subtitle="הצוות שמוביל את הקהילה" style={styles.sectionAltBackground}>
+    <View style={styles.hierarchyContainer}>
+      <AdminHierarchyTree />
+    </View>
+  </Section>
+);
+
 const RoadmapSection = () => {
   const roadmapSteps = [
     {
@@ -1689,7 +1700,7 @@ const LandingSiteScreen: React.FC = () => {
   useEffect(() => {
     if (!isWeb) return; // Works on all web screens including mobile
 
-    const sectionIds = ['stats', 'vision', 'problems', 'features', 'about', 'how', 'who', 'values', 'core-mottos', 'roadmap', 'contact', 'faq'];
+    const sectionIds = ['stats', 'vision', 'problems', 'features', 'about', 'how', 'who', 'values', 'core-mottos', 'hierarchy', 'roadmap', 'contact', 'faq'];
 
     // Create Intersection Observer
     const observerOptions = {
@@ -1795,6 +1806,7 @@ const LandingSiteScreen: React.FC = () => {
         <LazySection section={WhoIsItForSection} onDonate={() => setShowDonationModal(true)} />
         <LazySection section={ValuesSection} />
         <LazySection section={CoreMottosSection} />
+        <LazySection section={AdminHierarchySection} />
         <LazySection section={RoadmapSection} />
         <LazySection section={ContactSection} />
         <LazySection section={FAQSection} />
@@ -2941,6 +2953,12 @@ const styles = StyleSheet.create({
     maxWidth: isTablet ? 900 : '100%',
     alignSelf: 'center',
     gap: isMobileWeb ? 20 : 28,
+  },
+  hierarchyContainer: {
+    marginTop: isMobileWeb ? 16 : 24,
+    width: '100%',
+    maxWidth: isTablet ? 900 : '100%',
+    alignSelf: 'center',
   },
   coreMottoItem: {
     flexDirection: 'row-reverse',

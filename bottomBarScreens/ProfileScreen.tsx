@@ -122,23 +122,49 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
         const { USE_BACKEND, API_BASE_URL } = await import('../utils/dbConfig');
         const allContent: any[] = [];
 
-        // Load posts from API
+        // Load posts from API - including task posts
         try {
           const res = await apiService.getUserPosts(targetUserId, 50);
           if (res.success && Array.isArray(res.data)) {
-            const userPosts = res.data.map((p: any) => ({
-              id: p.id,
-              title: p.title,
-              thumbnail: (p.images && p.images.length > 0) ? p.images[0] : '',
-              likes: p.likes || 0,
-              comments: p.comments || 0,
-              type: 'post',
-              description: p.description,
-              timestamp: p.created_at,
-              status: 'active' // Posts are always active
-            }));
-            allContent.push(...userPosts);
-            console.log('📱 OpenRoute - Loaded posts from API:', userPosts.length);
+            res.data.forEach((p: any) => {
+              // Check if this is a task-related post
+              const isTaskPost = p.post_type === 'task_assignment' || p.post_type === 'task_completion';
+              
+              if (isTaskPost) {
+                // For task posts, only show if task is open/in_progress
+                const taskStatus = p.task?.status;
+                if (taskStatus === 'open' || taskStatus === 'in_progress') {
+                  allContent.push({
+                    id: p.id,
+                    title: p.title,
+                    thumbnail: '',
+                    likes: p.likes || 0,
+                    comments: p.comments || 0,
+                    type: 'task',
+                    subtype: p.post_type,
+                    description: p.description,
+                    timestamp: p.created_at,
+                    status: taskStatus,
+                    taskData: p.task,
+                    rawData: p
+                  });
+                }
+              } else {
+                // Regular posts - always active
+                allContent.push({
+                  id: p.id,
+                  title: p.title,
+                  thumbnail: (p.images && p.images.length > 0) ? p.images[0] : '',
+                  likes: p.likes || 0,
+                  comments: p.comments || 0,
+                  type: 'post',
+                  description: p.description,
+                  timestamp: p.created_at,
+                  status: 'active'
+                });
+              }
+            });
+            console.log('📱 OpenRoute - Loaded posts from API:', res.data.length);
           }
         } catch (error) {
           console.error('Error loading posts from API:', error);
@@ -226,15 +252,29 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
           console.error('Error loading rides:', error);
         }
 
-        // Load tasks (open, in_progress)
+        // Load tasks (open, in_progress) - avoid duplicates with task posts
         try {
+          // Get task IDs we already added from posts
+          const existingTaskIds = new Set(
+            allContent
+              .filter((c: any) => c.type === 'task' && c.taskData?.id)
+              .map((c: any) => c.taskData.id)
+          );
+          
           const openTasksRes = await apiService.getTasks({ assignee: targetUserId, status: 'open', limit: 50 });
           const inProgressTasksRes = await apiService.getTasks({ assignee: targetUserId, status: 'in_progress', limit: 50 });
           const tasks = [
             ...(openTasksRes.success && Array.isArray(openTasksRes.data) ? openTasksRes.data : []),
             ...(inProgressTasksRes.success && Array.isArray(inProgressTasksRes.data) ? inProgressTasksRes.data : [])
           ];
+          
           tasks.forEach((task: any) => {
+            // Skip if already added via task posts
+            if (existingTaskIds.has(task.id)) {
+              console.log(`📱 OpenRoute - Skipping duplicate task: ${task.id}`);
+              return;
+            }
+            
             allContent.push({
               id: `task_${task.id}`,
               title: task.title,
@@ -435,6 +475,42 @@ const ClosedRoute = ({ userId }: { userId?: string }) => {
           });
         });
 
+        // Load posts from API - including completed task posts
+        try {
+          const res = await apiService.getUserPosts(targetUserId, 50);
+          if (res.success && Array.isArray(res.data)) {
+            res.data.forEach((p: any) => {
+              // Check if this is a task-related post with completed task
+              const isTaskPost = p.post_type === 'task_assignment' || p.post_type === 'task_completion';
+              
+              if (isTaskPost) {
+                // For task posts, only show if task is done/archived
+                const taskStatus = p.task?.status;
+                if (taskStatus === 'done' || taskStatus === 'archived') {
+                  allContent.push({
+                    id: p.id,
+                    title: p.title,
+                    thumbnail: '',
+                    likes: p.likes || 0,
+                    comments: p.comments || 0,
+                    type: 'task',
+                    subtype: p.post_type,
+                    description: p.description,
+                    timestamp: p.created_at,
+                    status: taskStatus,
+                    taskData: p.task,
+                    rawData: p
+                  });
+                }
+              }
+              // Note: Regular posts are not shown in ClosedRoute
+            });
+            console.log('📱 ClosedRoute - Loaded task posts from API:', res.data.length);
+          }
+        } catch (error) {
+          console.error('Error loading posts from API:', error);
+        }
+
         // Load rides (completed)
         try {
           const allRides = await enhancedDB.getRides({});
@@ -462,15 +538,29 @@ const ClosedRoute = ({ userId }: { userId?: string }) => {
           console.error('Error loading rides:', error);
         }
 
-        // Load tasks (done, archived)
+        // Load tasks (done, archived) - avoid duplicates with task posts
         try {
+          // Get task IDs we already added from posts
+          const existingTaskIds = new Set(
+            allContent
+              .filter((c: any) => c.type === 'task' && c.taskData?.id)
+              .map((c: any) => c.taskData.id)
+          );
+          
           const doneTasksRes = await apiService.getTasks({ assignee: targetUserId, status: 'done', limit: 50 });
           const archivedTasksRes = await apiService.getTasks({ assignee: targetUserId, status: 'archived', limit: 50 });
           const tasks = [
             ...(doneTasksRes.success && Array.isArray(doneTasksRes.data) ? doneTasksRes.data : []),
             ...(archivedTasksRes.success && Array.isArray(archivedTasksRes.data) ? archivedTasksRes.data : [])
           ];
+          
           tasks.forEach((task: any) => {
+            // Skip if already added via task posts
+            if (existingTaskIds.has(task.id)) {
+              console.log(`📱 ClosedRoute - Skipping duplicate task: ${task.id}`);
+              return;
+            }
+            
             allContent.push({
               id: `task_${task.id}`,
               title: task.title,
@@ -988,6 +1078,71 @@ function ProfileScreenContent({
         });
       } catch (error) {
         console.error('Error loading rides:', error);
+      }
+
+      // Load task posts (both assignment and completion) with proper icons
+      try {
+        const taskPostsRes = await apiService.getUserPosts(userId, 50);
+        if (taskPostsRes.success && Array.isArray(taskPostsRes.data)) {
+          taskPostsRes.data.forEach((p: any) => {
+            if (p.post_type === 'task_assignment' || p.post_type === 'task_completion') {
+              const icon = p.post_type === 'task_assignment' 
+                ? 'add-circle-outline' 
+                : 'checkmark-circle-outline';
+              const color = p.post_type === 'task_assignment'
+                ? colors.info
+                : colors.success;
+              const typeLabel = p.post_type === 'task_assignment'
+                ? 'משימה חדשה'
+                : 'משימה הושלמה';
+                
+              activities.push({
+                id: `taskpost_${p.id}`,
+                type: 'task_post',
+                subtype: p.post_type,
+                title: p.title || typeLabel,
+                time: p.created_at || new Date().toISOString(),
+                icon,
+                color,
+                rawData: p
+              });
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error loading task posts:', error);
+      }
+
+      // Load tasks (all statuses) - for tasks without posts (legacy)
+      try {
+        // Get task IDs we already added from posts
+        const existingTaskIds = new Set(
+          activities
+            .filter((a: any) => a.type === 'task_post' && a.rawData?.task?.id)
+            .map((a: any) => a.rawData.task.id)
+        );
+        
+        const tasksRes = await apiService.getTasks({ assignee: userId, limit: 50 });
+        if (tasksRes.success && Array.isArray(tasksRes.data)) {
+          tasksRes.data.forEach((task: any) => {
+            // Skip if already added via task posts
+            if (existingTaskIds.has(task.id)) {
+              return;
+            }
+            
+            activities.push({
+              id: `task_${task.id}`,
+              type: 'task',
+              title: task.title || 'משימה חדשה',
+              time: task.created_at || new Date().toISOString(),
+              icon: 'checkmark-circle-outline',
+              color: colors.success,
+              rawData: task
+            });
+          });
+        }
+      } catch (error) {
+        console.error('Error loading tasks:', error);
       }
 
       // Sort by time (newest first) and limit to 10

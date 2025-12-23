@@ -81,6 +81,14 @@ class ApiService {
     });
   }
 
+  async getSubtasks(taskId: string): Promise<ApiResponse> {
+    return this.request(`/api/tasks/${taskId}/subtasks`);
+  }
+
+  async getTaskTree(taskId: string): Promise<ApiResponse> {
+    return this.request(`/api/tasks/${taskId}/tree`);
+  }
+
   private normalizeEndpoint(endpoint: string): string {
     if (!endpoint) {
       return '/';
@@ -147,10 +155,10 @@ class ApiService {
     return this.request(`/api/users/search?q=${encodeURIComponent(query)}`);
   }
 
-  async setManager(userId: string, managerId: string | null): Promise<ApiResponse> {
+  async setManager(userId: string, managerId: string | null, requestingUserId?: string): Promise<ApiResponse> {
     return this.request(`/api/users/${userId}/set-manager`, {
       method: 'POST',
-      body: JSON.stringify({ managerId }),
+      body: JSON.stringify({ managerId, requestingUserId }),
     });
   }
 
@@ -163,6 +171,35 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ action, managerId }),
     });
+  }
+
+  /**
+   * Promote a user to admin role (with hierarchy validation)
+   * The target user will become an admin under the requesting admin
+   */
+  async promoteToAdmin(targetUserId: string, requestingAdminId: string): Promise<ApiResponse> {
+    return this.request(`/api/users/${targetUserId}/promote-admin`, {
+      method: 'POST',
+      body: JSON.stringify({ requestingAdminId }),
+    });
+  }
+
+  /**
+   * Demote an admin to regular user (remove admin role)
+   * Can only demote admins that are your subordinates
+   */
+  async demoteAdmin(targetUserId: string, requestingAdminId: string): Promise<ApiResponse> {
+    return this.request(`/api/users/${targetUserId}/demote-admin`, {
+      method: 'POST',
+      body: JSON.stringify({ requestingAdminId }),
+    });
+  }
+
+  /**
+   * Get users eligible for admin promotion by a specific admin
+   */
+  async getEligibleForPromotion(adminId: string): Promise<ApiResponse> {
+    return this.request(`/api/users/eligible-for-promotion/${adminId}`);
   }
 
   async registerUser(userData: any): Promise<ApiResponse> {
@@ -227,6 +264,14 @@ class ApiService {
 
   async getUsersSummary(): Promise<ApiResponse> {
     return this.request('/api/users/stats/summary');
+  }
+
+  /**
+   * Get full admin hierarchy tree starting from super admin
+   * Returns a nested tree structure of all managers
+   */
+  async getFullAdminHierarchy(): Promise<ApiResponse> {
+    return this.request('/api/users/hierarchy/tree');
   }
 
   async followUser(userId: string, followerId: string): Promise<ApiResponse> {

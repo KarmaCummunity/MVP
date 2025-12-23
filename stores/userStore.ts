@@ -637,7 +637,9 @@ export const useUser = () => {
     isRealAuth: store.authMode === 'real',
     isAdmin: (() => {
       const user = store.selectedUser;
-      if (!user || !user.roles) return false;
+      if (!user) return false;
+      // Super admin email check (fallback if roles not updated in DB)
+      if (user.email === 'navesarussi@gmail.com') return true;
       const roles = Array.isArray(user.roles) ? user.roles : [];
       return roles.includes('admin') || roles.includes('super_admin');
     })(),

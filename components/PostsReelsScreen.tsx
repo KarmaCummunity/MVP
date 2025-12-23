@@ -58,7 +58,8 @@ type User = {
 
 type Item = {
   id: string;
-  type: 'post' | 'reel';
+  type: 'post' | 'reel' | 'task_post';
+  subtype?: 'task_assignment' | 'task_completion' | string;
   title: string;
   description: string;
   thumbnail: string;
@@ -67,6 +68,11 @@ type Item = {
   comments: number;
   isLiked: boolean;
   timestamp: string;
+  taskData?: {
+    id: string;
+    title: string;
+    status: string;
+  };
 };
 
 // TODO: URGENT - Remove this entire fake data generation function
@@ -1138,11 +1144,14 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
 
       const merged: Item[] = [];
 
-      // Add NEW posts first (high priority)
+      // Add NEW posts first (high priority) - including task posts
       newPostsList.forEach((p) => {
+        const isTaskPost = p.post_type === 'task_assignment' || p.post_type === 'task_completion';
+        
         merged.push({
           id: p.id,
-          type: 'post',
+          type: isTaskPost ? 'task_post' : 'post',
+          subtype: p.post_type, // task_assignment, task_completion, or undefined
           title: p.title,
           description: p.description || '',
           thumbnail: (p.images && p.images.length > 0) ? p.images[0] : '',
@@ -1155,8 +1164,9 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
           likes: p.likes || 0,
           comments: p.comments || 0,
           isLiked: false,
-          timestamp: p.created_at
-        });
+          timestamp: p.created_at,
+          taskData: p.task // Include task data for task posts
+        } as Item);
       });
 
       // Add posts to feed
