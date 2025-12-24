@@ -1,6 +1,6 @@
 // LandingSiteScreen.tsx
 // Web-only marketing landing page for KarmaCommunity
-import React, { useEffect, useState, useRef, Suspense, lazy, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Platform, View, Text, StyleSheet, Image, TouchableOpacity, Linking, Dimensions, ActivityIndicator, ScrollView, Animated, Modal, FlatList } from 'react-native';
 import { WebView } from 'react-native-webview';
 import colors from '../globals/colors';
@@ -224,9 +224,7 @@ const LazySection: React.FC<LazySectionProps> = ({ section: SectionComponent, ..
   return (
     <View ref={ref} style={{ minHeight: 200 }}>
       {isVisible ? (
-        <Suspense fallback={<ActivityIndicator size="large" color={colors.info} style={{ marginVertical: 50 }} />}>
-          <SectionComponent {...props} />
-        </Suspense>
+        <SectionComponent {...props} />
       ) : <ActivityIndicator size="large" color={colors.info} style={{ marginVertical: 50 }} />}
     </View>
   );
