@@ -147,7 +147,6 @@ class ApiService {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
-    // TODO: Add request timeout configuration
     // TODO: Add request ID for tracing and debugging
     // TODO: Add retry logic for failed requests
     try {
@@ -167,19 +166,42 @@ class ApiService {
 
       console.log(`🌐 API Request: ${config.method || 'GET'} ${url}`, authToken ? '(authenticated)' : '(no auth)');
 
-      const response = await fetch(url, config);
-      const data = await response.json();
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-      if (!response.ok) {
-        console.error(`❌ API Error: ${response.status}`, data);
-        return {
-          success: false,
-          error: data.message || data.error || 'Network error',
-        };
+      try {
+        const response = await fetch(url, {
+          ...config,
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        
+        const data = await response.json();
+
+        if (!response.ok) {
+          console.error(`❌ API Error: ${response.status}`, data);
+          return {
+            success: false,
+            error: data.message || data.error || 'Network error',
+          };
+        }
+
+        console.log(`✅ API Response: ${endpoint}`, data);
+        return data;
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        
+        // Check if error is due to abort (timeout)
+        if (fetchError.name === 'AbortError') {
+          console.error(`⏱️ API Timeout: ${endpoint}`);
+          return {
+            success: false,
+            error: 'Request timeout - server is not responding',
+          };
+        }
+        throw fetchError;
       }
-
-      console.log(`✅ API Response: ${endpoint}`, data);
-      return data;
     } catch (error) {
       console.error(`❌ API Network Error:`, error);
       return {

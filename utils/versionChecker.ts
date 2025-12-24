@@ -10,6 +10,7 @@ const CURRENT_VERSION = '2.3.0'; // תתעדכן אוטומטית מ-package.jso
  * קריאת הגרסה הנוכחית מה-meta tag
  */
 function getCurrentVersion(): string {
+  if (typeof document === 'undefined') return CURRENT_VERSION;
   const metaTag = document.querySelector('meta[name="app-version"]');
   return metaTag?.getAttribute('content') || CURRENT_VERSION;
 }
@@ -18,6 +19,7 @@ function getCurrentVersion(): string {
  * קריאת ה-timestamp של ה-build הנוכחי
  */
 function getCurrentBuildTimestamp(): string | null {
+  if (typeof document === 'undefined') return null;
   const metaTag = document.querySelector('meta[name="build-timestamp"]');
   return metaTag?.getAttribute('content');
 }
@@ -170,6 +172,12 @@ async function clearBrowserCache() {
  * מאתחל את בודק הגרסאות
  */
 export function initVersionChecker() {
+  // Only run on web platform
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    console.log('Version checker: Not running on web platform');
+    return;
+  }
+
   console.log(`KC App Version: ${getCurrentVersion()}`);
   console.log(`Build Timestamp: ${getCurrentBuildTimestamp()}`);
 

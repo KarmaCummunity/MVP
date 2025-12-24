@@ -117,40 +117,73 @@ function AppContent() {
 
         // Initialize web mode store (reads from localStorage synchronously on creation)
         if (Platform.OS === 'web') {
-          const { useWebModeStore } = await import('./stores/webModeStore');
-          useWebModeStore.getState().initialize();
-          
-          // Initialize version checker for web only
-          const { initVersionChecker } = await import('./utils/versionChecker');
-          initVersionChecker();
-          logger.info('App', 'Version checker initialized');
+          try {
+            logger.info('App', 'Importing web mode store');
+            const { useWebModeStore } = await import('./stores/webModeStore');
+            logger.info('App', 'Web mode store imported, initializing');
+            useWebModeStore.getState().initialize();
+            logger.info('App', 'Web mode store initialized');
+            
+            // Initialize version checker for web only (non-critical, can fail)
+            try {
+              logger.info('App', 'Importing version checker');
+              const { initVersionChecker } = await import('./utils/versionChecker');
+              initVersionChecker();
+              logger.info('App', 'Version checker initialized');
+            } catch (versionError) {
+              logger.warn('App', 'Version checker failed to initialize (non-critical)', { error: versionError });
+              // Continue - version checker is not critical for app functionality
+            }
+          } catch (webError) {
+            logger.error('App', 'Error initializing web mode store', { error: webError });
+            throw webError;
+          }
         }
 
         // Initialize user store
-        const { useUserStore } = await import('./stores/userStore');
-        await useUserStore.getState().initialize();
+        try {
+          logger.info('App', 'Importing user store');
+          const { useUserStore } = await import('./stores/userStore');
+          logger.info('App', 'User store imported, calling initialize');
+          await useUserStore.getState().initialize();
+          logger.info('App', 'User store initialized');
+        } catch (userStoreError) {
+          logger.error('App', 'Error initializing user store', { error: userStoreError });
+          throw userStoreError;
+        }
 
         logger.info('App', 'Zustand stores initialized');
 
         // Load navigation state after stores are ready
-        const { useWebModeStore } = await import('./stores/webModeStore');
-        const mode = useWebModeStore.getState().mode;
-        const userId = useUserStore.getState().selectedUser?.id || null;
+        try {
+          const { useWebModeStore } = await import('./stores/webModeStore');
+          const { useUserStore } = await import('./stores/userStore');
+          const mode = useWebModeStore.getState().mode;
+          const userId = useUserStore.getState().selectedUser?.id || null;
 
-        const savedState = await loadNavigationState(mode, userId);
-        if (savedState) {
-          setInitialNavigationState(savedState);
-          logger.info('App', 'Navigation state loaded successfully', {
-            mode,
-            hasUserId: !!userId,
-            routeNames: savedState.routes?.map((r: any) => r.name) || []
-          });
-        } else {
-          logger.info('App', 'No saved navigation state found', { mode, hasUserId: !!userId });
+          logger.info('App', 'Loading navigation state', { mode, userId });
+          const savedState = await loadNavigationState(mode, userId);
+          if (savedState) {
+            setInitialNavigationState(savedState);
+            logger.info('App', 'Navigation state loaded successfully', {
+              mode,
+              hasUserId: !!userId,
+              routeNames: savedState.routes?.map((r: any) => r.name) || []
+            });
+          } else {
+            logger.info('App', 'No saved navigation state found', { mode, hasUserId: !!userId });
+          }
+        } catch (navError) {
+          logger.warn('App', 'Error loading navigation state, continuing anyway', { error: navError });
         }
+        
         setIsNavigationStateLoaded(true);
       } catch (error) {
-        logger.error('App', 'Failed to initialize stores or load navigation state', { error });
+        logger.error('App', 'Failed to initialize stores or load navigation state', { 
+          error,
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        });
         setIsNavigationStateLoaded(true); // Continue even if loading fails
       }
     };

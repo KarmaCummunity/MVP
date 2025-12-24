@@ -8,6 +8,9 @@ import { getStorage, FirebaseStorage } from 'firebase/storage';
 const extra = (Constants?.expoConfig as any)?.extra || (Constants as any)?.manifest?.extra || {};
 const mode = (extra?.mode as string) || (process.env.NODE_ENV === 'production' ? 'prod' : 'dev');
 const extraFb = (extra?.firebase?.[mode]) || {};
+
+console.log('🔥 Firebase config - loading from:', { mode, hasExtra: !!extra, hasExtraFb: !!extraFb });
+
 const firebaseConfig: Record<string, string | undefined> = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || extra.EXPO_PUBLIC_FIREBASE_API_KEY || extraFb.EXPO_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || extra.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || extraFb.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -17,9 +20,17 @@ const firebaseConfig: Record<string, string | undefined> = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || extra.EXPO_PUBLIC_FIREBASE_APP_ID || extraFb.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-if (process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID) {
-  firebaseConfig.measurementId = process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID;
+const measurementId = process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID || extra.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID || extraFb.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID;
+if (measurementId) {
+  firebaseConfig.measurementId = measurementId;
 }
+
+console.log('🔥 Firebase config loaded:', { 
+  hasApiKey: !!firebaseConfig.apiKey, 
+  hasProjectId: !!firebaseConfig.projectId, 
+  hasAppId: !!firebaseConfig.appId,
+  projectId: firebaseConfig.projectId 
+});
 
 let app: FirebaseApp;
 let db: Firestore;

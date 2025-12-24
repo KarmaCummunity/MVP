@@ -73,8 +73,12 @@ const computeRole = (user: User | null, mode: AuthMode): Role => {
 
 const enrichUserWithOrgRoles = async (user: User): Promise<User> => {
   try {
+    console.log('🔐 enrichUserWithOrgRoles - Starting enrichment for:', user.email);
     const emailKey = (user.email || '').toLowerCase();
-    if (!emailKey) return user;
+    if (!emailKey) {
+      console.log('🔐 enrichUserWithOrgRoles - No email, returning user as-is');
+      return user;
+    }
 
     // Super admin email - hardcoded ONLY for the main system admin
     // DO NOT add other emails here - use database roles instead
@@ -86,19 +90,32 @@ const enrichUserWithOrgRoles = async (user: User): Promise<User> => {
     let dbRoles: string[] = [];
 
     try {
-      const response = await apiService.getUserById(user.id);
+      console.log('🔐 enrichUserWithOrgRoles - Fetching user from DB with timeout');
+      
+      // Add timeout to prevent hanging
+      const getUserWithTimeout = Promise.race([
+        apiService.getUserById(user.id),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout fetching user data')), 5000)
+        )
+      ]);
+
+      const response = await getUserWithTimeout as any;
       if (response.success && response.data) {
         dbRoles = response.data.roles || [];
+        console.log('🔐 enrichUserWithOrgRoles - Fetched roles from DB:', dbRoles);
       }
     } catch (err) {
-      console.log('🔐 enrichUserWithOrgRoles - Could not fetch user from DB, using existing roles');
+      console.log('🔐 enrichUserWithOrgRoles - Could not fetch user from DB, using existing roles:', err);
       dbRoles = user.roles || [];
     }
 
     // Check for approved org applications
+    console.log('🔐 enrichUserWithOrgRoles - Checking org applications');
     const { db } = await import('../utils/databaseService');
     const applications = await db.listOrgApplications(emailKey);
     const approved = (applications as any[]).find((a) => a.status === 'approved');
+    console.log('🔐 enrichUserWithOrgRoles - Found approved org:', !!approved);
 
     // Build final roles list
     let finalRoles = [...dbRoles];
@@ -116,6 +133,7 @@ const enrichUserWithOrgRoles = async (user: User): Promise<User> => {
     // Remove duplicates
     finalRoles = Array.from(new Set(finalRoles));
 
+    console.log('🔐 enrichUserWithOrgRoles - Final roles:', finalRoles);
     return {
       ...user,
       roles: finalRoles,
@@ -224,8 +242,18 @@ export const useUserStore = create<UserState>((set, get) => ({
           if (parsedUserData && parsedUserData.id && parsedUserData.email) {
             console.log('🔐 userStore - checkAuthStatus - Setting authenticated user from OAuth');
 
-            // Enrich user with org roles if applicable
-            const enrichedUser = await enrichUserWithOrgRoles(parsedUserData);
+            // Enrich user with org roles if applicable (with timeout)
+            const enrichWithTimeout = Promise.race([
+              enrichUserWithOrgRoles(parsedUserData),
+              new Promise<User>((resolve) => 
+                setTimeout(() => {
+                  console.warn('🔐 userStore - Enrichment timed out, using basic user data');
+                  resolve(parsedUserData);
+                }, 8000)
+              )
+            ]);
+
+            const enrichedUser = await enrichWithTimeout;
 
             set({
               selectedUser: enrichedUser,
@@ -259,7 +287,20 @@ export const useUserStore = create<UserState>((set, get) => ({
           const parsedUser = JSON.parse(persistedUser);
           if (parsedUser && parsedUser.id) {
             console.log('🔐 userStore - checkAuthStatus - Restoring persisted user session');
-            const enrichedUser = await enrichUserWithOrgRoles(parsedUser);
+            
+            // Enrich user with org roles if applicable (with timeout)
+            const enrichWithTimeout = Promise.race([
+              enrichUserWithOrgRoles(parsedUser),
+              new Promise<User>((resolve) => 
+                setTimeout(() => {
+                  console.warn('🔐 userStore - Enrichment timed out, using basic user data');
+                  resolve(parsedUser);
+                }, 8000)
+              )
+            ]);
+
+            const enrichedUser = await enrichWithTimeout;
+            
             set({
               selectedUser: enrichedUser,
               isAuthenticated: true,
@@ -440,19 +481,27 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   initialize: async () => {
-    console.log('🔐 userStore - initialize - Starting initialization');
-
-    // Check auth status
-    await get().checkAuthStatus();
-
-    // Mark as initialized after checkAuthStatus completes
-    set({ isInitialized: true });
-
-    // Setup Firebase Auth State Listener
-    console.log('🔥 userStore - Setting up Firebase Auth listener');
     try {
-      const { app } = getFirebase();
-      const auth = getAuth(app);
+      console.log('🔐 userStore - initialize - Starting initialization');
+
+      // Check auth status
+      await get().checkAuthStatus();
+
+      // Mark as initialized after checkAuthStatus completes
+      set({ isInitialized: true });
+
+      // Setup Firebase Auth State Listener
+      console.log('🔥 userStore - Setting up Firebase Auth listener');
+      try {
+        console.log('🔥 userStore - Getting Firebase instance');
+        const firebase = getFirebase();
+        if (!firebase || !firebase.app) {
+          console.warn('🔥 userStore - Firebase not available, skipping Auth listener setup');
+          return;
+        }
+        const { app } = firebase;
+        console.log('🔥 userStore - Getting Auth instance');
+        const auth = getAuth(app);
 
       onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
         const state = get();
@@ -616,6 +665,18 @@ export const useUserStore = create<UserState>((set, get) => ({
       console.log('🔥 Firebase Auth listener set up successfully');
     } catch (error) {
       console.error('🔥 Error setting up Firebase Auth listener:', error);
+    }
+    } catch (error) {
+      console.error('🔐 userStore - initialize - Critical error during initialization:', error);
+      // Ensure we still mark as initialized and set a safe state
+      set({ 
+        isInitialized: true,
+        isLoading: false,
+        isAuthenticated: false,
+        isGuestMode: false,
+        selectedUser: null,
+        authMode: 'guest',
+      });
     }
   },
 }));
