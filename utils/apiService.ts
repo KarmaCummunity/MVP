@@ -30,9 +30,19 @@ class ApiService {
   private _baseURL: string | null = null;
 
   private get baseURL(): string {
+    // Try environment variables first (highest priority - for local development)
+    if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_BASE_URL) {
+      return process.env.EXPO_PUBLIC_API_BASE_URL;
+    }
+    
     // For web, detect environment from domain at runtime
     if (typeof window !== 'undefined' && window.location) {
       const hostname = window.location.hostname;
+      
+      // If on localhost, use local server
+      if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
+        return 'http://localhost:3001';
+      }
       
       // If on dev domain, use dev server
       if (hostname.includes('dev.')) {
@@ -230,9 +240,11 @@ class ApiService {
   }
 
   async setManager(userId: string, managerId: string | null, requestingUserId?: string): Promise<ApiResponse> {
+    const body = { managerId, requestingUserId };
+    console.log(`[apiService.setManager] Sending request: userId=${userId}, managerId=${managerId} (type: ${typeof managerId}), body:`, JSON.stringify(body));
     return this.request(`/api/users/${userId}/set-manager`, {
       method: 'POST',
-      body: JSON.stringify({ managerId, requestingUserId }),
+      body: JSON.stringify(body),
     });
   }
 
@@ -310,11 +322,16 @@ class ApiService {
     search?: string;
     limit?: number;
     offset?: number;
+    forceRefresh?: boolean;
   } = {}): Promise<ApiResponse> {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        params.append(key, value.toString());
+        if (key === 'forceRefresh' && value === true) {
+          params.append(key, 'true');
+        } else if (key !== 'forceRefresh') {
+          params.append(key, value.toString());
+        }
       }
     });
 

@@ -53,7 +53,7 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
         loadUsers();
     }, [searchQuery, selectedUser?.id]);
 
-    const loadUsers = async () => {
+    const loadUsers = async (forceRefresh: boolean = false) => {
         if (!selectedUser?.id) {
             console.log('[AdminAdminsScreen] No selectedUser.id, skipping load');
             return;
@@ -65,9 +65,24 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
             if (searchQuery.trim()) {
                 filters.search = searchQuery.trim();
             }
-
+            
+            // Force refresh after admin operations to ensure fresh data
+            if (forceRefresh) {
+                filters.forceRefresh = true;
+                console.log('[AdminAdminsScreen] 🔄 FORCE REFRESH - Loading users with filters:', filters);
+            } else {
+                console.log('[AdminAdminsScreen] 🔄 Loading users with filters:', filters);
+            }
+            
             // Load all users for display
             const response = await apiService.getUsers(filters);
+            
+            console.log('[AdminAdminsScreen] 📡 Response from getUsers:', {
+                success: response.success,
+                dataLength: response.data?.length,
+                error: response.error
+            });
+            
             if (response.success && Array.isArray(response.data)) {
                 // Keep only other users (not current user)
                 const otherUsers = response.data.filter((u: any) => u.email !== selectedUser?.email);
@@ -80,11 +95,19 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                 });
                 setAllManagers(managers);
                 
-                console.log(`[AdminAdminsScreen] Loaded ${otherUsers.length} users, ${managers.length} managers`);
+                console.log(`[AdminAdminsScreen] ✅ Loaded ${otherUsers.length} users, ${managers.length} managers`);
+                console.log(`[AdminAdminsScreen] 📊 Sample user data:`, otherUsers.slice(0, 2).map(u => ({
+                    id: u.id,
+                    name: u.name,
+                    email: u.email,
+                    roles: u.roles,
+                    parent_manager_id: u.parent_manager_id,
+                    manager_details: u.manager_details
+                })));
             } else {
                 setUsersList([]);
                 setAllManagers([]);
-                console.log('[AdminAdminsScreen] Failed to load users:', response.error);
+                console.log('[AdminAdminsScreen] ❌ Failed to load users:', response.error);
             }
 
             // Load eligible users for promotion (to know who can be promoted)
@@ -104,40 +127,81 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
         }
     };
 
-    // Check if current user is super admin
-    const isCurrentUserSuperAdmin = selectedUser?.email === 'navesarussi@gmail.com';
+    // Check if current user is super admin - based on roles, not email
+    const currentUserRoles = selectedUser?.roles || [];
+    const isCurrentUserSuperAdmin = currentUserRoles.includes('super_admin') || 
+                                     currentUserRoles.includes('admin');
+    
+    console.log('[AdminAdminsScreen] 🔐 Current user check:', {
+        userId: selectedUser?.id,
+        email: selectedUser?.email,
+        roles: selectedUser?.roles,
+        isAdmin: isCurrentUserSuperAdmin
+    });
 
     // Check if a user can be promoted by current admin
     const canPromote = (user: any): boolean => {
-        // Super admin can promote anyone
+        // Admin/super_admin can promote users who are not already admins
         if (isCurrentUserSuperAdmin) {
-            const targetIsAlreadyAdmin = (user.roles || []).includes('admin') || (user.roles || []).includes('super_admin');
-            const targetIsSuperAdmin = user.email === 'navesarussi@gmail.com';
-            return !targetIsSuperAdmin && !targetIsAlreadyAdmin;
+            const targetRoles = user.roles || [];
+            const targetIsAlreadyAdmin = targetRoles.includes('admin') || targetRoles.includes('super_admin');
+            const canPromoteUser = !targetIsAlreadyAdmin;
+            
+            console.log('[AdminAdminsScreen] 🔍 canPromote check:', {
+                targetId: user.id,
+                targetEmail: user.email,
+                targetRoles: user.roles,
+                targetIsAlreadyAdmin,
+                canPromoteUser
+            });
+            
+            return canPromoteUser;
         }
         // Regular admins - check eligible list from server
-        return eligibleUsers.some(e => e.id === user.id);
+        const isEligible = eligibleUsers.some(e => e.id === user.id);
+        console.log('[AdminAdminsScreen] 🔍 canPromote (regular admin):', {
+            targetId: user.id,
+            targetEmail: user.email,
+            isEligible,
+            eligibleCount: eligibleUsers.length
+        });
+        return isEligible;
     };
 
     // Check if current admin can demote a user
     // We simplify this - let the server do the full validation
     // Just check basic conditions on client side
     const canDemote = (user: any): boolean => {
-        // Super admin can demote anyone except themselves
-        if (isCurrentUserSuperAdmin) return true;
+        const isSameUser = user.id === selectedUser?.id;
+        
+        // Cannot demote yourself
+        if (isSameUser) {
+            console.log('[AdminAdminsScreen] 🔍 canDemote: false (cannot demote yourself)');
+            return false;
+        }
+        
+        // Admin/super_admin can demote admins
+        if (isCurrentUserSuperAdmin) {
+            console.log('[AdminAdminsScreen] 🔍 canDemote (admin):', {
+                targetId: user.id,
+                targetEmail: user.email,
+                canDemote: true
+            });
+            return true;
+        }
         
         // For regular admins - check if user is in their subordinate tree
-        // We use a simple heuristic: if user's parent_manager_id matches current admin
-        // OR if the user was originally promoted by this admin (check eligibleUsers as proxy)
         // Let the server do the full tree validation
         const isDirectSubordinate = user.parent_manager_id === selectedUser?.id;
         
-        // If user is a direct subordinate, definitely can demote
-        if (isDirectSubordinate) return true;
+        console.log('[AdminAdminsScreen] 🔍 canDemote (checking hierarchy):', {
+            targetId: user.id,
+            isDirectSubordinate,
+            allowForServerValidation: true
+        });
         
-        // For indirect subordinates, let the server validate
-        // But show button as enabled if user is an admin (server will validate)
-        return true; // Let server validate hierarchy
+        // Let server validate hierarchy - show button as enabled
+        return true;
     };
 
     const handleToggleAdmin = async (user: any) => {
@@ -166,6 +230,13 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                 text: 'אישור',
                 style: isAdmin ? 'destructive' : 'default',
                 onPress: async () => {
+                    console.log(`[AdminAdminsScreen] ${isAdmin ? 'Demoting' : 'Promoting'} user:`, {
+                        userId: user.id,
+                        userName: user.name,
+                        currentRoles: user.roles,
+                        requestingAdminId: selectedUser.id
+                    });
+                    
                     let res;
                     if (isAdmin) {
                         // Demote admin
@@ -175,11 +246,15 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                         res = await apiService.promoteToAdmin(user.id, selectedUser.id);
                     }
                     
+                    console.log(`[AdminAdminsScreen] 📡 ${isAdmin ? 'Demote' : 'Promote'} response:`, res);
+                    
                     if (res.success) {
                         Alert.alert('הצלחה', res.message || 'העדכון בוצע בהצלחה');
-                        loadUsers();
+                        console.log('[AdminAdminsScreen] ✅ Operation successful, reloading users with force refresh...');
+                        await loadUsers(true); // Force refresh to bypass cache
                     } else {
                         Alert.alert('שגיאה', res.error || 'נכשל בעדכון');
+                        console.log('[AdminAdminsScreen] ❌ Operation failed:', res.error);
                     }
                 }
             }
@@ -207,21 +282,66 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
 
         try {
             const managerId = newManager ? newManager.id : null;
-            console.log(`[AdminAdminsScreen] Setting manager: userId=${selectedForManager.id}, managerId=${managerId}, requestedBy=${selectedUser?.id}`);
+            console.log(`[AdminAdminsScreen] 📝 Setting manager:`, {
+                userId: selectedForManager.id,
+                userName: selectedForManager.name,
+                currentManagerId: selectedForManager.parent_manager_id,
+                newManagerId: managerId,
+                newManagerName: newManager?.name,
+                requestedBy: selectedUser?.id
+            });
+            
             const res = await apiService.setManager(selectedForManager.id, managerId, selectedUser?.id);
+            
+            console.log('[AdminAdminsScreen] 📡 setManager response:', res);
+            
             if (res.success) {
                 Alert.alert('הצלחה', managerId ? 'מנהל עודכן בהצלחה' : 'שיוך מנהל הוסר בהצלחה');
                 setShowManagerModal(false);
-                loadUsers();
+                console.log('[AdminAdminsScreen] ✅ Manager updated successfully, reloading users with force refresh...');
+                await loadUsers(true); // Force refresh to bypass cache
             } else {
                 Alert.alert('שגיאה', res.error || 'נכשל בעדכון מנהל');
+                console.log('[AdminAdminsScreen] ❌ Failed to update manager:', res.error);
             }
         } catch (e) {
-            console.error('[AdminAdminsScreen] Error saving manager:', e);
+            console.error('[AdminAdminsScreen] ❌ Error saving manager:', e);
             Alert.alert('שגיאה', 'אירעה שגיאה');
         }
     };
     
+    // Direct remove function (without confirmation - used from modal button)
+    const performRemoveManager = async () => {
+        if (!selectedForManager) {
+            console.log('[AdminAdminsScreen] performRemoveManager called but no selectedForManager');
+            return;
+        }
+        
+        try {
+            console.log(`[AdminAdminsScreen] ⏳ Starting to remove manager for userId=${selectedForManager.id}, requestedBy=${selectedUser?.id}`);
+            setIsRemovingManager(true);
+            
+            const res = await apiService.setManager(selectedForManager.id, null, selectedUser?.id);
+            
+            console.log(`[AdminAdminsScreen] 📡 Response from setManager:`, res);
+            
+            if (res.success) {
+                Alert.alert('הצלחה', 'שיוך מנהל הוסר בהצלחה');
+                setShowManagerModal(false);
+                console.log('[AdminAdminsScreen] ✅ Manager removed successfully, reloading users with force refresh...');
+                await loadUsers(true); // Force refresh to bypass cache
+            } else {
+                Alert.alert('שגיאה', res.error || 'נכשל בהסרת שיוך מנהל');
+            }
+        } catch (e) {
+            console.error('[AdminAdminsScreen] ❌ Error removing manager:', e);
+            Alert.alert('שגיאה', 'אירעה שגיאה בהסרת שיוך מנהל');
+        } finally {
+            setIsRemovingManager(false);
+        }
+    };
+
+    // Remove manager with confirmation (used from outside modal)
     const removeManager = async () => {
         if (!selectedForManager) {
             console.log('[AdminAdminsScreen] removeManager called but no selectedForManager');
@@ -229,41 +349,27 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
         }
         
         console.log('[AdminAdminsScreen] removeManager called for:', selectedForManager.name || selectedForManager.email);
+        console.log('[AdminAdminsScreen] selectedForManager.id:', selectedForManager.id);
+        console.log('[AdminAdminsScreen] selectedUser?.id:', selectedUser?.id);
         
-        Alert.alert(
-            'הסרת שיוך מנהל',
-            `האם להסיר את שיוך המנהל מ-${selectedForManager.name || selectedForManager.email}?`,
-            [
-                { text: 'ביטול', style: 'cancel' },
-                {
-                    text: 'הסר',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            setIsRemovingManager(true);
-                            console.log(`[AdminAdminsScreen] ⏳ Starting to remove manager for userId=${selectedForManager.id}, requestedBy=${selectedUser?.id}`);
-                            
-                            const res = await apiService.setManager(selectedForManager.id, null, selectedUser?.id);
-                            
-                            console.log(`[AdminAdminsScreen] 📡 Response from setManager:`, res);
-                            
-                            if (res.success) {
-                                Alert.alert('הצלחה', 'שיוך מנהל הוסר בהצלחה');
-                                setShowManagerModal(false);
-                                await loadUsers();
-                            } else {
-                                Alert.alert('שגיאה', res.error || 'נכשל בהסרת שיוך מנהל');
-                            }
-                        } catch (e) {
-                            console.error('[AdminAdminsScreen] ❌ Error removing manager:', e);
-                            Alert.alert('שגיאה', 'אירעה שגיאה בהסרת שיוך מנהל');
-                        } finally {
-                            setIsRemovingManager(false);
-                        }
+        if (Platform.OS === 'web') {
+            if (typeof window !== 'undefined' && window.confirm(`האם להסיר את שיוך המנהל מ-${selectedForManager.name || selectedForManager.email}?`)) {
+                await performRemoveManager();
+            }
+        } else {
+            Alert.alert(
+                'הסרת שיוך מנהל',
+                `האם להסיר את שיוך המנהל מ-${selectedForManager.name || selectedForManager.email}?`,
+                [
+                    { text: 'ביטול', style: 'cancel' },
+                    {
+                        text: 'הסר',
+                        style: 'destructive',
+                        onPress: performRemoveManager
                     }
-                }
-            ]
-        );
+                ]
+            );
+        }
     };
     
     // Get managers that can be assigned (exclude the user themselves and create cycle prevention)
@@ -326,16 +432,28 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                 removeClippedSubviews={Platform.OS !== 'web'}
                 style={styles.flatList}
                 renderItem={({ item: user }) => {
-                    const isAdmin = (user.roles || []).includes('admin') || (user.roles || []).includes('super_admin');
-                    const isSuperAdmin = user.email === 'navesarussi@gmail.com';
+                    const userRoles = user.roles || [];
+                    const isAdmin = userRoles.includes('admin') || userRoles.includes('super_admin');
+                    const isSameUser = user.id === selectedUser?.id;
                     const userCanBePromoted = canPromote(user);
                     const userCanBeDemoted = canDemote(user);
-                    const isActionDisabled = isSuperAdmin || (isAdmin ? !userCanBeDemoted : !userCanBePromoted);
+                    const isActionDisabled = isSameUser || (isAdmin ? !userCanBeDemoted : !userCanBePromoted);
+                    
+                    console.log('[AdminAdminsScreen] 📋 Render user:', {
+                        userId: user.id,
+                        email: user.email,
+                        roles: user.roles,
+                        isAdmin,
+                        isSameUser,
+                        userCanBePromoted,
+                        userCanBeDemoted,
+                        isActionDisabled
+                    });
                     
                     // Determine button text and reason for disabled state
                     let buttonText = isAdmin ? 'הסר ניהול' : 'הפוך למנהל';
-                    if (isSuperAdmin) {
-                        buttonText = 'ראשי';
+                    if (isSameUser) {
+                        buttonText = 'את עצמך';
                     } else if (isAdmin && !userCanBeDemoted) {
                         buttonText = 'מנהל (לא שלך)';
                     } else if (!isAdmin && !userCanBePromoted) {
@@ -402,8 +520,12 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                                 <Text style={styles.currentManagerName}>{selectedForManager.manager_details.name}</Text>
                                 <TouchableOpacity 
                                     style={[styles.removeManagerBtn, isRemovingManager && { opacity: 0.5 }]}
-                                    onPress={removeManager}
+                                    onPress={() => {
+                                        console.log('[AdminAdminsScreen] Remove manager button pressed in modal');
+                                        performRemoveManager();
+                                    }}
                                     disabled={isRemovingManager}
+                                    activeOpacity={0.7}
                                 >
                                     {isRemovingManager ? (
                                         <ActivityIndicator size="small" color={colors.error} />
