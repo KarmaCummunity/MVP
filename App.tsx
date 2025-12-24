@@ -119,6 +119,11 @@ function AppContent() {
         if (Platform.OS === 'web') {
           const { useWebModeStore } = await import('./stores/webModeStore');
           useWebModeStore.getState().initialize();
+          
+          // Initialize version checker for web only
+          const { initVersionChecker } = await import('./utils/versionChecker');
+          initVersionChecker();
+          logger.info('App', 'Version checker initialized');
         }
 
         // Initialize user store

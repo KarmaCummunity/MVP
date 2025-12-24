@@ -49,5 +49,7 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
-} 
+  ],
+  "version": "2.4.0",
+  "build_timestamp": 1766535206
+}

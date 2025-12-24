@@ -1,3 +1,7 @@
+// Read version from package.json
+const packageJson = require('./package.json');
+const APP_VERSION = packageJson.version;
+
 // Environment detection
 const ENVIRONMENT = process.env.EXPO_PUBLIC_ENVIRONMENT || 'production';
 const IS_DEV = ENVIRONMENT === 'development';
@@ -20,7 +24,7 @@ export default {
   expo: {
     name: IS_DEV ? "KC - DEV 🟢" : "KC - הקיבוץ הקפיטליסטי",
     slug: "karma-community",
-    version: "1.9.5",
+    version: APP_VERSION,
     orientation: "portrait",
     icon: "./assets/images/לוגו_חדש_שחור.png",
     scheme: "karma-community",

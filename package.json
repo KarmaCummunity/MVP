@@ -1,7 +1,7 @@
 {
   "name": "KarmaCommunity",
   "license": "0BSD",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "main": "index.js",
   "_TODO_DEPENDENCIES": "// TODO: Audit all dependencies - remove unused packages and update outdated ones",
   "_TODO_SECURITY": "// TODO: Add security audit script and dependency vulnerability checking",
@@ -13,7 +13,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
+    "prebuild:web": "bash scripts/update-build-version.sh",
     "build:web": "EXPO_PUBLIC_API_BASE_URL=https://kc-mvp-server-production.up.railway.app expo export --platform web",
+    "postbuild:web": "bash scripts/restore-build-placeholders.sh",
     "build:web:local": "EXPO_PUBLIC_API_BASE_URL=http://localhost:3001 expo export:web",
     "_TODO_ADD_SCRIPTS": "// TODO: Add missing scripts: test, lint, type-check, format, security-audit, bundle-analyze"
   },
