@@ -6,10 +6,33 @@
 import { API_BASE_URL } from './config.constants';
 
 export class RestAdapter {
-  private baseUrl: string;
+  private _baseUrl: string | null = null;
 
-  constructor(baseUrl: string = API_BASE_URL) {
-    this.baseUrl = baseUrl.replace(/\/$/, '');
+  constructor(baseUrl?: string) {
+    this._baseUrl = baseUrl || null;
+  }
+  
+  private get baseUrl(): string {
+    // If baseUrl was provided in constructor, use it
+    if (this._baseUrl !== null) {
+      return this._baseUrl.replace(/\/$/, '');
+    }
+    
+    // For web, detect environment from domain at runtime
+    if (typeof window !== 'undefined' && window.location) {
+      const hostname = window.location.hostname;
+      
+      // If on dev domain, use dev server
+      if (hostname.includes('dev.')) {
+        return 'https://kc-mvp-server-development.up.railway.app';
+      }
+      
+      // Otherwise use production server
+      return 'https://kc-mvp-server-production.up.railway.app';
+    }
+    
+    // Fallback to config constant
+    return API_BASE_URL.replace(/\/$/, '');
   }
 
   async post<T>(path: string, body?: any): Promise<T> {

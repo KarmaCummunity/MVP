@@ -30,8 +30,21 @@ class ApiService {
   private _baseURL: string | null = null;
 
   private get baseURL(): string {
+    // For web, detect environment from domain at runtime
+    if (typeof window !== 'undefined' && window.location) {
+      const hostname = window.location.hostname;
+      
+      // If on dev domain, use dev server
+      if (hostname.includes('dev.')) {
+        return 'https://kc-mvp-server-development.up.railway.app';
+      }
+      
+      // Otherwise use production server
+      return 'https://kc-mvp-server-production.up.railway.app';
+    }
+    
+    // For native apps, use lazy initialization
     if (this._baseURL === null) {
-      // Lazy initialization to avoid circular dependency issues
       this._baseURL = CONFIG_API_BASE_URL;
     }
     return this._baseURL;

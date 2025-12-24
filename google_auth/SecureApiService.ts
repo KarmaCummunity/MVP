@@ -199,7 +199,7 @@ class SecureApiService {
   // ========================================
   
   /** Base URL for all API requests */
-  private readonly baseUrl: string;
+  private _baseUrl: string | null = null;
   
   /** Request counter for tracking and logging */
   private requestCounter: number = 0;
@@ -216,11 +216,37 @@ class SecureApiService {
    * @param baseUrl Override default API base URL
    */
   constructor(baseUrl?: string) {
-    this.baseUrl = baseUrl || API_BASE_URL;
+    this._baseUrl = baseUrl || null;
     
     logger.info('SecureApiService', 'Secure API service initialized', {
       baseUrl: this.baseUrl
     });
+  }
+  
+  /**
+   * Get base URL with runtime environment detection for web
+   */
+  private get baseUrl(): string {
+    // If baseUrl was provided in constructor, use it
+    if (this._baseUrl !== null) {
+      return this._baseUrl;
+    }
+    
+    // For web, detect environment from domain at runtime
+    if (typeof window !== 'undefined' && window.location) {
+      const hostname = window.location.hostname;
+      
+      // If on dev domain, use dev server
+      if (hostname.includes('dev.')) {
+        return 'https://kc-mvp-server-development.up.railway.app';
+      }
+      
+      // Otherwise use production server
+      return 'https://kc-mvp-server-production.up.railway.app';
+    }
+    
+    // Fallback to config constant
+    return API_BASE_URL;
   }
 
   // ========================================
