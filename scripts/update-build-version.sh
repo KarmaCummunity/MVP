@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Update build timestamp in index.html for cache busting
 
 set -e
@@ -13,14 +13,9 @@ echo "Updating build version: $VERSION (timestamp: $TIMESTAMP)"
 
 # Update web/index.html template
 if [ -f "web/index.html" ]; then
-  # For macOS compatibility, use different sed syntax
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/__BUILD_TIMESTAMP__/${TIMESTAMP}/g" "web/index.html"
-    sed -i '' "s/__APP_VERSION__/${VERSION}/g" "web/index.html"
-  else
-    sed -i "s/__BUILD_TIMESTAMP__/${TIMESTAMP}/g" "web/index.html"
-    sed -i "s/__APP_VERSION__/${VERSION}/g" "web/index.html"
-  fi
+  # Alpine Linux uses BusyBox sed (no -i with backup)
+  sed -i "s/__BUILD_TIMESTAMP__/${TIMESTAMP}/g" "web/index.html"
+  sed -i "s/__APP_VERSION__/${VERSION}/g" "web/index.html"
   echo "✓ Updated web/index.html"
 fi
 

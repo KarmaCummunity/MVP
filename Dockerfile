@@ -20,13 +20,13 @@ ENV EXPO_NO_TELEMETRY=1 \
     EXPO_PUBLIC_USE_FIRESTORE=${EXPO_PUBLIC_USE_FIRESTORE}
 
 # Update build version before export
-RUN chmod +x scripts/update-build-version.sh && bash scripts/update-build-version.sh
+RUN chmod +x scripts/update-build-version.sh && sh scripts/update-build-version.sh
 
 # Run Expo export
 RUN npx --yes expo@latest export --platform web || npx expo export --platform web
 
 # Restore placeholders (not critical if fails, so we don't fail build)
-RUN chmod +x scripts/restore-build-placeholders.sh && bash scripts/restore-build-placeholders.sh || true
+RUN chmod +x scripts/restore-build-placeholders.sh && sh scripts/restore-build-placeholders.sh || true
 
 # 2) Nginx runtime to serve static files
 FROM nginx:1.25-alpine as web
