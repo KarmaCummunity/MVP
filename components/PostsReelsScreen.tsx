@@ -41,7 +41,8 @@ import { FontSizes } from '../globals/constants';
 import { apiService } from '../utils/apiService';
 import { db } from '../utils/databaseService';
 import { getCategoryLabel } from '../utils/itemCategoryUtils';
-import { getScreenInfo, BREAKPOINTS } from '../globals/responsive';
+import { getScreenInfo, BREAKPOINTS, scaleSize } from '../globals/responsive';
+import { postsService } from '../utils/postsService';
 
 const { width } = Dimensions.get('window');
 
@@ -102,6 +103,7 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
   const { t } = useTranslation(['common', 'trump', 'donations', 'quickMessage']);
   const [isLiked, setIsLiked] = useState(item.isLiked);
   const [likesCount, setLikesCount] = useState(item.likes);
+  const [commentsCount, setCommentsCount] = useState(item.comments);
   const [showComments, setShowComments] = useState(false);
   const [isBookmarkedState, setIsBookmarkedState] = useState(false);
 
@@ -177,11 +179,39 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
     }
   };
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    setLikesCount(isLiked ? likesCount - 1 : likesCount + 1);
+  const handleLike = async () => {
+    if (!selectedUser?.id) {
+      toastService.warning('יש להתחבר כדי לעשות לייק');
+      return;
+    }
 
-    logger.logUserAction('like-post', 'PostsReelsScreen', { postId: item.id, isLiked: !isLiked, userId: selectedUser?.id });
+    // Optimistic UI update
+    const newIsLiked = !isLiked;
+    const newLikesCount = newIsLiked ? likesCount + 1 : likesCount - 1;
+    setIsLiked(newIsLiked);
+    setLikesCount(newLikesCount);
+
+    logger.logUserAction('like-post', 'PostsReelsScreen', { postId: item.id, isLiked: newIsLiked, userId: selectedUser?.id });
+
+    try {
+      const response = await postsService.togglePostLike(item.id, selectedUser.id);
+      
+      if (response.success && response.data) {
+        // Sync with server response
+        setIsLiked(response.data.is_liked);
+        setLikesCount(response.data.likes_count);
+      } else {
+        // Revert on error
+        setIsLiked(!newIsLiked);
+        setLikesCount(isLiked ? likesCount : likesCount);
+        logger.error('PostsReelsScreen', 'Failed to toggle like', { error: response.error });
+      }
+    } catch (error) {
+      // Revert on error
+      setIsLiked(!newIsLiked);
+      setLikesCount(isLiked ? likesCount : likesCount);
+      logger.error('PostsReelsScreen', 'Error toggling like', { error });
+    }
   };
 
   const handleProfilePress = () => {
@@ -696,7 +726,33 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
       </View>
 
       {/* Content */}
-      {item.thumbnail ? (
+      {item.type === 'task_post' ? (
+        // Task post - special UI with icon and task info
+        <TouchableOpacity onPress={handlePostPress} activeOpacity={0.9}>
+          <View style={[
+            styles.taskPostContainer,
+            cardWidth ? { width: cardWidth } : undefined
+          ]}>
+            <View style={styles.taskIconContainer}>
+              <Ionicons 
+                name={item.subtype === 'task_assignment' ? 'add-circle' : 'checkmark-circle'} 
+                size={scaleSize(48)} 
+                color={item.subtype === 'task_assignment' ? colors.info : colors.success} 
+              />
+            </View>
+            <View style={styles.taskPostContent}>
+              <Text style={styles.taskPostType}>
+                {item.subtype === 'task_assignment' ? 'משימה חדשה' : 'משימה הושלמה'}
+              </Text>
+              {item.taskData && (
+                <Text style={styles.taskTitle} numberOfLines={2}>
+                  {item.taskData.title}
+                </Text>
+              )}
+            </View>
+          </View>
+        </TouchableOpacity>
+      ) : item.thumbnail ? (
         <TouchableOpacity onPress={handlePostPress} activeOpacity={0.9}>
           <Image
             source={{ uri: item.thumbnail }}
@@ -715,7 +771,7 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
       {/* Description */}
       <View style={styles.contentContainer}>
         <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.description}>{item.description}</Text>
+        {item.type !== 'task_post' && <Text style={styles.description}>{item.description}</Text>}
         <Text style={styles.timestamp}>{formatTimestamp(item.timestamp)}</Text>
       </View>
 
@@ -732,7 +788,7 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
 
         <TouchableOpacity style={styles.actionButton} onPress={handleComment}>
           <Ionicons name="chatbubble-outline" size={24} color={colors.textSecondary} />
-          <Text style={styles.actionText}>{item.comments}</Text>
+          <Text style={styles.actionText}>{commentsCount}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
@@ -761,6 +817,7 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
         postId={item.id}
         postTitle={item.title}
         postUser={item.user}
+        onCommentsCountChange={setCommentsCount}
       />
     </View>
   );
@@ -1773,6 +1830,43 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.body,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+
+  // Task post styles
+  taskPostContainer: {
+    width: '100%',
+    backgroundColor: colors.backgroundSecondary,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    borderRadius: 12,
+    marginVertical: 8,
+  },
+  taskIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 16,
+  },
+  taskPostContent: {
+    flex: 1,
+    alignItems: 'flex-end',
+  },
+  taskPostType: {
+    fontSize: FontSizes.small,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  taskTitle: {
+    fontSize: FontSizes.medium,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    textAlign: 'right',
   },
 
   // Removed old styles

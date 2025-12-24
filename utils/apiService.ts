@@ -108,25 +108,64 @@ class ApiService {
     return `${normalizedBase}${normalizedEndpoint}`;
   }
 
+  private async getAuthToken(): Promise<string | null> {
+    try {
+      // Try to get JWT access token from AsyncStorage first
+      const AsyncStorage = await import('@react-native-async-storage/async-storage');
+      const jwtToken = await AsyncStorage.default.getItem('jwt_access_token');
+      
+      if (jwtToken) {
+        // Check if token is expired
+        const expiresAt = await AsyncStorage.default.getItem('jwt_token_expires_at');
+        if (expiresAt && parseInt(expiresAt) > Date.now()) {
+          return jwtToken;
+        } else {
+          console.warn('JWT token expired, attempting to refresh...');
+          // TODO: Implement token refresh logic
+        }
+      }
+      
+      // Fallback: Try to get Firebase ID token
+      const { getFirebase } = await import('./firebaseClient');
+      const { getAuth } = await import('firebase/auth');
+      const { app } = getFirebase();
+      const auth = getAuth(app);
+      const user = auth.currentUser;
+      
+      if (user) {
+        const token = await user.getIdToken();
+        return token;
+      }
+    } catch (error) {
+      console.warn('Failed to get auth token:', error);
+    }
+    
+    return null;
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     // TODO: Add request timeout configuration
-    // TODO: Add authentication token to headers automatically
     // TODO: Add request ID for tracing and debugging
     // TODO: Add retry logic for failed requests
     try {
       const url = this.buildUrl(endpoint);
+      
+      // Get authentication token
+      const authToken = await this.getAuthToken();
+      
       const config: RequestInit = {
         headers: {
           'Content-Type': 'application/json',
+          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
           ...options.headers,
         },
         ...options,
       };
 
-      console.log(`🌐 API Request: ${config.method || 'GET'} ${url}`);
+      console.log(`🌐 API Request: ${config.method || 'GET'} ${url}`, authToken ? '(authenticated)' : '(no auth)');
 
       const response = await fetch(url, config);
       const data = await response.json();

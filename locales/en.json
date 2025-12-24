@@ -6,6 +6,7 @@
     "notificationsList": "Notifications list",
     "cancel": "Cancel",
     "done": "Done",
+    "delete": "Delete",
     "loading": "Loading...",
     "notFound": {
       "title": "Oops! Not found",
@@ -173,7 +174,9 @@
     "reply": "Reply",
     "placeholder": "Add a comment...",
     "loadError": "Failed to load comments",
-    "sendError": "Failed to send comment"
+    "sendError": "Failed to send comment",
+    "empty": "No comments yet",
+    "beFirst": "Be the first to comment!"
   },
   "chat": {
     "title": "Chats",

@@ -27,6 +27,7 @@ interface LandingStats {
   completedRides: number;
   recurringDonationsAmount: number;
   uniqueDonors: number;
+  completedTasks: number;
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -512,6 +513,26 @@ const StatsDetailModal: React.FC<{
           </View>
         );
 
+      case 'completedTasks':
+        return (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailItemNumber}>{index + 1}.</Text>
+            <View style={styles.detailItemContent}>
+              <Text style={styles.detailItemText}>
+                {item.title || 'משימה'}
+              </Text>
+              {item.category && (
+                <Text style={styles.detailItemSubtext}>קטגוריה: {item.category}</Text>
+              )}
+              {item.updated_at && (
+                <Text style={styles.detailItemSubtext}>
+                  הושלמה: {new Date(item.updated_at).toLocaleDateString('he-IL')}
+                </Text>
+              )}
+            </View>
+          </View>
+        );
+
       default:
         return (
           <View style={styles.detailItem}>
@@ -747,6 +768,17 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onG
             <Ionicons name="people-outline" size={isMobileWeb ? 24 : 32} color={colors.info} style={styles.statIcon} />
             <Text style={styles.statNumber}>{stats.uniqueDonors.toLocaleString('he-IL')}</Text>
             <Text style={styles.statLabel}>תורמים פעילים</Text>
+            <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.statCard, { backgroundColor: colors.success + '15', borderColor: colors.success + '40' }]}
+            onPress={() => handleStatPress('completedTasks', 'משימות שבוצעו', stats.completedTasks, 'checkmark-done-outline', colors.success)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="checkmark-done-outline" size={isMobileWeb ? 24 : 32} color={colors.success} style={styles.statIcon} />
+            <Text style={styles.statNumber}>{stats.completedTasks.toLocaleString('he-IL')}</Text>
+            <Text style={styles.statLabel}>משימות שבוצעו</Text>
             <Ionicons name="chevron-back-outline" size={isMobileWeb ? 16 : 20} color={colors.textSecondary} style={styles.statChevron} />
           </TouchableOpacity>
         </View>
@@ -1367,6 +1399,7 @@ const LandingSiteScreen: React.FC = () => {
     completedRides: 0,
     recurringDonationsAmount: 0,
     uniqueDonors: 0,
+    completedTasks: 0,
   });
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -1557,6 +1590,7 @@ const LandingSiteScreen: React.FC = () => {
         completedRides: getValue(communityStats.completedRides) || 0,
         recurringDonationsAmount: getValue(communityStats.recurringDonationsAmount) || 0,
         uniqueDonors: getValue(communityStats.uniqueDonors) || 0,
+        completedTasks: getValue(communityStats.completed_tasks) || 0,
       };
 
       logger.info('LandingSite', 'Stats loaded', statsData);

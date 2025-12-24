@@ -370,9 +370,20 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
                   </View>
                 )}
               </View>
-            ) : post.type === 'task' ? (
-              <View style={[styles.postImage, { backgroundColor: colors.primary + '20', justifyContent: 'center', alignItems: 'center' }]}>
-                <Ionicons name="checkmark-circle-outline" size={32} color={colors.primary} />
+            ) : post.type === 'task' || post.type === 'task_post' ? (
+              <View style={[styles.postImage, styles.taskPlaceholder]}>
+                <Ionicons 
+                  name={post.subtype === 'task_assignment' ? 'add-circle-outline' : 'checkmark-circle-outline'} 
+                  size={scaleSize(32)} 
+                  color={post.subtype === 'task_assignment' ? colors.info : colors.success} 
+                />
+                {(post.title || post.taskData?.title) && (
+                  <View style={styles.taskDetailsContainer}>
+                    <Text style={styles.taskDetailsText} numberOfLines={2}>
+                      {post.taskData?.title || post.title}
+                    </Text>
+                  </View>
+                )}
               </View>
             ) : post.type === 'donation' ? (
               <View style={[styles.postImage, { backgroundColor: colors.error + '20', justifyContent: 'center', alignItems: 'center' }]}>
@@ -656,9 +667,20 @@ const ClosedRoute = ({ userId }: { userId?: string }) => {
                   </View>
                 )}
               </View>
-            ) : post.type === 'task' ? (
-              <View style={[styles.postImage, { backgroundColor: colors.primary + '20', justifyContent: 'center', alignItems: 'center' }]}>
-                <Ionicons name="checkmark-circle" size={32} color={colors.primary} />
+            ) : post.type === 'task' || post.type === 'task_post' ? (
+              <View style={[styles.postImage, styles.taskPlaceholder]}>
+                <Ionicons 
+                  name={post.subtype === 'task_assignment' ? 'add-circle' : 'checkmark-circle'} 
+                  size={scaleSize(32)} 
+                  color={post.subtype === 'task_assignment' ? colors.info : colors.success} 
+                />
+                {(post.title || post.taskData?.title) && (
+                  <View style={styles.taskDetailsContainer}>
+                    <Text style={styles.taskDetailsText} numberOfLines={2}>
+                      {post.taskData?.title || post.title}
+                    </Text>
+                  </View>
+                )}
               </View>
             ) : post.type === 'donation' ? (
               <View style={[styles.postImage, { backgroundColor: colors.error + '20', justifyContent: 'center', alignItems: 'center' }]}>
@@ -2877,6 +2899,27 @@ const styles = StyleSheet.create({
   },
   rideArrow: {
     marginVertical: 3,
+  },
+  taskPlaceholder: {
+    backgroundColor: colors.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: LAYOUT_CONSTANTS.SPACING.SM,
+    borderWidth: 1,
+    borderColor: colors.primary + '30',
+  },
+  taskDetailsContainer: {
+    marginTop: LAYOUT_CONSTANTS.SPACING.XS + 2,
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 8,
+  },
+  taskDetailsText: {
+    fontSize: FontSizes.small - 1,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    textAlign: 'center',
+    maxWidth: '95%',
   },
   tabContentPlaceholder: {
     flex: 1,

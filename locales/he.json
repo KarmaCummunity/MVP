@@ -6,6 +6,7 @@
     "notificationsList": "רשימת התראות",
     "cancel": "ביטול",
     "done": "הושלם",
+    "delete": "מחק",
     "loading": "טוען...",
     "notFound": {
       "title": "אופס! לא נמצא",
@@ -173,7 +174,9 @@
     "reply": "תגובה",
     "placeholder": "הוסף תגובה...",
     "loadError": "שגיאה בטעינת התגובות",
-    "sendError": "שגיאה בשליחת התגובה"
+    "sendError": "שגיאה בשליחת התגובה",
+    "empty": "אין תגובות עדיין",
+    "beFirst": "היה הראשון להגיב!"
   },
   "chat": {
     "title": "צ׳אטים",

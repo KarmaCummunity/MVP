@@ -123,32 +123,43 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
               email: firebaseUser.email || undefined
             });
 
-            if (!resolveResponse.success || !resolveResponse.data) {
+            // Save JWT tokens if provided
+            if (resolveResponse.tokens) {
+              await AsyncStorage.setItem('jwt_access_token', resolveResponse.tokens.accessToken);
+              await AsyncStorage.setItem('jwt_refresh_token', resolveResponse.tokens.refreshToken);
+              await AsyncStorage.setItem('jwt_token_expires_at', 
+                String(Date.now() + (resolveResponse.tokens.expiresIn * 1000))
+              );
+              console.log('🔑 JWT tokens saved from resolve-id');
+            }
+
+            const serverUser = resolveResponse.user || resolveResponse.data;
+            if (!resolveResponse.success || !serverUser) {
               console.warn('🔥 Failed to resolve user ID from server, using fallback');
               // Fallback: try to get user by email
               if (firebaseUser.email) {
                 const userResponse = await apiService.getUserById(firebaseUser.email);
                 if (userResponse.success && userResponse.data) {
-                  const serverUser = userResponse.data;
+                  const fallbackServerUser = userResponse.data;
                   const userData: User = {
-                    id: serverUser.id, // UUID from database
-                    name: serverUser.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-                    email: serverUser.email || firebaseUser.email || '',
-                    phone: serverUser.phone || firebaseUser.phoneNumber || '+9720000000',
-                    avatar: serverUser.avatar_url || firebaseUser.photoURL || 'https://i.pravatar.cc/150?img=1',
-                    bio: serverUser.bio || '',
-                    karmaPoints: serverUser.karma_points || 0,
-                    joinDate: serverUser.join_date || serverUser.created_at || new Date().toISOString(),
-                    isActive: serverUser.is_active !== false,
-                    lastActive: serverUser.last_active || new Date().toISOString(),
-                    location: { city: serverUser.city || 'ישראל', country: serverUser.country || 'IL' },
-                    interests: serverUser.interests || [],
-                    roles: serverUser.roles || ['user'],
-                    postsCount: serverUser.posts_count || 0,
-                    followersCount: serverUser.followers_count || 0,
-                    followingCount: serverUser.following_count || 0,
+                    id: fallbackServerUser.id, // UUID from database
+                    name: fallbackServerUser.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+                    email: fallbackServerUser.email || firebaseUser.email || '',
+                    phone: fallbackServerUser.phone || firebaseUser.phoneNumber || '+9720000000',
+                    avatar: fallbackServerUser.avatar_url || firebaseUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+                    bio: fallbackServerUser.bio || '',
+                    karmaPoints: fallbackServerUser.karma_points || 0,
+                    joinDate: fallbackServerUser.join_date || fallbackServerUser.created_at || new Date().toISOString(),
+                    isActive: fallbackServerUser.is_active !== false,
+                    lastActive: fallbackServerUser.last_active || new Date().toISOString(),
+                    location: { city: fallbackServerUser.city || 'ישראל', country: fallbackServerUser.country || 'IL' },
+                    interests: fallbackServerUser.interests || [],
+                    roles: fallbackServerUser.roles || ['user'],
+                    postsCount: fallbackServerUser.posts_count || 0,
+                    followersCount: fallbackServerUser.followers_count || 0,
+                    followingCount: fallbackServerUser.following_count || 0,
                     notifications: [],
-                    settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+                    settings: fallbackServerUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
                   };
 
                   await AsyncStorage.setItem('current_user', JSON.stringify(userData));
@@ -168,8 +179,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
               throw new Error('Failed to get user from server');
             }
 
-            // Use UUID from server
-            const serverUser = resolveResponse.data;
+            // Use UUID from server (serverUser already defined above)
             const nowIso = new Date().toISOString();
             const userData: User = {
               id: serverUser.id, // UUID from database - this is the primary identifier
