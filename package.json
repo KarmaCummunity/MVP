@@ -17,6 +17,12 @@
     "build:web": "EXPO_PUBLIC_API_BASE_URL=https://kc-mvp-server-production.up.railway.app expo export --platform web",
     "postbuild:web": "bash scripts/restore-build-placeholders.sh",
     "build:web:local": "EXPO_PUBLIC_API_BASE_URL=http://localhost:3001 expo export:web",
+    "audit:colors": "ts-node scripts/audit-colors.ts",
+    "audit:texts": "ts-node scripts/audit-texts.ts",
+    "audit:constants": "ts-node scripts/audit-constants.ts",
+    "audit:responsive": "ts-node scripts/audit-responsive.ts",
+    "audit:unused": "ts-node scripts/find-unused-files.ts",
+    "audit:all": "ts-node scripts/audit-all.ts",
     "_TODO_ADD_SCRIPTS": "// TODO: Add missing scripts: test, lint, type-check, format, security-audit, bundle-analyze"
   },
   "dependencies": {
@@ -69,8 +75,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@types/node": "^20.0.0",
     "@types/react": "~19.0.10",
     "babel-plugin-module-resolver": "^5.0.2",
+    "ts-node": "^10.9.2",
     "typescript": "~5.8.3"
   },
   "private": true
