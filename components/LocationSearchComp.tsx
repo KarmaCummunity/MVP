@@ -27,7 +27,20 @@ interface LocationSearchCompProps {
   placeholder?: string;
 }
 
-const GOOGLE_API_KEY = "AIzaSyAgkx8Jp2AfhhYL0wwgcOqONpaJ0-Mkcf8";
+/**
+ * IMPORTANT (pre-launch):
+ * - Never commit API keys. Use EAS/Expo env vars instead.
+ * - For Expo, public env vars are exposed via EXPO_PUBLIC_*.
+ *
+ * Required:
+ * - EXPO_PUBLIC_GOOGLE_API_KEY (native Google Places Web Service)
+ *
+ * Optional (web only):
+ * - EXPO_PUBLIC_WEB_AUTOCOMPLETE_PROXY_URL (server-side proxy to avoid CORS on Places Web Service)
+ */
+const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
+const WEB_AUTOCOMPLETE_PROXY_URL =
+  process.env.EXPO_PUBLIC_WEB_AUTOCOMPLETE_PROXY_URL;
 
 const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
   onLocationSelected,
@@ -41,11 +54,29 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
 
   const searchGooglePlaces = async (inputText: string) => {
     const startTime = Date.now();
+    if (Platform.OS === "web" && !WEB_AUTOCOMPLETE_PROXY_URL) {
+      // Google Places Web Service is typically blocked by CORS on browsers.
+      // If no proxy is configured, fail gracefully (no crash, no network spam).
+      logger.warn("Web autocomplete proxy URL is missing", {
+        screen: "LocationSearch",
+        action: "missing_web_proxy_env",
+      });
+      setResults([]);
+      return;
+    }
+
+    if (Platform.OS !== "web" && !GOOGLE_API_KEY) {
+      logger.error("Google API key is missing", {
+        screen: "LocationSearch",
+        action: "missing_google_api_key_env",
+      });
+      setResults([]);
+      return;
+    }
+
     const url =
       Platform.OS === "web"
-        ? `http://localhost:3001/autocomplete?input=${encodeURIComponent(
-            inputText
-          )}`
+        ? `${WEB_AUTOCOMPLETE_PROXY_URL}?input=${encodeURIComponent(inputText)}`
         : `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
             inputText
           )}&key=${GOOGLE_API_KEY}&language=he&components=country:il`;

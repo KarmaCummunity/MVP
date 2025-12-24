@@ -139,6 +139,15 @@ useEffect(() => {
 - npm או yarn
 - Expo CLI: `npm install -g @expo/cli`
 
+## 🔐 משתני סביבה (קריטי לפני השקה)
+
+כדי להימנע מהכנסת מפתחות לקוד, חלק מהפיצ'רים משתמשים במשתני סביבה מסוג `EXPO_PUBLIC_*`:
+
+- `EXPO_PUBLIC_GOOGLE_API_KEY` – מפתח Google Places Autocomplete (למובייל).
+- `EXPO_PUBLIC_WEB_AUTOCOMPLETE_PROXY_URL` – כתובת Proxy צד־שרת ל־autocomplete עבור Web (נדרש בגלל CORS בשירות ה־Web Service של Google).
+
+> הערה: אין להכניס מפתחות לקוד/ל־git. מומלץ להגדיר אותם ב־EAS Secrets/CI.
+
 ### התקנה
 ```bash
 # שכפול הפרויקט

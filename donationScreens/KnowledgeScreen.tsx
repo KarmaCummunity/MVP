@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Image,
   Linking,
+  Platform,
   Alert,
 } from 'react-native';
 import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
@@ -176,6 +177,11 @@ export default function KnowledgeScreen({
   const handleLinkPress = async (url: string, title: string) => {
     console.log('Opening educational link:', title);
     try {
+      // On web, prefer same-tab navigation (avoid opening new tabs).
+      if (Platform.OS === 'web') {
+        window.location.assign(url);
+        return;
+      }
       const supported = await Linking.canOpenURL(url);
       if (supported) {
         await Linking.openURL(url);

@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Image,
   Linking,
+  Platform,
   Alert,
 } from 'react-native';
 import { NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
@@ -178,6 +179,11 @@ export default function TimeScreen({
     console.log('Emergency volunteer link pressed');
     const url = 'https://www.volunteer.gov.il';
     try {
+      // On web, prefer same-tab navigation (avoid opening new tabs).
+      if (Platform.OS === 'web') {
+        window.location.assign(url);
+        return;
+      }
       const supported = await Linking.canOpenURL(url);
       if (supported) {
         await Linking.openURL(url);
