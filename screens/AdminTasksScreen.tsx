@@ -652,7 +652,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundSecondary,
     ...(Platform.OS === 'web' ? {
       position: 'relative' as any,
-      overflow: 'hidden' as any,
       height: '100vh' as any,
     } : {
       padding: LAYOUT_CONSTANTS.SPACING.LG,

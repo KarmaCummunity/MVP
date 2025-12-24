@@ -41,6 +41,7 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
     const [showManagerModal, setShowManagerModal] = useState(false);
     const [selectedForManager, setSelectedForManager] = useState<any>(null);
     const [newManager, setNewManager] = useState<any>(null);
+    const [isRemovingManager, setIsRemovingManager] = useState(false);
 
     // Store eligible users separately
     const [eligibleUsers, setEligibleUsers] = useState<any[]>([]);
@@ -222,7 +223,12 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
     };
     
     const removeManager = async () => {
-        if (!selectedForManager) return;
+        if (!selectedForManager) {
+            console.log('[AdminAdminsScreen] removeManager called but no selectedForManager');
+            return;
+        }
+        
+        console.log('[AdminAdminsScreen] removeManager called for:', selectedForManager.name || selectedForManager.email);
         
         Alert.alert(
             'הסרת שיוך מנהל',
@@ -234,18 +240,25 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            console.log(`[AdminAdminsScreen] Removing manager for userId=${selectedForManager.id}, requestedBy=${selectedUser?.id}`);
+                            setIsRemovingManager(true);
+                            console.log(`[AdminAdminsScreen] ⏳ Starting to remove manager for userId=${selectedForManager.id}, requestedBy=${selectedUser?.id}`);
+                            
                             const res = await apiService.setManager(selectedForManager.id, null, selectedUser?.id);
+                            
+                            console.log(`[AdminAdminsScreen] 📡 Response from setManager:`, res);
+                            
                             if (res.success) {
                                 Alert.alert('הצלחה', 'שיוך מנהל הוסר בהצלחה');
                                 setShowManagerModal(false);
-                                loadUsers();
+                                await loadUsers();
                             } else {
                                 Alert.alert('שגיאה', res.error || 'נכשל בהסרת שיוך מנהל');
                             }
                         } catch (e) {
-                            console.error('[AdminAdminsScreen] Error removing manager:', e);
-                            Alert.alert('שגיאה', 'אירעה שגיאה');
+                            console.error('[AdminAdminsScreen] ❌ Error removing manager:', e);
+                            Alert.alert('שגיאה', 'אירעה שגיאה בהסרת שיוך מנהל');
+                        } finally {
+                            setIsRemovingManager(false);
                         }
                     }
                 }
@@ -388,11 +401,18 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                                 <Text style={styles.currentManagerLabel}>מנהל נוכחי:</Text>
                                 <Text style={styles.currentManagerName}>{selectedForManager.manager_details.name}</Text>
                                 <TouchableOpacity 
-                                    style={styles.removeManagerBtn}
+                                    style={[styles.removeManagerBtn, isRemovingManager && { opacity: 0.5 }]}
                                     onPress={removeManager}
+                                    disabled={isRemovingManager}
                                 >
-                                    <Ionicons name="trash-outline" size={16} color={colors.error} />
-                                    <Text style={styles.removeManagerText}>הסר שיוך</Text>
+                                    {isRemovingManager ? (
+                                        <ActivityIndicator size="small" color={colors.error} />
+                                    ) : (
+                                        <>
+                                            <Ionicons name="trash-outline" size={16} color={colors.error} />
+                                            <Text style={styles.removeManagerText}>הסר שיוך</Text>
+                                        </>
+                                    )}
                                 </TouchableOpacity>
                             </View>
                         )}
@@ -467,7 +487,6 @@ const styles = StyleSheet.create({
         backgroundColor: colors.backgroundSecondary,
         ...(Platform.OS === 'web' && {
             position: 'relative' as any,
-            overflow: 'hidden' as any,
             height: '100vh' as any,
         }),
     },

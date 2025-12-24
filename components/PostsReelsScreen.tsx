@@ -1192,8 +1192,14 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
       let newPostsList: any[] = [];
       try {
         const res = await apiService.getPosts(20, 0);
+        console.log('📡 PostsReelsScreen - getPosts response:', { success: res.success, dataLength: res.data?.length });
         if (res.success && Array.isArray(res.data)) {
           newPostsList = res.data;
+          console.log('📋 PostsReelsScreen - Loaded posts:', newPostsList.map(p => ({ 
+            id: p.id.substring(0, 8), 
+            type: p.post_type, 
+            title: p.title.substring(0, 30) 
+          })));
         }
       } catch (err) {
         logger.error('PostsReelsScreen', 'Error loading new posts', { err });
@@ -1204,6 +1210,8 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
       // Add NEW posts first (high priority) - including task posts
       newPostsList.forEach((p) => {
         const isTaskPost = p.post_type === 'task_assignment' || p.post_type === 'task_completion';
+        
+        console.log(`📝 Processing post: ${p.title.substring(0, 30)} - isTaskPost: ${isTaskPost}, type: ${p.post_type}`);
         
         merged.push({
           id: p.id,
@@ -1225,6 +1233,8 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
           taskData: p.task // Include task data for task posts
         } as Item);
       });
+
+      console.log(`📊 PostsReelsScreen - After adding new posts, merged has ${merged.length} items`);
 
       // Add posts to feed
       postsLists.forEach((posts, idx) => {
@@ -1396,6 +1406,11 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
         userIds: userIds.length,
         sample: merged.slice(0, 2).map(p => ({ id: p.id, title: p.title }))
       });
+      
+      const taskPosts = merged.filter(p => p.type === 'task_post');
+      console.log(`📊 PostsReelsScreen - FINAL FEED: Total: ${merged.length}, Task Posts: ${taskPosts.length}`);
+      console.log(`📝 Task posts in feed:`, taskPosts.map(p => ({ id: p.id.substring(0, 8), title: p.title.substring(0, 30), subtype: p.subtype })));
+      
       setRealFeed(merged);
     } catch (e) {
       console.error('❌ Error loading feed:', e);
