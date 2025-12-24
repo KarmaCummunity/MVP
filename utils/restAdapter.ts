@@ -18,9 +18,19 @@ export class RestAdapter {
       return this._baseUrl.replace(/\/$/, '');
     }
     
+    // Try environment variables first (highest priority - for local development)
+    if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_BASE_URL) {
+      return process.env.EXPO_PUBLIC_API_BASE_URL.replace(/\/$/, '');
+    }
+    
     // For web, detect environment from domain at runtime
     if (typeof window !== 'undefined' && window.location) {
       const hostname = window.location.hostname;
+      
+      // If on localhost, use local server
+      if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
+        return 'http://localhost:3001';
+      }
       
       // If on dev domain, use dev server
       if (hostname.includes('dev.')) {

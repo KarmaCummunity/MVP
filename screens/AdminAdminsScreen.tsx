@@ -45,7 +45,7 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
 
     // Store eligible users separately
     const [eligibleUsers, setEligibleUsers] = useState<any[]>([]);
-    
+
     // Store all managers for manager assignment
     const [allManagers, setAllManagers] = useState<any[]>([]);
 
@@ -58,14 +58,14 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
             console.log('[AdminAdminsScreen] No selectedUser.id, skipping load');
             return;
         }
-        
+
         try {
             setIsLoading(true);
             const filters: any = { limit: 100 };
             if (searchQuery.trim()) {
                 filters.search = searchQuery.trim();
             }
-            
+
             // Force refresh after admin operations to ensure fresh data
             if (forceRefresh) {
                 filters.forceRefresh = true;
@@ -73,28 +73,28 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
             } else {
                 console.log('[AdminAdminsScreen] 🔄 Loading users with filters:', filters);
             }
-            
+
             // Load all users for display
             const response = await apiService.getUsers(filters);
-            
+
             console.log('[AdminAdminsScreen] 📡 Response from getUsers:', {
                 success: response.success,
                 dataLength: response.data?.length,
                 error: response.error
             });
-            
+
             if (response.success && Array.isArray(response.data)) {
                 // Keep only other users (not current user)
                 const otherUsers = response.data.filter((u: any) => u.email !== selectedUser?.email);
                 setUsersList(otherUsers);
-                
+
                 // Extract managers from the list (admins + super admin)
                 const managers = response.data.filter((u: any) => {
                     const roles = u.roles || [];
                     return roles.includes('admin') || roles.includes('super_admin') || u.email === 'navesarussi@gmail.com';
                 });
                 setAllManagers(managers);
-                
+
                 console.log(`[AdminAdminsScreen] ✅ Loaded ${otherUsers.length} users, ${managers.length} managers`);
                 console.log(`[AdminAdminsScreen] 📊 Sample user data:`, otherUsers.slice(0, 2).map(u => ({
                     id: u.id,
@@ -129,9 +129,9 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
 
     // Check if current user is super admin - based on roles, not email
     const currentUserRoles = selectedUser?.roles || [];
-    const isCurrentUserSuperAdmin = currentUserRoles.includes('super_admin') || 
-                                     currentUserRoles.includes('admin');
-    
+    const isCurrentUserSuperAdmin = currentUserRoles.includes('super_admin') ||
+        currentUserRoles.includes('admin');
+
     console.log('[AdminAdminsScreen] 🔐 Current user check:', {
         userId: selectedUser?.id,
         email: selectedUser?.email,
@@ -146,7 +146,7 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
             const targetRoles = user.roles || [];
             const targetIsAlreadyAdmin = targetRoles.includes('admin') || targetRoles.includes('super_admin');
             const canPromoteUser = !targetIsAlreadyAdmin;
-            
+
             console.log('[AdminAdminsScreen] 🔍 canPromote check:', {
                 targetId: user.id,
                 targetEmail: user.email,
@@ -154,7 +154,7 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                 targetIsAlreadyAdmin,
                 canPromoteUser
             });
-            
+
             return canPromoteUser;
         }
         // Regular admins - check eligible list from server
@@ -173,13 +173,13 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
     // Just check basic conditions on client side
     const canDemote = (user: any): boolean => {
         const isSameUser = user.id === selectedUser?.id;
-        
+
         // Cannot demote yourself
         if (isSameUser) {
             console.log('[AdminAdminsScreen] 🔍 canDemote: false (cannot demote yourself)');
             return false;
         }
-        
+
         // Admin/super_admin can demote admins
         if (isCurrentUserSuperAdmin) {
             console.log('[AdminAdminsScreen] 🔍 canDemote (admin):', {
@@ -189,17 +189,17 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
             });
             return true;
         }
-        
+
         // For regular admins - check if user is in their subordinate tree
         // Let the server do the full tree validation
         const isDirectSubordinate = user.parent_manager_id === selectedUser?.id;
-        
+
         console.log('[AdminAdminsScreen] 🔍 canDemote (checking hierarchy):', {
             targetId: user.id,
             isDirectSubordinate,
             allowForServerValidation: true
         });
-        
+
         // Let server validate hierarchy - show button as enabled
         return true;
     };
@@ -220,7 +220,7 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
         }
 
         const title = isAdmin ? 'הסרת הרשאות מנהל' : 'הפיכה למנהל';
-        const message = isAdmin 
+        const message = isAdmin
             ? `האם אתה בטוח שברצונך להסיר הרשאות מנהל מ-${user.name || user.email}?`
             : `האם אתה בטוח שברצונך להפוך את ${user.name || user.email} למנהל תחתיך?`;
 
@@ -236,7 +236,7 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                         currentRoles: user.roles,
                         requestingAdminId: selectedUser.id
                     });
-                    
+
                     let res;
                     if (isAdmin) {
                         // Demote admin
@@ -245,9 +245,9 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                         // Promote to admin (will also set as subordinate)
                         res = await apiService.promoteToAdmin(user.id, selectedUser.id);
                     }
-                    
+
                     console.log(`[AdminAdminsScreen] 📡 ${isAdmin ? 'Demote' : 'Promote'} response:`, res);
-                    
+
                     if (res.success) {
                         Alert.alert('הצלחה', res.message || 'העדכון בוצע בהצלחה');
                         console.log('[AdminAdminsScreen] ✅ Operation successful, reloading users with force refresh...');
@@ -290,11 +290,11 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                 newManagerName: newManager?.name,
                 requestedBy: selectedUser?.id
             });
-            
+
             const res = await apiService.setManager(selectedForManager.id, managerId, selectedUser?.id);
-            
+
             console.log('[AdminAdminsScreen] 📡 setManager response:', res);
-            
+
             if (res.success) {
                 Alert.alert('הצלחה', managerId ? 'מנהל עודכן בהצלחה' : 'שיוך מנהל הוסר בהצלחה');
                 setShowManagerModal(false);
@@ -309,22 +309,22 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
             Alert.alert('שגיאה', 'אירעה שגיאה');
         }
     };
-    
+
     // Direct remove function (without confirmation - used from modal button)
     const performRemoveManager = async () => {
         if (!selectedForManager) {
             console.log('[AdminAdminsScreen] performRemoveManager called but no selectedForManager');
             return;
         }
-        
+
         try {
             console.log(`[AdminAdminsScreen] ⏳ Starting to remove manager for userId=${selectedForManager.id}, requestedBy=${selectedUser?.id}`);
             setIsRemovingManager(true);
-            
+
             const res = await apiService.setManager(selectedForManager.id, null, selectedUser?.id);
-            
+
             console.log(`[AdminAdminsScreen] 📡 Response from setManager:`, res);
-            
+
             if (res.success) {
                 Alert.alert('הצלחה', 'שיוך מנהל הוסר בהצלחה');
                 setShowManagerModal(false);
@@ -347,11 +347,11 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
             console.log('[AdminAdminsScreen] removeManager called but no selectedForManager');
             return;
         }
-        
+
         console.log('[AdminAdminsScreen] removeManager called for:', selectedForManager.name || selectedForManager.email);
         console.log('[AdminAdminsScreen] selectedForManager.id:', selectedForManager.id);
         console.log('[AdminAdminsScreen] selectedUser?.id:', selectedUser?.id);
-        
+
         if (Platform.OS === 'web') {
             if (typeof window !== 'undefined' && window.confirm(`האם להסיר את שיוך המנהל מ-${selectedForManager.name || selectedForManager.email}?`)) {
                 await performRemoveManager();
@@ -371,7 +371,7 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
             );
         }
     };
-    
+
     // Get managers that can be assigned (exclude the user themselves and create cycle prevention)
     const getEligibleManagersForUser = (user: any) => {
         if (!user) return allManagers;
@@ -381,9 +381,20 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
 
     const getFilteredUsers = () => {
         return usersList.filter(user => {
+            // New Logic: 
+            // Admins tab (Managers) -> Users who HAVE a manager (parent_manager_id is NOT null)
+            // Users tab -> Users who DO NOT have a manager (parent_manager_id IS null)
+            const hasManager = !!user.parent_manager_id;
+
+            // Also include actual admins/super_admins in the "Managers" tab even if they don't have a manager (e.g. root admin)
             const currentRoles = Array.isArray(user.roles) ? user.roles : [];
-            const isAdmin = currentRoles.includes('admin') || currentRoles.includes('super_admin');
-            return activeTab === 'admins' ? isAdmin : !isAdmin;
+            const isAdminRole = currentRoles.includes('admin') || currentRoles.includes('super_admin');
+
+            if (activeTab === 'admins') {
+                return hasManager || isAdminRole;
+            } else {
+                return !hasManager && !isAdminRole;
+            }
         });
     };
 
@@ -438,7 +449,7 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                     const userCanBePromoted = canPromote(user);
                     const userCanBeDemoted = canDemote(user);
                     const isActionDisabled = isSameUser || (isAdmin ? !userCanBeDemoted : !userCanBePromoted);
-                    
+
                     console.log('[AdminAdminsScreen] 📋 Render user:', {
                         userId: user.id,
                         email: user.email,
@@ -449,7 +460,7 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                         userCanBeDemoted,
                         isActionDisabled
                     });
-                    
+
                     // Determine button text and reason for disabled state
                     let buttonText = isAdmin ? 'הסר ניהול' : 'הפוך למנהל';
                     if (isSameUser) {
@@ -487,24 +498,13 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                                     <Text style={styles.actionBtnText}>שיוך מנהל</Text>
                                 </TouchableOpacity>
 
-                                <TouchableOpacity
-                                    style={[
-                                        styles.actionButton, 
-                                        isAdmin ? styles.removeButton : styles.addButton, 
-                                        isActionDisabled && styles.lockedButton
-                                    ]}
-                                    onPress={() => handleToggleAdmin(user)}
-                                    disabled={isActionDisabled}
-                                >
-                                    <Text style={styles.actionBtnText}>{buttonText}</Text>
-                                </TouchableOpacity>
                             </View>
                         </View>
                     );
                 }}
             />
 
-            <Modal visible={showManagerModal} animationType="fade" transparent>
+            < Modal visible={showManagerModal} animationType="fade" transparent >
                 <View style={styles.modalBackdrop}>
                     <View style={styles.modalCard}>
                         <View style={styles.modalHeader}>
@@ -513,12 +513,12 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                                 <Ionicons name="close" size={24} color={colors.textPrimary} />
                             </TouchableOpacity>
                         </View>
-                        
+
                         {selectedForManager?.manager_details && (
                             <View style={styles.currentManagerBox}>
                                 <Text style={styles.currentManagerLabel}>מנהל נוכחי:</Text>
                                 <Text style={styles.currentManagerName}>{selectedForManager.manager_details.name}</Text>
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     style={[styles.removeManagerBtn, isRemovingManager && { opacity: 0.5 }]}
                                     onPress={() => {
                                         console.log('[AdminAdminsScreen] Remove manager button pressed in modal');
@@ -538,7 +538,7 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                                 </TouchableOpacity>
                             </View>
                         )}
-                        
+
                         <Text style={styles.modalSubtitle}>
                             {selectedForManager?.manager_details ? 'החלף למנהל אחר:' : 'בחר מנהל:'}
                         </Text>
@@ -551,7 +551,7 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                                 renderItem={({ item: manager }) => {
                                     const isSelected = newManager?.id === manager.id;
                                     const isCurrentManager = selectedForManager?.manager_details?.id === manager.id;
-                                    
+
                                     return (
                                         <TouchableOpacity
                                             style={[
@@ -584,12 +584,12 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                             <TouchableOpacity style={[styles.modalBtn, styles.modalCancel]} onPress={() => setShowManagerModal(false)}>
                                 <Text style={[styles.modalBtnText, { color: colors.textPrimary }]}>ביטול</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 style={[
-                                    styles.modalBtn, 
+                                    styles.modalBtn,
                                     styles.modalSave,
                                     (!newManager || newManager.id === selectedForManager?.manager_details?.id) && styles.modalBtnDisabled
-                                ]} 
+                                ]}
                                 onPress={saveManager}
                                 disabled={!newManager || newManager.id === selectedForManager?.manager_details?.id}
                             >
@@ -598,14 +598,14 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                         </View>
                     </View>
                 </View>
-            </Modal>
-        </SafeAreaView>
+            </Modal >
+        </SafeAreaView >
     );
 }
 
 const styles = StyleSheet.create({
-    container: { 
-        flex: 1, 
+    container: {
+        flex: 1,
         backgroundColor: colors.backgroundSecondary,
         ...(Platform.OS === 'web' && {
             position: 'relative' as any,
@@ -657,12 +657,12 @@ const styles = StyleSheet.create({
     modalSave: { backgroundColor: colors.primary },
     modalBtnDisabled: { backgroundColor: colors.textTertiary },
     modalBtnText: { color: 'white', fontWeight: 'bold' },
-    
+
     // Current manager box
-    currentManagerBox: { 
-        backgroundColor: colors.backgroundSecondary, 
-        padding: 12, 
-        borderRadius: 8, 
+    currentManagerBox: {
+        backgroundColor: colors.backgroundSecondary,
+        padding: 12,
+        borderRadius: 8,
         marginBottom: 16,
         flexDirection: 'row',
         alignItems: 'center',
@@ -670,23 +670,23 @@ const styles = StyleSheet.create({
     },
     currentManagerLabel: { fontSize: 12, color: colors.textSecondary },
     currentManagerName: { fontSize: 14, fontWeight: 'bold', color: colors.textPrimary, flex: 1, marginLeft: 8 },
-    removeManagerBtn: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
+    removeManagerBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
         gap: 4,
         padding: 8,
         borderRadius: 6,
         backgroundColor: colors.error + '15'
     },
     removeManagerText: { fontSize: 12, color: colors.error, fontWeight: '600' },
-    
+
     // Managers list
     managersList: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' },
-    managerItem: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        padding: 12, 
-        borderBottomWidth: 1, 
+    managerItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        borderBottomWidth: 1,
         borderBottomColor: colors.border,
         backgroundColor: colors.background
     },
@@ -695,9 +695,9 @@ const styles = StyleSheet.create({
     managerItemInfo: { flex: 1 },
     managerItemName: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
     managerItemEmail: { fontSize: 12, color: colors.textSecondary },
-    currentBadge: { 
-        fontSize: 10, 
-        color: colors.info, 
+    currentBadge: {
+        fontSize: 10,
+        color: colors.info,
         fontWeight: 'bold',
         backgroundColor: colors.info + '20',
         paddingHorizontal: 6,
