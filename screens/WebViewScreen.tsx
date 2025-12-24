@@ -37,10 +37,9 @@ const WebViewScreen: React.FC<WebViewScreenProps> = (
   useEffect(() => {
     if (Platform.OS === 'web') {
       // For web, jgive.com refuses to connect within an iframe due to security policies.
-      // The only reliable way to open it on web is in a new browser tab.
-      window.open(J_GIVE_URL, '_blank');
-      // After opening, navigate back in the app's history
-      navigation.goBack();
+      // Navigate in the SAME tab (avoid opening a new tab).
+      // Note: this will leave the app shell on web, by design.
+      window.location.assign(J_GIVE_URL);
     }
     // No need for WebBrowser.openBrowserAsync() on native here,
     // as the WebView component handles native rendering below.
@@ -53,7 +52,7 @@ const WebViewScreen: React.FC<WebViewScreenProps> = (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.info} />
           <Text style={styles.loadingText}>
-            Opening JGive in a new browser tab...
+            Redirecting to JGive...
           </Text>
         </View>
       </SafeAreaView>
