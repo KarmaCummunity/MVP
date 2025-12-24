@@ -92,9 +92,9 @@ const CommunityStatsGrid: React.FC<CommunityStatsGridProps> = ({ onSelect }) => 
     // Initial load
     loadStats();
     
-    // Auto-refresh every 60 seconds
+    // Auto-refresh every 60 seconds (but use cache - don't force refresh)
     const intervalId = setInterval(() => {
-      loadStats(true); // Force refresh from server
+      loadStats(false); // Normal refresh with cache
     }, POLLING_INTERVAL);
     
     return () => {
