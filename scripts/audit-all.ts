@@ -21,6 +21,7 @@ import { TextAuditor, TextAuditReport } from './audit-texts';
 import { ConstantAuditor, ConstantAuditReport } from './audit-constants';
 import { ResponsiveAuditor, ResponsiveAuditReport } from './audit-responsive';
 import { UnusedFileFinder, UnusedFilesReport } from './find-unused-files';
+import { StructureAuditor, StructureReport } from './audit-structure';
 
 interface MasterReport {
   timestamp: string;
@@ -29,6 +30,7 @@ interface MasterReport {
   constants: ConstantAuditReport;
   responsive: ResponsiveAuditReport;
   unusedFiles: UnusedFilesReport;
+  structure: StructureReport;
   summary: {
     totalIssues: number;
     criticalIssues: number;
@@ -47,7 +49,7 @@ class MasterAuditor {
   constructor(rootDir: string) {
     this.rootDir = rootDir;
     this.reportsDir = path.join(rootDir, 'audit-reports');
-    
+
     // Ensure reports directory exists
     if (!fs.existsSync(this.reportsDir)) {
       fs.mkdirSync(this.reportsDir, { recursive: true });
@@ -101,6 +103,12 @@ class MasterAuditor {
     unusedFinder.saveReport(path.join(this.reportsDir, 'unused-files.json'));
     unusedFinder.printSummary();
 
+    this.printHeader('6/6: Structure Audit');
+    const structureAuditor = new StructureAuditor(this.rootDir);
+    const structureReport = structureAuditor.audit();
+    structureAuditor.saveReport(path.join(this.reportsDir, 'structure-issues.json'));
+    structureAuditor.printSummary();
+
     // Create master report
     const masterReport: MasterReport = {
       timestamp: new Date().toISOString(),
@@ -109,13 +117,17 @@ class MasterAuditor {
       constants: constantsReport,
       responsive: responsiveReport,
       unusedFiles: unusedReport,
+      structure: structureReport,
       summary: {
-        totalIssues: 
+        totalIssues:
           colorsReport.totalIssues +
           textsReport.totalIssues +
           constantsReport.totalIssues +
           responsiveReport.totalIssues +
-          unusedReport.issues.length,
+          constantsReport.totalIssues +
+          responsiveReport.totalIssues +
+          unusedReport.issues.length +
+          structureReport.totalIssues,
         criticalIssues:
           colorsReport.issuesBySeverity.critical +
           textsReport.issuesBySeverity.critical +
@@ -141,7 +153,10 @@ class MasterAuditor {
           colorsReport.filesWithIssues,
           textsReport.filesWithIssues,
           constantsReport.filesWithIssues,
-          responsiveReport.filesWithIssues
+          responsiveReport.filesWithIssues,
+          // Structure report doesn't count "files with issues" property directly in same way, 
+          // but we can approximate or ignore for max simple calculation
+          0
         )
       }
     };
@@ -151,17 +166,17 @@ class MasterAuditor {
 
   private generateMarkdownSummary(report: MasterReport): string {
     const md: string[] = [];
-    
+
     md.push('# Codebase Audit Summary\n');
     md.push(`**Generated:** ${new Date(report.timestamp).toLocaleString()}\n`);
     md.push('---\n');
-    
+
     // Overall Summary
     md.push('## 📊 Overall Summary\n');
     md.push(`- **Total Files Scanned:** ${report.summary.filesScanned}`);
     md.push(`- **Files with Issues:** ${report.summary.filesWithIssues}`);
     md.push(`- **Total Issues Found:** ${report.summary.totalIssues}\n`);
-    
+
     // Issues by Severity
     md.push('### Issues by Severity\n');
     md.push('| Severity | Count | Percentage |');
@@ -171,7 +186,7 @@ class MasterAuditor {
     md.push(`| 🟠 High | ${report.summary.highIssues} | ${((report.summary.highIssues / total) * 100).toFixed(1)}% |`);
     md.push(`| 🟡 Medium | ${report.summary.mediumIssues} | ${((report.summary.mediumIssues / total) * 100).toFixed(1)}% |`);
     md.push(`| 🟢 Low | ${report.summary.lowIssues} | ${((report.summary.lowIssues / total) * 100).toFixed(1)}% |\n`);
-    
+
     // Colors
     md.push('## 🎨 Colors Audit\n');
     md.push(`- **Total Issues:** ${report.colors.totalIssues}`);
@@ -181,7 +196,7 @@ class MasterAuditor {
     md.push(`- **Named Colors:** ${report.colors.issuesByType.named}`);
     md.push(`- **Missing Imports:** ${report.colors.issuesByType['missing-import']}\n`);
     md.push('**Action Required:** Replace all hardcoded colors with imports from `globals/colors.tsx`\n');
-    
+
     // Texts
     md.push('## 📝 Texts/i18n Audit\n');
     md.push(`- **Total Issues:** ${report.texts.totalIssues}`);
@@ -192,7 +207,7 @@ class MasterAuditor {
     md.push(`- **Translation Keys (HE):** ${report.texts.translationStats.totalKeysHe}`);
     md.push(`- **Translation Keys (EN):** ${report.texts.translationStats.totalKeysEn}\n`);
     md.push('**Action Required:** Replace all hardcoded text with `t()` function and add missing keys to `locales/*.json`\n');
-    
+
     // Constants
     md.push('## 🔢 Constants Audit\n');
     md.push(`- **Total Issues:** ${report.constants.totalIssues}`);
@@ -202,7 +217,7 @@ class MasterAuditor {
     md.push(`- **Magic Numbers:** ${report.constants.issuesByType['magic-number']}`);
     md.push(`- **Missing Imports:** ${report.constants.issuesByType['missing-import']}\n`);
     md.push('**Action Required:** Replace magic numbers with constants from `globals/constants.tsx`\n');
-    
+
     // Responsive
     md.push('## 📱 Responsive Design Audit\n');
     md.push(`- **Total Issues:** ${report.responsive.totalIssues}`);
@@ -213,7 +228,7 @@ class MasterAuditor {
     md.push(`- **No Platform Checks:** ${report.responsive.issuesByType['no-platform-check']}`);
     md.push(`- **Missing Imports:** ${report.responsive.issuesByType['missing-import']}\n`);
     md.push('**Action Required:** Use responsive functions from `globals/responsive.ts` for all layouts\n');
-    
+
     // Unused Files
     md.push('## 🗑️ Unused Files Audit\n');
     md.push(`- **Unused Files:** ${report.unusedFiles.unusedFiles}`);
@@ -222,7 +237,12 @@ class MasterAuditor {
     const spaceMB = (report.unusedFiles.potentialSpaceSaved / 1024 / 1024).toFixed(2);
     md.push(`- **Potential Space to Reclaim:** ${spaceMB} MB\n`);
     md.push('**Action Required:** Review and remove unused/duplicate files\n');
-    
+
+    // Architecture/Structure
+    md.push('## 🏗️ Structure Audit\n');
+    md.push(`- **Total Issues:** ${report.structure.totalIssues}\n`);
+    md.push('**Action Required:** specific file naming and placement corrections\n');
+
     // Priority Actions
     md.push('## 🎯 Priority Actions\n');
     md.push('### Critical (Fix Immediately)\n');
@@ -232,17 +252,17 @@ class MasterAuditor {
     } else {
       md.push('✅ No critical issues found!\n');
     }
-    
+
     md.push('### High Priority (Fix Soon)\n');
     md.push(`1. Colors: Replace ${report.colors.issuesByType.hex + report.colors.issuesByType.rgb} hardcoded colors`);
     md.push(`2. Texts: Replace ${report.texts.issuesByType['hardcoded-hebrew']} hardcoded Hebrew texts`);
     md.push(`3. Responsive: Fix ${report.responsive.issuesByType['no-responsive-function']} non-responsive styles\n`);
-    
+
     md.push('### Medium Priority (Plan to Fix)\n');
     md.push(`1. Constants: Extract ${report.constants.issuesByType['repeated-value']} repeated values`);
     md.push(`2. Texts: Replace ${report.texts.issuesByType['hardcoded-english']} hardcoded English texts`);
     md.push(`3. Cleanup: Remove ${report.unusedFiles.unusedFiles} unused files\n`);
-    
+
     // Next Steps
     md.push('## 📋 Next Steps\n');
     md.push('1. Review detailed reports in `audit-reports/` directory');
@@ -250,15 +270,16 @@ class MasterAuditor {
     md.push('3. Fix critical and high-priority issues first');
     md.push('4. Run audits again after fixes to verify improvements');
     md.push('5. Set up pre-commit hooks to prevent new issues\n');
-    
+
     // Files
     md.push('## 📁 Detailed Reports\n');
     md.push('- `colors-issues.json` - All color-related issues');
     md.push('- `texts-issues.json` - All text/i18n issues');
     md.push('- `constants-issues.json` - All constants issues');
     md.push('- `responsive-issues.json` - All responsive design issues');
-    md.push('- `unused-files.json` - All unused/duplicate files\n');
-    
+    md.push('- `unused-files.json` - All unused/duplicate files');
+    md.push('- `structure-issues.json` - Structural organization issues\n');
+
     return md.join('\n');
   }
 
@@ -266,12 +287,12 @@ class MasterAuditor {
     // Save JSON report
     const jsonPath = path.join(this.reportsDir, 'master-report.json');
     fs.writeFileSync(jsonPath, JSON.stringify(report, null, 2));
-    
+
     // Save Markdown summary
     const mdPath = path.join(this.reportsDir, 'summary.md');
     const markdown = this.generateMarkdownSummary(report);
     fs.writeFileSync(mdPath, markdown);
-    
+
     console.log('\n📊 Master reports saved:');
     console.log(`   - ${jsonPath}`);
     console.log(`   - ${mdPath}\n`);
@@ -281,27 +302,28 @@ class MasterAuditor {
     console.log('\n' + '='.repeat(70));
     console.log('FINAL AUDIT SUMMARY'.padStart(45));
     console.log('='.repeat(70) + '\n');
-    
+
     console.log(`📁 Files scanned: ${report.summary.filesScanned}`);
     console.log(`⚠️  Files with issues: ${report.summary.filesWithIssues}`);
     console.log(`🔍 Total issues found: ${report.summary.totalIssues}\n`);
-    
+
     console.log('Issues breakdown:');
     console.log(`  🔴 Critical: ${report.summary.criticalIssues}`);
     console.log(`  🟠 High:     ${report.summary.highIssues}`);
     console.log(`  🟡 Medium:   ${report.summary.mediumIssues}`);
     console.log(`  🟢 Low:      ${report.summary.lowIssues}\n`);
-    
+
     console.log('By category:');
     console.log(`  🎨 Colors:     ${report.colors.totalIssues} issues`);
     console.log(`  📝 Texts:      ${report.texts.totalIssues} issues`);
     console.log(`  🔢 Constants:  ${report.constants.totalIssues} issues`);
     console.log(`  📱 Responsive: ${report.responsive.totalIssues} issues`);
-    console.log(`  🗑️  Unused:     ${report.unusedFiles.issues.length} files\n`);
-    
+    console.log(`  🗑️  Unused:     ${report.unusedFiles.issues.length} files`);
+    console.log(`  🏗️  Structure:  ${report.structure.totalIssues} issues\n`);
+
     console.log('📊 Detailed reports saved in: audit-reports/');
     console.log('📄 Read summary.md for action plan\n');
-    
+
     console.log('='.repeat(70) + '\n');
   }
 }
@@ -310,7 +332,7 @@ class MasterAuditor {
 if (require.main === module) {
   const rootDir = path.join(__dirname, '..');
   const auditor = new MasterAuditor(rootDir);
-  
+
   auditor.runAllAudits()
     .then(report => {
       auditor.saveMasterReport(report);
