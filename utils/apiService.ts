@@ -34,25 +34,25 @@ class ApiService {
     if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_BASE_URL) {
       return process.env.EXPO_PUBLIC_API_BASE_URL;
     }
-    
+
     // For web, detect environment from domain at runtime
     if (typeof window !== 'undefined' && window.location) {
       const hostname = window.location.hostname;
-      
+
       // If on localhost, use local server
       if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
         return 'http://localhost:3001';
       }
-      
+
       // If on dev domain, use dev server
       if (hostname.includes('dev.')) {
         return 'https://kc-mvp-server-development.up.railway.app';
       }
-      
+
       // Otherwise use production server
       return 'https://kc-mvp-server-production.up.railway.app';
     }
-    
+
     // For native apps, use lazy initialization
     if (this._baseURL === null) {
       this._baseURL = CONFIG_API_BASE_URL;
@@ -147,7 +147,7 @@ class ApiService {
       // Try to get JWT access token from AsyncStorage first
       const AsyncStorage = await import('@react-native-async-storage/async-storage');
       const jwtToken = await AsyncStorage.default.getItem('jwt_access_token');
-      
+
       if (jwtToken) {
         // Check if token is expired
         const expiresAt = await AsyncStorage.default.getItem('jwt_token_expires_at');
@@ -158,14 +158,14 @@ class ApiService {
           // TODO: Implement token refresh logic
         }
       }
-      
+
       // Fallback: Try to get Firebase ID token
       const { getFirebase } = await import('./firebaseClient');
       const { getAuth } = await import('firebase/auth');
       const { app } = getFirebase();
       const auth = getAuth(app);
       const user = auth.currentUser;
-      
+
       if (user) {
         const token = await user.getIdToken();
         return token;
@@ -173,7 +173,7 @@ class ApiService {
     } catch (error) {
       console.warn('Failed to get auth token:', error);
     }
-    
+
     return null;
   }
 
@@ -185,10 +185,10 @@ class ApiService {
     // TODO: Add retry logic for failed requests
     try {
       const url = this.buildUrl(endpoint);
-      
+
       // Get authentication token
       const authToken = await this.getAuthToken();
-      
+
       const config: RequestInit = {
         headers: {
           'Content-Type': 'application/json',
@@ -210,7 +210,7 @@ class ApiService {
           signal: controller.signal,
         });
         clearTimeout(timeoutId);
-        
+
         const data = await response.json();
 
         if (!response.ok) {
@@ -225,7 +225,7 @@ class ApiService {
         return data;
       } catch (fetchError: any) {
         clearTimeout(timeoutId);
-        
+
         // Check if error is due to abort (timeout)
         if (fetchError.name === 'AbortError') {
           console.error(`⏱️ API Timeout: ${endpoint}`);
@@ -597,6 +597,35 @@ class ApiService {
       url += `&viewer_id=${viewerId}`;
     }
     return this.request(url);
+  }
+
+  // Notifications APIs
+  async getNotifications(userId: string, limit = 50, offset = 0): Promise<ApiResponse> {
+    return this.request(`/api/notifications/${userId}?limit=${limit}&offset=${offset}`);
+  }
+
+  async markNotificationAsRead(userId: string, notificationId: string): Promise<ApiResponse> {
+    return this.request(`/api/notifications/${userId}/${notificationId}/read`, {
+      method: 'PUT',
+    });
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<ApiResponse> {
+    return this.request(`/api/notifications/${userId}/read-all`, {
+      method: 'POST',
+    });
+  }
+
+  async deleteNotification(userId: string, notificationId: string): Promise<ApiResponse> {
+    return this.request(`/api/notifications/${userId}/${notificationId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async clearAllNotifications(userId: string): Promise<ApiResponse> {
+    return this.request(`/api/notifications/${userId}`, {
+      method: 'DELETE',
+    });
   }
 
   // Admin APIs
