@@ -682,7 +682,7 @@ log_success "Server is up and healthy"
 # ============================================================================
 
 log_info "Running API Health Tests..."
-if ! ./scripts/test-api-health.sh "$SERVER_PORT"; then
+if ! "$CLIENT_DIR/scripts/test-api-health.sh" "$SERVER_PORT"; then
   log_error "API Health Tests failed. Aborting."
   exit 1
 fi

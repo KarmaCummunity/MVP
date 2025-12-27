@@ -104,10 +104,13 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
           ...res.data,
           metrics: {
             ...res.data.metrics,
+            tasks_open: Number(res.data.metrics.tasks_open || 0),
+            tasks_in_progress: Number(res.data.metrics.tasks_in_progress || 0),
+            tasks_done: Number(res.data.metrics.tasks_done || 0),
+            tasks_total: Number(res.data.metrics.tasks_total || 0),
+            admins_count: Number(res.data.metrics.admins_count || 0),
+            regular_users_count: Number(res.data.metrics.regular_users_count || 0),
             total_users: Number(res.data.metrics.total_users || 0),
-            total_donations: Number(res.data.metrics.total_donations || 0),
-            total_rides: Number(res.data.metrics.total_rides || 0),
-            total_money_donated: Number(res.data.metrics.total_money_donated || 0),
           }
         };
         console.log('📊 AdminDashboard - Processed stats:', processedData);
@@ -137,10 +140,6 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
       return;
     }
     (navigation as any).navigate(button.route);
-  };
-
-  const formatMoney = (amount: number) => {
-    return new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', maximumFractionDigits: 0 }).format(amount);
   };
 
   return (
@@ -176,24 +175,34 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
         {stats && stats.metrics && (
           <View style={styles.statsContainer}>
             <View style={styles.statCard}>
-              <Ionicons name="cash-outline" size={24} color={colors.success} />
-              <Text style={styles.statValue}>{formatMoney(stats.metrics.total_money_donated)}</Text>
-              <Text style={styles.statLabel}>סה"כ תרומות</Text>
+              <Ionicons name="list-outline" size={24} color={colors.primary} />
+              <Text style={styles.statValue}>{stats.metrics.tasks_open}</Text>
+              <Text style={styles.statLabel}>משימות פתוחות</Text>
             </View>
             <View style={styles.statCard}>
-              <Ionicons name="people-outline" size={24} color={colors.primary} />
+              <Ionicons name="hourglass-outline" size={24} color={colors.warning} />
+              <Text style={styles.statValue}>{stats.metrics.tasks_in_progress}</Text>
+              <Text style={styles.statLabel}>משימות בתהליך</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="checkmark-done-outline" size={24} color={colors.success} />
+              <Text style={styles.statValue}>{stats.metrics.tasks_done}</Text>
+              <Text style={styles.statLabel}>משימות שהושלמו</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="shield-outline" size={24} color={colors.secondary} />
+              <Text style={styles.statValue}>{stats.metrics.admins_count}</Text>
+              <Text style={styles.statLabel}>מנהלים במערכת</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="people-outline" size={24} color={colors.info} />
+              <Text style={styles.statValue}>{stats.metrics.regular_users_count}</Text>
+              <Text style={styles.statLabel}>משתמשים רגילים</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="person-outline" size={24} color={colors.textSecondary} />
               <Text style={styles.statValue}>{stats.metrics.total_users}</Text>
-              <Text style={styles.statLabel}>משתמשים</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="gift-outline" size={24} color={colors.secondary} />
-              <Text style={styles.statValue}>{stats.metrics.total_donations}</Text>
-              <Text style={styles.statLabel}>תרומות</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="car-outline" size={24} color={colors.warning} />
-              <Text style={styles.statValue}>{stats.metrics.total_rides}</Text>
-              <Text style={styles.statLabel}>נסיעות</Text>
+              <Text style={styles.statLabel}>סה"כ משתמשים</Text>
             </View>
           </View>
         )}

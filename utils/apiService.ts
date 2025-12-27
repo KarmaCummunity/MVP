@@ -66,7 +66,7 @@ class ApiService {
   }
 
   async getTasks(filters: {
-    status?: 'open' | 'in_progress' | 'done' | 'archived';
+    status?: 'open' | 'in_progress' | 'done' | 'archived' | 'stuck' | 'testing';
     priority?: 'low' | 'medium' | 'high';
     category?: string;
     assignee?: string;

@@ -8,7 +8,7 @@ import { useUser } from '../stores/userStore';
 import { useAdminProtection } from '../hooks/useAdminProtection';
 import UserSelector from '../components/UserSelector';
 
-type TaskStatus = 'open' | 'in_progress' | 'done' | 'archived';
+type TaskStatus = 'open' | 'in_progress' | 'done' | 'archived' | 'stuck' | 'testing';
 type TaskPriority = 'low' | 'medium' | 'high';
 
 interface User {
@@ -35,6 +35,7 @@ type AdminTask = {
   parent_task_id?: string | null;
   parent_task_details?: { id: string; title: string } | null;
   subtask_count?: number;
+  level?: number; // Depth level (0 = root, 1 = subtask, 2 = sub-subtask, etc.)
   created_at?: string;
   updated_at?: string;
 };
@@ -79,12 +80,14 @@ export default function AdminTasksScreen() {
 
   const sortedTasks = useMemo(() => {
     const priorityOrder: Record<TaskPriority, number> = { high: 0, medium: 1, low: 2 };
-    return [...tasks].sort((a, b) => {
+    // Filter out subtasks - only show root level tasks (those without parent_task_id)
+    const rootTasks = tasks.filter(t => !t.parent_task_id);
+    return [...rootTasks].sort((a, b) => {
       // First sort by ownership if "My Tasks" is NOT active (to bring mine to top implicitly? No, sticking to date/priority)
       if (a.status === b.status) {
         return priorityOrder[a.priority] - priorityOrder[b.priority];
       }
-      const statusRank: Record<TaskStatus, number> = { open: 0, in_progress: 1, done: 2, archived: 3 };
+      const statusRank: Record<TaskStatus, number> = { open: 0, in_progress: 1, stuck: 1.5, testing: 1.7, done: 2, archived: 3 };
       return statusRank[a.status] - statusRank[b.status];
     });
   }, [tasks]);
@@ -140,6 +143,25 @@ export default function AdminTasksScreen() {
     setEditingId(null);
   };
 
+  const checkAndUpdateParentStatus = async (taskId: string) => {
+    // Check if task has incomplete subtasks, if so, set to 'stuck'
+    try {
+      const res = await apiService.getSubtasks(taskId);
+      if (res.success && res.data && res.data.length > 0) {
+        // If there are any subtasks, automatically set parent to 'stuck'
+        const hasIncompleteSubtasks = res.data.some((st: AdminTask) => st.status !== 'done');
+        if (hasIncompleteSubtasks) {
+          console.log(`⚠️ Setting task ${taskId} to 'stuck' - has incomplete subtasks`);
+          await apiService.updateTask(taskId, { status: 'stuck' as TaskStatus });
+          return true;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to check parent status:', err);
+    }
+    return false;
+  };
+
   const toggleSubtasks = async (taskId: string) => {
     if (expandedTasks.has(taskId)) {
       // Collapse
@@ -153,6 +175,12 @@ export default function AdminTasksScreen() {
         const res = await apiService.getSubtasks(taskId);
         if (res.success && res.data) {
           setSubtasks(prev => ({ ...prev, [taskId]: res.data }));
+          // Check if parent should be marked as stuck
+          const updated = await checkAndUpdateParentStatus(taskId);
+          if (updated) {
+            // Refresh tasks if status was updated
+            await fetchTasks();
+          }
         }
         const newExpanded = new Set(expandedTasks);
         newExpanded.add(taskId);
@@ -230,6 +258,11 @@ export default function AdminTasksScreen() {
           setError(res.error || 'שגיאה ביצירת משימה');
         }
       } else if (res.data) {
+        // If this is a subtask, update parent status to 'stuck' FIRST
+        if (formData.parent_task_id) {
+          await checkAndUpdateParentStatus(formData.parent_task_id);
+        }
+        // Then refresh tasks
         await fetchTasks();
         resetForm();
         setShowForm(false);
@@ -261,19 +294,26 @@ export default function AdminTasksScreen() {
     }
   };
 
-  const renderItem = ({ item, isSubtask = false }: { item: AdminTask; isSubtask?: boolean }) => {
+  const renderItem = ({ item, isSubtask = false, level = 0 }: { item: AdminTask; isSubtask?: boolean; level?: number }) => {
     const isDone = item.status === 'done';
     const hasSubtasks = (item.subtask_count || 0) > 0;
     const isExpanded = expandedTasks.has(item.id);
     const taskSubtasks = subtasks[item.id] || [];
+    const taskLevel = item.level ?? level;
 
     return (
       <View>
-        <View style={[styles.taskItem, isDone && styles.taskItemDone, isSubtask && styles.subtaskItem]}>
+        <View style={[
+          styles.taskItem, 
+          isDone && styles.taskItemDone, 
+          isSubtask && styles.subtaskItem,
+          isSubtask && { marginRight: taskLevel * 16 }
+        ]}>
           {/* Subtask Indicator */}
           {isSubtask && (
             <View style={styles.subtaskIndicator}>
-              <Ionicons name="return-down-forward" size={16} color={colors.textSecondary} />
+              <Ionicons name="return-down-forward" size={16} color={colors.info} />
+              <Text style={styles.levelText}>דרגה {taskLevel}</Text>
             </View>
           )}
 
@@ -313,8 +353,14 @@ export default function AdminTasksScreen() {
               </View>
 
               {/* Status Badge */}
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{item.status === 'open' ? 'פתוחה' : item.status === 'in_progress' ? 'בתהליך' : item.status === 'done' ? 'בוצעה' : 'בארכיון'}</Text>
+              <View style={[styles.badge, styles[`status_${item.status}` as const]]}>
+                <Text style={styles.badgeText}>
+                  {item.status === 'open' ? 'פתוחה' : 
+                   item.status === 'in_progress' ? 'בתהליך' : 
+                   item.status === 'stuck' ? 'תקוע' :
+                   item.status === 'testing' ? 'בבדיקה' :
+                   item.status === 'done' ? 'בוצעה' : 'בארכיון'}
+                </Text>
               </View>
 
               {/* Subtasks Count Badge */}
@@ -375,12 +421,10 @@ export default function AdminTasksScreen() {
               <Ionicons name="create-outline" size={18} color={colors.textPrimary} />
               <Text style={styles.actionText}>ערוך</Text>
             </TouchableOpacity>
-            {!isSubtask && (
-              <TouchableOpacity style={styles.actionBtn} onPress={() => createSubtask(item)}>
-                <Ionicons name="add-circle-outline" size={18} color={colors.info} />
-                <Text style={[styles.actionText, { color: colors.info }]}>תת-משימה</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity style={styles.actionBtn} onPress={() => createSubtask(item)}>
+              <Ionicons name="add-circle-outline" size={18} color={colors.info} />
+              <Text style={[styles.actionText, { color: colors.info }]}>תת-משימה</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.actionBtn}
               onPress={() => deleteTask(item.id)}
@@ -404,7 +448,7 @@ export default function AdminTasksScreen() {
         <View style={styles.subtasksList}>
           {taskSubtasks.map((subtask) => (
             <View key={subtask.id}>
-              {renderItem({ item: subtask, isSubtask: true })}
+              {renderItem({ item: subtask, isSubtask: true, level: taskLevel + 1 })}
             </View>
           ))}
         </View>
@@ -527,6 +571,8 @@ export default function AdminTasksScreen() {
           { value: '', label: 'הכל' },
           { value: 'open', label: 'פתוחה' },
           { value: 'in_progress', label: 'בתהליך' },
+          { value: 'stuck', label: 'תקוע' },
+          { value: 'testing', label: 'בבדיקה' },
           { value: 'done', label: 'בוצעה' },
         ]} />
         <FilterChip label="עדיפות" value={filterPriority} setValue={setFilterPriority} options={[
@@ -582,6 +628,9 @@ export default function AdminTasksScreen() {
                 onChange={(v: string) => setFormData({ ...formData, status: v as TaskStatus })}
                 options={[
                   { value: 'open', label: 'פתוחה' },
+                  { value: 'in_progress', label: 'בתהליך' },
+                  { value: 'stuck', label: 'תקוע' },
+                  { value: 'testing', label: 'בבדיקה' },
                   { value: 'done', label: 'בוצעה' },
                 ]}
               />
@@ -692,6 +741,13 @@ const styles = StyleSheet.create({
   priority_high: { backgroundColor: colors.pinkLight, borderColor: colors.pinkLight },
   priority_medium: { backgroundColor: colors.warningLight, borderColor: colors.warningLight },
   priority_low: { backgroundColor: colors.successLight, borderColor: colors.successLight },
+  
+  status_open: { backgroundColor: colors.infoLight, borderColor: colors.info },
+  status_in_progress: { backgroundColor: colors.warningLight, borderColor: colors.warning },
+  status_stuck: { backgroundColor: colors.errorLight, borderColor: colors.error },
+  status_testing: { backgroundColor: '#E8F5E9', borderColor: '#4CAF50' },
+  status_done: { backgroundColor: colors.successLight, borderColor: colors.success },
+  status_archived: { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
 
   avatarsRow: { flexDirection: 'row-reverse', alignItems: 'center' },
   avatarSmall: { width: 24, height: 24, borderRadius: 12, borderWidth: 1, borderColor: colors.white },
@@ -712,13 +768,21 @@ const styles = StyleSheet.create({
   // Subtask styles
   subtaskItem: { 
     marginLeft: 24, 
-    borderLeftWidth: 2, 
+    borderLeftWidth: 3, 
     borderLeftColor: colors.info,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: '#F0F8FF',
   },
   subtaskIndicator: { 
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingRight: 8, 
     justifyContent: 'center',
+  },
+  levelText: {
+    fontSize: 10,
+    color: colors.info,
+    fontWeight: '600',
   },
   subtasksList: { 
     marginTop: 8, 

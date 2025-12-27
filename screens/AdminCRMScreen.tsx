@@ -228,6 +228,8 @@ export default function AdminCRMScreen({ navigation }: AdminCRMScreenProps) {
                 <ScrollView
                     contentContainerStyle={styles.listContent}
                     refreshControl={<RefreshControl refreshing={isLoading} onRefresh={loadContacts} />}
+                    scrollEnabled={true}
+                    nestedScrollEnabled={true}
                 >
                     {contacts.map((c) => (
                         <View key={c.id} style={styles.card}>
