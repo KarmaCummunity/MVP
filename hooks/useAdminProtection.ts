@@ -1,11 +1,14 @@
 import { useCallback, useRef } from 'react';
 import { Alert } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import { useUser } from '../stores/userStore';
 
-export function useAdminProtection() {
-    const { isAdmin, isLoading, selectedUser, refreshUserRoles } = useUser();
+export function useAdminProtection(allowViewOnly?: boolean) {
+    const { isAdmin, isLoading, selectedUser, refreshUserRoles, isAuthenticated, isGuestMode } = useUser();
     const navigation = useNavigation<any>();
+    const route = useRoute();
+    const routeParams = (route.params as any) || {};
+    const isViewOnly = routeParams?.viewOnly === true;
     const isVerifyingRef = useRef(false);
     const lastCheckRef = useRef<number>(0);
 
@@ -50,7 +53,14 @@ export function useAdminProtection() {
 
     useFocusEffect(
         useCallback(() => {
-            // 1. Immediate local check
+            // If view-only mode is allowed and active, allow everyone (including unauthenticated)
+            if (allowViewOnly && isViewOnly) {
+                // In view-only mode, allow everyone - no authentication required
+                console.log('🔐 View-only protection: Allowing access (view-only mode)');
+                return;
+            }
+
+            // 1. Immediate local check for admin access
             if (!isLoading && !isAdmin) {
                 console.log('🔐 Admin protection: User not admin (local check), redirecting');
                 handleUnauthorized();
@@ -62,8 +72,8 @@ export function useAdminProtection() {
             if (!isLoading && isAdmin && selectedUser) {
                 verifyAdminStatus();
             }
-        }, [isAdmin, isLoading, selectedUser, verifyAdminStatus, handleUnauthorized])
+        }, [isAdmin, isLoading, selectedUser, verifyAdminStatus, handleUnauthorized, allowViewOnly, isViewOnly, isAuthenticated, isGuestMode])
     );
 
-    return { isAuthorized: isAdmin };
+    return { isAuthorized: isAdmin || (allowViewOnly && isViewOnly && (isAuthenticated || isGuestMode)) };
 }

@@ -12,7 +12,7 @@ import {
     RefreshControl,
     ActivityIndicator,
 } from 'react-native';
-import { NavigationProp } from '@react-navigation/native';
+import { NavigationProp, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
@@ -51,7 +51,10 @@ interface ContactFormData {
 const LOG_SOURCE = 'AdminCRMScreen';
 
 export default function AdminCRMScreen({ navigation }: AdminCRMScreenProps) {
-    useAdminProtection();
+    const route = useRoute();
+    const routeParams = (route.params as any) || {};
+    const viewOnly = routeParams?.viewOnly === true;
+    useAdminProtection(true);
     const { selectedUser } = useUser();
     const [contacts, setContacts] = useState<CrmContact[]>([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -188,10 +191,12 @@ export default function AdminCRMScreen({ navigation }: AdminCRMScreenProps) {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>ניהול קשרים</Text>
-                <TouchableOpacity style={styles.addButton} onPress={handleAdd}>
-                    <Ionicons name="add" size={24} color="white" />
-                    <Text style={styles.addButtonText}>הוסף</Text>
-                </TouchableOpacity>
+                {!viewOnly && (
+                    <TouchableOpacity style={styles.addButton} onPress={handleAdd}>
+                        <Ionicons name="add" size={24} color="white" />
+                        <Text style={styles.addButtonText}>הוסף</Text>
+                    </TouchableOpacity>
+                )}
             </View>
 
             <View style={styles.filtersContainer}>
@@ -239,12 +244,16 @@ export default function AdminCRMScreen({ navigation }: AdminCRMScreenProps) {
                                     <Text style={styles.cardDate}>{new Date(c.created_at).toLocaleDateString('he-IL')}</Text>
                                 </View>
                                 <View style={styles.cardActions}>
-                                    <TouchableOpacity onPress={() => handleEdit(c)} style={styles.actionButton}>
-                                        <Ionicons name="create-outline" size={20} color={colors.primary} />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity onPress={() => handleDelete(c)} style={styles.actionButton}>
-                                        <Ionicons name="trash-outline" size={20} color={colors.error} />
-                                    </TouchableOpacity>
+                                    {!viewOnly && (
+                                        <>
+                                            <TouchableOpacity onPress={() => handleEdit(c)} style={styles.actionButton}>
+                                                <Ionicons name="create-outline" size={20} color={colors.primary} />
+                                            </TouchableOpacity>
+                                            <TouchableOpacity onPress={() => handleDelete(c)} style={styles.actionButton}>
+                                                <Ionicons name="trash-outline" size={20} color={colors.error} />
+                                            </TouchableOpacity>
+                                        </>
+                                    )}
                                 </View>
                             </View>
 
@@ -269,7 +278,7 @@ export default function AdminCRMScreen({ navigation }: AdminCRMScreenProps) {
                 </ScrollView>
             )}
 
-            <Modal visible={isModalVisible} animationType="slide" transparent>
+            <Modal visible={isModalVisible && !viewOnly} animationType="slide" transparent>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>

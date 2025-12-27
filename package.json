@@ -15,7 +15,7 @@
     "web": "expo start --web",
     "prebuild:web": "bash scripts/update-build-version.sh",
     "build:web": "EXPO_PUBLIC_API_BASE_URL=https://kc-mvp-server-production.up.railway.app expo export --platform web",
-    "postbuild:web": "bash scripts/restore-build-placeholders.sh",
+    "postbuild:web": "bash scripts/fix-scroll-html.sh && bash scripts/restore-build-placeholders.sh",
     "build:web:local": "EXPO_PUBLIC_API_BASE_URL=http://localhost:3001 expo export:web",
     "audit:colors": "ts-node -O '{\"module\": \"commonjs\"}' scripts/audit-colors.ts",
     "audit:texts": "ts-node -O '{\"module\": \"commonjs\"}' scripts/audit-texts.ts",

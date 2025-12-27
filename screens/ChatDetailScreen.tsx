@@ -22,6 +22,7 @@ import {
   StatusBar,
   ActivityIndicator,
   Dimensions,
+  Modal,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect, NavigationProp } from '@react-navigation/native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -30,6 +31,7 @@ import { RootStackParamList } from '../globals/types';
 import { useUser } from '../stores/userStore';
 import { getMessages, sendMessage, markMessagesAsRead, Message, subscribeToMessages } from '../utils/chatService';
 import { pickImage, pickVideo, takePhoto, pickDocument, validateFile, FileData } from '../utils/fileService';
+import { uploadFileWithProgress, buildChatFilePath } from '../utils/storageService';
 import { apiService } from '../utils/apiService';
 import { USE_BACKEND } from '../utils/config.constants';
 import colors from '../globals/colors';
@@ -68,6 +70,9 @@ export default function ChatDetailScreen() {
   const [userName, setUserName] = useState(initialUserName);
   const [userAvatar, setUserAvatar] = useState(initialUserAvatar);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadingFile, setUploadingFile] = useState<FileData | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   // Load user profile for the other user
@@ -276,13 +281,70 @@ export default function ChatDetailScreen() {
 
     try {
       setIsSending(true);
+      setUploadProgress(0);
+      setUploadingFile(fileData);
+      setShowUploadModal(true);
 
+      // Validate file
       const validation = validateFile(fileData);
       if (!validation.isValid) {
+        setShowUploadModal(false);
+        setUploadingFile(null);
+        setIsSending(false);
         Alert.alert('שגיאה', validation.error || 'הקובץ אינו תקין');
         return;
       }
 
+      // Generate temp messageId for file path
+      const tempMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Build file path in Firebase Storage
+      const fullPath = buildChatFilePath(conversationId, tempMessageId, fileData.name);
+      
+      // Upload file to Firebase Storage with progress tracking
+      let uploadedUrl: string;
+      try {
+        const uploadResult = await uploadFileWithProgress(
+          fullPath,
+          fileData.uri,
+          fileData.mimeType,
+          (progress) => {
+            setUploadProgress(progress);
+          }
+        );
+        uploadedUrl = uploadResult.url;
+      } catch (uploadError: any) {
+        console.error('❌ Upload file error:', uploadError);
+        const errorMessage = uploadError?.message || uploadError?.code || 'שגיאה לא ידועה';
+        console.error('❌ Upload error details:', {
+          error: uploadError,
+          fullPath,
+          fileName: fileData.name,
+          fileSize: fileData.size,
+          mimeType: fileData.mimeType,
+        });
+        setShowUploadModal(false);
+        setUploadingFile(null);
+        setIsSending(false);
+        Alert.alert(
+          'שגיאה בהעלאת הקובץ',
+          `לא ניתן להעלות את הקובץ. ${errorMessage.includes('CORS') ? 'בעיית CORS - בדוק את הגדרות Firebase Storage.' : errorMessage}`
+        );
+        return;
+      }
+
+      // Update fileData with Firebase Storage URL
+      const updatedFileData: FileData = {
+        ...fileData,
+        uri: uploadedUrl,
+      };
+
+      // Hide upload modal
+      setShowUploadModal(false);
+      setUploadingFile(null);
+      setUploadProgress(0);
+
+      // Send message with uploaded file URL
       await sendMessage({
         conversationId,
         senderId: selectedUser.id,
@@ -291,14 +353,20 @@ export default function ChatDetailScreen() {
         read: false,
         type: fileData.type,
         status: 'sent',
-        fileData,
-      });
+        fileData: updatedFileData,
+      }, [selectedUser.id, otherUserId]);
 
       console.log('✅ File message sent');
 
+      // Reload messages to show the new message
+      await loadMessages();
+
     } catch (error) {
       console.error('❌ Send file error:', error);
-      Alert.alert('שגיאה', 'שגיאה בשליחת הקובץ');
+      setShowUploadModal(false);
+      setUploadingFile(null);
+      setUploadProgress(0);
+      Alert.alert('שגיאה', 'שגיאה בשליחת הקובץ. אנא נסה שוב.');
     } finally {
       setIsSending(false);
     }
@@ -568,6 +636,26 @@ export default function ChatDetailScreen() {
           </View>
         </KeyboardAvoidingView>
       )}
+
+      {/* Upload Progress Modal */}
+      <Modal
+        visible={showUploadModal}
+        transparent
+        animationType="fade"
+      >
+        <View style={styles.uploadModalOverlay}>
+          <View style={styles.uploadModalContent}>
+            <ActivityIndicator size="large" color={colors.primary} style={styles.uploadSpinner} />
+            <Text style={styles.uploadText}>
+              {uploadingFile ? `מעלה ${uploadingFile.name}...` : 'מעלה קובץ...'}
+            </Text>
+            <View style={styles.progressBarContainer}>
+              <View style={[styles.progressBar, { width: `${uploadProgress}%` }]} />
+            </View>
+            <Text style={styles.progressText}>{Math.round(uploadProgress)}%</Text>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -730,6 +818,48 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.caption,
     color: colors.textSecondary,
     marginTop: 4,
+    textAlign: 'center',
+  },
+  // Upload progress modal
+  uploadModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  uploadModalContent: {
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    minWidth: 250,
+    maxWidth: '80%',
+  },
+  uploadSpinner: {
+    marginBottom: 16,
+  },
+  uploadText: {
+    fontSize: FontSizes.body,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  progressBarContainer: {
+    width: '100%',
+    height: 8,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: FontSizes.caption,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
 });

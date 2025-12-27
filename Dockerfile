@@ -25,6 +25,9 @@ RUN chmod +x scripts/update-build-version.sh && sh scripts/update-build-version.
 # Run Expo export
 RUN npx --yes expo@latest export --platform web || npx expo export --platform web
 
+# Fix scrolling issue: inject CSS into generated index.html
+RUN chmod +x scripts/fix-scroll-html.sh && sh scripts/fix-scroll-html.sh || true
+
 # Restore placeholders (not critical if fails, so we don't fail build)
 RUN chmod +x scripts/restore-build-placeholders.sh && sh scripts/restore-build-placeholders.sh || true
 

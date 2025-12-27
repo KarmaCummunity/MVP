@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Modal, Image, SafeAreaView, Platform } from 'react-native';
+import { useRoute, useFocusEffect, useNavigation } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +8,7 @@ import apiService, { ApiResponse } from '../utils/apiService';
 import { useUser } from '../stores/userStore';
 import { useAdminProtection } from '../hooks/useAdminProtection';
 import UserSelector from '../components/UserSelector';
+import TaskHoursModal from '../components/TaskHoursModal';
 
 type TaskStatus = 'open' | 'in_progress' | 'done' | 'archived' | 'stuck' | 'testing';
 type TaskPriority = 'low' | 'medium' | 'high';
@@ -36,13 +38,31 @@ type AdminTask = {
   parent_task_details?: { id: string; title: string } | null;
   subtask_count?: number;
   level?: number; // Depth level (0 = root, 1 = subtask, 2 = sub-subtask, etc.)
+  estimated_hours?: number | null;
+  actual_hours?: number | null;
   created_at?: string;
   updated_at?: string;
 };
 
 export default function AdminTasksScreen() {
-  useAdminProtection();
+  const route = useRoute();
+  const navigation = useNavigation<any>();
+  const routeParams = (route.params as any) || {};
+  const viewOnly = routeParams?.viewOnly === true;
+  useAdminProtection(true);
   const { selectedUser } = useUser();
+
+  // Ensure top bar and bottom bar are visible in view-only mode
+  useFocusEffect(
+    React.useCallback(() => {
+      if (viewOnly) {
+        navigation.setParams({
+          hideTopBar: false,
+          hideBottomBar: false,
+        });
+      }
+    }, [viewOnly, navigation])
+  );
   const [tasks, setTasks] = useState<AdminTask[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +82,13 @@ export default function AdminTasksScreen() {
     assignees: [] as User[],
     tagsText: '' as string,
     parent_task_id: '' as string,
+    estimated_hours: '' as string,
   });
+
+  // Task Hours Modal State
+  const [showHoursModal, setShowHoursModal] = useState(false);
+  const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
+  const [pendingTask, setPendingTask] = useState<AdminTask | null>(null);
 
   const [query, setQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<TaskStatus | ''>('');
@@ -139,6 +165,7 @@ export default function AdminTasksScreen() {
       assignees: [],
       tagsText: '',
       parent_task_id: '',
+      estimated_hours: '',
     });
     setEditingId(null);
   };
@@ -204,6 +231,7 @@ export default function AdminTasksScreen() {
       assignees: parentTask.assignees_details || [],
       tagsText: '',
       parent_task_id: parentTask.id,
+      estimated_hours: '',
     });
     setEditingId(null);
     setShowForm(true);
@@ -232,6 +260,15 @@ export default function AdminTasksScreen() {
         parsedDueDate = date.toISOString();
       }
 
+      // Parse estimated_hours
+      let parsedEstimatedHours = null;
+      if (formData.estimated_hours && formData.estimated_hours.trim()) {
+        const hours = parseFloat(formData.estimated_hours.trim());
+        if (!isNaN(hours) && hours > 0) {
+          parsedEstimatedHours = hours;
+        }
+      }
+
       const body = {
         title: formData.title.trim(),
         description: formData.description.trim() || null,
@@ -245,6 +282,7 @@ export default function AdminTasksScreen() {
           : [],
         created_by: selectedUser.id, // Always required
         parent_task_id: formData.parent_task_id || null,
+        estimated_hours: parsedEstimatedHours,
       };
 
       console.log('📤 Creating task with payload:', body);
@@ -276,11 +314,20 @@ export default function AdminTasksScreen() {
   };
 
   const toggleDone = async (task: AdminTask) => {
+    // If trying to mark as done, check if hours are logged first
+    if (task.status !== 'done') {
+      // Open hours modal first
+      setPendingTaskId(task.id);
+      setPendingTask(task);
+      setShowHoursModal(true);
+      return;
+    }
+
+    // If unmarking as done, just update status
     setUpdating(task.id);
     setError(null);
     try {
-      const nextStatus: TaskStatus = task.status === 'done' ? 'open' : 'done';
-      const res: ApiResponse<AdminTask> = await apiService.updateTask(task.id, { status: nextStatus });
+      const res: ApiResponse<AdminTask> = await apiService.updateTask(task.id, { status: 'open' });
       if (res.success && res.data) {
         await fetchTasks();
       } else {
@@ -292,6 +339,32 @@ export default function AdminTasksScreen() {
     } finally {
       setUpdating(null);
     }
+  };
+
+  const handleSaveHours = async (hours: number) => {
+    if (!pendingTaskId || !selectedUser?.id) {
+      throw new Error('משתמש לא זוהה');
+    }
+
+    // Log hours first
+    const logRes = await apiService.logTaskHours(pendingTaskId, hours, selectedUser.id);
+    if (!logRes.success) {
+      throw new Error(logRes.error || 'שגיאה ברישום שעות');
+    }
+
+    // Then update status to done
+    const updateRes = await apiService.updateTask(pendingTaskId, { status: 'done' });
+    if (!updateRes.success) {
+      throw new Error(updateRes.error || 'שגיאה בעדכון סטטוס המשימה');
+    }
+
+    // Refresh tasks
+    await fetchTasks();
+
+    // Close modal and reset state
+    setShowHoursModal(false);
+    setPendingTaskId(null);
+    setPendingTask(null);
   };
 
   const renderItem = ({ item, isSubtask = false, level = 0 }: { item: AdminTask; isSubtask?: boolean; level?: number }) => {
@@ -412,34 +485,55 @@ export default function AdminTasksScreen() {
               </View>
             </View>
 
+            {/* Hours Display */}
+            {((item.estimated_hours && parseFloat(String(item.estimated_hours)) > 0) || 
+              (item.actual_hours && parseFloat(String(item.actual_hours)) > 0)) && (
+              <View style={styles.hoursRow}>
+                {item.estimated_hours && parseFloat(String(item.estimated_hours)) > 0 && (
+                  <View style={[styles.badge, styles.hoursBadge]}>
+                    <Ionicons name="time-outline" size={12} color={colors.info} />
+                    <Text style={styles.hoursText}>מוערך: {parseFloat(String(item.estimated_hours)).toFixed(1)} שעות</Text>
+                  </View>
+                )}
+                {item.actual_hours && parseFloat(String(item.actual_hours)) > 0 && (
+                  <View style={[styles.badge, styles.hoursBadge, styles.actualHoursBadge]}>
+                    <Ionicons name="checkmark-circle-outline" size={12} color={colors.success} />
+                    <Text style={[styles.hoursText, { color: colors.success }]}>בוצע: {parseFloat(String(item.actual_hours)).toFixed(1)} שעות</Text>
+                  </View>
+                )}
+              </View>
+            )}
+
             {item.creator_details && (
               <Text style={styles.creatorText}>נוצר ע"י {item.creator_details.name}</Text>
             )}
 
-          <View style={styles.actionsRow}>
-            <TouchableOpacity style={styles.actionBtn} onPress={() => openEdit(item)}>
-              <Ionicons name="create-outline" size={18} color={colors.textPrimary} />
-              <Text style={styles.actionText}>ערוך</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtn} onPress={() => createSubtask(item)}>
-              <Ionicons name="add-circle-outline" size={18} color={colors.info} />
-              <Text style={[styles.actionText, { color: colors.info }]}>תת-משימה</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={() => deleteTask(item.id)}
-              disabled={deleting === item.id}
-            >
-              {deleting === item.id ? (
-                <ActivityIndicator size="small" color={colors.error} />
-              ) : (
-                <>
-                  <Ionicons name="trash-outline" size={18} color={colors.error} />
-                  <Text style={[styles.actionText, { color: colors.error }]}>מחק</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
+          {!viewOnly && (
+            <View style={styles.actionsRow}>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => openEdit(item)}>
+                <Ionicons name="create-outline" size={18} color={colors.textPrimary} />
+                <Text style={styles.actionText}>ערוך</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => createSubtask(item)}>
+                <Ionicons name="add-circle-outline" size={18} color={colors.info} />
+                <Text style={[styles.actionText, { color: colors.info }]}>תת-משימה</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => deleteTask(item.id)}
+                disabled={deleting === item.id}
+              >
+                {deleting === item.id ? (
+                  <ActivityIndicator size="small" color={colors.error} />
+                ) : (
+                  <>
+                    <Ionicons name="trash-outline" size={18} color={colors.error} />
+                    <Text style={[styles.actionText, { color: colors.error }]}>מחק</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </View>
 
@@ -468,6 +562,7 @@ export default function AdminTasksScreen() {
       assignees: task.assignees_details || [],
       tagsText: (task.tags || []).join(', '),
       parent_task_id: task.parent_task_id || '',
+      estimated_hours: (task.estimated_hours !== null && task.estimated_hours !== undefined && task.estimated_hours > 0) ? String(task.estimated_hours) : '',
     });
     setEditingId(task.id);
     setShowForm(true);
@@ -489,6 +584,15 @@ export default function AdminTasksScreen() {
         parsedDueDate = date.toISOString();
       }
 
+      // Parse estimated_hours
+      let parsedEstimatedHours = null;
+      if (formData.estimated_hours && formData.estimated_hours.trim()) {
+        const hours = parseFloat(formData.estimated_hours.trim());
+        if (!isNaN(hours) && hours > 0) {
+          parsedEstimatedHours = hours;
+        }
+      }
+
       const body: any = {
         title: formData.title.trim(),
         description: formData.description.trim() || null,
@@ -498,6 +602,7 @@ export default function AdminTasksScreen() {
         due_date: parsedDueDate,
         tags: formData.tagsText ? formData.tagsText.split(',').map((t) => t.trim()).filter(Boolean) : [],
         assignees: formData.assignees.map(u => u.id),
+        estimated_hours: parsedEstimatedHours,
       };
 
       const res = await apiService.updateTask(editingId, body);
@@ -644,6 +749,14 @@ export default function AdminTasksScreen() {
             />
 
             <TextInput style={styles.modalInput} placeholder="תגיות (מופרדות אות)" value={formData.tagsText} onChangeText={(v) => setFormData({ ...formData, tagsText: v })} />
+            
+            <TextInput 
+              style={styles.modalInput} 
+              placeholder="זמן עבודה מוערך בשעות (אופציונלי)" 
+              value={formData.estimated_hours} 
+              onChangeText={(v) => setFormData({ ...formData, estimated_hours: v })} 
+              keyboardType="decimal-pad"
+            />
 
             <View style={styles.modalActions}>
               <TouchableOpacity style={[styles.modalBtn, styles.modalCancel]} onPress={() => { setShowForm(false); resetForm(); }}>
@@ -657,9 +770,23 @@ export default function AdminTasksScreen() {
         </View>
       </Modal>
 
-      <TouchableOpacity style={styles.addButton} onPress={() => { resetForm(); setShowForm(true); }}>
-        <Ionicons name="add" size={24} color={colors.white} />
-      </TouchableOpacity>
+      <TaskHoursModal
+        visible={showHoursModal}
+        onClose={() => {
+          setShowHoursModal(false);
+          setPendingTaskId(null);
+          setPendingTask(null);
+        }}
+        onSave={handleSaveHours}
+        estimatedHours={pendingTask?.estimated_hours || null}
+        taskTitle={pendingTask?.title}
+      />
+
+      {!viewOnly && (
+        <TouchableOpacity style={styles.addButton} onPress={() => { resetForm(); setShowForm(true); }}>
+          <Ionicons name="add" size={24} color={colors.white} />
+        </TouchableOpacity>
+      )}
     </SafeAreaView>
   );
 }
@@ -755,6 +882,24 @@ const styles = StyleSheet.create({
   moreAvatarText: { color: colors.white, fontSize: 10, fontWeight: 'bold' },
 
   creatorText: { fontSize: 11, color: colors.textSecondary, textAlign: 'right', marginTop: 4 },
+
+  hoursRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' },
+  hoursBadge: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 4, 
+    backgroundColor: colors.infoLight,
+    borderColor: colors.info,
+  },
+  actualHoursBadge: {
+    backgroundColor: colors.successLight,
+    borderColor: colors.success,
+  },
+  hoursText: { 
+    fontSize: 11, 
+    color: colors.info, 
+    fontWeight: '600',
+  },
 
   actionsRow: { flexDirection: 'row-reverse', gap: 16, marginTop: 8 },
   actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },

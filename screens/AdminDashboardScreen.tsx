@@ -6,10 +6,9 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
-  RefreshControl,
   Alert
 } from 'react-native';
-import { NavigationProp } from '@react-navigation/native';
+import { NavigationProp, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
@@ -78,6 +77,22 @@ const adminButtons: AdminButton[] = [
     color: colors.warning,
     bgColor: colors.warningLight,
     route: 'AdminCRM',
+  },
+  {
+    id: 'time',
+    title: 'ניהול זמן עובדים',
+    icon: 'time-outline',
+    color: colors.accent,
+    bgColor: '#E8F5E9',
+    route: 'AdminTimeManagement',
+  },
+  {
+    id: 'tables',
+    title: 'טבלאות',
+    icon: 'grid-outline',
+    color: colors.info,
+    bgColor: colors.infoLight,
+    route: 'AdminTables',
   }
 ];
 
@@ -85,61 +100,30 @@ import { useAdminProtection } from '../hooks/useAdminProtection';
 
 export default function AdminDashboardScreen({ navigation }: AdminDashboardScreenProps) {
   const { selectedUser } = useUser();
-  useAdminProtection();
+  const route = useRoute();
+  const routeParams = (route.params as any) || {};
+  const viewOnly = routeParams?.viewOnly === true;
+  useAdminProtection(true);
 
-  const [stats, setStats] = React.useState<any>(null);
-  const [loading, setLoading] = React.useState(false);
-  const [refreshing, setRefreshing] = React.useState(false);
-
-  const loadStats = async () => {
-    try {
-      setLoading(true);
-      console.log('📊 AdminDashboard - Loading stats...');
-      const res = await import('../utils/apiService').then(m => m.apiService.getDashboardStats());
-      console.log('📊 AdminDashboard - API Response:', res);
-
-      if (res.success && res.data) {
-        // Convert string values to numbers for proper display
-        const processedData = {
-          ...res.data,
-          metrics: {
-            ...res.data.metrics,
-            tasks_open: Number(res.data.metrics.tasks_open || 0),
-            tasks_in_progress: Number(res.data.metrics.tasks_in_progress || 0),
-            tasks_done: Number(res.data.metrics.tasks_done || 0),
-            tasks_total: Number(res.data.metrics.tasks_total || 0),
-            admins_count: Number(res.data.metrics.admins_count || 0),
-            regular_users_count: Number(res.data.metrics.regular_users_count || 0),
-            total_users: Number(res.data.metrics.total_users || 0),
-          }
-        };
-        console.log('📊 AdminDashboard - Processed stats:', processedData);
-        setStats(processedData);
-      } else {
-        console.warn('⚠️ AdminDashboard - API call failed or returned no data:', res);
+  // Ensure top bar and bottom bar are visible in view-only mode
+  useFocusEffect(
+    React.useCallback(() => {
+      if (viewOnly) {
+        console.log('🔐 AdminDashboard - View-only mode: Ensuring bars are visible');
+        (navigation as any).setParams({
+          hideTopBar: false,
+          hideBottomBar: false,
+        });
       }
-    } catch (error) {
-      console.error('❌ AdminDashboard - Failed to load dashboard stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    }, [viewOnly, navigation])
+  );
 
-  const onRefresh = React.useCallback(async () => {
-    setRefreshing(true);
-    await loadStats();
-    setRefreshing(false);
-  }, []);
-
-  React.useEffect(() => {
-    loadStats();
-  }, []);
 
   const handleButtonPress = (button: AdminButton) => {
     if (button.route === 'AdminDashboard') {
       return;
     }
-    (navigation as any).navigate(button.route);
+    (navigation as any).navigate(button.route, viewOnly ? { viewOnly: true, hideTopBar: false, hideBottomBar: false } : undefined);
   };
 
   return (
@@ -147,65 +131,23 @@ export default function AdminDashboardScreen({ navigation }: AdminDashboardScree
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
-        }
       >
         <View style={styles.header}>
-          <Text style={styles.welcomeText}>לוח בקרה</Text>
-          <Text style={styles.subtitleText}>
-            {selectedUser?.name ? `שלום ${selectedUser.name}` : 'מנהל'}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+            <View>
+              <Text style={styles.welcomeText}>לוח בקרה</Text>
+              <Text style={styles.subtitleText}>
+                {selectedUser?.name ? `שלום ${selectedUser.name}` : 'מנהל'}
+              </Text>
+            </View>
+            {viewOnly && (
+              <View style={[styles.viewOnlyBadge, { backgroundColor: colors.warningLight }]}>
+                <Ionicons name="eye-outline" size={16} color={colors.warning} />
+                <Text style={[styles.viewOnlyText, { color: colors.warning }]}>מצב צפייה בלבד</Text>
+              </View>
+            )}
+          </View>
         </View>
-
-        {loading && !stats && (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>טוען סטטיסטיקות...</Text>
-          </View>
-        )}
-
-        {!loading && !stats && (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="stats-chart-outline" size={48} color={colors.textSecondary} />
-            <Text style={styles.emptyText}>לא ניתן לטעון סטטיסטיקות</Text>
-            <Text style={styles.emptySubtext}>משוך למטה לרענון</Text>
-          </View>
-        )}
-
-        {stats && stats.metrics && (
-          <View style={styles.statsContainer}>
-            <View style={styles.statCard}>
-              <Ionicons name="list-outline" size={24} color={colors.primary} />
-              <Text style={styles.statValue}>{stats.metrics.tasks_open}</Text>
-              <Text style={styles.statLabel}>משימות פתוחות</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="hourglass-outline" size={24} color={colors.warning} />
-              <Text style={styles.statValue}>{stats.metrics.tasks_in_progress}</Text>
-              <Text style={styles.statLabel}>משימות בתהליך</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="checkmark-done-outline" size={24} color={colors.success} />
-              <Text style={styles.statValue}>{stats.metrics.tasks_done}</Text>
-              <Text style={styles.statLabel}>משימות שהושלמו</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="shield-outline" size={24} color={colors.secondary} />
-              <Text style={styles.statValue}>{stats.metrics.admins_count}</Text>
-              <Text style={styles.statLabel}>מנהלים במערכת</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="people-outline" size={24} color={colors.info} />
-              <Text style={styles.statValue}>{stats.metrics.regular_users_count}</Text>
-              <Text style={styles.statLabel}>משתמשים רגילים</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="person-outline" size={24} color={colors.textSecondary} />
-              <Text style={styles.statValue}>{stats.metrics.total_users}</Text>
-              <Text style={styles.statLabel}>סה"כ משתמשים</Text>
-            </View>
-          </View>
-        )}
 
         <View style={styles.buttonsContainer}>
           {adminButtons.map((button) => (
@@ -280,35 +222,6 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.medium,
     color: colors.textSecondary,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: LAYOUT_CONSTANTS.SPACING.SM,
-    marginBottom: LAYOUT_CONSTANTS.SPACING.XL,
-  },
-  statCard: {
-    width: '48%',
-    backgroundColor: colors.background,
-    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.MEDIUM,
-    padding: LAYOUT_CONSTANTS.SPACING.MD,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: FontSizes.heading3,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-    marginVertical: 4,
-  },
-  statLabel: {
-    fontSize: FontSizes.small,
-    color: colors.textSecondary,
-  },
   buttonsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -347,34 +260,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     textAlign: 'center',
   },
-  loadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: LAYOUT_CONSTANTS.SPACING.XL,
-    marginBottom: LAYOUT_CONSTANTS.SPACING.XL,
-  },
-  loadingText: {
-    fontSize: FontSizes.medium,
-    color: colors.textSecondary,
-    marginTop: LAYOUT_CONSTANTS.SPACING.SM,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: LAYOUT_CONSTANTS.SPACING.XL,
-    marginBottom: LAYOUT_CONSTANTS.SPACING.XL,
-  },
-  emptyText: {
-    fontSize: FontSizes.medium,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-    marginTop: LAYOUT_CONSTANTS.SPACING.MD,
-  },
-  emptySubtext: {
-    fontSize: FontSizes.small,
-    color: colors.textSecondary,
-    marginTop: LAYOUT_CONSTANTS.SPACING.XS,
-  },
   hierarchySection: {
     marginTop: LAYOUT_CONSTANTS.SPACING.XL,
     paddingTop: LAYOUT_CONSTANTS.SPACING.LG,
@@ -409,6 +294,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
+  },
+  viewOnlyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.SM,
+    paddingVertical: LAYOUT_CONSTANTS.SPACING.XS,
+    borderRadius: LAYOUT_CONSTANTS.BORDER_RADIUS.SMALL,
+  },
+  viewOnlyText: {
+    fontSize: FontSizes.small,
+    fontWeight: '600',
   },
 });
 

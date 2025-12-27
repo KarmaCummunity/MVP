@@ -177,6 +177,7 @@ export type RootStackParamList = {
   AdminOrgApprovalsScreen: undefined;
   OrgDashboardScreen: undefined;
   EditProfileScreen: undefined;
+  AdminDashboard: { viewOnly?: boolean; hideTopBar?: boolean; hideBottomBar?: boolean };
 };
 
 // --- Bottom Tab Navigator (BottomNavigator) Parameter List ---
@@ -209,7 +210,7 @@ export type PostsReelsStackParamList = {
 };
 
 export type AdminStackParamList = {
-  AdminDashboard: undefined;
+  AdminDashboard: { viewOnly?: boolean; hideTopBar?: boolean; hideBottomBar?: boolean } | undefined;
   AdminMoney: undefined;
   AdminTasks: undefined;
   AdminPeople: undefined;
@@ -217,6 +218,12 @@ export type AdminStackParamList = {
   AdminReview: undefined;
   AdminFiles: undefined;
   AdminCRM: undefined;
+  AdminTimeManagement: undefined;
+  AdminTables: undefined;
+  AdminTableRows: {
+    tableId: string;
+    tableName: string;
+  };
   ChatListScreen: undefined;
   ChatDetailScreen: {
     conversationId: string;
