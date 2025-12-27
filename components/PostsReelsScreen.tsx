@@ -1191,14 +1191,15 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
       // Load NEW posts from Postgres DB (Task Completions, etc.)
       let newPostsList: any[] = [];
       try {
-        const res = await apiService.getPosts(20, 0);
+        const res = await apiService.getPosts(20, 0, selectedUser?.id);
         console.log('📡 PostsReelsScreen - getPosts response:', { success: res.success, dataLength: res.data?.length });
         if (res.success && Array.isArray(res.data)) {
           newPostsList = res.data;
           console.log('📋 PostsReelsScreen - Loaded posts:', newPostsList.map(p => ({ 
             id: p.id.substring(0, 8), 
             type: p.post_type, 
-            title: p.title.substring(0, 30) 
+            title: p.title.substring(0, 30),
+            is_liked: p.is_liked
           })));
         }
       } catch (err) {
@@ -1228,7 +1229,7 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
           },
           likes: p.likes || 0,
           comments: p.comments || 0,
-          isLiked: false,
+          isLiked: Boolean(p.is_liked ?? false),
           timestamp: p.created_at,
           taskData: p.task // Include task data for task posts
         } as Item);

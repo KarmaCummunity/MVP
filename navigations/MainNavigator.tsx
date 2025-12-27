@@ -39,8 +39,10 @@ import AdminOrgApprovalsScreen from '../screens/AdminOrgApprovalsScreen';
 import OrgDashboardScreen from '../screens/OrgDashboardScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import LandingSiteScreen from '../screens/LandingSiteScreen';
+import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import { useWebMode } from '../stores/webModeStore';
 import { logger } from '../utils/loggerService';
+import TopBarNavigator from './TopBarNavigator';
 
 import { RootStackParamList } from '../globals/types';
 
@@ -89,13 +91,19 @@ export default function MainNavigator() {
       key={stackKey}
       id={undefined}
       detachInactiveScreens={true}
-      screenOptions={{
-        headerShown: false,
+      screenOptions={({ navigation, route }) => ({
+        headerShown: route.name === 'AdminDashboard' ? true : false,
+        header: route.name === 'AdminDashboard' ? () => (
+          <TopBarNavigator
+            navigation={navigation as any}
+            hideTopBar={(route?.params as any)?.hideTopBar === true}
+          />
+        ) : undefined,
         // Fix for aria-hidden warning: prevent focus on inactive screens
         cardStyle: Platform.OS === 'web' ? {
           // On web, ensure inactive screens don't interfere with focus
         } : undefined,
-      }}
+      })}
     >
       {isAuthenticated || isGuestMode ? (
         // ==================================================================
@@ -148,6 +156,7 @@ export default function MainNavigator() {
           <Stack.Screen name="AdminOrgApprovalsScreen" component={AdminOrgApprovalsScreen} />
           <Stack.Screen name="OrgDashboardScreen" component={OrgDashboardScreen} />
           <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} />
+          <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
         </Stack.Group>
       ) : (
         // ==================================================================

@@ -13,7 +13,7 @@ import {
     Linking,
     ActivityIndicator,
 } from 'react-native';
-import { NavigationProp } from '@react-navigation/native';
+import { NavigationProp, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
@@ -21,6 +21,8 @@ import { AdminStackParamList } from '../globals/types';
 import { useUser } from '../stores/userStore';
 import { apiService } from '../utils/apiService';
 import { useAdminProtection } from '../hooks/useAdminProtection';
+import { pickDocument, validateFile, FileData, formatFileSize } from '../utils/fileService';
+import { uploadFileWithProgress, buildAdminFilePath } from '../utils/storageService';
 
 interface AdminFilesScreenProps {
     navigation: NavigationProp<AdminStackParamList>;
@@ -33,18 +35,22 @@ interface GeneralFile {
     folder_path: string;
     created_at: string;
     mime_type?: string;
+    size?: number;
 }
 
 export default function AdminFilesScreen({ navigation }: AdminFilesScreenProps) {
-    useAdminProtection();
+    const route = useRoute();
+    const routeParams = (route.params as any) || {};
+    const viewOnly = routeParams?.viewOnly === true;
+    useAdminProtection(true);
     const { selectedUser } = useUser();
     const [files, setFiles] = useState<GeneralFile[]>([]);
     const [currentFolder, setCurrentFolder] = useState('/');
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isMutating, setIsMutating] = useState(false);
-
-    const [newFile, setNewFile] = useState({ name: '', url: '' });
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [selectedFile, setSelectedFile] = useState<FileData | null>(null);
 
     useEffect(() => {
         loadFiles();
@@ -88,27 +94,94 @@ export default function AdminFilesScreen({ navigation }: AdminFilesScreenProps) 
         ]);
     };
 
+    const handlePickFile = async () => {
+        const result = await pickDocument();
+        if (result.success && result.fileData) {
+            setSelectedFile(result.fileData);
+        } else if (result.error) {
+            Alert.alert('שגיאה', result.error);
+        }
+    };
+
     const handleUpload = async () => {
-        if (!newFile.name || !newFile.url) {
-            Alert.alert('שגיאה', 'חובה למלא שם וקישור');
+        if (!selectedFile) {
+            Alert.alert('שגיאה', 'אנא בחר קובץ להעלאה');
+            return;
+        }
+
+        // Validate file size (max 10MB for admin files)
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        const validation = validateFile(selectedFile, maxSize);
+        if (!validation.isValid) {
+            Alert.alert('שגיאה', validation.error || 'הקובץ אינו תקין');
             return;
         }
 
         setIsMutating(true);
-        const res = await apiService.adminFiles.create({
-            name: newFile.name,
-            url: newFile.url,
-            folder_path: currentFolder,
-            uploaded_by: selectedUser?.id
-        });
-        setIsMutating(false);
+        setUploadProgress(0);
 
-        if (res.success) {
-            setIsModalVisible(false);
-            setNewFile({ name: '', url: '' });
-            loadFiles();
-        } else {
-            Alert.alert('שגיאה', 'הוספה נכשלה');
+        try {
+            // Generate file ID
+            const fileId = `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
+            // Build file path in Firebase Storage
+            const fullPath = buildAdminFilePath(currentFolder, fileId, selectedFile.name);
+            
+            // Upload file to Firebase Storage with progress tracking
+            let uploadedUrl: string;
+            try {
+                const uploadResult = await uploadFileWithProgress(
+                    fullPath,
+                    selectedFile.uri,
+                    selectedFile.mimeType,
+                    (progress) => {
+                        setUploadProgress(progress);
+                    }
+                );
+                uploadedUrl = uploadResult.url;
+            } catch (uploadError: any) {
+                console.error('❌ Upload file error:', uploadError);
+                const errorMessage = uploadError?.message || uploadError?.code || 'שגיאה לא ידועה';
+                console.error('❌ Upload error details:', {
+                    error: uploadError,
+                    fullPath,
+                    fileName: selectedFile.name,
+                    fileSize: selectedFile.size,
+                    mimeType: selectedFile.mimeType,
+                });
+                Alert.alert(
+                    'שגיאה בהעלאת הקובץ',
+                    `לא ניתן להעלות את הקובץ. ${errorMessage.includes('CORS') ? 'בעיית CORS - בדוק את הגדרות Firebase Storage.' : errorMessage}`
+                );
+                setIsMutating(false);
+                setUploadProgress(0);
+                return;
+            }
+
+            // Save file metadata to database
+            const res = await apiService.adminFiles.create({
+                name: selectedFile.name,
+                url: uploadedUrl,
+                mime_type: selectedFile.mimeType,
+                size: selectedFile.size || 0,
+                folder_path: currentFolder,
+                uploaded_by: selectedUser?.id
+            });
+
+            if (res.success) {
+                setIsModalVisible(false);
+                setSelectedFile(null);
+                setUploadProgress(0);
+                loadFiles();
+            } else {
+                Alert.alert('שגיאה', 'הוספה נכשלה');
+            }
+        } catch (error) {
+            console.error('❌ Upload error:', error);
+            Alert.alert('שגיאה', 'שגיאה בהעלאת הקובץ. אנא נסה שוב.');
+        } finally {
+            setIsMutating(false);
+            setUploadProgress(0);
         }
     };
 
@@ -116,10 +189,12 @@ export default function AdminFilesScreen({ navigation }: AdminFilesScreenProps) 
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>קבצים משותפים</Text>
-                <TouchableOpacity style={styles.addButton} onPress={() => setIsModalVisible(true)}>
-                    <Ionicons name="add" size={24} color="white" />
-                    <Text style={styles.addText}>הוסף קובץ</Text>
-                </TouchableOpacity>
+                {!viewOnly && (
+                    <TouchableOpacity style={styles.addButton} onPress={() => setIsModalVisible(true)}>
+                        <Ionicons name="add" size={24} color="white" />
+                        <Text style={styles.addText}>הוסף קובץ</Text>
+                    </TouchableOpacity>
+                )}
             </View>
 
             <View style={styles.folderBar}>
@@ -140,12 +215,19 @@ export default function AdminFilesScreen({ navigation }: AdminFilesScreenProps) 
                                 <Ionicons name="document-text-outline" size={30} color={colors.secondary} />
                                 <View style={styles.textContainer}>
                                     <Text style={styles.fileName}>{f.name}</Text>
-                                    <Text style={styles.fileDate}>{new Date(f.created_at).toLocaleDateString('he-IL')}</Text>
+                                    <View style={styles.fileMeta}>
+                                        <Text style={styles.fileDate}>{new Date(f.created_at).toLocaleDateString('he-IL')}</Text>
+                                        {f.size && f.size > 0 && (
+                                            <Text style={styles.fileSize}> • {formatFileSize(f.size)}</Text>
+                                        )}
+                                    </View>
                                 </View>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={() => handleDelete(f)} style={styles.deleteBtn}>
-                                <Ionicons name="trash-outline" size={20} color={colors.error} />
-                            </TouchableOpacity>
+                            {!viewOnly && (
+                                <TouchableOpacity onPress={() => handleDelete(f)} style={styles.deleteBtn}>
+                                    <Ionicons name="trash-outline" size={20} color={colors.error} />
+                                </TouchableOpacity>
+                            )}
                         </View>
                     ))}
                     {files.length === 0 && (
@@ -154,34 +236,68 @@ export default function AdminFilesScreen({ navigation }: AdminFilesScreenProps) 
                 </ScrollView>
             )}
 
-            <Modal visible={isModalVisible} transparent animationType="slide">
+            <Modal visible={isModalVisible && !viewOnly} transparent animationType="slide">
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>הוספת קובץ (קישור)</Text>
+                        <Text style={styles.modalTitle}>הוספת קובץ</Text>
 
-                        <Text style={styles.label}>שם הקובץ</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={newFile.name}
-                            onChangeText={t => setNewFile({ ...newFile, name: t })}
-                            placeholder="מסמך נהלים..."
-                        />
+                        {!selectedFile ? (
+                            <>
+                                <Text style={styles.label}>בחר קובץ מהטלפון/מחשב</Text>
+                                <TouchableOpacity style={styles.pickFileButton} onPress={handlePickFile}>
+                                    <Ionicons name="document-outline" size={24} color={colors.primary} />
+                                    <Text style={styles.pickFileText}>בחר קובץ</Text>
+                                </TouchableOpacity>
+                                <Text style={styles.hintText}>מקסימום 10MB</Text>
+                            </>
+                        ) : (
+                            <>
+                                <View style={styles.selectedFileContainer}>
+                                    <Ionicons name="document" size={24} color={colors.primary} />
+                                    <View style={styles.selectedFileInfo}>
+                                        <Text style={styles.selectedFileName}>{selectedFile.name}</Text>
+                                        {selectedFile.size && (
+                                            <Text style={styles.selectedFileSize}>{formatFileSize(selectedFile.size)}</Text>
+                                        )}
+                                    </View>
+                                    <TouchableOpacity onPress={() => setSelectedFile(null)}>
+                                        <Ionicons name="close-circle" size={24} color={colors.error} />
+                                    </TouchableOpacity>
+                                </View>
 
-                        <Text style={styles.label}>קישור (URL)</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={newFile.url}
-                            onChangeText={t => setNewFile({ ...newFile, url: t })}
-                            placeholder="https://drive.google.com/..."
-                            autoCapitalize="none"
-                        />
+                                {isMutating && uploadProgress > 0 && (
+                                    <View style={styles.progressContainer}>
+                                        <View style={styles.progressBarContainer}>
+                                            <View style={[styles.progressBar, { width: `${uploadProgress}%` }]} />
+                                        </View>
+                                        <Text style={styles.progressText}>{Math.round(uploadProgress)}%</Text>
+                                    </View>
+                                )}
+                            </>
+                        )}
 
                         <View style={styles.modalActions}>
-                            <TouchableOpacity onPress={() => setIsModalVisible(false)} style={styles.cancelBtn}>
+                            <TouchableOpacity 
+                                onPress={() => {
+                                    setIsModalVisible(false);
+                                    setSelectedFile(null);
+                                    setUploadProgress(0);
+                                }} 
+                                style={styles.cancelBtn}
+                                disabled={isMutating}
+                            >
                                 <Text>ביטול</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={handleUpload} style={styles.saveBtn} disabled={isMutating}>
-                                {isMutating ? <ActivityIndicator color="white" /> : <Text style={{ color: 'white' }}>שמור</Text>}
+                            <TouchableOpacity 
+                                onPress={handleUpload} 
+                                style={[styles.saveBtn, (!selectedFile || isMutating) && styles.saveBtnDisabled]} 
+                                disabled={!selectedFile || isMutating}
+                            >
+                                {isMutating ? (
+                                    <ActivityIndicator color="white" />
+                                ) : (
+                                    <Text style={{ color: 'white' }}>העלה</Text>
+                                )}
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -202,17 +318,63 @@ const styles = StyleSheet.create({
     list: { padding: 15 },
     fileItem: { flexDirection: 'row', backgroundColor: 'white', padding: 15, borderRadius: 10, marginBottom: 10, alignItems: 'center', justifyContent: 'space-between' },
     fileInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-    textContainer: { marginLeft: 15 },
+    textContainer: { marginLeft: 15, flex: 1 },
     fileName: { fontSize: 16, fontWeight: 'bold', textAlign: 'left' },
+    fileMeta: { flexDirection: 'row', alignItems: 'center' },
     fileDate: { fontSize: 12, color: '#888', textAlign: 'left' },
+    fileSize: { fontSize: 12, color: '#888', textAlign: 'left' },
     deleteBtn: { padding: 10 },
     emptyText: { textAlign: 'center', marginTop: 30, color: '#999' },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
     modalContent: { backgroundColor: 'white', padding: 20, borderRadius: 10 },
     modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
-    label: { marginBottom: 5, fontWeight: 'bold', textAlign: 'left' },
+    label: { marginBottom: 5, fontWeight: 'bold', textAlign: 'right' },
+    hintText: { fontSize: 12, color: '#888', textAlign: 'center', marginTop: 8 },
+    pickFileButton: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        borderWidth: 2, 
+        borderColor: colors.primary, 
+        borderStyle: 'dashed',
+        padding: 20, 
+        borderRadius: 10, 
+        marginBottom: 15 
+    },
+    pickFileText: { marginLeft: 10, color: colors.primary, fontWeight: 'bold' },
+    selectedFileContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.backgroundSecondary,
+        padding: 15,
+        borderRadius: 10,
+        marginBottom: 15,
+    },
+    selectedFileInfo: { flex: 1, marginLeft: 10 },
+    selectedFileName: { fontSize: 14, fontWeight: 'bold', textAlign: 'right' },
+    selectedFileSize: { fontSize: 12, color: '#888', textAlign: 'right', marginTop: 4 },
+    progressContainer: { marginBottom: 15 },
+    progressBarContainer: {
+        width: '100%',
+        height: 8,
+        backgroundColor: colors.backgroundSecondary,
+        borderRadius: 4,
+        overflow: 'hidden',
+        marginBottom: 8,
+    },
+    progressBar: {
+        height: '100%',
+        backgroundColor: colors.primary,
+        borderRadius: 4,
+    },
+    progressText: {
+        fontSize: 12,
+        color: colors.textSecondary,
+        textAlign: 'center',
+    },
     input: { borderWidth: 1, borderColor: '#ddd', padding: 10, borderRadius: 5, marginBottom: 15, textAlign: 'right' },
     modalActions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
     cancelBtn: { padding: 10 },
     saveBtn: { backgroundColor: colors.primary, padding: 10, borderRadius: 5, width: 100, alignItems: 'center' },
+    saveBtnDisabled: { backgroundColor: colors.textSecondary, opacity: 0.5 },
 });

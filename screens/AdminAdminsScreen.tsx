@@ -13,7 +13,7 @@ import {
     Modal,
     SafeAreaView,
 } from 'react-native';
-import { NavigationProp } from '@react-navigation/native';
+import { NavigationProp, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
@@ -30,7 +30,10 @@ interface AdminAdminsScreenProps {
 const LOG_SOURCE = 'AdminAdminsScreen';
 
 export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps) {
-    useAdminProtection();
+    const route = useRoute();
+    const routeParams = (route.params as any) || {};
+    const viewOnly = routeParams?.viewOnly === true;
+    useAdminProtection(true);
     const { selectedUser } = useUser();
     const [usersList, setUsersList] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -490,21 +493,22 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                                 )}
                             </View>
 
-                            <View style={styles.actionsColumn}>
-                                <TouchableOpacity
-                                    style={[styles.actionButton, styles.managerBtn]}
-                                    onPress={() => openManagerModal(user)}
-                                >
-                                    <Text style={styles.actionBtnText}>שיוך מנהל</Text>
-                                </TouchableOpacity>
-
-                            </View>
+                            {!viewOnly && (
+                                <View style={styles.actionsColumn}>
+                                    <TouchableOpacity
+                                        style={[styles.actionButton, styles.managerBtn]}
+                                        onPress={() => openManagerModal(user)}
+                                    >
+                                        <Text style={styles.actionBtnText}>שיוך מנהל</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
                         </View>
                     );
                 }}
             />
 
-            < Modal visible={showManagerModal} animationType="fade" transparent >
+            < Modal visible={showManagerModal && !viewOnly} animationType="fade" transparent >
                 <View style={styles.modalBackdrop}>
                     <View style={styles.modalCard}>
                         <View style={styles.modalHeader}>
@@ -520,11 +524,11 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                                 <Text style={styles.currentManagerName}>{selectedForManager.manager_details.name}</Text>
                                 <TouchableOpacity
                                     style={[styles.removeManagerBtn, isRemovingManager && { opacity: 0.5 }]}
-                                    onPress={() => {
+                                    onPress={viewOnly ? undefined : () => {
                                         console.log('[AdminAdminsScreen] Remove manager button pressed in modal');
                                         performRemoveManager();
                                     }}
-                                    disabled={isRemovingManager}
+                                    disabled={viewOnly || isRemovingManager}
                                     activeOpacity={0.7}
                                 >
                                     {isRemovingManager ? (
@@ -590,8 +594,8 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                                     styles.modalSave,
                                     (!newManager || newManager.id === selectedForManager?.manager_details?.id) && styles.modalBtnDisabled
                                 ]}
-                                onPress={saveManager}
-                                disabled={!newManager || newManager.id === selectedForManager?.manager_details?.id}
+                                onPress={viewOnly ? undefined : saveManager}
+                                disabled={viewOnly || !newManager || newManager.id === selectedForManager?.manager_details?.id}
                             >
                                 <Text style={styles.modalBtnText}>שמור</Text>
                             </TouchableOpacity>

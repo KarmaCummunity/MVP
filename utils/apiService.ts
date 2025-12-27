@@ -112,6 +112,17 @@ class ApiService {
     return this.request(`/api/tasks/${taskId}/tree`);
   }
 
+  async logTaskHours(taskId: string, hours: number, userId: string): Promise<ApiResponse> {
+    return this.request(`/api/tasks/${taskId}/log-hours`, {
+      method: 'POST',
+      body: JSON.stringify({ hours, user_id: userId }),
+    });
+  }
+
+  async getHoursReport(managerId: string): Promise<ApiResponse> {
+    return this.request(`/api/tasks/hours-report/${managerId}`);
+  }
+
   private normalizeEndpoint(endpoint: string): string {
     if (!endpoint) {
       return '/';
@@ -572,12 +583,20 @@ class ApiService {
   }
 
   // Posts APIs
-  async getPosts(limit = 20, offset = 0): Promise<ApiResponse> {
-    return this.request(`/api/posts?limit=${limit}&offset=${offset}`);
+  async getPosts(limit = 20, offset = 0, userId?: string): Promise<ApiResponse> {
+    let url = `/api/posts?limit=${limit}&offset=${offset}`;
+    if (userId) {
+      url += `&user_id=${userId}`;
+    }
+    return this.request(url);
   }
 
-  async getUserPosts(userId: string, limit = 20): Promise<ApiResponse> {
-    return this.request(`/api/posts/user/${userId}?limit=${limit}`);
+  async getUserPosts(userId: string, limit = 20, viewerId?: string): Promise<ApiResponse> {
+    let url = `/api/posts/user/${userId}?limit=${limit}`;
+    if (viewerId) {
+      url += `&viewer_id=${viewerId}`;
+    }
+    return this.request(url);
   }
 
   // Admin APIs
@@ -731,6 +750,32 @@ class ApiService {
       },
       create: (data: any) => this.request('/api/admin-files', { method: 'POST', body: JSON.stringify(data) }),
       delete: (id: string) => this.request(`/api/admin-files/${id}`, { method: 'DELETE' }),
+    };
+  }
+
+  // Admin Tables APIs
+  get adminTables() {
+    return {
+      getAll: () => this.request('/api/admin/tables'),
+      getById: (id: string, includeRows?: boolean, page?: number, limit?: number) => {
+        const params = new URLSearchParams();
+        if (includeRows) params.append('includeRows', 'true');
+        if (page) params.append('page', String(page));
+        if (limit) params.append('limit', String(limit));
+        return this.request(`/api/admin/tables/${id}?${params.toString()}`);
+      },
+      create: (data: any) => this.request('/api/admin/tables', { method: 'POST', body: JSON.stringify(data) }),
+      update: (id: string, data: any) => this.request(`/api/admin/tables/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      delete: (id: string) => this.request(`/api/admin/tables/${id}`, { method: 'DELETE' }),
+      getRows: (tableId: string, page?: number, limit?: number) => {
+        const params = new URLSearchParams();
+        if (page) params.append('page', String(page));
+        if (limit) params.append('limit', String(limit));
+        return this.request(`/api/admin/tables/${tableId}/rows?${params.toString()}`);
+      },
+      createRow: (tableId: string, data: any) => this.request(`/api/admin/tables/${tableId}/rows`, { method: 'POST', body: JSON.stringify(data) }),
+      updateRow: (tableId: string, rowId: string, data: any) => this.request(`/api/admin/tables/${tableId}/rows/${rowId}`, { method: 'PUT', body: JSON.stringify(data) }),
+      deleteRow: (tableId: string, rowId: string) => this.request(`/api/admin/tables/${tableId}/rows/${rowId}`, { method: 'DELETE' }),
     };
   }
 
