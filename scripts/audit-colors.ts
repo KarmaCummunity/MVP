@@ -119,19 +119,19 @@ class ColorAuditor {
 
   private getAllFiles(dir: string): string[] {
     let results: string[] = [];
-    
+
     try {
       const list = fs.readdirSync(dir);
-      
+
       list.forEach(file => {
         const filePath = path.join(dir, file);
-        
+
         if (this.shouldExclude(filePath)) {
           return;
         }
-        
+
         const stat = fs.statSync(filePath);
-        
+
         if (stat.isDirectory()) {
           results = results.concat(this.getAllFiles(filePath));
         } else if (this.isTypeScriptFile(filePath)) {
@@ -141,7 +141,7 @@ class ColorAuditor {
     } catch (error) {
       console.error(`Error reading directory ${dir}:`, error);
     }
-    
+
     return results;
   }
 
@@ -151,19 +151,19 @@ class ColorAuditor {
 
   private detectHexColors(content: string, filePath: string, hasImport: boolean): void {
     const lines = content.split('\n');
-    
+
     lines.forEach((line, lineIndex) => {
       const matches = line.matchAll(HEX_COLOR_PATTERN);
-      
+
       for (const match of matches) {
         const value = match[0];
         const column = match.index || 0;
-        
+
         // Skip if it's in a comment
         if (line.trim().startsWith('//') || line.trim().startsWith('*')) {
           continue;
         }
-        
+
         this.addIssue({
           file: path.relative(this.rootDir, filePath),
           line: lineIndex + 1,
@@ -172,7 +172,7 @@ class ColorAuditor {
           severity: hasImport ? 'high' : 'critical',
           value,
           context: line.trim(),
-          suggestion: hasImport 
+          suggestion: hasImport
             ? `Replace ${value} with a color from colors.tsx (e.g., colors.primary)`
             : `Import colors and replace ${value} with a color from colors.tsx`
         });
@@ -182,19 +182,19 @@ class ColorAuditor {
 
   private detectRgbColors(content: string, filePath: string, hasImport: boolean): void {
     const lines = content.split('\n');
-    
+
     lines.forEach((line, lineIndex) => {
       const matches = line.matchAll(RGB_COLOR_PATTERN);
-      
+
       for (const match of matches) {
         const value = match[0];
         const column = match.index || 0;
-        
+
         // Skip if it's in a comment
         if (line.trim().startsWith('//') || line.trim().startsWith('*')) {
           continue;
         }
-        
+
         this.addIssue({
           file: path.relative(this.rootDir, filePath),
           line: lineIndex + 1,
@@ -203,7 +203,7 @@ class ColorAuditor {
           severity: hasImport ? 'high' : 'critical',
           value,
           context: line.trim(),
-          suggestion: hasImport 
+          suggestion: hasImport
             ? `Replace ${value} with a color from colors.tsx`
             : `Import colors and replace ${value} with a color from colors.tsx`
         });
@@ -213,27 +213,27 @@ class ColorAuditor {
 
   private detectNamedColors(content: string, filePath: string, hasImport: boolean): void {
     const lines = content.split('\n');
-    
+
     lines.forEach((line, lineIndex) => {
       // Look for color: 'colorname' or color: "colorname" or backgroundColor: 'colorname'
       const colorPropertyPattern = /(color|backgroundColor|borderColor|shadowColor|tintColor):\s*['"](\w+)['"]/gi;
       const matches = line.matchAll(colorPropertyPattern);
-      
+
       for (const match of matches) {
         const colorName = match[2].toLowerCase();
         const fullMatch = match[0];
         const column = match.index || 0;
-        
+
         // Skip if it's a safe color or not a named color
         if (SAFE_COLORS.includes(colorName) || !NAMED_COLORS.includes(colorName)) {
           continue;
         }
-        
+
         // Skip if it's in a comment
         if (line.trim().startsWith('//') || line.trim().startsWith('*')) {
           continue;
         }
-        
+
         this.addIssue({
           file: path.relative(this.rootDir, filePath),
           line: lineIndex + 1,
@@ -242,7 +242,7 @@ class ColorAuditor {
           severity: 'medium',
           value: colorName,
           context: line.trim(),
-          suggestion: hasImport 
+          suggestion: hasImport
             ? `Replace '${colorName}' with a semantic color from colors.tsx`
             : `Import colors and replace '${colorName}' with a semantic color`
         });
@@ -252,10 +252,10 @@ class ColorAuditor {
 
   private detectMissingImport(content: string, filePath: string): void {
     const hasImport = this.hasColorsImport(content);
-    
+
     // Check if file has any color-related properties
     const hasColorUsage = /color|backgroundColor|borderColor|shadowColor|tintColor/i.test(content);
-    
+
     if (hasColorUsage && !hasImport) {
       this.addIssue({
         file: path.relative(this.rootDir, filePath),
@@ -281,20 +281,20 @@ class ColorAuditor {
     try {
       const content = fs.readFileSync(filePath, 'utf-8');
       const hasImport = this.hasColorsImport(content);
-      
+
       const issuesBeforeFile = this.report.totalIssues;
-      
+
       this.detectHexColors(content, filePath, hasImport);
       this.detectRgbColors(content, filePath, hasImport);
       this.detectNamedColors(content, filePath, hasImport);
       this.detectMissingImport(content, filePath);
-      
+
       const issuesAfterFile = this.report.totalIssues;
-      
+
       if (issuesAfterFile > issuesBeforeFile) {
         this.report.filesWithIssues++;
       }
-      
+
       this.report.totalFiles++;
     } catch (error) {
       console.error(`Error auditing file ${filePath}:`, error);
@@ -303,19 +303,19 @@ class ColorAuditor {
 
   public audit(): ColorAuditReport {
     console.log('🎨 Starting color audit...\n');
-    
+
     const files = this.getAllFiles(this.rootDir);
     console.log(`Found ${files.length} TypeScript files to audit\n`);
-    
+
     files.forEach((file, index) => {
       if (index % 10 === 0) {
         process.stdout.write(`\rProgress: ${index}/${files.length} files`);
       }
       this.auditFile(file);
     });
-    
+
     process.stdout.write(`\rProgress: ${files.length}/${files.length} files ✓\n\n`);
-    
+
     return this.report;
   }
 
@@ -324,7 +324,7 @@ class ColorAuditor {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    
+
     fs.writeFileSync(outputPath, JSON.stringify(this.report, null, 2));
     console.log(`\n📊 Report saved to: ${outputPath}`);
   }
@@ -336,36 +336,36 @@ class ColorAuditor {
     console.log(`\nTotal files scanned: ${this.report.totalFiles}`);
     console.log(`Files with issues: ${this.report.filesWithIssues}`);
     console.log(`Total issues found: ${this.report.totalIssues}\n`);
-    
+
     console.log('Issues by severity:');
     console.log(`  🔴 Critical: ${this.report.issuesBySeverity.critical}`);
     console.log(`  🟠 High:     ${this.report.issuesBySeverity.high}`);
     console.log(`  🟡 Medium:   ${this.report.issuesBySeverity.medium}`);
     console.log(`  🟢 Low:      ${this.report.issuesBySeverity.low}\n`);
-    
+
     console.log('Issues by type:');
     console.log(`  Hex colors:       ${this.report.issuesByType.hex}`);
     console.log(`  RGB colors:       ${this.report.issuesByType.rgb}`);
     console.log(`  Named colors:     ${this.report.issuesByType.named}`);
     console.log(`  Inline styles:    ${this.report.issuesByType.inline}`);
     console.log(`  Missing imports:  ${this.report.issuesByType['missing-import']}\n`);
-    
+
     if (this.report.totalIssues > 0) {
       console.log('Top 5 files with most issues:');
       const fileIssueCount = new Map<string, number>();
       this.report.issues.forEach(issue => {
         fileIssueCount.set(issue.file, (fileIssueCount.get(issue.file) || 0) + 1);
       });
-      
+
       const sorted = Array.from(fileIssueCount.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5);
-      
+
       sorted.forEach(([file, count], index) => {
         console.log(`  ${index + 1}. ${file} (${count} issues)`);
       });
     }
-    
+
     console.log('\n' + '='.repeat(60) + '\n');
   }
 }
@@ -374,12 +374,12 @@ class ColorAuditor {
 if (require.main === module) {
   const rootDir = path.join(__dirname, '..');
   const outputPath = path.join(rootDir, 'audit-reports', 'colors-issues.json');
-  
+
   const auditor = new ColorAuditor(rootDir);
   auditor.audit();
   auditor.saveReport(outputPath);
   auditor.printSummary();
-  
+
   process.exit(0);
 }
 

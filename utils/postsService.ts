@@ -58,7 +58,7 @@ class PostsService {
     try {
       // Try to get JWT access token from AsyncStorage
       const jwtToken = await AsyncStorage.getItem('jwt_access_token');
-      
+
       if (jwtToken) {
         // Check if token is expired
         const expiresAt = await AsyncStorage.getItem('jwt_token_expires_at');
@@ -66,7 +66,7 @@ class PostsService {
           return jwtToken;
         }
       }
-      
+
       // Fallback: Try to get Firebase ID token
       try {
         const { getFirebase } = await import('./firebaseClient');
@@ -74,7 +74,7 @@ class PostsService {
         const { app } = getFirebase();
         const auth = getAuth(app);
         const user = auth.currentUser;
-        
+
         if (user) {
           const token = await user.getIdToken();
           return token;
@@ -85,7 +85,7 @@ class PostsService {
     } catch (error) {
       console.warn('Failed to get auth token:', error);
     }
-    
+
     return null;
   }
 
@@ -95,10 +95,10 @@ class PostsService {
   ): Promise<PostsApiResponse<T>> {
     try {
       const url = `${this.baseURL}${endpoint}`;
-      
+
       // Get authentication token
       const authToken = await this.getAuthToken();
-      
+
       const config: RequestInit = {
         headers: {
           'Content-Type': 'application/json',

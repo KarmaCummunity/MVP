@@ -128,19 +128,19 @@ class ResponsiveAuditor {
 
   private getAllFiles(dir: string): string[] {
     let results: string[] = [];
-    
+
     try {
       const list = fs.readdirSync(dir);
-      
+
       list.forEach(file => {
         const filePath = path.join(dir, file);
-        
+
         if (this.shouldExclude(filePath)) {
           return;
         }
-        
+
         const stat = fs.statSync(filePath);
-        
+
         if (stat.isDirectory()) {
           results = results.concat(this.getAllFiles(filePath));
         } else if (this.isTypeScriptFile(filePath)) {
@@ -150,7 +150,7 @@ class ResponsiveAuditor {
     } catch (error) {
       console.error(`Error reading directory ${dir}:`, error);
     }
-    
+
     return results;
   }
 
@@ -160,7 +160,7 @@ class ResponsiveAuditor {
 
   private detectDirectDimensions(content: string, filePath: string): void {
     const lines = content.split('\n');
-    
+
     lines.forEach((line, lineIndex) => {
       // Skip comments
       if (line.trim().startsWith('//') || line.trim().startsWith('*')) {
@@ -170,10 +170,10 @@ class ResponsiveAuditor {
       // Look for Dimensions.get()
       const dimensionsPattern = /Dimensions\.get\(['"](?:window|screen)['"]\)/g;
       const matches = line.matchAll(dimensionsPattern);
-      
+
       for (const match of matches) {
         const column = match.index || 0;
-        
+
         this.addIssue({
           file: path.relative(this.rootDir, filePath),
           line: lineIndex + 1,
@@ -190,12 +190,12 @@ class ResponsiveAuditor {
 
   private detectMissingPlatformChecks(content: string, filePath: string): void {
     const lines = content.split('\n');
-    
+
     lines.forEach((line, lineIndex) => {
       // Skip comments and imports
-      if (line.trim().startsWith('//') || 
-          line.trim().startsWith('*') || 
-          line.trim().startsWith('import')) {
+      if (line.trim().startsWith('//') ||
+        line.trim().startsWith('*') ||
+        line.trim().startsWith('import')) {
         return;
       }
 
@@ -207,10 +207,10 @@ class ResponsiveAuditor {
             Math.max(0, lineIndex - 5),
             Math.min(lines.length, lineIndex + 5)
           );
-          const hasPlatformCheck = contextLines.some(l => 
+          const hasPlatformCheck = contextLines.some(l =>
             /Platform\.OS|Platform\.select/.test(l)
           );
-          
+
           if (!hasPlatformCheck) {
             this.addIssue({
               file: path.relative(this.rootDir, filePath),
@@ -230,7 +230,7 @@ class ResponsiveAuditor {
 
   private detectMissingResponsiveFunctions(content: string, filePath: string, hasImport: boolean): void {
     const lines = content.split('\n');
-    
+
     lines.forEach((line, lineIndex) => {
       // Skip comments
       if (line.trim().startsWith('//') || line.trim().startsWith('*')) {
@@ -242,7 +242,7 @@ class ResponsiveAuditor {
         // Look ahead for style definitions
         const styleBlockStart = lineIndex;
         let styleBlockEnd = lineIndex;
-        
+
         // Find the end of the style block (simplified)
         for (let i = lineIndex + 1; i < Math.min(lines.length, lineIndex + 50); i++) {
           if (lines[i].includes('});')) {
@@ -250,16 +250,16 @@ class ResponsiveAuditor {
             break;
           }
         }
-        
+
         // Check if the style block uses responsive functions
         const styleBlock = lines.slice(styleBlockStart, styleBlockEnd + 1).join('\n');
-        const hasResponsiveFunctions = RESPONSIVE_FUNCTIONS.some(fn => 
+        const hasResponsiveFunctions = RESPONSIVE_FUNCTIONS.some(fn =>
           styleBlock.includes(fn)
         );
-        
+
         // Check if it has numeric values that should be responsive
         const hasNumericValues = /:\s*\d+/.test(styleBlock);
-        
+
         if (hasNumericValues && !hasResponsiveFunctions) {
           this.addIssue({
             file: path.relative(this.rootDir, filePath),
@@ -280,20 +280,20 @@ class ResponsiveAuditor {
 
   private detectMissingScreenSizeChecks(content: string, filePath: string): void {
     const lines = content.split('\n');
-    
+
     // Check if file has JSX (component file)
     const hasJSX = /<[A-Z]/.test(content) || /<View/.test(content);
-    
+
     if (!hasJSX) {
       return; // Skip non-component files
     }
 
     // Check if file uses screen size checks
     const hasScreenSizeCheck = /isTablet|isDesktop|isLargeDesktop|isMobile|isWeb|getScreenInfo/.test(content);
-    
+
     // Check if file has complex layouts that would benefit from responsive design
     const hasComplexLayout = /flex|width|height|padding|margin/.test(content);
-    
+
     if (hasComplexLayout && !hasScreenSizeCheck) {
       this.addIssue({
         file: path.relative(this.rootDir, filePath),
@@ -310,15 +310,15 @@ class ResponsiveAuditor {
 
   private detectMissingImport(content: string, filePath: string): void {
     const hasImport = this.hasResponsiveImport(content);
-    
+
     // Check if file has styles
     const hasStyles = /StyleSheet\.create|fontSize|padding|margin|width|height/.test(content);
-    
+
     // Check if file uses any responsive functions
-    const usesResponsiveFunctions = RESPONSIVE_FUNCTIONS.some(fn => 
+    const usesResponsiveFunctions = RESPONSIVE_FUNCTIONS.some(fn =>
       content.includes(fn)
     );
-    
+
     if (hasStyles && !hasImport && !usesResponsiveFunctions) {
       this.addIssue({
         file: path.relative(this.rootDir, filePath),
@@ -344,21 +344,21 @@ class ResponsiveAuditor {
     try {
       const content = fs.readFileSync(filePath, 'utf-8');
       const hasImport = this.hasResponsiveImport(content);
-      
+
       const issuesBeforeFile = this.report.totalIssues;
-      
+
       this.detectDirectDimensions(content, filePath);
       this.detectMissingPlatformChecks(content, filePath);
       this.detectMissingResponsiveFunctions(content, filePath, hasImport);
       this.detectMissingScreenSizeChecks(content, filePath);
       this.detectMissingImport(content, filePath);
-      
+
       const issuesAfterFile = this.report.totalIssues;
-      
+
       if (issuesAfterFile > issuesBeforeFile) {
         this.report.filesWithIssues++;
       }
-      
+
       this.report.totalFiles++;
     } catch (error) {
       console.error(`Error auditing file ${filePath}:`, error);
@@ -367,19 +367,19 @@ class ResponsiveAuditor {
 
   public audit(): ResponsiveAuditReport {
     console.log('📱 Starting responsive design audit...\n');
-    
+
     const files = this.getAllFiles(this.rootDir);
     console.log(`Found ${files.length} TypeScript files to audit\n`);
-    
+
     files.forEach((file, index) => {
       if (index % 10 === 0) {
         process.stdout.write(`\rProgress: ${index}/${files.length} files`);
       }
       this.auditFile(file);
     });
-    
+
     process.stdout.write(`\rProgress: ${files.length}/${files.length} files ✓\n\n`);
-    
+
     return this.report;
   }
 
@@ -388,7 +388,7 @@ class ResponsiveAuditor {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    
+
     fs.writeFileSync(outputPath, JSON.stringify(this.report, null, 2));
     console.log(`\n📊 Report saved to: ${outputPath}`);
   }
@@ -400,36 +400,36 @@ class ResponsiveAuditor {
     console.log(`\nTotal files scanned: ${this.report.totalFiles}`);
     console.log(`Files with issues: ${this.report.filesWithIssues}`);
     console.log(`Total issues found: ${this.report.totalIssues}\n`);
-    
+
     console.log('Issues by severity:');
     console.log(`  🔴 Critical: ${this.report.issuesBySeverity.critical}`);
     console.log(`  🟠 High:     ${this.report.issuesBySeverity.high}`);
     console.log(`  🟡 Medium:   ${this.report.issuesBySeverity.medium}`);
     console.log(`  🟢 Low:      ${this.report.issuesBySeverity.low}\n`);
-    
+
     console.log('Issues by type:');
     console.log(`  Direct Dimensions:        ${this.report.issuesByType['dimensions-direct']}`);
     console.log(`  No Platform check:        ${this.report.issuesByType['no-platform-check']}`);
     console.log(`  No responsive functions:  ${this.report.issuesByType['no-responsive-function']}`);
     console.log(`  No screen size checks:    ${this.report.issuesByType['no-screen-size-check']}`);
     console.log(`  Missing imports:          ${this.report.issuesByType['missing-import']}\n`);
-    
+
     if (this.report.totalIssues > 0) {
       console.log('Top 5 files with most issues:');
       const fileIssueCount = new Map<string, number>();
       this.report.issues.forEach(issue => {
         fileIssueCount.set(issue.file, (fileIssueCount.get(issue.file) || 0) + 1);
       });
-      
+
       const sorted = Array.from(fileIssueCount.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5);
-      
+
       sorted.forEach(([file, count], index) => {
         console.log(`  ${index + 1}. ${file} (${count} issues)`);
       });
     }
-    
+
     console.log('\n' + '='.repeat(60) + '\n');
   }
 }
@@ -438,12 +438,12 @@ class ResponsiveAuditor {
 if (require.main === module) {
   const rootDir = path.join(__dirname, '..');
   const outputPath = path.join(rootDir, 'audit-reports', 'responsive-issues.json');
-  
+
   const auditor = new ResponsiveAuditor(rootDir);
   auditor.audit();
   auditor.saveReport(outputPath);
   auditor.printSummary();
-  
+
   process.exit(0);
 }
 

@@ -122,19 +122,19 @@ class UnusedFileFinder {
 
   private getAllFiles(dir: string): string[] {
     let results: string[] = [];
-    
+
     try {
       const list = fs.readdirSync(dir);
-      
+
       list.forEach(file => {
         const filePath = path.join(dir, file);
-        
+
         if (this.shouldExclude(filePath)) {
           return;
         }
-        
+
         const stat = fs.statSync(filePath);
-        
+
         if (stat.isDirectory()) {
           results = results.concat(this.getAllFiles(filePath));
         } else if (this.isSourceFile(filePath)) {
@@ -145,7 +145,7 @@ class UnusedFileFinder {
     } catch (error) {
       console.error(`Error reading directory ${dir}:`, error);
     }
-    
+
     return results;
   }
 
@@ -158,7 +158,7 @@ class UnusedFileFinder {
         .replace(/\/\/.*/g, '') // Remove line comments
         .replace(/\s+/g, ' ') // Normalize whitespace
         .trim();
-      
+
       return crypto.createHash('md5').update(normalized).digest('hex');
     } catch (error) {
       return '';
@@ -167,12 +167,12 @@ class UnusedFileFinder {
 
   private findDuplicates(): void {
     console.log('Finding duplicate files...');
-    
+
     this.allFiles.forEach(file => {
       const hash = this.calculateFileHash(file);
       if (hash) {
         this.fileHashes.set(file, hash);
-        
+
         if (!this.duplicates.has(hash)) {
           this.duplicates.set(hash, []);
         }
@@ -185,7 +185,7 @@ class UnusedFileFinder {
       if (files.length > 1) {
         // Keep the first file, mark others as duplicates
         const [original, ...duplicates] = files;
-        
+
         duplicates.forEach(duplicate => {
           const stat = fs.statSync(duplicate);
           this.addIssue({
@@ -206,7 +206,7 @@ class UnusedFileFinder {
 
   private extractImports(content: string, filePath: string): void {
     const lines = content.split('\n');
-    
+
     lines.forEach(line => {
       // Match various import patterns
       const importPatterns = [
@@ -219,11 +219,11 @@ class UnusedFileFinder {
         const match = line.match(pattern);
         if (match) {
           let importPath = match[1];
-          
+
           // Resolve the import path relative to the current file
           const fileDir = path.dirname(filePath);
           let resolvedPath = path.resolve(fileDir, importPath);
-          
+
           // Try different extensions if no extension specified
           if (!path.extname(resolvedPath)) {
             const extensions = ['.ts', '.tsx', '.js', '.jsx'];
@@ -234,7 +234,7 @@ class UnusedFileFinder {
                 break;
               }
             }
-            
+
             // Try index files
             const indexFiles = extensions.map(ext => path.join(resolvedPath, `index${ext}`));
             for (const indexFile of indexFiles) {
@@ -244,7 +244,7 @@ class UnusedFileFinder {
               }
             }
           }
-          
+
           this.importedFiles.add(resolvedPath);
         }
       });
@@ -253,7 +253,7 @@ class UnusedFileFinder {
 
   private findUnusedFiles(): void {
     console.log('Analyzing imports...');
-    
+
     // First pass: collect all imports
     this.allFiles.forEach(file => {
       try {
@@ -272,12 +272,12 @@ class UnusedFileFinder {
     });
 
     console.log('Finding unused files...');
-    
+
     // Second pass: find files that are never imported
     this.allFiles.forEach(file => {
       const isUsed = this.importedFiles.has(file);
       const isEntry = this.isEntryPoint(file);
-      
+
       if (!isUsed && !isEntry) {
         const stat = fs.statSync(file);
         this.addIssue({
@@ -296,7 +296,7 @@ class UnusedFileFinder {
 
   private findOldBackupFiles(): void {
     console.log('Finding old/backup files...');
-    
+
     this.allFiles.forEach(file => {
       if (this.isOldBackupFile(file)) {
         const stat = fs.statSync(file);
@@ -320,15 +320,15 @@ class UnusedFileFinder {
 
   public audit(): UnusedFilesReport {
     console.log('🗑️  Starting unused files audit...\n');
-    
+
     const files = this.getAllFiles(this.rootDir);
     this.report.totalFiles = files.length;
     console.log(`Found ${files.length} source files to analyze\n`);
-    
+
     this.findDuplicates();
     this.findUnusedFiles();
     this.findOldBackupFiles();
-    
+
     return this.report;
   }
 
@@ -337,7 +337,7 @@ class UnusedFileFinder {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    
+
     fs.writeFileSync(outputPath, JSON.stringify(this.report, null, 2));
     console.log(`\n📊 Report saved to: ${outputPath}`);
   }
@@ -351,20 +351,20 @@ class UnusedFileFinder {
     console.log(`Duplicate files: ${this.report.duplicateFiles}`);
     console.log(`Old/backup files: ${this.report.oldBackupFiles}`);
     console.log(`Orphaned test files: ${this.report.orphanedTests}\n`);
-    
+
     const spaceMB = (this.report.potentialSpaceSaved / 1024 / 1024).toFixed(2);
     console.log(`Potential space to reclaim: ${spaceMB} MB\n`);
-    
+
     if (this.report.issues.length > 0) {
       console.log('Files to review:');
-      
+
       const byType = {
         unused: this.report.issues.filter(i => i.type === 'unused'),
         duplicate: this.report.issues.filter(i => i.type === 'duplicate'),
         'old-backup': this.report.issues.filter(i => i.type === 'old-backup'),
         'orphaned-test': this.report.issues.filter(i => i.type === 'orphaned-test')
       };
-      
+
       Object.entries(byType).forEach(([type, issues]) => {
         if (issues.length > 0) {
           console.log(`\n  ${type.toUpperCase()} (${issues.length} files):`);
@@ -377,7 +377,7 @@ class UnusedFileFinder {
         }
       });
     }
-    
+
     console.log('\n' + '='.repeat(60) + '\n');
   }
 }
@@ -386,12 +386,12 @@ class UnusedFileFinder {
 if (require.main === module) {
   const rootDir = path.join(__dirname, '..');
   const outputPath = path.join(rootDir, 'audit-reports', 'unused-files.json');
-  
+
   const finder = new UnusedFileFinder(rootDir);
   finder.audit();
   finder.saveReport(outputPath);
   finder.printSummary();
-  
+
   process.exit(0);
 }
 

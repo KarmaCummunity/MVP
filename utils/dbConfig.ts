@@ -29,7 +29,7 @@ export const BACKEND_CONFIG = {
   CACHE_DURATION: 5 * 60 * 1000, // 5 minutes in milliseconds
   
   // API timeouts
-  REQUEST_TIMEOUT: 10000, // 10 seconds
+  REQUEST_TIMEOUT: 30000, // 30 seconds (for slower Railway servers)
   RETRY_ATTEMPTS: 3,
 };
 
