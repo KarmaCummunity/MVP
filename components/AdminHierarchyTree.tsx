@@ -32,6 +32,8 @@ export interface ManagerNode {
   level: number;
   isSuperAdmin: boolean;
   isAdmin?: boolean;
+  salary?: number;
+  seniority_start_date?: string;
   children?: ManagerNode[];
 }
 
@@ -130,6 +132,30 @@ const ManagerNodeComponent: React.FC<ManagerNodeProps> = ({ node, isLast = false
           {/* Role Badge */}
           <View style={[styles.roleBadge, { backgroundColor: badgeStyle.backgroundColor }]}>
             <Text style={[styles.roleText, { color: badgeStyle.color }]}>{getRoleLabel()}</Text>
+          </View>
+          
+          {/* Salary */}
+          <View style={styles.infoRow}>
+            <Ionicons name="cash-outline" size={isMobileWeb ? 12 : 14} color={colors.textSecondary} />
+            <Text style={styles.infoText}>
+              משכורת: ₪{(node.salary ?? 0).toLocaleString('he-IL')}
+            </Text>
+          </View>
+          
+          {/* Seniority */}
+          <View style={styles.infoRow}>
+            <Ionicons name="calendar-outline" size={isMobileWeb ? 12 : 14} color={colors.textSecondary} />
+            <Text style={styles.infoText}>
+              ותק: {node.seniority_start_date || new Date().toISOString().split('T')[0]}
+            </Text>
+          </View>
+          
+          {/* Level/Rank */}
+          <View style={styles.infoRow}>
+            <Ionicons name="layers-outline" size={isMobileWeb ? 12 : 14} color={colors.textSecondary} />
+            <Text style={styles.infoText}>
+              דרגה: {node.level}
+            </Text>
           </View>
         </View>
 
@@ -449,6 +475,18 @@ const styles = StyleSheet.create({
   roleText: {
     fontSize: isMobileWeb ? 10 : 11,
     fontWeight: '600',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+    alignSelf: 'flex-end',
+  },
+  infoText: {
+    fontSize: isMobileWeb ? 10 : 11,
+    color: colors.textSecondary,
+    textAlign: 'right',
   },
   expandIndicator: {
     alignItems: 'center',

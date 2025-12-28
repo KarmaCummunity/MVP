@@ -458,6 +458,8 @@ export default function NewChatScreen() {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={renderEmptyState}
           showsVerticalScrollIndicator={false}
+          scrollEnabled={true}
+          nestedScrollEnabled={true}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

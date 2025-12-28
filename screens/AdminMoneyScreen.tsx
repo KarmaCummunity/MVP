@@ -14,7 +14,7 @@ import {
   RefreshControl,
   Dimensions,
 } from 'react-native';
-import { NavigationProp } from '@react-navigation/native';
+import { NavigationProp, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
@@ -79,8 +79,23 @@ const LOG_SOURCE = 'AdminMoneyScreen';
 import { useAdminProtection } from '../hooks/useAdminProtection';
 
 export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) {
-  useAdminProtection();
+  const route = useRoute();
+  const routeParams = (route.params as any) || {};
+  const viewOnly = routeParams?.viewOnly === true;
+  useAdminProtection(true);
   const { isAdmin } = useUser();
+
+  // Ensure top bar and bottom bar are visible in view-only mode
+  useFocusEffect(
+    React.useCallback(() => {
+      if (viewOnly) {
+        (navigation as any).setParams({
+          hideTopBar: false,
+          hideBottomBar: false,
+        });
+      }
+    }, [viewOnly, navigation])
+  );
   const [donationsList, setDonationsList] = useState<Donation[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [formData, setFormData] = useState<DonationFormData>({
@@ -462,22 +477,24 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
           <Text style={styles.donationTitle}>{item.title}</Text>
           <Text style={styles.donationCategory}>{item.category}</Text>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: LAYOUT_CONSTANTS.SPACING.XS }}>
-          <TouchableOpacity
-            onPress={() => handleEditDonation(item)}
-            style={styles.iconButton}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="create-outline" size={20} color={colors.textPrimary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => handleDeleteDonation(item.id)}
-            style={styles.deleteButton}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="trash-outline" size={20} color={colors.error} />
-          </TouchableOpacity>
-        </View>
+        {!viewOnly && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: LAYOUT_CONSTANTS.SPACING.XS }}>
+            <TouchableOpacity
+              onPress={() => handleEditDonation(item)}
+              style={styles.iconButton}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="create-outline" size={20} color={colors.textPrimary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleDeleteDonation(item.id)}
+              style={styles.deleteButton}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="trash-outline" size={20} color={colors.error} />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
       <View style={styles.donationDetails}>
         <View style={styles.detailRow}>
@@ -539,19 +556,21 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
       </View>
 
       {/* Floating Add Donation Button - Always visible on top */}
-      <TouchableOpacity
-        style={styles.fabButton}
-        onPress={handleAddDonation}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="add" size={28} color="white" />
-        <Text style={styles.fabButtonText}>הוסף תרומה</Text>
-      </TouchableOpacity>
+      {!viewOnly && (
+        <TouchableOpacity
+          style={styles.fabButton}
+          onPress={handleAddDonation}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="add" size={28} color="white" />
+          <Text style={styles.fabButtonText}>הוסף תרומה</Text>
+        </TouchableOpacity>
+      )}
 
 
       {/* Add Donation Modal */}
       <Modal
-        visible={isModalVisible}
+        visible={isModalVisible && !viewOnly}
         animationType="slide"
         transparent={true}
         onRequestClose={() => setIsModalVisible(false)}

@@ -15,6 +15,9 @@ import AdminAdminsScreen from "../screens/AdminAdminsScreen";
 import AdminTasksScreen from "../screens/AdminTasksScreen";
 import AdminCRMScreen from "../screens/AdminCRMScreen";
 import AdminFilesScreen from "../screens/AdminFilesScreen";
+import AdminTimeManagementScreen from "../screens/AdminTimeManagementScreen";
+import AdminTablesScreen from "../screens/AdminTablesScreen";
+import AdminTableRowsScreen from "../screens/AdminTableRowsScreen";
 import ChatListScreen from "../topBarScreens/ChatListScreen";
 import ChatDetailScreen from "../screens/ChatDetailScreen";
 import NewChatScreen from "../screens/NewChatScreen";
@@ -65,6 +68,9 @@ export default function AdminStack() {
       <Stack.Screen name="AdminTasks" component={AdminTasksScreen} />
       <Stack.Screen name="AdminCRM" component={AdminCRMScreen} />
       <Stack.Screen name="AdminFiles" component={AdminFilesScreen} />
+      <Stack.Screen name="AdminTimeManagement" component={AdminTimeManagementScreen} />
+      <Stack.Screen name="AdminTables" component={AdminTablesScreen} />
+      <Stack.Screen name="AdminTableRows" component={AdminTableRowsScreen} />
       <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
       <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
       <Stack.Screen name="NewChatScreen" component={NewChatScreen} />

@@ -572,6 +572,7 @@ export default function DiscoverPeopleScreen() {
         }
         style={styles.flatList}
         scrollEnabled={true}
+        nestedScrollEnabled={true}
         initialNumToRender={20}
         maxToRenderPerBatch={10}
         windowSize={21}
@@ -588,7 +589,11 @@ const styles = StyleSheet.create({
   },
   flatList: {
     flex: 1,
-  },
+    ...(Platform.OS === 'web' && {
+      overflow: 'auto' as any,
+      WebkitOverflowScrolling: 'touch' as any,
+    }),
+  } as any,
   listContentContainer: {
     flexGrow: 1,
   },

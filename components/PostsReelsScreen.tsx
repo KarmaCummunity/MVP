@@ -185,6 +185,10 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
       return;
     }
 
+    // Save current state for revert
+    const previousIsLiked = isLiked;
+    const previousLikesCount = likesCount;
+
     // Optimistic UI update
     const newIsLiked = !isLiked;
     const newLikesCount = newIsLiked ? likesCount + 1 : likesCount - 1;
@@ -202,14 +206,14 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
         setLikesCount(response.data.likes_count);
       } else {
         // Revert on error
-        setIsLiked(!newIsLiked);
-        setLikesCount(isLiked ? likesCount : likesCount);
+        setIsLiked(previousIsLiked);
+        setLikesCount(previousLikesCount);
         logger.error('PostsReelsScreen', 'Failed to toggle like', { error: response.error });
       }
     } catch (error) {
       // Revert on error
-      setIsLiked(!newIsLiked);
-      setLikesCount(isLiked ? likesCount : likesCount);
+      setIsLiked(previousIsLiked);
+      setLikesCount(previousLikesCount);
       logger.error('PostsReelsScreen', 'Error toggling like', { error });
     }
   };
@@ -1191,14 +1195,15 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
       // Load NEW posts from Postgres DB (Task Completions, etc.)
       let newPostsList: any[] = [];
       try {
-        const res = await apiService.getPosts(20, 0);
+        const res = await apiService.getPosts(20, 0, selectedUser?.id);
         console.log('📡 PostsReelsScreen - getPosts response:', { success: res.success, dataLength: res.data?.length });
         if (res.success && Array.isArray(res.data)) {
           newPostsList = res.data;
           console.log('📋 PostsReelsScreen - Loaded posts:', newPostsList.map(p => ({ 
             id: p.id.substring(0, 8), 
             type: p.post_type, 
-            title: p.title.substring(0, 30) 
+            title: p.title.substring(0, 30),
+            is_liked: p.is_liked
           })));
         }
       } catch (err) {
@@ -1228,7 +1233,7 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
           },
           likes: p.likes || 0,
           comments: p.comments || 0,
-          isLiked: false,
+          isLiked: Boolean(p.is_liked ?? false),
           timestamp: p.created_at,
           taskData: p.task // Include task data for task posts
         } as Item);

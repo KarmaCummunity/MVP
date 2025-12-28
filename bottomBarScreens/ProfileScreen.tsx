@@ -124,7 +124,7 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
 
         // Load posts from API - including task posts
         try {
-          const res = await apiService.getUserPosts(targetUserId, 50);
+          const res = await apiService.getUserPosts(targetUserId, 50, selectedUser?.id);
           if (res.success && Array.isArray(res.data)) {
             res.data.forEach((p: any) => {
               // Check if this is a task-related post
@@ -488,7 +488,7 @@ const ClosedRoute = ({ userId }: { userId?: string }) => {
 
         // Load posts from API - including completed task posts
         try {
-          const res = await apiService.getUserPosts(targetUserId, 50);
+          const res = await apiService.getUserPosts(targetUserId, 50, selectedUser?.id);
           if (res.success && Array.isArray(res.data)) {
             res.data.forEach((p: any) => {
               // Check if this is a task-related post with completed task
@@ -1104,7 +1104,7 @@ function ProfileScreenContent({
 
       // Load task posts (both assignment and completion) with proper icons
       try {
-        const taskPostsRes = await apiService.getUserPosts(userId, 50);
+        const taskPostsRes = await apiService.getUserPosts(userId, 50, selectedUser?.id);
         if (taskPostsRes.success && Array.isArray(taskPostsRes.data)) {
           taskPostsRes.data.forEach((p: any) => {
             if (p.post_type === 'task_assignment' || p.post_type === 'task_completion') {

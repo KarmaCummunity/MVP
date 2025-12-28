@@ -12,7 +12,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { NavigationProp } from '@react-navigation/native';
+import { NavigationProp, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
@@ -55,7 +55,10 @@ const LOG_SOURCE = 'AdminPeopleScreen';
 import { useAdminProtection } from '../hooks/useAdminProtection';
 
 export default function AdminPeopleScreen({ navigation }: AdminPeopleScreenProps) {
-  useAdminProtection();
+  const route = useRoute();
+  const routeParams = (route.params as any) || {};
+  const viewOnly = routeParams?.viewOnly === true;
+  useAdminProtection(true);
   const { selectedUser, isAdmin } = useUser();
   const [membersList, setMembersList] = useState<CommunityMember[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -255,7 +258,8 @@ export default function AdminPeopleScreen({ navigation }: AdminPeopleScreenProps
         <Text style={styles.title}>ניהול אנשים</Text>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={handleAddMember}
+          onPress={viewOnly ? undefined : handleAddMember}
+          disabled={viewOnly}
           disabled={isMutating}
         >
           <Ionicons name="add" size={24} color="white" />
@@ -351,20 +355,24 @@ export default function AdminPeopleScreen({ navigation }: AdminPeopleScreenProps
                   </View>
                 </View>
                 <View style={styles.memberActions}>
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => handleEditMember(member)}
-                    disabled={isMutating}
-                  >
-                    <Ionicons name="create-outline" size={20} color={colors.primary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => handleDeleteMember(member)}
-                    disabled={isMutating}
-                  >
-                    <Ionicons name="trash-outline" size={20} color={colors.error} />
-                  </TouchableOpacity>
+                  {!viewOnly && (
+                    <>
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => handleEditMember(member)}
+                        disabled={isMutating}
+                      >
+                        <Ionicons name="create-outline" size={20} color={colors.primary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => handleDeleteMember(member)}
+                        disabled={isMutating}
+                      >
+                        <Ionicons name="trash-outline" size={20} color={colors.error} />
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
               </View>
 
@@ -406,7 +414,7 @@ export default function AdminPeopleScreen({ navigation }: AdminPeopleScreenProps
 
       {/* Add/Edit Modal */}
       <Modal
-        visible={isModalVisible}
+        visible={isModalVisible && !viewOnly}
         animationType="slide"
         transparent={true}
         onRequestClose={() => setIsModalVisible(false)}

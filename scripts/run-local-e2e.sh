@@ -681,121 +681,12 @@ log_success "Server is up and healthy"
 # API Tests
 # ============================================================================
 
-# Quick smoke-test critical endpoints before starting Expo
-log_info "Running API smoke tests..."
-set +e
-curl -sf http://localhost:"$SERVER_PORT"/api/donations/categories >/dev/null
-DONATIONS_OK=$?
-curl -sf http://localhost:"$SERVER_PORT"/api/stats/analytics/categories >/dev/null
-STATS_OK=$?
-set -e
-if [[ $DONATIONS_OK -ne 0 || $STATS_OK -ne 0 ]]; then
-  log_error "API smoke tests failed (donations=$DONATIONS_OK, stats=$STATS_OK). Not starting Expo."
+log_info "Running API Health Tests..."
+if ! "$CLIENT_DIR/scripts/test-api-health.sh" "$SERVER_PORT"; then
+  log_error "API Health Tests failed. Aborting."
   exit 1
 fi
-log_success "API smoke tests passed"
-
-# Extended API tests (non-flaky, no external keys required)
-log_info "Running extended API tests..."
-set +e
-
-# Test health/redis endpoint
-HEALTH_REDIS_RESPONSE=$(curl -s -w "\n%{http_code}" http://localhost:"$SERVER_PORT"/health/redis)
-HEALTH_REDIS_HTTP_CODE=$(echo "$HEALTH_REDIS_RESPONSE" | tail -n1)
-HEALTH_REDIS_BODY=$(echo "$HEALTH_REDIS_RESPONSE" | sed '$d')
-if [[ "$HEALTH_REDIS_HTTP_CODE" != "200" ]]; then
-  log_error "Health/Redis test failed (HTTP $HEALTH_REDIS_HTTP_CODE)"
-  echo "Response: $HEALTH_REDIS_BODY"
-  HEALTH_REDIS_OK=1
-else
-  HEALTH_REDIS_OK=0
-fi
-
-# Test stats/community endpoint
-COMMUNITY_STATS_RESPONSE=$(curl -s -w "\n%{http_code}" http://localhost:"$SERVER_PORT"/api/stats/community)
-COMMUNITY_STATS_HTTP_CODE=$(echo "$COMMUNITY_STATS_RESPONSE" | tail -n1)
-COMMUNITY_STATS_BODY=$(echo "$COMMUNITY_STATS_RESPONSE" | sed '$d')
-if [[ "$COMMUNITY_STATS_HTTP_CODE" != "200" ]]; then
-  log_error "Community stats test failed (HTTP $COMMUNITY_STATS_HTTP_CODE)"
-  echo "Response: $COMMUNITY_STATS_BODY"
-  COMMUNITY_STATS_OK=1
-else
-  COMMUNITY_STATS_OK=0
-fi
-
-# Test donations/stats/summary endpoint
-DONATION_STATS_RESPONSE=$(curl -s -w "\n%{http_code}" http://localhost:"$SERVER_PORT"/api/donations/stats/summary)
-DONATION_STATS_HTTP_CODE=$(echo "$DONATION_STATS_RESPONSE" | tail -n1)
-DONATION_STATS_BODY=$(echo "$DONATION_STATS_RESPONSE" | sed '$d')
-if [[ "$DONATION_STATS_HTTP_CODE" != "200" ]]; then
-  log_error "Donation stats test failed (HTTP $DONATION_STATS_HTTP_CODE)"
-  echo "Response: $DONATION_STATS_BODY"
-  DONATION_STATS_OK=1
-else
-  DONATION_STATS_OK=0
-fi
-
-# Test chat conversations endpoint - CRITICAL: Check for errors in response body
-CHAT_LIST_RESPONSE=$(curl -s -w "\n%{http_code}" http://localhost:"$SERVER_PORT"/api/chat/conversations/user/550e8400-e29b-41d4-a716-446655440000)
-CHAT_LIST_HTTP_CODE=$(echo "$CHAT_LIST_RESPONSE" | tail -n1)
-CHAT_LIST_BODY=$(echo "$CHAT_LIST_RESPONSE" | sed '$d')
-CHAT_LIST_OK=0
-if [[ "$CHAT_LIST_HTTP_CODE" != "200" ]]; then
-  log_error "Chat conversations test failed (HTTP $CHAT_LIST_HTTP_CODE)"
-  echo "Response: $CHAT_LIST_BODY"
-  CHAT_LIST_OK=1
-else
-  # Check if response contains error message
-  if echo "$CHAT_LIST_BODY" | grep -qi '"error"\|"success":\s*false\|operator does not exist'; then
-    log_error "Chat conversations test failed - Error in response body:"
-    echo "$CHAT_LIST_BODY" | head -20
-    CHAT_LIST_OK=1
-  fi
-fi
-
-# Test notifications endpoint (should not return 404 - endpoint should exist)
-NOTIFICATIONS_RESPONSE=$(curl -s -w "\n%{http_code}" http://localhost:"$SERVER_PORT"/api/collections/notifications?userId=550e8400-e29b-41d4-a716-446655440000)
-NOTIFICATIONS_HTTP_CODE=$(echo "$NOTIFICATIONS_RESPONSE" | tail -n1)
-NOTIFICATIONS_BODY=$(echo "$NOTIFICATIONS_RESPONSE" | sed '$d')
-if [[ "$NOTIFICATIONS_HTTP_CODE" == "404" ]]; then
-  NOTIFICATIONS_OK=1
-  log_warning "Notifications endpoint returned 404 - routing issue detected"
-else
-  NOTIFICATIONS_OK=0
-  log_success "Notifications endpoint exists (HTTP $NOTIFICATIONS_HTTP_CODE)"
-fi
-
-# Redis comprehensive test expects JSON with allTestsPassed=true
-REDIS_COMP_RESPONSE=$(curl -s -X POST http://localhost:"$SERVER_PORT"/redis-test/comprehensive -H 'Content-Type: application/json')
-if echo "$REDIS_COMP_RESPONSE" | grep -q '"allTestsPassed":true'; then
-  REDIS_COMP_OK=0
-else
-  log_error "Redis comprehensive test failed"
-  echo "Response: $REDIS_COMP_RESPONSE"
-  REDIS_COMP_OK=1
-fi
-
-set -e
-
-# Report failures and exit if any test failed
-if [[ $HEALTH_REDIS_OK -ne 0 || $COMMUNITY_STATS_OK -ne 0 || $DONATION_STATS_OK -ne 0 || $CHAT_LIST_OK -ne 0 || $NOTIFICATIONS_OK -ne 0 || $REDIS_COMP_OK -ne 0 ]]; then
-  echo ""
-  echo "═══════════════════════════════════════════════════════════════"
-  log_error "EXTENDED API TESTS FAILED - STOPPING SCRIPT"
-  echo "═══════════════════════════════════════════════════════════════"
-  echo "Test Results:"
-  echo "  - Health/Redis: $([ $HEALTH_REDIS_OK -eq 0 ] && echo '✅ PASS' || echo '❌ FAIL')"
-  echo "  - Community Stats: $([ $COMMUNITY_STATS_OK -eq 0 ] && echo '✅ PASS' || echo '❌ FAIL')"
-  echo "  - Donation Stats: $([ $DONATION_STATS_OK -eq 0 ] && echo '✅ PASS' || echo '❌ FAIL')"
-  echo "  - Chat Conversations: $([ $CHAT_LIST_OK -eq 0 ] && echo '✅ PASS' || echo '❌ FAIL')"
-  echo "  - Notifications: $([ $NOTIFICATIONS_OK -eq 0 ] && echo '✅ PASS' || echo '❌ FAIL')"
-  echo "  - Redis Comprehensive: $([ $REDIS_COMP_OK -eq 0 ] && echo '✅ PASS' || echo '❌ FAIL')"
-  echo ""
-  log_warning "Please fix the errors above before continuing."
-  echo "═══════════════════════════════════════════════════════════════"
-  exit 1
-fi
-log_success "Extended API tests passed"
+log_success "API Health Tests passed"
 
 # ============================================================================
 # Client (Expo) Startup

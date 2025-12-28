@@ -37,6 +37,10 @@ class ToastService {
     this.show(message, 'error', duration);
   }
 
+  warning(message: string, duration: number = 2000) {
+    this.show(message, 'info', duration);
+  }
+
   hide() {
     this.toastState = {
       ...this.toastState,

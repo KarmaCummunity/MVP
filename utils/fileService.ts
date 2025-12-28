@@ -231,11 +231,14 @@ export const formatFileSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-export const validateFile = (fileData: FileData): { isValid: boolean; error?: string } => {
+export const validateFile = (fileData: FileData, maxFileSize?: number): { isValid: boolean; error?: string } => {
   if (fileData.size) {
-    const maxSize = fileData.type === 'video' ? 50 * 1024 * 1024 : // 50MB לסרטונים
-                   fileData.type === 'image' ? 10 * 1024 * 1024 : // 10MB לתמונות
-                   20 * 1024 * 1024; // 20MB לקבצים
+    // If maxFileSize is provided, use it; otherwise use defaults
+    const maxSize = maxFileSize || (
+      fileData.type === 'video' ? 50 * 1024 * 1024 : // 50MB לסרטונים
+      fileData.type === 'image' ? 10 * 1024 * 1024 : // 10MB לתמונות
+      20 * 1024 * 1024 // 20MB לקבצים (default)
+    );
     
     if (fileData.size > maxSize) {
       return { 

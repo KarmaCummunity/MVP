@@ -1,7 +1,7 @@
 // LandingSiteScreen.tsx
 // Web-only marketing landing page for KarmaCommunity
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Platform, View, Text, StyleSheet, Image, TouchableOpacity, Linking, Dimensions, ActivityIndicator, ScrollView, Animated, Modal, FlatList } from 'react-native';
+import React, { useEffect, useState, useRef, useCallback, Suspense, lazy } from 'react';
+import { Platform, View, Text, StyleSheet, Image, TouchableOpacity, Linking, Dimensions, ActivityIndicator, ScrollView, Animated, Modal, FlatList, Alert } from 'react-native';
 import { WebView } from 'react-native-webview';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
@@ -1012,13 +1012,31 @@ const CoreMottosSection = () => (
 );
 
 // Admin Hierarchy Section - Visual tree of the management structure
-const AdminHierarchySection = () => (
-  <Section id="section-hierarchy" title="מבנה הניהול" subtitle="הצוות שמוביל את הקהילה" style={styles.sectionAltBackground}>
-    <View style={styles.hierarchyContainer}>
-      <AdminHierarchyTree />
-    </View>
-  </Section>
-);
+const AdminHierarchySection = () => {
+  const navigation = useNavigation<any>();
+  const { isAuthenticated, isGuestMode } = useUser();
+
+  const handleViewAdminDashboard = () => {
+    // Allow everyone to view, including unauthenticated users
+    navigation.navigate('AdminDashboard', { viewOnly: true, hideTopBar: false, hideBottomBar: false });
+  };
+
+  return (
+    <Section id="section-hierarchy" title="מבנה הניהול" subtitle="הצוות שמוביל את הקהילה" style={styles.sectionAltBackground}>
+      <View style={styles.hierarchyContainer}>
+        <AdminHierarchyTree />
+      </View>
+      <TouchableOpacity
+        style={[styles.contactButton, { backgroundColor: colors.primary, marginTop: 20 }]}
+        onPress={handleViewAdminDashboard}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="eye-outline" color={colors.white} size={isMobileWeb ? 14 : 18} />
+        <Text style={styles.contactButtonText}>למאחורי הקלעים של KC</Text>
+      </TouchableOpacity>
+    </Section>
+  );
+};
 
 const RoadmapSection = () => {
   const roadmapSteps = [

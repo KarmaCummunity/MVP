@@ -30,19 +30,29 @@ class ApiService {
   private _baseURL: string | null = null;
 
   private get baseURL(): string {
+    // Try environment variables first (highest priority - for local development)
+    if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_BASE_URL) {
+      return process.env.EXPO_PUBLIC_API_BASE_URL;
+    }
+
     // For web, detect environment from domain at runtime
     if (typeof window !== 'undefined' && window.location) {
       const hostname = window.location.hostname;
-      
+
+      // If on localhost, use local server
+      if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
+        return 'http://localhost:3001';
+      }
+
       // If on dev domain, use dev server
       if (hostname.includes('dev.')) {
         return 'https://kc-mvp-server-development.up.railway.app';
       }
-      
+
       // Otherwise use production server
       return 'https://kc-mvp-server-production.up.railway.app';
     }
-    
+
     // For native apps, use lazy initialization
     if (this._baseURL === null) {
       this._baseURL = CONFIG_API_BASE_URL;
@@ -56,7 +66,7 @@ class ApiService {
   }
 
   async getTasks(filters: {
-    status?: 'open' | 'in_progress' | 'done' | 'archived';
+    status?: 'open' | 'in_progress' | 'done' | 'archived' | 'stuck' | 'testing';
     priority?: 'low' | 'medium' | 'high';
     category?: string;
     assignee?: string;
@@ -102,6 +112,17 @@ class ApiService {
     return this.request(`/api/tasks/${taskId}/tree`);
   }
 
+  async logTaskHours(taskId: string, hours: number, userId: string): Promise<ApiResponse> {
+    return this.request(`/api/tasks/${taskId}/log-hours`, {
+      method: 'POST',
+      body: JSON.stringify({ hours, user_id: userId }),
+    });
+  }
+
+  async getHoursReport(managerId: string): Promise<ApiResponse> {
+    return this.request(`/api/tasks/hours-report/${managerId}`);
+  }
+
   private normalizeEndpoint(endpoint: string): string {
     if (!endpoint) {
       return '/';
@@ -126,7 +147,7 @@ class ApiService {
       // Try to get JWT access token from AsyncStorage first
       const AsyncStorage = await import('@react-native-async-storage/async-storage');
       const jwtToken = await AsyncStorage.default.getItem('jwt_access_token');
-      
+
       if (jwtToken) {
         // Check if token is expired
         const expiresAt = await AsyncStorage.default.getItem('jwt_token_expires_at');
@@ -137,14 +158,14 @@ class ApiService {
           // TODO: Implement token refresh logic
         }
       }
-      
+
       // Fallback: Try to get Firebase ID token
       const { getFirebase } = await import('./firebaseClient');
       const { getAuth } = await import('firebase/auth');
       const { app } = getFirebase();
       const auth = getAuth(app);
       const user = auth.currentUser;
-      
+
       if (user) {
         const token = await user.getIdToken();
         return token;
@@ -152,7 +173,7 @@ class ApiService {
     } catch (error) {
       console.warn('Failed to get auth token:', error);
     }
-    
+
     return null;
   }
 
@@ -164,10 +185,10 @@ class ApiService {
     // TODO: Add retry logic for failed requests
     try {
       const url = this.buildUrl(endpoint);
-      
+
       // Get authentication token
       const authToken = await this.getAuthToken();
-      
+
       const config: RequestInit = {
         headers: {
           'Content-Type': 'application/json',
@@ -189,7 +210,7 @@ class ApiService {
           signal: controller.signal,
         });
         clearTimeout(timeoutId);
-        
+
         const data = await response.json();
 
         if (!response.ok) {
@@ -204,7 +225,7 @@ class ApiService {
         return data;
       } catch (fetchError: any) {
         clearTimeout(timeoutId);
-        
+
         // Check if error is due to abort (timeout)
         if (fetchError.name === 'AbortError') {
           console.error(`⏱️ API Timeout: ${endpoint}`);
@@ -230,9 +251,11 @@ class ApiService {
   }
 
   async setManager(userId: string, managerId: string | null, requestingUserId?: string): Promise<ApiResponse> {
+    const body = { managerId, requestingUserId };
+    console.log(`[apiService.setManager] Sending request: userId=${userId}, managerId=${managerId} (type: ${typeof managerId}), body:`, JSON.stringify(body));
     return this.request(`/api/users/${userId}/set-manager`, {
       method: 'POST',
-      body: JSON.stringify({ managerId, requestingUserId }),
+      body: JSON.stringify(body),
     });
   }
 
@@ -310,11 +333,16 @@ class ApiService {
     search?: string;
     limit?: number;
     offset?: number;
+    forceRefresh?: boolean;
   } = {}): Promise<ApiResponse> {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        params.append(key, value.toString());
+        if (key === 'forceRefresh' && value === true) {
+          params.append(key, 'true');
+        } else if (key !== 'forceRefresh') {
+          params.append(key, value.toString());
+        }
       }
     });
 
@@ -555,12 +583,49 @@ class ApiService {
   }
 
   // Posts APIs
-  async getPosts(limit = 20, offset = 0): Promise<ApiResponse> {
-    return this.request(`/api/posts?limit=${limit}&offset=${offset}`);
+  async getPosts(limit = 20, offset = 0, userId?: string): Promise<ApiResponse> {
+    let url = `/api/posts?limit=${limit}&offset=${offset}`;
+    if (userId) {
+      url += `&user_id=${userId}`;
+    }
+    return this.request(url);
   }
 
-  async getUserPosts(userId: string, limit = 20): Promise<ApiResponse> {
-    return this.request(`/api/posts/user/${userId}?limit=${limit}`);
+  async getUserPosts(userId: string, limit = 20, viewerId?: string): Promise<ApiResponse> {
+    let url = `/api/posts/user/${userId}?limit=${limit}`;
+    if (viewerId) {
+      url += `&viewer_id=${viewerId}`;
+    }
+    return this.request(url);
+  }
+
+  // Notifications APIs
+  async getNotifications(userId: string, limit = 50, offset = 0): Promise<ApiResponse> {
+    return this.request(`/api/notifications/${userId}?limit=${limit}&offset=${offset}`);
+  }
+
+  async markNotificationAsRead(userId: string, notificationId: string): Promise<ApiResponse> {
+    return this.request(`/api/notifications/${userId}/${notificationId}/read`, {
+      method: 'PUT',
+    });
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<ApiResponse> {
+    return this.request(`/api/notifications/${userId}/read-all`, {
+      method: 'POST',
+    });
+  }
+
+  async deleteNotification(userId: string, notificationId: string): Promise<ApiResponse> {
+    return this.request(`/api/notifications/${userId}/${notificationId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async clearAllNotifications(userId: string): Promise<ApiResponse> {
+    return this.request(`/api/notifications/${userId}`, {
+      method: 'DELETE',
+    });
   }
 
   // Admin APIs
@@ -714,6 +779,32 @@ class ApiService {
       },
       create: (data: any) => this.request('/api/admin-files', { method: 'POST', body: JSON.stringify(data) }),
       delete: (id: string) => this.request(`/api/admin-files/${id}`, { method: 'DELETE' }),
+    };
+  }
+
+  // Admin Tables APIs
+  get adminTables() {
+    return {
+      getAll: () => this.request('/api/admin/tables'),
+      getById: (id: string, includeRows?: boolean, page?: number, limit?: number) => {
+        const params = new URLSearchParams();
+        if (includeRows) params.append('includeRows', 'true');
+        if (page) params.append('page', String(page));
+        if (limit) params.append('limit', String(limit));
+        return this.request(`/api/admin/tables/${id}?${params.toString()}`);
+      },
+      create: (data: any) => this.request('/api/admin/tables', { method: 'POST', body: JSON.stringify(data) }),
+      update: (id: string, data: any) => this.request(`/api/admin/tables/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      delete: (id: string) => this.request(`/api/admin/tables/${id}`, { method: 'DELETE' }),
+      getRows: (tableId: string, page?: number, limit?: number) => {
+        const params = new URLSearchParams();
+        if (page) params.append('page', String(page));
+        if (limit) params.append('limit', String(limit));
+        return this.request(`/api/admin/tables/${tableId}/rows?${params.toString()}`);
+      },
+      createRow: (tableId: string, data: any) => this.request(`/api/admin/tables/${tableId}/rows`, { method: 'POST', body: JSON.stringify(data) }),
+      updateRow: (tableId: string, rowId: string, data: any) => this.request(`/api/admin/tables/${tableId}/rows/${rowId}`, { method: 'PUT', body: JSON.stringify(data) }),
+      deleteRow: (tableId: string, rowId: string) => this.request(`/api/admin/tables/${tableId}/rows/${rowId}`, { method: 'DELETE' }),
     };
   }
 

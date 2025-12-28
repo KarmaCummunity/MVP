@@ -7,6 +7,12 @@ const detectEnvironmentFromDomain = (): 'development' | 'production' => {
   if (typeof window !== 'undefined' && window.location) {
     const hostname = window.location.hostname;
     
+    // If on localhost, it's development
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
+      console.log('🌐 Environment detected from domain:', hostname, '→ development (localhost)');
+      return 'development';
+    }
+    
     // If hostname contains 'dev.' it's development environment
     if (hostname.includes('dev.')) {
       console.log('🌐 Environment detected from domain:', hostname, '→ development');
@@ -34,9 +40,23 @@ export const CURRENT_ENVIRONMENT = projectEnv;
 
 // Simple API URL resolution - evaluated at runtime for web
 const getSimpleApiUrl = (): string => {
+  // Try environment variables first (highest priority - for local development)
+  if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_BASE_URL) {
+    const envUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+    console.log('🌐 Using API URL from EXPO_PUBLIC_API_BASE_URL:', envUrl);
+    return envUrl;
+  }
+  
   // For web, detect based on domain at runtime
   if (typeof window !== 'undefined' && window.location) {
     const hostname = window.location.hostname;
+    
+    // If on localhost, use local server
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
+      const localUrl = 'http://localhost:3001';
+      console.log('🌐 Using local API URL:', localUrl);
+      return localUrl;
+    }
     
     // If on dev domain, use dev server
     if (hostname.includes('dev.')) {
@@ -49,11 +69,6 @@ const getSimpleApiUrl = (): string => {
     const prodUrl = 'https://kc-mvp-server-production.up.railway.app';
     console.log('🌐 Using production API URL:', prodUrl);
     return prodUrl;
-  }
-  
-  // Try environment variables first (for native apps)
-  if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_BASE_URL) {
-    return process.env.EXPO_PUBLIC_API_BASE_URL;
   }
 
   // Fallback to appropriate environment URL for native apps

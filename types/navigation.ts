@@ -212,6 +212,7 @@ export const VALID_ADMIN_STACK_ROUTES: string[] = [
   'AdminPeople',
   'AdminReview',
   'AdminTasks',
+  'AdminTimeManagement',
   'SettingsScreen',
   'ChatListScreen',
   'ChatDetailScreen',

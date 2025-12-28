@@ -480,14 +480,29 @@ export const db = {
   createNotification: (userId: string, notificationId: string, notificationData: any) =>
     DatabaseService.create(DB_COLLECTIONS.NOTIFICATIONS, userId, notificationId, notificationData),
 
-  getUserNotifications: (userId: string) =>
-    DatabaseService.list(DB_COLLECTIONS.NOTIFICATIONS, userId),
+  getUserNotifications: async (userId: string) => {
+    if (USE_BACKEND) {
+      const res = await apiService.getNotifications(userId);
+      return res.success ? res.data : [];
+    }
+    return DatabaseService.list(DB_COLLECTIONS.NOTIFICATIONS, userId);
+  },
 
-  markNotificationAsRead: (userId: string, notificationId: string) =>
-    DatabaseService.update(DB_COLLECTIONS.NOTIFICATIONS, userId, notificationId, { read: true }),
+  markNotificationAsRead: async (userId: string, notificationId: string) => {
+    if (USE_BACKEND) {
+      const res = await apiService.markNotificationAsRead(userId, notificationId);
+      return res.success;
+    }
+    return DatabaseService.update(DB_COLLECTIONS.NOTIFICATIONS, userId, notificationId, { read: true });
+  },
 
-  deleteNotification: (userId: string, notificationId: string) =>
-    DatabaseService.delete(DB_COLLECTIONS.NOTIFICATIONS, userId, notificationId),
+  deleteNotification: async (userId: string, notificationId: string) => {
+    if (USE_BACKEND) {
+      const res = await apiService.deleteNotification(userId, notificationId);
+      return res.success;
+    }
+    return DatabaseService.delete(DB_COLLECTIONS.NOTIFICATIONS, userId, notificationId);
+  },
 
   // Bookmarks
   addBookmark: (userId: string, bookmarkId: string, bookmarkData: any) =>
