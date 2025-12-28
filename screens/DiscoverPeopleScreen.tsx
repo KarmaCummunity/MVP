@@ -9,7 +9,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   Image,
   TouchableOpacity,
@@ -47,7 +46,7 @@ const generateMockUsers = (count: number, excludeId?: string): CharacterType[] =
     'יעל טל', 'נועה אור', 'רומי גיל', 'תמר דניאל', 'מיכל אמיר',
     'עדי יהל', 'ליה גיא', 'שירה אדם', 'מור אורי', 'יערה רון'
   ];
-  
+
   const bios = [
     'אוהב לעזור לאחרים ולהתנדב בקהילה',
     'פעיל חברתי ומוביל שינוי בחברה',
@@ -68,7 +67,7 @@ const generateMockUsers = (count: number, excludeId?: string): CharacterType[] =
 
   const mockUsers: CharacterType[] = [];
   let userIdCounter = 1;
-  
+
   for (let i = 0; i < count; i++) {
     const baseId = `mock-user-${userIdCounter}`;
     // Skip if this is the excluded user
@@ -76,13 +75,13 @@ const generateMockUsers = (count: number, excludeId?: string): CharacterType[] =
       userIdCounter++;
       continue;
     }
-    
+
     const name = names[i % names.length] + ` ${Math.floor(i / names.length) + 1}`;
     const bio = bios[i % bios.length];
     const roles = rolesOptions[i % rolesOptions.length];
     const karmaPoints = Math.floor(Math.random() * 1000) + 50;
     const completedTasks = Math.floor(Math.random() * 50);
-    
+
     mockUsers.push({
       id: baseId,
       name,
@@ -96,10 +95,10 @@ const generateMockUsers = (count: number, excludeId?: string): CharacterType[] =
       isVerified: Math.random() > 0.9,
       isActive: true,
     });
-    
+
     userIdCounter++;
   }
-  
+
   return mockUsers;
 };
 
@@ -177,7 +176,7 @@ export default function DiscoverPeopleScreen() {
         console.log(`🧪 Development mode: Adding ${mockCount} mock users for scroll testing`);
         filteredSuggestions = [...filteredSuggestions, ...mockUsers];
       }
-      
+
       setSuggestions(filteredSuggestions);
 
       // Get popular users excluding current user - get ALL users (no limit)
@@ -196,7 +195,7 @@ export default function DiscoverPeopleScreen() {
 
         return !isCurrentUser;
       });
-      
+
       // In development, add mock users if we have less than 30 users to test scrolling
       if (IS_DEVELOPMENT && filteredPopular.length < 30) {
         const mockCount = 30 - filteredPopular.length;
@@ -204,7 +203,7 @@ export default function DiscoverPeopleScreen() {
         console.log(`🧪 Development mode: Adding ${mockCount} mock users to popular for scroll testing`);
         filteredPopular.push(...mockUsers);
       }
-      
+
       setPopularUsers(filteredPopular);
 
       // Get total users count from server
@@ -296,17 +295,17 @@ export default function DiscoverPeopleScreen() {
     if (IS_DEVELOPMENT && targetUserId.startsWith('mock-user-')) {
       const currentStats = followStats[targetUserId] || { isFollowing: false };
       const willBeFollowing = !currentStats.isFollowing;
-      
+
       if (willBeFollowing) {
         // Create updated follow stats that includes the newly followed mock user
         const updatedFollowStats = {
           ...followStats,
           [targetUserId]: { isFollowing: true }
         };
-        
+
         // Update follow stats state
         setFollowStats(updatedFollowStats);
-        
+
         // Remove mock users we're following from both lists (same as real users)
         const filterUsersWeFollow = (users: CharacterType[]) => {
           return users.filter(user => {
@@ -315,7 +314,7 @@ export default function DiscoverPeopleScreen() {
             return !userStats.isFollowing;
           });
         };
-        
+
         setSuggestions(prev => filterUsersWeFollow(prev));
         setPopularUsers(prev => filterUsersWeFollow(prev));
         console.log(`🧪 Development: Mock follow toggle for ${targetUserId} - user removed from list`);
@@ -350,10 +349,10 @@ export default function DiscoverPeopleScreen() {
             ...followStats,
             [targetUserId]: { isFollowing: true }
           };
-          
+
           // Update follow stats state
           setFollowStats(updatedFollowStats);
-          
+
           // Remove the followed user and all users we're already following from both lists
           // (because we don't need to show users we're already following)
           const filterUsersWeFollow = (users: CharacterType[]) => {
@@ -364,10 +363,10 @@ export default function DiscoverPeopleScreen() {
               return !userStats.isFollowing;
             });
           };
-          
+
           setSuggestions(prev => filterUsersWeFollow(prev));
           setPopularUsers(prev => filterUsersWeFollow(prev));
-          
+
           Alert.alert('עקיבה', 'התחלת לעקוב בהצלחה');
         }
       }
@@ -549,7 +548,7 @@ export default function DiscoverPeopleScreen() {
   const currentData = activeTab === 'suggestions' ? suggestions : popularUsers;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <FlatList
         data={currentData}
         renderItem={renderUserItem}
@@ -578,7 +577,7 @@ export default function DiscoverPeopleScreen() {
         windowSize={21}
         keyboardShouldPersistTaps="handled"
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
