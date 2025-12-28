@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { View, Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import styles from '../globals/styles';
@@ -12,16 +12,33 @@ interface ScreenWrapperProps {
   style?: object;
 }
 
-export default function ScreenWrapper({ 
-  children, 
-  navigation, 
-  hideTopBar = false, 
+export default function ScreenWrapper({
+  children,
+  navigation,
+  hideTopBar = false,
   showPosts = false,
   style = {}
 }: ScreenWrapperProps) {
+  if (Platform.OS === 'web') {
+    return (
+      <View style={[styles.safeArea, webStyles.container, style]}>
+        {children || null}
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.safeArea, style]}>
       {children || null}
     </SafeAreaView>
   );
 }
+
+const webStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    height: '100%',
+    width: '100%',
+    overflow: 'hidden', // Ensure no double scrollbars
+  }
+});
