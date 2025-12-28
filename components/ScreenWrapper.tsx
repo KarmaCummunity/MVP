@@ -20,8 +20,22 @@ export default function ScreenWrapper({
   style = {}
 }: ScreenWrapperProps) {
   if (Platform.OS === 'web') {
+    // Flatten styles to check for issues and enforce overrides
+    const flatStyle = StyleSheet.flatten([styles.safeArea, style]);
+
+    // Remove potentially problematic styles for web scrolling
+    // We strictly enforce height: 100% to ensure FlatList inside knows its bounds
+    const webSafeStyle = {
+      ...flatStyle,
+      height: '100%',
+      minHeight: undefined, // Explicitly remove minHeight to fix double-scroll/no-scroll
+      maxHeight: '100%',
+      flex: 1,
+      overflow: 'hidden'
+    };
+
     return (
-      <View style={[styles.safeArea, webStyles.container, style]}>
+      <View style={webSafeStyle as any}>
         {children || null}
       </View>
     );
