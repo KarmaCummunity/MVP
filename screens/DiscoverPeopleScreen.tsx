@@ -35,6 +35,7 @@ import apiService from '../utils/apiService';
 
 import { getScreenInfo, isLandscape } from '../globals/responsive';
 import { IS_DEVELOPMENT } from '../utils/dbConfig';
+import ScreenWrapper from '../components/ScreenWrapper';
 
 // Helper function to generate mock users for testing scroll in development
 const generateMockUsers = (count: number, excludeId?: string): CharacterType[] => {
@@ -548,7 +549,7 @@ export default function DiscoverPeopleScreen() {
   const currentData = activeTab === 'suggestions' ? suggestions : popularUsers;
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper style={styles.container}>
       <FlatList
         data={currentData}
         renderItem={renderUserItem}
@@ -577,7 +578,7 @@ export default function DiscoverPeopleScreen() {
         windowSize={21}
         keyboardShouldPersistTaps="handled"
       />
-    </View>
+    </ScreenWrapper>
   );
 }
 
