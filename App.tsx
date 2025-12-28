@@ -111,9 +111,17 @@ function AppContent() {
   // Initialize stores and load navigation state on mount
   // This must happen before NavigationContainer is rendered
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    
     const initializeStoresAndLoadState = async () => {
       try {
         logger.info('App', 'Initializing Zustand stores and loading navigation state');
+
+        // Set timeout to prevent infinite white screen (10 seconds max)
+        timeoutId = setTimeout(() => {
+          logger.warn('App', 'Initialization timeout - forcing navigation state to load');
+          setIsNavigationStateLoaded(true);
+        }, 10000);
 
         // Initialize web mode store (reads from localStorage synchronously on creation)
         if (Platform.OS === 'web') {
@@ -177,6 +185,12 @@ function AppContent() {
           logger.warn('App', 'Error loading navigation state, continuing anyway', { error: navError });
         }
         
+        // Clear timeout if initialization completed successfully
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        
         setIsNavigationStateLoaded(true);
       } catch (error) {
         logger.error('App', 'Failed to initialize stores or load navigation state', { 
@@ -184,12 +198,26 @@ function AppContent() {
           message: error instanceof Error ? error.message : 'Unknown error',
           stack: error instanceof Error ? error.stack : undefined
         });
+        
+        // Clear timeout on error
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        
         setIsNavigationStateLoaded(true); // Continue even if loading fails
       }
     };
 
     // Initialize immediately - no delay needed
     initializeStoresAndLoadState();
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, []);
 
   logger.info('App', 'App component mounted');

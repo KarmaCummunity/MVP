@@ -185,6 +185,10 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
       return;
     }
 
+    // Save current state for revert
+    const previousIsLiked = isLiked;
+    const previousLikesCount = likesCount;
+
     // Optimistic UI update
     const newIsLiked = !isLiked;
     const newLikesCount = newIsLiked ? likesCount + 1 : likesCount - 1;
@@ -202,14 +206,14 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
         setLikesCount(response.data.likes_count);
       } else {
         // Revert on error
-        setIsLiked(!newIsLiked);
-        setLikesCount(isLiked ? likesCount : likesCount);
+        setIsLiked(previousIsLiked);
+        setLikesCount(previousLikesCount);
         logger.error('PostsReelsScreen', 'Failed to toggle like', { error: response.error });
       }
     } catch (error) {
       // Revert on error
-      setIsLiked(!newIsLiked);
-      setLikesCount(isLiked ? likesCount : likesCount);
+      setIsLiked(previousIsLiked);
+      setLikesCount(previousLikesCount);
       logger.error('PostsReelsScreen', 'Error toggling like', { error });
     }
   };

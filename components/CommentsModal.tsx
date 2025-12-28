@@ -166,15 +166,22 @@ export default function CommentsModal({
       return;
     }
 
+    // Find comment and save previous state for revert
+    const comment = comments.find(c => c.id === commentId);
+    if (!comment) return;
+    
+    const previousIsLiked = comment.isLiked;
+    const previousLikes = comment.likes;
+
     // Optimistic UI update
-    setComments(prev => prev.map(comment =>
-      comment.id === commentId 
+    setComments(prev => prev.map(c =>
+      c.id === commentId 
         ? { 
-            ...comment, 
-            isLiked: !comment.isLiked,
-            likes: comment.isLiked ? comment.likes - 1 : comment.likes + 1
+            ...c, 
+            isLiked: !c.isLiked,
+            likes: c.isLiked ? c.likes - 1 : c.likes + 1
           }
-        : comment
+        : c
     ));
 
     try {
@@ -182,38 +189,38 @@ export default function CommentsModal({
       
       if (response.success && response.data) {
         // Sync with server
-        setComments(prev => prev.map(comment =>
-          comment.id === commentId 
+        setComments(prev => prev.map(c =>
+          c.id === commentId 
             ? { 
-                ...comment, 
+                ...c, 
                 isLiked: response.data!.is_liked,
                 likes: response.data!.likes_count
               }
-            : comment
+            : c
         ));
       } else {
         // Revert on error
-        setComments(prev => prev.map(comment =>
-          comment.id === commentId 
+        setComments(prev => prev.map(c =>
+          c.id === commentId 
             ? { 
-                ...comment, 
-                isLiked: !comment.isLiked,
-                likes: comment.isLiked ? comment.likes + 1 : comment.likes - 1
+                ...c, 
+                isLiked: previousIsLiked,
+                likes: previousLikes
               }
-            : comment
+            : c
         ));
         logger.error('CommentsModal', 'Failed to toggle comment like', { error: response.error });
       }
     } catch (error) {
       // Revert on error
-      setComments(prev => prev.map(comment =>
-        comment.id === commentId 
+      setComments(prev => prev.map(c =>
+        c.id === commentId 
           ? { 
-              ...comment, 
-              isLiked: !comment.isLiked,
-              likes: comment.isLiked ? comment.likes + 1 : comment.likes - 1
+              ...c, 
+              isLiked: previousIsLiked,
+              likes: previousLikes
             }
-          : comment
+          : c
       ));
       logger.error('CommentsModal', 'Error toggling comment like', { error });
     }
