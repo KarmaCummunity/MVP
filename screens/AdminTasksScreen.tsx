@@ -718,7 +718,7 @@ export default function AdminTasksScreen() {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={[
-            styles.listContent,
+            stylesWithListContent.listContent,
             Platform.OS === 'web' && { paddingBottom: 120 }
           ]}
           ListHeaderComponent={renderHeader}
@@ -851,17 +851,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.backgroundSecondary,
     position: 'relative',
-  },
-  listWrapper: {
-    flex: 1,
-    backgroundColor: colors.backgroundSecondary,
-  },
     ...(Platform.OS === 'web' ? {
       position: 'relative' as any,
       height: '100vh' as any,
     } : {
       padding: LAYOUT_CONSTANTS.SPACING.LG,
     }),
+  },
+  listWrapper: {
+    flex: 1,
+    backgroundColor: colors.backgroundSecondary,
   },
   header: {
     fontSize: FontSizes.heading2,
@@ -874,15 +873,6 @@ const styles = StyleSheet.create({
   input: { flex: 1, height: 44, backgroundColor: colors.background, borderRadius: 8, paddingHorizontal: 10, textAlign: 'right', color: colors.textPrimary },
   refreshBtn: { width: 44, height: 44, backgroundColor: colors.primary, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
-  listContent: Platform.OS === 'web' ? {
-    paddingBottom: 100,
-    gap: 12,
-    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
-    paddingTop: LAYOUT_CONSTANTS.SPACING.LG,
-  } : {
-    paddingBottom: 100,
-    gap: 12,
-  },
   emptyText: { textAlign: 'center', color: colors.textSecondary, marginTop: 40 },
 
   taskItem: { flexDirection: 'row', padding: 12, backgroundColor: colors.background, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
@@ -1035,3 +1025,20 @@ const styles = StyleSheet.create({
   modalSave: { backgroundColor: colors.primary },
   modalBtnText: { color: colors.white, fontWeight: 'bold' },
 });
+
+// Define listContent outside StyleSheet.create() because it needs dynamic Platform check
+const listContentStyle = Platform.OS === 'web' ? {
+  paddingBottom: 100,
+  gap: 12,
+  paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+  paddingTop: LAYOUT_CONSTANTS.SPACING.LG,
+} : {
+  paddingBottom: 100,
+  gap: 12,
+};
+
+// Merge with base styles
+const stylesWithListContent = {
+  ...styles,
+  listContent: listContentStyle,
+};
