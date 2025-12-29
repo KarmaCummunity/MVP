@@ -5,10 +5,10 @@
 // - Screens: HomeMain (HomeScreen), ChatList, ChatDetail, Notifications, About, Settings, Bookmarks, UserProfile, Followers, PostsReels (modal), WebView.
 // - Params of interest: `hideTopBar`, `showPosts` passed by HomeScreen to control header and content.
 // - External deps: react-navigation stack, TopBarNavigator wrapper.
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, CommonActions } from '@react-navigation/native';
 
 import HomeScreen from '../bottomBarScreens/HomeScreen';
 import ChatListScreen from '../topBarScreens/ChatListScreen';
@@ -28,6 +28,7 @@ import LandingSiteScreen from '../screens/LandingSiteScreen';
 import TopBarNavigator from './TopBarNavigator';
 import { useWebMode } from '../stores/webModeStore';
 import { logger } from '../utils/loggerService';
+import { useUser } from '../stores/userStore';
 import CommunityStatsScreen from '../screens/CommunityStatsScreen';
 
 type HomeTabStackParamList = {
@@ -52,15 +53,52 @@ const Stack = createStackNavigator<HomeTabStackParamList>();
 
 export default function HomeTabStack(): React.ReactElement {
   const { mode } = useWebMode();
-
-
+  const { resetHomeScreenTrigger } = useUser();
+  const navigation = useNavigation();
+  const previousTriggerRef = useRef(resetHomeScreenTrigger);
 
   // Determine initial route based on web mode
   const initialRouteName = (typeof window !== 'undefined' && mode === 'site')
     ? "LandingSiteScreen"
     : "HomeMain";
 
-  logger.debug('HomeTabStack', 'Rendering with initial route', { initialRouteName, mode });
+  logger.debug('HomeTabStack', 'Rendering with initial route', { initialRouteName, mode, resetHomeScreenTrigger });
+
+  // Listen to resetHomeScreenTrigger and reset navigation to HomeMain
+  useEffect(() => {
+    // Only act if trigger actually changed (not on initial mount)
+    if (previousTriggerRef.current !== resetHomeScreenTrigger && resetHomeScreenTrigger > 0) {
+      logger.debug('HomeTabStack', 'resetHomeScreenTrigger changed, resetting to HomeMain', {
+        previousTrigger: previousTriggerRef.current,
+        currentTrigger: resetHomeScreenTrigger,
+        platform: Platform.OS
+      });
+
+      try {
+        // Reset navigation stack to HomeMain
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'HomeMain' }],
+          })
+        );
+
+        logger.debug('HomeTabStack', 'Navigation reset to HomeMain completed', {
+          platform: Platform.OS,
+          trigger: resetHomeScreenTrigger
+        });
+      } catch (error) {
+        logger.error('HomeTabStack', 'Error resetting navigation to HomeMain', {
+          error,
+          platform: Platform.OS,
+          trigger: resetHomeScreenTrigger
+        });
+      }
+
+      // Update ref to current trigger value
+      previousTriggerRef.current = resetHomeScreenTrigger;
+    }
+  }, [resetHomeScreenTrigger, navigation]);
 
   return (
     <Stack.Navigator
