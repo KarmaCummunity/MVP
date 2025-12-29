@@ -17,8 +17,11 @@ import {
   Platform,
   Alert,
   RefreshControl,
+  StatusBar,
+  Dimensions,
 } from 'react-native';
 import { useNavigation, useFocusEffect, NavigationProp, ParamListBase } from '@react-navigation/native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useUser } from '../stores/userStore';
 import {
   getNotifications,
@@ -36,16 +39,21 @@ import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import ScreenWrapper from '../components/ScreenWrapper';
 
 export default function NotificationsScreen() {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { selectedUser } = useUser();
   const { t } = useTranslation(['notifications', 'common']);
+  const tabBarHeight = useBottomTabBarHeight() || 0;
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const screenHeight = Platform.OS === 'web' ? Dimensions.get('window').height : undefined;
+  const maxListHeight = Platform.OS === 'web' && screenHeight && headerHeight > 0
+    ? screenHeight - tabBarHeight - headerHeight
+    : undefined;
 
   console.log('🔔 NotificationsScreen - Component rendered, selectedUser:', selectedUser?.name || 'null');
 
@@ -296,8 +304,17 @@ export default function NotificationsScreen() {
   );
 
   return (
-    <>
-      <ScreenWrapper navigation={navigation} style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, Platform.OS === 'web' && { position: 'relative' }]}>
+      <StatusBar backgroundColor={colors.backgroundSecondary} barStyle="dark-content" />
+      {/* Header container - measure total height */}
+      <View
+        onLayout={(event) => {
+          if (Platform.OS === 'web') {
+            const { height } = event.nativeEvent.layout;
+            setHeaderHeight(height);
+          }
+        }}
+      >
         {/* Additional header actions for notifications */}
         <View style={styles.additionalHeaderSection}>
           {[
@@ -327,7 +344,15 @@ export default function NotificationsScreen() {
             <Text style={styles.unreadBadgeText}>{t('notifications:unreadBadge', { count: unreadCount })}</Text>
           </View>
         )}
+      </View>
 
+      {/* List container - limited height on web to ensure scrolling works */}
+      <View style={[
+        styles.listWrapper,
+        Platform.OS === 'web' && maxListHeight ? {
+          maxHeight: maxListHeight,
+        } : undefined
+      ]}>
         <FlatList
           data={notifications}
           keyExtractor={(item) => item.id}
@@ -339,15 +364,21 @@ export default function NotificationsScreen() {
           }
           showsVerticalScrollIndicator={false}
           scrollEnabled={true}
-          nestedScrollEnabled={true}
+          nestedScrollEnabled={Platform.OS === 'web' ? true : undefined}
+          scrollEventThrottle={16}
         />
-      </ScreenWrapper>
-    </>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
+    flex: 1,
+    backgroundColor: colors.backgroundSecondary,
+    position: 'relative',
+  },
+  listWrapper: {
     flex: 1,
     backgroundColor: colors.backgroundSecondary,
   },

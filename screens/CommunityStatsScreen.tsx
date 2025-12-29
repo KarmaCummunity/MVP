@@ -1,7 +1,8 @@
 // screens/CommunityStatsScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, Dimensions, ActivityIndicator, Platform, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, Dimensions, ActivityIndicator, Platform, RefreshControl, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
 import { useTranslation } from 'react-i18next';
@@ -90,6 +91,7 @@ interface CommunityStats {
 export default function CommunityStatsScreen() {
     const { t } = useTranslation();
     const { selectedUser } = useUser();
+    const tabBarHeight = useBottomTabBarHeight() || 0;
     const [stats, setStats] = useState<CommunityStats>({
         // Community stats from landing page
         siteVisits: 0,
@@ -126,6 +128,11 @@ export default function CommunityStatsScreen() {
     });
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [headerHeight, setHeaderHeight] = useState(0);
+    const screenHeight = Platform.OS === 'web' ? Dimensions.get('window').height : undefined;
+    const maxListHeight = Platform.OS === 'web' && screenHeight && headerHeight > 0
+        ? screenHeight - tabBarHeight - headerHeight
+        : undefined;
 
     useEffect(() => {
         logger.debug('CommunityStatsScreen', 'Screen viewed', { userId: selectedUser?.id });
@@ -232,7 +239,8 @@ export default function CommunityStatsScreen() {
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.safeArea}>
+            <SafeAreaView style={[styles.safeArea, Platform.OS === 'web' && { position: 'relative' }]}>
+                <StatusBar backgroundColor={colors.background} barStyle="dark-content" />
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={colors.primary} />
                     <Text style={styles.loadingText}>{t('common:loading')}</Text>
@@ -242,17 +250,36 @@ export default function CommunityStatsScreen() {
     }
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={true}
-                bounces={true}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
-                }
-            >
-                <View style={styles.header}>
+        <SafeAreaView style={[styles.safeArea, Platform.OS === 'web' && { position: 'relative' }]}>
+            <StatusBar backgroundColor={colors.background} barStyle="dark-content" />
+            {/* List container - limited height on web to ensure scrolling works */}
+            <View style={[
+                styles.listWrapper,
+                Platform.OS === 'web' && maxListHeight ? {
+                    maxHeight: maxListHeight,
+                } : undefined
+            ]}>
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={true}
+                    bounces={true}
+                    scrollEnabled={true}
+                    nestedScrollEnabled={Platform.OS === 'web' ? true : undefined}
+                    scrollEventThrottle={16}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+                    }
+                >
+                    <View 
+                        style={styles.header}
+                        onLayout={(event) => {
+                            if (Platform.OS === 'web') {
+                                const { height } = event.nativeEvent.layout;
+                                setHeaderHeight(height);
+                            }
+                        }}
+                    >
                     <Text style={styles.title}>סטטיסטיקות הקהילה</Text>
                     <Text style={styles.subtitle}>השפעה אמיתית, במספרים</Text>
                 </View>
@@ -432,7 +459,8 @@ export default function CommunityStatsScreen() {
 
                 {/* Bottom padding for safe area */}
                 <View style={{ height: Platform.OS === 'ios' ? 100 : 80 }} />
-            </ScrollView>
+                </ScrollView>
+            </View>
         </SafeAreaView>
     );
 }
@@ -442,6 +470,11 @@ const cardWidth = getResponsiveCardWidth();
 
 const styles = StyleSheet.create({
     safeArea: {
+        flex: 1,
+        backgroundColor: colors.background,
+        position: 'relative',
+    },
+    listWrapper: {
         flex: 1,
         backgroundColor: colors.background,
     },
