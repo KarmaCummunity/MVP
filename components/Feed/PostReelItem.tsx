@@ -54,25 +54,46 @@ const PostReelItem: React.FC<PostReelItemProps> = ({
     // Format timestamp
     const formattedTime = useMemo(() => {
         try {
+            if (!item.timestamp) {
+                console.warn('[PostReelItem] No timestamp for item:', item.id, item.subtype);
+                return 'עכשיו';
+            }
+
             const date = new Date(item.timestamp);
+
+            // Check if date is valid
+            if (isNaN(date.getTime())) {
+                console.error('[PostReelItem] Invalid timestamp:', item.timestamp, 'for item:', item.id);
+                return 'עכשיו';
+            }
+
             const now = new Date();
             const diff = now.getTime() - date.getTime();
 
-            // Less than 24 hours
-            if (diff < 24 * 60 * 60 * 1000) {
-                if (diff < 60 * 60 * 1000) {
-                    const minutes = Math.floor(diff / (60 * 1000));
-                    return t('common.time.minutesAgo', { count: minutes });
-                }
-                const hours = Math.floor(diff / (60 * 60 * 1000));
-                return t('common.time.hoursAgo', { count: hours });
+            // Less than 1 minute
+            if (diff < 60 * 1000) {
+                return 'עכשיו';
             }
 
-            return date.toLocaleDateString('he-IL'); // Plain date for older
+            // Less than 1 hour
+            if (diff < 60 * 60 * 1000) {
+                const minutes = Math.floor(diff / (60 * 1000));
+                return `לפני ${minutes} דקות`;
+            }
+
+            // Less than 24 hours
+            if (diff < 24 * 60 * 60 * 1000) {
+                const hours = Math.floor(diff / (60 * 60 * 1000));
+                return `לפני ${hours} שעות`;
+            }
+
+            // Older than 24 hours - show date
+            return date.toLocaleDateString('he-IL');
         } catch (e) {
-            return '';
+            console.error('[PostReelItem] Error formatting timestamp:', e, item.timestamp);
+            return 'עכשיו';
         }
-    }, [item.timestamp, t]);
+    }, [item.timestamp]);
 
     const handleProfilePressInternal = useCallback(() => {
         if (item.user && item.user.id) {
@@ -137,6 +158,11 @@ const PostReelItem: React.FC<PostReelItemProps> = ({
     const displayName = item.user.name === 'common.unknownUser' ? t('common.unknownUser') : item.user.name;
 
     // --- Render Regular Post/Reel ---
+
+    // Check if it's an Item/Donation subtype
+    const isItemType = item.subtype === 'item' || item.subtype === 'donation';
+    const isRideType = item.subtype === 'ride';
+
     return (
         <View style={[
             styles.itemContainer,
@@ -171,16 +197,68 @@ const PostReelItem: React.FC<PostReelItemProps> = ({
                         style={[styles.thumbnail, isGrid && { height: 150 }]}
                         resizeMode="cover"
                     />
+                    {(isItemType || isRideType) && (
+                        <View style={styles.overlayContainer}>
+                            <Text style={styles.overlayTitle}>{displayTitle}</Text>
+                            {item.description ? (
+                                <Text style={styles.overlayDescription} numberOfLines={3}>
+                                    {item.description}
+                                </Text>
+                            ) : null}
+                            {isItemType && item.category && (
+                                <Text style={styles.overlayCategory}>
+                                    📦 {item.category}
+                                </Text>
+                            )}
+                            {isRideType && (
+                                <View style={styles.rideDetailsOverlay}>
+                                    {item.seats ? (
+                                        <Text style={styles.rideDetailText}>
+                                            🪑 {item.seats} מקומות
+                                        </Text>
+                                    ) : null}
+                                    <Text style={styles.rideDetailText}>
+                                        {item.price && item.price > 0 ? `💰 השתתפות בדלק ₪${item.price}` : '🆓 חינם'}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
+                    )}
                 </TouchableOpacity>
             ) : (
                 // Text only post fallback or placeholder
-                <TouchableOpacity onPress={handleItemPress} style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
+                <TouchableOpacity
+                    onPress={handleItemPress}
+                    style={[
+                        styles.thumbnail,
+                        styles.thumbnailPlaceholder,
+                        // If it's an item/donation/ride, specific background style
+                        isItemType && { backgroundColor: item.subtype === 'donation' ? '#E8F5E9' : '#FFF3E0' },
+                        isRideType && { backgroundColor: '#E3F2FD' }
+                    ]}
+                >
+                    {/* For placeholders, we show title + description in the center too */}
+                    {(isItemType || isRideType) && <Text style={[styles.placeholderText, styles.placeholderTitle]}>{displayTitle}</Text>}
                     <Text style={styles.placeholderText} numberOfLines={3}>{item.description}</Text>
+                    {isRideType && (
+                        <View style={styles.rideDetailsPlaceholder}>
+                            {item.seats ? (
+                                <Text style={styles.rideDetailTextDark}>
+                                    🪑 {item.seats} מקומות
+                                </Text>
+                            ) : null}
+                            {item.price && item.price > 0 ? (
+                                <Text style={styles.rideDetailTextDark}>
+                                    💰 ₪{item.price}
+                                </Text>
+                            ) : null}
+                        </View>
+                    )}
                 </TouchableOpacity>
             )}
 
-            {/* Text Content */}
-            {!isGrid && (
+            {/* Text Content - Hide for items/rides if shown in overlay */}
+            {!isGrid && !isItemType && !isRideType && (
                 <View style={styles.textContainer}>
                     <Text style={styles.title} numberOfLines={1}>{displayTitle}</Text>
                     {item.description ? (
@@ -300,6 +378,73 @@ const styles = StyleSheet.create({
     placeholderText: {
         color: colors.textSecondary,
         textAlign: 'center',
+    },
+    placeholderTitle: {
+        fontWeight: 'bold',
+        fontSize: 18,
+        marginBottom: 8,
+        color: colors.textPrimary
+    },
+    // Overlay styles for Items
+    overlayContainer: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20
+    },
+    overlayTitle: {
+        color: colors.white,
+        fontSize: 22,
+        fontWeight: 'bold',
+        marginBottom: 8,
+        textAlign: 'center',
+        textShadowColor: 'rgba(0, 0, 0, 0.75)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 4
+    },
+    overlayDescription: {
+        color: colors.white,
+        fontSize: 16,
+        textAlign: 'center',
+        textShadowColor: 'rgba(0, 0, 0, 0.75)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 4
+    },
+    overlayCategory: {
+        color: colors.white,
+        fontSize: 14,
+        fontWeight: '600',
+        marginTop: 8,
+        textAlign: 'center',
+        textShadowColor: 'rgba(0, 0, 0, 0.75)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 4
+    },
+    rideDetailsOverlay: {
+        flexDirection: 'row',
+        gap: 16,
+        marginTop: 12,
+        justifyContent: 'center'
+    },
+    rideDetailText: {
+        color: colors.white,
+        fontSize: 14,
+        fontWeight: '600',
+        textShadowColor: 'rgba(0, 0, 0, 0.75)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 4
+    },
+    rideDetailsPlaceholder: {
+        flexDirection: 'row',
+        gap: 16,
+        marginTop: 12,
+        justifyContent: 'center'
+    },
+    rideDetailTextDark: {
+        color: colors.textPrimary,
+        fontSize: 14,
+        fontWeight: '600'
     },
     textContainer: {
         padding: 12,

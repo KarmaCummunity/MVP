@@ -44,4 +44,7 @@ export interface FeedItem {
     time?: string;
     seats?: number;
     price?: number;
+
+    // Item specific (optional)
+    category?: string;
 }

@@ -129,7 +129,7 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
             res.data.forEach((p: any) => {
               // Check if this is a task-related post
               const isTaskPost = p.post_type === 'task_assignment' || p.post_type === 'task_completion';
-              
+
               if (isTaskPost) {
                 // For task posts, only show if task is open/in_progress
                 const taskStatus = p.task?.status;
@@ -195,7 +195,7 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
         } else {
           try {
             const allItems = await db.getDedicatedItemsByOwner(targetUserId) || [];
-            userItems = allItems.filter((item: any) => 
+            userItems = allItems.filter((item: any) =>
               item.status === 'available' || item.status === 'reserved'
             );
           } catch (error) {
@@ -228,11 +228,22 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
         // Load rides (active, full)
         try {
           const allRides = await enhancedDB.getRides({});
+          console.log('[ProfileScreen OpenRoute] Fetched rides:', allRides.length);
+
           const userRides = allRides.filter((ride: any) => {
-            const createdBy = ride.createdBy || ride.created_by || ride.driver_id || ride.driverId;
+            const driverId = ride.driver_id || ride.createdBy || ride.created_by || ride.driverId;
             const status = ride.status || 'active';
-            return createdBy === targetUserId && (status === 'active' || status === 'full');
+            const isUserRide = driverId === targetUserId && (status === 'active' || status === 'full');
+
+            if (isUserRide) {
+              console.log('[ProfileScreen OpenRoute] Found user ride:', ride.id, 'driver:', driverId);
+            }
+
+            return isUserRide;
           });
+
+          console.log('[ProfileScreen OpenRoute] User rides count:', userRides.length);
+
           userRides.forEach((ride: any) => {
             const fromLocation = ride.from || ride.from_location?.name || ride.from_location?.city || '';
             const toLocation = ride.to || ride.to_location?.name || ride.to_location?.city || '';
@@ -249,7 +260,7 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
             });
           });
         } catch (error) {
-          console.error('Error loading rides:', error);
+          console.error('[ProfileScreen OpenRoute] Error loading rides:', error);
         }
 
         // Load tasks (open, in_progress) - avoid duplicates with task posts
@@ -260,21 +271,21 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
               .filter((c: any) => c.type === 'task' && c.taskData?.id)
               .map((c: any) => c.taskData.id)
           );
-          
+
           const openTasksRes = await apiService.getTasks({ assignee: targetUserId, status: 'open', limit: 50 });
           const inProgressTasksRes = await apiService.getTasks({ assignee: targetUserId, status: 'in_progress', limit: 50 });
           const tasks = [
             ...(openTasksRes.success && Array.isArray(openTasksRes.data) ? openTasksRes.data : []),
             ...(inProgressTasksRes.success && Array.isArray(inProgressTasksRes.data) ? inProgressTasksRes.data : [])
           ];
-          
+
           tasks.forEach((task: any) => {
             // Skip if already added via task posts
             if (existingTaskIds.has(task.id)) {
               console.log(`📱 OpenRoute - Skipping duplicate task: ${task.id}`);
               return;
             }
-            
+
             allContent.push({
               id: `task_${task.id}`,
               title: task.title,
@@ -372,10 +383,10 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
               </View>
             ) : post.type === 'task' || post.type === 'task_post' ? (
               <View style={[styles.postImage, styles.taskPlaceholder]}>
-                <Ionicons 
-                  name={post.subtype === 'task_assignment' ? 'add-circle-outline' : 'checkmark-circle-outline'} 
-                  size={scaleSize(32)} 
-                  color={post.subtype === 'task_assignment' ? colors.info : colors.success} 
+                <Ionicons
+                  name={post.subtype === 'task_assignment' ? 'add-circle-outline' : 'checkmark-circle-outline'}
+                  size={scaleSize(32)}
+                  color={post.subtype === 'task_assignment' ? colors.info : colors.success}
                 />
                 {(post.title || post.taskData?.title) && (
                   <View style={styles.taskDetailsContainer}>
@@ -456,7 +467,7 @@ const ClosedRoute = ({ userId }: { userId?: string }) => {
         } else {
           try {
             const allItems = await db.getDedicatedItemsByOwner(targetUserId) || [];
-            userItems = allItems.filter((item: any) => 
+            userItems = allItems.filter((item: any) =>
               item.status === 'delivered' || item.status === 'completed'
             );
           } catch (error) {
@@ -493,7 +504,7 @@ const ClosedRoute = ({ userId }: { userId?: string }) => {
             res.data.forEach((p: any) => {
               // Check if this is a task-related post with completed task
               const isTaskPost = p.post_type === 'task_assignment' || p.post_type === 'task_completion';
-              
+
               if (isTaskPost) {
                 // For task posts, only show if task is done/archived
                 const taskStatus = p.task?.status;
@@ -557,21 +568,21 @@ const ClosedRoute = ({ userId }: { userId?: string }) => {
               .filter((c: any) => c.type === 'task' && c.taskData?.id)
               .map((c: any) => c.taskData.id)
           );
-          
+
           const doneTasksRes = await apiService.getTasks({ assignee: targetUserId, status: 'done', limit: 50 });
           const archivedTasksRes = await apiService.getTasks({ assignee: targetUserId, status: 'archived', limit: 50 });
           const tasks = [
             ...(doneTasksRes.success && Array.isArray(doneTasksRes.data) ? doneTasksRes.data : []),
             ...(archivedTasksRes.success && Array.isArray(archivedTasksRes.data) ? archivedTasksRes.data : [])
           ];
-          
+
           tasks.forEach((task: any) => {
             // Skip if already added via task posts
             if (existingTaskIds.has(task.id)) {
               console.log(`📱 ClosedRoute - Skipping duplicate task: ${task.id}`);
               return;
             }
-            
+
             allContent.push({
               id: `task_${task.id}`,
               title: task.title,
@@ -669,10 +680,10 @@ const ClosedRoute = ({ userId }: { userId?: string }) => {
               </View>
             ) : post.type === 'task' || post.type === 'task_post' ? (
               <View style={[styles.postImage, styles.taskPlaceholder]}>
-                <Ionicons 
-                  name={post.subtype === 'task_assignment' ? 'add-circle' : 'checkmark-circle'} 
-                  size={scaleSize(32)} 
-                  color={post.subtype === 'task_assignment' ? colors.info : colors.success} 
+                <Ionicons
+                  name={post.subtype === 'task_assignment' ? 'add-circle' : 'checkmark-circle'}
+                  size={scaleSize(32)}
+                  color={post.subtype === 'task_assignment' ? colors.info : colors.success}
                 />
                 {(post.title || post.taskData?.title) && (
                   <View style={styles.taskDetailsContainer}>
@@ -1108,8 +1119,8 @@ function ProfileScreenContent({
         if (taskPostsRes.success && Array.isArray(taskPostsRes.data)) {
           taskPostsRes.data.forEach((p: any) => {
             if (p.post_type === 'task_assignment' || p.post_type === 'task_completion') {
-              const icon = p.post_type === 'task_assignment' 
-                ? 'add-circle-outline' 
+              const icon = p.post_type === 'task_assignment'
+                ? 'add-circle-outline'
                 : 'checkmark-circle-outline';
               const color = p.post_type === 'task_assignment'
                 ? colors.info
@@ -1117,7 +1128,7 @@ function ProfileScreenContent({
               const typeLabel = p.post_type === 'task_assignment'
                 ? 'משימה חדשה'
                 : 'משימה הושלמה';
-                
+
               activities.push({
                 id: `taskpost_${p.id}`,
                 type: 'task_post',
@@ -1143,7 +1154,7 @@ function ProfileScreenContent({
             .filter((a: any) => a.type === 'task_post' && a.rawData?.task?.id)
             .map((a: any) => a.rawData.task.id)
         );
-        
+
         const tasksRes = await apiService.getTasks({ assignee: userId, limit: 50 });
         if (tasksRes.success && Array.isArray(tasksRes.data)) {
           tasksRes.data.forEach((task: any) => {
@@ -1151,7 +1162,7 @@ function ProfileScreenContent({
             if (existingTaskIds.has(task.id)) {
               return;
             }
-            
+
             activities.push({
               id: `task_${task.id}`,
               type: 'task',
