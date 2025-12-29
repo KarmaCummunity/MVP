@@ -200,21 +200,36 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
     try {
       const response = await postsService.togglePostLike(item.id, selectedUser.id);
       
+      console.log('🔄 PostsReelsScreen - togglePostLike response:', {
+        success: response.success,
+        hasData: !!response.data,
+        data: response.data,
+        error: response.error
+      });
+      
       if (response.success && response.data) {
         // Sync with server response
+        console.log('✅ PostsReelsScreen - Updating state:', {
+          is_liked: response.data.is_liked,
+          likes_count: response.data.likes_count
+        });
         setIsLiked(response.data.is_liked);
         setLikesCount(response.data.likes_count);
       } else {
         // Revert on error
+        console.warn('⚠️ PostsReelsScreen - Reverting state due to error:', response.error);
         setIsLiked(previousIsLiked);
         setLikesCount(previousLikesCount);
         logger.error('PostsReelsScreen', 'Failed to toggle like', { error: response.error });
+        toastService.error(response.error || 'נכשל בעדכון הלייק');
       }
     } catch (error) {
       // Revert on error
+      console.error('❌ PostsReelsScreen - Exception in togglePostLike:', error);
       setIsLiked(previousIsLiked);
       setLikesCount(previousLikesCount);
       logger.error('PostsReelsScreen', 'Error toggling like', { error });
+      toastService.error('שגיאה בעדכון הלייק');
     }
   };
 
@@ -1195,18 +1210,30 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
       // Load NEW posts from Postgres DB (Task Completions, etc.)
       let newPostsList: any[] = [];
       try {
+        console.log('📡 [PostsReelsScreen] Calling getPosts API...', { userId: selectedUser?.id?.substring(0, 8) });
         const res = await apiService.getPosts(20, 0, selectedUser?.id);
-        console.log('📡 PostsReelsScreen - getPosts response:', { success: res.success, dataLength: res.data?.length });
+        console.log('📡 [PostsReelsScreen] getPosts API response:', { 
+          success: res.success, 
+          dataLength: res.data?.length,
+          hasData: !!res.data,
+          isArray: Array.isArray(res.data),
+          error: res.error
+        });
         if (res.success && Array.isArray(res.data)) {
           newPostsList = res.data;
-          console.log('📋 PostsReelsScreen - Loaded posts:', newPostsList.map(p => ({ 
-            id: p.id.substring(0, 8), 
+          console.log(`📋 [PostsReelsScreen] Loaded ${newPostsList.length} posts from API:`, newPostsList.map(p => ({ 
+            id: p.id?.substring(0, 8), 
             type: p.post_type, 
-            title: p.title.substring(0, 30),
+            title: p.title?.substring(0, 30),
+            has_author: !!p.author,
+            author_id: p.author?.id?.substring(0, 8),
             is_liked: p.is_liked
           })));
+        } else {
+          console.warn('⚠️ [PostsReelsScreen] getPosts failed or returned invalid data:', res);
         }
       } catch (err) {
+        console.error('❌ [PostsReelsScreen] Error loading new posts:', err);
         logger.error('PostsReelsScreen', 'Error loading new posts', { err });
       }
 
