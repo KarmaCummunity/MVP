@@ -242,12 +242,12 @@ export const useFeedData = (feedMode: 'friends' | 'discovery') => {
                         return;
                     }
 
-                    const taskId = `task_${task.id}`;
-                    if (!existingIds.has(taskId)) {
+                    // Use actual task ID (UUID) without prefix
+                    if (!existingIds.has(task.id)) {
                         const creator = task.creator_details || {};
 
                         const taskItem: FeedItem = {
-                            id: taskId,
+                            id: task.id, // Use actual task ID
                             type: 'post', // Show as post
                             subtype: 'task_assignment',
                             title: `יצר/ה משימה חדשה: ${task.title}`,
@@ -269,7 +269,7 @@ export const useFeedData = (feedMode: 'friends' | 'discovery') => {
                             }
                         };
                         allContent.push(taskItem);
-                        existingIds.add(taskId);
+                        existingIds.add(task.id);
                     }
                 });
             } catch (e) {
