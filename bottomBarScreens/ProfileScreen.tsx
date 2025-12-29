@@ -1088,27 +1088,24 @@ function ProfileScreenContent({
         console.error('Error loading donations:', error);
       }
 
-      // Load rides - filter by createdBy after loading
+      // Load rides using the correct API endpoint
       try {
-        const allRides = await enhancedDB.getRides({});
-        const userRides = allRides.filter((ride: any) => {
-          const createdBy = ride.createdBy || ride.created_by || ride.driver_id || ride.driverId;
-          return createdBy === userId;
-        });
-
-        userRides.forEach((ride: any) => {
-          const fromLocation = ride.from || ride.from_location?.name || ride.from_location?.city || 'לא צויין';
-          const toLocation = ride.to || ride.to_location?.name || ride.to_location?.city || 'לא צויין';
-          activities.push({
-            id: `ride_${ride.id}`,
-            type: 'ride',
-            title: `טרמפ: ${fromLocation} ➝ ${toLocation}`,
-            time: ride.created_at || ride.createdAt || new Date().toISOString(),
-            icon: 'car-sport-outline',
-            color: colors.info,
-            rawData: ride
+        const userRidesResponse = await apiService.getUserRides(userId, 'driver');
+        if (userRidesResponse.success && Array.isArray(userRidesResponse.data)) {
+          userRidesResponse.data.forEach((ride: any) => {
+            const fromLocation = ride.from || ride.from_location?.name || ride.from_location?.city || 'לא צויין';
+            const toLocation = ride.to || ride.to_location?.name || ride.to_location?.city || 'לא צויין';
+            activities.push({
+              id: `ride_${ride.id}`,
+              type: 'ride',
+              title: `טרמפ: ${fromLocation} ➝ ${toLocation}`,
+              time: ride.created_at || ride.createdAt || new Date().toISOString(),
+              icon: 'car-sport-outline',
+              color: colors.info,
+              rawData: ride
+            });
           });
-        });
+        }
       } catch (error) {
         console.error('Error loading rides:', error);
       }
