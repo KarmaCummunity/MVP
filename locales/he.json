@@ -47,7 +47,24 @@
     "chat": "שיחה",
     "favorites": "מועדפים",
     "posts": "פוסטים",
-    "inactive": "לא פעיל"
+    "inactive": "לא פעיל",
+    "feed": {
+      "tabs": {
+        "friends": "חברים",
+        "discovery": "גילוי"
+      },
+      "empty_title": "אין פוסטים עדיין",
+      "empty_friends": "הוסף חברים כדי לראות פוסטים!",
+      "empty_discovery": "היה הראשון לפרסם!"
+    },
+    "post": {
+      "noTitle": "פוסט ללא כותרת"
+    },
+    "tasks": {
+      "status": {
+        "new": "משימה חדשה"
+      }
+    }
   },
   "search": {
     "sortTitle": "מיון",

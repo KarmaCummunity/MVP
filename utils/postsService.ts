@@ -142,6 +142,44 @@ class PostsService {
   }
 
   // ============================================
+  // POSTS
+  // ============================================
+
+  /**
+   * Get main feed posts
+   * @param limit - Max number of results
+   * @param offset - Pagination offset
+   * @param userId - Optional: filter by user ID (for profile feed) or for "friends" logic checking (backend dependant)
+   */
+  async getPosts(limit = 20, offset = 0, userId?: string): Promise<PostsApiResponse<any[]>> {
+    let url = `/api/posts?limit=${limit}&offset=${offset}`;
+    if (userId) {
+      url += `&user_id=${userId}`;
+      // Note: Backend currently uses this param for "friends" filtering or just author filtering? 
+      // Based on controller, getPosts takes query params. 
+      // Controller signature: @Query('limit') limitArg, @Query('offset') offsetArg, @Query('userId') userId (optional filter?)
+    }
+    return this.request<any[]>(url);
+  }
+
+  /**
+   * Get specific user's posts
+   * @param targetUserId - The ID of the user whose posts to fetch
+   * @param viewerId - The ID of the current viewer (to check likes)
+   * @param limit
+   * @param offset
+   */
+  async getUserPosts(targetUserId: string, viewerId?: string, limit = 20, offset = 0): Promise<PostsApiResponse<any[]>> {
+    let url = `/api/posts/user/${targetUserId}?limit=${limit}`;
+    if (viewerId) {
+      url += `&viewer_id=${viewerId}`;
+    }
+    // Note: Pagination offset support might need to be added to backend getUserPosts if missing, 
+    // likely it supports it or we rely on limit for now.
+    return this.request<any[]>(url);
+  }
+
+  // ============================================
   // LIKES
   // ============================================
 

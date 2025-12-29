@@ -199,6 +199,44 @@ export default function BottomNavigator(): React.ReactElement {
     return route.params;
   };
 
+  // Map tab route names to their initial stack route names
+  const TAB_INITIAL_ROUTES: Record<string, string> = {
+    HomeScreen: 'HomeMain',
+    SearchTab: 'SearchScreen',
+    DonationsTab: 'DonationsScreen',
+    ProfileScreen: 'ProfileMain',
+    AdminTab: 'AdminDashboard',
+  };
+
+  const handleTabPress = (e: any, navigation: any, routeName: string) => {
+    // Only act if the tab is already focused
+    if (navigation.isFocused()) {
+      const initialRoute = TAB_INITIAL_ROUTES[routeName];
+      if (initialRoute) {
+        logger.debug('BottomNavigator', `Tab ${routeName} pressed while focused - resetting stack to ${initialRoute}`);
+
+        e.preventDefault();
+
+        // Special handling for Home logic (refresh/reset via store)
+        if (routeName === 'HomeScreen') {
+          resetHomeScreen();
+        }
+
+        // Perform a deep reset of the tab's stack
+        // This resets the Tab Navigator history to just this tab, with the stack reset to initial route
+        navigation.dispatch(CommonActions.reset({
+          index: 0,
+          routes: [{
+            name: routeName,
+            state: {
+              routes: [{ name: initialRoute }]
+            }
+          }]
+        }));
+      }
+    }
+  };
+
   return (
     <Tab.Navigator
       id={undefined}
@@ -241,60 +279,43 @@ export default function BottomNavigator(): React.ReactElement {
         });
       }}
     >
-      {!isGuestMode && <Tab.Screen name="ProfileScreen" component={ProfileTabStack} />}
-      <Tab.Screen name="DonationsTab" component={DonationsStack} />
-      <Tab.Screen name="SearchTab" component={SearchTabStack} />
-      {isAdmin && <Tab.Screen name="AdminTab" component={AdminStack} />}
+      {!isGuestMode && (
+        <Tab.Screen
+          name="ProfileScreen"
+          component={ProfileTabStack}
+          listeners={({ navigation, route }) => ({
+            tabPress: (e) => handleTabPress(e, navigation, route.name),
+          })}
+        />
+      )}
+      <Tab.Screen
+        name="DonationsTab"
+        component={DonationsStack}
+        listeners={({ navigation, route }) => ({
+          tabPress: (e) => handleTabPress(e, navigation, route.name),
+        })}
+      />
+      <Tab.Screen
+        name="SearchTab"
+        component={SearchTabStack}
+        listeners={({ navigation, route }) => ({
+          tabPress: (e) => handleTabPress(e, navigation, route.name),
+        })}
+      />
+      {isAdmin && (
+        <Tab.Screen
+          name="AdminTab"
+          component={AdminStack}
+          listeners={({ navigation, route }) => ({
+            tabPress: (e) => handleTabPress(e, navigation, route.name),
+          })}
+        />
+      )}
       <Tab.Screen
         name="HomeScreen"
         component={HomeTabStack}
-        listeners={({ navigation }) => ({
-          tabPress: (e) => {
-            logger.debug('BottomNavigator', 'HomeScreen tab pressed');
-            try {
-              // Get current navigation state
-              const state = (navigation as any).getState();
-              const currentRoute = state?.routes?.[state?.index || 0];
-              const currentRouteName = currentRoute?.name;
-
-              logger.debug('BottomNavigator', 'Tab press check', { currentRouteName });
-
-              if (currentRouteName === 'HomeScreen') {
-                // Already on Home tab - check if we're on HomeMain inside the stack
-                const stackState = currentRoute?.state;
-                const stackRoute = stackState?.routes?.[stackState?.index || 0];
-                const innerRouteName = stackRoute?.name;
-
-                logger.debug('BottomNavigator', 'Already on HomeScreen, checking inner route', { innerRouteName });
-
-                if (innerRouteName === 'HomeMain') {
-                  // Already on HomeMain - just refresh without navigating
-                  // This prevents opening ChatListScreen or other screens
-                  logger.debug('BottomNavigator', 'Already on HomeMain, just refreshing');
-                  resetHomeScreen();
-                  // Don't navigate - just let the reset trigger refresh the screen
-                  e.preventDefault();
-                } else {
-                  // On a different screen inside HomeTabStack - reset to HomeMain
-                  logger.debug('BottomNavigator', 'On different screen in HomeTabStack, resetting to HomeMain', {
-                    currentScreen: innerRouteName
-                  });
-                  // Use resetHomeScreen trigger which will be handled by HomeTabStack
-                  // This is the most reliable way to reset the stack to HomeMain
-                  resetHomeScreen();
-                  e.preventDefault(); // Prevent default navigation since we handled it
-                }
-              } else {
-                // Switching tabs - just navigate
-                logger.debug('BottomNavigator', 'Switching to HomeScreen');
-                (navigation as any).navigate('HomeScreen');
-              }
-            } catch (error) {
-              logger.error('BottomNavigator', 'Error handling HomeScreen tab press', { error });
-              // Fallback: standard navigation
-              (navigation as any).navigate('HomeScreen');
-            }
-          },
+        listeners={({ navigation, route }) => ({
+          tabPress: (e) => handleTabPress(e, navigation, route.name),
         })}
       />
 
