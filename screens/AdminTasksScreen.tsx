@@ -874,13 +874,14 @@ const styles = StyleSheet.create({
   input: { flex: 1, height: 44, backgroundColor: colors.background, borderRadius: 8, paddingHorizontal: 10, textAlign: 'right', color: colors.textPrimary },
   refreshBtn: { width: 44, height: 44, backgroundColor: colors.primary, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
-  listContent: { 
-    paddingBottom: 100, 
+  listContent: Platform.OS === 'web' ? {
+    paddingBottom: 100,
     gap: 12,
-    ...(Platform.OS === 'web' && {
-      paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
-      paddingTop: LAYOUT_CONSTANTS.SPACING.LG,
-    }),
+    paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+    paddingTop: LAYOUT_CONSTANTS.SPACING.LG,
+  } : {
+    paddingBottom: 100,
+    gap: 12,
   },
   emptyText: { textAlign: 'center', color: colors.textSecondary, marginTop: 40 },
 
