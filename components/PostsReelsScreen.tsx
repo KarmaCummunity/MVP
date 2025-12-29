@@ -199,14 +199,14 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
 
     try {
       const response = await postsService.togglePostLike(item.id, selectedUser.id);
-      
+
       console.log('🔄 PostsReelsScreen - togglePostLike response:', {
         success: response.success,
         hasData: !!response.data,
         data: response.data,
         error: response.error
       });
-      
+
       if (response.success && response.data) {
         // Sync with server response
         console.log('✅ PostsReelsScreen - Updating state:', {
@@ -221,7 +221,7 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
         setIsLiked(previousIsLiked);
         setLikesCount(previousLikesCount);
         logger.error('PostsReelsScreen', 'Failed to toggle like', { error: response.error });
-        toastService.error(response.error || 'נכשל בעדכון הלייק');
+        toastService.showError(response.error || 'נכשל בעדכון הלייק');
       }
     } catch (error) {
       // Revert on error
@@ -229,7 +229,7 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
       setIsLiked(previousIsLiked);
       setLikesCount(previousLikesCount);
       logger.error('PostsReelsScreen', 'Error toggling like', { error });
-      toastService.error('שגיאה בעדכון הלייק');
+      toastService.showError('שגיאה בעדכון הלייק');
     }
   };
 
@@ -753,10 +753,10 @@ const PostReelItem = ({ item, cardWidth, numColumns = 2 }: { item: Item; cardWid
             cardWidth ? { width: cardWidth } : undefined
           ]}>
             <View style={styles.taskIconContainer}>
-              <Ionicons 
-                name={item.subtype === 'task_assignment' ? 'add-circle' : 'checkmark-circle'} 
-                size={scaleSize(48)} 
-                color={item.subtype === 'task_assignment' ? colors.info : colors.success} 
+              <Ionicons
+                name={item.subtype === 'task_assignment' ? 'add-circle' : 'checkmark-circle'}
+                size={scaleSize(48)}
+                color={item.subtype === 'task_assignment' ? colors.info : colors.success}
               />
             </View>
             <View style={styles.taskPostContent}>
@@ -1212,8 +1212,8 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
       try {
         console.log('📡 [PostsReelsScreen] Calling getPosts API...', { userId: selectedUser?.id?.substring(0, 8) });
         const res = await apiService.getPosts(20, 0, selectedUser?.id);
-        console.log('📡 [PostsReelsScreen] getPosts API response:', { 
-          success: res.success, 
+        console.log('📡 [PostsReelsScreen] getPosts API response:', {
+          success: res.success,
           dataLength: res.data?.length,
           hasData: !!res.data,
           isArray: Array.isArray(res.data),
@@ -1221,9 +1221,9 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
         });
         if (res.success && Array.isArray(res.data)) {
           newPostsList = res.data;
-          console.log(`📋 [PostsReelsScreen] Loaded ${newPostsList.length} posts from API:`, newPostsList.map(p => ({ 
-            id: p.id?.substring(0, 8), 
-            type: p.post_type, 
+          console.log(`📋 [PostsReelsScreen] Loaded ${newPostsList.length} posts from API:`, newPostsList.map(p => ({
+            id: p.id?.substring(0, 8),
+            type: p.post_type,
             title: p.title?.substring(0, 30),
             has_author: !!p.author,
             author_id: p.author?.id?.substring(0, 8),
@@ -1253,15 +1253,15 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
           });
           return;
         }
-        
+
         // Log task posts specifically
         const isTaskPost = p.post_type === 'task_assignment' || p.post_type === 'task_completion';
         if (isTaskPost) {
           console.log(`✅ Adding task post to feed: ${p.title?.substring(0, 40)} (type: ${p.post_type})`);
         }
-        
+
         console.log(`📝 Processing post: ${p.title?.substring(0, 30)} - isTaskPost: ${isTaskPost}, type: ${p.post_type}`);
-        
+
         merged.push({
           id: p.id,
           type: isTaskPost ? 'task_post' : 'post',
@@ -1455,11 +1455,11 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
         userIds: userIds.length,
         sample: merged.slice(0, 2).map(p => ({ id: p.id, title: p.title }))
       });
-      
+
       const taskPosts = merged.filter(p => p.type === 'task_post');
       console.log(`📊 PostsReelsScreen - FINAL FEED: Total: ${merged.length}, Task Posts: ${taskPosts.length}`);
       console.log(`📝 Task posts in feed:`, taskPosts.map(p => ({ id: p.id.substring(0, 8), title: p.title.substring(0, 30), subtype: p.subtype })));
-      
+
       setRealFeed(merged);
     } catch (e) {
       console.error('❌ Error loading feed:', e);
