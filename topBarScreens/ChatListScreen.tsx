@@ -7,8 +7,7 @@
 // - External deps/services: `chatService` (get/subscribe), i18n, Haptics, static users from `fakeData` and `characterTypes`.
 // ChatListScreen – professional, concise, with in-file demo support and live updates
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, RefreshControl, Alert, TextInput, TouchableOpacity, Platform } from 'react-native';
-import ScrollContainer from '../components/ScrollContainer';
+import { View, Text, StyleSheet, RefreshControl, Alert, TextInput, TouchableOpacity, Platform, SafeAreaView, StatusBar, Dimensions, FlatList } from 'react-native';
 import { useNavigation, NavigationProp, ParamListBase, useFocusEffect } from '@react-navigation/native';
 import ChatListItem from '../components/ChatListItem';
 import { useUser } from '../stores/userStore';
@@ -17,22 +16,28 @@ import { apiService } from '../utils/apiService';
 import { USE_BACKEND } from '../utils/config.constants';
 import colors from '../globals/colors';
 import { FontSizes } from '../globals/constants';
-import ScreenWrapper from '../components/ScreenWrapper';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import * as Haptics from 'expo-haptics';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 // Demo data is now localized via i18n inside the component
 
 export default function ChatListScreen() {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { selectedUser, isRealAuth } = useUser();
+  const tabBarHeight = useBottomTabBarHeight() || 0;
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [usersMap, setUsersMap] = useState<Map<string, ChatUser>>(new Map());
   const usersMapRef = useRef<Map<string, ChatUser>>(new Map());
   const { t } = useTranslation(['chat', 'common']);
+  const [searchHeight, setSearchHeight] = useState(0);
+  const screenHeight = Platform.OS === 'web' ? Dimensions.get('window').height : undefined;
+  const maxListHeight = Platform.OS === 'web' && screenHeight && searchHeight > 0
+    ? screenHeight - tabBarHeight - searchHeight
+    : undefined;
 
   // Local ChatUser type for display only
   interface ChatUser {
@@ -200,9 +205,18 @@ export default function ChatListScreen() {
   };
 
   return (
-    <ScreenWrapper navigation={navigation} style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, Platform.OS === 'web' && { position: 'relative' }]}>
+      <StatusBar backgroundColor={colors.backgroundSecondary} barStyle="dark-content" />
       {/* Search bar for conversations */}
-      <View style={styles.searchContainer}>
+      <View 
+        style={styles.searchContainer}
+        onLayout={(event) => {
+          if (Platform.OS === 'web') {
+            const { height } = event.nativeEvent.layout;
+            setSearchHeight(height);
+          }
+        }}
+      >
         <TextInput
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -215,13 +229,17 @@ export default function ChatListScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollContainer
-        contentStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-      >
-        {filteredSortedConversations
-          .filter(item => item.participants && Array.isArray(item.participants) && item.participants.length > 0)
-          .map(item => {
+      {/* List container - limited height on web to ensure scrolling works */}
+      <View style={[
+        styles.listWrapper,
+        Platform.OS === 'web' && maxListHeight ? {
+          maxHeight: maxListHeight,
+        } : undefined
+      ]}>
+        <FlatList
+          data={filteredSortedConversations.filter(item => item.participants && Array.isArray(item.participants) && item.participants.length > 0)}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => {
             const otherId = item.participants!.find(id => id !== selectedUser?.id);
             if (!otherId) {
               return null;
@@ -262,27 +280,37 @@ export default function ChatListScreen() {
             };
             return (
               <ChatListItem
-                key={item.id}
                 conversation={chatConversation}
                 user={chatUser}
                 onPress={() => handlePressChat(item.id, chatUser.id, chatUser.name, chatUser.avatar || '')}
               />
             );
-          })
-          .filter(Boolean)}
-        {filteredSortedConversations.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateTitle}>{t('chat:noChats')}</Text>
-            <Text style={styles.emptyStateSubtitle}>{t('chat:startNewOrClearSearch')}</Text>
-          </View>
-        )}
-      </ScrollContainer>
-    </ScreenWrapper>
+          }}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateTitle}>{t('chat:noChats')}</Text>
+              <Text style={styles.emptyStateSubtitle}>{t('chat:startNewOrClearSearch')}</Text>
+            </View>
+          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          scrollEnabled={true}
+          nestedScrollEnabled={Platform.OS === 'web' ? true : undefined}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={true}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
+    flex: 1,
+    backgroundColor: colors.backgroundSecondary,
+    position: 'relative',
+  },
+  listWrapper: {
     flex: 1,
     backgroundColor: colors.backgroundSecondary,
   },

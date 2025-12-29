@@ -20,7 +20,10 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  StatusBar,
+  Dimensions,
 } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { ParamListBase } from '@react-navigation/native';
@@ -44,6 +47,7 @@ export default function NewChatScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<Record<string, NewChatRouteParams>, string>>();
   const { selectedUser } = useUser();
+  const tabBarHeight = useBottomTabBarHeight() || 0;
   const [searchQuery, setSearchQuery] = useState('');
   const [friends, setFriends] = useState<CharacterType[]>([]);
   const [filteredFriends, setFilteredFriends] = useState<CharacterType[]>([]);
@@ -53,6 +57,12 @@ export default function NewChatScreen() {
   const [sortBy, setSortBy] = useState<SortType>('name');
   const [showFilters, setShowFilters] = useState(false);
   const [existingConversations, setExistingConversations] = useState<string[]>([]);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const [filtersHeight, setFiltersHeight] = useState(0);
+  const screenHeight = Platform.OS === 'web' ? Dimensions.get('window').height : undefined;
+  const maxListHeight = Platform.OS === 'web' && screenHeight && headerHeight > 0
+    ? screenHeight - tabBarHeight - headerHeight - (showFilters ? filtersHeight : 0)
+    : undefined;
 
   const loadFriends = useCallback(async () => {
     if (!selectedUser) {
@@ -323,8 +333,17 @@ export default function NewChatScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.safeArea, Platform.OS === 'web' && { position: 'relative' }]}>
+      <StatusBar backgroundColor={colors.backgroundSecondary} barStyle="dark-content" />
+      <View 
+        style={styles.header}
+        onLayout={(event) => {
+          if (Platform.OS === 'web') {
+            const { height } = event.nativeEvent.layout;
+            setHeaderHeight(height);
+          }
+        }}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
           <Icon name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -363,7 +382,15 @@ export default function NewChatScreen() {
       </View>
 
       {showFilters && (
-        <View style={styles.filtersContainer}>
+        <View 
+          style={styles.filtersContainer}
+          onLayout={(event) => {
+            if (Platform.OS === 'web') {
+              const { height } = event.nativeEvent.layout;
+              setFiltersHeight(height);
+            }
+          }}
+        >
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView}>
             <TouchableOpacity
               style={[styles.filterChip, activeFilter === 'all' && styles.filterChipActive]}
@@ -445,30 +472,39 @@ export default function NewChatScreen() {
         </View>
       )}
 
-      {isLoading && filteredFriends.length === 0 ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>{t('loadingFriends')}</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredFriends}
-          keyExtractor={(item) => item.id}
-          renderItem={renderFriend}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={renderEmptyState}
-          showsVerticalScrollIndicator={false}
-          scrollEnabled={true}
-          nestedScrollEnabled={true}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.primary}
-            />
-          }
-        />
-      )}
+      {/* List container - limited height on web to ensure scrolling works */}
+      <View style={[
+        styles.listWrapper,
+        Platform.OS === 'web' && maxListHeight ? {
+          maxHeight: maxListHeight,
+        } : undefined
+      ]}>
+        {isLoading && filteredFriends.length === 0 ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingText}>{t('loadingFriends')}</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredFriends}
+            keyExtractor={(item) => item.id}
+            renderItem={renderFriend}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={renderEmptyState}
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={true}
+            nestedScrollEnabled={Platform.OS === 'web' ? true : undefined}
+            scrollEventThrottle={16}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.primary}
+              />
+            }
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -477,6 +513,11 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     marginTop: Platform.OS === 'android' ? 30 : 0,
+    backgroundColor: colors.backgroundSecondary,
+    position: 'relative',
+  },
+  listWrapper: {
+    flex: 1,
     backgroundColor: colors.backgroundSecondary,
   },
   header: {

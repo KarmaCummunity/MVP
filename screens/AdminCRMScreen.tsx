@@ -11,7 +11,11 @@ import {
     ScrollView,
     RefreshControl,
     ActivityIndicator,
+    Platform,
+    Dimensions,
+    StatusBar,
 } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { NavigationProp, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
@@ -56,6 +60,7 @@ export default function AdminCRMScreen({ navigation }: AdminCRMScreenProps) {
     const viewOnly = routeParams?.viewOnly === true;
     useAdminProtection(true);
     const { selectedUser } = useUser();
+    const tabBarHeight = useBottomTabBarHeight() || 0;
     const [contacts, setContacts] = useState<CrmContact[]>([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
@@ -73,6 +78,12 @@ export default function AdminCRMScreen({ navigation }: AdminCRMScreenProps) {
     const [isMutating, setIsMutating] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+    const [headerHeight, setHeaderHeight] = useState(0);
+    const [filtersHeight, setFiltersHeight] = useState(0);
+    const screenHeight = Platform.OS === 'web' ? Dimensions.get('window').height : undefined;
+    const maxListHeight = Platform.OS === 'web' && screenHeight && headerHeight > 0
+        ? screenHeight - tabBarHeight - headerHeight - filtersHeight
+        : undefined;
 
     useEffect(() => {
         loadContacts();
@@ -188,8 +199,17 @@ export default function AdminCRMScreen({ navigation }: AdminCRMScreenProps) {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
+        <SafeAreaView style={[styles.container, Platform.OS === 'web' && { position: 'relative' }]}>
+            <StatusBar backgroundColor={colors.backgroundSecondary} barStyle="dark-content" />
+            <View 
+                style={styles.header}
+                onLayout={(event) => {
+                    if (Platform.OS === 'web') {
+                        const { height } = event.nativeEvent.layout;
+                        setHeaderHeight(height);
+                    }
+                }}
+            >
                 <Text style={styles.title}>ניהול קשרים</Text>
                 {!viewOnly && (
                     <TouchableOpacity style={styles.addButton} onPress={handleAdd}>
@@ -199,7 +219,15 @@ export default function AdminCRMScreen({ navigation }: AdminCRMScreenProps) {
                 )}
             </View>
 
-            <View style={styles.filtersContainer}>
+            <View 
+                style={styles.filtersContainer}
+                onLayout={(event) => {
+                    if (Platform.OS === 'web') {
+                        const { height } = event.nativeEvent.layout;
+                        setFiltersHeight(height);
+                    }
+                }}
+            >
                 <View style={styles.searchContainer}>
                     <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
                     <TextInput
@@ -225,17 +253,25 @@ export default function AdminCRMScreen({ navigation }: AdminCRMScreenProps) {
                 </View>
             </View>
 
-            {isLoading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                </View>
-            ) : (
-                <ScrollView
-                    contentContainerStyle={styles.listContent}
-                    refreshControl={<RefreshControl refreshing={isLoading} onRefresh={loadContacts} />}
-                    scrollEnabled={true}
-                    nestedScrollEnabled={true}
-                >
+            {/* List container - limited height on web to ensure scrolling works */}
+            <View style={[
+                styles.listWrapper,
+                Platform.OS === 'web' && maxListHeight ? {
+                    maxHeight: maxListHeight,
+                } : undefined
+            ]}>
+                {isLoading ? (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color={colors.primary} />
+                    </View>
+                ) : (
+                    <ScrollView
+                        contentContainerStyle={styles.listContent}
+                        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={loadContacts} />}
+                        scrollEnabled={true}
+                        nestedScrollEnabled={Platform.OS === 'web' ? true : undefined}
+                        scrollEventThrottle={16}
+                    >
                     {contacts.map((c) => (
                         <View key={c.id} style={styles.card}>
                             <View style={styles.cardHeader}>
@@ -275,8 +311,9 @@ export default function AdminCRMScreen({ navigation }: AdminCRMScreenProps) {
                     {contacts.length === 0 && (
                         <Text style={styles.emptyText}>לא נמצאו אנשי קשר</Text>
                     )}
-                </ScrollView>
-            )}
+                    </ScrollView>
+                )}
+            </View>
 
             <Modal visible={isModalVisible && !viewOnly} animationType="slide" transparent>
                 <View style={styles.modalOverlay}>
@@ -336,7 +373,8 @@ const FormInput = ({ label, value, onChange, multiline = false }: any) => (
 );
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.backgroundSecondary },
+    container: { flex: 1, backgroundColor: colors.backgroundSecondary, position: 'relative' },
+    listWrapper: { flex: 1, backgroundColor: colors.backgroundSecondary },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: LAYOUT_CONSTANTS.SPACING.LG, backgroundColor: colors.background, paddingVertical: 20 },
     title: { fontSize: FontSizes.heading2, fontWeight: 'bold' },
     addButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, padding: 8, borderRadius: 8 },

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Modal, Image, SafeAreaView, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Modal, Image, SafeAreaView, Platform, StatusBar, Dimensions } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useRoute, useFocusEffect, useNavigation } from '@react-navigation/native';
 import colors from '../globals/colors';
 import { FontSizes, LAYOUT_CONSTANTS } from '../globals/constants';
@@ -98,6 +99,12 @@ export default function AdminTasksScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [subtasks, setSubtasks] = useState<Record<string, AdminTask[]>>({});
+  const tabBarHeight = useBottomTabBarHeight() || 0;
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const screenHeight = Platform.OS === 'web' ? Dimensions.get('window').height : undefined;
+  const maxListHeight = Platform.OS === 'web' && screenHeight && headerHeight > 0
+    ? screenHeight - tabBarHeight - headerHeight
+    : undefined;
   const [loadingSubtasks, setLoadingSubtasks] = useState<string | null>(null);
 
   useEffect(() => {
@@ -646,7 +653,14 @@ export default function AdminTasksScreen() {
   };
 
   const renderHeader = () => (
-    <>
+    <View
+      onLayout={(event) => {
+        if (Platform.OS === 'web') {
+          const { height } = event.nativeEvent.layout;
+          setHeaderHeight(height);
+        }
+      }}
+    >
       <Text style={styles.header}>ניהול משימות וצוות</Text>
 
       <View style={styles.filtersRow}>
@@ -686,27 +700,37 @@ export default function AdminTasksScreen() {
           { value: 'medium', label: 'בינונית' },
         ]} />
       </View>
-    </>
+    </View>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <FlatList
-        data={sortedTasks}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={[
-          styles.listContent,
-          Platform.OS === 'web' && { paddingBottom: 120 }
-        ]}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={<Text style={styles.emptyText}>אין משימות כרגע</Text>}
-        scrollEnabled={true}
-        nestedScrollEnabled={Platform.OS === 'web' ? true : undefined}
-        showsVerticalScrollIndicator={true}
-        removeClippedSubviews={Platform.OS !== 'web'}
-        style={styles.flatList}
-      />
+    <SafeAreaView style={[styles.container, Platform.OS === 'web' && { position: 'relative' }]}>
+      <StatusBar backgroundColor={colors.backgroundSecondary} barStyle="dark-content" />
+      {/* List container - limited height on web to ensure scrolling works */}
+      <View style={[
+        styles.listWrapper,
+        Platform.OS === 'web' && maxListHeight ? {
+          maxHeight: maxListHeight,
+        } : undefined
+      ]}>
+        <FlatList
+          data={sortedTasks}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={[
+            stylesWithListContent.listContent,
+            Platform.OS === 'web' && { paddingBottom: 120 }
+          ]}
+          ListHeaderComponent={renderHeader}
+          ListEmptyComponent={<Text style={styles.emptyText}>אין משימות כרגע</Text>}
+          scrollEnabled={true}
+          nestedScrollEnabled={Platform.OS === 'web' ? true : undefined}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={true}
+          removeClippedSubviews={Platform.OS !== 'web'}
+          style={styles.flatList}
+        />
+      </View>
 
       <Modal visible={showForm} animationType="slide" transparent>
         <View style={styles.modalBackdrop}>
@@ -826,12 +850,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundSecondary,
+    position: 'relative',
     ...(Platform.OS === 'web' ? {
       position: 'relative' as any,
       height: '100vh' as any,
     } : {
       padding: LAYOUT_CONSTANTS.SPACING.LG,
     }),
+  },
+  listWrapper: {
+    flex: 1,
+    backgroundColor: colors.backgroundSecondary,
   },
   header: {
     fontSize: FontSizes.heading2,
@@ -844,14 +873,6 @@ const styles = StyleSheet.create({
   input: { flex: 1, height: 44, backgroundColor: colors.background, borderRadius: 8, paddingHorizontal: 10, textAlign: 'right', color: colors.textPrimary },
   refreshBtn: { width: 44, height: 44, backgroundColor: colors.primary, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
-  listContent: { 
-    paddingBottom: 100, 
-    gap: 12,
-    ...(Platform.OS === 'web' && {
-      paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
-      paddingTop: LAYOUT_CONSTANTS.SPACING.LG,
-    }),
-  },
   emptyText: { textAlign: 'center', color: colors.textSecondary, marginTop: 40 },
 
   taskItem: { flexDirection: 'row', padding: 12, backgroundColor: colors.background, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
@@ -1004,3 +1025,20 @@ const styles = StyleSheet.create({
   modalSave: { backgroundColor: colors.primary },
   modalBtnText: { color: colors.white, fontWeight: 'bold' },
 });
+
+// Define listContent outside StyleSheet.create() because it needs dynamic Platform check
+const listContentStyle = Platform.OS === 'web' ? {
+  paddingBottom: 100,
+  gap: 12,
+  paddingHorizontal: LAYOUT_CONSTANTS.SPACING.LG,
+  paddingTop: LAYOUT_CONSTANTS.SPACING.LG,
+} : {
+  paddingBottom: 100,
+  gap: 12,
+};
+
+// Merge with base styles
+const stylesWithListContent = {
+  ...styles,
+  listContent: listContentStyle,
+};

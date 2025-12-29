@@ -16,6 +16,8 @@ import {
   Platform,
   Dimensions,
   RefreshControl,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect, NavigationProp, ParamListBase } from '@react-navigation/native';
@@ -35,7 +37,7 @@ import apiService from '../utils/apiService';
 
 import { getScreenInfo, isLandscape } from '../globals/responsive';
 import { IS_DEVELOPMENT } from '../utils/dbConfig';
-import ScreenWrapper from '../components/ScreenWrapper';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 // Helper function to generate mock users for testing scroll in development
 const generateMockUsers = (count: number, excludeId?: string): CharacterType[] => {
@@ -107,8 +109,9 @@ export default function DiscoverPeopleScreen() {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { isTablet, isDesktop } = getScreenInfo();
   const landscape = isLandscape();
+  const tabBarHeight = useBottomTabBarHeight() || 0;
   const estimatedTabBarHeight = landscape ? 40 : (isDesktop ? 56 : isTablet ? 54 : 46);
-  const bottomPadding = (Platform.OS === 'web' ? estimatedTabBarHeight : 0) + 24;
+  const bottomPadding = (Platform.OS === 'web' ? estimatedTabBarHeight : tabBarHeight) + 24;
   const { selectedUser } = useUser();
   const [suggestions, setSuggestions] = useState<CharacterType[]>([]);
   const [popularUsers, setPopularUsers] = useState<CharacterType[]>([]);
@@ -116,6 +119,11 @@ export default function DiscoverPeopleScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'suggestions' | 'popular'>('suggestions');
   const [followStats, setFollowStats] = useState<Record<string, { isFollowing: boolean }>>({});
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const screenHeight = Platform.OS === 'web' ? Dimensions.get('window').height : undefined;
+  const maxListHeight = Platform.OS === 'web' && screenHeight && headerHeight > 0
+    ? screenHeight - tabBarHeight - headerHeight
+    : undefined;
 
   // Helper function to check if a user is the current user
   const isCurrentUserCheck = useCallback((
@@ -133,6 +141,14 @@ export default function DiscoverPeopleScreen() {
   }, []);
 
   const loadUsers = useCallback(async (isRefresh = false) => {
+    console.log('📋 DiscoverPeopleScreen - loadUsers called', {
+      isRefresh,
+      platform: Platform.OS,
+      hasSelectedUser: !!selectedUser,
+      userId: selectedUser?.id,
+      environment: IS_DEVELOPMENT ? 'development' : 'production'
+    });
+
     if (isRefresh) {
       setRefreshing(true);
     } else {
@@ -140,6 +156,7 @@ export default function DiscoverPeopleScreen() {
     }
     try {
       if (!selectedUser) {
+        console.log('⚠️ DiscoverPeopleScreen - No selectedUser, clearing data');
         setSuggestions([]);
         setPopularUsers([]);
         setFollowStats({});
@@ -259,8 +276,15 @@ export default function DiscoverPeopleScreen() {
       }
 
       setFollowStats(stats);
+      
+      console.log('✅ DiscoverPeopleScreen - loadUsers completed', {
+        suggestionsCount: filteredSuggestions.length,
+        popularCount: filteredPopular.length,
+        totalUsers: filteredSuggestions.length + filteredPopular.length,
+        followStatsCount: Object.keys(stats).length
+      });
     } catch (error) {
-      console.error('Error loading users:', error);
+      console.error('❌ DiscoverPeopleScreen - Error loading users:', error);
       if (!isRefresh) {
         Alert.alert('שגיאה', 'שגיאה בטעינת המשתמשים');
       }
@@ -277,16 +301,34 @@ export default function DiscoverPeopleScreen() {
   // Refresh data when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🔍 DiscoverPeopleScreen - Screen focused, refreshing data...');
+      console.log('👁️ DiscoverPeopleScreen - Screen focused, refreshing data...', {
+        platform: Platform.OS,
+        activeTab,
+        suggestionsCount: suggestions.length,
+        popularCount: popularUsers.length
+      });
       loadUsers(false);
-    }, [loadUsers])
+    }, [loadUsers, activeTab, suggestions.length, popularUsers.length])
   );
 
   const onRefresh = useCallback(() => {
+    console.log('🔄 DiscoverPeopleScreen - onRefresh called', {
+      platform: Platform.OS,
+      activeTab,
+      currentSuggestionsCount: suggestions.length,
+      currentPopularCount: popularUsers.length
+    });
     loadUsers(true);
-  }, [loadUsers]);
+  }, [loadUsers, activeTab, suggestions.length, popularUsers.length]);
 
   const handleFollowToggle = async (targetUserId: string) => {
+    console.log('👆 DiscoverPeopleScreen - handleFollowToggle called', {
+      targetUserId,
+      platform: Platform.OS,
+      hasSelectedUser: !!selectedUser,
+      currentIsFollowing: followStats[targetUserId]?.isFollowing || false
+    });
+
     if (!selectedUser) {
       Alert.alert('שגיאה', 'יש להתחבר תחילה');
       return;
@@ -334,15 +376,18 @@ export default function DiscoverPeopleScreen() {
       const currentStats = followStats[targetUserId] || { isFollowing: false };
 
       if (currentStats.isFollowing) {
+        console.log('👋 DiscoverPeopleScreen - Unfollowing user', { targetUserId });
         const success = await unfollowUser(selectedUser.id, targetUserId);
         if (success) {
           setFollowStats(prev => ({
             ...prev,
             [targetUserId]: { isFollowing: false }
           }));
+          console.log('✅ DiscoverPeopleScreen - Unfollowed successfully', { targetUserId });
           Alert.alert('ביטול עקיבה', 'ביטלת את העקיבה בהצלחה');
         }
       } else {
+        console.log('➕ DiscoverPeopleScreen - Following user', { targetUserId });
         const success = await followUser(selectedUser.id, targetUserId);
         if (success) {
           // Create updated follow stats that includes the newly followed user
@@ -368,11 +413,15 @@ export default function DiscoverPeopleScreen() {
           setSuggestions(prev => filterUsersWeFollow(prev));
           setPopularUsers(prev => filterUsersWeFollow(prev));
 
+          console.log('✅ DiscoverPeopleScreen - Followed successfully', { targetUserId });
           Alert.alert('עקיבה', 'התחלת לעקוב בהצלחה');
         }
       }
     } catch (error) {
-      console.error('❌ Follow toggle error:', error);
+      console.error('❌ DiscoverPeopleScreen - Follow toggle error:', error, {
+        targetUserId,
+        platform: Platform.OS
+      });
       Alert.alert('שגיאה', 'אירעה שגיאה בביצוע הפעולה');
     }
   };
@@ -416,6 +465,16 @@ export default function DiscoverPeopleScreen() {
   const renderUserItem = ({ item }: { item: CharacterType }) => {
     const currentStats = followStats[item.id] || { isFollowing: false };
     const isCurrentUser = selectedUser?.id === item.id;
+    
+    // Log only occasionally to avoid spam (every 10th item)
+    if (Math.random() < 0.1) {
+      console.log('🎨 DiscoverPeopleScreen - renderUserItem', {
+        userId: item.id,
+        isCurrentUser,
+        isFollowing: currentStats.isFollowing,
+        platform: Platform.OS
+      });
+    }
 
     return (
       <View style={styles.userItem}>
@@ -522,10 +581,22 @@ export default function DiscoverPeopleScreen() {
 
   const renderListHeader = () => (
     <>
-      <View style={styles.header}>
+      <View 
+        style={styles.header}
+        onLayout={(event) => {
+          if (Platform.OS === 'web') {
+            const { height } = event.nativeEvent.layout;
+            setHeaderHeight(height);
+            console.log('📏 DiscoverPeopleScreen - Header height measured', { height, platform: Platform.OS });
+          }
+        }}
+      >
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            console.log('⬅️ DiscoverPeopleScreen - Back button pressed');
+            navigation.goBack();
+          }}
         >
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -548,37 +619,84 @@ export default function DiscoverPeopleScreen() {
   // Data is already filtered in loadUsers, no need to filter again
   const currentData = activeTab === 'suggestions' ? suggestions : popularUsers;
 
+  console.log('🖼️ DiscoverPeopleScreen - Rendering', {
+    platform: Platform.OS,
+    activeTab,
+    dataCount: currentData.length,
+    loading,
+    refreshing,
+    maxListHeight,
+    headerHeight,
+    tabBarHeight
+  });
+
   return (
-    <ScreenWrapper style={styles.container}>
-      <FlatList
-        data={currentData}
-        renderItem={renderUserItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[
-          styles.listContentContainer,
-          { paddingBottom: bottomPadding },
-          currentData.length === 0 && styles.emptyListContainer
-        ]}
-        showsVerticalScrollIndicator={true}
-        ListHeaderComponent={renderListHeader}
-        ListEmptyComponent={renderEmptyState}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
-        style={styles.flatList}
-        scrollEnabled={true}
-        nestedScrollEnabled={true}
-        initialNumToRender={20}
-        maxToRenderPerBatch={10}
-        windowSize={21}
-        keyboardShouldPersistTaps="handled"
-      />
-    </ScreenWrapper>
+    <SafeAreaView style={[styles.container, Platform.OS === 'web' && { position: 'relative' }]}>
+      <StatusBar backgroundColor={colors.backgroundPrimary} barStyle="dark-content" />
+      {/* List container - limited height on web to ensure scrolling works */}
+      <View style={[
+        styles.listWrapper,
+        Platform.OS === 'web' && maxListHeight ? {
+          maxHeight: maxListHeight,
+        } : undefined
+      ]}>
+        <FlatList
+          data={currentData}
+          renderItem={renderUserItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[
+            styles.listContentContainer,
+            { paddingBottom: bottomPadding },
+            currentData.length === 0 && styles.emptyListContainer
+          ]}
+          showsVerticalScrollIndicator={true}
+          ListHeaderComponent={renderListHeader}
+          ListEmptyComponent={renderEmptyState}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
+          style={styles.flatList}
+          scrollEnabled={true}
+          nestedScrollEnabled={Platform.OS === 'web' ? true : undefined}
+          scrollEventThrottle={16}
+          initialNumToRender={20}
+          maxToRenderPerBatch={10}
+          windowSize={21}
+          keyboardShouldPersistTaps="handled"
+          onScroll={(event) => {
+            // Log scroll events occasionally to avoid spam
+            if (Math.random() < 0.05) {
+              console.log('📜 DiscoverPeopleScreen - onScroll', {
+                platform: Platform.OS,
+                contentOffset: event.nativeEvent.contentOffset.y,
+                contentSize: event.nativeEvent.contentSize.height,
+                layoutSize: event.nativeEvent.layoutMeasurement.height
+              });
+            }
+          }}
+          onContentSizeChange={(contentWidth, contentHeight) => {
+            console.log('📐 DiscoverPeopleScreen - onContentSizeChange', {
+              platform: Platform.OS,
+              contentWidth,
+              contentHeight,
+              dataCount: currentData.length
+            });
+          }}
+          onLayout={(event) => {
+            console.log('📏 DiscoverPeopleScreen - FlatList onLayout', {
+              platform: Platform.OS,
+              width: event.nativeEvent.layout.width,
+              height: event.nativeEvent.layout.height
+            });
+          }}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -586,14 +704,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundPrimary,
+    position: 'relative',
+  },
+  listWrapper: {
+    flex: 1,
+    backgroundColor: colors.backgroundPrimary,
   },
   flatList: {
     flex: 1,
-    ...(Platform.OS === 'web' && {
-      overflow: 'auto' as any,
-      WebkitOverflowScrolling: 'touch' as any,
-    }),
-  } as any,
+    backgroundColor: colors.backgroundPrimary,
+  },
   listContentContainer: {
     flexGrow: 1,
   },
