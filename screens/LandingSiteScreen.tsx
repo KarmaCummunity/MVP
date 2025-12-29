@@ -238,7 +238,7 @@ const HeroSection: React.FC<{ onDonate: () => void }> = ({ onDonate }) => {
       toValue: 1,
       duration: 800,
       delay: 200,
-      useNativeDriver: !isWeb,
+      useNativeDriver: false,
     }).start();
   }, [heroAnimation]);
 

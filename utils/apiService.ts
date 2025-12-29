@@ -142,24 +142,26 @@ class ApiService {
     return `${normalizedBase}${normalizedEndpoint}`;
   }
 
-  private async getAuthToken(): Promise<string | null> {
+  async getAuthToken(): Promise<string | null> {
     try {
       // Try to get JWT access token from AsyncStorage first
       const AsyncStorage = await import('@react-native-async-storage/async-storage');
       const jwtToken = await AsyncStorage.default.getItem('jwt_access_token');
+      const expiresAt = await AsyncStorage.default.getItem('jwt_token_expires_at');
 
       if (jwtToken) {
-        // Check if token is expired
-        const expiresAt = await AsyncStorage.default.getItem('jwt_token_expires_at');
-        if (expiresAt && parseInt(expiresAt) > Date.now()) {
+        // Check if token is expired (or close to expiring - within 1 minute)
+        if (expiresAt && parseInt(expiresAt) > Date.now() + 60000) {
           return jwtToken;
         } else {
-          console.warn('JWT token expired, attempting to refresh...');
-          // TODO: Implement token refresh logic
+          console.warn('JWT token expired or invalid, cleaning up...');
+          // Clear invalid token so we don't check it again until fresh login
+          await AsyncStorage.default.multiRemove(['jwt_access_token', 'jwt_token_expires_at']);
         }
       }
 
       // Fallback: Try to get Firebase ID token
+      // This is robust because it automatically refreshes if needed
       const { getFirebase } = await import('./firebaseClient');
       const { getAuth } = await import('firebase/auth');
       const { app } = getFirebase();
@@ -167,6 +169,8 @@ class ApiService {
       const user = auth.currentUser;
 
       if (user) {
+        // forceRefresh=false by default, but if we suspect issues we could try true
+        // However, standard getIdToken() handles refresh automatically.
         const token = await user.getIdToken();
         return token;
       }

@@ -80,43 +80,60 @@ const enrichUserWithOrgRoles = async (user: User): Promise<User> => {
       return user;
     }
 
-    // Super admin emails - hardcoded for main system admins
-    // navesarussi@gmail.com is the top-level super admin
-    // karmacommunity2.0@gmail.com is the organization super admin (under navesarussi@gmail.com)
     const SUPER_ADMINS = ['navesarussi@gmail.com', 'karmacommunity2.0@gmail.com'];
     const isSuperAdmin = SUPER_ADMINS.includes(emailKey);
 
-    // Fetch fresh user data from database to get current roles
+    // Import services locally
     const { apiService } = await import('../utils/apiService');
-    let dbRoles: string[] = [];
+    const { db } = await import('../utils/databaseService');
 
-    try {
-      console.log('🔐 enrichUserWithOrgRoles - Fetching user from DB with timeout');
+    // Run fetches in parallel with independent timeouts
+    const [userFetchResult, applicationsFetchResult] = await Promise.allSettled([
+      // 1. Fetch user roles from DB
+      (async () => {
+        try {
+          const response = await Promise.race([
+            apiService.getUserById(user.id),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout fetching user data')), 4000))
+          ]) as any;
 
-      // Add timeout to prevent hanging
-      const getUserWithTimeout = Promise.race([
-        apiService.getUserById(user.id),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout fetching user data')), 5000)
-        )
-      ]);
+          if (response.success && response.data) {
+            return response.data.roles || [];
+          }
+        } catch (err) {
+          console.warn('🔐 enrichUserWithOrgRoles - User fetch warning:', err);
+        }
+        return null; // Return null to indicate failure/no change
+      })(),
 
-      const response = await getUserWithTimeout as any;
-      if (response.success && response.data) {
-        dbRoles = response.data.roles || [];
-        console.log('🔐 enrichUserWithOrgRoles - Fetched roles from DB:', dbRoles);
-      }
-    } catch (err) {
-      console.log('🔐 enrichUserWithOrgRoles - Could not fetch user from DB, using existing roles:', err);
-      dbRoles = user.roles || [];
+      // 2. Fetch org applications
+      (async () => {
+        try {
+          const apps = await Promise.race([
+            db.listOrgApplications(emailKey),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout fetching org apps')), 4000))
+          ]) as any[];
+          return apps;
+        } catch (err) {
+          console.warn('🔐 enrichUserWithOrgRoles - Org apps fetch warning:', err);
+          return [];
+        }
+      })()
+    ]);
+
+    // Process User Roles
+    let dbRoles = user.roles || [];
+    if (userFetchResult.status === 'fulfilled' && userFetchResult.value) {
+      dbRoles = userFetchResult.value;
+      console.log('🔐 enrichUserWithOrgRoles - Fetched roles from DB:', dbRoles);
     }
 
-    // Check for approved org applications
-    console.log('🔐 enrichUserWithOrgRoles - Checking org applications');
-    const { db } = await import('../utils/databaseService');
-    const applications = await db.listOrgApplications(emailKey);
-    const approved = (applications as any[]).find((a) => a.status === 'approved');
-    console.log('🔐 enrichUserWithOrgRoles - Found approved org:', !!approved);
+    // Process Org Applications
+    let approved: any = undefined;
+    if (applicationsFetchResult.status === 'fulfilled' && Array.isArray(applicationsFetchResult.value)) {
+      approved = applicationsFetchResult.value.find((a) => a.status === 'approved');
+      console.log('🔐 enrichUserWithOrgRoles - Found approved org:', !!approved);
+    }
 
     // Build final roles list
     let finalRoles = [...dbRoles];

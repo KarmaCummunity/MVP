@@ -64,7 +64,7 @@
       "thanks_message": "Thanks for taking part!"
     },
     "items": {
-      "title": "Items"
+      "title": "Item"
     }
   },
   "search": {
@@ -538,7 +538,7 @@
         "description": "Sports and activity"
       },
       "items": {
-        "title": "Items",
+        "title": "Item",
         "subtitle": "Objects",
         "description": "Donations of items"
       },

@@ -73,7 +73,7 @@
       "thanks_message": "תודה שלקחת חלק בנסיעה!"
     },
     "items": {
-      "title": "פריטים"
+      "title": "פריט"
     },
     "post": {
       "noTitle": "פוסט ללא כותרת"
@@ -558,7 +558,7 @@
         "description": "מפגשי ספורט ופעילות"
       },
       "items": {
-        "title": "פריטים",
+        "title": "פריט",
         "subtitle": "חפצים",
         "description": "תרומות של פריטים"
       },

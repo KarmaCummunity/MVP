@@ -75,12 +75,12 @@ const DonationsPulseIcon: React.FC<{ color: string; size: number }> = ({ color, 
           toValue: 1,
           duration: 2000,
           easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(anim, {
           toValue: 0,
           duration: 0,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ])
     );

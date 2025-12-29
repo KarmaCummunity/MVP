@@ -5,42 +5,44 @@
 // utils/restAdapter.ts
 import { API_BASE_URL } from './config.constants';
 
+import { apiService } from './apiService';
+
 export class RestAdapter {
   private _baseUrl: string | null = null;
 
   constructor(baseUrl?: string) {
     this._baseUrl = baseUrl || null;
   }
-  
+
   private get baseUrl(): string {
     // If baseUrl was provided in constructor, use it
     if (this._baseUrl !== null) {
       return this._baseUrl.replace(/\/$/, '');
     }
-    
+
     // Try environment variables first (highest priority - for local development)
     if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_BASE_URL) {
       return process.env.EXPO_PUBLIC_API_BASE_URL.replace(/\/$/, '');
     }
-    
+
     // For web, detect environment from domain at runtime
     if (typeof window !== 'undefined' && window.location) {
       const hostname = window.location.hostname;
-      
+
       // If on localhost, use local server
       if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
         return 'http://localhost:3001';
       }
-      
+
       // If on dev domain, use dev server
       if (hostname.includes('dev.')) {
         return 'https://kc-mvp-server-development.up.railway.app';
       }
-      
+
       // Otherwise use production server
       return 'https://kc-mvp-server-production.up.railway.app';
     }
-    
+
     // Fallback to config constant
     return API_BASE_URL.replace(/\/$/, '');
   }
@@ -56,11 +58,22 @@ export class RestAdapter {
     const url = `${this.baseUrl}${path}`;
     const method = (init?.method || 'GET').toUpperCase();
     const startedAt = Date.now();
+
+    // Add authentication token
+    const token = await apiService.getAuthToken();
+
     // High-signal client log for production debugging
     // eslint-disable-next-line no-console
-    console.log(`🌐 REST → ${method} ${url}`, init?.body ? { body: init?.body } : '');
+    console.log(`🌐 REST → ${method} ${url}`, init?.body ? { body: init?.body } : '', token ? '(authenticated)' : '(no auth)');
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      ...(init?.headers as Record<string, string> || {}),
+    };
+
     const res = await fetch(url, {
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       mode: 'cors',
       ...init,
     });
@@ -74,22 +87,22 @@ export class RestAdapter {
       throw new Error(`HTTP ${res.status}: ${text}`);
     }
     if (res.status === 204) return undefined as unknown as T;
-    
+
     // Check if response has content before parsing JSON
     const contentLength = res.headers.get('content-length');
     const contentType = res.headers.get('content-type');
-    
+
     if (contentLength === '0' || (!contentType?.includes('application/json') && !contentType?.includes('text/json'))) {
       // Return empty object for non-JSON or empty responses
       return {} as unknown as T;
     }
-    
+
     const text = await res.text();
     if (!text.trim()) {
       // Return empty object for empty responses
       return {} as unknown as T;
     }
-    
+
     try {
       return JSON.parse(text) as T;
     } catch (error) {

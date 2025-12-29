@@ -146,6 +146,7 @@ const colors = {
   headerTitleText: palette.brownDeep,
   menuBackground: palette.white,
   menuText: palette.brownDeep,
+  menuBorder: palette.greyMedium,
   toggleActive: palette.tealDark,
   toggleInactive: palette.greyMedium,
   toggleBackground: palette.greyLight, // Added

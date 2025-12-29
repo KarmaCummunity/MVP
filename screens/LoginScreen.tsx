@@ -54,7 +54,7 @@ export default function LoginScreen() {
         Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 800,
-            useNativeDriver: true,
+            useNativeDriver: false,
         }).start();
     }, []);
 
@@ -117,19 +117,19 @@ export default function LoginScreen() {
         setIsLoading(true);
         try {
             const nowIso = new Date().toISOString();
-            
+
             // Try to sign in first (unified flow)
             try {
                 const fbUser = await signInWithEmail(email, password);
-                
+
                 // Get UUID from server using firebase_uid
                 try {
                     const { apiService } = await import('../utils/apiService');
-                    const resolveResponse = await apiService.resolveUserId({ 
+                    const resolveResponse = await apiService.resolveUserId({
                         firebase_uid: fbUser.uid,
-                        email: fbUser.email || email 
+                        email: fbUser.email || email
                     });
-                    
+
                     if (!resolveResponse.success || !resolveResponse.user) {
                         // Fallback: try to get user by email
                         const userResponse = await apiService.getUserById(fbUser.email || email);
@@ -161,7 +161,7 @@ export default function LoginScreen() {
                         }
                         throw new Error('Failed to get user from server');
                     }
-                    
+
                     // Use UUID from server
                     const serverUser = resolveResponse.user;
                     const userData = {
@@ -213,11 +213,11 @@ export default function LoginScreen() {
                                 const fbUser = await signInWithEmail(email, password);
                                 // Get user data and proceed with login (same logic as above)
                                 const { apiService } = await import('../utils/apiService');
-                                const resolveResponse = await apiService.resolveUserId({ 
+                                const resolveResponse = await apiService.resolveUserId({
                                     firebase_uid: fbUser.uid,
-                                    email: fbUser.email || email 
+                                    email: fbUser.email || email
                                 });
-                                
+
                                 if (resolveResponse.success && resolveResponse.user) {
                                     const serverUser = resolveResponse.user;
                                     const userData = {
