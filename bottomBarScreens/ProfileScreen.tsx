@@ -20,6 +20,7 @@ import {
   Alert,
   TouchableWithoutFeedback,
   Platform,
+  FlatList,
 } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -42,6 +43,8 @@ import { apiService } from '../utils/apiService';
 import { USE_BACKEND } from '../utils/dbConfig';
 import { UserPreview as CharacterType } from '../globals/types';
 import { useToast, toastService } from '../utils/toastService';
+import PostReelItem from '../components/Feed/PostReelItem';
+import { FeedItem, FeedUser } from '../types/feed';
 
 // --- Type Definitions ---
 type TabRoute = {
@@ -66,6 +69,25 @@ const getRoleDisplayName = (role: string): string => {
     'student': 'סטודנט'
   };
   return roleTranslations[role] || role;
+};
+
+// Helper to format ride time safely
+const formatRideTime = (dateIso: string) => {
+  if (!dateIso) return { time: '', date: '' };
+  const dep = new Date(dateIso);
+  if (isNaN(dep.getTime())) return { time: '', date: '' };
+
+  const hours = dep.getHours().toString().padStart(2, '0');
+  const minutes = dep.getMinutes().toString().padStart(2, '0');
+
+  const day = dep.getDate().toString().padStart(2, '0');
+  const month = (dep.getMonth() + 1).toString().padStart(2, '0');
+  const year = dep.getFullYear();
+
+  return {
+    time: `${hours}:${minutes}`,
+    date: `${day}.${month}.${year}`
+  };
 };
 
 
@@ -98,7 +120,7 @@ const isClosedStatus = (status: string, type: string): boolean => {
   return false; // Posts are not shown in closed
 };
 
-const OpenRoute = ({ userId }: { userId?: string }) => {
+const OpenRoute = ({ userId, user, onHeightChange }: { userId?: string, user?: any, onHeightChange?: (height: number) => void }) => {
   const { t } = useTranslation(['profile']);
   const { selectedUser } = useUser();
   const [posts, setPosts] = useState<any[]>([]);
@@ -121,46 +143,96 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
 
         const { USE_BACKEND, API_BASE_URL } = await import('../utils/dbConfig');
         const allContent: any[] = [];
+        const existingRideIds = new Set<string>();
+        const existingItemIds = new Set<string>();
 
-        // Load posts from API - including task posts
+        // Load posts from API - handle all types with status
         try {
           const res = await apiService.getUserPosts(targetUserId, 50, selectedUser?.id);
           if (res.success && Array.isArray(res.data)) {
             res.data.forEach((p: any) => {
-              // Check if this is a task-related post
-              const isTaskPost = p.post_type === 'task_assignment' || p.post_type === 'task_completion';
+              let shouldInclude = false;
+              let status = 'active';
+              let type = 'post';
+              let subtype = p.post_type;
 
-              if (isTaskPost) {
-                // For task posts, only show if task is open/in_progress
+              // Determine if post should be in OPEN tab
+              if (p.post_type === 'task_assignment' || p.post_type === 'task_completion') {
                 const taskStatus = p.task?.status;
-                if (taskStatus === 'open' || taskStatus === 'in_progress') {
-                  allContent.push({
-                    id: p.id,
-                    title: p.title,
-                    thumbnail: '',
-                    likes: p.likes || 0,
-                    comments: p.comments || 0,
-                    type: 'task',
-                    subtype: p.post_type,
-                    description: p.description,
-                    timestamp: p.created_at,
-                    status: taskStatus,
-                    taskData: p.task,
-                    rawData: p
-                  });
-                }
+                shouldInclude = taskStatus === 'open' || taskStatus === 'in_progress';
+                status = taskStatus || 'open';
+                type = 'task';
+              } else if (p.ride_data || p.post_type === 'ride') {
+                const rideStatus = p.ride_data?.status || 'active';
+                shouldInclude = rideStatus === 'active' || rideStatus === 'full';
+                status = rideStatus;
+                type = 'ride';
+                if (shouldInclude && p.ride_data?.id) existingRideIds.add(p.ride_data.id);
+              } else if ((p.item_data || p.post_type === 'item') || p.post_type === 'donation') {
+                const itemStatus = p.item_data?.status || 'available';
+                shouldInclude = itemStatus === 'available' || itemStatus === 'reserved' || itemStatus === 'active';
+                status = itemStatus;
+                type = p.post_type === 'donation' ? 'donation' : 'item';
+                if (shouldInclude && p.item_data?.id) existingItemIds.add(p.item_data.id);
               } else {
                 // Regular posts - always active
+                shouldInclude = true;
+              }
+
+              if (shouldInclude) {
+                let fromLocation = '';
+                let toLocation = '';
+
+                let seats = 0;
+                let price = 0;
+                let time = '';
+                let date = '';
+
+                if (type === 'ride') {
+                  const rData = p.ride_data;
+                  if (rData) {
+                    fromLocation = rData.from_location?.city || rData.from_location?.name || rData.from_location?.address || '';
+                    toLocation = rData.to_location?.city || rData.to_location?.name || rData.to_location?.address || '';
+
+                    seats = rData.available_seats || 0;
+                    price = rData.price_per_seat || 0;
+
+                    if (rData.departure_time) {
+                      const formatted = formatRideTime(rData.departure_time);
+                      time = formatted.time;
+                      date = formatted.date;
+                    }
+                  }
+                }
+
                 allContent.push({
                   id: p.id,
-                  title: p.title,
-                  thumbnail: (p.images && p.images.length > 0) ? p.images[0] : '',
+                  title: p.title || '',
+                  thumbnail: (p.images && p.images.length > 0) ? p.images[0] : null,
                   likes: p.likes || 0,
                   comments: p.comments || 0,
-                  type: 'post',
-                  description: p.description,
+                  isLiked: p.is_liked || false,
+                  type: type as any,
+                  subtype: subtype,
+                  description: p.description || '',
                   timestamp: p.created_at,
-                  status: 'active'
+                  status: status,
+                  user: user ? {
+                    id: user.id,
+                    name: user.name,
+                    avatar: user.avatar,
+                    karmaPoints: user.karmaPoints
+                  } : { id: 'unknown' },
+                  taskData: p.task,
+                  rideData: p.ride_data,
+                  itemData: p.item_data,
+                  from: fromLocation,
+                  to: toLocation,
+                  seats,
+                  price,
+                  time,
+                  date,
+                  rawData: p
                 });
               }
             });
@@ -205,6 +277,7 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
 
         // Process items
         userItems.forEach((item: any) => {
+          if (existingItemIds.has(item.id)) return;
           let thumbnail = '';
           if (item.image_base64) {
             const imageData = item.image_base64;
@@ -217,10 +290,26 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
           allContent.push({
             id: `item_${item.id}`,
             title: item.title,
-            thumbnail: thumbnail,
+            description: item.description || '',
+            thumbnail: thumbnail || null,
             likes: 0,
-            type: 'item',
+            comments: 0,
+            isLiked: false,
+            timestamp: item.created_at || new Date().toISOString(),
+            type: 'post', // Items map to 'post' or 'item' subtype depending on implementation
+            subtype: 'item',
             status: item.status,
+            user: user ? {
+              id: user.id,
+              name: user.name,
+              avatar: user.avatar,
+              karmaPoints: user.karmaPoints
+            } : { id: 'unknown' },
+            itemData: {
+              ...item,
+              price: item.price
+            },
+            price: item.price,
             rawData: item
           });
         });
@@ -245,17 +334,46 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
           console.log('[ProfileScreen OpenRoute] User rides count:', userRides.length);
 
           userRides.forEach((ride: any) => {
+            if (existingRideIds.has(ride.id)) return;
             const fromLocation = ride.from || ride.from_location?.name || ride.from_location?.city || '';
             const toLocation = ride.to || ride.to_location?.name || ride.to_location?.city || '';
+
+            let time = '';
+            let date = '';
+            if (ride.departure_time) {
+              const formatted = formatRideTime(ride.departure_time);
+              time = formatted.time;
+              date = formatted.date;
+            } else if (ride.time) {
+              time = ride.time;
+              date = ride.date || '';
+            }
+
             allContent.push({
               id: `ride_${ride.id}`,
               title: `טרמפ: ${fromLocation} ➝ ${toLocation}`,
-              thumbnail: ride.image || '',
+              description: ride.description || '',
+              thumbnail: ride.image || null,
               likes: 0,
-              type: 'ride',
+              comments: 0,
+              isLiked: false,
+              timestamp: ride.created_at || new Date().toISOString(),
+              type: 'post',
+              subtype: 'ride',
               status: ride.status || 'active',
               from: fromLocation,
               to: toLocation,
+              seats: ride.available_seats || ride.seats || 0,
+              price: ride.price_per_seat || ride.price || 0,
+              time,
+              date,
+              user: user ? {
+                id: user.id,
+                name: user.name,
+                avatar: user.avatar,
+                karmaPoints: user.karmaPoints
+              } : { id: 'unknown' },
+              rideData: ride,
               rawData: ride
             });
           });
@@ -289,10 +407,26 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
             allContent.push({
               id: `task_${task.id}`,
               title: task.title,
+              description: task.description || '',
               thumbnail: '',
               likes: 0,
-              type: 'task',
+              comments: 0,
+              isLiked: false,
+              timestamp: task.created_at || new Date().toISOString(),
+              type: 'task_post',
+              subtype: 'task_assignment',
               status: task.status,
+              user: user ? {
+                id: user.id,
+                name: user.name,
+                avatar: user.avatar,
+                karmaPoints: user.karmaPoints
+              } : { id: 'unknown' },
+              taskData: {
+                id: task.id,
+                title: task.title,
+                status: task.status
+              },
               rawData: task
             });
           });
@@ -309,10 +443,21 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
               allContent.push({
                 id: `donation_${donation.id}`,
                 title: donation.title,
-                thumbnail: (donation.images && donation.images.length > 0) ? donation.images[0] : '',
+                description: donation.description || '',
+                thumbnail: (donation.images && donation.images.length > 0) ? donation.images[0] : null,
                 likes: 0,
-                type: 'donation',
+                comments: 0,
+                isLiked: false,
+                timestamp: donation.created_at || new Date().toISOString(),
+                type: 'post',
+                subtype: 'donation',
                 status: donation.status,
+                user: user ? {
+                  id: user.id,
+                  name: user.name,
+                  avatar: user.avatar,
+                  karmaPoints: user.karmaPoints
+                } : { id: 'unknown' },
                 rawData: donation
               });
             });
@@ -344,7 +489,7 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
 
   if (posts.length === 0) {
     return (
-      <View style={styles.tabContentPlaceholder}>
+      <View style={[styles.tabContentPlaceholder, { height: 400 }]} onLayout={(e) => onHeightChange && onHeightChange(Math.max(400, e.nativeEvent.layout.height))}>
         <Ionicons name="folder-open-outline" size={60} color={colors.textSecondary} />
         <Text style={styles.placeholderText}>אין תוכן פתוח עדיין</Text>
         <Text style={styles.placeholderSubtext}>התוכן הפתוח שלך יופיע כאן</Text>
@@ -352,73 +497,36 @@ const OpenRoute = ({ userId }: { userId?: string }) => {
     );
   }
 
+  const screenWidth = Dimensions.get('window').width;
+  const cardWidth = screenWidth / 3;
+
   return (
-    <ScrollView contentContainerStyle={styles.tabContentContainer}>
-      <View style={styles.postsGrid}>
-        {posts.map((post, i) => (
-          <TouchableOpacity
-            key={post.id || i}
-            style={styles.postContainer}
-            onPress={() => Alert.alert('פוסט', post.title || `פוסט ${i + 1}`)}
-          >
-            {post.thumbnail || post.image ? (
-              <Image
-                source={{ uri: post.thumbnail || post.image }}
-                style={styles.postImage}
-              />
-            ) : post.type === 'ride' ? (
-              <View style={[styles.postImage, styles.ridePlaceholder]}>
-                <Ionicons name="car-sport" size={scaleSize(32)} color={colors.info} />
-                {post.from && post.to && (
-                  <View style={styles.rideDetailsContainer}>
-                    <Text style={styles.rideDetailsText} numberOfLines={1}>
-                      {post.from}
-                    </Text>
-                    <Ionicons name="arrow-forward" size={scaleSize(12)} color={colors.textSecondary} style={styles.rideArrow} />
-                    <Text style={styles.rideDetailsText} numberOfLines={1}>
-                      {post.to}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            ) : post.type === 'task' || post.type === 'task_post' ? (
-              <View style={[styles.postImage, styles.taskPlaceholder]}>
-                <Ionicons
-                  name={post.subtype === 'task_assignment' ? 'add-circle-outline' : 'checkmark-circle-outline'}
-                  size={scaleSize(32)}
-                  color={post.subtype === 'task_assignment' ? colors.info : colors.success}
-                />
-                {(post.title || post.taskData?.title) && (
-                  <View style={styles.taskDetailsContainer}>
-                    <Text style={styles.taskDetailsText} numberOfLines={2}>
-                      {post.taskData?.title || post.title}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            ) : post.type === 'donation' ? (
-              <View style={[styles.postImage, { backgroundColor: colors.error + '20', justifyContent: 'center', alignItems: 'center' }]}>
-                <Ionicons name="heart-outline" size={32} color={colors.error} />
-              </View>
-            ) : (
-              <View style={[styles.postImage, { backgroundColor: colors.backgroundTertiary, justifyContent: 'center', alignItems: 'center' }]}>
-                <Ionicons name="image-outline" size={32} color={colors.textSecondary} />
-              </View>
-            )}
-            <View style={styles.postOverlay}>
-              <View style={styles.postStats}>
-                <Ionicons name="heart" size={16} color={colors.white} />
-                <Text style={styles.postStatsText}>{post.likes || 0}</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </ScrollView>
+    <View style={styles.tabContentContainer}>
+      <FlatList
+        data={posts}
+        keyExtractor={(item) => item.id}
+        numColumns={3}
+        key={3}
+        scrollEnabled={false}
+        renderItem={({ item }) => (
+          <PostReelItem
+            item={item}
+            numColumns={3}
+            cardWidth={cardWidth}
+            onPress={() => { }}
+          />
+        )}
+        onContentSizeChange={(w, h) => {
+          if (onHeightChange) onHeightChange(h);
+        }}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 };
 
-const ClosedRoute = ({ userId }: { userId?: string }) => {
+const ClosedRoute = ({ userId, user, onHeightChange }: { userId?: string, user?: any, onHeightChange?: (height: number) => void }) => {
   const { t } = useTranslation(['profile']);
   const { selectedUser } = useUser();
   const [posts, setPosts] = useState<any[]>([]);
@@ -441,6 +549,104 @@ const ClosedRoute = ({ userId }: { userId?: string }) => {
 
         const { USE_BACKEND, API_BASE_URL } = await import('../utils/dbConfig');
         const allContent: any[] = [];
+        const existingRideIds = new Set();
+        const existingItemIds = new Set();
+
+        // Load posts from API - handle all types with closed status
+        try {
+          const res = await apiService.getUserPosts(targetUserId, 50, selectedUser?.id);
+          if (res.success && Array.isArray(res.data)) {
+            res.data.forEach((p: any) => {
+              let shouldInclude = false;
+              let status = 'closed';
+              let type = 'post';
+              let subtype = p.post_type;
+
+              // Determine if post should be in CLOSED tab
+              if (p.post_type === 'task_assignment' || p.post_type === 'task_completion') {
+                const taskStatus = p.task?.status;
+                shouldInclude = taskStatus === 'done' || taskStatus === 'archived';
+                status = taskStatus || 'done';
+                type = 'task';
+              } else if (p.ride_data || p.post_type === 'ride') {
+                const rideStatus = p.ride_data?.status;
+                shouldInclude = rideStatus === 'completed' || rideStatus === 'cancelled';
+                status = rideStatus || 'completed';
+                type = 'ride';
+                if (shouldInclude && p.ride_data?.id) existingRideIds.add(p.ride_data.id);
+              } else if ((p.item_data || p.post_type === 'item') || p.post_type === 'donation') {
+                const itemStatus = p.item_data?.status;
+                shouldInclude = itemStatus === 'delivered' || itemStatus === 'completed' || itemStatus === 'expired';
+                status = itemStatus || 'completed';
+                type = p.post_type === 'donation' ? 'donation' : 'item';
+                if (shouldInclude && p.item_data?.id) existingItemIds.add(p.item_data.id);
+              } else {
+                // Regular posts - not shown in closed
+                shouldInclude = false;
+              }
+
+              let fromLocation = '';
+              let toLocation = '';
+
+              let seats = 0;
+              let price = 0;
+              let time = '';
+              let date = '';
+
+              if (type === 'ride') {
+                const rData = p.ride_data;
+                if (rData) {
+                  fromLocation = rData.from_location?.city || rData.from_location?.name || rData.from_location?.address || '';
+                  toLocation = rData.to_location?.city || rData.to_location?.name || rData.to_location?.address || '';
+
+                  seats = rData.available_seats || 0;
+                  price = rData.price_per_seat || 0;
+
+                  if (rData.departure_time) {
+                    const formatted = formatRideTime(rData.departure_time);
+                    time = formatted.time;
+                    date = formatted.date;
+                  }
+                }
+              }
+
+              if (shouldInclude) {
+                allContent.push({
+                  id: p.id,
+                  title: p.title || '',
+                  thumbnail: (p.images && p.images.length > 0) ? p.images[0] : null,
+                  likes: p.likes || 0,
+                  comments: p.comments || 0,
+                  isLiked: p.is_liked || false,
+                  type: type as any,
+                  subtype: subtype,
+                  description: p.description || '',
+                  timestamp: p.created_at,
+                  status: status,
+                  user: user ? {
+                    id: user.id,
+                    name: user.name,
+                    avatar: user.avatar,
+                    karmaPoints: user.karmaPoints
+                  } : { id: 'unknown' },
+                  taskData: p.task,
+                  rideData: p.ride_data,
+                  itemData: p.item_data,
+                  from: fromLocation,
+                  to: toLocation,
+                  seats,
+                  price,
+                  time,
+                  date,
+                  rawData: p
+                });
+              }
+            });
+            console.log('📱 ClosedRoute - Loaded posts from API:', res.data.length);
+          }
+        } catch (error) {
+          console.error('Error loading posts from API:', error);
+        }
 
         // Load items from API (delivered, completed)
         let userItems: any[] = [];
@@ -477,6 +683,7 @@ const ClosedRoute = ({ userId }: { userId?: string }) => {
 
         // Process items
         userItems.forEach((item: any) => {
+          if (existingItemIds.has(item.id)) return;
           let thumbnail = '';
           if (item.image_base64) {
             const imageData = item.image_base64;
@@ -489,49 +696,29 @@ const ClosedRoute = ({ userId }: { userId?: string }) => {
           allContent.push({
             id: `item_${item.id}`,
             title: item.title,
-            thumbnail: thumbnail,
+            description: item.description || '',
+            thumbnail: thumbnail || null,
             likes: 0,
-            type: 'item',
+            comments: 0,
+            isLiked: false,
+            timestamp: item.created_at || new Date().toISOString(),
+            type: 'post', // Items map to 'post' or 'item' subtype
+            subtype: 'item',
             status: item.status,
+            user: user ? {
+              id: user.id,
+              name: user.name,
+              avatar: user.avatar,
+              karmaPoints: user.karmaPoints
+            } : { id: 'unknown' },
+            itemData: {
+              ...item,
+              price: item.price
+            },
+            price: item.price,
             rawData: item
           });
         });
-
-        // Load posts from API - including completed task posts
-        try {
-          const res = await apiService.getUserPosts(targetUserId, 50, selectedUser?.id);
-          if (res.success && Array.isArray(res.data)) {
-            res.data.forEach((p: any) => {
-              // Check if this is a task-related post with completed task
-              const isTaskPost = p.post_type === 'task_assignment' || p.post_type === 'task_completion';
-
-              if (isTaskPost) {
-                // For task posts, only show if task is done/archived
-                const taskStatus = p.task?.status;
-                if (taskStatus === 'done' || taskStatus === 'archived') {
-                  allContent.push({
-                    id: p.id,
-                    title: p.title,
-                    thumbnail: '',
-                    likes: p.likes || 0,
-                    comments: p.comments || 0,
-                    type: 'task',
-                    subtype: p.post_type,
-                    description: p.description,
-                    timestamp: p.created_at,
-                    status: taskStatus,
-                    taskData: p.task,
-                    rawData: p
-                  });
-                }
-              }
-              // Note: Regular posts are not shown in ClosedRoute
-            });
-            console.log('📱 ClosedRoute - Loaded task posts from API:', res.data.length);
-          }
-        } catch (error) {
-          console.error('Error loading posts from API:', error);
-        }
 
         // Load rides (completed)
         try {
@@ -542,17 +729,46 @@ const ClosedRoute = ({ userId }: { userId?: string }) => {
             return createdBy === targetUserId && status === 'completed';
           });
           userRides.forEach((ride: any) => {
+            if (existingRideIds.has(ride.id)) return;
             const fromLocation = ride.from || ride.from_location?.name || ride.from_location?.city || '';
             const toLocation = ride.to || ride.to_location?.name || ride.to_location?.city || '';
+
+            let time = '';
+            let date = '';
+            if (ride.departure_time) {
+              const formatted = formatRideTime(ride.departure_time);
+              time = formatted.time;
+              date = formatted.date;
+            } else if (ride.time) {
+              time = ride.time;
+              date = ride.date || '';
+            }
+
             allContent.push({
               id: `ride_${ride.id}`,
               title: `טרמפ: ${fromLocation} ➝ ${toLocation}`,
-              thumbnail: ride.image || '',
+              description: ride.description || '',
+              thumbnail: ride.image || null,
               likes: 0,
-              type: 'ride',
+              comments: 0,
+              isLiked: false,
+              timestamp: ride.created_at || new Date().toISOString(),
+              type: 'post',
+              subtype: 'ride',
               status: ride.status || 'completed',
               from: fromLocation,
               to: toLocation,
+              seats: ride.available_seats || ride.seats || 0,
+              price: ride.price_per_seat || ride.price || 0,
+              time,
+              date,
+              user: user ? {
+                id: user.id,
+                name: user.name,
+                avatar: user.avatar,
+                karmaPoints: user.karmaPoints
+              } : { id: 'unknown' },
+              rideData: ride,
               rawData: ride
             });
           });
@@ -586,10 +802,26 @@ const ClosedRoute = ({ userId }: { userId?: string }) => {
             allContent.push({
               id: `task_${task.id}`,
               title: task.title,
+              description: task.description || '',
               thumbnail: '',
               likes: 0,
-              type: 'task',
+              comments: 0,
+              isLiked: false,
+              timestamp: task.created_at || new Date().toISOString(),
+              type: 'task_post',
+              subtype: 'task_assignment',
               status: task.status,
+              user: user ? {
+                id: user.id,
+                name: user.name,
+                avatar: user.avatar,
+                karmaPoints: user.karmaPoints
+              } : { id: 'unknown' },
+              taskData: {
+                id: task.id,
+                title: task.title,
+                status: task.status
+              },
               rawData: task
             });
           });
@@ -606,10 +838,21 @@ const ClosedRoute = ({ userId }: { userId?: string }) => {
               allContent.push({
                 id: `donation_${donation.id}`,
                 title: donation.title,
-                thumbnail: (donation.images && donation.images.length > 0) ? donation.images[0] : '',
+                description: donation.description || '',
+                thumbnail: (donation.images && donation.images.length > 0) ? donation.images[0] : null,
                 likes: 0,
-                type: 'donation',
+                comments: 0,
+                isLiked: false,
+                timestamp: donation.created_at || new Date().toISOString(),
+                type: 'post',
+                subtype: 'donation',
                 status: donation.status,
+                user: user ? {
+                  id: user.id,
+                  name: user.name,
+                  avatar: user.avatar,
+                  karmaPoints: user.karmaPoints
+                } : { id: 'unknown' },
                 rawData: donation
               });
             });
@@ -641,7 +884,7 @@ const ClosedRoute = ({ userId }: { userId?: string }) => {
 
   if (posts.length === 0) {
     return (
-      <View style={styles.tabContentPlaceholder}>
+      <View style={[styles.tabContentPlaceholder, { height: 400 }]} onLayout={(e) => onHeightChange && onHeightChange(Math.max(400, e.nativeEvent.layout.height))}>
         <Ionicons name="checkmark-done-circle-outline" size={60} color={colors.textSecondary} />
         <Text style={styles.placeholderText}>אין תוכן סגור עדיין</Text>
         <Text style={styles.placeholderSubtext}>התוכן הסגור שלך יופיע כאן</Text>
@@ -649,75 +892,41 @@ const ClosedRoute = ({ userId }: { userId?: string }) => {
     );
   }
 
+  const screenWidth = Dimensions.get('window').width;
+  const cardWidth = screenWidth / 3;
+
   return (
-    <ScrollView contentContainerStyle={styles.tabContentContainer}>
-      <View style={styles.postsGrid}>
-        {posts.map((post, i) => (
-          <TouchableOpacity
-            key={post.id || i}
-            style={styles.postContainer}
-            onPress={() => Alert.alert('פוסט', post.title || `פוסט ${i + 1}`)}
-          >
-            {post.thumbnail || post.image ? (
-              <Image
-                source={{ uri: post.thumbnail || post.image }}
-                style={styles.postImage}
-              />
-            ) : post.type === 'ride' ? (
-              <View style={[styles.postImage, styles.ridePlaceholder]}>
-                <Ionicons name="car-sport" size={scaleSize(32)} color={colors.info} />
-                {post.from && post.to && (
-                  <View style={styles.rideDetailsContainer}>
-                    <Text style={styles.rideDetailsText} numberOfLines={1}>
-                      {post.from}
-                    </Text>
-                    <Ionicons name="arrow-forward" size={scaleSize(12)} color={colors.textSecondary} style={styles.rideArrow} />
-                    <Text style={styles.rideDetailsText} numberOfLines={1}>
-                      {post.to}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            ) : post.type === 'task' || post.type === 'task_post' ? (
-              <View style={[styles.postImage, styles.taskPlaceholder]}>
-                <Ionicons
-                  name={post.subtype === 'task_assignment' ? 'add-circle' : 'checkmark-circle'}
-                  size={scaleSize(32)}
-                  color={post.subtype === 'task_assignment' ? colors.info : colors.success}
-                />
-                {(post.title || post.taskData?.title) && (
-                  <View style={styles.taskDetailsContainer}>
-                    <Text style={styles.taskDetailsText} numberOfLines={2}>
-                      {post.taskData?.title || post.title}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            ) : post.type === 'donation' ? (
-              <View style={[styles.postImage, { backgroundColor: colors.error + '20', justifyContent: 'center', alignItems: 'center' }]}>
-                <Ionicons name="heart" size={32} color={colors.error} />
-              </View>
-            ) : (
-              <View style={[styles.postImage, { backgroundColor: colors.backgroundTertiary, justifyContent: 'center', alignItems: 'center' }]}>
-                <Ionicons name="image-outline" size={32} color={colors.textSecondary} />
-              </View>
-            )}
-            <View style={styles.postOverlay}>
-              <View style={styles.postStats}>
-                <Ionicons name="heart" size={16} color={colors.white} />
-                <Text style={styles.postStatsText}>{post.likes || 0}</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </ScrollView>
+    <View style={styles.tabContentContainer}>
+      <FlatList
+        data={posts}
+        keyExtractor={(item) => item.id}
+        numColumns={3}
+        key={3}
+        scrollEnabled={false}
+        renderItem={({ item }) => (
+          <PostReelItem
+            item={item}
+            numColumns={3}
+            cardWidth={cardWidth}
+            onPress={() => { }}
+          />
+        )}
+        onContentSizeChange={(w, h) => {
+          if (onHeightChange) onHeightChange(h);
+        }}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 };
 
-const TaggedRoute = () => {
+const TaggedRoute = ({ onHeightChange }: { onHeightChange?: (height: number) => void }) => {
   return (
-    <View style={styles.tabContentPlaceholder}>
+    <View
+      style={[styles.tabContentPlaceholder, { height: 400 }]}
+      onLayout={(e) => onHeightChange && onHeightChange(Math.max(400, e.nativeEvent.layout.height))}
+    >
       <Ionicons name="person-outline" size={60} color={colors.textSecondary} />
       <Text style={styles.placeholderText}>תיוגים יהיה פעיל בהמשך</Text>
     </View>
@@ -812,6 +1021,16 @@ function ProfileScreenContent({
 
   const [index, setIndex] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
+  const [tabHeights, setTabHeights] = useState<Record<string, number>>({});
+
+  const handleTabHeightChange = (key: string, height: number) => {
+    // Add some buffer and min height
+    const newHeight = Math.max(height, 500);
+    setTabHeights(prev => {
+      if (Math.abs((prev[key] || 0) - newHeight) < 10) return prev;
+      return { ...prev, [key]: newHeight };
+    });
+  };
   const [userStats, setUserStats] = useState({
     posts: 0,
     followers: 0,
@@ -1298,15 +1517,18 @@ function ProfileScreenContent({
   const renderScene = ({ route: sceneRoute }: SceneRendererProps & { route: TabRoute }) => {
     switch (sceneRoute.key) {
       case 'open':
-        return <OpenRoute userId={targetUserId} />;
+        return <OpenRoute userId={targetUserId} user={displayUser} onHeightChange={(h) => handleTabHeightChange('open', h)} />;
       case 'closed':
-        return <ClosedRoute userId={targetUserId} />;
+        return <ClosedRoute userId={targetUserId} user={displayUser} onHeightChange={(h) => handleTabHeightChange('closed', h)} />;
       case 'tagged':
-        return <TaggedRoute />;
+        return <TaggedRoute onHeightChange={(h) => handleTabHeightChange('tagged', h)} />;
       default:
         return null;
     }
   };
+
+  const currentTabHeight = tabHeights[routes[index].key] || 600;
+
 
   const renderTabBar = (
     props: SceneRendererProps & { navigationState: NavigationState<TabRoute> }
@@ -1952,7 +2174,7 @@ function ProfileScreenContent({
             )}
 
             {/* Tab View Container */}
-            <View style={styles.tabViewContainer}>
+            <View style={[styles.tabViewContainer, { height: currentTabHeight }]}>
               <TabView
                 navigationState={{ index, routes }}
                 renderScene={renderScene}
@@ -2438,7 +2660,7 @@ function ProfileScreenContent({
           )}
 
           {/* Tab View Container */}
-          <View style={styles.tabViewContainer}>
+          <View style={[styles.tabViewContainer, { height: currentTabHeight }]}>
             <TabView
               navigationState={{ index, routes }}
               renderScene={renderScene}
@@ -2815,7 +3037,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   tabViewContainer: {
-    height: scaleSize(600), // Fixed baseline, scaled per screen
+    // height: scaleSize(600), // Dynamic height now
   },
   tabBarContainer: {
     backgroundColor: colors.background,

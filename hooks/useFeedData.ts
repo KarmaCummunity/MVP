@@ -15,10 +15,70 @@ export const useFeedData = (feedMode: 'friends' | 'discovery') => {
 
     // Helper to map API post to FeedItem
     const mapPostToItem = (post: any): FeedItem => {
+        // For ride posts, extract ride-specific data
+        // Helper to format date/time safely
+        let rideData: any = {};
+        const formatRideTime = (dateIso: string) => {
+            if (!dateIso) return { time: '', date: '' };
+            const dep = new Date(dateIso);
+            if (isNaN(dep.getTime())) return { time: '', date: '' };
+
+            const hours = dep.getHours().toString().padStart(2, '0');
+            const minutes = dep.getMinutes().toString().padStart(2, '0');
+
+            const day = dep.getDate().toString().padStart(2, '0');
+            const month = (dep.getMonth() + 1).toString().padStart(2, '0');
+            const year = dep.getFullYear();
+
+            return {
+                time: `${hours}:${minutes}`,
+                date: `${day}.${month}.${year}`
+            };
+        };
+
+        // 1. Try ride_data from DB Join
+        if (post.ride_data) {
+            const rd = post.ride_data;
+            const { time, date } = formatRideTime(rd.departure_time);
+
+            rideData = {
+                from: typeof rd.from_location === 'string' ? rd.from_location : (rd.from_location?.name || rd.from_location?.city || ''),
+                to: typeof rd.to_location === 'string' ? rd.to_location : (rd.to_location?.name || rd.to_location?.city || ''),
+                seats: rd.available_seats || 0,
+                price: rd.price_per_seat || 0,
+                time,
+                date
+            };
+        }
+        // 2. Fallback to metadata
+        else if ((post.post_type === 'ride' || post.post_type === 'ride_offered') && post.metadata) {
+            const meta = typeof post.metadata === 'string' ? JSON.parse(post.metadata) : post.metadata;
+            const r = meta.ride || meta;
+
+            // Check departure_time (schema) or time/date (legacy/manual)
+            let timeStr = r.time || '';
+            let dateStr = r.date || '';
+
+            if (r.departure_time) {
+                const formatted = formatRideTime(r.departure_time);
+                if (formatted.time) timeStr = formatted.time;
+                if (formatted.date) dateStr = formatted.date;
+            }
+
+            rideData = {
+                from: typeof r.from_location === 'string' ? r.from_location : (r.from_location?.name || r.from_location?.city || r.from || ''),
+                to: typeof r.to_location === 'string' ? r.to_location : (r.to_location?.name || r.to_location?.city || r.to || ''),
+                seats: r.available_seats || r.seats || 0,
+                price: r.price_per_seat || r.price || 0,
+                time: timeStr,
+                date: dateStr
+            };
+        }
+
         return {
             id: post.id,
             type: post.post_type || 'post',
-            subtype: post.post_type, // e.g. 'task_assignment'
+            subtype: post.post_type, // e.g. 'task_assignment', 'ride'
             title: post.title || 'post.noTitle', // Use key or default in UI
             description: post.description || '',
             thumbnail: post.images && post.images.length > 0 ? post.images[0] : null,
@@ -37,58 +97,12 @@ export const useFeedData = (feedMode: 'friends' | 'discovery') => {
                 id: post.task.id,
                 title: post.task.title,
                 status: post.task.status
-            } : undefined
+            } : undefined,
+            // Add ride-specific fields if this is a ride post
+            ...rideData
         };
     };
 
-    // Helper to map Ride to FeedItem
-    const mapRideToItem = (ride: any): FeedItem => {
-        // Parse locations - handle both object and string formats
-        let fromLocation = '';
-        let toLocation = '';
-
-        if (typeof ride.from_location === 'object' && ride.from_location) {
-            fromLocation = ride.from_location.name || ride.from_location.city || ride.from_location.address || '';
-        } else if (typeof ride.from_location === 'string') {
-            fromLocation = ride.from_location;
-        } else if (ride.from) {
-            fromLocation = ride.from;
-        }
-
-        if (typeof ride.to_location === 'object' && ride.to_location) {
-            toLocation = ride.to_location.name || ride.to_location.city || ride.to_location.address || '';
-        } else if (typeof ride.to_location === 'string') {
-            toLocation = ride.to_location;
-        } else if (ride.to) {
-            toLocation = ride.to;
-        }
-
-        return {
-            id: ride.id,
-            type: 'post',
-            subtype: 'ride',
-            title: `טרמפ: ${fromLocation} ← ${toLocation}`,
-            description: ride.description || ride.notes || `נסיעה מ${fromLocation} ל${toLocation}`,
-            thumbnail: ride.image || null,
-            user: {
-                id: ride.driver_id || ride.createdBy || ride.created_by || 'unknown',
-                name: ride.driver_name || 'common.unknownUser',
-                avatar: ride.driver_avatar || undefined
-            },
-            likes: 0,
-            comments: 0,
-            isLiked: false,
-            // Use created_at for feed sorting (when ride was posted, not departure time)
-            timestamp: (ride.created_at && !isNaN(new Date(ride.created_at).getTime()))
-                ? new Date(ride.created_at).toISOString()
-                : new Date().toISOString(),
-            // Ride specific fields
-            from: fromLocation,
-            to: toLocation,
-            seats: ride.available_seats || ride.seats || 0,
-            price: ride.price_per_seat || ride.price || 0
-        };
-    };
 
     // Helper to map Donation/Item to FeedItem
     const mapItemToItem = (item: any): FeedItem => {
@@ -156,37 +170,8 @@ export const useFeedData = (feedMode: 'friends' | 'discovery') => {
                     .map((p: any) => p.task_id || p.task?.id)
             );
 
-            // 2. Fetch Rides (Match ProfileScreen logic but sorted for feed)
-            try {
-                const { enhancedDB } = require('../utils/enhancedDatabaseService');
-                const allRides = await enhancedDB.getRides({
-                    include_past: 'true',
-                    sort_by: 'created_at',
-                    sort_order: 'desc',
-                    limit: 50
-                }); // Fetch all rides sorted by creation
-                logger.debug('useFeedData', 'Fetched rides', { count: allRides.length });
+            // Note: Rides are now included in posts with post_type='ride', so no need to fetch separately
 
-                const mappedRides = allRides.map((ride: any) => mapRideToItem(ride));
-                logger.debug('useFeedData', 'Mapped rides sample', {
-                    sample: mappedRides[0] ? {
-                        id: mappedRides[0].id,
-                        title: mappedRides[0].title,
-                        user: mappedRides[0].user,
-                        timestamp: mappedRides[0].timestamp
-                    } : 'none'
-                });
-
-                mappedRides.forEach((item: FeedItem) => {
-                    if (!existingIds.has(item.id)) {
-                        allContent.push(item);
-                        existingIds.add(item.id);
-                    }
-                });
-                logger.info('useFeedData', 'Added rides to feed', { added: mappedRides.length });
-            } catch (e) {
-                logger.warn('useFeedData', 'Failed to load rides', { error: e });
-            }
 
             // 3. Fetch Items (Match ProfileScreen logic)
             try {

@@ -92,11 +92,11 @@ const enrichUserWithOrgRoles = async (user: User): Promise<User> => {
 
     try {
       console.log('🔐 enrichUserWithOrgRoles - Fetching user from DB with timeout');
-      
+
       // Add timeout to prevent hanging
       const getUserWithTimeout = Promise.race([
         apiService.getUserById(user.id),
-        new Promise((_, reject) => 
+        new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Timeout fetching user data')), 5000)
         )
       ]);
@@ -246,7 +246,7 @@ export const useUserStore = create<UserState>((set, get) => ({
             // Enrich user with org roles if applicable (with timeout)
             const enrichWithTimeout = Promise.race([
               enrichUserWithOrgRoles(parsedUserData),
-              new Promise<User>((resolve) => 
+              new Promise<User>((resolve) =>
                 setTimeout(() => {
                   console.warn('🔐 userStore - Enrichment timed out, using basic user data');
                   resolve(parsedUserData);
@@ -288,11 +288,11 @@ export const useUserStore = create<UserState>((set, get) => ({
           const parsedUser = JSON.parse(persistedUser);
           if (parsedUser && parsedUser.id) {
             console.log('🔐 userStore - checkAuthStatus - Restoring persisted user session');
-            
+
             // Enrich user with org roles if applicable (with timeout)
             const enrichWithTimeout = Promise.race([
               enrichUserWithOrgRoles(parsedUser),
-              new Promise<User>((resolve) => 
+              new Promise<User>((resolve) =>
                 setTimeout(() => {
                   console.warn('🔐 userStore - Enrichment timed out, using basic user data');
                   resolve(parsedUser);
@@ -301,7 +301,7 @@ export const useUserStore = create<UserState>((set, get) => ({
             ]);
 
             const enrichedUser = await enrichWithTimeout;
-            
+
             set({
               selectedUser: enrichedUser,
               isAuthenticated: true,
@@ -504,173 +504,168 @@ export const useUserStore = create<UserState>((set, get) => ({
         console.log('🔥 userStore - Getting Auth instance');
         const auth = getAuth(app);
 
-      onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-        const state = get();
+        onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+          const state = get();
 
-        // Skip updates if store hasn't been initialized yet
-        if (!state.isInitialized) {
-          console.log('🔥 Firebase Auth State Changed - Skipping (not initialized yet)');
-          return;
-        }
+          // Skip updates if store hasn't been initialized yet
+          if (!state.isInitialized) {
+            console.log('🔥 Firebase Auth State Changed - Skipping (not initialized yet)');
+            return;
+          }
 
-        console.log('🔥 Firebase Auth State Changed:', {
-          hasUser: !!firebaseUser,
-          email: firebaseUser?.email,
-          uid: firebaseUser?.uid,
-          emailVerified: firebaseUser?.emailVerified
+          console.log('🔥 Firebase Auth State Changed:', {
+            hasUser: !!firebaseUser,
+            email: firebaseUser?.email,
+            uid: firebaseUser?.uid,
+            emailVerified: firebaseUser?.emailVerified
+          });
+
+          if (firebaseUser) {
+            // Firebase user is logged in - restore/create session
+            console.log('🔥 Firebase user detected, restoring session');
+
+            try {
+              // Get UUID from server using firebase_uid and google_id
+              const { apiService } = await import('../utils/apiService');
+
+              // Extract google_id from providerData if available
+              const googleProvider = firebaseUser.providerData?.find(
+                (provider) => provider.providerId === 'google.com'
+              );
+              const googleId = googleProvider?.uid || undefined;
+
+              console.log('🔥 Resolving user with identifiers:', {
+                firebase_uid: firebaseUser.uid,
+                google_id: googleId,
+                email: firebaseUser.email
+              });
+
+              const resolveResponse = await apiService.resolveUserId({
+                firebase_uid: firebaseUser.uid,
+                google_id: googleId,
+                email: firebaseUser.email || undefined
+              });
+
+              if (!resolveResponse.success || !(resolveResponse as any).user) {
+                console.warn('🔥 Failed to resolve user ID from server, using fallback');
+                // Fallback: try to get user by email
+                if (firebaseUser.email) {
+                  const userResponse = await apiService.getUserById(firebaseUser.email);
+                  if (userResponse.success && userResponse.data) {
+                    const serverUser = userResponse.data;
+                    const nowIso = new Date().toISOString();
+                    const userData: User = {
+                      id: serverUser.id, // UUID from database
+                      name: serverUser.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+                      email: serverUser.email || firebaseUser.email || '',
+                      phone: serverUser.phone || firebaseUser.phoneNumber || '+9720000000',
+                      avatar: serverUser.avatar_url || firebaseUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+                      bio: serverUser.bio || '',
+                      karmaPoints: serverUser.karma_points || 0,
+                      joinDate: serverUser.join_date || serverUser.created_at || nowIso,
+                      isActive: serverUser.is_active !== false,
+                      lastActive: serverUser.last_active || nowIso,
+                      location: { city: serverUser.city || 'ישראל', country: serverUser.country || 'IL' },
+                      interests: serverUser.interests || [],
+                      roles: serverUser.roles || ['user'],
+                      postsCount: serverUser.posts_count || 0,
+                      followersCount: serverUser.followers_count || 0,
+                      followingCount: serverUser.following_count || 0,
+                      notifications: [],
+                      settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+                    };
+
+                    await AsyncStorage.setItem('current_user', JSON.stringify(userData));
+                    await AsyncStorage.setItem('auth_mode', 'real');
+                    await AsyncStorage.setItem('firebase_user_id', firebaseUser.uid);
+
+                    const enrichedUser = await enrichUserWithOrgRoles(userData);
+                    set({
+                      selectedUser: enrichedUser,
+                      isAuthenticated: true
+                    });
+                    console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
+                    return;
+                  }
+                }
+                throw new Error('Failed to get user from server');
+              }
+
+              // We used to skip update if ID matched, but this prevents fresh data (like roles/avatar) 
+              // from being applied on startup if the user is already cached.
+              // Removing the check ensures we always sync with server.
+
+              // Use UUID from server
+              const serverUser = (resolveResponse as any).user;
+              const nowIso = new Date().toISOString();
+              const userData: User = {
+                id: serverUser.id, // UUID from database - this is the primary identifier
+                name: serverUser.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+                email: serverUser.email || firebaseUser.email || '',
+                phone: serverUser.phone || firebaseUser.phoneNumber || '+9720000000',
+                avatar: serverUser.avatar_url || serverUser.avatar || firebaseUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+                bio: serverUser.bio || '',
+                karmaPoints: serverUser.karmaPoints || 0,
+                joinDate: serverUser.createdAt || serverUser.joinDate || nowIso,
+                isActive: serverUser.isActive !== false,
+                lastActive: serverUser.lastActive || nowIso,
+                location: serverUser.location || { city: 'ישראל', country: 'IL' },
+                interests: serverUser.interests || [],
+                roles: serverUser.roles || ['user'],
+                postsCount: serverUser.postsCount || 0,
+                followersCount: serverUser.followersCount || 0,
+                followingCount: serverUser.followingCount || 0,
+                notifications: [],
+                settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+              };
+
+              // Save to AsyncStorage for persistence
+              await AsyncStorage.setItem('current_user', JSON.stringify(userData));
+              await AsyncStorage.setItem('auth_mode', 'real');
+              await AsyncStorage.setItem('firebase_user_id', firebaseUser.uid);
+
+              // Update store state
+              const enrichedUser = await enrichUserWithOrgRoles(userData);
+              set({
+                selectedUser: enrichedUser,
+                isAuthenticated: true,
+                authMode: 'real',
+                isGuestMode: false
+              });
+              console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
+            } catch (error) {
+              console.error('🔥 Failed to restore Firebase session:', error);
+              // Don't set user state if we can't get UUID from server
+            }
+          } else {
+            // No Firebase user - only clear if we had a Firebase user before
+            const currentState = get();
+            const firebaseUserId = await AsyncStorage.getItem('firebase_user_id');
+
+            // Only clear if we actually had a Firebase user and we're not in guest mode
+            if (firebaseUserId && currentState.authMode === 'real' && currentState.isAuthenticated) {
+              console.log('🔥 Firebase user logged out, clearing session');
+              await AsyncStorage.multiRemove(['current_user', 'auth_mode', 'firebase_user_id']);
+              set({
+                selectedUser: null,
+                isAuthenticated: false,
+                isGuestMode: false,
+                authMode: 'guest',
+              });
+            } else {
+              console.log('🔥 Firebase Auth State Changed - No user, but not clearing (guest mode or no previous Firebase user)');
+            }
+          }
         });
 
-        if (firebaseUser) {
-          // Firebase user is logged in - restore/create session
-          console.log('🔥 Firebase user detected, restoring session');
-
-          try {
-            // Get UUID from server using firebase_uid and google_id
-            const { apiService } = await import('../utils/apiService');
-
-            // Extract google_id from providerData if available
-            const googleProvider = firebaseUser.providerData?.find(
-              (provider) => provider.providerId === 'google.com'
-            );
-            const googleId = googleProvider?.uid || undefined;
-
-            console.log('🔥 Resolving user with identifiers:', {
-              firebase_uid: firebaseUser.uid,
-              google_id: googleId,
-              email: firebaseUser.email
-            });
-
-            const resolveResponse = await apiService.resolveUserId({
-              firebase_uid: firebaseUser.uid,
-              google_id: googleId,
-              email: firebaseUser.email || undefined
-            });
-
-            if (!resolveResponse.success || !(resolveResponse as any).user) {
-              console.warn('🔥 Failed to resolve user ID from server, using fallback');
-              // Fallback: try to get user by email
-              if (firebaseUser.email) {
-                const userResponse = await apiService.getUserById(firebaseUser.email);
-                if (userResponse.success && userResponse.data) {
-                  const serverUser = userResponse.data;
-                  const nowIso = new Date().toISOString();
-                  const userData: User = {
-                    id: serverUser.id, // UUID from database
-                    name: serverUser.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-                    email: serverUser.email || firebaseUser.email || '',
-                    phone: serverUser.phone || firebaseUser.phoneNumber || '+9720000000',
-                    avatar: serverUser.avatar_url || firebaseUser.photoURL || 'https://i.pravatar.cc/150?img=1',
-                    bio: serverUser.bio || '',
-                    karmaPoints: serverUser.karma_points || 0,
-                    joinDate: serverUser.join_date || serverUser.created_at || nowIso,
-                    isActive: serverUser.is_active !== false,
-                    lastActive: serverUser.last_active || nowIso,
-                    location: { city: serverUser.city || 'ישראל', country: serverUser.country || 'IL' },
-                    interests: serverUser.interests || [],
-                    roles: serverUser.roles || ['user'],
-                    postsCount: serverUser.posts_count || 0,
-                    followersCount: serverUser.followers_count || 0,
-                    followingCount: serverUser.following_count || 0,
-                    notifications: [],
-                    settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
-                  };
-
-                  await AsyncStorage.setItem('current_user', JSON.stringify(userData));
-                  await AsyncStorage.setItem('auth_mode', 'real');
-                  await AsyncStorage.setItem('firebase_user_id', firebaseUser.uid);
-
-                  const enrichedUser = await enrichUserWithOrgRoles(userData);
-                  set({
-                    selectedUser: enrichedUser,
-                    isAuthenticated: true
-                  });
-                  console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
-                  return;
-                }
-              }
-              throw new Error('Failed to get user from server');
-            }
-
-            // Check if we already have this user loaded to prevent unnecessary updates
-            const currentState = get();
-            if (currentState.selectedUser?.id === (resolveResponse as any).user.id &&
-              currentState.isAuthenticated &&
-              currentState.authMode === 'real') {
-              console.log('🔥 Firebase Auth State Changed - User already loaded, skipping update');
-              return;
-            }
-
-            // Use UUID from server
-            const serverUser = (resolveResponse as any).user;
-            const nowIso = new Date().toISOString();
-            const userData: User = {
-              id: serverUser.id, // UUID from database - this is the primary identifier
-              name: serverUser.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-              email: serverUser.email || firebaseUser.email || '',
-              phone: serverUser.phone || firebaseUser.phoneNumber || '+9720000000',
-              avatar: serverUser.avatar || firebaseUser.photoURL || 'https://i.pravatar.cc/150?img=1',
-              bio: serverUser.bio || '',
-              karmaPoints: serverUser.karmaPoints || 0,
-              joinDate: serverUser.createdAt || serverUser.joinDate || nowIso,
-              isActive: serverUser.isActive !== false,
-              lastActive: serverUser.lastActive || nowIso,
-              location: serverUser.location || { city: 'ישראל', country: 'IL' },
-              interests: serverUser.interests || [],
-              roles: serverUser.roles || ['user'],
-              postsCount: serverUser.postsCount || 0,
-              followersCount: serverUser.followersCount || 0,
-              followingCount: serverUser.followingCount || 0,
-              notifications: [],
-              settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
-            };
-
-            // Save to AsyncStorage for persistence
-            await AsyncStorage.setItem('current_user', JSON.stringify(userData));
-            await AsyncStorage.setItem('auth_mode', 'real');
-            await AsyncStorage.setItem('firebase_user_id', firebaseUser.uid);
-
-            // Update store state
-            const enrichedUser = await enrichUserWithOrgRoles(userData);
-            set({
-              selectedUser: enrichedUser,
-              isAuthenticated: true,
-              authMode: 'real',
-              isGuestMode: false
-            });
-            console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
-          } catch (error) {
-            console.error('🔥 Failed to restore Firebase session:', error);
-            // Don't set user state if we can't get UUID from server
-          }
-        } else {
-          // No Firebase user - only clear if we had a Firebase user before
-          const currentState = get();
-          const firebaseUserId = await AsyncStorage.getItem('firebase_user_id');
-
-          // Only clear if we actually had a Firebase user and we're not in guest mode
-          if (firebaseUserId && currentState.authMode === 'real' && currentState.isAuthenticated) {
-            console.log('🔥 Firebase user logged out, clearing session');
-            await AsyncStorage.multiRemove(['current_user', 'auth_mode', 'firebase_user_id']);
-            set({
-              selectedUser: null,
-              isAuthenticated: false,
-              isGuestMode: false,
-              authMode: 'guest',
-            });
-          } else {
-            console.log('🔥 Firebase Auth State Changed - No user, but not clearing (guest mode or no previous Firebase user)');
-          }
-        }
-      });
-
-      console.log('🔥 Firebase Auth listener set up successfully');
-    } catch (error) {
-      console.error('🔥 Error setting up Firebase Auth listener:', error);
-    }
+        console.log('🔥 Firebase Auth listener set up successfully');
+      } catch (error) {
+        console.error('🔥 Error setting up Firebase Auth listener:', error);
+      }
     } catch (error) {
       console.error('🔐 userStore - initialize - Critical error during initialization:', error);
       // Ensure we still mark as initialized and set a safe state
-      set({ 
+      set({
         isInitialized: true,
         isLoading: false,
         isAuthenticated: false,

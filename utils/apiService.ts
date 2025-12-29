@@ -599,6 +599,14 @@ class ApiService {
     return this.request(url);
   }
 
+  async deletePost(postId: string, userId: string): Promise<ApiResponse> {
+    // userId is used for local Optimistic UI updates if needed, but not sent to server
+    // Server extracts user ID from JWT token
+    return this.request(`/api/posts/${postId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Notifications APIs
   async getNotifications(userId: string, limit = 50, offset = 0): Promise<ApiResponse> {
     return this.request(`/api/notifications/${userId}?limit=${limit}&offset=${offset}`);

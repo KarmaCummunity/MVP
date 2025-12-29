@@ -8,10 +8,20 @@ export interface FeedUser {
     karmaPoints?: number;
 }
 
+export interface TaskAssignee {
+    id: string;
+    name: string;
+    avatar?: string;
+}
+
 export interface TaskData {
     id: string;
     title: string;
+    description?: string;
     status: string;
+    estimated_hours?: number;
+    due_date?: string;
+    assignees?: TaskAssignee[];
 }
 
 export interface FeedItem {

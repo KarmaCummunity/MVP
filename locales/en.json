@@ -6,6 +6,7 @@
     "notificationsList": "Notifications list",
     "cancel": "Cancel",
     "done": "Done",
+    "edit": "Edit",
     "delete": "Delete",
     "loading": "Loading...",
     "notFound": {
@@ -47,7 +48,24 @@
     "chat": "Chat",
     "favorites": "Favorites",
     "posts": "Posts",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "rides": {
+      "offered": "Ride",
+      "completed": "Ride Completed",
+      "from": "From",
+      "to": "To",
+      "origin": "Origin",
+      "destination": "Destination",
+      "seats": "Seats",
+      "free": "Free",
+      "fuelShare": "Participation",
+      "noCharge": "No Charge",
+      "departure": "Departure",
+      "thanks_message": "Thanks for taking part!"
+    },
+    "items": {
+      "title": "Items"
+    }
   },
   "search": {
     "sortTitle": "Sort",
@@ -1290,5 +1308,23 @@
       "error": "Error sending message",
       "sendButton": "Send quick message"
     }
+  },
+  "rides": {
+    "offered": "Ride Offered",
+    "completed": "Ride Completed",
+    "seats": "Seats",
+    "fuelShare": "Fuel Share",
+    "free": "Free",
+    "noCharge": "No Charge",
+    "departure": "Departure",
+    "from": "From",
+    "to": "To",
+    "origin": "Origin",
+    "destination": "Destination",
+    "thanks_message": "Ride completed successfully! Thank you for your help."
+  },
+  "items": {
+    "title": "Item",
+    "forSale": "For Sale"
   }
 }

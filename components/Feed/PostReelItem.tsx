@@ -1,20 +1,18 @@
 import React, { useCallback, useMemo } from 'react';
 import {
     View,
-    Text,
-    Image,
-    TouchableOpacity,
     StyleSheet,
     Dimensions,
-    Platform
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import colors from '../../globals/colors';
 import { FeedItem } from '../../types/feed';
 import { usePostInteractions } from '../../hooks/usePostInteractions';
 import { useProfileNavigation } from '../../hooks/useProfileNavigation';
-import { FontSizes } from '../../globals/constants';
-import { useTranslation } from 'react-i18next';
+import DonationItemCard from './PostCard/DonationItemCard';
+import RegularItemCard from './PostCard/RegularItemCard';
+import RideOfferedCard from './PostCard/RideOfferedCard';
+import RideCompletedCard from './PostCard/RideCompletedCard';
+import TaskAssignmentCard from './PostCard/TaskAssignmentCard';
+import TaskCompletionCard from './PostCard/TaskCompletionCard';
 
 const { width } = Dimensions.get('window');
 
@@ -24,6 +22,7 @@ interface PostReelItemProps {
     numColumns?: number;
     onPress?: (item: FeedItem) => void;
     onCommentPress?: (item: FeedItem) => void;
+    onMorePress?: (item: FeedItem, measurements?: { x: number, y: number }) => void; // Added prop
 }
 
 const PostReelItem: React.FC<PostReelItemProps> = ({
@@ -31,9 +30,9 @@ const PostReelItem: React.FC<PostReelItemProps> = ({
     cardWidth = width,
     numColumns = 1,
     onPress,
-    onCommentPress
+    onCommentPress,
+    onMorePress
 }) => {
-    const { t } = useTranslation();
     const {
         isLiked,
         likesCount,
@@ -48,53 +47,8 @@ const PostReelItem: React.FC<PostReelItemProps> = ({
 
     // Determine layout mode
     const isGrid = numColumns > 1;
-    const isTask = item.type === 'task_post';
-    const isCompletion = item.subtype === 'task_completion';
 
-    // Format timestamp
-    const formattedTime = useMemo(() => {
-        try {
-            if (!item.timestamp) {
-                console.warn('[PostReelItem] No timestamp for item:', item.id, item.subtype);
-                return 'עכשיו';
-            }
-
-            const date = new Date(item.timestamp);
-
-            // Check if date is valid
-            if (isNaN(date.getTime())) {
-                console.error('[PostReelItem] Invalid timestamp:', item.timestamp, 'for item:', item.id);
-                return 'עכשיו';
-            }
-
-            const now = new Date();
-            const diff = now.getTime() - date.getTime();
-
-            // Less than 1 minute
-            if (diff < 60 * 1000) {
-                return 'עכשיו';
-            }
-
-            // Less than 1 hour
-            if (diff < 60 * 60 * 1000) {
-                const minutes = Math.floor(diff / (60 * 1000));
-                return `לפני ${minutes} דקות`;
-            }
-
-            // Less than 24 hours
-            if (diff < 24 * 60 * 60 * 1000) {
-                const hours = Math.floor(diff / (60 * 60 * 1000));
-                return `לפני ${hours} שעות`;
-            }
-
-            // Older than 24 hours - show date
-            return date.toLocaleDateString('he-IL');
-        } catch (e) {
-            console.error('[PostReelItem] Error formatting timestamp:', e, item.timestamp);
-            return 'עכשיו';
-        }
-    }, [item.timestamp]);
-
+    // Common Handlers
     const handleProfilePressInternal = useCallback(() => {
         if (item.user && item.user.id) {
             navigateToProfile(item.user.id, item.user.name || 'User');
@@ -105,431 +59,96 @@ const PostReelItem: React.FC<PostReelItemProps> = ({
         if (onPress) onPress(item);
     }, [onPress, item]);
 
-    // --- Render Task Post ---
-    if (isTask) {
-        return (
-            <TouchableOpacity
-                style={[styles.itemContainer, styles.taskPostContainer, isGrid && styles.itemContainerGrid, { width: cardWidth }]}
-                onPress={handleItemPress}
-                activeOpacity={0.9}
-            >
-                <View style={styles.taskIconContainer}>
-                    <Ionicons
-                        name={isCompletion ? "checkmark-circle" : "clipboard"}
-                        size={32}
-                        color={isCompletion ? colors.success : colors.primary}
-                    />
-                </View>
-                <View style={styles.taskPostContent}>
-                    <Text style={styles.taskPostType}>
-                        {isCompletion ? t('common.done') : t('tasks.status.new')}
-                    </Text>
-                    <Text style={styles.taskTitle} numberOfLines={2}>
-                        {item.taskData?.title || item.title}
-                    </Text>
+    const handleCommentPressInternal = useCallback(() => {
+        if (onCommentPress) onCommentPress(item);
+    }, [onCommentPress, item]);
 
-                    <TouchableOpacity style={styles.userInfoSmall} onPress={handleProfilePressInternal}>
-                        <Text style={styles.userNameSmall}>{item.user.name}</Text>
-                        {item.user.avatar ? (
-                            <Image source={{ uri: item.user.avatar }} style={styles.userAvatarSmall} />
-                        ) : (
-                            <View style={[styles.userAvatarSmall, styles.avatarPlaceholder]}>
-                                <Ionicons name="person" size={12} color={colors.white} />
-                            </View>
-                        )}
-                    </TouchableOpacity>
-                </View>
+    const handleMorePressInternal = useCallback((itemOrMeasure?: any, measure?: any) => {
+        // Handle both (item) and (item, measure) signatures if cards call differently
+        // But since we control call sites, we expect cards to call onMorePress(item, measure)?
+        // Wait, BaseCardProps says onMorePress: (measure) => void.
+        // So cards call onMorePress({x,y}).
+        // So this function receives measurements as first arg?
+        // No, PostReelItem renders cards. The cards receive `onMorePress` as a prop.
+        // `commonProps` passes user of `onMorePress: handleMorePressInternal`.
+        // So `handleMorePressInternal` is what the card calls.
+        // The card calls it like: `onMorePress(measurements)`.
+        const measurements = itemOrMeasure;
+        if (onMorePress) onMorePress(item, measurements);
+    }, [onMorePress, item]);
 
-                {/* Actions (Like/Comment) for task */}
-                <View style={styles.taskActions}>
-                    <TouchableOpacity onPress={handleLike} style={styles.actionButtonSmall}>
-                        <Ionicons name={isLiked ? "heart" : "heart-outline"} size={20} color={isLiked ? colors.error : colors.textSecondary} />
-                        {likesCount > 0 && <Text style={styles.actionTextSmall}>{likesCount}</Text>}
-                    </TouchableOpacity>
-                </View>
-            </TouchableOpacity>
-        );
+
+    // Format timestamp logic (reused)
+    const formattedTime = useMemo(() => {
+        try {
+            if (!item.timestamp) return 'עכשיו';
+            const date = new Date(item.timestamp);
+            if (isNaN(date.getTime())) return 'עכשיו';
+            const now = new Date();
+            const diff = now.getTime() - date.getTime();
+            if (diff < 60 * 1000) return 'עכשיו';
+            if (diff < 60 * 60 * 1000) return `לפני ${Math.floor(diff / (60 * 1000))} דקות`;
+            if (diff < 24 * 60 * 60 * 1000) return `לפני ${Math.floor(diff / (60 * 60 * 1000))} שעות`;
+            return date.toLocaleDateString('he-IL');
+        } catch (e) {
+            return 'עכשיו';
+        }
+    }, [item.timestamp]);
+
+    // Props for child components
+    const commonProps = {
+        item,
+        cardWidth,
+        isGrid,
+        onPress: handleItemPress,
+        onProfilePress: handleProfilePressInternal,
+        onLike: handleLike,
+        onComment: handleCommentPressInternal,
+        onBookmark: handleBookmark,
+        onShare: handleShare,
+        onMorePress: handleMorePressInternal, // Pass down
+        isLiked,
+        isBookmarked,
+        likesCount,
+        commentsCount,
+        formattedTime
+    };
+
+    // --- Dispatcher Logic ---
+
+    // 1. Task Completion
+    if (item.type === 'task_post' && item.subtype === 'task_completion') {
+        return <TaskCompletionCard {...commonProps} />;
     }
 
-    const displayTitle = item.title === 'post.noTitle' ? t('post.noTitle') :
-        item.title === 'donations.categories.items.title' ? t('donations.categories.items.title') :
-            item.title;
+    // 2. Task Assignment (New Task)
+    if (item.type === 'task_post' || item.subtype === 'task_assignment') {
+        return <TaskAssignmentCard {...commonProps} />;
+    }
 
-    const displayName = item.user.name === 'common.unknownUser' ? t('common.unknownUser') : item.user.name;
+    // 3. Donation
+    if (item.subtype === 'donation') {
+        return <DonationItemCard {...commonProps} />;
+    }
 
-    // --- Render Regular Post/Reel ---
+    // 4. Ride
+    if (item.subtype === 'ride') {
+        // Distinguish completed vs offered
+        if (item.status === 'completed') {
+            return <RideCompletedCard {...commonProps} />;
+        }
+        return <RideOfferedCard {...commonProps} />;
+    }
 
-    // Check if it's an Item/Donation subtype
-    const isItemType = item.subtype === 'item' || item.subtype === 'donation';
-    const isRideType = item.subtype === 'ride';
+    // 5. Item (Regular) - Fallback for 'item' or if nothing else matches but has thumbnail/price
+    if (item.subtype === 'item' || item.price) {
+        return <RegularItemCard {...commonProps} />;
+    }
 
-    return (
-        <View style={[
-            styles.itemContainer,
-            isGrid && styles.itemContainerGrid,
-            { width: cardWidth },
-            // item.type === 'reel' && styles.reelItem // Optional logic for reels
-        ]}>
-            {/* Header */}
-            <View style={styles.header}>
-                {/* Removed headerMoreBtn (bookmark) from here */}
-                <View style={styles.headerSpacer} />
-                <TouchableOpacity style={styles.userInfo} onPress={handleProfilePressInternal}>
-                    <View>
-                        <Text style={styles.userName}>{displayName}</Text>
-                        <Text style={styles.timestamp}>{formattedTime}</Text>
-                    </View>
-                    {item.user.avatar ? (
-                        <Image source={{ uri: item.user.avatar }} style={styles.userAvatar} />
-                    ) : (
-                        <View style={[styles.userAvatar, styles.avatarPlaceholder]}>
-                            <Ionicons name="person" size={20} color={colors.white} />
-                        </View>
-                    )}
-                </TouchableOpacity>
-            </View>
-
-            {/* Content (Image) */}
-            {item.thumbnail ? (
-                <TouchableOpacity onPress={handleItemPress} activeOpacity={0.9}>
-                    <Image
-                        source={{ uri: item.thumbnail }}
-                        style={[styles.thumbnail, isGrid && { height: 150 }]}
-                        resizeMode="cover"
-                    />
-                    {(isItemType || isRideType) && (
-                        <View style={styles.overlayContainer}>
-                            <Text style={styles.overlayTitle}>{displayTitle}</Text>
-                            {item.description ? (
-                                <Text style={styles.overlayDescription} numberOfLines={3}>
-                                    {item.description}
-                                </Text>
-                            ) : null}
-                            {isItemType && item.category && (
-                                <Text style={styles.overlayCategory}>
-                                    📦 {item.category}
-                                </Text>
-                            )}
-                            {isRideType && (
-                                <View style={styles.rideDetailsOverlay}>
-                                    {item.seats ? (
-                                        <Text style={styles.rideDetailText}>
-                                            🪑 {item.seats} מקומות
-                                        </Text>
-                                    ) : null}
-                                    <Text style={styles.rideDetailText}>
-                                        {item.price && item.price > 0 ? `💰 השתתפות בדלק ₪${item.price}` : '🆓 חינם'}
-                                    </Text>
-                                </View>
-                            )}
-                        </View>
-                    )}
-                </TouchableOpacity>
-            ) : (
-                // Text only post fallback or placeholder
-                <TouchableOpacity
-                    onPress={handleItemPress}
-                    style={[
-                        styles.thumbnail,
-                        styles.thumbnailPlaceholder,
-                        // If it's an item/donation/ride, specific background style
-                        isItemType && { backgroundColor: item.subtype === 'donation' ? '#E8F5E9' : '#FFF3E0' },
-                        isRideType && { backgroundColor: '#E3F2FD' }
-                    ]}
-                >
-                    {/* For placeholders, we show title + description in the center too */}
-                    {(isItemType || isRideType) && <Text style={[styles.placeholderText, styles.placeholderTitle]}>{displayTitle}</Text>}
-                    <Text style={styles.placeholderText} numberOfLines={3}>{item.description}</Text>
-                    {isRideType && (
-                        <View style={styles.rideDetailsPlaceholder}>
-                            {item.seats ? (
-                                <Text style={styles.rideDetailTextDark}>
-                                    🪑 {item.seats} מקומות
-                                </Text>
-                            ) : null}
-                            {item.price && item.price > 0 ? (
-                                <Text style={styles.rideDetailTextDark}>
-                                    💰 ₪{item.price}
-                                </Text>
-                            ) : null}
-                        </View>
-                    )}
-                </TouchableOpacity>
-            )}
-
-            {/* Text Content - Hide for items/rides if shown in overlay */}
-            {!isGrid && !isItemType && !isRideType && (
-                <View style={styles.textContainer}>
-                    <Text style={styles.title} numberOfLines={1}>{displayTitle}</Text>
-                    {item.description ? (
-                        <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
-                    ) : null}
-                </View>
-            )}
-
-            {/* Actions */}
-            <View style={styles.actionsContainer}>
-                <View style={{ flexDirection: 'row-reverse' }}>
-                    <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
-                        <Ionicons name={isLiked ? "heart" : "heart-outline"} size={22} color={isLiked ? colors.error : colors.textSecondary} />
-                        <Text style={[styles.actionText, isLiked && styles.likedText]}>{likesCount > 0 ? likesCount : ''}</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.actionButton} onPress={() => onCommentPress && onCommentPress(item)}>
-                        <Ionicons name="chatbubble-outline" size={22} color={colors.textSecondary} />
-                        <Text style={styles.actionText}>{commentsCount > 0 ? commentsCount : ''}</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.actionButton} onPress={handleBookmark}>
-                        <Ionicons name={isBookmarked ? "bookmark" : "bookmark-outline"} size={22} color={colors.textSecondary} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-                        <Ionicons name="share-outline" size={22} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                </View>
-            </View>
-        </View>
-    );
+    // 6. Generic/Unknown Post Type
+    return <RegularItemCard {...commonProps} />;
 };
 
-const styles = StyleSheet.create({
-    itemContainer: {
-        backgroundColor: colors.white,
-        borderRadius: 12,
-        marginVertical: 8,
-        marginHorizontal: 16,
-        ...Platform.select({
-            ios: {
-                shadowColor: colors.black,
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-            },
-            android: {
-                elevation: 3,
-            },
-            web: {
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
-            }
-        }),
-        overflow: 'hidden',
-    },
-    itemContainerGrid: {
-        marginHorizontal: 8,
-        marginBottom: 16,
-    },
-    taskPostContainer: {
-        padding: 16,
-        flexDirection: 'row-reverse',
-        alignItems: 'center',
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.backgroundTertiary,
-    },
-    headerSpacer: {
-        flex: 1,
-    },
-    headerMoreBtn: {
-        padding: 4,
-    },
-    userInfo: {
-        flexDirection: 'row-reverse',
-        alignItems: 'center',
-    },
-    userAvatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        marginLeft: 8,
-        backgroundColor: colors.backgroundTertiary,
-    },
-    avatarPlaceholder: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: colors.primary,
-    },
-    userName: {
-        fontSize: FontSizes.body,
-        fontWeight: '600',
-        color: colors.textPrimary,
-        textAlign: 'right',
-    },
-    timestamp: {
-        fontSize: FontSizes.small,
-        color: colors.textSecondary,
-        textAlign: 'right',
-    },
-    thumbnail: {
-        width: '100%',
-        height: 250,
-        backgroundColor: colors.backgroundTertiary,
-    },
-    thumbnailPlaceholder: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-    },
-    placeholderText: {
-        color: colors.textSecondary,
-        textAlign: 'center',
-    },
-    placeholderTitle: {
-        fontWeight: 'bold',
-        fontSize: 18,
-        marginBottom: 8,
-        color: colors.textPrimary
-    },
-    // Overlay styles for Items
-    overlayContainer: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20
-    },
-    overlayTitle: {
-        color: colors.white,
-        fontSize: 22,
-        fontWeight: 'bold',
-        marginBottom: 8,
-        textAlign: 'center',
-        textShadowColor: 'rgba(0, 0, 0, 0.75)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 4
-    },
-    overlayDescription: {
-        color: colors.white,
-        fontSize: 16,
-        textAlign: 'center',
-        textShadowColor: 'rgba(0, 0, 0, 0.75)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 4
-    },
-    overlayCategory: {
-        color: colors.white,
-        fontSize: 14,
-        fontWeight: '600',
-        marginTop: 8,
-        textAlign: 'center',
-        textShadowColor: 'rgba(0, 0, 0, 0.75)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 4
-    },
-    rideDetailsOverlay: {
-        flexDirection: 'row',
-        gap: 16,
-        marginTop: 12,
-        justifyContent: 'center'
-    },
-    rideDetailText: {
-        color: colors.white,
-        fontSize: 14,
-        fontWeight: '600',
-        textShadowColor: 'rgba(0, 0, 0, 0.75)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 4
-    },
-    rideDetailsPlaceholder: {
-        flexDirection: 'row',
-        gap: 16,
-        marginTop: 12,
-        justifyContent: 'center'
-    },
-    rideDetailTextDark: {
-        color: colors.textPrimary,
-        fontSize: 14,
-        fontWeight: '600'
-    },
-    textContainer: {
-        padding: 12,
-    },
-    title: {
-        fontSize: FontSizes.medium,
-        fontWeight: '600',
-        color: colors.textPrimary,
-        marginBottom: 4,
-        textAlign: 'right',
-    },
-    description: {
-        fontSize: FontSizes.body,
-        color: colors.textSecondary,
-        textAlign: 'right',
-    },
-    actionsContainer: {
-        padding: 12,
-        borderTopWidth: 1,
-        borderTopColor: colors.backgroundTertiary,
-        flexDirection: 'row',
-        justifyContent: 'flex-start', // Icons on left
-    },
-    actionButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginRight: 20,
-    },
-    actionText: {
-        fontSize: FontSizes.body,
-        color: colors.textSecondary,
-        marginLeft: 6,
-    },
-    likedText: {
-        color: colors.error,
-    },
-    // Task specific
-    taskIconContainer: {
-        marginLeft: 16,
-    },
-    taskPostContent: {
-        flex: 1,
-        alignItems: 'flex-end',
-    },
-    taskPostType: {
-        fontSize: 10,
-        color: colors.textSecondary,
-        marginBottom: 4,
-        textTransform: 'uppercase',
-    },
-    taskTitle: {
-        fontSize: FontSizes.medium,
-        fontWeight: '700',
-        color: colors.textPrimary,
-        textAlign: 'right',
-        marginBottom: 8,
-    },
-    userInfoSmall: {
-        flexDirection: 'row-reverse',
-        alignItems: 'center',
-    },
-    userNameSmall: {
-        fontSize: 12,
-        color: colors.textSecondary,
-        marginLeft: 6,
-    },
-    userAvatarSmall: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-    },
-    taskActions: {
-        justifyContent: 'center',
-        paddingLeft: 8
-    },
-    actionButtonSmall: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    actionTextSmall: {
-        fontSize: 12,
-        marginLeft: 4,
-        color: colors.textSecondary
-    }
-
-});
+const styles = StyleSheet.create({});
 
 export default React.memo(PostReelItem);

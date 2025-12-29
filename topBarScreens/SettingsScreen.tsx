@@ -363,7 +363,7 @@ export default function SettingsScreen() {
       const taskData = {
         title: `Report from ${selectedUser?.name || 'User'}`,
         description: `User Email: ${selectedUser?.email}\nUser ID: ${currentUserId}\n\nReport Content:\n${reportText}`,
-        status: 'open',
+        status: 'reports',
         priority: 'high',
         category: 'report',
         assignee_id: adminId,

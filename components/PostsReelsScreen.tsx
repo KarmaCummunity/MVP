@@ -9,7 +9,9 @@ import {
   NativeScrollEvent,
   RefreshControl,
   Text,
-  Alert
+  Alert,
+  Platform,
+  ActionSheetIOS
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -19,9 +21,15 @@ import { FeedItem } from '../types/feed';
 import { useFeedData } from '../hooks/useFeedData';
 import PostReelItem from './Feed/PostReelItem';
 import FeedHeader from './Feed/FeedHeader';
-import CommentsModal from './CommentsModal'; // Assuming this exists in the same dir
+import CommentsModal from './CommentsModal';
+import OptionsModal, { Option } from './Feed/OptionsModal';
+import ReportPostModal from './Feed/ReportPostModal';
+import { apiService } from '../utils/apiService';
 import VerticalGridSlider from './VerticalGridSlider';
 import { logger } from '../utils/loggerService';
+import { usePostDeletion } from '../hooks/usePostDeletion';
+import { useUser } from '../stores/userStore';
+import { toastService } from '../utils/toastService';
 
 const { width } = Dimensions.get('window');
 
@@ -39,13 +47,22 @@ const PostsReelsScreen: React.FC<PostsReelsScreenProps> = ({
 }) => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
+  const { canDelete, deletePost } = usePostDeletion();
+  const { selectedUser } = useUser();
 
   // State
   const [feedMode, setFeedMode] = useState<'friends' | 'discovery'>('friends');
   const [commentsModalVisible, setCommentsModalVisible] = useState(false);
   const [selectedItemForComments, setSelectedItemForComments] = useState<FeedItem | null>(null);
+  const [optionsModalVisible, setOptionsModalVisible] = useState(false);
+  const [modalOptions, setModalOptions] = useState<Option[]>([]);
   const [numColumns, setNumColumns] = useState(1); // Default to list view
   const [sliderValue, setSliderValue] = useState(0); // 0 = 1 col, 1 = 2 cols, 2 = 3 cols
+
+  // Report State
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [selectedPostForReport, setSelectedPostForReport] = useState<FeedItem | null>(null);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   // Custom Hook for Data
   const { feed, loading, refreshing, refresh } = useFeedData(feedMode);
@@ -74,7 +91,6 @@ const PostsReelsScreen: React.FC<PostsReelsScreenProps> = ({
   }, [navigation]);
 
   const handlePostPress = useCallback((item: FeedItem) => {
-    // Navigate to detailed view?
     logger.debug('PostsReelsScreen', 'Post pressed', { itemId: item.id });
     // TODO: Implement navigation to individual post screen if exists
   }, []);
@@ -84,21 +100,168 @@ const PostsReelsScreen: React.FC<PostsReelsScreenProps> = ({
     setCommentsModalVisible(true);
   }, []);
 
+  const handleReportSubmit = async (reason: string) => {
+    if (!selectedPostForReport) return;
+
+    setIsSubmittingReport(true);
+    try {
+      const adminEmail = 'navesarussi@gmail.com';
+      // Resolve admin ID - try multiple methods
+      let adminId: string | null = null;
+      try {
+        const resolveRes = await apiService.resolveUserId({ email: adminEmail });
+        if (resolveRes.success && resolveRes.data?.id) {
+          adminId = resolveRes.data.id;
+        }
+      } catch (e) { console.warn('Resolve admin failed', e); }
+
+      if (!adminId) {
+        // Fallback or better error handling needed in real app
+        // For MVP we might need to assume a system user or fail gracefuly
+        // Attempt search
+        const searchRes = await apiService.getUsers({ search: adminEmail, limit: 1 });
+        if (searchRes.success && searchRes.data?.[0]?.id) {
+          adminId = searchRes.data[0].id;
+        }
+      }
+
+      if (adminId && selectedUser?.id) {
+        const taskData = {
+          title: `Report on Post: ${selectedPostForReport.title || selectedPostForReport.id}`,
+          description: `Reporter: ${selectedUser.name} (${selectedUser.email})\nPost ID: ${selectedPostForReport.id}\nReason: ${reason}\n\nLink: /post/${selectedPostForReport.id}`, // Deep-linking to be implemented
+          status: 'reports',
+          priority: 'high',
+          category: 'moderation',
+          assignee_id: adminId,
+          created_by: selectedUser.id,
+          due_date: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 48h SLA
+          metadata: {
+            related_post_id: selectedPostForReport.id,
+            report_reason: reason
+          }
+        };
+
+        const res = await apiService.createTask(taskData);
+        if (res.success) {
+          Alert.alert(t('common.success') || 'Success', t('common.report_sent') || 'Report sent successfully');
+          setReportModalVisible(false);
+          setSelectedPostForReport(null);
+        } else {
+          throw new Error(res.error || 'Failed to create task');
+        }
+      } else {
+        throw new Error('Could not resolve admin or user ID');
+      }
+
+    } catch (error) {
+      console.error('Report failed:', error);
+      Alert.alert(t('common.error') || 'Error', t('common.report_failed') || 'Failed to send report');
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
+  // Position state
+  const [modalPosition, setModalPosition] = useState<{ x: number, y: number } | undefined>(undefined);
+
+  const handleMorePress = useCallback((item: FeedItem, measurements?: { x: number, y: number }) => {
+    const isOwner = selectedUser?.id === item.user.id;
+    const canDeleteThisPost = canDelete(item.user.id);
+
+    // Actions
+    const handleDelete = () => {
+      deletePost(item.id, item.subtype || 'general', () => {
+        refresh(); // Refresh feed on success
+      });
+    };
+
+    const handleReport = () => {
+      setSelectedPostForReport(item);
+      setReportModalVisible(true);
+    };
+
+    const handleEdit = () => {
+      toastService.showInfo('Edit functionality coming soon!');
+    };
+
+    if (Platform.OS === 'ios') {
+      const options = [t('common.cancel') || 'Cancel'];
+      const destructiveButtonIndex: number[] = [];
+
+      if (canDeleteThisPost) {
+        options.push(t('common.delete') || 'Delete');
+        destructiveButtonIndex.push(options.length - 1);
+      }
+
+      if (isOwner) {
+        options.push(t('common.edit') || 'Edit');
+      } else {
+        options.push(t('common.report') || 'Report');
+      }
+
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options,
+          cancelButtonIndex: 0,
+          destructiveButtonIndex,
+          title: t('common.options') || 'Options'
+        },
+        (buttonIndex) => {
+          const selectedOption = options[buttonIndex];
+          if (selectedOption === (t('common.delete') || 'Delete')) {
+            handleDelete();
+          } else if (selectedOption === (t('common.report') || 'Report')) {
+            handleReport();
+          } else if (selectedOption === (t('common.edit') || 'Edit')) {
+            handleEdit();
+          }
+        }
+      );
+    } else {
+      // Android & Web: Use Custom OptionsModal
+      const options: Option[] = [];
+
+      if (canDeleteThisPost) {
+        options.push({
+          label: t('common.delete') || 'Delete',
+          onPress: handleDelete,
+          isDestructive: true,
+          icon: 'trash-outline'
+        });
+      }
+
+      if (isOwner) {
+        options.push({
+          label: t('common.edit') || 'Edit',
+          onPress: handleEdit,
+          icon: 'create-outline'
+        });
+      }
+
+      // Allow reporting for everyone (including owner for testing purposes, or standard app policy allows self-reporting issues)
+      options.push({
+        label: t('common.report') || 'Report',
+        onPress: handleReport,
+        isDestructive: true,
+        icon: 'flag-outline'
+      });
+
+      setModalOptions(options);
+      setModalPosition(measurements);
+      setOptionsModalVisible(true);
+    }
+  }, [selectedUser, canDelete, deletePost, refresh, t]);
+
   const handleSliderChange = useCallback((value: number) => {
     // Round to nearest integer standardizing step behavior
     const step = Math.round(value);
     setSliderValue(step);
 
     // Map slider value (0-2) to columns (1-3)
-    // 0 -> 1 column (List)
-    // 1 -> 2 columns (Grid)
-    // 2 -> 3 columns (Dense Grid)
     setNumColumns(step + 1);
   }, []);
 
   const renderItem = useCallback(({ item }: { item: FeedItem }) => {
-    // Calculate width based on columns
-    // Screen width - 32 (padding) / numColumns
     const itemWidth = (width - 32) / numColumns;
 
     return (
@@ -108,9 +271,10 @@ const PostsReelsScreen: React.FC<PostsReelsScreenProps> = ({
         numColumns={numColumns}
         onPress={handlePostPress}
         onCommentPress={handleCommentPress}
+        onMorePress={handleMorePress}
       />
     );
-  }, [handlePostPress, handleCommentPress, numColumns]);
+  }, [handlePostPress, handleCommentPress, handleMorePress, numColumns]);
 
   const renderEmptyComponent = () => (
     <View style={styles.emptyContainer}>
@@ -174,10 +338,24 @@ const PostsReelsScreen: React.FC<PostsReelsScreenProps> = ({
           initialNumToRender={5}
           maxToRenderPerBatch={5}
           windowSize={10}
-          removeClippedSubviews={true}
+          removeClippedSubviews={false}
+          showsVerticalScrollIndicator={false}
         />
 
         {/* Modals */}
+        <OptionsModal
+          visible={optionsModalVisible}
+          onClose={() => setOptionsModalVisible(false)}
+          options={modalOptions}
+          title={t('common.options') || 'Options'}
+          anchorPosition={modalPosition}
+        />
+        <ReportPostModal
+          visible={reportModalVisible}
+          onClose={() => setReportModalVisible(false)}
+          onSubmit={handleReportSubmit}
+          isLoading={isSubmittingReport}
+        />
         <CommentsModal
           visible={commentsModalVisible}
           onClose={() => setCommentsModalVisible(false)}
