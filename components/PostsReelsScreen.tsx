@@ -1215,12 +1215,23 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
       // Add NEW posts first (high priority) - including task posts
       newPostsList.forEach((p) => {
         // Skip posts without author data (safety check)
+        // Note: This should not happen as the server returns author even if user doesn't exist
         if (!p.author || !p.author.id) {
-          console.warn(`⚠️ Skipping post ${p.id?.substring(0, 8)} - missing author data:`, p);
+          console.warn(`⚠️ Skipping post ${p.id?.substring(0, 8)} - missing author data:`, {
+            postId: p.id,
+            postTitle: p.title,
+            postType: p.post_type,
+            hasAuthor: !!p.author,
+            authorId: p.author?.id
+          });
           return;
         }
         
+        // Log task posts specifically
         const isTaskPost = p.post_type === 'task_assignment' || p.post_type === 'task_completion';
+        if (isTaskPost) {
+          console.log(`✅ Adding task post to feed: ${p.title?.substring(0, 40)} (type: ${p.post_type})`);
+        }
         
         console.log(`📝 Processing post: ${p.title?.substring(0, 30)} - isTaskPost: ${isTaskPost}, type: ${p.post_type}`);
         
