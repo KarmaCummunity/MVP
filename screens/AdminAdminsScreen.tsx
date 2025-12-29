@@ -210,7 +210,8 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
     const handleToggleAdmin = async (user: any) => {
         const currentRoles = Array.isArray(user.roles) ? user.roles : [];
         const isAdmin = currentRoles.includes('admin') || currentRoles.includes('super_admin');
-        const isSuperAdmin = user.email === 'navesarussi@gmail.com';
+        const superAdminEmails = ['navesarussi@gmail.com', 'karmacommunity2.0@gmail.com'];
+        const isSuperAdmin = superAdminEmails.includes(user.email?.toLowerCase() || '');
 
         if (isSuperAdmin) {
             Alert.alert('שגיאה', 'לא ניתן לשנות הרשאות למנהל הראשי');

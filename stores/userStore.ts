@@ -80,9 +80,10 @@ const enrichUserWithOrgRoles = async (user: User): Promise<User> => {
       return user;
     }
 
-    // Super admin email - hardcoded ONLY for the main system admin
-    // DO NOT add other emails here - use database roles instead
-    const SUPER_ADMINS = ['navesarussi@gmail.com'];
+    // Super admin emails - hardcoded for main system admins
+    // navesarussi@gmail.com is the top-level super admin
+    // karmacommunity2.0@gmail.com is the organization super admin (under navesarussi@gmail.com)
+    const SUPER_ADMINS = ['navesarussi@gmail.com', 'karmacommunity2.0@gmail.com'];
     const isSuperAdmin = SUPER_ADMINS.includes(emailKey);
 
     // Fetch fresh user data from database to get current roles
