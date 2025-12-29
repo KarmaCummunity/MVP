@@ -849,6 +849,9 @@
       "knownUser": "Known email. Enter password",
       "unknownEmail": "Unknown email, please sign up",
       "invalidPassword": "Incorrect password",
+      "wrongPassword": "Incorrect password. Please try again.",
+      "emailAlreadyRegistered": "Email already registered. Please check your password.",
+      "unifiedAction": "Continue",
       "resetPassword": "Reset password",
       "resetSent": "Password reset link sent",
       "resetError": "Password reset failed",
@@ -856,6 +859,7 @@
       "passwordTooShort": "Password must be at least 6 characters",
       "verifyTitle": "Email verification",
       "verifySent": "We've sent you a verification link. After confirming, return and sign in to complete registration.",
+      "verificationRequired": "We sent a verification link to your email. Please verify your email to complete registration.",
       "signupFailed": "Sign up failed. Please try again."
     },
     "googleCta": "Sign in / Sign up with Google",

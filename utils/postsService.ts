@@ -108,16 +108,25 @@ class PostsService {
         ...options,
       };
 
-      console.log(`🌐 PostsService Request: ${config.method || 'GET'} ${url}`);
+      console.log(`🌐 PostsService Request: ${config.method || 'GET'} ${url}`, {
+        hasAuth: !!authToken,
+        authTokenLength: authToken?.length || 0
+      });
 
       const response = await fetch(url, config);
       const data = await response.json();
 
       if (!response.ok) {
-        console.error(`❌ PostsService Error: ${response.status}`, data);
+        console.error(`❌ PostsService Error: ${response.status}`, {
+          status: response.status,
+          statusText: response.statusText,
+          data,
+          endpoint,
+          hasAuth: !!authToken
+        });
         return {
           success: false,
-          error: data.message || data.error || 'Network error',
+          error: data.message || data.error || `HTTP ${response.status}: ${response.statusText}`,
         };
       }
 

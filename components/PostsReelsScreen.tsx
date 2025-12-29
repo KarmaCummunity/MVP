@@ -1214,9 +1214,15 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
 
       // Add NEW posts first (high priority) - including task posts
       newPostsList.forEach((p) => {
+        // Skip posts without author data (safety check)
+        if (!p.author || !p.author.id) {
+          console.warn(`⚠️ Skipping post ${p.id?.substring(0, 8)} - missing author data:`, p);
+          return;
+        }
+        
         const isTaskPost = p.post_type === 'task_assignment' || p.post_type === 'task_completion';
         
-        console.log(`📝 Processing post: ${p.title.substring(0, 30)} - isTaskPost: ${isTaskPost}, type: ${p.post_type}`);
+        console.log(`📝 Processing post: ${p.title?.substring(0, 30)} - isTaskPost: ${isTaskPost}, type: ${p.post_type}`);
         
         merged.push({
           id: p.id,
@@ -1227,7 +1233,7 @@ export default function PostsReelsScreen({ onScroll, hideTopBar = false, showTop
           thumbnail: (p.images && p.images.length > 0) ? p.images[0] : '',
           user: {
             id: p.author.id,
-            name: p.author.name,
+            name: p.author.name || 'משתמש לא ידוע',
             avatar: p.author.avatar_url || `https://i.pravatar.cc/150?u=${p.author.id}`,
             karmaPoints: 0
           },
