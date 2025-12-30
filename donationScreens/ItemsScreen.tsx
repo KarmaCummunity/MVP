@@ -168,6 +168,7 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   const [recentPosts, setRecentPosts] = useState<FeedItem[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const titleInputRef = useRef<TextInput | null>(null);
+  const loadItemsRef = useRef<(() => Promise<void>) | undefined>(undefined);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState<string>('');
@@ -453,6 +454,11 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
     }
   };
 
+  // Store loadItems in ref so it can be used in callbacks without dependency issues
+  useEffect(() => {
+    loadItemsRef.current = loadItems;
+  });
+
   useEffect(() => {
     loadItems();
   }, [selectedUser, itemType, mode]);
@@ -585,7 +591,10 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   const COLUMN_GAP = isMobile ? 8 : 16;
   const screenPadding = HORIZONTAL_PADDING;
   const cardGap = COLUMN_GAP;
-  const cardWidth = (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
+  // Calculate card width: full width minus padding on both sides, minus gaps between columns
+  const cardWidth = numColumns === 1 
+    ? width - (screenPadding * 2) 
+    : (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
 
   const handleSearch = (query: string, filters: string[] = [], sorts: string[] = [], _results?: any[]) => {
     setSearchQuery(query);
@@ -823,6 +832,68 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
     setSelectedItem(null);
   };
 
+  // Handle post closed - immediately update UI for fast responsiveness
+  const handlePostClosed = useCallback((postId: string) => {
+    // Optimistic update: remove post from lists immediately for instant UI feedback
+    setAllPosts(prev => prev.filter(p => p.id !== postId));
+    setFilteredPosts(prev => prev.filter(p => p.id !== postId));
+    setRecentPosts(prev => prev.filter(p => p.id !== postId));
+    
+    // Background reload to ensure consistency (non-blocking)
+    // The UI is already updated, so this is just for data sync
+    setTimeout(() => {
+      if (loadItemsRef.current) {
+        loadItemsRef.current().catch(err => {
+          console.error('Error reloading items after close:', err);
+        });
+      }
+    }, 100);
+  }, []);
+
+  // Render item callback for FlatList (search mode)
+  const renderPostItem = useCallback(({ item }: { item: FeedItem }) => {
+    // Calculate available width: screen width minus horizontal padding on both sides
+    const availableWidth = width - (screenPadding * 2);
+    
+    // For grid view: with justifyContent: 'space-between', FlatList distributes items automatically
+    // So each item gets availableWidth / numColumns (no need to account for gaps)
+    const itemWidth = numColumns > 1 
+      ? availableWidth / numColumns
+      : availableWidth; // Full available width for list view
+
+    return (
+      <PostReelItem
+        item={item}
+        cardWidth={itemWidth}
+        numColumns={numColumns}
+        onPress={(item) => {
+          // Navigate to post details or open modal
+          console.log('Post pressed:', item.id);
+        }}
+        onCommentPress={(item) => {
+          // Handle comment press
+          console.log('Comment pressed:', item.id);
+        }}
+        onMorePress={handleMorePress}
+        onPostClosed={handlePostClosed}
+      />
+    );
+  }, [numColumns, screenPadding, width, handleMorePress, handlePostClosed]);
+
+  // Empty component for FlatList
+  const renderEmptyPosts = useCallback(() => (
+    <View style={localStyles.emptyState}>
+      <Icon name="search-outline" size={48} color={colors.textSecondary} />
+      <Text style={localStyles.emptyStateTitle}>לא נמצאו פוסטים</Text>
+      <Text style={localStyles.emptyStateText}>נסה לשנות את הפילטרים או החיפוש</Text>
+      {(searchQuery || selectedFilters.length > 0 || selectedSorts.length > 0) && (
+        <TouchableOpacity style={localStyles.emptyStateClearButton} onPress={handleClearAll}>
+          <Text style={localStyles.emptyStateClearButtonText}>נקה הכל</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  ), [searchQuery, selectedFilters, selectedSorts, handleClearAll]);
+
   const renderItemCard = ({ item }: { item: DonationItem }) => (
     <TouchableOpacity style={localStyles.itemCard} onPress={() => handleItemPress(item)}>
       {/* תמונה base64 */}
@@ -962,52 +1033,20 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
               )}
             </View>
 
-            {/* Posts List or Empty State (in search mode) */}
-            {filteredPosts.length === 0 ? (
-              <View style={localStyles.emptyState}>
-                <Icon name="search-outline" size={48} color={colors.textSecondary} />
-                <Text style={localStyles.emptyStateTitle}>לא נמצאו פוסטים</Text>
-                <Text style={localStyles.emptyStateText}>נסה לשנות את הפילטרים או החיפוש</Text>
-                {(searchQuery || selectedFilters.length > 0 || selectedSorts.length > 0) && (
-                  <TouchableOpacity style={localStyles.emptyStateClearButton} onPress={handleClearAll}>
-                    <Text style={localStyles.emptyStateClearButtonText}>נקה הכל</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            ) : (
-              <View style={[
-                localStyles.itemsGrid,
-                {
-                  paddingHorizontal: screenPadding,
-                }
-              ]}>
-                {filteredPosts.map((post, idx) => (
-                  <View
-                    key={post.id}
-                    style={{
-                      width: cardWidth,
-                      marginBottom: cardGap,
-                      marginLeft: idx % numColumns === 0 ? 0 : cardGap,
-                    }}
-                  >
-                    <PostReelItem
-                      item={post}
-                      cardWidth={cardWidth}
-                      numColumns={numColumns}
-                      onPress={(item) => {
-                        // Navigate to post details or open modal
-                        console.log('Post pressed:', item.id);
-                      }}
-                      onCommentPress={(item) => {
-                        // Handle comment press
-                        console.log('Comment pressed:', item.id);
-                      }}
-                      onMorePress={handleMorePress}
-                    />
-                  </View>
-                ))}
-              </View>
-            )}
+            {/* Posts List (in search mode) */}
+            <FlatList
+              data={filteredPosts}
+              renderItem={renderPostItem}
+              keyExtractor={(item) => item.id}
+              key={numColumns} // Force re-render on column change
+              numColumns={numColumns}
+              columnWrapperStyle={numColumns > 1 ? localStyles.columnWrapper : undefined}
+              contentContainerStyle={{ paddingHorizontal: screenPadding }}
+              scrollEnabled={false}
+              nestedScrollEnabled={true}
+              ListEmptyComponent={renderEmptyPosts}
+              showsVerticalScrollIndicator={false}
+            />
 
             {/* Footer Stats */}
             <View style={localStyles.section}>
@@ -1242,22 +1281,30 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
               <Text style={localStyles.emptyStateText}>אין פוסטים שפורסמו עדיין</Text>
             ) : (
               <View style={localStyles.recentContainer}>
-                {recentPosts.map((post) => (
-                  <View key={post.id} style={localStyles.recentItemWrapper}>
-                    <PostReelItem
-                      item={post}
-                      cardWidth={width - (HORIZONTAL_PADDING * 2)}
-                      numColumns={1}
-                      onPress={(item) => {
-                        console.log('Post pressed:', item.id);
-                      }}
-                      onCommentPress={(item) => {
-                        console.log('Comment pressed:', item.id);
-                      }}
-                      onMorePress={handleMorePress}
-                    />
-                  </View>
-                ))}
+                {recentPosts.map((post) => {
+                  // Container has paddingHorizontal: 16, scrollContent has paddingHorizontal: 16, 
+                  // and recentContainer has paddingHorizontal: 8
+                  // Total padding is 16 + 16 + 8 = 40 on each side
+                  const totalPadding = 16 + 16 + 8;
+                  const recentCardWidth = width - (totalPadding * 2);
+                  return (
+                    <View key={post.id} style={localStyles.recentItemWrapper}>
+                      <PostReelItem
+                        item={post}
+                        cardWidth={recentCardWidth}
+                        numColumns={1}
+                        onPress={(item) => {
+                          console.log('Post pressed:', item.id);
+                        }}
+                        onCommentPress={(item) => {
+                          console.log('Comment pressed:', item.id);
+                        }}
+                        onMorePress={handleMorePress}
+                        onPostClosed={handlePostClosed}
+                      />
+                    </View>
+                  );
+                })}
               </View>
             )}
           </View>
@@ -1334,10 +1381,8 @@ const localStyles = StyleSheet.create({
   sectionWithScroller: { flex: 1, backgroundColor: colors.pinkLight, borderRadius: 12, borderWidth: 1, borderColor: colors.secondary, paddingVertical: 8, paddingHorizontal: 8 },
   innerScroll: { flex: 1 },
   itemsGridContainer: {},
-  itemsGrid: {
-    flexDirection: 'row-reverse',
-    flexWrap: 'wrap',
-    paddingHorizontal: 0,
+  columnWrapper: {
+    justifyContent: 'space-between',
   },
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
   emptyStateTitle: { fontSize: FontSizes.body, fontWeight: 'bold', color: colors.textPrimary, marginTop: 16, marginBottom: 8 },

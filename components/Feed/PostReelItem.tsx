@@ -27,6 +27,7 @@ interface PostReelItemProps {
     onPress?: (item: FeedItem) => void;
     onCommentPress?: (item: FeedItem) => void;
     onMorePress?: (item: FeedItem, measurements?: { x: number, y: number }) => void; // Added prop
+    onPostClosed?: (postId: string) => void; // Callback when post is successfully closed
 }
 
 const PostReelItem: React.FC<PostReelItemProps> = ({
@@ -35,7 +36,8 @@ const PostReelItem: React.FC<PostReelItemProps> = ({
     numColumns = 1,
     onPress,
     onCommentPress,
-    onMorePress
+    onMorePress,
+    onPostClosed
 }) => {
     const {
         isLiked,
@@ -245,7 +247,10 @@ const PostReelItem: React.FC<PostReelItemProps> = ({
 
             if (updateResult?.success) {
                 toastService.showSuccess(t('post:closedSuccess', { defaultValue: 'הפוסט נסגר בהצלחה' }));
-                // Optionally refresh the feed - could trigger a refresh callback if provided
+                // Immediately notify parent to update UI
+                if (onPostClosed) {
+                    onPostClosed(item.id);
+                }
             } else {
                 toastService.showError(updateResult?.error || t('post:closeError', { defaultValue: 'שגיאה בסגירת הפוסט' }));
             }
@@ -254,7 +259,7 @@ const PostReelItem: React.FC<PostReelItemProps> = ({
             const { toastService } = await import('../../utils/toastService');
             toastService.showError(t('post:closeError', { defaultValue: 'שגיאה בסגירת הפוסט' }));
         }
-    }, [selectedUser, isPostOwner, item, t]);
+    }, [selectedUser, isPostOwner, item, t, onPostClosed]);
 
 
     // Format timestamp logic (reused)

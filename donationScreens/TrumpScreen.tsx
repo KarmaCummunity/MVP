@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   Alert,
   ScrollView,
+  FlatList,
   Dimensions,
   Platform,
 } from 'react-native';
@@ -832,12 +833,52 @@ export default function TrumpScreen({
   const COLUMN_GAP = isMobile ? 8 : 16;
   const screenPadding = HORIZONTAL_PADDING;
   const cardGap = COLUMN_GAP;
-  const cardWidth = (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
+  // Calculate card width: full width minus padding on both sides, minus gaps between columns
+  const cardWidth = numColumns === 1 
+    ? width - (screenPadding * 2) 
+    : (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
 
   const handleCloseRideModal = () => {
     setShowRideModal(false);
     setSelectedRide(null);
   };
+
+  // Render item callback for FlatList (search mode)
+  const renderPostItem = useCallback(({ item }: { item: FeedItem }) => {
+    // Calculate available width: screen width minus horizontal padding on both sides
+    const availableWidth = width - (screenPadding * 2);
+    
+    // For grid view: with justifyContent: 'space-between', FlatList distributes items automatically
+    // So each item gets availableWidth / numColumns (no need to account for gaps)
+    const itemWidth = numColumns > 1 
+      ? availableWidth / numColumns
+      : availableWidth; // Full available width for list view
+
+    return (
+      <PostReelItem
+        item={item}
+        cardWidth={itemWidth}
+        numColumns={numColumns}
+        onPress={(item) => {
+          // Navigate to post details or open modal
+          console.log('Post pressed:', item.id);
+        }}
+        onCommentPress={(item) => {
+          // Handle comment press
+          console.log('Comment pressed:', item.id);
+        }}
+        onMorePress={handleMorePress}
+      />
+    );
+  }, [numColumns, screenPadding, width, handleMorePress]);
+
+  // Empty component for FlatList
+  const renderEmptyPosts = useCallback(() => (
+    <View style={localStyles.emptyState}>
+      <Text style={localStyles.emptyStateTitle}>{t('trump:ui.noRidesFoundTitle')}</Text>
+      <Text style={localStyles.emptyStateText}>{t('trump:ui.noRidesFoundBody')}</Text>
+    </View>
+  ), [t]);
 
   const handleSelectRideOld = (ride: any) => {
     // In Search Mode: Show join details/contact
@@ -932,22 +973,27 @@ export default function TrumpScreen({
             {recentPosts.length === 0 ? (
               <Text style={localStyles.emptyStateText}>{t('trump:ui.noRecentRides')}</Text>
             ) : (
-              recentPosts.map((post) => (
-                <View key={post.id} style={{ marginBottom: 16 }}>
-                  <PostReelItem
-                    item={post}
-                    cardWidth={width - (HORIZONTAL_PADDING * 2)}
-                    numColumns={1}
-                    onPress={(item) => {
-                      console.log('Post pressed:', item.id);
-                    }}
-                    onCommentPress={(item) => {
-                      console.log('Comment pressed:', item.id);
-                    }}
-                    onMorePress={handleMorePress}
-                  />
-                </View>
-              ))
+              recentPosts.map((post) => {
+                // Container has paddingHorizontal: 16, so card width should account for that
+                const containerPadding = 16;
+                const historyCardWidth = width - (containerPadding * 2);
+                return (
+                  <View key={post.id} style={{ marginBottom: 16, width: '100%' }}>
+                    <PostReelItem
+                      item={post}
+                      cardWidth={historyCardWidth}
+                      numColumns={1}
+                      onPress={(item) => {
+                        console.log('Post pressed:', item.id);
+                      }}
+                      onCommentPress={(item) => {
+                        console.log('Comment pressed:', item.id);
+                      }}
+                      onMorePress={handleMorePress}
+                    />
+                  </View>
+                );
+              })
             )}
           </View>
 
@@ -981,45 +1027,19 @@ export default function TrumpScreen({
             contentStyle={localStyles.resultsList}
             showsVerticalScrollIndicator={false}
           >
-            {filteredPosts.length === 0 ? (
-              <View style={localStyles.emptyState}>
-                <Text style={localStyles.emptyStateTitle}>{t('trump:ui.noRidesFoundTitle')}</Text>
-                <Text style={localStyles.emptyStateText}>{t('trump:ui.noRidesFoundBody')}</Text>
-              </View>
-            ) : (
-              <View style={[
-                localStyles.ridesGrid,
-                {
-                  paddingHorizontal: screenPadding,
-                }
-              ]}>
-                {filteredPosts.map((post, idx) => (
-                  <View
-                    key={post.id || idx}
-                    style={{
-                      width: cardWidth,
-                      marginBottom: cardGap,
-                      marginLeft: idx % numColumns === 0 ? 0 : cardGap,
-                    }}
-                  >
-                    <PostReelItem
-                      item={post}
-                      cardWidth={cardWidth}
-                      numColumns={numColumns}
-                      onPress={(item) => {
-                        // Navigate to post details or open modal
-                        console.log('Post pressed:', item.id);
-                      }}
-                      onCommentPress={(item) => {
-                        // Handle comment press
-                        console.log('Comment pressed:', item.id);
-                      }}
-                      onMorePress={handleMorePress}
-                    />
-                  </View>
-                ))}
-              </View>
-            )}
+            <FlatList
+              data={filteredPosts}
+              renderItem={renderPostItem}
+              keyExtractor={(item) => item.id || String(Math.random())}
+              key={numColumns} // Force re-render on column change
+              numColumns={numColumns}
+              columnWrapperStyle={numColumns > 1 ? localStyles.columnWrapper : undefined}
+              contentContainerStyle={{ paddingHorizontal: screenPadding }}
+              scrollEnabled={false}
+              nestedScrollEnabled={true}
+              ListEmptyComponent={renderEmptyPosts}
+              showsVerticalScrollIndicator={false}
+            />
 
             {/* Groups Section (Restored) */}
             <View style={[localStyles.section, { marginTop: 30, paddingBottom: 40 }]}>
@@ -1134,9 +1154,7 @@ const localStyles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: 8,
   },
-  ridesGrid: {
-    flexDirection: 'row-reverse',
-    flexWrap: 'wrap',
-    paddingHorizontal: 0,
+  columnWrapper: {
+    justifyContent: 'space-between',
   },
 });

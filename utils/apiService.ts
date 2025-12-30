@@ -381,13 +381,14 @@ class ApiService {
   }
 
   /**
-   * Demote an admin to regular user (remove admin role)
+   * Demote an admin to regular user or volunteer (remove admin role)
    * Can only demote admins that are your subordinates
+   * @param convertToVolunteer - if true, user becomes volunteer under requesting admin
    */
-  async demoteAdmin(targetUserId: string, requestingAdminId: string): Promise<ApiResponse> {
+  async demoteAdmin(targetUserId: string, requestingAdminId: string, convertToVolunteer: boolean = false): Promise<ApiResponse> {
     return this.request(`/api/users/${targetUserId}/demote-admin`, {
       method: 'POST',
-      body: JSON.stringify({ requestingAdminId }),
+      body: JSON.stringify({ requestingAdminId, convertToVolunteer }),
     });
   }
 

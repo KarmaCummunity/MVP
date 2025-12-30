@@ -208,17 +208,34 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
     };
 
     const handleToggleAdmin = async (user: any) => {
+        console.log('[AdminAdminsScreen] 🎯 handleToggleAdmin called with:', {
+            userId: user?.id,
+            userName: user?.name,
+            userEmail: user?.email,
+            userRoles: user?.roles,
+            selectedUserId: selectedUser?.id,
+            selectedUserEmail: selectedUser?.email
+        });
+
         const currentRoles = Array.isArray(user.roles) ? user.roles : [];
         const isAdmin = currentRoles.includes('admin') || currentRoles.includes('super_admin');
         const superAdminEmails = ['navesarussi@gmail.com', 'karmacommunity2.0@gmail.com'];
         const isSuperAdmin = superAdminEmails.includes(user.email?.toLowerCase() || '');
 
+        console.log('[AdminAdminsScreen] 🔍 User check:', {
+            isAdmin,
+            isSuperAdmin,
+            currentRoles
+        });
+
         if (isSuperAdmin) {
+            console.log('[AdminAdminsScreen] ❌ Blocked: Super admin');
             Alert.alert('שגיאה', 'לא ניתן לשנות הרשאות למנהל הראשי');
             return;
         }
 
         if (!selectedUser?.id) {
+            console.log('[AdminAdminsScreen] ❌ No selectedUser.id');
             Alert.alert('שגיאה', 'לא ניתן לזהות את המשתמש הנוכחי');
             return;
         }
@@ -228,12 +245,21 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
             ? `האם אתה בטוח שברצונך להסיר הרשאות מנהל מ-${user.name || user.email}?`
             : `האם אתה בטוח שברצונך להפוך את ${user.name || user.email} למנהל תחתיך?`;
 
+        console.log('[AdminAdminsScreen] 📢 Showing Alert.alert:', { title, message });
+
         Alert.alert(title, message, [
-            { text: 'ביטול', style: 'cancel' },
+            { 
+                text: 'ביטול', 
+                style: 'cancel',
+                onPress: () => {
+                    console.log('[AdminAdminsScreen] ❌ User cancelled');
+                }
+            },
             {
                 text: 'אישור',
                 style: isAdmin ? 'destructive' : 'default',
                 onPress: async () => {
+                    console.log('[AdminAdminsScreen] ✅ User confirmed');
                     console.log(`[AdminAdminsScreen] ${isAdmin ? 'Demoting' : 'Promoting'} user:`, {
                         userId: user.id,
                         userName: user.name,
@@ -244,9 +270,11 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                     let res;
                     if (isAdmin) {
                         // Demote admin
+                        console.log('[AdminAdminsScreen] 📡 Calling demoteAdmin');
                         res = await apiService.demoteAdmin(user.id, selectedUser.id);
                     } else {
                         // Promote to admin (will also set as subordinate)
+                        console.log('[AdminAdminsScreen] 📡 Calling promoteToAdmin');
                         res = await apiService.promoteToAdmin(user.id, selectedUser.id);
                     }
 
@@ -376,6 +404,169 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
         }
     };
 
+    const handlePromoteToVolunteer = async (targetUser: any) => {
+        logger.info(LOG_SOURCE, 'handlePromoteToVolunteer called', {
+            targetUserId: targetUser.id,
+            targetUserName: targetUser.name,
+            targetUserEmail: targetUser.email,
+            requestingAdminId: selectedUser?.id
+        });
+
+        if (!selectedUser?.id) {
+            logger.warn(LOG_SOURCE, 'handlePromoteToVolunteer: No selectedUser.id', {});
+            Alert.alert('שגיאה', 'לא ניתן לזהות את המשתמש הנוכחי');
+            return;
+        }
+        
+        Alert.alert(
+            'הפוך למתנדב',
+            `האם אתה בטוח שברצונך להפוך את ${targetUser.name || targetUser.email} למתנדב?`,
+            [
+                { text: 'ביטול', style: 'cancel' },
+                {
+                    text: 'אישור',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            logger.info(LOG_SOURCE, 'Promoting user to volunteer - API call started', {
+                                targetUserId: targetUser.id,
+                                requestingAdminId: selectedUser.id
+                            });
+
+                            const res = await apiService.promoteToVolunteer(targetUser.id, selectedUser.id);
+                            
+                            logger.info(LOG_SOURCE, 'Promote to volunteer API response', {
+                                success: res.success,
+                                message: res.message,
+                                error: res.error,
+                                targetUserId: targetUser.id
+                            });
+
+                            if (res.success) {
+                                logger.info(LOG_SOURCE, 'User promoted to volunteer successfully', {
+                                    targetUserId: targetUser.id,
+                                    targetUserName: targetUser.name
+                                });
+                                Alert.alert('הצלחה', res.message || 'המשתמש הפך למתנדב');
+                                await loadUsers(true);
+                            } else {
+                                logger.error(LOG_SOURCE, 'Failed to promote user to volunteer', {
+                                    targetUserId: targetUser.id,
+                                    error: res.error
+                                });
+                                Alert.alert('שגיאה', res.error || 'נכשל בהפיכה למתנדב');
+                            }
+                        } catch (e: any) {
+                            logger.error(LOG_SOURCE, 'Error promoting to volunteer', {
+                                targetUserId: targetUser.id,
+                                error: e?.message || String(e),
+                                stack: e?.stack
+                            });
+                            console.error('[AdminAdminsScreen] Error promoting to volunteer:', e);
+                            Alert.alert('שגיאה', 'נכשל בהפיכה למתנדב');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleDemoteToVolunteer = async (targetUser: any) => {
+        console.log('[AdminAdminsScreen] 🎯 handleDemoteToVolunteer called with:', {
+            targetUserId: targetUser?.id,
+            targetUserName: targetUser?.name,
+            targetUserEmail: targetUser?.email,
+            targetUserRoles: targetUser?.roles,
+            requestingAdminId: selectedUser?.id,
+            selectedUserEmail: selectedUser?.email
+        });
+
+        logger.info(LOG_SOURCE, 'handleDemoteToVolunteer called', {
+            targetUserId: targetUser.id,
+            targetUserName: targetUser.name,
+            targetUserEmail: targetUser.email,
+            targetUserRoles: targetUser.roles,
+            requestingAdminId: selectedUser?.id
+        });
+
+        if (!selectedUser?.id) {
+            logger.warn(LOG_SOURCE, 'handleDemoteToVolunteer: No selectedUser.id', {});
+            console.error('[AdminAdminsScreen] ❌ No selectedUser.id');
+            Alert.alert('שגיאה', 'לא ניתן לזהות את המשתמש הנוכחי');
+            return;
+        }
+
+        console.log('[AdminAdminsScreen] 📢 Showing Alert.alert for demote to volunteer');
+        
+        Alert.alert(
+            'הפוך למתנדב',
+            `האם אתה בטוח שברצונך להסיר הרשאות מנהל מ-${targetUser.name || targetUser.email} ולהפוך אותו למתנדב?`,
+            [
+                { 
+                    text: 'ביטול', 
+                    style: 'cancel',
+                    onPress: () => {
+                        console.log('[AdminAdminsScreen] ❌ User cancelled demote to volunteer');
+                    }
+                },
+                {
+                    text: 'אישור',
+                    style: 'destructive',
+                    onPress: async () => {
+                        console.log('[AdminAdminsScreen] ✅ User confirmed demote to volunteer');
+                        try {
+                            logger.info(LOG_SOURCE, 'Demoting admin to volunteer - Starting process', {
+                                targetUserId: targetUser.id,
+                                requestingAdminId: selectedUser.id
+                            });
+
+                            console.log('[AdminAdminsScreen] 📡 Calling apiService.demoteAdmin with convertToVolunteer=true');
+                            // Demote admin and convert to volunteer in one step
+                            logger.info(LOG_SOURCE, 'Demoting admin to volunteer', {
+                                targetUserId: targetUser.id,
+                                convertToVolunteer: true
+                            });
+                            const demoteRes = await apiService.demoteAdmin(targetUser.id, selectedUser.id, true);
+                            
+                            console.log('[AdminAdminsScreen] 📡 API Response:', demoteRes);
+                            logger.info(LOG_SOURCE, 'Demote admin to volunteer API response', {
+                                success: demoteRes.success,
+                                message: demoteRes.message,
+                                error: demoteRes.error,
+                                targetUserId: targetUser.id
+                            });
+
+                            if (demoteRes.success) {
+                                logger.info(LOG_SOURCE, 'Admin demoted to volunteer successfully', {
+                                    targetUserId: targetUser.id,
+                                    targetUserName: targetUser.name
+                                });
+                                console.log('[AdminAdminsScreen] ✅ Success! Reloading users...');
+                                Alert.alert('הצלחה', demoteRes.message || 'המשתמש הוסר ממנהלים והפך למתנדב');
+                                await loadUsers(true);
+                            } else {
+                                logger.error(LOG_SOURCE, 'Failed to demote admin to volunteer', {
+                                    targetUserId: targetUser.id,
+                                    error: demoteRes.error
+                                });
+                                console.error('[AdminAdminsScreen] ❌ Failed:', demoteRes.error);
+                                Alert.alert('שגיאה', demoteRes.error || 'נכשל בהסרת הרשאות מנהל והפיכה למתנדב');
+                            }
+                        } catch (e: any) {
+                            logger.error(LOG_SOURCE, 'Error demoting admin to volunteer', {
+                                targetUserId: targetUser.id,
+                                error: e?.message || String(e),
+                                stack: e?.stack
+                            });
+                            console.error('[AdminAdminsScreen] ❌ Exception:', e);
+                            Alert.alert('שגיאה', 'נכשל בהסרת הרשאות מנהל');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     // Get managers that can be assigned (exclude the user themselves and create cycle prevention)
     const getEligibleManagersForUser = (user: any) => {
         if (!user) return allManagers;
@@ -470,36 +661,6 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                         levelText = `דרגה ${hierarchyLevel}`;
                     }
 
-                    const handlePromoteToVolunteer = async () => {
-                        if (!selectedUser?.id) return;
-                        
-                        Alert.alert(
-                            'הפוך למתנדב',
-                            `האם אתה בטוח שברצונך להפוך את ${user.name || user.email} למתנדב?`,
-                            [
-                                { text: 'ביטול', style: 'cancel' },
-                                {
-                                    text: 'אישור',
-                                    style: 'destructive',
-                                    onPress: async () => {
-                                        try {
-                                            const res = await apiService.promoteToVolunteer(user.id, selectedUser.id);
-                                            if (res.success) {
-                                                Alert.alert('הצלחה', res.message || 'המשתמש הפך למתנדב');
-                                                await loadUsers(true);
-                                            } else {
-                                                Alert.alert('שגיאה', res.error || 'נכשל בהפיכה למתנדב');
-                                            }
-                                        } catch (e) {
-                                            console.error('[AdminAdminsScreen] Error promoting to volunteer:', e);
-                                            Alert.alert('שגיאה', 'נכשל בהפיכה למתנדב');
-                                        }
-                                    }
-                                }
-                            ]
-                        );
-                    };
-
                     return (
                         <View style={styles.userCard}>
                             <View style={styles.userInfo}>
@@ -544,11 +705,46 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                                         <Text style={styles.actionBtnText}>שיוך מנהל</Text>
                                     </TouchableOpacity>
                                     
-                                    {/* Show "Promote to Volunteer" button for non-volunteers in volunteers tab or admins tab */}
-                                    {!isVolunteer && activeTab !== 'users' && (
+                                    {/* In volunteers tab: Show "הפוך למנהל" button for volunteers who can be promoted */}
+                                    {(() => {
+                                        const shouldShow = activeTab === 'volunteers' && isVolunteer && !isAdmin && userCanBePromoted;
+                                        console.log('[AdminAdminsScreen] 🔍 Button visibility check:', {
+                                            userId: user.id,
+                                            userName: user.name,
+                                            activeTab,
+                                            isVolunteer,
+                                            isAdmin,
+                                            userCanBePromoted,
+                                            shouldShow
+                                        });
+                                        return shouldShow;
+                                    })() && (
+                                        <TouchableOpacity
+                                            style={[styles.actionButton, { backgroundColor: colors.primary, marginTop: 8 }]}
+                                            onPress={() => {
+                                                console.log('[AdminAdminsScreen] 🎯 "הפוך למנהל" button pressed for user:', user.id, user.name);
+                                                handleToggleAdmin(user);
+                                            }}
+                                        >
+                                            <Text style={[styles.actionBtnText, { color: 'white' }]}>הפוך למנהל</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    
+                                    {/* In admins tab: Show "הפוך למתנדב" button for admins who can be demoted */}
+                                    {activeTab === 'admins' && isAdmin && userCanBeDemoted && (
                                         <TouchableOpacity
                                             style={[styles.actionButton, { backgroundColor: colors.warning, marginTop: 8 }]}
-                                            onPress={handlePromoteToVolunteer}
+                                            onPress={() => handleDemoteToVolunteer(user)}
+                                        >
+                                            <Text style={[styles.actionBtnText, { color: 'white' }]}>הפוך למתנדב</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    
+                                    {/* Show "Promote to Volunteer" button for non-volunteers in volunteers tab */}
+                                    {activeTab === 'volunteers' && !isVolunteer && (
+                                        <TouchableOpacity
+                                            style={[styles.actionButton, { backgroundColor: colors.warning, marginTop: 8 }]}
+                                            onPress={() => handlePromoteToVolunteer(user)}
                                         >
                                             <Text style={[styles.actionBtnText, { color: 'white' }]}>הפוך למתנדב</Text>
                                         </TouchableOpacity>

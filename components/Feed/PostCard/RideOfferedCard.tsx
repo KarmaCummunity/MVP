@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
         }),
     },
     gridContainer: {
-        marginHorizontal: isMobile ? 4 : 8, // Small gap between columns in grid view
+        // marginHorizontal removed - FlatList with justifyContent: 'space-between' handles spacing
         minHeight: isMobile ? 180 : 250,
     },
     header: {

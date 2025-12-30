@@ -32,6 +32,7 @@ export interface ManagerNode {
   level: number;
   isSuperAdmin: boolean;
   isAdmin?: boolean;
+  isVolunteer?: boolean;
   salary?: number;
   seniority_start_date?: string;
   children?: ManagerNode[];
@@ -69,12 +70,16 @@ const ManagerNodeComponent: React.FC<ManagerNodeProps> = ({ node, isLast = false
     if (node.isAdmin) {
       return { backgroundColor: colors.primary, color: colors.white };
     }
+    if (node.isVolunteer) {
+      return { backgroundColor: colors.warning, color: colors.white };
+    }
     return { backgroundColor: colors.backgroundSecondary, color: colors.textSecondary };
   };
 
   const getRoleLabel = () => {
     if (node.isSuperAdmin) return 'מנהל ראשי';
     if (node.isAdmin) return 'מנהל';
+    if (node.isVolunteer) return 'מתנדב';
     return 'משתמש';
   };
 
