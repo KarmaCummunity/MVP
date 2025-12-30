@@ -36,6 +36,8 @@
     "back": "Back",
     "web": "Web page",
     "report": "Report",
+    "options": "Options",
+    "reopen": "Reopen",
     "cannotOpenLink": "Cannot open the link",
     "welcomeShort": "Welcome!",
     "appName": "Karma Community",

@@ -45,6 +45,9 @@ import { UserPreview as CharacterType } from '../globals/types';
 import { useToast, toastService } from '../utils/toastService';
 import PostReelItem from '../components/Feed/PostReelItem';
 import { FeedItem, FeedUser } from '../types/feed';
+import { usePostMenu } from '../hooks/usePostMenu';
+import OptionsModal from '../components/Feed/OptionsModal';
+import ReportPostModal from '../components/Feed/ReportPostModal';
 
 // --- Type Definitions ---
 type TabRoute = {
@@ -126,6 +129,27 @@ const OpenRoute = ({ userId, user, onHeightChange }: { userId?: string, user?: a
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { db } = require('../utils/databaseService');
+
+  // Post menu hook
+  const {
+    handleMorePress,
+    optionsModalVisible,
+    setOptionsModalVisible,
+    modalOptions,
+    modalPosition,
+    reportModalVisible,
+    setReportModalVisible,
+    selectedPostForReport,
+    setSelectedPostForReport
+  } = usePostMenu();
+
+  // Report submit handler
+  const handleReportSubmit = async (reason: string) => {
+    if (!selectedPostForReport) return;
+    // Report functionality can be implemented here if needed
+    setReportModalVisible(false);
+    setSelectedPostForReport(null);
+  };
 
   // Use provided userId or fallback to selectedUser.id
   const targetUserId = userId || selectedUser?.id;
@@ -232,7 +256,11 @@ const OpenRoute = ({ userId, user, onHeightChange }: { userId?: string, user?: a
                   price,
                   time,
                   date,
-                  rawData: p
+                  rawData: p,
+                  // Add IDs for updating posts (critical for delete/close functionality)
+                  rideId: p.ride_id || p.ride_data?.id,
+                  itemId: p.item_data?.id || (p.item_id && !/^\d{10,13}$/.test(p.item_id) ? p.item_id : undefined),
+                  taskId: p.task_id || p.task?.id
                 });
               }
             });
@@ -374,7 +402,9 @@ const OpenRoute = ({ userId, user, onHeightChange }: { userId?: string, user?: a
                 karmaPoints: user.karmaPoints
               } : { id: 'unknown' },
               rideData: ride,
-              rawData: ride
+              rawData: ride,
+              // Add rideId for updating posts (critical for delete/close functionality)
+              rideId: ride.id
             });
           });
         } catch (error) {
@@ -514,6 +544,7 @@ const OpenRoute = ({ userId, user, onHeightChange }: { userId?: string, user?: a
             numColumns={3}
             cardWidth={cardWidth}
             onPress={() => { }}
+            onMorePress={handleMorePress}
           />
         )}
         onContentSizeChange={(w, h) => {
@@ -521,6 +552,20 @@ const OpenRoute = ({ userId, user, onHeightChange }: { userId?: string, user?: a
         }}
         contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
+      />
+      {/* Modals */}
+      <OptionsModal
+        visible={optionsModalVisible}
+        onClose={() => setOptionsModalVisible(false)}
+        options={modalOptions}
+        title={t('common.options') || 'Options'}
+        anchorPosition={modalPosition}
+      />
+      <ReportPostModal
+        visible={reportModalVisible}
+        onClose={() => setReportModalVisible(false)}
+        onSubmit={handleReportSubmit}
+        isLoading={false}
       />
     </View>
   );
@@ -532,6 +577,27 @@ const ClosedRoute = ({ userId, user, onHeightChange }: { userId?: string, user?:
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { db } = require('../utils/databaseService');
+
+  // Post menu hook
+  const {
+    handleMorePress,
+    optionsModalVisible,
+    setOptionsModalVisible,
+    modalOptions,
+    modalPosition,
+    reportModalVisible,
+    setReportModalVisible,
+    selectedPostForReport,
+    setSelectedPostForReport
+  } = usePostMenu();
+
+  // Report submit handler
+  const handleReportSubmit = async (reason: string) => {
+    if (!selectedPostForReport) return;
+    // Report functionality can be implemented here if needed
+    setReportModalVisible(false);
+    setSelectedPostForReport(null);
+  };
 
   // Use provided userId or fallback to selectedUser.id
   const targetUserId = userId || selectedUser?.id;
@@ -638,7 +704,11 @@ const ClosedRoute = ({ userId, user, onHeightChange }: { userId?: string, user?:
                   price,
                   time,
                   date,
-                  rawData: p
+                  rawData: p,
+                  // Add IDs for updating posts (critical for delete/close functionality)
+                  rideId: p.ride_id || p.ride_data?.id,
+                  itemId: p.item_data?.id || (p.item_id && !/^\d{10,13}$/.test(p.item_id) ? p.item_id : undefined),
+                  taskId: p.task_id || p.task?.id
                 });
               }
             });
@@ -769,7 +839,9 @@ const ClosedRoute = ({ userId, user, onHeightChange }: { userId?: string, user?:
                 karmaPoints: user.karmaPoints
               } : { id: 'unknown' },
               rideData: ride,
-              rawData: ride
+              rawData: ride,
+              // Add rideId for updating posts (critical for delete/close functionality)
+              rideId: ride.id
             });
           });
         } catch (error) {
@@ -909,6 +981,7 @@ const ClosedRoute = ({ userId, user, onHeightChange }: { userId?: string, user?:
             numColumns={3}
             cardWidth={cardWidth}
             onPress={() => { }}
+            onMorePress={handleMorePress}
           />
         )}
         onContentSizeChange={(w, h) => {
@@ -916,6 +989,20 @@ const ClosedRoute = ({ userId, user, onHeightChange }: { userId?: string, user?:
         }}
         contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
+      />
+      {/* Modals */}
+      <OptionsModal
+        visible={optionsModalVisible}
+        onClose={() => setOptionsModalVisible(false)}
+        options={modalOptions}
+        title={t('common.options') || 'Options'}
+        anchorPosition={modalPosition}
+      />
+      <ReportPostModal
+        visible={reportModalVisible}
+        onClose={() => setReportModalVisible(false)}
+        onSubmit={handleReportSubmit}
+        isLoading={false}
       />
     </View>
   );

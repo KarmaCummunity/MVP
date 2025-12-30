@@ -6,7 +6,7 @@ import colors from '../../../globals/colors';
 import { FontSizes } from '../../../globals/constants';
 import { BaseCardProps } from './types';
 
-const DonationItemCard: React.FC<BaseCardProps> = ({
+const ItemDeliveredCard: React.FC<BaseCardProps> = ({
     item,
     cardWidth,
     isGrid,
@@ -17,8 +17,6 @@ const DonationItemCard: React.FC<BaseCardProps> = ({
     onBookmark,
     onShare,
     onMorePress,
-    onQuickMessage,
-    onClosePost,
     isLiked,
     isBookmarked,
     likesCount,
@@ -50,7 +48,7 @@ const DonationItemCard: React.FC<BaseCardProps> = ({
             : isTranslationKey(item.title)
                 ? t(normalizeTranslationKey(item.title))
                 : item.title;
-
+    
     // Safe access to user.name with fallback
     const userName = item.user?.name || 'common.unknownUser';
     const displayName = userName === 'common.unknownUser' ? t('common.unknownUser') : userName;
@@ -61,7 +59,7 @@ const DonationItemCard: React.FC<BaseCardProps> = ({
             isGrid && styles.gridContainer,
             { width: cardWidth }
         ]}>
-            {/* Header with gradient background */}
+            {/* Header */}
             <View style={[styles.header, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <TouchableOpacity
                     style={[styles.userInfo, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -85,15 +83,13 @@ const DonationItemCard: React.FC<BaseCardProps> = ({
                 </TouchableOpacity>
 
                 <View style={[styles.headerRight, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    <View style={styles.donationBadge}>
-                        <Ionicons name="gift" size={16} color={colors.white} />
-                        <Text style={styles.donationBadgeText}>
-                            {item.status && ['delivered', 'completed', 'expired', 'cancelled'].includes(item.status)
-                                ? t('items.delivered')
-                                : t('items.available')}
-                        </Text>
+                    {/* Item Delivered Badge */}
+                    <View style={styles.deliveredBadge}>
+                        <Ionicons name="checkmark-done-circle" size={16} color={colors.white} />
+                        <Text style={styles.deliveredBadgeText}>{t('items.delivered')}</Text>
                     </View>
 
+                    {/* More Options Button */}
                     <TouchableOpacity
                         onPress={(e) => onMorePress && onMorePress({ x: e.nativeEvent.pageX, y: e.nativeEvent.pageY })}
                         style={styles.moreButton}
@@ -103,7 +99,7 @@ const DonationItemCard: React.FC<BaseCardProps> = ({
                 </View>
             </View>
 
-            {/* Image with overlay */}
+            {/* Image with overlay - Greyed out/Subtle for delivered items */}
             <TouchableOpacity onPress={onPress} activeOpacity={0.95} style={styles.cardContent}>
                 {item.thumbnail ? (
                     <View style={styles.imageContainer}>
@@ -122,32 +118,36 @@ const DonationItemCard: React.FC<BaseCardProps> = ({
                                         {item.description}
                                     </Text>
                                 )}
-                                {item.category && (
-                                    <View style={styles.categoryBadge}>
-                                        <Ionicons name="pricetag" size={14} color={colors.white} />
-                                        <Text style={styles.categoryText}>{item.category}</Text>
-                                    </View>
-                                )}
+                                <View style={[styles.detailsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                                    {item.category && (
+                                        <View style={styles.detailBadge}>
+                                            <Ionicons name="pricetag" size={14} color={colors.white} />
+                                            <Text style={styles.detailText}>{item.category}</Text>
+                                        </View>
+                                    )}
+                                </View>
                             </View>
                         </View>
                     </View>
                 ) : (
                     <View style={[styles.placeholderContainer, isGrid && styles.imageGrid]}>
-                        <Ionicons name="gift-outline" size={48} color={colors.primary} />
+                        <Ionicons name="cube-outline" size={48} color={colors.textTertiary} />
                         <Text style={styles.placeholderTitle}>{displayTitle}</Text>
                         {item.description && !isGrid && (
                             <Text style={styles.placeholderDescription} numberOfLines={3}>
                                 {item.description}
                             </Text>
                         )}
-                        {item.category && (
-                            <View style={[styles.categoryBadge, styles.categoryBadgeDark]}>
-                                <Ionicons name="pricetag" size={14} color={colors.primary} />
-                                <Text style={[styles.categoryText, styles.categoryTextDark]}>
-                                    {item.category}
-                                </Text>
-                            </View>
-                        )}
+                        <View style={[styles.detailsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                            {item.category && (
+                                <View style={[styles.detailBadge, styles.detailBadgeDark]}>
+                                    <Ionicons name="pricetag" size={14} color={colors.textTertiary} />
+                                    <Text style={[styles.detailText, styles.detailTextDark]}>
+                                        {item.category}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
                     </View>
                 )}
             </TouchableOpacity>
@@ -187,22 +187,6 @@ const DonationItemCard: React.FC<BaseCardProps> = ({
                 </View>
 
                 <View style={[styles.actionsRight, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    {onQuickMessage && (
-                        <TouchableOpacity
-                            style={[styles.actionButton, { marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0 }]}
-                            onPress={onQuickMessage}
-                        >
-                            <Ionicons name="chatbubble-ellipses" size={24} color={colors.primary} />
-                        </TouchableOpacity>
-                    )}
-                    {onClosePost && (
-                        <TouchableOpacity
-                            style={[styles.actionButton, { marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0 }]}
-                            onPress={onClosePost}
-                        >
-                            <Ionicons name="checkmark-circle-outline" size={24} color={colors.success} />
-                        </TouchableOpacity>
-                    )}
                     <TouchableOpacity style={styles.actionButton} onPress={onBookmark}>
                         <Ionicons
                             name={isBookmarked ? "bookmark" : "bookmark-outline"}
@@ -223,7 +207,9 @@ const styles = StyleSheet.create({
         marginVertical: 8,
         marginHorizontal: 0, // Padding is handled by parent listContent
         overflow: 'hidden',
-        minHeight: 380, // minHeight
+        minHeight: 380,
+        borderWidth: 1,
+        borderColor: colors.backgroundSecondary,
         ...Platform.select({
             ios: {
                 shadowColor: colors.black,
@@ -247,7 +233,7 @@ const styles = StyleSheet.create({
         padding: 16,
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: colors.backgroundSecondary,
+        backgroundColor: '#FAFAFA',
     },
     headerRight: {
         alignItems: 'center',
@@ -266,11 +252,12 @@ const styles = StyleSheet.create({
         height: 44,
         borderRadius: 22,
         backgroundColor: colors.backgroundTertiary,
+        opacity: 0.8,
     },
     avatarPlaceholder: {
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: colors.primary,
+        backgroundColor: colors.textTertiary,
     },
     userTextContainer: {
         gap: 2,
@@ -279,22 +266,23 @@ const styles = StyleSheet.create({
     userName: {
         fontSize: FontSizes.body,
         fontWeight: '700',
-        color: colors.textPrimary,
+        color: colors.textSecondary,
     },
     timestamp: {
         fontSize: FontSizes.small,
-        color: colors.textSecondary,
+        color: colors.textTertiary,
     },
-    donationBadge: {
+    deliveredBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.success,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
         borderRadius: 20,
-        gap: 6,
+        gap: 4,
+        opacity: 0.9,
     },
-    donationBadgeText: {
+    deliveredBadgeText: {
         fontSize: FontSizes.small,
         fontWeight: '600',
         color: colors.white,
@@ -305,6 +293,7 @@ const styles = StyleSheet.create({
     imageContainer: {
         position: 'relative',
         height: 280,
+        opacity: 0.7,
     },
     image: {
         width: '100%',
@@ -339,45 +328,48 @@ const styles = StyleSheet.create({
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 3,
     },
-    categoryBadge: {
+    detailsRow: {
+        gap: 8,
+        marginTop: 4,
+    },
+    detailBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'rgba(255, 255, 255, 0.25)',
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 16,
-        alignSelf: 'flex-start',
         gap: 6,
-        marginTop: 4,
     },
-    categoryBadgeDark: {
+    detailBadgeDark: {
         backgroundColor: colors.backgroundSecondary,
     },
-    categoryText: {
+    detailText: {
         fontSize: FontSizes.small,
         fontWeight: '600',
         color: colors.white,
     },
-    categoryTextDark: {
-        color: colors.primary,
+    detailTextDark: {
+        color: colors.textTertiary,
     },
     placeholderContainer: {
         height: 280,
-        backgroundColor: '#E8F5E9',
+        backgroundColor: '#F5F5F5',
         justifyContent: 'center',
         alignItems: 'center',
         padding: 24,
         gap: 12,
+        opacity: 0.7,
     },
     placeholderTitle: {
         fontSize: 20,
         fontWeight: '700',
-        color: colors.textPrimary,
+        color: colors.textSecondary,
         textAlign: 'center',
     },
     placeholderDescription: {
         fontSize: FontSizes.body,
-        color: colors.textSecondary,
+        color: colors.textTertiary,
         textAlign: 'center',
         lineHeight: 22,
     },
@@ -387,6 +379,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderTopWidth: 1,
         borderTopColor: colors.backgroundSecondary,
+        backgroundColor: '#FAFAFA',
     },
     actionsLeft: {
         alignItems: 'center',
@@ -410,4 +403,5 @@ const styles = StyleSheet.create({
     },
 });
 
-export default React.memo(DonationItemCard);
+export default React.memo(ItemDeliveredCard);
+

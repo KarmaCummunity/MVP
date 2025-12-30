@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Platform, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import colors from '../../../globals/colors';
 import { FontSizes } from '../../../globals/constants';
 import { BaseCardProps } from './types';
+import { isMobileWeb } from '../../../globals/responsive';
 
 const RideCompletedCard: React.FC<BaseCardProps> = ({
     item,
@@ -90,7 +91,7 @@ const RideCompletedCard: React.FC<BaseCardProps> = ({
 
                         <View style={styles.routeLine}>
                             <View style={[styles.dashedLine, styles.lineInactive]} />
-                            <Ionicons name="arrow-down" size={16} color={colors.textTertiary} />
+                            <Ionicons name="arrow-down" size={isMobile ? 14 : 16} color={colors.textTertiary} />
                         </View>
 
                         <View style={styles.locationPoint}>
@@ -114,12 +115,12 @@ const RideCompletedCard: React.FC<BaseCardProps> = ({
             <View style={[styles.actionsBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <View style={[styles.actionsLeft, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                     <TouchableOpacity
-                        style={[styles.actionButton, { marginRight: isRTL ? 0 : 16, marginLeft: isRTL ? 16 : 0 }]}
+                        style={[styles.actionButton, { marginRight: isRTL ? 0 : (isMobile ? 12 : 16), marginLeft: isRTL ? (isMobile ? 12 : 16) : 0 }]}
                         onPress={onLike}
                     >
                         <Ionicons
                             name={isLiked ? "heart" : "heart-outline"}
-                            size={24}
+                            size={isMobile ? 20 : 24}
                             color={isLiked ? colors.error : colors.textSecondary}
                         />
                         {likesCount > 0 && (
@@ -130,10 +131,10 @@ const RideCompletedCard: React.FC<BaseCardProps> = ({
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.actionButton, { marginRight: isRTL ? 0 : 16, marginLeft: isRTL ? 16 : 0 }]}
+                        style={[styles.actionButton, { marginRight: isRTL ? 0 : (isMobile ? 12 : 16), marginLeft: isRTL ? (isMobile ? 12 : 16) : 0 }]}
                         onPress={onComment}
                     >
-                        <Ionicons name="chatbubble-outline" size={24} color={colors.textSecondary} />
+                        <Ionicons name="chatbubble-outline" size={isMobile ? 20 : 24} color={colors.textSecondary} />
                         {commentsCount > 0 && (
                             <Text style={styles.actionCount}>{commentsCount}</Text>
                         )}
@@ -146,23 +147,25 @@ const RideCompletedCard: React.FC<BaseCardProps> = ({
     );
 };
 
+const isMobile = isMobileWeb();
+
 const styles = StyleSheet.create({
     container: {
         backgroundColor: colors.white,
-        borderRadius: 16,
-        marginVertical: 8,
-        marginHorizontal: 16,
+        borderRadius: isMobile ? 12 : 16,
+        marginVertical: isMobile ? 6 : 8,
+        marginHorizontal: 0, // Padding is handled by parent listContent
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: colors.backgroundSecondary,
-        minHeight: 380, // minHeight
+        minHeight: isMobile ? 280 : 380, // Smaller height for mobile web
     },
     gridContainer: {
-        marginHorizontal: 8,
-        minHeight: 250,
+        marginHorizontal: isMobile ? 4 : 8, // Small gap between columns in grid view
+        minHeight: isMobile ? 180 : 250,
     },
     header: {
-        padding: 16,
+        padding: isMobile ? 10 : 16,
         justifyContent: 'space-between',
         alignItems: 'center',
         backgroundColor: '#FAFAFA',
@@ -180,9 +183,9 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     avatar: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: isMobile ? 36 : 44,
+        height: isMobile ? 36 : 44,
+        borderRadius: isMobile ? 18 : 22,
         backgroundColor: colors.backgroundTertiary,
         opacity: 0.8,
     },
@@ -196,26 +199,26 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     userName: {
-        fontSize: FontSizes.body,
+        fontSize: isMobile ? FontSizes.small : FontSizes.body,
         fontWeight: '700',
         color: colors.textSecondary,
     },
     timestamp: {
-        fontSize: FontSizes.small,
+        fontSize: isMobile ? 10 : FontSizes.small,
         color: colors.textTertiary,
     },
     completedBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.success,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        gap: 6,
+        paddingHorizontal: isMobile ? 8 : 12,
+        paddingVertical: isMobile ? 3 : 6,
+        borderRadius: isMobile ? 16 : 20,
+        gap: isMobile ? 4 : 6,
         opacity: 0.9,
     },
     completedBadgeText: {
-        fontSize: FontSizes.small,
+        fontSize: isMobile ? 10 : FontSizes.small,
         fontWeight: '600',
         color: colors.white,
     },
@@ -224,13 +227,13 @@ const styles = StyleSheet.create({
         backgroundColor: '#F5F5F5',
     },
     contentContainer: {
-        padding: 24,
+        padding: isMobile ? 16 : 24,
         flex: 1,
         justifyContent: 'center',
-        gap: 24,
+        gap: isMobile ? 14 : 24,
     },
     contentContainerGrid: {
-        padding: 16,
+        padding: isMobile ? 12 : 16,
     },
     routeContainer: {
         gap: 4,
@@ -251,7 +254,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.textTertiary,
     },
     locationText: {
-        fontSize: FontSizes.body,
+        fontSize: isMobile ? FontSizes.small : FontSizes.body,
         fontWeight: '600',
     },
     textInactive: {
@@ -270,20 +273,20 @@ const styles = StyleSheet.create({
         backgroundColor: colors.textTertiary,
     },
     completionMessage: {
-        marginTop: 16,
-        padding: 12,
+        marginTop: isMobile ? 10 : 16,
+        padding: isMobile ? 10 : 12,
         backgroundColor: colors.white,
-        borderRadius: 8,
+        borderRadius: isMobile ? 6 : 8,
         alignItems: 'center',
     },
     completionText: {
-        fontSize: FontSizes.body,
+        fontSize: isMobile ? FontSizes.small : FontSizes.body,
         color: colors.success,
         fontWeight: '600',
         textAlign: 'center',
     },
     actionsBar: {
-        padding: 16,
+        padding: isMobile ? 10 : 16,
         justifyContent: 'space-between',
         alignItems: 'center',
         borderTopWidth: 1,
@@ -299,7 +302,7 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     actionCount: {
-        fontSize: FontSizes.body,
+        fontSize: isMobile ? FontSizes.small : FontSizes.body,
         fontWeight: '600',
         color: colors.textSecondary,
     },

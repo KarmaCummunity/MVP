@@ -47,7 +47,8 @@ export const useFeedData = (feedMode: 'friends' | 'discovery') => {
                 seats: rd.available_seats || 0,
                 price: rd.price_per_seat || 0,
                 time,
-                date
+                date,
+                status: rd.status // Add status for ride
             };
         }
         // 2. Fallback to metadata
@@ -75,6 +76,65 @@ export const useFeedData = (feedMode: 'friends' | 'discovery') => {
             };
         }
 
+        // Ensure user is always defined
+        const author = post.author || {};
+        const userId = author.id || post.author_id || 'unknown';
+        const userName = author.name || 'common.unknownUser';
+        const userAvatar = author.avatar_url || undefined;
+
+        // Get status from item_data or ride_data or default
+        let itemStatus: string | undefined;
+        if (post.item_data) {
+            itemStatus = post.item_data.status;
+        } else if (post.ride_data) {
+            itemStatus = post.ride_data.status;
+        }
+
+        // Parse metadata to get item_id if needed
+        let metadataItemId: string | undefined;
+        try {
+            if (post.metadata) {
+                const metadata = typeof post.metadata === 'string' ? JSON.parse(post.metadata) : post.metadata;
+                metadataItemId = metadata?.item_id;
+            }
+        } catch (e) {
+            // Ignore parse errors
+        }
+
+        // For items: ALWAYS prefer item_data.id (from JOIN with items table) - this is the most reliable source
+        // Then try metadata.item_id, then item_id column (if not timestamp)
+        // This is a workaround for cases where item_id column was stored incorrectly as timestamp
+        let finalItemId: string | undefined;
+        if (post.item_data?.id) {
+            // item_data.id comes from JOIN with items table - this is the most reliable
+            finalItemId = post.item_data.id;
+        } else if (metadataItemId && !/^\d{10,13}$/.test(metadataItemId)) {
+            // metadata.item_id is valid (not timestamp) - this is stored when post is created
+            finalItemId = metadataItemId;
+        } else if (post.item_id && !/^\d{10,13}$/.test(post.item_id)) {
+            // item_id column is valid (not timestamp)
+            finalItemId = post.item_id;
+        } else {
+            // If all else fails and we have a timestamp, we can't use it
+            // But we'll log it for debugging
+            finalItemId = undefined;
+        }
+
+        // Debug log for item/donation posts to help diagnose issues
+        if ((post.post_type === 'item' || post.post_type === 'donation')) {
+            if (!finalItemId || /^\d{10,13}$/.test(finalItemId || '')) {
+                console.warn('⚠️ Invalid item ID for post:', {
+                    postId: post.id,
+                    postType: post.post_type,
+                    finalItemId,
+                    item_id_column: post.item_id,
+                    item_data_id: post.item_data?.id,
+                    metadata_item_id: metadataItemId,
+                    hasItemData: !!post.item_data
+                });
+            }
+        }
+
         return {
             id: post.id,
             type: post.post_type || 'post',
@@ -83,9 +143,9 @@ export const useFeedData = (feedMode: 'friends' | 'discovery') => {
             description: post.description || '',
             thumbnail: post.images && post.images.length > 0 ? post.images[0] : null,
             user: {
-                id: post.author?.id || post.author_id,
-                name: post.author?.name || 'common.unknownUser', // Use key
-                avatar: post.author?.avatar_url || undefined,
+                id: userId,
+                name: userName,
+                avatar: userAvatar,
             },
             likes: parseInt(post.likes || '0'),
             comments: parseInt(post.comments || '0'),
@@ -98,50 +158,14 @@ export const useFeedData = (feedMode: 'friends' | 'discovery') => {
                 title: post.task.title,
                 status: post.task.status
             } : undefined,
+            // Add status for items and donations
+            status: itemStatus,
+            // Add IDs for updating posts
+            itemId: finalItemId,
+            rideId: post.ride_id || post.ride_data?.id,
+            taskId: post.task_id || post.task?.id,
             // Add ride-specific fields if this is a ride post
             ...rideData
-        };
-    };
-
-
-    // Helper to map Donation/Item to FeedItem
-    const mapItemToItem = (item: any): FeedItem => {
-        let thumbnail = item.image || null;
-        if (item.images && item.images.length > 0) {
-            thumbnail = typeof item.images[0] === 'string' ? item.images[0] : item.images[0].uri || null;
-        } else if (item.image_base64) {
-            const imageData = item.image_base64;
-            if (imageData.startsWith('data:image') || imageData.startsWith('http')) {
-                thumbnail = imageData;
-            } else if (imageData.length > 100) {
-                thumbnail = `data:image/jpeg;base64,${imageData}`;
-            }
-        }
-
-        // Backend query (items-delivery.service.ts) returns owner_name/owner_avatar in listItems
-        const userName = item.owner_name || item.user_name || item.name || 'common.unknownUser';
-        const userAvatar = item.owner_avatar || item.user_avatar || item.avatar || undefined;
-        const userId = item.owner_id || item.userId || item.ownerId || 'unknown';
-
-        return {
-            id: item.id,
-            type: 'post',
-            subtype: item.type === 'donation' ? 'donation' : 'item',
-            title: item.title || 'donations.categories.items.title',
-            description: item.description || '',
-            thumbnail: thumbnail,
-            user: {
-                id: userId,
-                name: userName,
-                avatar: userAvatar
-            },
-            likes: 0,
-            comments: 0,
-            isLiked: false,
-            timestamp: (item.created_at && !isNaN(new Date(item.created_at).getTime()))
-                ? new Date(item.created_at).toISOString()
-                : (item.timestamp || new Date().toISOString()),
-            taskData: undefined
         };
     };
 
@@ -171,41 +195,8 @@ export const useFeedData = (feedMode: 'friends' | 'discovery') => {
             );
 
             // Note: Rides are now included in posts with post_type='ride', so no need to fetch separately
-
-
-            // 3. Fetch Items (Match ProfileScreen logic)
-            try {
-                const { API_BASE_URL, USE_BACKEND } = require('../utils/dbConfig');
-                let rawItems: any[] = [];
-
-                if (USE_BACKEND && API_BASE_URL) {
-                    const axios = require('axios').default;
-                    // Load available and reserved items
-                    const [availRes, reservedRes] = await Promise.all([
-                        axios.get(`${API_BASE_URL}/api/items-delivery/search`, { params: { status: 'available', limit: 50 } }),
-                        axios.get(`${API_BASE_URL}/api/items-delivery/search`, { params: { status: 'reserved', limit: 50 } })
-                    ]);
-
-                    if (availRes.data?.success) rawItems.push(...(availRes.data.data || []));
-                    if (reservedRes.data?.success) rawItems.push(...(reservedRes.data.data || []));
-                } else {
-                    const dbService = databaseService as any;
-                    const items = await dbService.listItems(currentUser?.id || '');
-                    rawItems = items;
-                }
-                logger.debug('useFeedData', 'Fetched items', { count: rawItems.length });
-
-                const mappedItems = rawItems.map(mapItemToItem);
-                mappedItems.forEach((item: FeedItem) => {
-                    if (!existingIds.has(item.id)) {
-                        allContent.push(item);
-                        existingIds.add(item.id);
-                    }
-                });
-                logger.info('useFeedData', 'Added items to feed', { added: mappedItems.length });
-            } catch (e) {
-                logger.warn('useFeedData', 'Failed to load items', { error: e });
-            }
+            // Note: Items are now included in posts with post_type='item' or 'donation', so no need to fetch separately
+            // When an item is created, a post is automatically created for it in the backend
 
             // 4. Fetch Tasks (Match ProfileScreen logic - independent tasks)
             try {

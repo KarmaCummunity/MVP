@@ -142,22 +142,89 @@ class ApiService {
     return `${normalizedBase}${normalizedEndpoint}`;
   }
 
-  async getAuthToken(): Promise<string | null> {
+  /**
+   * Validate token and refresh if expired
+   * @returns Valid access token or null if refresh failed
+   */
+  private async validateAndRefreshToken(): Promise<string | null> {
     try {
-      // Try to get JWT access token from AsyncStorage first
       const AsyncStorage = await import('@react-native-async-storage/async-storage');
       const jwtToken = await AsyncStorage.default.getItem('jwt_access_token');
       const expiresAt = await AsyncStorage.default.getItem('jwt_token_expires_at');
+      const refreshToken = await AsyncStorage.default.getItem('jwt_refresh_token');
 
+      // If no access token, try Firebase fallback
+      if (!jwtToken) {
+        return null;
+      }
+
+      // Check if token is still valid (with 1 minute buffer)
+      if (expiresAt && parseInt(expiresAt) > Date.now() + 60000) {
+        return jwtToken;
+      }
+
+      // Token is expired or about to expire, try to refresh
+      if (!refreshToken) {
+        console.warn('JWT token expired and no refresh token available');
+        await AsyncStorage.default.multiRemove(['jwt_access_token', 'jwt_token_expires_at']);
+        return null;
+      }
+
+      console.log('🔄 Attempting to refresh expired JWT token');
+
+      // Call refresh endpoint
+      const refreshUrl = this.buildUrl('/auth/refresh');
+      const response = await fetch(refreshUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        console.warn('❌ Token refresh failed:', data.error || 'Unknown error');
+        // Clear all tokens if refresh failed
+        await AsyncStorage.default.multiRemove([
+          'jwt_access_token',
+          'jwt_token_expires_at',
+          'jwt_refresh_token',
+        ]);
+        return null;
+      }
+
+      // Save new access token
+      const newAccessToken = data.accessToken;
+      const newExpiresAt = Date.now() + (data.expiresIn * 1000);
+      await AsyncStorage.default.setItem('jwt_access_token', newAccessToken);
+      await AsyncStorage.default.setItem('jwt_token_expires_at', String(newExpiresAt));
+
+      console.log('✅ Token refreshed successfully');
+      return newAccessToken;
+    } catch (error) {
+      console.warn('❌ Error during token validation/refresh:', error);
+      try {
+        const AsyncStorage = await import('@react-native-async-storage/async-storage');
+        await AsyncStorage.default.multiRemove([
+          'jwt_access_token',
+          'jwt_token_expires_at',
+          'jwt_refresh_token',
+        ]);
+      } catch (cleanupError) {
+        console.warn('Failed to cleanup tokens:', cleanupError);
+      }
+      return null;
+    }
+  }
+
+  async getAuthToken(): Promise<string | null> {
+    try {
+      // Try to validate and refresh JWT token if needed
+      const jwtToken = await this.validateAndRefreshToken();
       if (jwtToken) {
-        // Check if token is expired (or close to expiring - within 1 minute)
-        if (expiresAt && parseInt(expiresAt) > Date.now() + 60000) {
-          return jwtToken;
-        } else {
-          console.warn('JWT token expired or invalid, cleaning up...');
-          // Clear invalid token so we don't check it again until fresh login
-          await AsyncStorage.default.multiRemove(['jwt_access_token', 'jwt_token_expires_at']);
-        }
+        return jwtToken;
       }
 
       // Fallback: Try to get Firebase ID token
@@ -183,10 +250,10 @@ class ApiService {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retryOn401: boolean = true
   ): Promise<ApiResponse<T>> {
     // TODO: Add request ID for tracing and debugging
-    // TODO: Add retry logic for failed requests
     try {
       const url = this.buildUrl(endpoint);
 
@@ -216,6 +283,34 @@ class ApiService {
         clearTimeout(timeoutId);
 
         const data = await response.json();
+
+        // Handle 401 Unauthorized - try to refresh token and retry
+        if (response.status === 401 && retryOn401 && authToken) {
+          console.warn('🔄 Received 401, attempting token refresh and retry');
+          
+          // Try to refresh token
+          const refreshedToken = await this.validateAndRefreshToken();
+          
+          if (refreshedToken) {
+            // Retry request with new token (only once to prevent infinite loops)
+            console.log('🔄 Retrying request with refreshed token');
+            return this.request<T>(endpoint, options, false);
+          } else {
+            // Refresh failed, clear session
+            console.error('❌ Token refresh failed, clearing session');
+            const AsyncStorage = await import('@react-native-async-storage/async-storage');
+            await AsyncStorage.default.multiRemove([
+              'jwt_access_token',
+              'jwt_token_expires_at',
+              'jwt_refresh_token',
+            ]);
+            
+            return {
+              success: false,
+              error: 'Session expired. Please log in again.',
+            };
+          }
+        }
 
         if (!response.ok) {
           console.error(`❌ API Error: ${response.status}`, data);
@@ -291,6 +386,18 @@ class ApiService {
    */
   async demoteAdmin(targetUserId: string, requestingAdminId: string): Promise<ApiResponse> {
     return this.request(`/api/users/${targetUserId}/demote-admin`, {
+      method: 'POST',
+      body: JSON.stringify({ requestingAdminId }),
+    });
+  }
+
+  /**
+   * Promote a user to volunteer role
+   * Any manager (hierarchy_level >= 1) can promote users to volunteer
+   * The target user will become a volunteer under the requesting admin
+   */
+  async promoteToVolunteer(targetUserId: string, requestingAdminId: string): Promise<ApiResponse> {
+    return this.request(`/api/users/${targetUserId}/promote-volunteer`, {
       method: 'POST',
       body: JSON.stringify({ requestingAdminId }),
     });
@@ -502,6 +609,21 @@ class ApiService {
 
   async getRideStats(): Promise<ApiResponse> {
     return this.request('/api/rides/stats/summary');
+  }
+
+  async updateRide(rideId: string, updateData: any): Promise<ApiResponse> {
+    return this.request(`/api/rides/${rideId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
+  }
+
+  // Items Delivery APIs
+  async updateItem(itemId: string, updateData: any): Promise<ApiResponse> {
+    return this.request(`/api/items-delivery/${itemId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
   }
 
   // Stats APIs

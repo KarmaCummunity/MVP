@@ -304,30 +304,73 @@ export const useUserStore = create<UserState>((set, get) => ({
         try {
           const parsedUser = JSON.parse(persistedUser);
           if (parsedUser && parsedUser.id) {
-            console.log('🔐 userStore - checkAuthStatus - Restoring persisted user session');
+            console.log('🔐 userStore - checkAuthStatus - Found persisted user, validating token');
 
-            // Enrich user with org roles if applicable (with timeout)
-            const enrichWithTimeout = Promise.race([
-              enrichUserWithOrgRoles(parsedUser),
-              new Promise<User>((resolve) =>
-                setTimeout(() => {
-                  console.warn('🔐 userStore - Enrichment timed out, using basic user data');
-                  resolve(parsedUser);
-                }, 8000)
-              )
-            ]);
+            // Validate token before restoring session
+            // Only validate if not in guest mode
+            if (authModeStored !== 'guest') {
+              const { apiService } = await import('../utils/apiService');
+              
+              // Try to get a valid auth token (this will refresh if needed)
+              const authToken = await apiService.getAuthToken();
+              
+              if (!authToken) {
+                console.warn('🔐 userStore - checkAuthStatus - No valid token found, clearing session');
+                // Token validation failed, clear session
+                await AsyncStorage.multiRemove([
+                  'current_user',
+                  'guest_mode',
+                  'auth_mode',
+                  'oauth_in_progress',
+                  'oauth_success_flag',
+                  'google_auth_user',
+                  'google_auth_token',
+                  'jwt_access_token',
+                  'jwt_token_expires_at',
+                  'jwt_refresh_token',
+                ]);
+                // Continue to unauthenticated state below
+              } else {
+                // Token is valid, proceed with session restoration
+                console.log('🔐 userStore - checkAuthStatus - Token validated, restoring session');
 
-            const enrichedUser = await enrichWithTimeout;
+                // Enrich user with org roles if applicable (with timeout)
+                const enrichWithTimeout = Promise.race([
+                  enrichUserWithOrgRoles(parsedUser),
+                  new Promise<User>((resolve) =>
+                    setTimeout(() => {
+                      console.warn('🔐 userStore - Enrichment timed out, using basic user data');
+                      resolve(parsedUser);
+                    }, 8000)
+                  )
+                ]);
 
-            set({
-              selectedUser: enrichedUser,
-              isAuthenticated: true,
-              isGuestMode: guestMode === 'true',
-              authMode: (authModeStored as AuthMode) || 'real',
-            });
-            console.log('🔐 userStore - checkAuthStatus - Persisted session restored successfully');
-            set({ isLoading: false });
-            return; // Exit early - user is authenticated
+                const enrichedUser = await enrichWithTimeout;
+
+                set({
+                  selectedUser: enrichedUser,
+                  isAuthenticated: true,
+                  isGuestMode: guestMode === 'true',
+                  authMode: (authModeStored as AuthMode) || 'real',
+                });
+                console.log('🔐 userStore - checkAuthStatus - Persisted session restored successfully');
+                set({ isLoading: false });
+                return; // Exit early - user is authenticated
+              }
+            } else {
+              // Guest mode - no token validation needed
+              console.log('🔐 userStore - checkAuthStatus - Guest mode, restoring session without token validation');
+
+              set({
+                selectedUser: parsedUser,
+                isAuthenticated: true,
+                isGuestMode: true,
+                authMode: 'guest',
+              });
+              console.log('🔐 userStore - checkAuthStatus - Guest session restored successfully');
+              set({ isLoading: false });
+              return; // Exit early - guest user is authenticated
+            }
           }
         } catch (parseError) {
           console.error('🔐 userStore - checkAuthStatus - Error parsing persisted user:', parseError);

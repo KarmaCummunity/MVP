@@ -57,3 +57,4 @@ jest.mock('expo-notifications', () => ({
 // הגדרת timeout גלובלי
 jest.setTimeout(10000); // 10 שניות
 
+

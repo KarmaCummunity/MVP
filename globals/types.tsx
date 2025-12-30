@@ -275,4 +275,5 @@ export interface UserPreview {
   joinDate?: string;
   interests?: string[];
   parentManagerId?: string | null;
+  hierarchyLevel?: number | null; // דרגה בהיררכיה: 0 = מנהל ראשי, 1 = סופר מנהל, 2+ = מנהלים/מתנדבים, null = משתמש רגיל
 }

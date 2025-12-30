@@ -38,7 +38,7 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
     const [usersList, setUsersList] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeTab, setActiveTab] = useState<'admins' | 'users'>('admins');
+    const [activeTab, setActiveTab] = useState<'admins' | 'volunteers' | 'users'>('admins');
 
     // Manager Assignment State
     const [showManagerModal, setShowManagerModal] = useState(false);
@@ -385,19 +385,20 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
 
     const getFilteredUsers = () => {
         return usersList.filter(user => {
-            // New Logic: 
-            // Admins tab (Managers) -> Users who HAVE a manager (parent_manager_id is NOT null)
-            // Users tab -> Users who DO NOT have a manager (parent_manager_id IS null)
             const hasManager = !!user.parent_manager_id;
-
-            // Also include actual admins/super_admins in the "Managers" tab even if they don't have a manager (e.g. root admin)
             const currentRoles = Array.isArray(user.roles) ? user.roles : [];
             const isAdminRole = currentRoles.includes('admin') || currentRoles.includes('super_admin');
+            const isVolunteerRole = currentRoles.includes('volunteer');
 
             if (activeTab === 'admins') {
-                return hasManager || isAdminRole;
+                // מנהלים: משתמשים עם role admin/super_admin (גם אם אין להם manager)
+                return isAdminRole;
+            } else if (activeTab === 'volunteers') {
+                // מתנדבים: משתמשים עם role volunteer (ללא admin)
+                return isVolunteerRole && !isAdminRole;
             } else {
-                return !hasManager && !isAdminRole;
+                // משתמשים רגילים: ללא manager וללא roles מיוחדים
+                return !hasManager && !isAdminRole && !isVolunteerRole;
             }
         });
     };
@@ -412,6 +413,9 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
             <View style={styles.tabsContainer}>
                 <TouchableOpacity style={[styles.tab, activeTab === 'admins' && styles.activeTab]} onPress={() => setActiveTab('admins')}>
                     <Text style={[styles.tabText, activeTab === 'admins' && styles.activeTabText]}>מנהלים</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.tab, activeTab === 'volunteers' && styles.activeTab]} onPress={() => setActiveTab('volunteers')}>
+                    <Text style={[styles.tabText, activeTab === 'volunteers' && styles.activeTabText]}>מתנדבים</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.tab, activeTab === 'users' && styles.activeTab]} onPress={() => setActiveTab('users')}>
                     <Text style={[styles.tabText, activeTab === 'users' && styles.activeTabText]}>משתמשים</Text>
@@ -449,38 +453,69 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                 renderItem={({ item: user }) => {
                     const userRoles = user.roles || [];
                     const isAdmin = userRoles.includes('admin') || userRoles.includes('super_admin');
+                    const isVolunteer = userRoles.includes('volunteer');
                     const isSameUser = user.id === selectedUser?.id;
+                    const isRootAdmin = user.email === 'karmacommunity2.0@gmail.com'; // המנהל הראשי - מוגן לחלוטין
                     const userCanBePromoted = canPromote(user);
                     const userCanBeDemoted = canDemote(user);
-                    const isActionDisabled = isSameUser || (isAdmin ? !userCanBeDemoted : !userCanBePromoted);
-
-                    console.log('[AdminAdminsScreen] 📋 Render user:', {
-                        userId: user.id,
-                        email: user.email,
-                        roles: user.roles,
-                        isAdmin,
-                        isSameUser,
-                        userCanBePromoted,
-                        userCanBeDemoted,
-                        isActionDisabled
-                    });
-
-                    // Determine button text and reason for disabled state
-                    let buttonText = isAdmin ? 'הסר ניהול' : 'הפוך למנהל';
-                    if (isSameUser) {
-                        buttonText = 'את עצמך';
-                    } else if (isAdmin && !userCanBeDemoted) {
-                        buttonText = 'מנהל (לא שלך)';
-                    } else if (!isAdmin && !userCanBePromoted) {
-                        buttonText = 'לא זמין';
+                    const hierarchyLevel = user.hierarchy_level;
+                    
+                    // Determine hierarchy level display
+                    let levelText = '';
+                    if (hierarchyLevel === 0) {
+                        levelText = 'דרגה 0 - מנהל ראשי 👑';
+                    } else if (hierarchyLevel === 1) {
+                        levelText = 'דרגה 1 - סופר מנהל';
+                    } else if (hierarchyLevel !== null && hierarchyLevel !== undefined) {
+                        levelText = `דרגה ${hierarchyLevel}`;
                     }
+
+                    const handlePromoteToVolunteer = async () => {
+                        if (!selectedUser?.id) return;
+                        
+                        Alert.alert(
+                            'הפוך למתנדב',
+                            `האם אתה בטוח שברצונך להפוך את ${user.name || user.email} למתנדב?`,
+                            [
+                                { text: 'ביטול', style: 'cancel' },
+                                {
+                                    text: 'אישור',
+                                    style: 'destructive',
+                                    onPress: async () => {
+                                        try {
+                                            const res = await apiService.promoteToVolunteer(user.id, selectedUser.id);
+                                            if (res.success) {
+                                                Alert.alert('הצלחה', res.message || 'המשתמש הפך למתנדב');
+                                                await loadUsers(true);
+                                            } else {
+                                                Alert.alert('שגיאה', res.error || 'נכשל בהפיכה למתנדב');
+                                            }
+                                        } catch (e) {
+                                            console.error('[AdminAdminsScreen] Error promoting to volunteer:', e);
+                                            Alert.alert('שגיאה', 'נכשל בהפיכה למתנדב');
+                                        }
+                                    }
+                                }
+                            ]
+                        );
+                    };
 
                     return (
                         <View style={styles.userCard}>
                             <View style={styles.userInfo}>
                                 <Text style={styles.userName}>{user.name || 'ללא שם'}</Text>
                                 <Text style={styles.userEmail}>{user.email}</Text>
-                                {user.manager_details && (
+                                
+                                {/* Display hierarchy level */}
+                                {levelText && (
+                                    <View style={[styles.managerBadge, { backgroundColor: colors.primary + '20', marginTop: 4 }]}>
+                                        <Ionicons name="layers-outline" size={12} color={colors.primary} />
+                                        <Text style={[styles.managerText, { color: colors.primary }]}>{levelText}</Text>
+                                    </View>
+                                )}
+                                
+                                {/* Show "Reports to" only if NOT root admin and has manager */}
+                                {!isRootAdmin && user.manager_details && (
                                     <View style={styles.managerBadge}>
                                         <Ionicons name="people-outline" size={12} color={colors.primary} />
                                         <Text style={styles.managerText}>מדווח ל- {user.manager_details.name}</Text>
@@ -492,9 +527,15 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                                         <Text style={[styles.managerText, { color: colors.success }]}>מנהל תחתיך</Text>
                                     </View>
                                 )}
+                                {isVolunteer && !isAdmin && (
+                                    <View style={[styles.managerBadge, { backgroundColor: colors.warning + '20' }]}>
+                                        <Ionicons name="heart-outline" size={12} color={colors.warning} />
+                                        <Text style={[styles.managerText, { color: colors.warning }]}>מתנדב</Text>
+                                    </View>
+                                )}
                             </View>
 
-                            {!viewOnly && (
+                            {!viewOnly && !isRootAdmin && (
                                 <View style={styles.actionsColumn}>
                                     <TouchableOpacity
                                         style={[styles.actionButton, styles.managerBtn]}
@@ -502,6 +543,24 @@ export default function AdminAdminsScreen({ navigation }: AdminAdminsScreenProps
                                     >
                                         <Text style={styles.actionBtnText}>שיוך מנהל</Text>
                                     </TouchableOpacity>
+                                    
+                                    {/* Show "Promote to Volunteer" button for non-volunteers in volunteers tab or admins tab */}
+                                    {!isVolunteer && activeTab !== 'users' && (
+                                        <TouchableOpacity
+                                            style={[styles.actionButton, { backgroundColor: colors.warning, marginTop: 8 }]}
+                                            onPress={handlePromoteToVolunteer}
+                                        >
+                                            <Text style={[styles.actionBtnText, { color: 'white' }]}>הפוך למתנדב</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            )}
+                            
+                            {/* Show protected message for root admin */}
+                            {isRootAdmin && (
+                                <View style={[styles.managerBadge, { backgroundColor: colors.error + '20', marginTop: 8 }]}>
+                                    <Ionicons name="shield-checkmark" size={12} color={colors.error} />
+                                    <Text style={[styles.managerText, { color: colors.error }]}>מנהל ראשי</Text>
                                 </View>
                             )}
                         </View>

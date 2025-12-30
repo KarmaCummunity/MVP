@@ -28,10 +28,15 @@ import { apiService } from '../utils/apiService';
 import VerticalGridSlider from './VerticalGridSlider';
 import { logger } from '../utils/loggerService';
 import { usePostDeletion } from '../hooks/usePostDeletion';
+import { usePostMenu } from '../hooks/usePostMenu';
 import { useUser } from '../stores/userStore';
 import { toastService } from '../utils/toastService';
+import { isMobileWeb } from '../globals/responsive';
 
 const { width } = Dimensions.get('window');
+const isMobile = isMobileWeb();
+const HORIZONTAL_PADDING = isMobile ? 8 : 16; // Padding from screen edges
+const COLUMN_GAP = isMobile ? 8 : 16; // Gap between columns in grid view
 
 // Props
 interface PostsReelsScreenProps {
@@ -47,22 +52,38 @@ const PostsReelsScreen: React.FC<PostsReelsScreenProps> = ({
 }) => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
-  const { canDelete, deletePost } = usePostDeletion();
   const { selectedUser } = useUser();
 
   // State
   const [feedMode, setFeedMode] = useState<'friends' | 'discovery'>('friends');
   const [commentsModalVisible, setCommentsModalVisible] = useState(false);
   const [selectedItemForComments, setSelectedItemForComments] = useState<FeedItem | null>(null);
-  const [optionsModalVisible, setOptionsModalVisible] = useState(false);
-  const [modalOptions, setModalOptions] = useState<Option[]>([]);
   const [numColumns, setNumColumns] = useState(1); // Default to list view
   const [sliderValue, setSliderValue] = useState(0); // 0 = 1 col, 1 = 2 cols, 2 = 3 cols
 
   // Report State
-  const [reportModalVisible, setReportModalVisible] = useState(false);
-  const [selectedPostForReport, setSelectedPostForReport] = useState<FeedItem | null>(null);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+
+  // Post menu hook
+  const {
+    handleMorePress,
+    optionsModalVisible,
+    setOptionsModalVisible,
+    modalOptions,
+    modalPosition,
+    reportModalVisible,
+    setReportModalVisible,
+    selectedPostForReport,
+    setSelectedPostForReport
+  } = usePostMenu({
+    onDelete: (postId) => {
+      refresh(); // Refresh feed on success
+    },
+    onReport: (item) => {
+      setSelectedPostForReport(item);
+      setReportModalVisible(true);
+    }
+  });
 
   // Custom Hook for Data
   const { feed, loading, refreshing, refresh } = useFeedData(feedMode);
@@ -161,96 +182,6 @@ const PostsReelsScreen: React.FC<PostsReelsScreenProps> = ({
     }
   };
 
-  // Position state
-  const [modalPosition, setModalPosition] = useState<{ x: number, y: number } | undefined>(undefined);
-
-  const handleMorePress = useCallback((item: FeedItem, measurements?: { x: number, y: number }) => {
-    const isOwner = selectedUser?.id === item.user.id;
-    const canDeleteThisPost = canDelete(item.user.id);
-
-    // Actions
-    const handleDelete = () => {
-      deletePost(item.id, item.subtype || 'general', () => {
-        refresh(); // Refresh feed on success
-      });
-    };
-
-    const handleReport = () => {
-      setSelectedPostForReport(item);
-      setReportModalVisible(true);
-    };
-
-    const handleEdit = () => {
-      toastService.showInfo('Edit functionality coming soon!');
-    };
-
-    if (Platform.OS === 'ios') {
-      const options = [t('common.cancel') || 'Cancel'];
-      const destructiveButtonIndex: number[] = [];
-
-      if (canDeleteThisPost) {
-        options.push(t('common.delete') || 'Delete');
-        destructiveButtonIndex.push(options.length - 1);
-      }
-
-      if (isOwner) {
-        options.push(t('common.edit') || 'Edit');
-      } else {
-        options.push(t('common.report') || 'Report');
-      }
-
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options,
-          cancelButtonIndex: 0,
-          destructiveButtonIndex,
-          title: t('common.options') || 'Options'
-        },
-        (buttonIndex) => {
-          const selectedOption = options[buttonIndex];
-          if (selectedOption === (t('common.delete') || 'Delete')) {
-            handleDelete();
-          } else if (selectedOption === (t('common.report') || 'Report')) {
-            handleReport();
-          } else if (selectedOption === (t('common.edit') || 'Edit')) {
-            handleEdit();
-          }
-        }
-      );
-    } else {
-      // Android & Web: Use Custom OptionsModal
-      const options: Option[] = [];
-
-      if (canDeleteThisPost) {
-        options.push({
-          label: t('common.delete') || 'Delete',
-          onPress: handleDelete,
-          isDestructive: true,
-          icon: 'trash-outline'
-        });
-      }
-
-      if (isOwner) {
-        options.push({
-          label: t('common.edit') || 'Edit',
-          onPress: handleEdit,
-          icon: 'create-outline'
-        });
-      }
-
-      // Allow reporting for everyone (including owner for testing purposes, or standard app policy allows self-reporting issues)
-      options.push({
-        label: t('common.report') || 'Report',
-        onPress: handleReport,
-        isDestructive: true,
-        icon: 'flag-outline'
-      });
-
-      setModalOptions(options);
-      setModalPosition(measurements);
-      setOptionsModalVisible(true);
-    }
-  }, [selectedUser, canDelete, deletePost, refresh, t]);
 
   const handleSliderChange = useCallback((value: number) => {
     // Round to nearest integer standardizing step behavior
@@ -262,12 +193,20 @@ const PostsReelsScreen: React.FC<PostsReelsScreenProps> = ({
   }, []);
 
   const renderItem = useCallback(({ item }: { item: FeedItem }) => {
-    const itemWidth = (width - 32) / numColumns;
+    // Calculate available width: screen width minus horizontal padding on both sides
+    const availableWidth = width - (HORIZONTAL_PADDING * 2);
+    
+    // For grid view: calculate width with gaps between columns
+    // Using space-between in columnWrapper, so we need to account for gaps
+    const totalGaps = numColumns > 1 ? (numColumns - 1) * COLUMN_GAP : 0;
+    const itemWidth = numColumns > 1 
+      ? (availableWidth - totalGaps) / numColumns 
+      : availableWidth; // Full available width for list view
 
     return (
       <PostReelItem
         item={item}
-        cardWidth={numColumns > 1 ? itemWidth : width} // Full width if list
+        cardWidth={itemWidth}
         numColumns={numColumns}
         onPress={handlePostPress}
         onCommentPress={handleCommentPress}
@@ -323,6 +262,7 @@ const PostsReelsScreen: React.FC<PostsReelsScreenProps> = ({
           keyExtractor={(item) => item.id}
           key={numColumns} // Force re-render on column change
           numColumns={numColumns}
+          columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
           contentContainerStyle={[
             styles.listContent,
             // Add padding top to account for floating header
@@ -383,6 +323,10 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 80, // Space for bottom bar
+    paddingHorizontal: HORIZONTAL_PADDING, // Padding from screen edges
+  },
+  columnWrapper: {
+    // Gap will be handled by marginHorizontal on individual items
   },
   emptyContainer: {
     flex: 1,

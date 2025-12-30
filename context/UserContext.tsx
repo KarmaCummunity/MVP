@@ -294,7 +294,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         }
       }
 
-      // Check for persistent user session (if implemented in the future)
+      // Check for persistent user session
       console.log('🔐 UserContext - checkAuthStatus - Checking for persistent session');
       const persistedUser = await AsyncStorage.getItem('current_user');
       const guestMode = await AsyncStorage.getItem('guest_mode');
@@ -304,14 +304,53 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         try {
           const parsedUser = JSON.parse(persistedUser);
           if (parsedUser && parsedUser.id) {
-            console.log('🔐 UserContext - checkAuthStatus - Restoring persisted user session');
-            const enrichedUser = await enrichUserWithOrgRoles(parsedUser);
-            setSelectedUserState(enrichedUser);
-            setIsAuthenticated(true);
-            setIsGuestMode(guestMode === 'true');
-            setAuthMode((authModeStored as AuthMode) || 'real');
-            console.log('🔐 UserContext - checkAuthStatus - Persisted session restored successfully');
-            return; // Exit early - user is authenticated
+            console.log('🔐 UserContext - checkAuthStatus - Found persisted user, validating token');
+
+            // Validate token before restoring session
+            // Only validate if not in guest mode
+            if (authModeStored !== 'guest') {
+              const { apiService } = await import('../utils/apiService');
+              
+              // Try to get a valid auth token (this will refresh if needed)
+              const authToken = await apiService.getAuthToken();
+              
+              if (!authToken) {
+                console.warn('🔐 UserContext - checkAuthStatus - No valid token found, clearing session');
+                // Token validation failed, clear session
+                await AsyncStorage.multiRemove([
+                  'current_user',
+                  'guest_mode',
+                  'auth_mode',
+                  'oauth_in_progress',
+                  'oauth_success_flag',
+                  'google_auth_user',
+                  'google_auth_token',
+                  'jwt_access_token',
+                  'jwt_token_expires_at',
+                  'jwt_refresh_token',
+                ]);
+                // Continue to unauthenticated state below
+              } else {
+                // Token is valid, proceed with session restoration
+                console.log('🔐 UserContext - checkAuthStatus - Token validated, restoring session');
+                const enrichedUser = await enrichUserWithOrgRoles(parsedUser);
+                setSelectedUserState(enrichedUser);
+                setIsAuthenticated(true);
+                setIsGuestMode(guestMode === 'true');
+                setAuthMode((authModeStored as AuthMode) || 'real');
+                console.log('🔐 UserContext - checkAuthStatus - Persisted session restored successfully');
+                return; // Exit early - user is authenticated
+              }
+            } else {
+              // Guest mode - no token validation needed
+              console.log('🔐 UserContext - checkAuthStatus - Guest mode, restoring session without token validation');
+              setSelectedUserState(parsedUser);
+              setIsAuthenticated(true);
+              setIsGuestMode(true);
+              setAuthMode('guest');
+              console.log('🔐 UserContext - checkAuthStatus - Guest session restored successfully');
+              return; // Exit early - guest user is authenticated
+            }
           }
         } catch (parseError) {
           console.error('🔐 UserContext - checkAuthStatus - Error parsing persisted user:', parseError);
@@ -327,7 +366,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         'oauth_in_progress',
         'oauth_success_flag',
         'google_auth_user',
-        'google_auth_token'
+        'google_auth_token',
+        'jwt_access_token',
+        'jwt_token_expires_at',
+        'jwt_refresh_token',
       ]);
 
       console.log('🔐 UserContext - checkAuthStatus - Setting unauthenticated state');

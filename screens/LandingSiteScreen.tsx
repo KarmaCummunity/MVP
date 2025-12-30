@@ -1899,7 +1899,7 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: isMobileWeb ? 28 : (isWeb ? (isTablet ? 56 : 42) : 64),
     fontWeight: '900',
-    color: colors.textPrimary,
+    color: colors.textPrimary, 
     textAlign: 'center',
     marginBottom: isMobileWeb ? 16 : (isWeb ? 24 : 32),
     letterSpacing: -1,

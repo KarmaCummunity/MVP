@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Platform, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import colors from '../../../globals/colors';
 import { FontSizes } from '../../../globals/constants';
 import { BaseCardProps } from './types';
+import { isMobileWeb } from '../../../globals/responsive';
 
 const TaskCompletionCard: React.FC<BaseCardProps> = ({
     item,
@@ -59,7 +60,7 @@ const TaskCompletionCard: React.FC<BaseCardProps> = ({
                 <View style={[styles.headerRight, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                     <View style={styles.completedTaskBadge}>
                         <Ionicons name="checkmark-done" size={16} color={colors.white} />
-                        <Text style={styles.completedTaskBadgeText}>{t('common.done')}</Text>
+                        <Text style={styles.completedTaskBadgeText}>{t('tasks.status.completed')}</Text>
                     </View>
 
                     <TouchableOpacity
@@ -75,10 +76,10 @@ const TaskCompletionCard: React.FC<BaseCardProps> = ({
             <TouchableOpacity onPress={onPress} activeOpacity={0.95} style={styles.cardContent}>
                 <View style={[styles.contentContainer, isGrid && styles.contentContainerGrid]}>
                     <View style={styles.celebrationContainer}>
-                        <Ionicons name="trophy" size={56} color={colors.warning} />
+                        <Ionicons name="trophy" size={isMobile ? 40 : 56} color={colors.warning} />
                         <View style={styles.starsContainer}>
-                            <Ionicons name="star" size={24} color={colors.warning} style={{ position: 'absolute', top: -10, left: -30, transform: [{ rotate: '-20deg' }] }} />
-                            <Ionicons name="star" size={32} color={colors.warning} style={{ position: 'absolute', top: -25, right: -25, transform: [{ rotate: '15deg' }] }} />
+                            <Ionicons name="star" size={isMobile ? 18 : 24} color={colors.warning} style={{ position: 'absolute', top: isMobile ? -8 : -10, left: isMobile ? -22 : -30, transform: [{ rotate: '-20deg' }] }} />
+                            <Ionicons name="star" size={isMobile ? 24 : 32} color={colors.warning} style={{ position: 'absolute', top: isMobile ? -18 : -25, right: isMobile ? -18 : -25, transform: [{ rotate: '15deg' }] }} />
                         </View>
                     </View>
 
@@ -100,12 +101,12 @@ const TaskCompletionCard: React.FC<BaseCardProps> = ({
             <View style={[styles.actionsBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <View style={[styles.actionsLeft, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                     <TouchableOpacity
-                        style={[styles.actionButton, { marginRight: isRTL ? 0 : 16, marginLeft: isRTL ? 16 : 0 }]}
+                        style={[styles.actionButton, { marginRight: isRTL ? 0 : (isMobile ? 12 : 16), marginLeft: isRTL ? (isMobile ? 12 : 16) : 0 }]}
                         onPress={onLike}
                     >
                         <Ionicons
                             name={isLiked ? "heart" : "heart-outline"}
-                            size={24}
+                            size={isMobile ? 20 : 24}
                             color={isLiked ? colors.error : colors.textSecondary}
                         />
                         {likesCount > 0 && (
@@ -116,10 +117,10 @@ const TaskCompletionCard: React.FC<BaseCardProps> = ({
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.actionButton, { marginRight: isRTL ? 0 : 16, marginLeft: isRTL ? 16 : 0 }]}
+                        style={[styles.actionButton, { marginRight: isRTL ? 0 : (isMobile ? 12 : 16), marginLeft: isRTL ? (isMobile ? 12 : 16) : 0 }]}
                         onPress={onComment}
                     >
-                        <Ionicons name="chatbubble-outline" size={24} color={colors.textSecondary} />
+                        <Ionicons name="chatbubble-outline" size={isMobile ? 20 : 24} color={colors.textSecondary} />
                         {commentsCount > 0 && (
                             <Text style={styles.actionCount}>{commentsCount}</Text>
                         )}
@@ -130,15 +131,17 @@ const TaskCompletionCard: React.FC<BaseCardProps> = ({
     );
 };
 
+const isMobile = isMobileWeb();
+
 const styles = StyleSheet.create({
     container: {
         backgroundColor: colors.white,
-        borderRadius: 16,
-        marginVertical: 8,
-        marginHorizontal: 16,
+        borderRadius: isMobile ? 12 : 16,
+        marginVertical: isMobile ? 6 : 8,
+        marginHorizontal: 0, // Padding is handled by parent listContent
         overflow: 'hidden',
-        minHeight: 380, // Uniform Height
-        borderWidth: 2,
+        minHeight: isMobile ? 280 : 380, // Smaller height for mobile web
+        borderWidth: isMobile ? 1 : 2,
         borderColor: '#E8F5E9',
         ...Platform.select({
             ios: {
@@ -156,11 +159,11 @@ const styles = StyleSheet.create({
         }),
     },
     gridContainer: {
-        marginHorizontal: 8,
-        minHeight: 250,
+        marginHorizontal: isMobile ? 4 : 8, // Small gap between columns in grid view
+        minHeight: isMobile ? 180 : 250,
     },
     header: {
-        padding: 16,
+        padding: isMobile ? 10 : 16,
         justifyContent: 'space-between',
         alignItems: 'center',
         backgroundColor: '#FAFAFA',
@@ -178,9 +181,9 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     avatar: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: isMobile ? 36 : 44,
+        height: isMobile ? 36 : 44,
+        borderRadius: isMobile ? 18 : 22,
         backgroundColor: colors.backgroundTertiary,
     },
     avatarPlaceholder: {
@@ -193,25 +196,25 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     userName: {
-        fontSize: FontSizes.body,
+        fontSize: isMobile ? FontSizes.small : FontSizes.body,
         fontWeight: '700',
         color: colors.textPrimary,
     },
     timestamp: {
-        fontSize: FontSizes.small,
+        fontSize: isMobile ? 10 : FontSizes.small,
         color: colors.textSecondary,
     },
     completedTaskBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.success,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        gap: 6,
+        paddingHorizontal: isMobile ? 8 : 12,
+        paddingVertical: isMobile ? 3 : 6,
+        borderRadius: isMobile ? 16 : 20,
+        gap: isMobile ? 4 : 6,
     },
     completedTaskBadgeText: {
-        fontSize: FontSizes.small,
+        fontSize: isMobile ? 10 : FontSizes.small,
         fontWeight: '600',
         color: colors.white,
     },
@@ -220,14 +223,14 @@ const styles = StyleSheet.create({
         backgroundColor: '#F1F8E9',
     },
     contentContainer: {
-        padding: 32,
+        padding: isMobile ? 20 : 32,
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 24,
+        gap: isMobile ? 14 : 24,
         flex: 1,
     },
     contentContainerGrid: {
-        padding: 16,
+        padding: isMobile ? 12 : 16,
     },
     celebrationContainer: {
         position: 'relative',
@@ -246,26 +249,26 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     title: {
-        fontSize: 24,
+        fontSize: isMobile ? 18 : 24,
         fontWeight: '700',
         color: colors.success,
     },
     taskReference: {
         backgroundColor: 'rgba(255, 255, 255, 0.8)',
-        padding: 16,
-        borderRadius: 12,
+        padding: isMobile ? 12 : 16,
+        borderRadius: isMobile ? 10 : 12,
         width: '100%',
         borderWidth: 1,
         borderColor: 'rgba(0, 200, 83, 0.1)',
     },
     taskReferenceText: {
-        fontSize: 16,
+        fontSize: isMobile ? FontSizes.small : 16,
         color: colors.textPrimary,
         fontWeight: '500',
-        lineHeight: 24,
+        lineHeight: isMobile ? 18 : 24,
     },
     actionsBar: {
-        padding: 16,
+        padding: isMobile ? 10 : 16,
         justifyContent: 'space-between',
         alignItems: 'center',
         borderTopWidth: 1,
@@ -281,7 +284,7 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     actionCount: {
-        fontSize: FontSizes.body,
+        fontSize: isMobile ? FontSizes.small : FontSizes.body,
         fontWeight: '600',
         color: colors.textSecondary,
     },

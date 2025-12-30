@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Platform, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import colors from '../../../globals/colors';
 import { FontSizes } from '../../../globals/constants';
 import { BaseCardProps } from './types';
+import { isMobileWeb } from '../../../globals/responsive';
 
 const RegularItemCard: React.FC<BaseCardProps> = ({
     item,
@@ -17,6 +18,8 @@ const RegularItemCard: React.FC<BaseCardProps> = ({
     onBookmark,
     onShare,
     onMorePress,
+    onQuickMessage,
+    onClosePost,
     isLiked,
     isBookmarked,
     likesCount,
@@ -26,8 +29,32 @@ const RegularItemCard: React.FC<BaseCardProps> = ({
     const { t, i18n } = useTranslation();
     const isRTL = i18n.language === 'he';
 
-    const displayTitle = item.title === 'post.noTitle' ? t('post.noTitle') : item.title;
-    const displayName = item.user.name === 'common.unknownUser' ? t('common.unknownUser') : item.user.name;
+    // Helper to check if a string is a translation key
+    const isTranslationKey = (str: string | undefined | null): boolean => {
+        if (!str) return false;
+        // Check for both dot notation and colon notation
+        return (str.includes('.') || str.includes(':')) && 
+               (str.startsWith('post.') || str.startsWith('post:') ||
+                str.startsWith('donations.') || str.startsWith('donations:') ||
+                str.startsWith('common.') || str.startsWith('common:'));
+    };
+
+    // Normalize translation key format (convert colons to dots for consistency)
+    const normalizeTranslationKey = (key: string): string => {
+        return key.replace(/donations:/g, 'donations.').replace(/post:/g, 'post.').replace(/common:/g, 'common.');
+    };
+
+    const displayTitle = !item.title || item.title.trim() === '' || item.title === 'donations.categories.items.title' || item.title === 'donations:categories.items.title'
+        ? t('donations.categories.items.title')
+        : item.title === 'post.noTitle' 
+            ? t('post.noTitle')
+            : isTranslationKey(item.title)
+                ? t(normalizeTranslationKey(item.title))
+                : item.title;
+    
+    // Safe access to user.name with fallback
+    const userName = item.user?.name || 'common.unknownUser';
+    const displayName = userName === 'common.unknownUser' ? t('common.unknownUser') : userName;
 
     return (
         <View style={[
@@ -41,7 +68,7 @@ const RegularItemCard: React.FC<BaseCardProps> = ({
                     style={[styles.userInfo, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                     onPress={onProfilePress}
                 >
-                    {item.user.avatar ? (
+                    {item.user?.avatar ? (
                         <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
                     ) : (
                         <View style={[styles.avatar, styles.avatarPlaceholder]}>
@@ -59,10 +86,10 @@ const RegularItemCard: React.FC<BaseCardProps> = ({
                 </TouchableOpacity>
 
                 <View style={[styles.headerRight, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    {/* Item Badge - Changed to Generic "Item" or "Donation" context per user request */}
+                    {/* Item Badge - Shows "Available" for open items */}
                     <View style={styles.itemBadge}>
                         <Ionicons name="cube" size={16} color={colors.white} />
-                        <Text style={styles.itemBadgeText}>{t('items.title')}</Text>
+                        <Text style={styles.itemBadgeText}>{t('items.available')}</Text>
                     </View>
 
                     {/* More Options Button */}
@@ -133,12 +160,12 @@ const RegularItemCard: React.FC<BaseCardProps> = ({
             <View style={[styles.actionsBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <View style={[styles.actionsLeft, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                     <TouchableOpacity
-                        style={[styles.actionButton, { marginRight: isRTL ? 0 : 16, marginLeft: isRTL ? 16 : 0 }]}
+                        style={[styles.actionButton, { marginRight: isRTL ? 0 : (isMobile ? 12 : 16), marginLeft: isRTL ? (isMobile ? 12 : 16) : 0 }]}
                         onPress={onLike}
                     >
                         <Ionicons
                             name={isLiked ? "heart" : "heart-outline"}
-                            size={24}
+                            size={isMobile ? 20 : 24}
                             color={isLiked ? colors.error : colors.textSecondary}
                         />
                         {likesCount > 0 && (
@@ -149,40 +176,61 @@ const RegularItemCard: React.FC<BaseCardProps> = ({
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.actionButton, { marginRight: isRTL ? 0 : 16, marginLeft: isRTL ? 16 : 0 }]}
+                        style={[styles.actionButton, { marginRight: isRTL ? 0 : (isMobile ? 12 : 16), marginLeft: isRTL ? (isMobile ? 12 : 16) : 0 }]}
                         onPress={onComment}
                     >
-                        <Ionicons name="chatbubble-outline" size={24} color={colors.textSecondary} />
+                        <Ionicons name="chatbubble-outline" size={isMobile ? 20 : 24} color={colors.textSecondary} />
                         {commentsCount > 0 && (
                             <Text style={styles.actionCount}>{commentsCount}</Text>
                         )}
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.actionButton} onPress={onShare}>
-                        <Ionicons name="share-outline" size={24} color={colors.textSecondary} />
+                        <Ionicons name="share-outline" size={isMobile ? 20 : 24} color={colors.textSecondary} />
                     </TouchableOpacity>
                 </View>
 
-                <TouchableOpacity style={styles.actionButton} onPress={onBookmark}>
-                    <Ionicons
-                        name={isBookmarked ? "bookmark" : "bookmark-outline"}
-                        size={24}
-                        color={isBookmarked ? colors.primary : colors.textSecondary}
-                    />
-                </TouchableOpacity>
+                <View style={[styles.actionsRight, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                    {onQuickMessage && (
+                        <TouchableOpacity
+                            style={[styles.actionButton, { marginRight: isRTL ? 0 : (isMobile ? 6 : 8), marginLeft: isRTL ? (isMobile ? 6 : 8) : 0 }]}
+                            onPress={onQuickMessage}
+                        >
+                            <Ionicons name="chatbubble-ellipses" size={isMobile ? 20 : 24} color={colors.primary} />
+                        </TouchableOpacity>
+                    )}
+                    {onClosePost && (
+                        <TouchableOpacity
+                            style={[styles.actionButton, { marginRight: isRTL ? 0 : (isMobile ? 6 : 8), marginLeft: isRTL ? (isMobile ? 6 : 8) : 0 }]}
+                            onPress={onClosePost}
+                        >
+                            <Ionicons name="checkmark-circle-outline" size={isMobile ? 20 : 24} color={colors.success} />
+                        </TouchableOpacity>
+                    )}
+                    <TouchableOpacity style={styles.actionButton} onPress={onBookmark}>
+                        <Ionicons
+                            name={isBookmarked ? "bookmark" : "bookmark-outline"}
+                            size={isMobile ? 20 : 24}
+                            color={isBookmarked ? colors.primary : colors.textSecondary}
+                        />
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
     );
 };
 
+const isMobile = isMobileWeb();
+const windowWidth = Dimensions.get('window').width;
+
 const styles = StyleSheet.create({
     container: {
         backgroundColor: colors.white,
-        borderRadius: 16,
-        marginVertical: 8,
-        marginHorizontal: 16,
+        borderRadius: isMobile ? 12 : 16,
+        marginVertical: isMobile ? 6 : 8,
+        marginHorizontal: 0, // Padding is handled by parent listContent
         overflow: 'hidden',
-        minHeight: 380, // Enforce uniform minimum height
+        minHeight: isMobile ? 280 : 380, // Smaller height for mobile web
         ...Platform.select({
             ios: {
                 shadowColor: colors.black,
@@ -199,11 +247,11 @@ const styles = StyleSheet.create({
         }),
     },
     gridContainer: {
-        marginHorizontal: 8,
-        minHeight: 250, // Smaller min height for grid
+        marginHorizontal: isMobile ? 4 : 8, // Small gap between columns in grid view
+        minHeight: isMobile ? 180 : 250, // Smaller min height for grid on mobile
     },
     header: {
-        padding: 16,
+        padding: isMobile ? 10 : 16,
         justifyContent: 'space-between',
         alignItems: 'center',
         backgroundColor: colors.backgroundSecondary,
@@ -221,9 +269,9 @@ const styles = StyleSheet.create({
         flex: 1, // Allow text to take space
     },
     avatar: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: isMobile ? 36 : 44,
+        height: isMobile ? 36 : 44,
+        borderRadius: isMobile ? 18 : 22,
         backgroundColor: colors.backgroundTertiary,
     },
     avatarPlaceholder: {
@@ -236,25 +284,25 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     userName: {
-        fontSize: FontSizes.body,
+        fontSize: isMobile ? FontSizes.small : FontSizes.body,
         fontWeight: '700',
         color: colors.textPrimary,
     },
     timestamp: {
-        fontSize: FontSizes.small,
+        fontSize: isMobile ? 10 : FontSizes.small,
         color: colors.textSecondary,
     },
     itemBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.textSecondary, // Neutral color for generic item
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 20,
-        gap: 4,
+        paddingHorizontal: isMobile ? 8 : 10,
+        paddingVertical: isMobile ? 3 : 4,
+        borderRadius: isMobile ? 16 : 20,
+        gap: isMobile ? 3 : 4,
     },
     itemBadgeText: {
-        fontSize: FontSizes.small,
+        fontSize: isMobile ? 10 : FontSizes.small,
         fontWeight: '600',
         color: colors.white,
     },
@@ -263,7 +311,7 @@ const styles = StyleSheet.create({
     },
     imageContainer: {
         position: 'relative',
-        height: 280,
+        height: isMobile ? 180 : 280,
     },
     image: {
         width: '100%',
@@ -271,19 +319,19 @@ const styles = StyleSheet.create({
         backgroundColor: colors.backgroundTertiary,
     },
     imageGrid: {
-        height: 180,
+        height: isMobile ? 120 : 180,
     },
     gradientOverlay: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: 'rgba(0, 0, 0, 0.35)',
         justifyContent: 'flex-end',
-        padding: 20,
+        padding: isMobile ? 12 : 20,
     },
     overlayContent: {
-        gap: 8,
+        gap: isMobile ? 4 : 8,
     },
     itemTitle: {
-        fontSize: 24,
+        fontSize: isMobile ? 18 : 24,
         fontWeight: '800',
         color: colors.white,
         textShadowColor: 'rgba(0, 0, 0, 0.8)',
@@ -291,31 +339,31 @@ const styles = StyleSheet.create({
         textShadowRadius: 4,
     },
     itemDescription: {
-        fontSize: FontSizes.body,
+        fontSize: isMobile ? FontSizes.small : FontSizes.body,
         color: colors.white,
-        lineHeight: 22,
+        lineHeight: isMobile ? 16 : 22,
         textShadowColor: 'rgba(0, 0, 0, 0.8)',
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 3,
     },
     detailsRow: {
-        gap: 8,
-        marginTop: 4,
+        gap: isMobile ? 4 : 8,
+        marginTop: isMobile ? 2 : 4,
     },
     detailBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'rgba(255, 255, 255, 0.25)',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 16,
-        gap: 6,
+        paddingHorizontal: isMobile ? 8 : 12,
+        paddingVertical: isMobile ? 4 : 6,
+        borderRadius: isMobile ? 12 : 16,
+        gap: isMobile ? 4 : 6,
     },
     detailBadgeDark: {
         backgroundColor: colors.backgroundSecondary,
     },
     detailText: {
-        fontSize: FontSizes.small,
+        fontSize: isMobile ? 10 : FontSizes.small,
         fontWeight: '600',
         color: colors.white,
     },
@@ -323,27 +371,27 @@ const styles = StyleSheet.create({
         color: colors.textPrimary,
     },
     placeholderContainer: {
-        height: 280,
+        height: isMobile ? 180 : 280,
         backgroundColor: '#F5F5F5',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 24,
-        gap: 12,
+        padding: isMobile ? 16 : 24,
+        gap: isMobile ? 8 : 12,
     },
     placeholderTitle: {
-        fontSize: 20,
+        fontSize: isMobile ? 16 : 20,
         fontWeight: '700',
         color: colors.textPrimary,
         textAlign: 'center',
     },
     placeholderDescription: {
-        fontSize: FontSizes.body,
+        fontSize: isMobile ? FontSizes.small : FontSizes.body,
         color: colors.textSecondary,
         textAlign: 'center',
-        lineHeight: 22,
+        lineHeight: isMobile ? 16 : 22,
     },
     actionsBar: {
-        padding: 16,
+        padding: isMobile ? 10 : 16,
         justifyContent: 'space-between',
         alignItems: 'center',
         borderTopWidth: 1,
@@ -358,12 +406,16 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     actionCount: {
-        fontSize: FontSizes.body,
+        fontSize: isMobile ? FontSizes.small : FontSizes.body,
         fontWeight: '600',
         color: colors.textSecondary,
     },
     likedCount: {
         color: colors.error,
+    },
+    actionsRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
 });
 

@@ -24,13 +24,19 @@ import { useUser } from '../stores/userStore';
 import ScrollContainer from '../components/ScrollContainer';
 import AddLinkComponent from '../components/AddLinkComponent';
 import { useToast } from '../utils/toastService';
-import { getScreenInfo, BREAKPOINTS } from '../globals/responsive';
+import { getScreenInfo, BREAKPOINTS, isMobileWeb } from '../globals/responsive';
 
 // New Modular Components
 import RideCard from '../components/rides/RideCard';
 import RideHistoryCard from '../components/rides/RideHistoryCard';
 import RideOfferForm from '../components/rides/RideOfferForm';
 import VerticalGridSlider from '../components/VerticalGridSlider';
+import { postsService } from '../utils/postsService';
+import PostReelItem from '../components/Feed/PostReelItem';
+import { usePostMenu } from '../hooks/usePostMenu';
+import OptionsModal from '../components/Feed/OptionsModal';
+import ReportPostModal from '../components/Feed/ReportPostModal';
+import { FeedItem } from '../types/feed';
 
 export default function TrumpScreen({
   navigation,
@@ -51,6 +57,27 @@ export default function TrumpScreen({
 
   const [mode, setMode] = useState(initialMode); // false = Offer Mode (Driver/פרסום), true = Search Mode (Passenger/חיפוש)
   const { t } = useTranslation(['donations', 'common', 'trump', 'search']);
+
+  // Post menu hook
+  const {
+    handleMorePress,
+    optionsModalVisible,
+    setOptionsModalVisible,
+    modalOptions,
+    modalPosition,
+    reportModalVisible,
+    setReportModalVisible,
+    selectedPostForReport,
+    setSelectedPostForReport
+  } = usePostMenu();
+
+  // Report submit handler
+  const handleReportSubmit = async (reason: string) => {
+    if (!selectedPostForReport) return;
+    // Report functionality can be implemented here if needed
+    setReportModalVisible(false);
+    setSelectedPostForReport(null);
+  };
 
   // Update mode when route params change (e.g., from deep link)
   useEffect(() => {
@@ -91,9 +118,14 @@ export default function TrumpScreen({
   }, []);
 
   // === Data State ===
-  const [allRides, setAllRides] = useState<any[]>([]); // Active rides for search
-  const [filteredRides, setFilteredRides] = useState<any[]>([]); // Filtered active rides
-  const [recentRides, setRecentRides] = useState<any[]>([]); // User's Published History
+  const [allRides, setAllRides] = useState<any[]>([]); // Active rides for search (legacy, for offer mode)
+  const [filteredRides, setFilteredRides] = useState<any[]>([]); // Filtered active rides (legacy, for offer mode)
+  const [recentRides, setRecentRides] = useState<any[]>([]); // User's Published History (legacy)
+  // Posts state for search mode
+  const [allPosts, setAllPosts] = useState<FeedItem[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<FeedItem[]>([]);
+  // Posts state for offer mode history
+  const [recentPosts, setRecentPosts] = useState<FeedItem[]>([]);
 
   // === Modal State ===
   const [selectedRide, setSelectedRide] = useState<any | null>(null);
@@ -228,70 +260,190 @@ export default function TrumpScreen({
   // Inside render / HeaderComp prop:
   // placeholder={mode ? t('trump:ui.searchPlaceholder.offer') : t('trump:ui.searchPlaceholder.seek')}
 
+  // Helper to map API post to FeedItem (same as useFeedData.mapPostToItem)
+  const mapPostToFeedItem = (post: any): FeedItem => {
+    // For ride posts, extract ride-specific data (same logic as useFeedData)
+    let rideData: any = {};
+    const formatRideTime = (dateIso: string) => {
+      if (!dateIso) return { time: '', date: '' };
+      const dep = new Date(dateIso);
+      if (isNaN(dep.getTime())) return { time: '', date: '' };
+
+      const hours = dep.getHours().toString().padStart(2, '0');
+      const minutes = dep.getMinutes().toString().padStart(2, '0');
+
+      const day = dep.getDate().toString().padStart(2, '0');
+      const month = (dep.getMonth() + 1).toString().padStart(2, '0');
+      const year = dep.getFullYear();
+
+      return {
+        time: `${hours}:${minutes}`,
+        date: `${day}.${month}.${year}`
+      };
+    };
+
+    // 1. Try ride_data from DB Join (same as useFeedData)
+    if (post.ride_data) {
+      const rd = post.ride_data;
+      const { time, date } = formatRideTime(rd.departure_time);
+
+      rideData = {
+        from: typeof rd.from_location === 'string' ? rd.from_location : (rd.from_location?.name || rd.from_location?.city || ''),
+        to: typeof rd.to_location === 'string' ? rd.to_location : (rd.to_location?.name || rd.to_location?.city || ''),
+        seats: rd.available_seats || 0,
+        price: rd.price_per_seat || 0,
+        time,
+        date
+      };
+    }
+    // 2. Fallback to metadata (same as useFeedData)
+    else if ((post.post_type === 'ride' || post.post_type === 'ride_offered') && post.metadata) {
+      const meta = typeof post.metadata === 'string' ? JSON.parse(post.metadata) : post.metadata;
+      const r = meta.ride || meta;
+
+      // Check departure_time (schema) or time/date (legacy/manual)
+      let timeStr = r.time || '';
+      let dateStr = r.date || '';
+
+      if (r.departure_time) {
+        const formatted = formatRideTime(r.departure_time);
+        if (formatted.time) timeStr = formatted.time;
+        if (formatted.date) dateStr = formatted.date;
+      }
+
+      rideData = {
+        from: typeof r.from_location === 'string' ? r.from_location : (r.from_location?.name || r.from_location?.city || r.from || ''),
+        to: typeof r.to_location === 'string' ? r.to_location : (r.to_location?.name || r.to_location?.city || r.to || ''),
+        seats: r.available_seats || r.seats || 0,
+        price: r.price_per_seat || r.price || 0,
+        time: timeStr,
+        date: dateStr
+      };
+    }
+
+    // Ensure user is always defined (same format as useFeedData)
+    const author = post.author || {};
+    const userId = author.id || post.author_id || 'unknown';
+    const userName = author.name || 'common.unknownUser';
+    const userAvatar = author.avatar_url || undefined;
+
+    return {
+      id: post.id,
+      type: post.post_type || 'post',
+      subtype: post.post_type, // Same as useFeedData - e.g. 'ride', 'ride_offered'
+      title: post.title || 'post.noTitle', // Same as useFeedData
+      description: post.description || '',
+      thumbnail: post.images && post.images.length > 0 ? post.images[0] : null, // Same as useFeedData
+      user: {
+        id: userId,
+        name: userName,
+        avatar: userAvatar,
+      },
+      likes: parseInt(post.likes || '0'),
+      comments: parseInt(post.comments || '0'),
+      isLiked: post.is_liked || false,
+      timestamp: (post.created_at && !isNaN(new Date(post.created_at).getTime()))
+        ? new Date(post.created_at).toISOString()
+        : new Date().toISOString(),
+      // Add ride-specific fields if this is a ride post (same as useFeedData)
+      ...rideData
+    };
+  };
+
   // --- 1. Data Loading ---
   const loadRides = useCallback(async (includePastOverride?: boolean) => {
     try {
       const uid = selectedUser?.id || 'guest';
-      console.log('🔄 Loading rides for user:', uid);
+      console.log('🔄 Loading rides/posts for user:', uid, 'mode:', mode);
 
-      // Check if includePast filter is selected, or use override
+      if (mode) {
+        // Search mode - load posts
+        console.log('🔍 מצב מחפש - טוען פוסטים של טרמפים');
+        try {
+          const postsResponse = await postsService.getPosts(100, 0, uid, 'ride');
+          if (postsResponse.success && Array.isArray(postsResponse.data)) {
+            const mappedPosts = postsResponse.data.map(mapPostToFeedItem);
+            setAllPosts(mappedPosts);
+            setFilteredPosts(mappedPosts);
+            console.log('✅ טעינת פוסטים הצליחה:', mappedPosts.length, 'פוסטים');
+          } else {
+            console.warn('⚠️ טעינת פוסטים נכשלה:', postsResponse.error);
+            setAllPosts([]);
+            setFilteredPosts([]);
+          }
+        } catch (error) {
+          console.error('❌ שגיאה בטעינת פוסטים:', error);
+          setAllPosts([]);
+          setFilteredPosts([]);
+        }
+        return; // Don't load rides in search mode
+      }
+
+      // Offer mode - load posts for history
+      console.log('🔵 מצב מציע - טוען פוסטים של המשתמש להיסטוריה:', uid);
+      try {
+        // טוען את הפוסטים של המשתמש
+        const { apiService } = await import('../utils/apiService');
+        const postsResponse = await apiService.getUserPosts(uid, 50, uid);
+        
+        if (postsResponse.success && Array.isArray(postsResponse.data)) {
+          // מסנן רק פוסטים של טרמפים
+          const ridePosts = postsResponse.data.filter((post: any) => 
+            post.post_type === 'ride' || post.post_type === 'ride_offered' || post.ride_id
+          );
+          
+          // ממפה את הפוסטים
+          const mappedPosts = ridePosts
+            .map(mapPostToFeedItem)
+            .filter((post: FeedItem | null): post is FeedItem => 
+              post !== null && post !== undefined && post.user && post.user.id && post.user.name
+            );
+          
+          setRecentPosts(mappedPosts);
+          console.log('✅ טעינת פוסטים להיסטוריה הצליחה:', mappedPosts.length, 'פוסטים');
+        } else {
+          console.warn('⚠️ טעינת פוסטים להיסטוריה נכשלה:', postsResponse.error);
+          setRecentPosts([]);
+        }
+      } catch (error) {
+        console.error('❌ שגיאה בטעינת פוסטים להיסטוריה:', error);
+        setRecentPosts([]);
+      }
+
+      // עדיין טוען rides לצורך history (legacy support)
       const shouldIncludePast = includePastOverride !== undefined
         ? includePastOverride
         : selectedFilters.includes('includePast');
 
       const [activeRides, myHistory] = await Promise.all([
-        db.listRides(uid, { includePast: shouldIncludePast }), // Active Search Data - include past only if filter is selected
-        selectedUser?.id ? db.getUserRides(selectedUser.id, 'driver') : Promise.resolve([]) // History Data
+        db.listRides(uid, { includePast: shouldIncludePast }),
+        selectedUser?.id ? db.getUserRides(selectedUser.id, 'driver') : Promise.resolve([])
       ]);
-
-      console.log('📊 Loaded rides - Active:', activeRides?.length || 0, 'History:', myHistory?.length || 0);
-      if (activeRides && activeRides.length > 0) {
-        console.log('📋 Sample active ride:', JSON.stringify(activeRides[0], null, 2));
-      }
-      if (myHistory && myHistory.length > 0) {
-        console.log('📋 Sample history ride:', JSON.stringify(myHistory[0], null, 2));
-      }
 
       // Enrich activeRides with real user names
       const enrichedRides = await Promise.all((activeRides || []).map(async (ride: any) => {
-        // If driverName is missing or looks like an ID (matches driverId or is a UUID), try to fetch user
         const driverId = ride.driverId;
-
-        // Simple heuristic: if name equals ID, or is "Driver", or missing, we want to fetch
         const needsFetch = !ride.driverName || ride.driverName === driverId || ride.driverName === 'Driver';
 
         if (needsFetch && driverId) {
           try {
-            // Try fetching user from DB/API
             const user = await db.getUser(driverId) as any;
             if (user && user.name && user.name !== driverId) {
               return { ...ride, driverName: user.name };
             }
           } catch (e) {
-            // Ignore error, keep original
+            // Ignore error
           }
         }
         return ride;
       }));
 
-      console.log('✅ Enriched rides count:', enrichedRides.length);
-      if (enrichedRides.length > 0) {
-        console.log('📋 Sample enriched ride:', {
-          id: enrichedRides[0].id,
-          from: enrichedRides[0].from,
-          to: enrichedRides[0].to,
-          date: enrichedRides[0].date,
-          time: enrichedRides[0].time,
-          driverId: enrichedRides[0].driverId,
-          driverName: enrichedRides[0].driverName
-        });
-      }
       setAllRides(enrichedRides);
 
-      // Map history to UI format if needed (or ensure backend consistency)
+      // Map history to UI format (legacy)
       const userRecent = (myHistory || []).map((r: any) => ({
         ...r,
-        status: r.status || 'active', // Changed from 'published' to 'active'
+        status: r.status || 'active',
         price: r.price || 0,
       }));
       setRecentRides(userRecent);
@@ -320,6 +472,46 @@ export default function TrumpScreen({
 
   // --- 2. Search Logic (Search Mode) ---
   const getFilteredRides = useCallback(() => {
+    // In search mode, filter posts instead of rides
+    if (mode) {
+      let filtered = [...allPosts];
+
+      console.log('🔍 Filtering posts - Total:', allPosts.length, 'Search query:', searchQuery, 'Filters:', selectedFilters.length);
+
+      // Filter by text
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter(post =>
+          (post.user?.name?.toLowerCase()?.includes(q) ?? false) ||
+          (post.from?.toLowerCase()?.includes(q) ?? false) ||
+          (post.to?.toLowerCase()?.includes(q) ?? false) ||
+          (post.title?.toLowerCase()?.includes(q) ?? false) ||
+          (post.description?.toLowerCase()?.includes(q) ?? false)
+        );
+        console.log('🔍 After text filter:', filtered.length);
+      }
+
+      // Apply Filters
+      if (selectedFilters.length > 0) {
+        selectedFilters.forEach(f => {
+          if (f === 'noCostSharing') filtered = filtered.filter(p => (p.price ?? 0) === 0);
+          // Add other filters as needed
+        });
+        console.log('🔍 After tag filters:', filtered.length);
+      }
+
+      // Sorting
+      const selectedSort = selectedSorts[0];
+      if (selectedSort) {
+        if (selectedSort === t('trump:sort.byPrice')) filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
+        else if (selectedSort === t('trump:sort.byDate')) filtered.sort((a, b) => new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime());
+      }
+
+      console.log('✅ Final filtered posts:', filtered.length);
+      return filtered;
+    }
+
+    // In offer mode, filter rides as before
     let filtered = [...allRides];
 
     console.log('🔍 Filtering rides - Total:', allRides.length, 'Search query:', searchQuery, 'Filters:', selectedFilters.length);
@@ -366,8 +558,12 @@ export default function TrumpScreen({
   }, [allRides, searchQuery, selectedFilters, selectedSorts, t]);
 
   useEffect(() => {
-    setFilteredRides(getFilteredRides());
-  }, [getFilteredRides]);
+    if (mode) {
+      setFilteredPosts(getFilteredRides() as FeedItem[]);
+    } else {
+      setFilteredRides(getFilteredRides() as any[]);
+    }
+  }, [getFilteredRides, mode]);
 
   const handleSearch = (query: string, filters?: string[], sorts?: string[]) => {
     if (!mode) {
@@ -626,12 +822,16 @@ export default function TrumpScreen({
   const { width } = Dimensions.get('window');
   const { isTablet, isDesktop } = getScreenInfo();
   const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
+  const isMobile = isMobileWeb();
 
   // Initialize with appropriate default, but allow user control via slider
   const [numColumns, setNumColumns] = useState(() => (isTablet || isDesktop || isDesktopWeb) ? 3 : 2);
 
-  const screenPadding = 20;
-  const cardGap = isTablet || isDesktop || isDesktopWeb ? 16 : 14;
+  // Use same padding values as PostsReelsScreen for consistency
+  const HORIZONTAL_PADDING = isMobile ? 8 : 16;
+  const COLUMN_GAP = isMobile ? 8 : 16;
+  const screenPadding = HORIZONTAL_PADDING;
+  const cardGap = COLUMN_GAP;
   const cardWidth = (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
 
   const handleCloseRideModal = () => {
@@ -729,16 +929,24 @@ export default function TrumpScreen({
           {/* 2. History */}
           <View style={localStyles.section}>
             <Text style={localStyles.sectionTitle}>{t('trump:ui.yourRecentRides')}</Text>
-            {recentRides.length === 0 ? (
+            {recentPosts.length === 0 ? (
               <Text style={localStyles.emptyStateText}>{t('trump:ui.noRecentRides')}</Text>
             ) : (
-              recentRides.map((ride, idx) => (
-                <RideHistoryCard
-                  key={ride.id || idx}
-                  ride={ride}
-                  onDelete={handleDeleteRide}
-                  onRestore={handleRestoreRide}
-                />
+              recentPosts.map((post) => (
+                <View key={post.id} style={{ marginBottom: 16 }}>
+                  <PostReelItem
+                    item={post}
+                    cardWidth={width - (HORIZONTAL_PADDING * 2)}
+                    numColumns={1}
+                    onPress={(item) => {
+                      console.log('Post pressed:', item.id);
+                    }}
+                    onCommentPress={(item) => {
+                      console.log('Comment pressed:', item.id);
+                    }}
+                    onMorePress={handleMorePress}
+                  />
+                </View>
               ))
             )}
           </View>
@@ -765,7 +973,7 @@ export default function TrumpScreen({
           />
           <View style={localStyles.resultsHeader}>
             <Text style={localStyles.resultsTitle}>
-              {searchQuery ? `${t('trump:ui.searchResultsPrefix')} "${searchQuery}"` : t('trump:ui.availableRides')} ({filteredRides.length})
+              {searchQuery ? `${t('trump:ui.searchResultsPrefix')} "${searchQuery}"` : t('trump:ui.availableRides')} ({filteredPosts.length})
             </Text>
           </View>
 
@@ -773,7 +981,7 @@ export default function TrumpScreen({
             contentStyle={localStyles.resultsList}
             showsVerticalScrollIndicator={false}
           >
-            {filteredRides.length === 0 ? (
+            {filteredPosts.length === 0 ? (
               <View style={localStyles.emptyState}>
                 <Text style={localStyles.emptyStateTitle}>{t('trump:ui.noRidesFoundTitle')}</Text>
                 <Text style={localStyles.emptyStateText}>{t('trump:ui.noRidesFoundBody')}</Text>
@@ -785,18 +993,28 @@ export default function TrumpScreen({
                   paddingHorizontal: screenPadding,
                 }
               ]}>
-                {filteredRides.map((ride, idx) => (
+                {filteredPosts.map((post, idx) => (
                   <View
-                    key={ride.id || idx}
+                    key={post.id || idx}
                     style={{
                       width: cardWidth,
                       marginBottom: cardGap,
                       marginLeft: idx % numColumns === 0 ? 0 : cardGap,
                     }}
                   >
-                    <RideCard
-                      ride={ride}
-                      onPress={handleSelectRide}
+                    <PostReelItem
+                      item={post}
+                      cardWidth={cardWidth}
+                      numColumns={numColumns}
+                      onPress={(item) => {
+                        // Navigate to post details or open modal
+                        console.log('Post pressed:', item.id);
+                      }}
+                      onCommentPress={(item) => {
+                        // Handle comment press
+                        console.log('Comment pressed:', item.id);
+                      }}
+                      onMorePress={handleMorePress}
                     />
                   </View>
                 ))}
@@ -826,12 +1044,28 @@ export default function TrumpScreen({
         navigation={navigation}
       />
 
+      {/* Post Menu Modals */}
+      <OptionsModal
+        visible={optionsModalVisible}
+        onClose={() => setOptionsModalVisible(false)}
+        options={modalOptions}
+        title={t('common.options') || 'Options'}
+        anchorPosition={modalPosition}
+      />
+      <ReportPostModal
+        visible={reportModalVisible}
+        onClose={() => setReportModalVisible(false)}
+        onSubmit={handleReportSubmit}
+        isLoading={false}
+      />
+
       {/* Footer Stats (Visible in Search Mode usually, or always) */}
-      {!mode && (
+      {mode && (
         <DonationStatsFooter
           stats={[
-            { label: t('trump:stats.availableRides') || 'זמינים', value: filteredRides.length, icon: 'car-outline' },
-            { label: t('trump:stats.noCost') || 'חינם', value: filteredRides.filter(r => (r.price || 0) === 0).length, icon: 'pricetag-outline' },
+            { label: t('trump:stats.availableRides') || 'זמינים', value: filteredPosts.length, icon: 'car-outline' },
+            { label: 'לייקים', value: filteredPosts.reduce((sum, p) => sum + (p.likes || 0), 0), icon: 'heart-outline' },
+            { label: 'תגובות', value: filteredPosts.reduce((sum, p) => sum + (p.comments || 0), 0), icon: 'chatbubble-outline' },
           ]}
         />
       )}

@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Platform, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import colors from '../../../globals/colors';
 import { FontSizes } from '../../../globals/constants';
 import { BaseCardProps } from './types';
+import { isMobileWeb } from '../../../globals/responsive';
 
 const TaskAssignmentCard: React.FC<BaseCardProps> = ({
     item,
@@ -17,6 +18,8 @@ const TaskAssignmentCard: React.FC<BaseCardProps> = ({
     onBookmark,
     onShare,
     onMorePress,
+    onQuickMessage,
+    onClosePost,
     isLiked,
     isBookmarked,
     likesCount,
@@ -59,7 +62,11 @@ const TaskAssignmentCard: React.FC<BaseCardProps> = ({
                 <View style={[styles.headerRight, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                     <View style={styles.taskBadge}>
                         <Ionicons name="clipboard" size={16} color={colors.white} />
-                        <Text style={styles.taskBadgeText}>{t('tasks.status.new')}</Text>
+                        <Text style={styles.taskBadgeText}>
+                            {item.taskData?.status === 'open' || item.taskData?.status === 'in_progress' 
+                                ? t('tasks.status.open') 
+                                : t('tasks.status.new')}
+                        </Text>
                     </View>
 
                     <TouchableOpacity
@@ -75,7 +82,7 @@ const TaskAssignmentCard: React.FC<BaseCardProps> = ({
             <TouchableOpacity onPress={onPress} activeOpacity={0.95} style={styles.cardContent}>
                 <View style={[styles.contentContainer, isGrid && styles.contentContainerGrid]}>
                     <View style={styles.iconContainer}>
-                        <Ionicons name="construct-outline" size={32} color={colors.primary} />
+                        <Ionicons name="construct-outline" size={isMobile ? 24 : 32} color={colors.primary} />
                     </View>
 
                     <View style={styles.textContainer}>
@@ -99,7 +106,7 @@ const TaskAssignmentCard: React.FC<BaseCardProps> = ({
                     <View style={styles.detailsSection}>
                         {/* Creator */}
                         <View style={styles.detailRow}>
-                            <Ionicons name="person-outline" size={16} color={colors.textSecondary} />
+                            <Ionicons name="person-outline" size={isMobile ? 14 : 16} color={colors.textSecondary} />
                             <Text style={styles.detailText}>
                                 {t('task.opened_by', 'נוצר ע"י')}: {item.user.name}
                             </Text>
@@ -107,7 +114,7 @@ const TaskAssignmentCard: React.FC<BaseCardProps> = ({
 
                         {/* Assignee */}
                         <View style={styles.detailRow}>
-                            <Ionicons name="people-outline" size={16} color={colors.textSecondary} />
+                            <Ionicons name="people-outline" size={isMobile ? 14 : 16} color={colors.textSecondary} />
                             <Text style={styles.detailText}>
                                 {t('task.performer', 'מבצע')}: {
                                     item.taskData?.assignees && item.taskData.assignees.length > 0
@@ -120,7 +127,7 @@ const TaskAssignmentCard: React.FC<BaseCardProps> = ({
                         {/* Duration */}
                         {item.taskData?.estimated_hours ? (
                             <View style={styles.detailRow}>
-                                <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
+                                <Ionicons name="time-outline" size={isMobile ? 14 : 16} color={colors.textSecondary} />
                                 <Text style={styles.detailText}>
                                     {t('task.duration', 'משך זמן')}: {item.taskData.estimated_hours} {t('common.hours', 'שעות')}
                                 </Text>
@@ -134,12 +141,12 @@ const TaskAssignmentCard: React.FC<BaseCardProps> = ({
             <View style={[styles.actionsBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <View style={[styles.actionsLeft, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                     <TouchableOpacity
-                        style={[styles.actionButton, { marginRight: isRTL ? 0 : 16, marginLeft: isRTL ? 16 : 0 }]}
+                        style={[styles.actionButton, { marginRight: isRTL ? 0 : (isMobile ? 12 : 16), marginLeft: isRTL ? (isMobile ? 12 : 16) : 0 }]}
                         onPress={onLike}
                     >
                         <Ionicons
                             name={isLiked ? "heart" : "heart-outline"}
-                            size={24}
+                            size={isMobile ? 20 : 24}
                             color={isLiked ? colors.error : colors.textSecondary}
                         />
                         {likesCount > 0 && (
@@ -150,36 +157,56 @@ const TaskAssignmentCard: React.FC<BaseCardProps> = ({
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.actionButton, { marginRight: isRTL ? 0 : 16, marginLeft: isRTL ? 16 : 0 }]}
+                        style={[styles.actionButton, { marginRight: isRTL ? 0 : (isMobile ? 12 : 16), marginLeft: isRTL ? (isMobile ? 12 : 16) : 0 }]}
                         onPress={onComment}
                     >
-                        <Ionicons name="chatbubble-outline" size={24} color={colors.textSecondary} />
+                        <Ionicons name="chatbubble-outline" size={isMobile ? 20 : 24} color={colors.textSecondary} />
                         {commentsCount > 0 && (
                             <Text style={styles.actionCount}>{commentsCount}</Text>
                         )}
                     </TouchableOpacity>
                 </View>
 
-                <TouchableOpacity style={styles.actionButton} onPress={onBookmark}>
-                    <Ionicons
-                        name={isBookmarked ? "bookmark" : "bookmark-outline"}
-                        size={24}
-                        color={isBookmarked ? colors.primary : colors.textSecondary}
-                    />
-                </TouchableOpacity>
+                <View style={[styles.actionsRight, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                    {onQuickMessage && (
+                        <TouchableOpacity
+                            style={[styles.actionButton, { marginRight: isRTL ? 0 : (isMobile ? 6 : 8), marginLeft: isRTL ? (isMobile ? 6 : 8) : 0 }]}
+                            onPress={onQuickMessage}
+                        >
+                            <Ionicons name="chatbubble-ellipses" size={isMobile ? 20 : 24} color={colors.primary} />
+                        </TouchableOpacity>
+                    )}
+                    {onClosePost && (
+                        <TouchableOpacity
+                            style={[styles.actionButton, { marginRight: isRTL ? 0 : (isMobile ? 6 : 8), marginLeft: isRTL ? (isMobile ? 6 : 8) : 0 }]}
+                            onPress={onClosePost}
+                        >
+                            <Ionicons name="checkmark-circle-outline" size={isMobile ? 20 : 24} color={colors.success} />
+                        </TouchableOpacity>
+                    )}
+                    <TouchableOpacity style={styles.actionButton} onPress={onBookmark}>
+                        <Ionicons
+                            name={isBookmarked ? "bookmark" : "bookmark-outline"}
+                            size={isMobile ? 20 : 24}
+                            color={isBookmarked ? colors.primary : colors.textSecondary}
+                        />
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
     );
 };
 
+const isMobile = isMobileWeb();
+
 const styles = StyleSheet.create({
     container: {
         backgroundColor: colors.white,
-        borderRadius: 16,
-        marginVertical: 8,
-        marginHorizontal: 16,
+        borderRadius: isMobile ? 12 : 16,
+        marginVertical: isMobile ? 6 : 8,
+        marginHorizontal: 0, // Padding is handled by parent listContent
         overflow: 'hidden',
-        minHeight: 380, // Enforce uniform minimum height
+        minHeight: isMobile ? 280 : 380, // Smaller height for mobile web
         ...Platform.select({
             ios: {
                 shadowColor: colors.black,
@@ -196,11 +223,11 @@ const styles = StyleSheet.create({
         }),
     },
     gridContainer: {
-        marginHorizontal: 8,
-        minHeight: 250,
+        marginHorizontal: isMobile ? 4 : 8, // Small gap between columns in grid view
+        minHeight: isMobile ? 180 : 250,
     },
     header: {
-        padding: 16,
+        padding: isMobile ? 10 : 16,
         justifyContent: 'space-between',
         alignItems: 'center',
         backgroundColor: colors.backgroundSecondary,
@@ -218,9 +245,9 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     avatar: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: isMobile ? 36 : 44,
+        height: isMobile ? 36 : 44,
+        borderRadius: isMobile ? 18 : 22,
         backgroundColor: colors.backgroundTertiary,
     },
     avatarPlaceholder: {
@@ -233,25 +260,25 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     userName: {
-        fontSize: FontSizes.body,
+        fontSize: isMobile ? FontSizes.small : FontSizes.body,
         fontWeight: '700',
         color: colors.textPrimary,
     },
     timestamp: {
-        fontSize: FontSizes.small,
+        fontSize: isMobile ? 10 : FontSizes.small,
         color: colors.textSecondary,
     },
     taskBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.primary,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        gap: 6,
+        paddingHorizontal: isMobile ? 8 : 12,
+        paddingVertical: isMobile ? 3 : 6,
+        borderRadius: isMobile ? 16 : 20,
+        gap: isMobile ? 4 : 6,
     },
     taskBadgeText: {
-        fontSize: FontSizes.small,
+        fontSize: isMobile ? 10 : FontSizes.small,
         fontWeight: '600',
         color: colors.white,
     },
@@ -260,19 +287,19 @@ const styles = StyleSheet.create({
         backgroundColor: '#F3F4F6',
     },
     contentContainer: {
-        padding: 24,
+        padding: isMobile ? 16 : 24,
         alignItems: 'center',
         justifyContent: 'center', // Center content vertically
-        gap: 16,
+        gap: isMobile ? 10 : 16,
         flex: 1, // Take full height
     },
     contentContainerGrid: {
-        padding: 16,
+        padding: isMobile ? 12 : 16,
     },
     iconContainer: {
-        width: 80, // Slightly larger
-        height: 80,
-        borderRadius: 40,
+        width: isMobile ? 60 : 80,
+        height: isMobile ? 60 : 80,
+        borderRadius: isMobile ? 30 : 40,
         backgroundColor: '#E6E8EB',
         justifyContent: 'center',
         alignItems: 'center',
@@ -282,14 +309,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     title: {
-        fontSize: 22, // Slightly larger
+        fontSize: isMobile ? 18 : 22,
         fontWeight: '700',
         color: colors.textPrimary,
     },
     description: {
-        fontSize: FontSizes.body,
+        fontSize: isMobile ? FontSizes.small : FontSizes.body,
         color: colors.textSecondary,
-        lineHeight: 22,
+        lineHeight: isMobile ? 16 : 22,
     },
     ctaButton: {
         flexDirection: 'row',
@@ -307,7 +334,7 @@ const styles = StyleSheet.create({
         color: colors.white,
     },
     actionsBar: {
-        padding: 16,
+        padding: isMobile ? 10 : 16,
         justifyContent: 'space-between',
         alignItems: 'center',
         borderTopWidth: 1,
@@ -323,28 +350,32 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     actionCount: {
-        fontSize: FontSizes.body,
+        fontSize: isMobile ? FontSizes.small : FontSizes.body,
         fontWeight: '600',
         color: colors.textSecondary,
     },
     likedCount: {
         color: colors.error,
     },
+    actionsRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
     detailsSection: {
         width: '100%',
-        marginTop: 16,
-        paddingTop: 16,
+        marginTop: isMobile ? 10 : 16,
+        paddingTop: isMobile ? 10 : 16,
         borderTopWidth: 1,
         borderTopColor: colors.border,
-        gap: 8,
+        gap: isMobile ? 6 : 8,
     },
     detailRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: isMobile ? 6 : 8,
     },
     detailText: {
-        fontSize: FontSizes.body,
+        fontSize: isMobile ? FontSizes.small : FontSizes.body,
         color: colors.textSecondary,
     }
 });

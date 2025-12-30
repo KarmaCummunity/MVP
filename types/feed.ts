@@ -40,6 +40,10 @@ export interface FeedItem {
     // Association
     user: FeedUser;
     taskData?: TaskData;
+    // IDs for updating posts
+    itemId?: string;
+    rideId?: string;
+    taskId?: string;
 
     // Stats & State
     likes: number;

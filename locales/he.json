@@ -36,6 +36,8 @@
     "back": "חזרה",
     "web": "דף אינטרנט",
     "report": "דווח",
+    "options": "אפשרויות",
+    "reopen": "פתיחה חוזרת",
     "cannotOpenLink": "לא ניתן לפתוח את הקישור",
     "welcomeShort": "ברוכים הבאים!",
     "appName": "Karma Community",
@@ -59,8 +61,10 @@
       "empty_discovery": "היה הראשון לפרסם!"
     },
     "rides": {
-      "offered": "טרמפ",
+      "offered": "טרמפ זמין",
       "completed": "הנסיעה הושלמה",
+      "taken": "הטרמפ נתפס",
+      "past": "הטרמפ עבר כבר",
       "from": "מ",
       "to": "ל",
       "origin": "מוצא",
@@ -73,15 +77,21 @@
       "thanks_message": "תודה שלקחת חלק בנסיעה!"
     },
     "items": {
-      "title": "פריט"
+      "title": "פריט",
+      "available": "פריט זמין",
+      "delivered": "הפריט נמסר"
     },
     "post": {
-      "noTitle": "פוסט ללא כותרת"
+      "noTitle": "פוסט ללא כותרת",
+      "closedSuccess": "הפוסט נסגר בהצלחה",
+      "closeError": "שגיאה בסגירת הפוסט"
     },
     "tasks": {
       "status": {
         "new": "משימה חדשה",
-        "new_for_you": "נוצרה עבורך משימה חדשה"
+        "new_for_you": "נוצרה עבורך משימה חדשה",
+        "open": "משימה פתוחה",
+        "completed": "משימה שבוצעה"
       },
       "view_details": "הצג פרטים",
       "task_completed": "משימה בוצעה!"
@@ -1358,5 +1368,18 @@
   "items": {
     "title": "פריט",
     "forSale": "למכירה"
+  },
+  "quickMessage": {
+    "title": "שלח הודעה מהירה",
+    "to": "ל",
+    "placeholder": "הקלד הודעה...",
+    "send": "שלח",
+    "success": "ההודעה נשלחה בהצלחה",
+    "error": "שגיאה בשליחת ההודעה",
+    "cannotMessageSelf": "לא ניתן לשלוח הודעה לעצמך",
+    "item": "האם פריט זה עוד רלוונטי?",
+    "ride": "האם טרמפ זה עוד רלוונטי?",
+    "task": "האם משימה זו עוד רלוונטית?",
+    "default": "האם זה עוד רלוונטי?"
   }
 }

@@ -150,14 +150,30 @@ class PostsService {
    * @param limit - Max number of results
    * @param offset - Pagination offset
    * @param userId - Optional: filter by user ID (for profile feed) or for "friends" logic checking (backend dependant)
+   * @param postType - Optional: filter by post type (e.g., 'item', 'ride', 'donation')
+   * @param itemId - Optional: filter by item_id
+   * @param rideId - Optional: filter by ride_id
    */
-  async getPosts(limit = 20, offset = 0, userId?: string): Promise<PostsApiResponse<any[]>> {
+  async getPosts(
+    limit = 20, 
+    offset = 0, 
+    userId?: string,
+    postType?: string,
+    itemId?: string,
+    rideId?: string
+  ): Promise<PostsApiResponse<any[]>> {
     let url = `/api/posts?limit=${limit}&offset=${offset}`;
     if (userId) {
       url += `&user_id=${userId}`;
-      // Note: Backend currently uses this param for "friends" filtering or just author filtering? 
-      // Based on controller, getPosts takes query params. 
-      // Controller signature: @Query('limit') limitArg, @Query('offset') offsetArg, @Query('userId') userId (optional filter?)
+    }
+    if (postType) {
+      url += `&post_type=${encodeURIComponent(postType)}`;
+    }
+    if (itemId) {
+      url += `&item_id=${encodeURIComponent(itemId)}`;
+    }
+    if (rideId) {
+      url += `&ride_id=${encodeURIComponent(rideId)}`;
     }
     return this.request<any[]>(url);
   }
