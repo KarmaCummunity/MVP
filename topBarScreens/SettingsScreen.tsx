@@ -737,6 +737,18 @@ export default function SettingsScreen() {
             />
           </View>
 
+          {/* My Activity Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('settings:myActivitySection', 'הפעילות שלי')}</Text>
+
+            <SettingsItem
+              icon="trophy-outline"
+              title={t('challenges:myChallenges')}
+              subtitle={t('settings:myChallengesDesc', 'עדכון מהיר של האתגרים שהצטרפת אליהם')}
+              onPress={() => (navigation as any).navigate('ChallengeStatisticsScreen')}
+            />
+          </View>
+
           {/* Privacy & Security Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('settings:privacySection')}</Text>

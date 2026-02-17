@@ -323,6 +323,51 @@ class PostsService {
       }
     );
   }
+
+  // ============================================
+  // POST MANAGEMENT
+  // ============================================
+
+  /**
+   * Update a post (title, description, image)
+   * @param postId - The ID of the post
+   * @param userId - The ID of the user (must be post owner)
+   * @param updates - Object containing fields to update
+   */
+  async updatePost(
+    postId: string,
+    userId: string,
+    updates: { title?: string; description?: string; image?: string }
+  ): Promise<PostsApiResponse<any>> {
+    return this.request<any>(`/api/posts/${postId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ user_id: userId, ...updates }),
+    });
+  }
+
+  /**
+   * Hide a post (soft delete - sets status to 'hidden')
+   * @param postId - The ID of the post
+   * @param userId - The ID of the user (must be post owner)
+   */
+  async hidePost(postId: string, userId: string): Promise<PostsApiResponse<{ status: string }>> {
+    return this.request<{ status: string }>(`/api/posts/${postId}/hide`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId }),
+    });
+  }
+
+  /**
+   * Unhide a post (restore from hidden status)
+   * @param postId - The ID of the post
+   * @param userId - The ID of the user (must be post owner)
+   */
+  async unhidePost(postId: string, userId: string): Promise<PostsApiResponse<{ status: string }>> {
+    return this.request<{ status: string }>(`/api/posts/${postId}/unhide`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId }),
+    });
+  }
 }
 
 // Export singleton instance

@@ -165,6 +165,11 @@ export const VALID_PROFILE_TAB_STACK_ROUTES: string[] = [
 
 export const VALID_DONATIONS_STACK_ROUTES: string[] = [
   'DonationsScreen',
+  'MyChallengesScreen',
+  'CommunityChallengesScreen',
+  'ChallengeDetailsScreen',
+  'ChallengeStatisticsScreen',
+  'MyCreatedChallengesScreen',
   'MoneyScreen',
   'ItemsScreen',
   'TimeScreen',

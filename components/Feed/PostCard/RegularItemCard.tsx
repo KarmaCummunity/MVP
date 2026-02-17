@@ -52,6 +52,26 @@ const RegularItemCard: React.FC<BaseCardProps> = ({
                 ? t(normalizeTranslationKey(item.title))
                 : item.title;
     
+    // Build full description for items
+    const fullItemDescription = React.useMemo(() => {
+        if (!item.title && !item.description) return '';
+        
+        const titlePart = item.title && item.title.trim() !== '' 
+            ? (isTranslationKey(item.title) ? t(normalizeTranslationKey(item.title)) : item.title)
+            : '';
+        const descPart = item.description && item.description.trim() !== '' ? item.description : '';
+        
+        // Build full text: "בפריט [שם הפריט] למסירה - [תיאור]"
+        if (titlePart && descPart) {
+            return `בפריט ${titlePart} למסירה - ${descPart}`;
+        } else if (titlePart) {
+            return `בפריט ${titlePart} למסירה`;
+        } else if (descPart) {
+            return descPart;
+        }
+        return '';
+    }, [item.title, item.description, t]);
+    
     // Safe access to user.name with fallback
     const userName = item.user?.name || 'common.unknownUser';
     const displayName = userName === 'common.unknownUser' ? t('common.unknownUser') : userName;
@@ -116,9 +136,9 @@ const RegularItemCard: React.FC<BaseCardProps> = ({
                                 <Text style={styles.itemTitle} numberOfLines={2}>
                                     {displayTitle}
                                 </Text>
-                                {item.description && !isGrid && (
+                                {fullItemDescription && !isGrid && (
                                     <Text style={styles.itemDescription} numberOfLines={3}>
-                                        {item.description}
+                                        {fullItemDescription}
                                     </Text>
                                 )}
                                 <View style={[styles.detailsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -137,9 +157,9 @@ const RegularItemCard: React.FC<BaseCardProps> = ({
                     <View style={[styles.placeholderContainer, isGrid && styles.imageGrid]}>
                         <Ionicons name="cube-outline" size={48} color={colors.textSecondary} />
                         <Text style={styles.placeholderTitle}>{displayTitle}</Text>
-                        {item.description && !isGrid && (
+                        {fullItemDescription && !isGrid && (
                             <Text style={styles.placeholderDescription} numberOfLines={3}>
-                                {item.description}
+                                {fullItemDescription}
                             </Text>
                         )}
                         <View style={[styles.detailsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>

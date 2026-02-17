@@ -13,13 +13,17 @@ import { RootStackParamList } from '../globals/types';
  * Maps URL paths to navigation screens with proper parameter handling
  */
 export const linking: LinkingOptions<RootStackParamList> = {
-  // URL prefixes that the app will respond to
+  // URL prefixes that the app will respond to (localhost for dev)
   prefixes: [
     'karma-community://',
     'https://karma-community-kc.com',
     'https://www.karma-community-kc.com',
     'http://karma-community-kc.com',
     'http://www.karma-community-kc.com',
+    'http://localhost:8081',
+    'http://localhost:19006',
+    'http://127.0.0.1:8081',
+    'http://127.0.0.1:19006',
   ],
   
   // Custom function to handle paths that don't match exactly
@@ -83,6 +87,7 @@ export const linking: LinkingOptions<RootStackParamList> = {
           DonationsTab: {
             screens: {
               DonationsScreen: 'donations',
+              MyChallengesScreen: 'donations/challenges',
               
               // Main donation categories with mode support (offer/search)
               // 4 main categories: money, time, knowledge, rides (trump), items

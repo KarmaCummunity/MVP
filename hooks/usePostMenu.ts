@@ -12,6 +12,7 @@ interface UsePostMenuOptions {
   onReport?: (item: FeedItem) => void;
   onEdit?: (item: FeedItem) => void;
   onReopen?: (item: FeedItem) => void;
+  onHide?: (item: FeedItem) => void;
 }
 
 interface UsePostMenuReturn {
@@ -100,6 +101,14 @@ export const usePostMenu = (options: UsePostMenuOptions = {}): UsePostMenuReturn
       }
     };
 
+    const handleHide = () => {
+      if (options.onHide) {
+        options.onHide(item);
+      } else {
+        toastService.showInfo(t('hide_coming_soon') || 'Hide functionality coming soon!');
+      }
+    };
+
     if (Platform.OS === 'ios') {
       const iosOptions = [t('cancel') || 'Cancel'];
       const destructiveButtonIndex: number[] = [];
@@ -115,10 +124,18 @@ export const usePostMenu = (options: UsePostMenuOptions = {}): UsePostMenuReturn
         iosOptions.push(t('reopen') || 'Reopen');
       }
 
-      // Edit (if owner) or Report (if not owner)
+      // Edit (if owner)
       if (isOwner) {
         iosOptions.push(t('edit') || 'Edit');
-      } else {
+      }
+
+      // Hide (if owner and not closed)
+      if (isOwner && !isClosed) {
+        iosOptions.push(t('hide') || 'Hide');
+      }
+
+      // Report (always show)
+      if (!isOwner) {
         iosOptions.push(t('report') || 'Report');
         destructiveButtonIndex.push(iosOptions.length - 1);
       }
@@ -142,6 +159,8 @@ export const usePostMenu = (options: UsePostMenuOptions = {}): UsePostMenuReturn
             handleEdit();
           } else if (selectedOption === (t('reopen') || 'Reopen')) {
             handleReopen();
+          } else if (selectedOption === (t('hide') || 'Hide')) {
+            handleHide();
           }
         }
       );
@@ -168,12 +187,21 @@ export const usePostMenu = (options: UsePostMenuOptions = {}): UsePostMenuReturn
         });
       }
 
-      // Edit (if owner) or Report (if not owner, or always show report)
+      // Edit (if owner)
       if (isOwner) {
         androidOptions.push({
           label: t('edit') || 'Edit',
           onPress: handleEdit,
           icon: 'create-outline'
+        });
+      }
+
+      // Hide (if owner and not closed)
+      if (isOwner && !isClosed) {
+        androidOptions.push({
+          label: t('hide') || 'Hide',
+          onPress: handleHide,
+          icon: 'eye-off-outline'
         });
       }
 

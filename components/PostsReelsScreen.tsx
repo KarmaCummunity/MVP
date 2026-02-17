@@ -24,7 +24,9 @@ import FeedHeader from './Feed/FeedHeader';
 import CommentsModal from './CommentsModal';
 import OptionsModal, { Option } from './Feed/OptionsModal';
 import ReportPostModal from './Feed/ReportPostModal';
+import EditPostModal from './Feed/EditPostModal';
 import { apiService } from '../utils/apiService';
+import { postsService } from '../utils/postsService';
 import VerticalGridSlider from './VerticalGridSlider';
 import { logger } from '../utils/loggerService';
 import { usePostDeletion } from '../hooks/usePostDeletion';
@@ -64,6 +66,10 @@ const PostsReelsScreen: React.FC<PostsReelsScreenProps> = ({
   // Report State
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
+  // Edit State
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [selectedItemForEdit, setSelectedItemForEdit] = useState<FeedItem | null>(null);
+
   // Post menu hook
   const {
     handleMorePress,
@@ -82,6 +88,26 @@ const PostsReelsScreen: React.FC<PostsReelsScreenProps> = ({
     onReport: (item) => {
       setSelectedPostForReport(item);
       setReportModalVisible(true);
+    },
+    onEdit: (item) => {
+      setSelectedItemForEdit(item);
+      setEditModalVisible(true);
+    },
+    onHide: async (item) => {
+      if (!selectedUser?.id) return;
+      
+      try {
+        const result = await postsService.hidePost(item.id, selectedUser.id);
+        if (result.success) {
+          toastService.showSuccess(t('post.hideSuccess') || 'הפוסט הוסתר בהצלחה');
+          refresh();
+        } else {
+          toastService.showError(result.error || t('post.hideError') || 'שגיאה בהסתרת הפוסט');
+        }
+      } catch (error) {
+        console.error('Error hiding post:', error);
+        toastService.showError(t('post.hideError') || 'שגיאה בהסתרת הפוסט');
+      }
     }
   });
 
@@ -296,17 +322,45 @@ const PostsReelsScreen: React.FC<PostsReelsScreenProps> = ({
           onSubmit={handleReportSubmit}
           isLoading={isSubmittingReport}
         />
-        <CommentsModal
-          visible={commentsModalVisible}
-          onClose={() => setCommentsModalVisible(false)}
-          postId={selectedItemForComments?.id || ''}
-          postUser={selectedItemForComments?.user ? {
-            id: selectedItemForComments.user.id,
-            name: selectedItemForComments.user.name || null,
-            avatar: selectedItemForComments.user.avatar || ''
-          } : { id: '', name: '', avatar: '' }}
-          postTitle={selectedItemForComments?.title || ''}
+        <EditPostModal
+          visible={editModalVisible}
+          item={selectedItemForEdit}
+          onClose={() => {
+            setEditModalVisible(false);
+            setSelectedItemForEdit(null);
+          }}
+          onSave={async (postId, updates) => {
+            if (!selectedUser?.id) return;
+            
+            const result = await postsService.updatePost(postId, selectedUser.id, updates);
+            if (result.success) {
+              refresh();
+            } else {
+              throw new Error(result.error || 'Failed to update post');
+            }
+          }}
         />
+        {selectedItemForComments && (
+          <CommentsModal
+            visible={commentsModalVisible}
+            onClose={() => setCommentsModalVisible(false)}
+            postId={selectedItemForComments.id}
+            postUser={selectedItemForComments.user ? {
+              id: selectedItemForComments.user.id,
+              name: selectedItemForComments.user.name || null,
+              avatar: selectedItemForComments.user.avatar || 'https://picsum.photos/seed/user/100/100'
+            } : undefined}
+            postTitle={selectedItemForComments.title || ''}
+            onCommentsCountChange={(count) => {
+              // Update the comments count in the feed
+              setFeedItems(prev => prev.map(item => 
+                item.id === selectedItemForComments.id 
+                  ? { ...item, commentsCount: count }
+                  : item
+              ));
+            }}
+          />
+        )}
       </View>
     </SafeAreaView>
   );

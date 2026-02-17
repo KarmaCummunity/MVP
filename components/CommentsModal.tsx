@@ -39,10 +39,10 @@ interface CommentsModalProps {
   onClose: () => void;
   postId: string;
   postTitle: string;
-  postUser: {
+  postUser?: {
     id: string;
     name: string | null; // Can be null if name is not available (never use ID as name)
-    avatar: string;
+    avatar?: string;
   };
   onCommentsCountChange?: (count: number) => void;
 }
@@ -369,10 +369,13 @@ export default function CommentsModal({
 
         {/* Post Info */}
         <View style={styles.postInfo}>
-          <Image source={{ uri: postUser.avatar }} style={styles.postUserAvatar} />
+          <Image 
+            source={{ uri: postUser?.avatar || 'https://picsum.photos/seed/user/100/100' }} 
+            style={styles.postUserAvatar} 
+          />
           <View style={styles.postInfoContent}>
-            <Text style={styles.postUserName}>{postUser.name || 'משתמש'}</Text>
-            <Text style={styles.postTitle} numberOfLines={1}>{postTitle}</Text>
+            <Text style={styles.postUserName}>{postUser?.name || 'משתמש'}</Text>
+            <Text style={styles.postTitle} numberOfLines={1}>{postTitle || ''}</Text>
           </View>
         </View>
 

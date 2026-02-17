@@ -986,6 +986,165 @@ export const db = {
     console.log('✅ API: Item deleted');
     return response.data;
   },
+
+  // ========================================
+  // Community Group Challenges API
+  // ========================================
+
+  createCommunityChallenge: async (challengeData: {
+    creator_id: string;
+    title: string;
+    description?: string;
+    image_url?: string;
+    type: 'BOOLEAN' | 'NUMERIC' | 'DURATION';
+    frequency: 'DAILY' | 'WEEKLY' | 'FLEXIBLE';
+    goal_value?: number;
+    goal_direction?: 'maximize' | 'minimize';
+    deadline?: string;
+    difficulty?: 'easy' | 'medium' | 'hard' | 'expert';
+    category?: string;
+  }) => {
+    console.log('📤 API: Creating community challenge:', challengeData.title);
+    const response = await axios.post(`${API_BASE_URL}/api/community-challenges`, challengeData);
+    console.log('✅ API: Challenge created:', response.data);
+    return response.data;
+  },
+
+  getCommunityChallenges: async (filters: {
+    type?: string;
+    frequency?: string;
+    difficulty?: string;
+    category?: string;
+    is_active?: boolean;
+    creator_id?: string;
+    search?: string;
+    sort_by?: string;
+    sort_order?: 'ASC' | 'DESC';
+    limit?: number;
+    offset?: number;
+  } = {}) => {
+    console.log('📥 API: Fetching community challenges with filters:', filters);
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        params.append(key, String(value));
+      }
+    });
+    const response = await axios.get(`${API_BASE_URL}/api/community-challenges?${params.toString()}`);
+    console.log('✅ API: Received challenges:', response.data.data?.length || 0);
+    return response.data;
+  },
+
+  getChallengeDetails: async (challengeId: string) => {
+    console.log('📥 API: Fetching challenge details:', challengeId);
+    const response = await axios.get(`${API_BASE_URL}/api/community-challenges/${challengeId}`);
+    console.log('✅ API: Challenge details received');
+    return response.data;
+  },
+
+  joinChallenge: async (challengeId: string, userId: string) => {
+    console.log('🤝 API: Joining challenge:', challengeId, 'User:', userId);
+    const response = await axios.post(`${API_BASE_URL}/api/community-challenges/${challengeId}/join`, {
+      user_id: userId
+    });
+    console.log('✅ API: Joined challenge successfully');
+    return response.data;
+  },
+
+  addChallengeEntry: async (challengeId: string, entryData: {
+    user_id: string;
+    value: number;
+    entry_date?: string;
+    notes?: string;
+  }) => {
+    const body = { challenge_id: challengeId, ...entryData };
+    console.log('📝 API: Adding challenge entry:', challengeId, 'date=', entryData.entry_date, 'value=', entryData.value);
+    const response = await axios.post(
+      `${API_BASE_URL}/api/community-challenges/${challengeId}/entries`,
+      body
+    );
+    console.log('✅ API: Entry added. Streak:', response.data?.data?.current_streak, 'entry_date:', response.data?.data?.entry_date);
+    return response.data;
+  },
+
+  getChallengeEntries: async (challengeId: string, userId: string, limit = 100, offset = 0) => {
+    console.log('📥 API: Fetching challenge entries:', challengeId, 'User:', userId);
+    const params = new URLSearchParams({
+      user_id: userId,
+      limit: String(limit),
+      offset: String(offset)
+    });
+    const response = await axios.get(
+      `${API_BASE_URL}/api/community-challenges/${challengeId}/entries?${params.toString()}`
+    );
+    console.log('✅ API: Received entries:', response.data.data?.length || 0);
+    return response.data;
+  },
+
+  getChallengeStatistics: async (userId: string) => {
+    console.log('📊 API: Fetching challenge statistics for user:', userId);
+    const response = await axios.get(`${API_BASE_URL}/api/community-challenges/user/${userId}/stats`);
+    console.log('✅ API: Statistics received');
+    return response.data;
+  },
+
+  updateCommunityChallenge: async (challengeId: string, userId: string, updateData: {
+    title?: string;
+    description?: string;
+    image_url?: string;
+    goal_value?: number;
+    goal_direction?: 'maximize' | 'minimize';
+    deadline?: string;
+    difficulty?: string;
+    category?: string;
+    is_active?: boolean;
+  }) => {
+    console.log('✏️ API: Updating challenge:', challengeId);
+    const params = new URLSearchParams({ user_id: userId });
+    const response = await axios.put(
+      `${API_BASE_URL}/api/community-challenges/${challengeId}?${params.toString()}`,
+      updateData
+    );
+    console.log('✅ API: Challenge updated');
+    return response.data;
+  },
+
+  deleteCommunityChallenge: async (challengeId: string, userId: string) => {
+    console.log('🗑️ API: Deleting challenge:', challengeId, 'User:', userId);
+    const params = new URLSearchParams({ user_id: userId });
+    const url = `${API_BASE_URL}/api/community-challenges/${challengeId}?${params.toString()}`;
+    console.log('🔗 API: DELETE URL:', url);
+    const response = await axios.delete(url);
+    console.log('✅ API: Challenge deleted:', response.data);
+    return response.data;
+  },
+
+  // ========================================
+  // Daily Habits Tracker API
+  // ========================================
+
+  getDailyTrackerData: async (userId: string, startDate?: string, endDate?: string) => {
+    console.log('📊 API: Fetching daily tracker data for user:', userId);
+    console.log('📅 Date range:', startDate, '-', endDate);
+    
+    const params = new URLSearchParams({ user_id: userId });
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    
+    const response = await axios.get(
+      `${API_BASE_URL}/api/community-challenges/daily-tracker?${params.toString()}`
+    );
+    
+    const payload = response.data?.data ?? response.data;
+    console.log('✅ API: Tracker data received');
+    console.log('   Challenges:', payload?.challenges?.length ?? 0);
+    console.log('   Success rate:', payload?.stats?.total_success_rate ?? 'N/A');
+    if (payload?.entries_by_date && typeof __DEV__ !== 'undefined' && __DEV__) {
+      const dates = Object.keys(payload.entries_by_date);
+      console.log('   Dates with entries:', dates.join(', '));
+    }
+    return response.data;
+  },
 };
 
 export default DatabaseService;

@@ -46,6 +46,11 @@ export type DonationsStackParamList = {
   TimeScreen: undefined;
   ItemsScreen: undefined;
   CategoryScreen: undefined;
+  CommunityChallengesScreen: { mode?: 'search' | 'offer' } | undefined;
+  ChallengeDetailsScreen: { challengeId: string; openEntryForm?: boolean } | undefined;
+  ChallengeStatisticsScreen: undefined;
+  MyChallengesScreen: undefined;
+  MyCreatedChallengesScreen: undefined;
   // Top bar accessible screens that are also used inside the Donations stack
   ChatListScreen: undefined;
   ChatDetailScreen: { chatId?: string } | undefined;
@@ -277,3 +282,101 @@ export interface UserPreview {
   parentManagerId?: string | null;
   hierarchyLevel?: number | null; // דרגה בהיררכיה: 0 = מנהל ראשי, 1 = סופר מנהל, 2+ = מנהלים/מתנדבים, null = משתמש רגיל
 }
+
+// --- Community Challenges Types ---
+export type ChallengeType = 'BOOLEAN' | 'NUMERIC' | 'DURATION';
+export type ChallengeFrequency = 'DAILY' | 'WEEKLY' | 'FLEXIBLE';
+export type ChallengeDifficulty = 'easy' | 'medium' | 'hard' | 'expert';
+export type GoalDirection = 'maximize' | 'minimize' | null;
+
+export interface CommunityChallenge {
+  id: string;
+  creator_id: string;
+  title: string;
+  description?: string;
+  image_url?: string;
+  type: ChallengeType;
+  frequency: ChallengeFrequency;
+  goal_value?: number;
+  goal_direction?: GoalDirection;
+  deadline?: string;
+  difficulty?: ChallengeDifficulty;
+  category?: string;
+  is_active: boolean;
+  participants_count: number;
+  created_at: string;
+  updated_at: string;
+  // Extended fields from JOIN
+  creator_name?: string;
+  creator_avatar?: string;
+  post_id?: string;
+  participants?: ChallengeParticipant[];
+}
+
+export interface ChallengeParticipant {
+  id: string;
+  challenge_id: string;
+  user_id: string;
+  joined_at: string;
+  current_streak: number;
+  best_streak: number;
+  total_entries: number;
+  last_entry_date?: string;
+  // Extended fields from JOIN
+  user_name?: string;
+  user_avatar?: string;
+}
+
+export interface ChallengeEntry {
+  id: string;
+  challenge_id: string;
+  user_id: string;
+  entry_date: string;
+  value: number;
+  notes?: string;
+  created_at: string;
+}
+
+export interface ChallengeStatistics {
+  overall: {
+    active_challenges: number;
+    total_entries: number;
+    best_streak_overall: number;
+    avg_current_streak: number;
+  };
+  challenges: Array<ChallengeParticipant & {
+    title: string;
+    type: ChallengeType;
+    frequency: ChallengeFrequency;
+    difficulty?: ChallengeDifficulty;
+    category?: string;
+    goal_value?: number;
+    deadline?: string;
+  }>;
+}
+
+// New types for Daily Habits Tracker
+export type EntryStatus = 'success' | 'failed' | 'neutral' | 'empty';
+
+export interface ChallengeEntryWithStatus extends ChallengeEntry {
+  status: EntryStatus;
+}
+
+export interface DailyTrackerChallenge extends CommunityChallenge {
+  participant_data: ChallengeParticipant;
+}
+
+export interface DailyTrackerData {
+  challenges: DailyTrackerChallenge[];
+  entries_by_date: {
+    [date: string]: {
+      [challengeId: string]: ChallengeEntryWithStatus;
+    };
+  };
+  stats: {
+    total_success_rate: number | null;
+    total_days_tracked: number;
+  };
+}
+
+export type ViewMode = 'day' | 'week' | 'month';
