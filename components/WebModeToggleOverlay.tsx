@@ -119,7 +119,7 @@ const WebModeToggleOverlay: React.FC = () => {
           {/* Right Side: Toggle + Menu (RTL) */}
           <View style={styles.rightContainer}>
             {/* Toggle Switch */}
-            <TouchableOpacity onPress={handleToggle} activeOpacity={0.9} style={styles.toggleWrapper}>
+            {/* <TouchableOpacity onPress={handleToggle} activeOpacity={0.9} style={styles.toggleWrapper}>
               <View style={styles.toggleBackground}>
                 <View style={[styles.toggleSegment, mode === 'site' ? styles.toggleSelected : styles.toggleUnselected]}>
                   <Text style={[styles.toggleText, mode === 'site' ? styles.toggleTextSelected : undefined]}>{t('siteMode')}</Text>
@@ -128,7 +128,7 @@ const WebModeToggleOverlay: React.FC = () => {
                   <Text style={[styles.toggleText, mode === 'app' ? styles.toggleTextSelected : undefined]}>{t('appMode')}</Text>
                 </View>
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             {mode === 'site' && (
               isMobile ? (
