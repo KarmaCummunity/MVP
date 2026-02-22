@@ -37,7 +37,7 @@ import OrgOnboardingScreen from '../screens/OrgOnboardingScreen';
 import AdminOrgApprovalsScreen from '../screens/AdminOrgApprovalsScreen';
 import OrgDashboardScreen from '../screens/OrgDashboardScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
-import LandingSiteScreen from '../screens/LandingSiteScreen';
+import LandingSiteScreen from '../screens/Landing/LandingSiteScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import { useWebMode } from '../stores/webModeStore';
 import { logger } from '../utils/loggerService';

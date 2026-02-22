@@ -10,6 +10,7 @@ import {
   Switch,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ChallengeType, DailyTrackerChallenge } from '../../globals/types';
 
 interface EditEntryModalProps {
@@ -33,6 +34,7 @@ export const EditEntryModal: React.FC<EditEntryModalProps> = ({
   onSave,
   onDelete,
 }) => {
+  const { t } = useTranslation(['challenges', 'common']);
   const [value, setValue] = useState<number>(existingValue ?? 0);
   const [notes, setNotes] = useState<string>(existingNotes ?? '');
   const [saving, setSaving] = useState(false);
@@ -44,7 +46,7 @@ export const EditEntryModal: React.FC<EditEntryModalProps> = ({
       setValue(nextValue);
       setNotes(nextNotes);
       if (__DEV__) {
-        console.log('[EditEntryModal] פתוח עם ערכים:', { date, existingValue, nextValue, existingNotes: existingNotes?.slice(0, 20) });
+        console.log('[EditEntryModal] Opened with values:', { date, existingValue, nextValue, existingNotes: existingNotes?.slice(0, 20) });
       }
     }
   }, [visible, date, existingValue, existingNotes, challenge?.id]);
@@ -52,14 +54,14 @@ export const EditEntryModal: React.FC<EditEntryModalProps> = ({
   if (!challenge) return null;
 
   const handleSave = async () => {
-    if (__DEV__) console.log('[EditEntryModal] לחיצה על שמור:', { value, notes });
+    if (__DEV__) console.log('[EditEntryModal] Save clicked:', { value, notes });
     setSaving(true);
     try {
       await onSave(value, notes);
       // onSave should handle closing the modal and refreshing data
     } catch (error) {
-      if (__DEV__) console.error('[EditEntryModal] שגיאה בשמירה:', error);
-      Alert.alert('שגיאה', 'לא הצלחנו לשמור את הערך');
+      if (__DEV__) console.error('[EditEntryModal] Error saving:', error);
+      Alert.alert(t('editEntry.saveErrorTitle'), t('editEntry.saveErrorMessage'));
     } finally {
       setSaving(false);
     }
@@ -67,12 +69,12 @@ export const EditEntryModal: React.FC<EditEntryModalProps> = ({
 
   const handleDelete = async () => {
     Alert.alert(
-      'מחיקת ערך',
-      'האם אתה בטוח שברצונך למחוק את הערך?',
+      t('editEntry.deleteTitle'),
+      t('editEntry.deleteMessage'),
       [
-        { text: 'ביטול', style: 'cancel' },
+        { text: t('common:cancel'), style: 'cancel' },
         {
-          text: 'מחק',
+          text: t('common:delete'),
           style: 'destructive',
           onPress: async () => {
             if (onDelete) {
@@ -81,7 +83,7 @@ export const EditEntryModal: React.FC<EditEntryModalProps> = ({
                 await onDelete();
                 onClose();
               } catch (error) {
-                Alert.alert('שגיאה', 'לא הצלחנו למחוק את הערך');
+                Alert.alert(t('editEntry.deleteErrorTitle'), t('editEntry.deleteErrorMessage'));
               } finally {
                 setSaving(false);
               }
@@ -106,10 +108,10 @@ export const EditEntryModal: React.FC<EditEntryModalProps> = ({
     if (challenge.type === 'BOOLEAN') {
       return (
         <View style={styles.booleanContainer}>
-          <Text style={styles.label}>סטטוס</Text>
+          <Text style={styles.label}>{t('challenges:fields.value')}</Text>
           <View style={styles.switchRow}>
             <Text style={styles.switchLabel}>
-              {value === 1 ? 'הצלחה ✓' : 'כישלון ✗'}
+              {value === 1 ? '✓' : '✗'}
             </Text>
             <Switch
               value={value === 1}
@@ -125,7 +127,7 @@ export const EditEntryModal: React.FC<EditEntryModalProps> = ({
     if (challenge.type === 'NUMERIC') {
       return (
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>ערך</Text>
+          <Text style={styles.label}>{t('challenges:fields.value')}</Text>
           <TextInput
             style={styles.input}
             value={value.toString()}
@@ -134,11 +136,11 @@ export const EditEntryModal: React.FC<EditEntryModalProps> = ({
               setValue(isNaN(num) ? 0 : num);
             }}
             keyboardType="numeric"
-            placeholder="הכנס ערך"
+            placeholder={t('challenges:fields.valuePlaceholder')}
           />
           {challenge.goal_value && (
             <Text style={styles.hint}>
-              יעד: {challenge.goal_direction === 'minimize' ? 'פחות מ-' : 'לפחות '}
+              {challenge.goal_direction === 'minimize' ? '< ' : '≥ '}
               {challenge.goal_value}
             </Text>
           )}
@@ -152,10 +154,10 @@ export const EditEntryModal: React.FC<EditEntryModalProps> = ({
 
       return (
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>משך זמן (דקות)</Text>
+          <Text style={styles.label}>{t('challenges:fields.goalValueMinutes')}</Text>
           <View style={styles.timeRow}>
             <View style={styles.timeInput}>
-              <Text style={styles.timeLabel}>שעות</Text>
+              <Text style={styles.timeLabel}>H</Text>
               <TextInput
                 style={styles.input}
                 value={hours.toString()}
@@ -169,7 +171,7 @@ export const EditEntryModal: React.FC<EditEntryModalProps> = ({
             </View>
             <Text style={styles.timeSeparator}>:</Text>
             <View style={styles.timeInput}>
-              <Text style={styles.timeLabel}>דקות</Text>
+              <Text style={styles.timeLabel}>M</Text>
               <TextInput
                 style={styles.input}
                 value={minutes.toString()}
@@ -184,7 +186,7 @@ export const EditEntryModal: React.FC<EditEntryModalProps> = ({
           </View>
           {challenge.goal_value && (
             <Text style={styles.hint}>
-              יעד: {challenge.goal_value} דקות
+              {t('editEntry.goalMinutes', { value: challenge.goal_value })}
             </Text>
           )}
         </View>
@@ -210,12 +212,12 @@ export const EditEntryModal: React.FC<EditEntryModalProps> = ({
             {renderValueInput()}
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>הערות (אופציונלי)</Text>
+              <Text style={styles.label}>{t('fields.notes')}</Text>
               <TextInput
                 style={[styles.input, styles.notesInput]}
                 value={notes}
                 onChangeText={setNotes}
-                placeholder="הוסף הערות..."
+                placeholder={t('fields.notesPlaceholder')}
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
@@ -228,7 +230,7 @@ export const EditEntryModal: React.FC<EditEntryModalProps> = ({
                 onPress={onClose}
                 disabled={saving}
               >
-                <Text style={styles.buttonTextCancel}>ביטול</Text>
+                <Text style={styles.buttonTextCancel}>{t('common:cancel')}</Text>
               </TouchableOpacity>
 
               {existingValue !== undefined && onDelete && (
@@ -237,7 +239,7 @@ export const EditEntryModal: React.FC<EditEntryModalProps> = ({
                   onPress={handleDelete}
                   disabled={saving}
                 >
-                  <Text style={styles.buttonTextDelete}>מחק</Text>
+                  <Text style={styles.buttonTextDelete}>{t('common:delete')}</Text>
                 </TouchableOpacity>
               )}
 
@@ -247,7 +249,7 @@ export const EditEntryModal: React.FC<EditEntryModalProps> = ({
                 disabled={saving}
               >
                 <Text style={styles.buttonTextSave}>
-                  {saving ? 'שומר...' : 'שמור'}
+                  {saving ? t('editEntry.saving') : t('editEntry.save')}
                 </Text>
               </TouchableOpacity>
             </View>

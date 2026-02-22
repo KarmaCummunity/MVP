@@ -14,6 +14,7 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 import { apiService } from '../utils/apiService';
@@ -46,6 +47,7 @@ interface ManagerNodeProps {
 
 // Individual Manager Node Component (Recursive)
 const ManagerNodeComponent: React.FC<ManagerNodeProps> = ({ node, isLast = false, depth = 0 }) => {
+  const { t } = useTranslation('admin');
   const [isExpanded, setIsExpanded] = useState(true);
   const [animatedHeight] = useState(new Animated.Value(1));
   const hasChildren = node.children && node.children.length > 0;
@@ -77,10 +79,10 @@ const ManagerNodeComponent: React.FC<ManagerNodeProps> = ({ node, isLast = false
   };
 
   const getRoleLabel = () => {
-    if (node.isSuperAdmin) return 'מנהל ראשי';
-    if (node.isAdmin) return 'מנהל';
-    if (node.isVolunteer) return 'מתנדב';
-    return 'משתמש';
+    if (node.isSuperAdmin) return t('hierarchy.roleSuperAdmin');
+    if (node.isAdmin) return t('hierarchy.roleAdmin');
+    if (node.isVolunteer) return t('hierarchy.roleVolunteer');
+    return t('hierarchy.roleUser');
   };
 
   const badgeStyle = getRoleBadgeStyle();
@@ -143,7 +145,7 @@ const ManagerNodeComponent: React.FC<ManagerNodeProps> = ({ node, isLast = false
           <View style={styles.infoRow}>
             <Ionicons name="cash-outline" size={isMobileWeb ? 12 : 14} color={colors.textSecondary} />
             <Text style={styles.infoText}>
-              משכורת: ₪{(node.salary ?? 0).toLocaleString('he-IL')}
+              {t('hierarchy.salary')}: ₪{(node.salary ?? 0).toLocaleString('he-IL')}
             </Text>
           </View>
           
@@ -151,7 +153,7 @@ const ManagerNodeComponent: React.FC<ManagerNodeProps> = ({ node, isLast = false
           <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={isMobileWeb ? 12 : 14} color={colors.textSecondary} />
             <Text style={styles.infoText}>
-              ותק: {node.seniority_start_date || new Date().toISOString().split('T')[0]}
+              {t('hierarchy.seniority')}: {node.seniority_start_date || new Date().toISOString().split('T')[0]}
             </Text>
           </View>
           
@@ -159,7 +161,7 @@ const ManagerNodeComponent: React.FC<ManagerNodeProps> = ({ node, isLast = false
           <View style={styles.infoRow}>
             <Ionicons name="layers-outline" size={isMobileWeb ? 12 : 14} color={colors.textSecondary} />
             <Text style={styles.infoText}>
-              דרגה: {node.level}
+              {t('hierarchy.level')}: {node.level}
             </Text>
           </View>
         </View>
@@ -215,6 +217,7 @@ interface AdminHierarchyTreeProps {
 }
 
 const AdminHierarchyTree: React.FC<AdminHierarchyTreeProps> = ({ onError }) => {
+  const { t } = useTranslation('admin');
   const [treeData, setTreeData] = useState<ManagerNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -231,19 +234,19 @@ const AdminHierarchyTree: React.FC<AdminHierarchyTreeProps> = ({ onError }) => {
         setTreeData(response.data);
         setTotalCount((response as any).totalCount || response.data.length);
       } else {
-        const errorMsg = response.error || 'שגיאה בטעינת עץ המנהלים';
+        const errorMsg = response.error || t('hierarchy.loadError');
         setError(errorMsg);
         onError?.(errorMsg);
       }
     } catch (err) {
-      const errorMsg = 'שגיאה בחיבור לשרת';
+      const errorMsg = t('hierarchy.connectionError');
       setError(errorMsg);
       onError?.(errorMsg);
       console.error('Failed to load hierarchy:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [onError]);
+  }, [onError, t]);
 
   useEffect(() => {
     loadHierarchy();
@@ -254,7 +257,7 @@ const AdminHierarchyTree: React.FC<AdminHierarchyTreeProps> = ({ onError }) => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>טוען את מבנה הניהול...</Text>
+        <Text style={styles.loadingText}>{t('hierarchy.loading')}</Text>
       </View>
     );
   }
@@ -266,7 +269,7 @@ const AdminHierarchyTree: React.FC<AdminHierarchyTreeProps> = ({ onError }) => {
         <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={loadHierarchy}>
-          <Text style={styles.retryButtonText}>נסה שוב</Text>
+          <Text style={styles.retryButtonText}>{t('hierarchy.retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -277,7 +280,7 @@ const AdminHierarchyTree: React.FC<AdminHierarchyTreeProps> = ({ onError }) => {
     return (
       <View style={styles.emptyContainer}>
         <Ionicons name="people-outline" size={48} color={colors.textTertiary} />
-        <Text style={styles.emptyText}>אין מנהלים להצגה</Text>
+        <Text style={styles.emptyText}>{t('hierarchy.noManagers')}</Text>
       </View>
     );
   }
@@ -288,7 +291,7 @@ const AdminHierarchyTree: React.FC<AdminHierarchyTreeProps> = ({ onError }) => {
       <View style={styles.headerStats}>
         <View style={styles.statBadge}>
           <Ionicons name="people" size={16} color={colors.primary} />
-          <Text style={styles.statText}>{totalCount} מנהלים</Text>
+          <Text style={styles.statText}>{t('hierarchy.managersCount', { count: totalCount })}</Text>
         </View>
       </View>
 
@@ -308,15 +311,15 @@ const AdminHierarchyTree: React.FC<AdminHierarchyTreeProps> = ({ onError }) => {
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: colors.accent }]} />
-          <Text style={styles.legendText}>מנהל ראשי</Text>
+          <Text style={styles.legendText}>{t('hierarchy.roleSuperAdmin')}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
-          <Text style={styles.legendText}>מנהל</Text>
+          <Text style={styles.legendText}>{t('hierarchy.roleAdmin')}</Text>
         </View>
         <View style={styles.legendItem}>
           <Ionicons name="chevron-down-outline" size={14} color={colors.textSecondary} />
-          <Text style={styles.legendText}>לחץ להרחבה</Text>
+          <Text style={styles.legendText}>{t('hierarchy.expandHint')}</Text>
         </View>
       </View>
     </View>

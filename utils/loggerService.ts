@@ -17,12 +17,18 @@ try {
 }
 const isProduction = !isDevelopment;
 
+export interface LogOptions {
+  /** Mark as recurring/periodic log (e.g. polling, re-renders, nav save) - shown with [PERIODIC] in console */
+  periodic?: boolean;
+}
+
 interface LogEntry {
   timestamp: string;
   level: 'info' | 'warn' | 'error' | 'debug';
   component: string;
   message: string;
   data?: Record<string, unknown>;
+  periodic?: boolean;
 }
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'none';
@@ -140,16 +146,24 @@ class LoggerService {
     return levels[level] >= levels[this.logLevel];
   }
 
-  private addLog(level: 'info' | 'warn' | 'error' | 'debug', component: string, message: string, data?: Record<string, unknown>) {
+  private addLog(
+    level: 'info' | 'warn' | 'error' | 'debug',
+    component: string,
+    message: string,
+    data?: Record<string, unknown>,
+    options?: LogOptions
+  ) {
     // Early return if log level is not enabled
     if (!this.shouldLog(level)) return;
 
+    const periodic = options?.periodic === true;
     const logEntry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
       component,
       message,
-      data
+      data,
+      periodic,
     };
 
     // Add to pending logs for batching
@@ -162,7 +176,8 @@ class LoggerService {
 
     // Console output only if enabled (disabled in production by default)
     if (this.enableConsoleOutput) {
-      const prefix = `[${logEntry.timestamp}] ${component}:`;
+      const periodicTag = periodic ? ' [PERIODIC]' : '';
+      const prefix = `[${logEntry.timestamp}] ${component}:${periodicTag}`;
       const fullMessage = data ? `${message} ${JSON.stringify(data)}` : message;
 
       switch (level) {
@@ -182,20 +197,20 @@ class LoggerService {
     }
   }
 
-  debug(component: string, message: string, data?: Record<string, unknown>) {
-    this.addLog('debug', component, message, data);
+  debug(component: string, message: string, data?: Record<string, unknown>, options?: LogOptions) {
+    this.addLog('debug', component, message, data, options);
   }
 
-  info(component: string, message: string, data?: Record<string, unknown>) {
-    this.addLog('info', component, message, data);
+  info(component: string, message: string, data?: Record<string, unknown>, options?: LogOptions) {
+    this.addLog('info', component, message, data, options);
   }
 
-  warn(component: string, message: string, data?: Record<string, unknown>) {
-    this.addLog('warn', component, message, data);
+  warn(component: string, message: string, data?: Record<string, unknown>, options?: LogOptions) {
+    this.addLog('warn', component, message, data, options);
   }
 
-  error(component: string, message: string, data?: Record<string, unknown>) {
-    this.addLog('error', component, message, data);
+  error(component: string, message: string, data?: Record<string, unknown>, options?: LogOptions) {
+    this.addLog('error', component, message, data, options);
   }
 
   // Compatibility methods for legacy logger API
@@ -252,7 +267,10 @@ class LoggerService {
 
   async exportLogs(): Promise<string> {
     return this.logs
-      .map(log => `[${log.timestamp}] ${log.level.toUpperCase()} ${log.component}: ${log.message}${log.data ? ` ${JSON.stringify(log.data)}` : ''}`)
+      .map(log => {
+        const periodicTag = log.periodic ? ' [PERIODIC]' : '';
+        return `[${log.timestamp}] ${log.level.toUpperCase()} ${log.component}:${periodicTag} ${log.message}${log.data ? ` ${JSON.stringify(log.data)}` : ''}`;
+      })
       .join('\n');
   }
 

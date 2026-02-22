@@ -1401,7 +1401,7 @@ const ContactSection = () => (
 {/* <Section title="הצטרפו לקהילה שעושה טוב" subtitle="כל אחד יכול להשפיע. בואו נבנה את זה יחד." style={styles.sectionAltBackground}> */ }
 
 const LandingSiteScreen: React.FC = () => {
-  console.log('LandingSiteScreen - Component rendered');
+  logger.debug('LandingSite', 'Component rendered', undefined, { periodic: true });
 
   const { setMode } = useWebMode();
   const navigation = useNavigation<any>();
@@ -1609,7 +1609,7 @@ const LandingSiteScreen: React.FC = () => {
         completedTasks: getValue(communityStats.completed_tasks) || 0,
       };
 
-      logger.info('LandingSite', 'Stats loaded', statsData);
+      logger.info('LandingSite', 'Stats loaded', statsData, { periodic: true });
       setStats(statsData);
     } catch (error) {
       logger.error('LandingSite', 'Failed to load stats', { error });

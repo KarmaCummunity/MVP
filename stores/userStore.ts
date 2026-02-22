@@ -9,6 +9,7 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuth, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { getFirebase } from '../utils/firebaseClient';
+import { logger } from '../utils/loggerService';
 
 // Auth mode of the current session
 export type AuthMode = 'guest' | 'demo' | 'real';
@@ -569,20 +570,20 @@ export const useUserStore = create<UserState>((set, get) => ({
 
           // Skip updates if store hasn't been initialized yet
           if (!state.isInitialized) {
-            console.log('🔥 Firebase Auth State Changed - Skipping (not initialized yet)');
+            logger.debug('Auth', 'Firebase Auth State Changed - Skipping (not initialized yet)');
             return;
           }
 
-          console.log('🔥 Firebase Auth State Changed:', {
+          logger.info('Auth', 'Firebase Auth State Changed', {
             hasUser: !!firebaseUser,
             email: firebaseUser?.email,
             uid: firebaseUser?.uid,
-            emailVerified: firebaseUser?.emailVerified
+            emailVerified: firebaseUser?.emailVerified,
           });
 
           if (firebaseUser) {
             // Firebase user is logged in - restore/create session
-            console.log('🔥 Firebase user detected, restoring session');
+            logger.info('Auth', 'Firebase user detected, restoring session');
 
             try {
               // Get UUID from server using firebase_uid and google_id
@@ -594,10 +595,10 @@ export const useUserStore = create<UserState>((set, get) => ({
               );
               const googleId = googleProvider?.uid || undefined;
 
-              console.log('🔥 Resolving user with identifiers:', {
+              logger.debug('Auth', 'Resolving user with identifiers', {
                 firebase_uid: firebaseUser.uid,
                 google_id: googleId,
-                email: firebaseUser.email
+                email: firebaseUser.email,
               });
 
               const resolveResponse = await apiService.resolveUserId({
@@ -607,7 +608,7 @@ export const useUserStore = create<UserState>((set, get) => ({
               });
 
               if (!resolveResponse.success || !(resolveResponse as any).user) {
-                console.warn('🔥 Failed to resolve user ID from server, using fallback');
+                logger.warn('Auth', 'Failed to resolve user ID from server, using fallback');
                 // Fallback: try to get user by email
                 if (firebaseUser.email) {
                   const userResponse = await apiService.getUserById(firebaseUser.email);
@@ -644,7 +645,7 @@ export const useUserStore = create<UserState>((set, get) => ({
                       selectedUser: enrichedUser,
                       isAuthenticated: true
                     });
-                    console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
+                    logger.info('Auth', 'Firebase session restored successfully with UUID', { userId: userData.id });
                     return;
                   }
                 }
@@ -692,9 +693,9 @@ export const useUserStore = create<UserState>((set, get) => ({
                 authMode: 'real',
                 isGuestMode: false
               });
-              console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
+              logger.info('Auth', 'Firebase session restored successfully with UUID', { userId: userData.id });
             } catch (error) {
-              console.error('🔥 Failed to restore Firebase session:', error);
+              logger.error('Auth', 'Failed to restore Firebase session', { error });
               // Don't set user state if we can't get UUID from server
             }
           } else {
@@ -704,7 +705,7 @@ export const useUserStore = create<UserState>((set, get) => ({
 
             // Only clear if we actually had a Firebase user and we're not in guest mode
             if (firebaseUserId && currentState.authMode === 'real' && currentState.isAuthenticated) {
-              console.log('🔥 Firebase user logged out, clearing session');
+              logger.info('Auth', 'Firebase user logged out, clearing session');
               await AsyncStorage.multiRemove(['current_user', 'auth_mode', 'firebase_user_id']);
               set({
                 selectedUser: null,
@@ -713,17 +714,17 @@ export const useUserStore = create<UserState>((set, get) => ({
                 authMode: 'guest',
               });
             } else {
-              console.log('🔥 Firebase Auth State Changed - No user, but not clearing (guest mode or no previous Firebase user)');
+              logger.info('Auth', 'Firebase Auth State Changed - No user, not clearing (guest mode or no previous Firebase user)');
             }
           }
         });
 
-        console.log('🔥 Firebase Auth listener set up successfully');
+        logger.info('Auth', 'Firebase Auth listener set up successfully');
       } catch (error) {
-        console.error('🔥 Error setting up Firebase Auth listener:', error);
+        logger.error('Auth', 'Error setting up Firebase Auth listener', { error });
       }
     } catch (error) {
-      console.error('🔐 userStore - initialize - Critical error during initialization:', error);
+      logger.error('Auth', 'Critical error during initialization', { error });
       // Ensure we still mark as initialized and set a safe state
       set({
         isInitialized: true,

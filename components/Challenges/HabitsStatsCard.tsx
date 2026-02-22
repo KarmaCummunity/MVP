@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 interface HabitsStatsCardProps {
   successRate: number | null;
@@ -12,27 +13,28 @@ export const HabitsStatsCard: React.FC<HabitsStatsCardProps> = ({
   currentStreak,
   activeChallenges
 }) => {
+  const { t } = useTranslation('challenges');
   return (
     <View style={styles.container}>
       <View style={styles.statItem}>
         <Text style={styles.statValue}>
-          {successRate !== null ? `${Math.round(successRate)}%` : 'אין נתונים'}
+          {successRate !== null ? `${Math.round(successRate)}%` : t('stats.noData')}
         </Text>
-        <Text style={styles.statLabel}>אחוז הצלחה</Text>
+        <Text style={styles.statLabel}>{t('stats.successRate')}</Text>
       </View>
 
       <View style={styles.divider} />
 
       <View style={styles.statItem}>
         <Text style={styles.statValue}>{currentStreak}</Text>
-        <Text style={styles.statLabel}>רצף נוכחי</Text>
+        <Text style={styles.statLabel}>{t('stats.currentStreak')}</Text>
       </View>
 
       <View style={styles.divider} />
 
       <View style={styles.statItem}>
         <Text style={styles.statValue}>{activeChallenges}</Text>
-        <Text style={styles.statLabel}>אתגרים פעילים</Text>
+        <Text style={styles.statLabel}>{t('stats.activeChallenges')}</Text>
       </View>
     </View>
   );

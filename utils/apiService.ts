@@ -16,6 +16,7 @@
 // TODO: Add request/response transformation middleware
 // TODO: Add comprehensive logging and monitoring
 import { API_BASE_URL as CONFIG_API_BASE_URL } from './config.constants';
+import { logger } from './loggerService';
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -269,7 +270,8 @@ class ApiService {
         ...options,
       };
 
-      console.log(`🌐 API Request: ${config.method || 'GET'} ${url}`, authToken ? '(authenticated)' : '(no auth)');
+      const isPeriodic = endpoint.includes('stats/community');
+      logger.debug('API', `${config.method || 'GET'} ${endpoint}`, { auth: !!authToken }, isPeriodic ? { periodic: true } : undefined);
 
       // Add timeout to prevent hanging requests
       const controller = new AbortController();
@@ -286,18 +288,18 @@ class ApiService {
 
         // Handle 401 Unauthorized - try to refresh token and retry
         if (response.status === 401 && retryOn401 && authToken) {
-          console.warn('🔄 Received 401, attempting token refresh and retry');
+          logger.warn('API', 'Received 401, attempting token refresh and retry', { endpoint });
           
           // Try to refresh token
           const refreshedToken = await this.validateAndRefreshToken();
           
           if (refreshedToken) {
             // Retry request with new token (only once to prevent infinite loops)
-            console.log('🔄 Retrying request with refreshed token');
+            logger.info('API', 'Retrying request with refreshed token', { endpoint });
             return this.request<T>(endpoint, options, false);
           } else {
             // Refresh failed, clear session
-            console.error('❌ Token refresh failed, clearing session');
+            logger.error('API', 'Token refresh failed, clearing session', { endpoint });
             const AsyncStorage = await import('@react-native-async-storage/async-storage');
             await AsyncStorage.default.multiRemove([
               'jwt_access_token',
@@ -313,21 +315,21 @@ class ApiService {
         }
 
         if (!response.ok) {
-          console.error(`❌ API Error: ${response.status}`, data);
+          logger.error('API', `API Error ${response.status}`, { endpoint, status: response.status, data });
           return {
             success: false,
             error: data.message || data.error || 'Network error',
           };
         }
 
-        console.log(`✅ API Response: ${endpoint}`, data);
+        logger.debug('API', `Response ${endpoint}`, { success: true }, isPeriodic ? { periodic: true } : undefined);
         return data;
       } catch (fetchError: any) {
         clearTimeout(timeoutId);
 
         // Check if error is due to abort (timeout)
         if (fetchError.name === 'AbortError') {
-          console.error(`⏱️ API Timeout: ${endpoint}`);
+          logger.error('API', 'Request timeout', { endpoint });
           return {
             success: false,
             error: 'Request timeout - server is not responding',
@@ -336,7 +338,7 @@ class ApiService {
         throw fetchError;
       }
     } catch (error) {
-      console.error(`❌ API Network Error:`, error);
+      logger.error('API', 'Network error', { error: String(error) });
       return {
         success: false,
         error: 'Network error - please check your connection',

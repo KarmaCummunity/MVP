@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { db } from '../../utils/databaseService';
 import { useUser } from '../../stores/userStore';
 import { EditEntryModal } from './EditEntryModal';
@@ -48,6 +49,7 @@ function getDateRange(mode: ViewMode): string[] {
 export const DailyHabitsQuickView: React.FC<DailyHabitsQuickViewProps> = ({
   onBrowseChallenges,
 }) => {
+  const { t } = useTranslation('challenges');
   const { selectedUser: user } = useUser();
   const [data, setData] = useState<DailyTrackerData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,27 +76,21 @@ export const DailyHabitsQuickView: React.FC<DailyHabitsQuickViewProps> = ({
       if (payload && Array.isArray(payload.challenges)) {
         if (__DEV__) {
           const dates = payload.entries_by_date ? Object.keys(payload.entries_by_date) : [];
-          console.log('[DailyHabitsQuickView] נתונים נטענו:', { 
-            challenges: payload.challenges.length, 
-            dates, 
-          });
-          // Log detailed entries for debugging
+          console.log('[DailyHabitsQuickView] Data loaded:', { challenges: payload.challenges.length, dates });
           dates.forEach(date => {
             const dateEntries = payload.entries_by_date[date];
             console.log(`[DailyHabitsQuickView] Entries for ${date}:`, dateEntries);
-            // Log each entry's status
             Object.keys(dateEntries).forEach(challengeId => {
               const entry = dateEntries[challengeId];
               console.log(`  Challenge ${challengeId}: value=${entry.value}, status=${entry.status}, notes=${entry.notes?.substring(0, 20) || 'none'}`);
             });
           });
-          console.log('[DailyHabitsQuickView] מעדכן state עם דאטה חדשה');
+          console.log('[DailyHabitsQuickView] Updating state with new data');
         }
-        // Force new object reference to trigger re-render
         setData({ ...payload });
-        if (__DEV__) console.log('[DailyHabitsQuickView] state עודכן עם object חדש');
+        if (__DEV__) console.log('[DailyHabitsQuickView] State updated with new object');
       } else {
-        if (__DEV__) console.warn('[DailyHabitsQuickView] payload לא תקין:', { hasPayload: !!payload, challengesIsArray: Array.isArray(payload?.challenges) });
+        if (__DEV__) console.warn('[DailyHabitsQuickView] Invalid payload:', { hasPayload: !!payload, challengesIsArray: Array.isArray(payload?.challenges) });
         setData(null);
       }
     } catch (error) {
@@ -144,17 +140,7 @@ export const DailyHabitsQuickView: React.FC<DailyHabitsQuickViewProps> = ({
     setSelectedDate(date);
     setModalVisible(true);
     if (__DEV__) {
-      console.log('[DailyHabitsQuickView] פתיחת עריכה:', { 
-        challengeId: challenge.id, 
-        title: challenge.title, 
-        type: challenge.type,
-        goal_value: challenge.goal_value,
-        goal_direction: challenge.goal_direction,
-        date, 
-        value, 
-        notes,
-        currentStatus
-      });
+      console.log('[DailyHabitsQuickView] Opening edit:', { challengeId: challenge.id, title: challenge.title, type: challenge.type, goal_value: challenge.goal_value, goal_direction: challenge.goal_direction, date, value, notes, currentStatus });
     }
   };
 
@@ -162,12 +148,10 @@ export const DailyHabitsQuickView: React.FC<DailyHabitsQuickViewProps> = ({
     const challengeId = selectedChallenge?.id;
     const dateToSave = selectedDate || editingRef.current?.date;
     if (!challengeId || !user?.id || !dateToSave) {
-      if (__DEV__) console.warn('[DailyHabitsQuickView] שמירה בוטלה: חסר challenge/user/date', { challengeId, userId: user?.id, dateToSave });
+      if (__DEV__) console.warn('[DailyHabitsQuickView] Save cancelled: missing challenge/user/date', { challengeId, userId: user?.id, dateToSave });
       return;
     }
-    if (__DEV__) {
-      console.log('[DailyHabitsQuickView] שומר entry:', { challengeId, date: dateToSave, value, notes });
-    }
+    if (__DEV__) console.log('[DailyHabitsQuickView] Saving entry:', { challengeId, date: dateToSave, value, notes });
     try {
       await db.addChallengeEntry(challengeId, {
         user_id: user.id,
@@ -175,20 +159,14 @@ export const DailyHabitsQuickView: React.FC<DailyHabitsQuickViewProps> = ({
         notes,
         entry_date: dateToSave,
       });
-      if (__DEV__) console.log('[DailyHabitsQuickView] שמירה הצליחה');
-      
-      // Close modal immediately for better UX
+      if (__DEV__) console.log('[DailyHabitsQuickView] Save succeeded');
       editingRef.current = null;
       setModalVisible(false);
-      
-      if (__DEV__) console.log('[DailyHabitsQuickView] מודל נסגר, מרענן נתונים');
-      
-      // Refresh data in background
+      if (__DEV__) console.log('[DailyHabitsQuickView] Modal closed, refreshing data');
       await loadTodayData();
-      
-      if (__DEV__) console.log('[DailyHabitsQuickView] נתונים רוענו בהצלחה');
+      if (__DEV__) console.log('[DailyHabitsQuickView] Data refreshed successfully');
     } catch (err) {
-      if (__DEV__) console.error('[DailyHabitsQuickView] שגיאה בשמירה:', err);
+      if (__DEV__) console.error('[DailyHabitsQuickView] Save error:', err);
       throw err;
     }
   };
@@ -208,7 +186,7 @@ export const DailyHabitsQuickView: React.FC<DailyHabitsQuickViewProps> = ({
       <View style={styles.container}>
         <View style={styles.loadingRow}>
           <ActivityIndicator size="small" color="#2E7D32" />
-          <Text style={styles.loadingText}>טוען מעקב יומי...</Text>
+          <Text style={styles.loadingText}>{t('quickView.loading')}</Text>
         </View>
       </View>
     );
@@ -218,7 +196,7 @@ export const DailyHabitsQuickView: React.FC<DailyHabitsQuickViewProps> = ({
 
   const formatDateLabel = (dateStr: string) => {
     const d = new Date(dateStr + 'T00:00:00');
-    if (viewMode === 'daily') return dateStr === today ? 'היום' : 'אתמול';
+    if (viewMode === 'daily') return dateStr === today ? t('details.today') : t('details.yesterday');
     if (viewMode === 'weekly') return d.getDate().toString();
     return d.getDate().toString();
   };
@@ -226,7 +204,7 @@ export const DailyHabitsQuickView: React.FC<DailyHabitsQuickViewProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>מעקב יומי</Text>
+        <Text style={styles.title}>{t('quickView.title')}</Text>
         <View style={styles.toggleRow}>
           {(['daily', 'weekly', 'monthly'] as const).map((mode) => (
             <TouchableOpacity
@@ -235,7 +213,7 @@ export const DailyHabitsQuickView: React.FC<DailyHabitsQuickViewProps> = ({
               onPress={() => setViewMode(mode)}
             >
               <Text style={[styles.toggleBtnText, viewMode === mode && styles.toggleBtnTextActive]}>
-                {mode === 'daily' ? 'יומי' : mode === 'weekly' ? 'שבועי' : 'חודשי'}
+                {mode === 'daily' ? t('frequency.DAILY') : mode === 'weekly' ? t('frequency.WEEKLY') : t('frequency.MONTHLY')}
               </Text>
             </TouchableOpacity>
           ))}
@@ -256,11 +234,11 @@ export const DailyHabitsQuickView: React.FC<DailyHabitsQuickViewProps> = ({
                     ? `${Math.round(data.stats.total_success_rate)}%`
                     : '—'}
                 </Text>
-                <Text style={styles.statLabel}>אחוז הצלחה</Text>
+                <Text style={styles.statLabel}>{t('stats.successRate')}</Text>
               </View>
               <View style={styles.statBox}>
                 <Text style={styles.statValue}>{calculateOverallStreak()}</Text>
-                <Text style={styles.statLabel}>רצף נוכחי</Text>
+                <Text style={styles.statLabel}>{t('stats.currentStreak')}</Text>
               </View>
             </View>
 
@@ -335,9 +313,9 @@ export const DailyHabitsQuickView: React.FC<DailyHabitsQuickViewProps> = ({
         </ScrollView>
       ) : (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>אין אתגרים יומיים במעקב</Text>
+          <Text style={styles.emptyText}>{t('quickView.noChallenges')}</Text>
           <Text style={styles.emptySubtext}>
-            רק אתגרים עם תדירות «יומי» מופיעים כאן. הצטרף לאתגר יומי או צור חדש כדי לראות את טבלת המעקב.
+            {t('quickView.noChallengesHint')}
           </Text>
           <TouchableOpacity style={styles.expandButton} onPress={onBrowseChallenges}>
             <Text style={styles.expandButtonText}>עיון באתגרים →</Text>

@@ -23,7 +23,7 @@ import WebViewScreen from '../screens/WebViewScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
 import FollowersScreen from '../screens/FollowersScreen';
 import DiscoverPeopleScreen from '../screens/DiscoverPeopleScreen';
-import LandingSiteScreen from '../screens/LandingSiteScreen';
+import LandingSiteScreen from '../screens/Landing/LandingSiteScreen';
 
 import TopBarNavigator from './TopBarNavigator';
 import { useWebMode } from '../stores/webModeStore';

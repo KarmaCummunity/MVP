@@ -24,7 +24,7 @@ import NewChatScreen from "../screens/NewChatScreen";
 import SettingsScreen from "../topBarScreens/SettingsScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 import AboutKarmaCommunityScreen from "../topBarScreens/AboutKarmaCommunityScreen";
-import LandingSiteScreen from "../screens/LandingSiteScreen";
+import LandingSiteScreen from "../screens/Landing/LandingSiteScreen";
 import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
 import TopBarNavigator from "./TopBarNavigator";
 import { AdminStackParamList } from "../globals/types";

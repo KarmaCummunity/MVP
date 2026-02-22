@@ -54,7 +54,7 @@ import NotificationsScreen from "../screens/NotificationsScreen";
 import AboutKarmaCommunityScreen from "../topBarScreens/AboutKarmaCommunityScreen";
 import SettingsScreen from "../topBarScreens/SettingsScreen";
 import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
-import LandingSiteScreen from "../screens/LandingSiteScreen";
+import LandingSiteScreen from "../screens/Landing/LandingSiteScreen";
 import TopBarNavigator from "./TopBarNavigator";
 import { DonationsStackParamList } from "../globals/types";
 import { logger } from "../utils/loggerService";

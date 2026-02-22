@@ -19,7 +19,7 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 import AboutKarmaCommunityScreen from '../topBarScreens/AboutKarmaCommunityScreen';
 import DiscoverPeopleScreen from '../screens/DiscoverPeopleScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
-import LandingSiteScreen from '../screens/LandingSiteScreen';
+import LandingSiteScreen from '../screens/Landing/LandingSiteScreen';
 import TopBarNavigator from './TopBarNavigator';
 import { logger } from '../utils/loggerService';
 import { useUser } from '../stores/userStore';

@@ -31,16 +31,16 @@ export interface MyCreatedChallengesScreenProps {
 }
 
 const CHALLENGE_TYPE_OPTIONS = [
-  { id: 'BOOLEAN', label: 'כן/לא', icon: 'checkmark-circle-outline' },
-  { id: 'NUMERIC', label: 'מספרי', icon: 'calculator-outline' },
-  { id: 'DURATION', label: 'זמן', icon: 'time-outline' },
+  { id: 'BOOLEAN', icon: 'checkmark-circle-outline' },
+  { id: 'NUMERIC', icon: 'calculator-outline' },
+  { id: 'DURATION', icon: 'time-outline' },
 ];
 
 const CHALLENGE_DIFFICULTY_OPTIONS = [
-  { id: 'easy', label: 'קל', icon: 'happy-outline', color: colors.success },
-  { id: 'medium', label: 'בינוני', icon: 'bulb-outline', color: colors.warning },
-  { id: 'hard', label: 'קשה', icon: 'flame-outline', color: colors.error },
-  { id: 'expert', label: 'מומחה', icon: 'trophy-outline', color: colors.primary },
+  { id: 'easy', icon: 'happy-outline', color: colors.success },
+  { id: 'medium', icon: 'bulb-outline', color: colors.warning },
+  { id: 'hard', icon: 'flame-outline', color: colors.error },
+  { id: 'expert', icon: 'trophy-outline', color: colors.primary },
 ];
 
 export default function MyCreatedChallengesScreen({ navigation, route }: MyCreatedChallengesScreenProps) {
@@ -164,7 +164,7 @@ export default function MyCreatedChallengesScreen({ navigation, route }: MyCreat
   };
 
   const renderChallengeCard = ({ item }: { item: CommunityChallenge }) => {
-    const typeOption = CHALLENGE_TYPE_OPTIONS.find((t) => t.id === item.type);
+    const typeOption = CHALLENGE_TYPE_OPTIONS.find((opt) => opt.id === item.type);
     const difficultyOption = CHALLENGE_DIFFICULTY_OPTIONS.find((d) => d.id === item.difficulty);
 
     return (
@@ -182,7 +182,7 @@ export default function MyCreatedChallengesScreen({ navigation, route }: MyCreat
           </View>
           {difficultyOption && (
             <View style={[styles.difficultyBadge, { backgroundColor: difficultyOption.color }]}>
-              <Text style={styles.difficultyText}>{difficultyOption.label}</Text>
+              <Text style={styles.difficultyText}>{difficultyOption ? t(`challenges:difficulty.${difficultyOption.id}`) : item.difficulty}</Text>
             </View>
           )}
         </View>

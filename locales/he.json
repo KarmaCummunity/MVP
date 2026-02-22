@@ -50,6 +50,10 @@
     "labels": {
       "countryIsrael": "ישראל"
     },
+    "accessibility": {
+      "aboutButton": "אודות",
+      "aboutButtonHint": "פתח את מסך אודות קהילת קארמה"
+    },
     "newChat": "שיחה חדשה",
     "chat": "שיחה",
     "favorites": "מועדפים",
@@ -1033,6 +1037,24 @@
   "errors": {},
   "buttons": {},
   "labels": {},
+  "admin": {
+    "hierarchy": {
+      "loadError": "שגיאה בטעינת עץ המנהלים",
+      "connectionError": "שגיאה בחיבור לשרת",
+      "loading": "טוען את מבנה הניהול...",
+      "retry": "נסה שוב",
+      "noManagers": "אין מנהלים להצגה",
+      "managersCount": "{{count}} מנהלים",
+      "roleSuperAdmin": "מנהל ראשי",
+      "roleAdmin": "מנהל",
+      "roleVolunteer": "מתנדב",
+      "roleUser": "משתמש",
+      "expandHint": "לחץ להרחבה",
+      "salary": "משכורת",
+      "seniority": "ותק",
+      "level": "דרגה"
+    }
+  },
   "bookmarks": {
     "title": "מועדפים",
     "selectUserFirst": "יש לבחור יוזר תחילה",
@@ -1111,6 +1133,46 @@
   "landing": {
     "appName": "KarmaCommunity",
     "tagline": "קהילה שעוזרת אחת לשנייה — תרומות, תמיכה, משאבים וחיבורים אנושיים.",
+    "hero": {
+      "welcomeTitle": {
+        "large1": "המקום",
+        "small1": "בו",
+        "large2": "הטוב",
+        "small2": "קורה"
+      },
+      "values": {
+        "unity": "אחדות",
+        "transparency": "שקיפות",
+        "order": "סדר"
+      },
+      "subtitle": "רשת חברתית שמחברת בין אנשים שצריכים עזרה, לאנשים שרוצים לעזור. פשוט, שקוף ומהלב.",
+      "whatsappButton": "שלחו לי ווטסאפ",
+      "donateButton": "תרמו לנו",
+      "accessibility": {
+        "whatsapp": "שלח הודעת WhatsApp",
+        "donate": "תרום לארגון"
+      }
+    },
+    "menu": {
+      "title": "תפריט ניווט",
+      "stats": "במספרים",
+      "vision": "החזון",
+      "problems": "הבעיות",
+      "features": "תכונות",
+      "about": "אודות",
+      "how": "איך זה עובד",
+      "who": "למי זה מתאים",
+      "values": "ערכים",
+      "hierarchy": "מבנה ניהול",
+      "roadmap": "מפת דרכים",
+      "contact": "יצירת קשר",
+      "faq": "שאלות נפוצות",
+      "accessibility": {
+        "open": "פתח תפריט ניווט",
+        "close": "סגור תפריט ניווט",
+        "navigateTo": "נווט ל{{label}}"
+      }
+    },
     "cta": {
       "primary": "הורדת האפליקציה",
       "secondary": "דברו איתי"
@@ -1442,7 +1504,19 @@
     "frequency": {
       "DAILY": "יומי",
       "WEEKLY": "שבועי",
+      "MONTHLY": "חודשי",
       "FLEXIBLE": "גמיש"
+    },
+    "viewMode": {
+      "day": "יום",
+      "week": "שבוע",
+      "month": "חודש"
+    },
+    "quickView": {
+      "title": "מעקב יומי",
+      "loading": "טוען מעקב יומי...",
+      "noChallenges": "אין אתגרים יומיים במעקב",
+      "noChallengesHint": "רק אתגרים עם תדירות «יומי» מופיעים כאן. הצטרף לאתגר יומי או צור חדש כדי לראות את טבלת המעקב."
     },
     "frequencyDescription": {
       "DAILY": "כל יום",
@@ -1483,6 +1557,7 @@
       "bestStreak": "רצף מקסימלי",
       "totalEntries": "סה\"כ ביצועים",
       "successRate": "אחוז הצלחה",
+      "noData": "אין נתונים",
       "activeChallenges": "אתגרים פעילים",
       "completedDays": "ימים פעילים",
       "overallSuccess": "אחוז הצלחה כולל",
@@ -1555,6 +1630,17 @@
     "imagePermissionRequired": "נדרשת הרשאה לגישה לגלריה",
     "imagePickError": "שגיאה בבחירת תמונה",
     "viewComments": "הצג תגובות",
-    "commentsHint": "שתף מחשבות, עצות והצלחות עם הקהילה"
+    "commentsHint": "שתף מחשבות, עצות והצלחות עם הקהילה",
+    "editEntry": {
+      "deleteTitle": "מחיקת ערך",
+      "deleteMessage": "האם אתה בטוח שברצונך למחוק את הערך?",
+      "deleteErrorTitle": "שגיאה",
+      "deleteErrorMessage": "לא הצלחנו למחוק את הערך",
+      "saveErrorTitle": "שגיאה",
+      "saveErrorMessage": "לא הצלחנו לשמור את הערך",
+      "save": "שמור",
+      "saving": "שומר...",
+      "goalMinutes": "יעד: {{value}} דקות"
+    }
   }
 }

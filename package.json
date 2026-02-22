@@ -18,7 +18,7 @@
     "postbuild:web": "bash scripts/restore-build-placeholders.sh",
     "build:web:local": "EXPO_PUBLIC_API_BASE_URL=http://localhost:3001 expo export:web",
     "audit:colors": "ts-node scripts/audit-colors.ts",
-    "audit:texts": "ts-node scripts/audit-texts.ts",
+    "audit:texts": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' ts-node scripts/audit-texts.ts",
     "audit:constants": "ts-node scripts/audit-constants.ts",
     "audit:responsive": "ts-node scripts/audit-responsive.ts",
     "audit:unused": "ts-node scripts/find-unused-files.ts",

@@ -50,6 +50,10 @@
     "labels": {
       "countryIsrael": "Israel"
     },
+    "accessibility": {
+      "aboutButton": "About",
+      "aboutButtonHint": "Open About Karma Community screen"
+    },
     "newChat": "New Chat",
     "chat": "Chat",
     "favorites": "Favorites",
@@ -1007,6 +1011,24 @@
   "errors": {},
   "buttons": {},
   "labels": {},
+  "admin": {
+    "hierarchy": {
+      "loadError": "Error loading manager tree",
+      "connectionError": "Error connecting to server",
+      "loading": "Loading management structure...",
+      "retry": "Try again",
+      "noManagers": "No managers to display",
+      "managersCount": "{{count}} managers",
+      "roleSuperAdmin": "Super Admin",
+      "roleAdmin": "Admin",
+      "roleVolunteer": "Volunteer",
+      "roleUser": "User",
+      "expandHint": "Tap to expand",
+      "salary": "Salary",
+      "seniority": "Seniority",
+      "level": "Level"
+    }
+  },
   "bookmarks": {
     "title": "Bookmarks",
     "selectUserFirst": "Please select a user first",
@@ -1078,6 +1100,46 @@
   "landing": {
     "appName": "KarmaCommunity",
     "tagline": "A community that helps each other — donations, support, resources and human connections.",
+    "hero": {
+      "welcomeTitle": {
+        "large1": "The place",
+        "small1": "where",
+        "large2": "good",
+        "small2": "happens"
+      },
+      "values": {
+        "unity": "Unity",
+        "transparency": "Transparency",
+        "order": "Order"
+      },
+      "subtitle": "A social network connecting people who need help with people who want to help. Simple, transparent and from the heart.",
+      "whatsappButton": "Send me WhatsApp",
+      "donateButton": "Donate to us",
+      "accessibility": {
+        "whatsapp": "Send WhatsApp message",
+        "donate": "Donate to organization"
+      }
+    },
+    "menu": {
+      "title": "Navigation menu",
+      "stats": "In numbers",
+      "vision": "Vision",
+      "problems": "Problems",
+      "features": "Features",
+      "about": "About",
+      "how": "How it works",
+      "who": "Who it's for",
+      "values": "Values",
+      "hierarchy": "Management structure",
+      "roadmap": "Roadmap",
+      "contact": "Contact",
+      "faq": "FAQ",
+      "accessibility": {
+        "open": "Open navigation menu",
+        "close": "Close navigation menu",
+        "navigateTo": "Navigate to {{label}}"
+      }
+    },
     "cta": {
       "primary": "Download the app",
       "secondary": "Contact me"
@@ -1396,7 +1458,19 @@
     "frequency": {
       "DAILY": "Daily",
       "WEEKLY": "Weekly",
+      "MONTHLY": "Monthly",
       "FLEXIBLE": "Flexible"
+    },
+    "viewMode": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month"
+    },
+    "quickView": {
+      "title": "Daily tracking",
+      "loading": "Loading daily tracking...",
+      "noChallenges": "No daily challenges in tracking",
+      "noChallengesHint": "Only challenges with «daily» frequency appear here. Join a daily challenge or create one to see the tracking table."
     },
     "frequencyDescription": {
       "DAILY": "Every day",
@@ -1437,6 +1511,7 @@
       "bestStreak": "Best Streak",
       "totalEntries": "Total Entries",
       "successRate": "Success Rate",
+      "noData": "No data",
       "activeChallenges": "Active Challenges",
       "completedDays": "Active Days",
       "overallSuccess": "Overall Success Rate",
@@ -1509,6 +1584,17 @@
     "imagePermissionRequired": "Gallery access permission required",
     "imagePickError": "Error selecting image",
     "viewComments": "View Comments",
-    "commentsHint": "Share thoughts, tips and successes with the community"
+    "commentsHint": "Share thoughts, tips and successes with the community",
+    "editEntry": {
+      "deleteTitle": "Delete value",
+      "deleteMessage": "Are you sure you want to delete this value?",
+      "deleteErrorTitle": "Error",
+      "deleteErrorMessage": "Failed to delete the value",
+      "saveErrorTitle": "Error",
+      "saveErrorMessage": "Failed to save the value",
+      "save": "Save",
+      "saving": "Saving...",
+      "goalMinutes": "Goal: {{value}} minutes"
+    }
   }
 }

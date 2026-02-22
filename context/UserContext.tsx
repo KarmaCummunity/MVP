@@ -22,6 +22,7 @@ import { db } from '../utils/databaseService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuth, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { getFirebase } from '../utils/firebaseClient';
+import { logger } from '../utils/loggerService';
 
 // Auth mode of the current session
 export type AuthMode = 'guest' | 'demo' | 'real';
@@ -102,16 +103,16 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       const auth = getAuth(app);
 
       unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-        console.log('🔥 Firebase Auth State Changed:', {
+        logger.info('Auth', 'Firebase Auth State Changed', {
           hasUser: !!firebaseUser,
           email: firebaseUser?.email,
           uid: firebaseUser?.uid,
-          emailVerified: firebaseUser?.emailVerified
+          emailVerified: firebaseUser?.emailVerified,
         });
 
         if (firebaseUser) {
           // Firebase user is logged in - restore/create session
-          console.log('🔥 Firebase user detected, restoring session');
+          logger.info('Auth', 'Firebase user detected, restoring session');
 
           try {
             // Get UUID from server using firebase_uid
@@ -130,12 +131,12 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
               await AsyncStorage.setItem('jwt_token_expires_at', 
                 String(Date.now() + (resolveResponse.tokens.expiresIn * 1000))
               );
-              console.log('🔑 JWT tokens saved from resolve-id');
+              logger.debug('Auth', 'JWT tokens saved from resolve-id');
             }
 
             const serverUser = resolveResponse.user || resolveResponse.data;
             if (!resolveResponse.success || !serverUser) {
-              console.warn('🔥 Failed to resolve user ID from server, using fallback');
+              logger.warn('Auth', 'Failed to resolve user ID from server, using fallback');
               // Fallback: try to get user by email
               if (firebaseUser.email) {
                 const userResponse = await apiService.getUserById(firebaseUser.email);
@@ -172,7 +173,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
                   setIsGuestMode(false);
                   setAuthMode('real');
 
-                  console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
+                  logger.info('Auth', 'Firebase session restored successfully with UUID', { userId: userData.id });
                   return;
                 }
               }
@@ -214,16 +215,16 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
             setIsGuestMode(false);
             setAuthMode('real');
 
-            console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
+            logger.info('Auth', 'Firebase session restored successfully with UUID', { userId: userData.id });
           } catch (error) {
-            console.error('🔥 Failed to restore Firebase session:', error);
+            logger.error('Auth', 'Failed to restore Firebase session', { error });
             // Don't set user state if we can't get UUID from server
           }
         } else {
           // No Firebase user - only clear if we had a Firebase user before
           const firebaseUserId = await AsyncStorage.getItem('firebase_user_id');
           if (firebaseUserId) {
-            console.log('🔥 Firebase user logged out, clearing session');
+            logger.info('Auth', 'Firebase user logged out, clearing session');
             await AsyncStorage.multiRemove(['current_user', 'auth_mode', 'firebase_user_id']);
             setSelectedUserState(null);
             setIsAuthenticated(false);
@@ -233,14 +234,14 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         }
       });
 
-      console.log('🔥 Firebase Auth listener set up successfully');
+      logger.info('Auth', 'Firebase Auth listener set up successfully');
     } catch (error) {
-      console.error('🔥 Error setting up Firebase Auth listener:', error);
+      logger.error('Auth', 'Error setting up Firebase Auth listener', { error });
     }
 
     // Cleanup function
     return () => {
-      console.log('🔥 Cleaning up Firebase Auth listener');
+      logger.debug('Auth', 'Cleaning up Firebase Auth listener');
       if (unsubscribe) {
         unsubscribe();
       }

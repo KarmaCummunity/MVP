@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ViewMode } from '../../globals/types';
 
 interface ViewToggleButtonsProps {
@@ -11,10 +12,11 @@ export const ViewToggleButtons: React.FC<ViewToggleButtonsProps> = ({
   currentView,
   onViewChange
 }) => {
+  const { t } = useTranslation('challenges');
   const views: { key: ViewMode; label: string }[] = [
-    { key: 'day', label: 'יום' },
-    { key: 'week', label: 'שבוע' },
-    { key: 'month', label: 'חודש' },
+    { key: 'day', label: t('viewMode.day') },
+    { key: 'week', label: t('viewMode.week') },
+    { key: 'month', label: t('viewMode.month') },
   ];
 
   return (
