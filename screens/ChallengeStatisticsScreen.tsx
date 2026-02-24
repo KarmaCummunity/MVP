@@ -46,7 +46,7 @@ const AnimatedCard: React.FC<{ children: React.ReactNode; delay?: number }> = ({
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [delay, fadeAnim, slideAnim]);
 
   return (
     <Animated.View
@@ -72,13 +72,7 @@ export default function ChallengeStatisticsScreen({ navigation }: ChallengeStati
   const [loading, setLoading] = useState(true);
   const [statistics, setStatistics] = useState<ChallengeStatistics | null>(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadStatistics();
-    }, [])
-  );
-
-  const loadStatistics = async () => {
+  const loadStatistics = useCallback(async () => {
     if (!user?.id) {
       showToast(t('challenges:messages.loginRequired'), 'error');
       return;
@@ -97,7 +91,13 @@ export default function ChallengeStatisticsScreen({ navigation }: ChallengeStati
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, showToast, t]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadStatistics();
+    }, [loadStatistics])
+  );
 
   const overall = statistics?.overall;
   const challenges = statistics?.challenges || [];
@@ -184,14 +184,14 @@ export default function ChallengeStatisticsScreen({ navigation }: ChallengeStati
         legendFontSize: 12,
       },
     ].filter((item) => item.population > 0);
-  }, [challenges]);
+  }, [challenges, colors]);
 
   const progressData = useMemo(() => {
     const avgProgress = challenges.length > 0
       ? challenges.reduce((sum, c) => {
-          const progress = c.goal_value ? Math.min(1, c.total_entries / c.goal_value) : 0.5;
-          return sum + progress;
-        }, 0) / challenges.length
+        const progress = c.goal_value ? Math.min(1, c.total_entries / c.goal_value) : 0.5;
+        return sum + progress;
+      }, 0) / challenges.length
       : 0;
 
     return {
@@ -206,14 +206,14 @@ export default function ChallengeStatisticsScreen({ navigation }: ChallengeStati
 
     const totalStreaks = challenges.reduce((sum, c) => sum + (c.current_streak || 0), 0);
     const avgStreak = (totalStreaks / challenges.length).toFixed(1);
-    
-    const mostActiveChallenge = challenges.reduce((max, c) => 
+
+    const mostActiveChallenge = challenges.reduce((max, c) =>
       (c.total_entries > max.total_entries ? c : max), challenges[0]);
-    
-    const longestStreak = challenges.reduce((max, c) => 
+
+    const longestStreak = challenges.reduce((max, c) =>
       (c.best_streak > max.best_streak ? c : max), challenges[0]);
 
-    const completionRate = challenges.filter(c => 
+    const completionRate = challenges.filter(c =>
       c.goal_value && c.total_entries >= c.goal_value
     ).length;
 
@@ -249,7 +249,7 @@ export default function ChallengeStatisticsScreen({ navigation }: ChallengeStati
         filterOptions={[]}
         sortOptions={[]}
         searchData={[]}
-        onSearch={() => {}}
+        onSearch={() => { }}
         hideSortButton={true}
       />
 
@@ -441,10 +441,10 @@ export default function ChallengeStatisticsScreen({ navigation }: ChallengeStati
                             challenge.difficulty === 'easy'
                               ? colors.success
                               : challenge.difficulty === 'medium'
-                              ? colors.warning
-                              : challenge.difficulty === 'hard'
-                              ? colors.error
-                              : colors.primary,
+                                ? colors.warning
+                                : challenge.difficulty === 'hard'
+                                  ? colors.error
+                                  : colors.primary,
                         },
                       ]}
                     >

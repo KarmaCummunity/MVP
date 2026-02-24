@@ -138,6 +138,60 @@ fi
 log_success "Docker is available and running"
 
 # ============================================================================
+# Code Quality & Security Checks (Sonar, Snyk, Lint)
+# ============================================================================
+
+if [[ "${SKIP_CHECKS:-}" == "1" ]]; then
+  log_warning "Skipping Code Quality & Security Checks as requested (SKIP_CHECKS=1)"
+else
+  log_info "Running Code Quality & Security Checks (Lint, Snyk, Sonar)..."
+
+  # --- Linting ---
+  log_info "Running server linting..."
+  if ! (cd "$SERVER_DIR" && npm run lint); then
+    log_error "Server linting failed. Please fix before continuing."
+    log_warning "To skip checks, run with SKIP_CHECKS=1"
+    exit 1
+  fi
+
+  log_info "Running client linting..."
+  if ! (cd "$CLIENT_DIR" && npm run lint); then
+    log_error "Client linting failed. Please fix before continuing."
+    log_warning "To skip checks, run with SKIP_CHECKS=1"
+    exit 1
+  fi
+  log_success "Lint checks passed."
+
+  # --- Snyk ---
+  log_info "Running Snyk security checks..."
+  if ! command -v snyk >/dev/null 2>&1; then
+    log_warning "Snyk CLI not found. Running via npx..."
+    (cd "$SERVER_DIR" && npx snyk test --all-projects) || log_warning "Snyk check failed on server with vulnerabilities."
+    (cd "$CLIENT_DIR" && npx snyk test --all-projects) || log_warning "Snyk check failed on client with vulnerabilities."
+  else
+    (cd "$SERVER_DIR" && snyk test --all-projects) || log_warning "Snyk check failed on server with vulnerabilities."
+    (cd "$CLIENT_DIR" && snyk test --all-projects) || log_warning "Snyk check failed on client with vulnerabilities."
+  fi
+  log_success "Snyk checks completed."
+
+  # --- SonarQube ---
+  if [[ -z "${SONAR_TOKEN:-}" ]]; then
+    log_warning "SONAR_TOKEN not set. Skipping SonarQube checks (usually for CI only)."
+  else
+    log_info "Running SonarQube checks..."
+    if ! command -v sonar-scanner >/dev/null 2>&1; then
+      log_info "sonar-scanner CLI not found. Running via npx..."
+      (cd "$SERVER_DIR" && npx sonar-scanner) || log_warning "Sonar check failed on server."
+      (cd "$CLIENT_DIR" && npx sonar-scanner) || log_warning "Sonar check failed on client."
+    else
+      (cd "$SERVER_DIR" && sonar-scanner) || log_warning "Sonar check failed on server."
+      (cd "$CLIENT_DIR" && sonar-scanner) || log_warning "Sonar check failed on client."
+    fi
+    log_success "SonarQube checks completed."
+  fi
+fi
+
+# ============================================================================
 # Port Management
 # ============================================================================
 
@@ -180,15 +234,15 @@ log_success "Ports are ready"
 log_info "Starting Docker services (Postgres & Redis)..."
 
 # MODIFIED: Preserve data between runs - only stop containers, don't delete volumes
-log_info "Stopping existing Docker containers (preserving data)..."
-(cd "$SERVER_DIR" && docker compose down >/dev/null 2>&1 || true)
-# NOTE: Volume deletion commented out to preserve data between runs
-# Uncomment the following lines if you need a fresh database:
-# (cd "$SERVER_DIR" && docker compose down -v >/dev/null 2>&1 || true)
-# docker volume rm kc-mvp-server_pgdata 2>/dev/null || true
+log_info "Ensuring clean Docker state..."
+(cd "$SERVER_DIR" && docker compose down --remove-orphans >/dev/null 2>&1 || true)
+
+# Explicitly remove containers if they still exist (handles name conflicts)
+log_info "Cleaning up any lingering containers..."
+docker rm -f kc-mvp-server-postgres-1 kc-mvp-server-redis-1 >/dev/null 2>&1 || true
 
 if docker compose version >/dev/null 2>&1; then
-  (cd "$SERVER_DIR" && docker compose up -d || {
+  (cd "$SERVER_DIR" && docker compose up -d --remove-orphans || {
     log_error "Failed to start Docker Compose services"
     exit 1
   })
