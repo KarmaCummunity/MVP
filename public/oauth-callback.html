@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html>
+<html lang="he" dir="rtl">
+
 <head>
   <meta charset="utf-8">
   <title>OAuth Callback</title>
@@ -14,11 +15,13 @@
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
     }
+
     .container {
       text-align: center;
     }
+
     .spinner {
-      border: 4px solid rgba(255,255,255,0.3);
+      border: 4px solid rgba(255, 255, 255, 0.3);
       border-radius: 50%;
       border-top: 4px solid white;
       width: 40px;
@@ -26,19 +29,26 @@
       animation: spin 1s linear infinite;
       margin: 0 auto 20px;
     }
+
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
   </style>
 </head>
+
 <body>
   <div class="container">
     <div class="spinner"></div>
     <h2>מעבד התחברות...</h2>
     <p>אנא המתן, חלון זה ייסגר בקרוב</p>
   </div>
-  
+
   <script>
     // Parse JWT
     function parseJWT(token) {
@@ -57,24 +67,24 @@
         return null;
       }
     }
-    
+
     // Extract token from URL hash
     const hash = window.location.hash;
-    
+
     if (hash && hash.includes('id_token=')) {
       const params = new URLSearchParams(hash.substring(1));
       const idToken = params.get('id_token');
-      
+
       if (idToken) {
         const profile = parseJWT(idToken);
-        
+
         if (profile && window.opener) {
           // Send message to parent window
           window.opener.postMessage({
             type: 'GOOGLE_AUTH_SUCCESS',
             profile: profile
           }, window.location.origin);
-          
+
           // Close popup after a short delay
           setTimeout(() => {
             window.close();
@@ -89,5 +99,5 @@
     }
   </script>
 </body>
-</html>
 
+</html>

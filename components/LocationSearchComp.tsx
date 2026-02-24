@@ -45,9 +45,12 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
         ? `http://localhost:3001/autocomplete?input=${encodeURIComponent(
           inputText
         )}`
-        : `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
-          inputText
-        )}&key=${GOOGLE_API_KEY}&language=he&components=country:il`;
+        : `https://maps.googleapis.com/maps/api/place/autocomplete/json?${new URLSearchParams({
+          input: inputText,
+          key: GOOGLE_API_KEY,
+          language: 'he',
+          components: 'country:il'
+        }).toString()}`;
 
     try {
       logger.info('LocationSearch', 'Google Places API call started', {

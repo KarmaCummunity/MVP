@@ -27,7 +27,8 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
-    "_TODO_ADD_SCRIPTS": "// TODO: Add missing scripts: lint, type-check, format, security-audit, bundle-analyze"
+    "_TODO_ADD_SCRIPTS": "// TODO: Add missing scripts: lint, type-check, format, security-audit, bundle-analyze",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",
@@ -92,7 +93,8 @@
     "react-native": "^0.80.2",
     "react-test-renderer": "^19.2.3",
     "ts-node": "^10.9.2",
-    "typescript": "~5.8.3"
+    "typescript": "~5.8.3",
+    "husky": "^8.0.0"
   },
   "private": true
 }

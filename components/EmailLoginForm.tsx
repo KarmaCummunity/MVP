@@ -326,11 +326,11 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
 
       // Get UUID from server using firebase_uid
       const { apiService } = await import('../utils/apiService');
-      const resolveResponse = await apiService.resolveUserId({ 
+      const resolveResponse = await apiService.resolveUserId({
         firebase_uid: fbUser.uid,
-        email: fbUser.email || email 
+        email: fbUser.email || email
       });
-      
+
       if (!resolveResponse.success || !resolveResponse.user) {
         // Fallback: try to get user by email
         const userResponse = await apiService.getUserById(fbUser.email || email);
@@ -362,7 +362,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
         }
         throw new Error('Failed to get user from server');
       }
-      
+
       // Use UUID from server
       const serverUser = resolveResponse.user;
       const userData = {
@@ -413,14 +413,14 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
         // Try to sign in instead
         try {
           const fbUser = await fbSignInWithEmail(email, formState.passwordValue);
-          
+
           // Get UUID from server using firebase_uid
           const { apiService } = await import('../utils/apiService');
-          const resolveResponse = await apiService.resolveUserId({ 
+          const resolveResponse = await apiService.resolveUserId({
             firebase_uid: fbUser.uid,
-            email: fbUser.email || email 
+            email: fbUser.email || email
           });
-          
+
           if (!resolveResponse.success || !resolveResponse.user) {
             // Fallback: try to get user by email
             const userResponse = await apiService.getUserById(fbUser.email || email);
@@ -434,6 +434,41 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
                 avatar: serverUser.avatar_url || fbUser.photoURL || 'https://i.pravatar.cc/150?img=1',
                 bio: serverUser.bio || '',
                 karmaPoints: serverUser.karma_points || 0,
+                joinDate: nowIso,
+                isActive: true,
+                lastActive: nowIso,
+                location: { city: t('common:labels.countryIsrael') as string, country: 'IL' },
+                interests: [],
+                roles: ['user'],
+                postsCount: 0,
+                followersCount: 0,
+                followingCount: 0,
+                notifications: [],
+                settings: { language: 'he', darkMode: false, notificationsEnabled: true },
+              };
+
+              try {
+                // User is already in database from resolveUserId/getUserById - no need to create via restAdapter
+              } catch (error) {
+                console.log('Saving user on server failed (non-critical):', error);
+              }
+
+              await saveRecentEmail(email);
+              onLoginSuccess(userData);
+              return;
+            }
+            throw new Error('Failed to get user from server');
+          }
+
+          const serverUser = resolveResponse.user as any;
+          const userData = {
+            id: serverUser.id,
+            name: serverUser.name || fbUser.displayName || email.split('@')[0],
+            email: serverUser.email || fbUser.email || email,
+            phone: serverUser.phone || fbUser.phoneNumber || '+9720000000',
+            avatar: serverUser.avatar_url || fbUser.photoURL || 'https://i.pravatar.cc/150?img=1',
+            bio: serverUser.bio || '',
+            karmaPoints: serverUser.karma_points || 0,
             joinDate: nowIso,
             isActive: true,
             lastActive: nowIso,
@@ -446,12 +481,6 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
             notifications: [],
             settings: { language: 'he', darkMode: false, notificationsEnabled: true },
           };
-
-          try {
-            // User is already in database from resolveUserId/getUserById - no need to create via restAdapter
-          } catch (error) {
-            console.log('Saving user on server failed (non-critical):', error);
-          }
 
           await saveRecentEmail(email);
           onLoginSuccess(userData);

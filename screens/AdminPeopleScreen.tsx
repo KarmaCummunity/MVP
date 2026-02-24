@@ -259,8 +259,7 @@ export default function AdminPeopleScreen({ navigation }: AdminPeopleScreenProps
         <TouchableOpacity
           style={styles.addButton}
           onPress={viewOnly ? undefined : handleAddMember}
-          disabled={viewOnly}
-          disabled={isMutating}
+          disabled={viewOnly || isMutating}
         >
           <Ionicons name="add" size={24} color="white" />
           <Text style={styles.addButtonText}>הוסף רשומה</Text>

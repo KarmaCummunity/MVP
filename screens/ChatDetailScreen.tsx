@@ -57,10 +57,10 @@ export default function ChatDetailScreen() {
   const [headerHeight, setHeaderHeight] = useState(0);
   const [inputHeight, setInputHeight] = useState(0);
   const screenHeight = Platform.OS === 'web' ? Dimensions.get('window').height : undefined;
-  const maxMessagesHeight = Platform.OS === 'web' && screenHeight && headerHeight > 0 && inputHeight > 0 
-    ? screenHeight - tabBarHeight - inputHeight - headerHeight 
+  const maxMessagesHeight = Platform.OS === 'web' && screenHeight && headerHeight > 0 && inputHeight > 0
+    ? screenHeight - tabBarHeight - inputHeight - headerHeight
     : undefined;
-  
+
   const [conversationId, setConversationId] = useState(initialConversationId);
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -153,12 +153,8 @@ export default function ChatDetailScreen() {
   // Load user profile on mount - prioritize loading if initial name is "unknown user"
   useEffect(() => {
     // If initial name is "unknown user", load immediately
-    if (initialUserName === t('chat:unknownUser') || !initialUserName) {
-      loadUserProfile();
-    } else {
-      // Otherwise, still try to load to get latest data, but don't block
-      loadUserProfile();
-    }
+    // Load user profile on mount
+    loadUserProfile();
   }, [loadUserProfile, initialUserName, t]);
 
   // Real-time subscription
@@ -297,10 +293,10 @@ export default function ChatDetailScreen() {
 
       // Generate temp messageId for file path
       const tempMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // Build file path in Firebase Storage
       const fullPath = buildChatFilePath(conversationId, tempMessageId, fileData.name);
-      
+
       // Upload file to Firebase Storage with progress tracking
       let uploadedUrl: string;
       try {
@@ -430,11 +426,40 @@ export default function ChatDetailScreen() {
       <Text style={styles.loadingText}>טוען הודעות...</Text>
     </View>
   );
-  
+
+  const InputChildren = () => (
+    <>
+      <TouchableOpacity onPress={() => setShowMediaOptions(!showMediaOptions)}>
+        <Icon name="add-circle-outline" size={24} color={colors.primary} style={styles.icon} />
+      </TouchableOpacity>
+      <TextInput
+        style={styles.textInput}
+        value={inputText}
+        onChangeText={setInputText}
+        placeholder={t('chat:placeholder')}
+        placeholderTextColor={colors.textSecondary}
+        multiline
+        textAlignVertical="center"
+        editable={!isSending}
+      />
+      <TouchableOpacity
+        onPress={handleSendMessage}
+        style={[styles.sendButton, isSending && styles.sendButtonDisabled]}
+        disabled={isSending}
+      >
+        {isSending ? (
+          <ActivityIndicator size="small" color={colors.background} />
+        ) : (
+          <Text style={styles.sendButtonText}>שלח</Text>
+        )}
+      </TouchableOpacity>
+    </>
+  );
+
   return (
     <SafeAreaView style={[styles.safeArea, Platform.OS === 'web' && { position: 'relative' }]}>
       <StatusBar backgroundColor={colors.backgroundSecondary} barStyle="dark-content" />
-      <View 
+      <View
         style={styles.header}
         onLayout={(event) => {
           if (Platform.OS === 'web') {
@@ -495,7 +520,7 @@ export default function ChatDetailScreen() {
                 // For web with fixed position input, we need extra padding since fixed elements don't take space in flow
                 // Input height is approximately 70px, but we need more padding to ensure scrolling works
                 const inputHeight = 70;
-                const paddingBottom = Platform.OS === 'web' 
+                const paddingBottom = Platform.OS === 'web'
                   ? tabBarHeight + inputHeight + 40  // Extra 40px for web to ensure scrolling works
                   : tabBarHeight + (showMediaOptions ? 150 : 70);
                 return { paddingBottom };
@@ -559,7 +584,7 @@ export default function ChatDetailScreen() {
             return inputStyle;
           })()}
         >
-          <View 
+          <View
             style={styles.inputContainer}
             onLayout={(event) => {
               if (Platform.OS === 'web') {
@@ -568,30 +593,7 @@ export default function ChatDetailScreen() {
               }
             }}
           >
-            <TouchableOpacity onPress={() => setShowMediaOptions(!showMediaOptions)}>
-              <Icon name="add-circle-outline" size={24} color={colors.primary} style={styles.icon} />
-            </TouchableOpacity>
-            <TextInput
-              style={styles.textInput}
-              value={inputText}
-              onChangeText={setInputText}
-              placeholder={t('chat:placeholder')}
-              placeholderTextColor={colors.textSecondary}
-              multiline
-              textAlignVertical="center"
-              editable={!isSending}
-            />
-            <TouchableOpacity
-              onPress={handleSendMessage}
-              style={[styles.sendButton, isSending && styles.sendButtonDisabled]}
-              disabled={isSending}
-            >
-              {isSending ? (
-                <ActivityIndicator size="small" color={colors.background} />
-              ) : (
-                <Text style={styles.sendButtonText}>שלח</Text>
-              )}
-            </TouchableOpacity>
+            <InputChildren />
           </View>
         </View>
       ) : (
@@ -609,30 +611,7 @@ export default function ChatDetailScreen() {
           pointerEvents="box-none"
         >
           <View style={styles.inputContainer}>
-            <TouchableOpacity onPress={() => setShowMediaOptions(!showMediaOptions)}>
-              <Icon name="add-circle-outline" size={24} color={colors.primary} style={styles.icon} />
-            </TouchableOpacity>
-            <TextInput
-              style={styles.textInput}
-              value={inputText}
-              onChangeText={setInputText}
-              placeholder={t('chat:placeholder')}
-              placeholderTextColor={colors.textSecondary}
-              multiline
-              textAlignVertical="center"
-              editable={!isSending}
-            />
-            <TouchableOpacity
-              onPress={handleSendMessage}
-              style={[styles.sendButton, isSending && styles.sendButtonDisabled]}
-              disabled={isSending}
-            >
-              {isSending ? (
-                <ActivityIndicator size="small" color={colors.background} />
-              ) : (
-                <Text style={styles.sendButtonText}>שלח</Text>
-              )}
-            </TouchableOpacity>
+            <InputChildren />
           </View>
         </KeyboardAvoidingView>
       )}

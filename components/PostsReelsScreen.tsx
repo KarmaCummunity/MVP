@@ -95,7 +95,7 @@ const PostsReelsScreen: React.FC<PostsReelsScreenProps> = ({
     },
     onHide: async (item) => {
       if (!selectedUser?.id) return;
-      
+
       try {
         const result = await postsService.hidePost(item.id, selectedUser.id);
         if (result.success) {
@@ -221,13 +221,11 @@ const PostsReelsScreen: React.FC<PostsReelsScreenProps> = ({
   const renderItem = useCallback(({ item }: { item: FeedItem }) => {
     // Calculate available width: screen width minus horizontal padding on both sides
     const availableWidth = width - (HORIZONTAL_PADDING * 2);
-    
+
     // For grid view: calculate width with gaps between columns
     // Using space-between in columnWrapper, so we need to account for gaps
-    const totalGaps = numColumns > 1 ? (numColumns - 1) * COLUMN_GAP : 0;
-    const itemWidth = numColumns > 1 
-      ? (availableWidth - totalGaps) / numColumns 
-      : availableWidth; // Full available width for list view
+    const totalGaps = (numColumns - 1) * COLUMN_GAP;
+    const itemWidth = (availableWidth - totalGaps) / numColumns;
 
     return (
       <PostReelItem
@@ -331,7 +329,7 @@ const PostsReelsScreen: React.FC<PostsReelsScreenProps> = ({
           }}
           onSave={async (postId, updates) => {
             if (!selectedUser?.id) return;
-            
+
             const result = await postsService.updatePost(postId, selectedUser.id, updates);
             if (result.success) {
               refresh();
@@ -353,11 +351,7 @@ const PostsReelsScreen: React.FC<PostsReelsScreenProps> = ({
             postTitle={selectedItemForComments.title || ''}
             onCommentsCountChange={(count) => {
               // Update the comments count in the feed
-              setFeedItems(prev => prev.map(item => 
-                item.id === selectedItemForComments.id 
-                  ? { ...item, commentsCount: count }
-                  : item
-              ));
+              refresh();
             }}
           />
         )}

@@ -311,10 +311,10 @@ export const useUserStore = create<UserState>((set, get) => ({
             // Only validate if not in guest mode
             if (authModeStored !== 'guest') {
               const { apiService } = await import('../utils/apiService');
-              
+
               // Try to get a valid auth token (this will refresh if needed)
               const authToken = await apiService.getAuthToken();
-              
+
               if (!authToken) {
                 console.warn('🔐 userStore - checkAuthStatus - No valid token found, clearing session');
                 // Token validation failed, clear session
@@ -524,8 +524,8 @@ export const useUserStore = create<UserState>((set, get) => ({
       const enrichedUser = await enrichUserWithOrgRoles(currentUser);
 
       // Only update if roles actually changed to prevent infinite loops
-      const currentRoles = JSON.stringify((currentUser.roles || []).sort());
-      const newRoles = JSON.stringify((enrichedUser.roles || []).sort());
+      const currentRoles = JSON.stringify((currentUser.roles || []).sort((a, b) => a.localeCompare(b)));
+      const newRoles = JSON.stringify((enrichedUser.roles || []).sort((a, b) => a.localeCompare(b)));
 
       if (currentRoles !== newRoles) {
         console.log('🔐 userStore - refreshUserRoles - Roles changed!', {

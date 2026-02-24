@@ -175,6 +175,10 @@ const colors = {
   shadow: palette.black,        // Default shadow color
   shadowLight: palette.black,   // Light shadow color
   shadowDark: palette.black,    // Dark shadow color
+
+  // Custom/Legacy colors for specific panels
+  legacyMediumPurple: '#9333ea',
+  legacyMediumYellow: '#facc15',
 };
 
 export default colors;

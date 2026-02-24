@@ -242,14 +242,10 @@ function AppContent() {
             // Navigate to ChatDetailScreen - note that it requires full params according to RootStackParamList
             // For notifications, we'll need userName, userAvatar, and otherUserId
             // For now, we'll navigate to NotificationsScreen if we don't have full params
-            navigationQueue.navigate('NotificationsScreen', undefined, 1).catch((error) => {
-              logger.warn('App', 'Failed to navigate to NotificationsScreen from notification', { error });
-            });
-          } else {
-            navigationQueue.navigate('NotificationsScreen', undefined, 1).catch((error) => {
-              logger.warn('App', 'Failed to navigate to NotificationsScreen from notification', { error });
-            });
           }
+          navigationQueue.navigate('NotificationsScreen', undefined, 1).catch((error) => {
+            logger.warn('App', 'Failed to navigate to NotificationsScreen from notification', { error });
+          });
         }
       } catch (err) {
         logger.warn('App', 'Failed to handle notification response', { error: err });

@@ -39,12 +39,10 @@ const MENU_ITEMS = [
 ];
 
 const WebModeToggleOverlay: React.FC = () => {
-  if (Platform.OS !== 'web') return null as any;
-
   const { t } = useTranslation('webOverlay'); // Use specific namespace
   const { mode, setMode } = useWebMode();
   const { isAuthenticated, isGuestMode, selectedUser, isAdmin } = useUser();
-  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const navigation: any = useNavigation<NavigationProp<ParamListBase>>();
 
   const [windowWidth, setWindowWidth] = useState(Dimensions.get('window').width);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -55,6 +53,8 @@ const WebModeToggleOverlay: React.FC = () => {
     const subscription = Dimensions.addEventListener('change', updateWidth);
     return () => subscription.remove();
   }, []);
+
+  if (Platform.OS !== 'web') return null as any;
 
   // Hide top bar if user is authenticated (not guest mode) - standard app user
   if (isAuthenticated && !isGuestMode && selectedUser) {

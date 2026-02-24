@@ -127,7 +127,7 @@ export default function LoginScreen() {
                     const { apiService } = await import('../utils/apiService');
                     const resolveResponse = await apiService.resolveUserId({
                         firebase_uid: fbUser.uid,
-                        email: fbUser.email || email
+                        email: email
                     });
 
                     if (!resolveResponse.success || !resolveResponse.user) {
@@ -138,7 +138,7 @@ export default function LoginScreen() {
                             const userData = {
                                 id: serverUser.id, // UUID from database
                                 name: serverUser.name || fbUser.displayName || email.split('@')[0],
-                                email: serverUser.email || fbUser.email || email,
+                                email: serverUser.email || email,
                                 isActive: serverUser.is_active !== false,
                                 lastActive: serverUser.last_active || nowIso,
                                 roles: serverUser.roles || ['user'],
@@ -167,7 +167,7 @@ export default function LoginScreen() {
                     const userData = {
                         id: serverUser.id, // UUID from database - this is the primary identifier
                         name: serverUser.name || fbUser.displayName || email.split('@')[0],
-                        email: serverUser.email || fbUser.email || email,
+                        email: serverUser.email || email,
                         isActive: serverUser.isActive !== false,
                         lastActive: serverUser.lastActive || nowIso,
                         roles: serverUser.roles || ['user'],
@@ -215,7 +215,7 @@ export default function LoginScreen() {
                                 const { apiService } = await import('../utils/apiService');
                                 const resolveResponse = await apiService.resolveUserId({
                                     firebase_uid: fbUser.uid,
-                                    email: fbUser.email || email
+                                    email: email
                                 });
 
                                 if (resolveResponse.success && resolveResponse.user) {
@@ -223,7 +223,7 @@ export default function LoginScreen() {
                                     const userData = {
                                         id: serverUser.id,
                                         name: serverUser.name || fbUser.displayName || email.split('@')[0],
-                                        email: serverUser.email || fbUser.email || email,
+                                        email: serverUser.email || email,
                                         isActive: serverUser.isActive !== false,
                                         lastActive: serverUser.lastActive || nowIso,
                                         roles: serverUser.roles || ['user'],

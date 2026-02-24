@@ -353,7 +353,7 @@ const VisionSection: React.FC<{ onGoToApp: () => void }> = ({ onGoToApp }) => (
     </View>
 
     {/* CTA Button - Join Us */}
-    <View style={styles.ctaRow}>
+    {/* <View style={styles.ctaRow}>
       <TouchableOpacity
         style={styles.primaryCta}
         onPress={onGoToApp}
@@ -362,7 +362,7 @@ const VisionSection: React.FC<{ onGoToApp: () => void }> = ({ onGoToApp }) => (
         <Ionicons name="people-outline" size={isMobileWeb ? 16 : 22} color={colors.white} style={styles.ctaIcon} />
         <Text style={styles.primaryCtaText}>הצטרפו אלינו</Text>
       </TouchableOpacity>
-    </View>
+    </View> */}
   </Section>
 );
 
@@ -783,7 +783,7 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onG
       )}
 
       {/* CTA Button - Go to App */}
-      <View style={styles.ctaRow}>
+      {/* <View style={styles.ctaRow}>
         <TouchableOpacity
           style={styles.primaryCta}
           onPress={onGoToApp}
@@ -792,7 +792,7 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onG
           <Ionicons name="phone-portrait-outline" size={isMobileWeb ? 16 : 22} color={colors.white} style={styles.ctaIcon} />
           <Text style={styles.primaryCtaText}>עבור לאפליקציה</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
     </Section>
   );
 };
@@ -1811,7 +1811,7 @@ const LandingSiteScreen: React.FC = () => {
     let mutationObserver: MutationObserver | null = null;
     if (typeof MutationObserver !== 'undefined') {
       mutationObserver = new MutationObserver(() => {
-        sectionIds.forEach(observeSection);
+        sectionIds.forEach(id => observeSection(id));
       });
       mutationObserver.observe(document.body, { childList: true, subtree: true });
     }
@@ -1899,7 +1899,7 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: isMobileWeb ? 28 : (isWeb ? (isTablet ? 56 : 42) : 64),
     fontWeight: '900',
-    color: colors.textPrimary, 
+    color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: isMobileWeb ? 16 : (isWeb ? 24 : 32),
     letterSpacing: -1,
@@ -2279,7 +2279,7 @@ const styles = StyleSheet.create({
   },
   roadmapItemWrapper: {
     width: '100%',
-    marginBottom: isMobileWeb ? 0 : 0,
+    marginBottom: 0,
   },
   roadmapItem: {
     flexDirection: 'row',
