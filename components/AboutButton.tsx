@@ -7,6 +7,7 @@
 import React from 'react';
 import { TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { useNavigation, NavigationProp, ParamListBase } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../globals/colors';
 
@@ -55,6 +56,7 @@ export default function AboutButton({
   iconColor = colors.topNavIcon,
   onPress,
 }: AboutButtonProps) {
+  const { t } = useTranslation('common');
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const handlePress = () => {
@@ -71,8 +73,8 @@ export default function AboutButton({
       onPress={handlePress}
       style={[styles.button, style]}
       activeOpacity={0.7}
-      accessibilityLabel="אודות"
-      accessibilityHint="פתח את מסך אודות קהילת קארמה"
+      accessibilityLabel={t('accessibility.aboutButton')}
+      accessibilityHint={t('accessibility.aboutButtonHint')}
     >
       <Ionicons name="information-circle-outline" size={iconSize} color={iconColor} />
     </TouchableOpacity>

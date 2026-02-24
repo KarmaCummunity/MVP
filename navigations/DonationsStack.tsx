@@ -42,6 +42,11 @@ import MatchmakingScreen from "../donationScreens/MatchmakingScreen";
 import MentalHealthScreen from "../donationScreens/MentalHealthScreen";
 import GoldenAgeScreen from "../donationScreens/GoldenAgeScreen";
 import LanguagesScreen from "../donationScreens/LanguagesScreen";
+import CommunityChallengesScreen from "../donationScreens/CommunityChallengesScreen";
+import ChallengeDetailsScreen from "../screens/ChallengeDetailsScreen";
+import ChallengeStatisticsScreen from "../screens/ChallengeStatisticsScreen";
+import MyChallengesScreen from "../screens/MyChallengesScreen";
+import MyCreatedChallengesScreen from "../screens/MyCreatedChallengesScreen";
 import ChatListScreen from "../topBarScreens/ChatListScreen";
 import ChatDetailScreen from "../screens/ChatDetailScreen";
 import NewChatScreen from "../screens/NewChatScreen";
@@ -49,7 +54,7 @@ import NotificationsScreen from "../screens/NotificationsScreen";
 import AboutKarmaCommunityScreen from "../topBarScreens/AboutKarmaCommunityScreen";
 import SettingsScreen from "../topBarScreens/SettingsScreen";
 import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
-import LandingSiteScreen from "../screens/LandingSiteScreen";
+import LandingSiteScreen from "../screens/Landing/LandingSiteScreen";
 import TopBarNavigator from "./TopBarNavigator";
 import { DonationsStackParamList } from "../globals/types";
 import { logger } from "../utils/loggerService";
@@ -120,6 +125,11 @@ export default function DonationsStack() {
       <Stack.Screen name="WasteScreen" component={WasteScreen} />
       <Stack.Screen name="ArtScreen" component={ArtScreen} />
       <Stack.Screen name="SportsScreen" component={SportsScreen} />
+      <Stack.Screen name="CommunityChallengesScreen" component={CommunityChallengesScreen} />
+      <Stack.Screen name="ChallengeDetailsScreen" component={ChallengeDetailsScreen} />
+      <Stack.Screen name="ChallengeStatisticsScreen" component={ChallengeStatisticsScreen} />
+      <Stack.Screen name="MyChallengesScreen" component={MyChallengesScreen} />
+      <Stack.Screen name="MyCreatedChallengesScreen" component={MyCreatedChallengesScreen} />
       <Stack.Screen name="ChatListScreen" component={ChatListScreen} />
       <Stack.Screen name="ChatDetailScreen" component={ChatDetailScreen} />
       <Stack.Screen name="NewChatScreen" component={NewChatScreen} />

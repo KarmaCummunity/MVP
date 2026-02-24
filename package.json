@@ -18,12 +18,17 @@
     "postbuild:web": "bash scripts/restore-build-placeholders.sh",
     "build:web:local": "EXPO_PUBLIC_API_BASE_URL=http://localhost:3001 expo export:web",
     "audit:colors": "ts-node scripts/audit-colors.ts",
-    "audit:texts": "ts-node scripts/audit-texts.ts",
+    "audit:texts": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' ts-node scripts/audit-texts.ts",
     "audit:constants": "ts-node scripts/audit-constants.ts",
     "audit:responsive": "ts-node scripts/audit-responsive.ts",
     "audit:unused": "ts-node scripts/find-unused-files.ts",
     "audit:all": "ts-node scripts/audit-all.ts",
-    "_TODO_ADD_SCRIPTS": "// TODO: Add missing scripts: test, lint, type-check, format, security-audit, bundle-analyze"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "test:ci": "jest --ci --coverage --maxWorkers=2",
+    "_TODO_ADD_SCRIPTS": "// TODO: Add missing scripts: lint, type-check, format, security-audit, bundle-analyze",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",
@@ -60,13 +65,14 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-i18next": "^15.6.1",
-    "react-native": "0.79.5",
+    "react-native-chart-kit": "^6.12.0",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-is-edge-to-edge": "^1.2.1",
     "react-native-pager-view": "6.7.1",
     "react-native-reanimated": "^3.19.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
+    "react-native-svg": "^15.15.1",
     "react-native-tab-view": "^4.1.2",
     "react-native-web": "^0.20.0",
     "react-native-webview": "13.13.5",
@@ -75,11 +81,24 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^13.3.3",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
     "@types/react": "~19.0.10",
     "babel-plugin-module-resolver": "^5.0.2",
+    "husky": "^8.0.0",
+    "jest": "^30.2.0",
+    "jest-expo": "^54.0.16",
+    "jest-react-native": "^18.0.0",
+    "lint-staged": "^16.2.7",
+    "react-native": "^0.80.2",
+    "react-test-renderer": "^19.2.3",
     "ts-node": "^10.9.2",
     "typescript": "~5.8.3"
   },
-  "private": true
+  "private": true,
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": "eslint --fix"
+  }
 }

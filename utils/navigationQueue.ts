@@ -3,8 +3,8 @@
 // Prevents race conditions and navigation conflicts
 
 import { NavigationContainerRef, StackActions } from '@react-navigation/native';
-import { 
-  QueuedNavigationAction, 
+import {
+  QueuedNavigationAction,
   NavigationQueueItem,
   NavigateAction,
   ResetAction,
@@ -162,11 +162,7 @@ class NavigationQueue {
       throw new Error('Navigation ref not initialized');
     }
 
-    if (action.key) {
-      this.navigationRef.navigate(action.routeName as never, action.params as never);
-    } else {
-      this.navigationRef.navigate(action.routeName as never, action.params as never);
-    }
+    (this.navigationRef.navigate as any)(action.routeName, action.params);
   }
 
   /**
@@ -205,11 +201,7 @@ class NavigationQueue {
       throw new Error('Navigation ref not initialized');
     }
 
-    if (action.key) {
-      this.navigationRef.goBack();
-    } else {
-      this.navigationRef.goBack();
-    }
+    this.navigationRef.goBack();
   }
 
   /**

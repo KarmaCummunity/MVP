@@ -33,6 +33,10 @@ class ToastService {
     this.show(message, 'success', duration);
   }
 
+  showInfo(message: string, duration: number = 2000) {
+    this.show(message, 'info', duration);
+  }
+
   showError(message: string, duration: number = 2000) {
     this.show(message, 'error', duration);
   }

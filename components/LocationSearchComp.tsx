@@ -27,29 +27,30 @@ interface LocationSearchCompProps {
   placeholder?: string;
 }
 
-const GOOGLE_API_KEY = "AIzaSyAgkx8Jp2AfhhYL0wwgcOqONpaJ0-Mkcf8";
+const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
   onLocationSelected,
   placeholder,
 }) => {
-  const { t } = useTranslation(['search','common']);
+  const { t } = useTranslation(['search', 'common']);
   const [query, setQuery] = useState<string>("");
   const [results, setResults] = useState<PlacePrediction[]>([]);
-  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(
-    null
-  );
+  const [debounceTimer, setDebounceTimer] = useState<any>(null);
 
   const searchGooglePlaces = async (inputText: string) => {
     const startTime = Date.now();
     const url =
       Platform.OS === "web"
         ? `http://localhost:3001/autocomplete?input=${encodeURIComponent(
-            inputText
-          )}`
-        : `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
-            inputText
-          )}&key=${GOOGLE_API_KEY}&language=he&components=country:il`;
+          inputText
+        )}`
+        : `https://maps.googleapis.com/maps/api/place/autocomplete/json?${new URLSearchParams({
+          input: inputText,
+          key: GOOGLE_API_KEY,
+          language: 'he',
+          components: 'country:il'
+        }).toString()}`;
 
     try {
       logger.info('LocationSearch', 'Google Places API call started', {
@@ -112,7 +113,7 @@ const LocationSearchComp: React.FC<LocationSearchCompProps> = ({
   };
 
   const handleSelect = (item: PlacePrediction) => {
-    logger.info('Location selected', {
+    logger.info('LocationSearch', 'Location selected', {
       screen: 'LocationSearch',
       action: 'location_selected',
       selectedLocation: item.description

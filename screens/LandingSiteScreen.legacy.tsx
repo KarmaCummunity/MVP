@@ -238,7 +238,7 @@ const HeroSection: React.FC<{ onDonate: () => void }> = ({ onDonate }) => {
       toValue: 1,
       duration: 800,
       delay: 200,
-      useNativeDriver: !isWeb,
+      useNativeDriver: false,
     }).start();
   }, [heroAnimation]);
 
@@ -782,8 +782,8 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onG
         </View>
       )}
 
-      {/* CTA Button - Go to App 
-      <View style={styles.ctaRow}>
+      {/* CTA Button - Go to App */}
+      {/* <View style={styles.ctaRow}>
         <TouchableOpacity
           style={styles.primaryCta}
           onPress={onGoToApp}
@@ -792,7 +792,7 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onG
           <Ionicons name="phone-portrait-outline" size={isMobileWeb ? 16 : 22} color={colors.white} style={styles.ctaIcon} />
           <Text style={styles.primaryCtaText}>עבור לאפליקציה</Text>
         </TouchableOpacity>
-      </View>*/}
+      </View> */}
     </Section>
   );
 };
@@ -1401,7 +1401,7 @@ const ContactSection = () => (
 {/* <Section title="הצטרפו לקהילה שעושה טוב" subtitle="כל אחד יכול להשפיע. בואו נבנה את זה יחד." style={styles.sectionAltBackground}> */ }
 
 const LandingSiteScreen: React.FC = () => {
-  console.log('LandingSiteScreen - Component rendered');
+  logger.debug('LandingSite', 'Component rendered', undefined, { periodic: true });
 
   const { setMode } = useWebMode();
   const navigation = useNavigation<any>();
@@ -1609,7 +1609,7 @@ const LandingSiteScreen: React.FC = () => {
         completedTasks: getValue(communityStats.completed_tasks) || 0,
       };
 
-      logger.info('LandingSite', 'Stats loaded', statsData);
+      logger.info('LandingSite', 'Stats loaded', statsData, { periodic: true });
       setStats(statsData);
     } catch (error) {
       logger.error('LandingSite', 'Failed to load stats', { error });
@@ -1811,7 +1811,7 @@ const LandingSiteScreen: React.FC = () => {
     let mutationObserver: MutationObserver | null = null;
     if (typeof MutationObserver !== 'undefined') {
       mutationObserver = new MutationObserver(() => {
-        sectionIds.forEach(observeSection);
+        sectionIds.forEach(id => observeSection(id));
       });
       mutationObserver.observe(document.body, { childList: true, subtree: true });
     }
@@ -2279,7 +2279,7 @@ const styles = StyleSheet.create({
   },
   roadmapItemWrapper: {
     width: '100%',
-    marginBottom: isMobileWeb ? 0 : 0,
+    marginBottom: 0,
   },
   roadmapItem: {
     flexDirection: 'row',

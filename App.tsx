@@ -21,7 +21,7 @@
 // TODO: Add crash reporting integration (Sentry, Bugsnag)
 // TODO: Remove magic numbers for padding (48px) - use constants file
 // TODO: Add proper accessibility support throughout the app
-import React, { useState, useCallback, useEffect, useRef, useMemo, memo } from 'react';
+import React, { useCallback, useEffect, useRef, useMemo, memo } from 'react';
 import { View, Text, ActivityIndicator, Platform, StyleSheet } from 'react-native';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import * as Font from 'expo-font';
@@ -76,6 +76,7 @@ type NotificationService = {
 let notificationService: NotificationService = null;
 if (Platform.OS !== 'web') {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     notificationService = require('./utils/notificationService');
   } catch (error) {
     logger.warn('App', 'Failed to load notification service', { error });
@@ -83,7 +84,7 @@ if (Platform.OS !== 'web') {
 }
 
 // Complete auth session results as early as possible (important for Web OAuth flows)
-try { WebBrowser.maybeCompleteAuthSession(); } catch { }
+try { WebBrowser.maybeCompleteAuthSession(); } catch { /* ignored */ }
 
 SplashScreen.preventAutoHideAsync();
 
@@ -111,7 +112,7 @@ function AppContent() {
   // Initialize stores and load navigation state on mount
   // This must happen before NavigationContainer is rendered
   useEffect(() => {
-    let timeoutId: any = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const initializeStoresAndLoadState = async () => {
       try {
@@ -176,7 +177,7 @@ function AppContent() {
             logger.info('App', 'Navigation state loaded successfully', {
               mode,
               hasUserId: !!userId,
-              routeNames: savedState.routes?.map((r: any) => r.name) || []
+              routeNames: savedState.routes?.map((r: { name: string }) => r.name) || []
             });
           } else {
             logger.info('App', 'No saved navigation state found', { mode, hasUserId: !!userId });
@@ -242,14 +243,10 @@ function AppContent() {
             // Navigate to ChatDetailScreen - note that it requires full params according to RootStackParamList
             // For notifications, we'll need userName, userAvatar, and otherUserId
             // For now, we'll navigate to NotificationsScreen if we don't have full params
-            navigationQueue.navigate('NotificationsScreen', undefined, 1).catch((error) => {
-              logger.warn('App', 'Failed to navigate to NotificationsScreen from notification', { error });
-            });
-          } else {
-            navigationQueue.navigate('NotificationsScreen', undefined, 1).catch((error) => {
-              logger.warn('App', 'Failed to navigate to NotificationsScreen from notification', { error });
-            });
           }
+          navigationQueue.navigate('NotificationsScreen', undefined, 1).catch((error) => {
+            logger.warn('App', 'Failed to navigate to NotificationsScreen from notification', { error });
+          });
         }
       } catch (err) {
         logger.warn('App', 'Failed to handle notification response', { error: err });
@@ -283,6 +280,7 @@ function AppContent() {
 
     if (Platform.OS !== 'web') {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const { startNotificationListener } = require('./utils/notificationService');
         cleanupListener = startNotificationListener(selectedUser.id);
       } catch (e) {
@@ -512,19 +510,19 @@ function AppContent() {
         linking={linking}
         initialState={initialState}
         onStateChange={handleNavigationStateChange}
-        children={
-          <View style={Platform.OS === 'web' ? { flex: 1, backgroundColor: colors.black } : { flex: 1 }}>
-            <View style={[containerStyle, webWrapperStyle]}>
-              <DevEnvironmentBanner />
-              <MainNavigator />
-              <WebModeToggleOverlay />
-              <StatusBar style="auto" />
-            </View>
+      >
+        <View style={Platform.OS === 'web' ? { flex: 1, backgroundColor: colors.black } : { flex: 1 }}>
+          <View style={[containerStyle, webWrapperStyle]}>
+            <DevEnvironmentBanner />
+            <MainNavigator />
+            <WebModeToggleOverlay />
+            <StatusBar style="auto" />
           </View>
-        }
-      />
+        </View>
+      </NavigationContainer>
     );
   });
+  AppNavigationRoot.displayName = 'AppNavigationRoot';
 
   return (
     <AppNavigationRoot initialState={initialNavigationState} />

@@ -35,10 +35,11 @@ const StatItem: React.FC<StatItemProps> = ({ icon, value, label, color = colors.
 
 export default function CommunityStatsPanel() {
   const { t } = useTranslation(['home']);
-  const { isRealAuth } = useUser();
-  if (isRealAuth) return null;
   const translateY = useSharedValue(PANEL_HEIGHT - MIN_HEIGHT);
   const isExpanded = useSharedValue(false);
+
+  const { isRealAuth } = useUser();
+  if (isRealAuth) return null;
 
   const gesture = Gesture.Pan()
     .onUpdate((event) => {

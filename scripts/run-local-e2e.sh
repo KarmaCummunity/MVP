@@ -614,6 +614,36 @@ else
   log_warning "Postgres container not found - skipping posts table creation"
 fi
 
+# ============================================================================
+# Database Migration: Community Group Challenges Tables
+# ============================================================================
+
+log_info "Ensuring community group challenges tables exist..."
+COMMUNITY_CHALLENGES_SCHEMA_FILE="$SERVER_DIR/src/database/community-group-challenges-schema.sql"
+if [[ ! -f "$COMMUNITY_CHALLENGES_SCHEMA_FILE" ]]; then
+  log_warning "Community challenges schema file not found: $COMMUNITY_CHALLENGES_SCHEMA_FILE - skipping"
+else
+  POSTGRES_CONTAINER=$(docker ps -q -f name=postgres)
+  if [[ -n "$POSTGRES_CONTAINER" ]]; then
+    # Check if community_group_challenges table exists
+    COMMUNITY_CHALLENGES_EXISTS=$(docker exec "$POSTGRES_CONTAINER" psql -U kc -d kc_db -tAc \
+      "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='community_group_challenges');" 2>/dev/null || echo "false")
+    
+    if [[ "$COMMUNITY_CHALLENGES_EXISTS" == "t" ]]; then
+      log_success "Community group challenges tables already exist - no migration needed"
+    else
+      log_info "Creating community group challenges tables..."
+      if docker exec -i "$POSTGRES_CONTAINER" psql -U kc -d kc_db < "$COMMUNITY_CHALLENGES_SCHEMA_FILE" 2>/dev/null; then
+        log_success "Community group challenges tables created successfully"
+      else
+        log_warning "Community challenges schema creation had warnings (tables may already exist)"
+      fi
+    fi
+  else
+    log_warning "Postgres container not found - skipping community challenges tables creation"
+  fi
+fi
+
 # Final check: ensure dependencies are installed before starting server
 cd "$SERVER_DIR"
 if [[ ! -f node_modules/body-parser/package.json ]]; then

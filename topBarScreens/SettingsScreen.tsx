@@ -363,7 +363,7 @@ export default function SettingsScreen() {
       const taskData = {
         title: `Report from ${selectedUser?.name || 'User'}`,
         description: `User Email: ${selectedUser?.email}\nUser ID: ${currentUserId}\n\nReport Content:\n${reportText}`,
-        status: 'open',
+        status: 'reports',
         priority: 'high',
         category: 'report',
         assignee_id: adminId,
@@ -734,6 +734,18 @@ export default function SettingsScreen() {
               title={t('settings:language')}
               subtitle={currentLang === 'he' ? t('settings:lang.he') : t('settings:lang.en')}
               onPress={handleLanguagePress}
+            />
+          </View>
+
+          {/* My Activity Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('settings:myActivitySection', 'הפעילות שלי')}</Text>
+
+            <SettingsItem
+              icon="trophy-outline"
+              title={t('challenges:myChallenges')}
+              subtitle={t('settings:myChallengesDesc', 'עדכון מהיר של האתגרים שהצטרפת אליהם')}
+              onPress={() => (navigation as any).navigate('ChallengeStatisticsScreen')}
             />
           </View>
 

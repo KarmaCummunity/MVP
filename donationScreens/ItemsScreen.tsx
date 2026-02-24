@@ -12,10 +12,17 @@ import AddLinkComponent from '../components/AddLinkComponent';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { db } from '../utils/databaseService';
 import { useUser } from '../stores/userStore';
-import { biDiTextAlign, rowDirection, isLandscape, marginStartEnd, getScreenInfo, BREAKPOINTS } from '../globals/responsive';
+import { biDiTextAlign, rowDirection, isLandscape, marginStartEnd, getScreenInfo, BREAKPOINTS, isMobileWeb } from '../globals/responsive';
 import { getCategoryLabel } from '../utils/itemCategoryUtils';
 import { useToast } from '../utils/toastService';
 import VerticalGridSlider from '../components/VerticalGridSlider';
+import { postsService } from '../utils/postsService';
+import PostReelItem from '../components/Feed/PostReelItem';
+import { FeedItem } from '../types/feed';
+import { usePostMenu } from '../hooks/usePostMenu';
+import OptionsModal from '../components/Feed/OptionsModal';
+import ReportPostModal from '../components/Feed/ReportPostModal';
+import { useTranslation } from 'react-i18next';
 
 type ItemType = 'furniture' | 'clothes' | 'general' | 'books' | 'dry_food' | 'games' | 'electronics' | 'toys' | 'sports' | 'art' | 'kitchen' | 'bathroom' | 'garden' | 'tools' | 'baby' | 'pet' | 'other';
 
@@ -89,6 +96,7 @@ const itemsSortOptions = [
 
 export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   const { ToastComponent } = useToast();
+  const { t } = useTranslation(['donations', 'common', 'items']);
   const itemType: ItemType = (route?.params?.itemType as ItemType) || 'general';
   const routeParams = route?.params as { mode?: string } | undefined;
 
@@ -98,6 +106,27 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   // Default is search mode (true)
   const initialMode = routeParams?.mode === 'offer' ? false : true;
   const [mode, setMode] = useState(initialMode);
+
+  // Post menu hook
+  const {
+    handleMorePress,
+    optionsModalVisible,
+    setOptionsModalVisible,
+    modalOptions,
+    modalPosition,
+    reportModalVisible,
+    setReportModalVisible,
+    selectedPostForReport,
+    setSelectedPostForReport
+  } = usePostMenu();
+
+  // Report submit handler
+  const handleReportSubmit = async (reason: string) => {
+    if (!selectedPostForReport) return;
+    // Report functionality can be implemented here if needed
+    setReportModalVisible(false);
+    setSelectedPostForReport(null);
+  };
 
   // Update mode when route params change (e.g., from deep link)
   useEffect(() => {
@@ -132,8 +161,14 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
   const [allItems, setAllItems] = useState<DonationItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<DonationItem[]>([]);
   const [recentMine, setRecentMine] = useState<DonationItem[]>([]);
+  // Posts state for search mode
+  const [allPosts, setAllPosts] = useState<FeedItem[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<FeedItem[]>([]);
+  // Posts state for offer mode history
+  const [recentPosts, setRecentPosts] = useState<FeedItem[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const titleInputRef = useRef<TextInput | null>(null);
+  const loadItemsRef = useRef<(() => Promise<void>) | undefined>(undefined);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState<string>('');
@@ -223,91 +258,190 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
 
   const dummyItems: DonationItem[] = useMemo(() => [], []);
 
-  // פונקציה נפרדת לטעינת פריטים שנוכל לקרוא לה גם אחרי שמירה
+  // Helper to map API post to FeedItem (same as useFeedData.mapPostToItem)
+  const mapPostToFeedItem = (post: any): FeedItem | null => {
+    // הגנה מפני post null/undefined
+    if (!post || !post.id) {
+      console.warn('⚠️ mapPostToFeedItem: post is null or missing id', post);
+      return null;
+    }
+
+    // Extract item data if available
+    const itemData = post.item_data || {};
+    let metadata = {};
+    try {
+      metadata = typeof post.metadata === 'string' ? JSON.parse(post.metadata) : (post.metadata || {});
+    } catch (e) {
+      console.warn('⚠️ Failed to parse metadata:', e);
+    }
+
+    // Ensure user is always defined (same format as useFeedData)
+    // בדיקה מפורטת יותר
+    let author = null;
+    if (post.author) {
+      author = post.author;
+    } else if (post.author_id) {
+      // אם אין author object, ניצור אחד בסיסי
+      author = { id: post.author_id, name: null, avatar_url: null };
+    }
+
+    const userId = author?.id || post.author_id || 'unknown';
+    const userName = author?.name || 'common.unknownUser';
+    const userAvatar = author?.avatar_url || undefined;
+
+    // וידוא שה-user תמיד מוגדר
+    if (!userId || userId === 'unknown') {
+      console.warn('⚠️ mapPostToFeedItem: post without valid user', { postId: post.id, author, author_id: post.author_id });
+    }
+
+    // Get status from item_data or ride_data
+    let itemStatus: string | undefined;
+    if (post.item_data) {
+      itemStatus = post.item_data.status;
+    } else if (post.ride_data) {
+      itemStatus = post.ride_data.status;
+    }
+
+    return {
+      id: post.id,
+      type: post.post_type || 'post',
+      subtype: post.post_type, // Same as useFeedData - e.g. 'item', 'donation', 'ride'
+      title: post.title || 'post.noTitle', // Same as useFeedData
+      description: post.description || '',
+      thumbnail: post.images && post.images.length > 0 ? post.images[0] : null, // Same as useFeedData
+      user: {
+        id: userId,
+        name: userName,
+        avatar: userAvatar,
+      },
+      likes: parseInt(post.likes || '0'),
+      comments: parseInt(post.comments || '0'),
+      isLiked: post.is_liked || false,
+      timestamp: (post.created_at && !isNaN(new Date(post.created_at).getTime()))
+        ? new Date(post.created_at).toISOString()
+        : new Date().toISOString(),
+      // Item-specific fields
+      category: itemData?.category || (metadata as any)?.category,
+      // Add status for items and donations
+      status: itemStatus,
+      // Add IDs for updating posts
+      // IMPORTANT: For items, ALWAYS prefer item_data.id (from JOIN) - this is the most reliable source
+      // item_id column might be a timestamp if post was created incorrectly
+      itemId: post.item_data?.id || (post.item_id && !/^\d{10,13}$/.test(post.item_id) ? post.item_id : undefined),
+      rideId: post.ride_id || post.ride_data?.id,
+      taskId: post.task_id || post.task?.id,
+    };
+  };
+
+  // פונקציה נפרדת לטעינת פריטים/פוסטים שנוכל לקרוא לה גם אחרי שמירה
   const loadItems = async () => {
     try {
-      console.log('📥 טוען פריטים מהשרת...', { mode, itemType });
+      console.log('📥 טוען פריטים/פוסטים מהשרת...', { mode, itemType });
       const uid = selectedUser?.id || 'guest';
 
-      let serverItems: any[] = [];
-
       if (mode) {
-        // מצב "מחפש" - טוען את כל הפריטים הזמינים מכל המשתמשים (ללא סינון קטגוריה)
-        console.log('🔍 מצב מחפש - טוען את כל הפריטים הזמינים');
-        const { USE_BACKEND, API_BASE_URL } = await import('../utils/dbConfig');
-        if (USE_BACKEND && API_BASE_URL) {
-          const axios = (await import('axios')).default;
-          // במצב "מחפש", לא נסנן לפי קטגוריה - נטען את כל הפריטים הזמינים
-          // הסינון לפי קטגוריה ייעשה רק ב-UI אחרי הטעינה
-          const response = await axios.get(`${API_BASE_URL}/api/items-delivery/search`, {
-            params: {
-              status: 'available',
-              limit: 100, // Limit to 100 items for performance
+        // מצב "מחפש" - טוען פוסטים של פריטים (item או donation)
+        console.log('🔍 מצב מחפש - טוען פוסטים של פריטים');
+        try {
+          // טוען את כל הפוסטים ואז מסנן לפי post_type
+          const postsResponse = await postsService.getPosts(200, 0, uid);
+          if (postsResponse.success && Array.isArray(postsResponse.data)) {
+            // מסנן רק פוסטים של פריטים (item או donation)
+            const itemPosts = postsResponse.data.filter((post: any) => 
+              post.post_type === 'item' || post.post_type === 'donation' || post.item_id
+            );
+            
+            console.log('📊 סה"כ פוסטים:', postsResponse.data.length, 'פוסטים של פריטים:', itemPosts.length);
+            
+            // ממפה את הפוסטים עם הגנה מפני user undefined
+            const mappedPosts = itemPosts
+              .map(mapPostToFeedItem)
+              .filter((post: FeedItem | null): post is FeedItem => 
+                post !== null && post !== undefined && !!post.user && !!post.user.id && !!post.user.name
+              ); // מסנן פוסטים ללא user תקין
+            
+            setAllPosts(mappedPosts);
+            setFilteredPosts(mappedPosts);
+            console.log('✅ טעינת פוסטים הצליחה:', mappedPosts.length, 'פוסטים');
+            
+            if (mappedPosts.length === 0 && itemPosts.length > 0) {
+              console.warn('⚠️ יש פוסטים אבל הם לא נמפו נכון. דוגמה:', itemPosts[0]);
             }
-          });
-
-          if (response.data?.success && Array.isArray(response.data.data)) {
-            serverItems = response.data.data;
-            console.log('✅ טעינת פריטים מה-API הצליחה:', serverItems.length, 'פריטים');
           } else {
-            console.warn('⚠️ API response לא תקין:', response.data);
+            console.warn('⚠️ טעינת פוסטים נכשלה:', postsResponse.error);
+            setAllPosts([]);
+            setFilteredPosts([]);
           }
-        } else {
-          // Fallback: אם אין backend, נטען רק את הפריטים של המשתמש
-          console.warn('⚠️ אין backend - טוען רק פריטים של המשתמש');
-          serverItems = await db.getDedicatedItemsByOwner(uid);
+        } catch (error) {
+          console.error('❌ שגיאה בטעינת פוסטים:', error);
+          setAllPosts([]);
+          setFilteredPosts([]);
         }
+        return; // Don't load items in search mode
       } else {
-        // מצב "מציע" - טוען רק את הפריטים של המשתמש הנוכחי
-        console.log('🔵 מצב מציע - טוען פריטים של המשתמש:', uid);
-        serverItems = await db.getDedicatedItemsByOwner(uid);
-      }
+        // מצב "מציע" - טוען את הפוסטים של המשתמש להיסטוריה
+        console.log('🔵 מצב מציע - טוען פוסטים של המשתמש להיסטוריה:', uid);
+        try {
+          // טוען את הפוסטים של המשתמש
+          const { apiService } = await import('../utils/apiService');
+          const postsResponse = await apiService.getUserPosts(uid, 50, uid);
+          
+          if (postsResponse.success && Array.isArray(postsResponse.data)) {
+            // מסנן רק פוסטים של פריטים (item או donation)
+            const itemPosts = postsResponse.data.filter((post: any) => 
+              post.post_type === 'item' || post.post_type === 'donation' || post.item_id
+            );
+            
+            // ממפה את הפוסטים
+            const mappedPosts = itemPosts
+              .map(mapPostToFeedItem)
+              .filter((post: FeedItem | null): post is FeedItem => 
+                post !== null && post !== undefined && !!post.user && !!post.user.id && !!post.user.name
+              );
+            
+            setRecentPosts(mappedPosts);
+            console.log('✅ טעינת פוסטים להיסטוריה הצליחה:', mappedPosts.length, 'פוסטים');
+          } else {
+            console.warn('⚠️ טעינת פוסטים להיסטוריה נכשלה:', postsResponse.error);
+            setRecentPosts([]);
+          }
+        } catch (error) {
+          console.error('❌ שגיאה בטעינת פוסטים להיסטוריה:', error);
+          setRecentPosts([]);
+        }
 
-      // המרה לפורמט התצוגה + סינון פריטים שנמחקו
-      const displayItems: DonationItem[] = (serverItems || [])
-        .filter((item: any) => {
-          // נסנן פריטים שנמחקו
-          const isDeleted = item.is_deleted || item.isDeleted;
-          return !isDeleted;
-        })
-        .map((item: any) => ({
-          id: item.id,
-          ownerId: item.owner_id || item.ownerId,
-          title: item.title,
-          description: item.description,
-          category: item.category,
-          condition: item.condition,
-          city: item.city || (item.location && typeof item.location === 'object' ? item.location.city : null),
-          address: item.address || (item.location && typeof item.location === 'object' ? item.location.address : null),
-          coordinates: item.coordinates || (item.location && typeof item.location === 'object' ? item.location.coordinates : null),
-          price: item.price,
-          image_base64: item.image_base64,
-          rating: item.rating,
-          timestamp: item.created_at || item.timestamp,
-          tags: item.tags,
-          qty: item.quantity || item.qty,
-          delivery_method: item.delivery_method,
-          status: item.status,
-          isDeleted: item.is_deleted || item.isDeleted,
-          deletedAt: item.deleted_at || item.deletedAt,
-        }));
+        // עדיין טוען פריטים לצורך יצירה/עריכה (אם צריך)
+        const serverItems = await db.getDedicatedItemsByOwner(uid);
+        const displayItems: DonationItem[] = (serverItems || [])
+          .filter((item: any) => {
+            const isDeleted = item.is_deleted || item.isDeleted;
+            return !isDeleted;
+          })
+          .map((item: any) => ({
+            id: item.id,
+            ownerId: item.owner_id || item.ownerId,
+            title: item.title,
+            description: item.description,
+            category: item.category,
+            condition: item.condition,
+            city: item.city || (item.location && typeof item.location === 'object' ? item.location.city : null),
+            address: item.address || (item.location && typeof item.location === 'object' ? item.location.address : null),
+            coordinates: item.coordinates || (item.location && typeof item.location === 'object' ? item.location.coordinates : null),
+            price: item.price,
+            image_base64: item.image_base64,
+            rating: item.rating,
+            timestamp: item.created_at || item.timestamp,
+            tags: item.tags,
+            qty: item.quantity || item.qty,
+            delivery_method: item.delivery_method,
+            status: item.status,
+            isDeleted: item.is_deleted || item.isDeleted,
+            deletedAt: item.deleted_at || item.deletedAt,
+          }));
 
-      // סינון לפי קטגוריה
-      // במצב "מחפש", נציג את כל הפריטים ללא סינון קטגוריה
-      // במצב "מציע", נסנן לפי קטגוריה רק אם itemType לא 'general'
-      const forType = !mode
-        ? displayItems.filter(i => itemType === 'general' ? true : i.category === itemType)
-        : displayItems; // במצב "מחפש", נציג את כל הפריטים
-
-      setAllItems(forType);
-
-      // recentMine - רק במצב "מציע" נשמור את הפריטים של המשתמש
-      if (!mode) {
+        const forType = displayItems.filter(i => itemType === 'general' ? true : i.category === itemType);
+        setAllItems(forType);
         setRecentMine(forType);
-      } else {
-        // במצב "מחפש", recentMine יהיה רק הפריטים של המשתמש הנוכחי
-        const myItems = forType.filter(i => i.ownerId === uid);
-        setRecentMine(myItems);
       }
 
     } catch (error) {
@@ -320,11 +454,60 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
     }
   };
 
+  // Store loadItems in ref so it can be used in callbacks without dependency issues
+  useEffect(() => {
+    loadItemsRef.current = loadItems;
+  });
+
   useEffect(() => {
     loadItems();
   }, [selectedUser, itemType, mode]);
 
   const getFilteredItems = useCallback(() => {
+    // In search mode, filter posts instead of items
+    if (mode) {
+      let filtered = [...allPosts];
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter(p =>
+          p.title.toLowerCase().includes(q) ||
+          (p.description || '').toLowerCase().includes(q) ||
+          (p.user?.name || '').toLowerCase().includes(q)
+        );
+      }
+
+      // Apply filters (category, etc.)
+      if (selectedFilters.length > 0) {
+        selectedFilters.forEach(f => {
+          // Filter by category
+          const matchingCategory = ITEM_CATEGORIES.find(cat => cat.label === f);
+          if (matchingCategory) {
+            filtered = filtered.filter(post => post.category === matchingCategory.id);
+          }
+        });
+      }
+
+      // Sorting
+      const selectedSort = selectedSorts[0];
+      switch (selectedSort) {
+        case 'אלפביתי':
+          filtered.sort((a, b) => a.title.localeCompare(b.title, 'he'));
+          break;
+        case 'לפי תאריך':
+          filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+          break;
+        case 'לפי דירוג':
+          filtered.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+          break;
+        case 'לפי רלוונטיות':
+          filtered.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+          break;
+      }
+
+      return filtered;
+    }
+
+    // In offer mode, filter items as before
     let filtered = [...allItems];
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -385,22 +568,33 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
     return filtered;
   }, [allItems, searchQuery, selectedFilters, selectedSorts]);
 
-  // Update filtered items whenever search/filter/sort changes
+  // Update filtered items/posts whenever search/filter/sort changes
   useEffect(() => {
-    setFilteredItems(getFilteredItems());
-  }, [getFilteredItems]);
+    if (mode) {
+      setFilteredPosts(getFilteredItems() as FeedItem[]);
+    } else {
+      setFilteredItems(getFilteredItems() as DonationItem[]);
+    }
+  }, [getFilteredItems, mode]);
 
   // Calculate grid layout for search mode
   const { width } = Dimensions.get('window');
   const { isTablet, isDesktop } = getScreenInfo();
   const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
+  const isMobile = isMobileWeb();
 
   // Initialize with appropriate default, but allow user control via slider
   const [numColumns, setNumColumns] = useState(() => (isTablet || isDesktop || isDesktopWeb) ? 3 : 2);
 
-  const screenPadding = 20;
-  const cardGap = isTablet || isDesktop || isDesktopWeb ? 16 : 14;
-  const cardWidth = (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
+  // Use same padding values as PostsReelsScreen for consistency
+  const HORIZONTAL_PADDING = isMobile ? 8 : 16;
+  const COLUMN_GAP = isMobile ? 8 : 16;
+  const screenPadding = HORIZONTAL_PADDING;
+  const cardGap = COLUMN_GAP;
+  // Calculate card width: full width minus padding on both sides, minus gaps between columns
+  const cardWidth = numColumns === 1 
+    ? width - (screenPadding * 2) 
+    : (width - (screenPadding * 2) - (cardGap * (numColumns - 1))) / numColumns;
 
   const handleSearch = (query: string, filters: string[] = [], sorts: string[] = [], _results?: any[]) => {
     setSearchQuery(query);
@@ -496,7 +690,8 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         return;
       }
       const uid = selectedUser.id; // This is already a UUID from the server
-      const id = `${Date.now()}`;
+      // Note: We don't send 'id' to the server - the backend will generate it
+      // This is similar to how rides work - the backend creates the ID
 
       // המרת תמונה ל-base64
       let imageBase64 = null;
@@ -509,30 +704,46 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
       }
 
       // הכנת אובייקט עם כל השדות הנפרדים
-      const itemData = {
-        id,
+      // Note: We don't include 'id' - the backend will generate it
+      // For optional fields, send undefined instead of empty string to avoid validation issues
+      const itemData: any = {
         owner_id: uid,
         title: title.trim(),
-        description: description.trim() || '',
         category: selectedCategory || itemType,
-        condition: condition || 'used',
-
-        // שדות מיקום נפרדים
-        city: city.trim() || '',
-        address: address.trim() || '',
-        coordinates: '',
-
-        price: Number(price) || 0,
-        image_base64: imageBase64,
-        rating: 0,
-        tags: selectedFilters.join(','),  // המרה ל-string מופרד בפסיקים
-        quantity: qty || 1,
-        delivery_method: 'pickup',
-        status: 'available',
       };
 
+      // Add optional fields only if they have values
+      if (description.trim()) {
+        itemData.description = description.trim();
+      }
+      if (condition) {
+        itemData.condition = condition;
+      }
+      if (city.trim()) {
+        itemData.city = city.trim();
+      }
+      if (address.trim()) {
+        itemData.address = address.trim();
+      }
+      // Note: coordinates is not currently supported in the UI
+      // If needed in the future, add a coordinates state variable and input field
+      if (price && Number(price) > 0) {
+        itemData.price = Number(price);
+      }
+      if (imageBase64) {
+        itemData.image_base64 = imageBase64;
+      }
+      if (selectedFilters.length > 0) {
+        itemData.tags = selectedFilters.join(',');
+      }
+      if (qty && qty > 1) {
+        itemData.quantity = qty;
+      }
+      // Note: delivery_method and status are optional
+      // Backend will use defaults: 'pickup' for delivery_method and 'available' for status
+      // If you want to customize these, add state variables and UI inputs for them
+
       console.log('📤 שולח לשרת:', {
-        id: itemData.id,
         title: itemData.title,
         city: itemData.city,
         address: itemData.address,
@@ -546,8 +757,9 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
       console.log('✅ נשמר בהצלחה בשרת:', savedItem);
 
       // Optimistic Update: Add to local state immediately
+      // Use the ID returned from the server (savedItem.id) - this is the proper ID generated by backend
       const newItemForState: DonationItem = {
-        id: itemData.id,
+        id: savedItem.id || savedItem.data?.id,
         ownerId: itemData.owner_id,
         title: itemData.title,
         description: itemData.description,
@@ -593,9 +805,16 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
 
     } catch (error: any) {
       console.error('❌ שגיאה בשמירת פריט:', error);
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'שגיאה לא ידועה';
+      console.error('❌ Error details:', {
+        message: errorMessage,
+        status: error.response?.status,
+        data: error.response?.data,
+        fullError: error
+      });
       Alert.alert(
         '❌ שגיאה',
-        `לא הצלחנו לשמור את הפריט:\n${error.message || 'שגיאה לא ידועה'}`,
+        `לא הצלחנו לשמור את הפריט:\n${errorMessage}`,
         [{ text: 'סגור', style: 'cancel' }]
       );
     }
@@ -612,6 +831,68 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
     setShowItemModal(false);
     setSelectedItem(null);
   };
+
+  // Handle post closed - immediately update UI for fast responsiveness
+  const handlePostClosed = useCallback((postId: string) => {
+    // Optimistic update: remove post from lists immediately for instant UI feedback
+    setAllPosts(prev => prev.filter(p => p.id !== postId));
+    setFilteredPosts(prev => prev.filter(p => p.id !== postId));
+    setRecentPosts(prev => prev.filter(p => p.id !== postId));
+    
+    // Background reload to ensure consistency (non-blocking)
+    // The UI is already updated, so this is just for data sync
+    setTimeout(() => {
+      if (loadItemsRef.current) {
+        loadItemsRef.current().catch(err => {
+          console.error('Error reloading items after close:', err);
+        });
+      }
+    }, 100);
+  }, []);
+
+  // Render item callback for FlatList (search mode)
+  const renderPostItem = useCallback(({ item }: { item: FeedItem }) => {
+    // Calculate available width: screen width minus horizontal padding on both sides
+    const availableWidth = width - (screenPadding * 2);
+    
+    // For grid view: with justifyContent: 'space-between', FlatList distributes items automatically
+    // So each item gets availableWidth / numColumns (no need to account for gaps)
+    const itemWidth = numColumns > 1 
+      ? availableWidth / numColumns
+      : availableWidth; // Full available width for list view
+
+    return (
+      <PostReelItem
+        item={item}
+        cardWidth={itemWidth}
+        numColumns={numColumns}
+        onPress={(item) => {
+          // Navigate to post details or open modal
+          console.log('Post pressed:', item.id);
+        }}
+        onCommentPress={(item) => {
+          // Handle comment press
+          console.log('Comment pressed:', item.id);
+        }}
+        onMorePress={handleMorePress}
+        onPostClosed={handlePostClosed}
+      />
+    );
+  }, [numColumns, screenPadding, width, handleMorePress, handlePostClosed]);
+
+  // Empty component for FlatList
+  const renderEmptyPosts = useCallback(() => (
+    <View style={localStyles.emptyState}>
+      <Icon name="search-outline" size={48} color={colors.textSecondary} />
+      <Text style={localStyles.emptyStateTitle}>לא נמצאו פוסטים</Text>
+      <Text style={localStyles.emptyStateText}>נסה לשנות את הפילטרים או החיפוש</Text>
+      {(searchQuery || selectedFilters.length > 0 || selectedSorts.length > 0) && (
+        <TouchableOpacity style={localStyles.emptyStateClearButton} onPress={handleClearAll}>
+          <Text style={localStyles.emptyStateClearButtonText}>נקה הכל</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  ), [searchQuery, selectedFilters, selectedSorts, handleClearAll]);
 
   const renderItemCard = ({ item }: { item: DonationItem }) => (
     <TouchableOpacity style={localStyles.itemCard} onPress={() => handleItemPress(item)}>
@@ -752,47 +1033,28 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
               )}
             </View>
 
-            {/* Items List or Empty State */}
-            {filteredItems.length === 0 ? (
-              <View style={localStyles.emptyState}>
-                <Icon name="search-outline" size={48} color={colors.textSecondary} />
-                <Text style={localStyles.emptyStateTitle}>לא נמצאו פריטים</Text>
-                <Text style={localStyles.emptyStateText}>נסה לשנות את הפילטרים או החיפוש</Text>
-                {(searchQuery || selectedFilters.length > 0 || selectedSorts.length > 0) && (
-                  <TouchableOpacity style={localStyles.emptyStateClearButton} onPress={handleClearAll}>
-                    <Text style={localStyles.emptyStateClearButtonText}>נקה הכל</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            ) : (
-              <View style={[
-                localStyles.itemsGrid,
-                {
-                  paddingHorizontal: screenPadding,
-                }
-              ]}>
-                {filteredItems.map((item, idx) => (
-                  <View
-                    key={item.id}
-                    style={{
-                      width: cardWidth,
-                      marginBottom: cardGap,
-                      marginLeft: idx % numColumns === 0 ? 0 : cardGap,
-                    }}
-                  >
-                    {renderItemCard({ item })}
-                  </View>
-                ))}
-              </View>
-            )}
+            {/* Posts List (in search mode) */}
+            <FlatList
+              data={filteredPosts}
+              renderItem={renderPostItem}
+              keyExtractor={(item) => item.id}
+              key={numColumns} // Force re-render on column change
+              numColumns={numColumns}
+              columnWrapperStyle={numColumns > 1 ? localStyles.columnWrapper : undefined}
+              contentContainerStyle={{ paddingHorizontal: screenPadding }}
+              scrollEnabled={false}
+              nestedScrollEnabled={true}
+              ListEmptyComponent={renderEmptyPosts}
+              showsVerticalScrollIndicator={false}
+            />
 
             {/* Footer Stats */}
             <View style={localStyles.section}>
               <DonationStatsFooter
                 stats={[
-                  { label: 'פריטים שפורסמו', value: filteredItems.length, icon: 'cube-outline' },
-                  { label: 'פריטים בחינם', value: filteredItems.filter(i => (i.price ?? 0) === 0).length, icon: 'pricetag-outline' },
-                  { label: 'מיקומים ייחודיים', value: new Set(filteredItems.map(i => i.city || 'לא צויין')).size, icon: 'pin-outline' },
+                  { label: 'פוסטים שפורסמו', value: filteredPosts.length, icon: 'cube-outline' },
+                  { label: 'לייקים', value: filteredPosts.reduce((sum, p) => sum + (p.likes || 0), 0), icon: 'heart-outline' },
+                  { label: 'תגובות', value: filteredPosts.reduce((sum, p) => sum + (p.comments || 0), 0), icon: 'chatbubble-outline' },
                 ]}
               />
             </View>
@@ -1015,11 +1277,36 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
 
           <View style={localStyles.section}>
             <Text style={localStyles.sectionTitle}>פריטים שפרסמת לאחרונה</Text>
-            <View style={localStyles.recentContainer}>
-              {recentMine.map((it) => (
-                <View key={it.id} style={localStyles.recentItemWrapper}>{renderRecentCard({ item: it })}</View>
-              ))}
-            </View>
+            {recentPosts.length === 0 ? (
+              <Text style={localStyles.emptyStateText}>אין פוסטים שפורסמו עדיין</Text>
+            ) : (
+              <View style={localStyles.recentContainer}>
+                {recentPosts.map((post) => {
+                  // Container has paddingHorizontal: 16, scrollContent has paddingHorizontal: 16, 
+                  // and recentContainer has paddingHorizontal: 8
+                  // Total padding is 16 + 16 + 8 = 40 on each side
+                  const totalPadding = 16 + 16 + 8;
+                  const recentCardWidth = width - (totalPadding * 2);
+                  return (
+                    <View key={post.id} style={localStyles.recentItemWrapper}>
+                      <PostReelItem
+                        item={post}
+                        cardWidth={recentCardWidth}
+                        numColumns={1}
+                        onPress={(item) => {
+                          console.log('Post pressed:', item.id);
+                        }}
+                        onCommentPress={(item) => {
+                          console.log('Comment pressed:', item.id);
+                        }}
+                        onMorePress={handleMorePress}
+                        onPostClosed={handlePostClosed}
+                      />
+                    </View>
+                  );
+                })}
+              </View>
+            )}
           </View>
 
           {/* Add Links Section */}
@@ -1037,6 +1324,21 @@ export default function ItemsScreen({ navigation, route }: ItemsScreenProps) {
         item={selectedItem}
         type="item"
         navigation={navigation}
+      />
+
+      {/* Post Menu Modals */}
+      <OptionsModal
+        visible={optionsModalVisible}
+        onClose={() => setOptionsModalVisible(false)}
+        options={modalOptions}
+        title={t('common.options') || 'Options'}
+        anchorPosition={modalPosition}
+      />
+      <ReportPostModal
+        visible={reportModalVisible}
+        onClose={() => setReportModalVisible(false)}
+        onSubmit={handleReportSubmit}
+        isLoading={false}
       />
       {ToastComponent}
     </SafeAreaView>
@@ -1079,10 +1381,8 @@ const localStyles = StyleSheet.create({
   sectionWithScroller: { flex: 1, backgroundColor: colors.pinkLight, borderRadius: 12, borderWidth: 1, borderColor: colors.secondary, paddingVertical: 8, paddingHorizontal: 8 },
   innerScroll: { flex: 1 },
   itemsGridContainer: {},
-  itemsGrid: {
-    flexDirection: 'row-reverse',
-    flexWrap: 'wrap',
-    paddingHorizontal: 0,
+  columnWrapper: {
+    justifyContent: 'space-between',
   },
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
   emptyStateTitle: { fontSize: FontSizes.body, fontWeight: 'bold', color: colors.textPrimary, marginTop: 16, marginBottom: 8 },

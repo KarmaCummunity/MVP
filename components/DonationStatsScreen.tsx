@@ -25,8 +25,19 @@ import Animated, {
   interpolate,
 } from "react-native-reanimated";
 import { FontSizes } from "../globals/constants";
-// Empty array - replace with real data from API
-const charities: any[] = [];
+// Initial data - replace with real data from API
+const charities: any[] = [{
+  id: 'kc',
+  name: 'KarmaCommunity',
+  statistics: [
+    { id: '1', name: 'קהילה', value: 3847, icon: '👥', category: 'community', color: colors.info },
+    { id: '2', name: 'תרומות', value: 12456, icon: '❤️', category: 'donations', color: colors.secondary },
+  ],
+  motivationalQuotes: [
+    'נתינה היא הקבלה הגדולה ביותר.',
+    'ביחד אנחנו בונים עולם טוב יותר.',
+  ]
+}];
 import { TouchableOpacity } from "react-native";
 import colors from "../globals/colors";
 import { useTranslation } from "react-i18next";
@@ -37,13 +48,13 @@ const { width, height } = Dimensions.get("window");
 // --- Constants ---
 const kcStats = charities[0]?.statistics || [];
 const STATS_BUBBLE_COUNT = kcStats.length;
-const BACKGROUND_BUBBLES_COUNT = 15; 
+const BACKGROUND_BUBBLES_COUNT = 15;
 const MIN_SIZE = 60;
 const MAX_SIZE = 160;
 const BACKGROUND_MIN_SIZE = 30;
 const BACKGROUND_MAX_SIZE = 80;
-const MIN_VALUE = kcStats.length > 0 ? Math.min(...kcStats.map(s => s.value)) : 0;
-const MAX_VALUE = kcStats.length > 0 ? Math.max(...kcStats.map(s => s.value)) : 100;
+const MIN_VALUE = kcStats.length > 0 ? Math.min(...kcStats.map((s: any) => s.value)) : 0;
+const MAX_VALUE = kcStats.length > 0 ? Math.max(...kcStats.map((s: any) => s.value)) : 100;
 
 /**
  * ממיר מספר לערך גודל בועה בטווח המוגדר
@@ -55,7 +66,7 @@ const scaleNumberToSize = (num: number): number => {
   const scaledSize =
     MIN_SIZE +
     ((clampedNum - MIN_VALUE) / (MAX_VALUE - MIN_VALUE)) *
-      (MAX_SIZE - MIN_SIZE);
+    (MAX_SIZE - MIN_SIZE);
   return scaledSize;
 };
 
@@ -85,19 +96,19 @@ const generateStatsLayout = () => {
   const bubbles: any[] = [];
   let attempts = 0;
   const maxAttempts = 3000;
-  
+
   for (let i = 0; i < BACKGROUND_BUBBLES_COUNT && attempts < maxAttempts; i++) {
     const size = BACKGROUND_MIN_SIZE + Math.random() * (BACKGROUND_MAX_SIZE - BACKGROUND_MIN_SIZE);
-    
+
     let placed = false;
     let localAttempts = 0;
     const maxLocalAttempts = 200;
-    
+
     while (!placed && localAttempts < maxLocalAttempts) {
       const margin = 40;
       const x = margin + Math.random() * (width - size - margin * 2);
-      const y = 200 + Math.random() * (height - size - 350); 
-      
+      const y = 200 + Math.random() * (height - size - 350);
+
       if (!isOverlapping(x, y, size, bubbles)) {
         bubbles.push({
           id: `bg-${i}`,
@@ -108,7 +119,7 @@ const generateStatsLayout = () => {
           name: "",
           icon: "",
           category: "background",
-          color: colors.border, 
+          color: colors.border,
           directionX: Math.random() > 0.5 ? 1 : -1,
           directionY: Math.random() > 0.5 ? 1 : -1,
           delay: Math.random() * 2000,
@@ -120,20 +131,20 @@ const generateStatsLayout = () => {
       attempts++;
     }
   }
-  
+
   for (let i = 0; i < kcStats.length && attempts < maxAttempts; i++) {
     const stat = kcStats[i];
     const size = scaleNumberToSize(stat.value);
-    
+
     let placed = false;
     let localAttempts = 0;
     const maxLocalAttempts = 300;
-    
+
     while (!placed && localAttempts < maxLocalAttempts) {
       const margin = 20;
       const x = margin + Math.random() * (width - size - margin * 2);
-      const y = 200 + Math.random() * (height - size - 350); 
-      
+      const y = 200 + Math.random() * (height - size - 350);
+
       if (!isOverlapping(x, y, size, bubbles)) {
         bubbles.push({
           id: stat.id,
@@ -165,7 +176,7 @@ const generateStatsLayout = () => {
  * קומפוננטה ראשית להצגת סטטיסטיקות תרומות כבועות צפות
  */
 const DonationStatsScreen: React.FC = () => {
-  const { t } = useTranslation(["donations","common"]);
+  const { t } = useTranslation(["donations", "common"]);
   const bubbles = useMemo(generateStatsLayout, []);
   const [selectedBubbleId, setSelectedBubbleId] = useState<string | null>(null);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
@@ -198,13 +209,13 @@ const DonationStatsScreen: React.FC = () => {
   return (
     <View style={localStyles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      
+
       {/* Screen header */}
       <View style={localStyles.headerContainer}>
         <Text style={localStyles.title}>{t('donations:statsScreen.title')}</Text>
         <Text style={localStyles.subtitle}>{t('donations:statsScreen.subtitle')}</Text>
       </View>
-      
+
       {/* Bubbles container */}
       <View style={localStyles.bubblesContainer}>
         {bubbles.map((bubble) => (
@@ -219,7 +230,7 @@ const DonationStatsScreen: React.FC = () => {
 
       {/* Motivational message container */}
       <View style={localStyles.messageContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={handleMessagePress}
           style={localStyles.messageButton}
         >
@@ -337,13 +348,13 @@ const AnimatedStatsBubble: React.FC<AnimatedStatsBubbleProps> = ({
     );
 
     let backgroundColor, borderColor, shadowColor;
-    
+
     if (isBackground) {
-      backgroundColor = color + '15'; 
+      backgroundColor = color + '15';
       borderColor = color + '30';
       shadowColor = color + '20';
     } else {
-      backgroundColor = color + '20'; 
+      backgroundColor = color + '20';
       borderColor = color;
       shadowColor = color + '40';
 
@@ -391,7 +402,7 @@ const AnimatedStatsBubble: React.FC<AnimatedStatsBubbleProps> = ({
             <Text style={[localStyles.bubbleIcon, { fontSize: iconSize }]}>
               {icon}
             </Text>
-            
+
             {/* Value */}
             <Text
               style={[
@@ -407,7 +418,7 @@ const AnimatedStatsBubble: React.FC<AnimatedStatsBubbleProps> = ({
             >
               {value.toLocaleString()}
             </Text>
-            
+
             {/* Name */}
             <Text
               style={[
@@ -503,7 +514,7 @@ const localStyles = StyleSheet.create({
   },
   messageContainer: {
     position: 'absolute',
-    bottom: 100, 
+    bottom: 100,
     left: 20,
     right: 20,
     alignItems: "center",

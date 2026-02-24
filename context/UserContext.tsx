@@ -22,6 +22,7 @@ import { db } from '../utils/databaseService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuth, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { getFirebase } from '../utils/firebaseClient';
+import { logger } from '../utils/loggerService';
 
 // Auth mode of the current session
 export type AuthMode = 'guest' | 'demo' | 'real';
@@ -102,16 +103,16 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       const auth = getAuth(app);
 
       unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-        console.log('🔥 Firebase Auth State Changed:', {
+        logger.info('Auth', 'Firebase Auth State Changed', {
           hasUser: !!firebaseUser,
           email: firebaseUser?.email,
           uid: firebaseUser?.uid,
-          emailVerified: firebaseUser?.emailVerified
+          emailVerified: firebaseUser?.emailVerified,
         });
 
         if (firebaseUser) {
           // Firebase user is logged in - restore/create session
-          console.log('🔥 Firebase user detected, restoring session');
+          logger.info('Auth', 'Firebase user detected, restoring session');
 
           try {
             // Get UUID from server using firebase_uid
@@ -130,12 +131,12 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
               await AsyncStorage.setItem('jwt_token_expires_at', 
                 String(Date.now() + (resolveResponse.tokens.expiresIn * 1000))
               );
-              console.log('🔑 JWT tokens saved from resolve-id');
+              logger.debug('Auth', 'JWT tokens saved from resolve-id');
             }
 
             const serverUser = resolveResponse.user || resolveResponse.data;
             if (!resolveResponse.success || !serverUser) {
-              console.warn('🔥 Failed to resolve user ID from server, using fallback');
+              logger.warn('Auth', 'Failed to resolve user ID from server, using fallback');
               // Fallback: try to get user by email
               if (firebaseUser.email) {
                 const userResponse = await apiService.getUserById(firebaseUser.email);
@@ -172,7 +173,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
                   setIsGuestMode(false);
                   setAuthMode('real');
 
-                  console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
+                  logger.info('Auth', 'Firebase session restored successfully with UUID', { userId: userData.id });
                   return;
                 }
               }
@@ -214,16 +215,16 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
             setIsGuestMode(false);
             setAuthMode('real');
 
-            console.log('🔥 Firebase session restored successfully with UUID:', userData.id);
+            logger.info('Auth', 'Firebase session restored successfully with UUID', { userId: userData.id });
           } catch (error) {
-            console.error('🔥 Failed to restore Firebase session:', error);
+            logger.error('Auth', 'Failed to restore Firebase session', { error });
             // Don't set user state if we can't get UUID from server
           }
         } else {
           // No Firebase user - only clear if we had a Firebase user before
           const firebaseUserId = await AsyncStorage.getItem('firebase_user_id');
           if (firebaseUserId) {
-            console.log('🔥 Firebase user logged out, clearing session');
+            logger.info('Auth', 'Firebase user logged out, clearing session');
             await AsyncStorage.multiRemove(['current_user', 'auth_mode', 'firebase_user_id']);
             setSelectedUserState(null);
             setIsAuthenticated(false);
@@ -233,14 +234,14 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         }
       });
 
-      console.log('🔥 Firebase Auth listener set up successfully');
+      logger.info('Auth', 'Firebase Auth listener set up successfully');
     } catch (error) {
-      console.error('🔥 Error setting up Firebase Auth listener:', error);
+      logger.error('Auth', 'Error setting up Firebase Auth listener', { error });
     }
 
     // Cleanup function
     return () => {
-      console.log('🔥 Cleaning up Firebase Auth listener');
+      logger.debug('Auth', 'Cleaning up Firebase Auth listener');
       if (unsubscribe) {
         unsubscribe();
       }
@@ -294,7 +295,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         }
       }
 
-      // Check for persistent user session (if implemented in the future)
+      // Check for persistent user session
       console.log('🔐 UserContext - checkAuthStatus - Checking for persistent session');
       const persistedUser = await AsyncStorage.getItem('current_user');
       const guestMode = await AsyncStorage.getItem('guest_mode');
@@ -304,14 +305,53 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         try {
           const parsedUser = JSON.parse(persistedUser);
           if (parsedUser && parsedUser.id) {
-            console.log('🔐 UserContext - checkAuthStatus - Restoring persisted user session');
-            const enrichedUser = await enrichUserWithOrgRoles(parsedUser);
-            setSelectedUserState(enrichedUser);
-            setIsAuthenticated(true);
-            setIsGuestMode(guestMode === 'true');
-            setAuthMode((authModeStored as AuthMode) || 'real');
-            console.log('🔐 UserContext - checkAuthStatus - Persisted session restored successfully');
-            return; // Exit early - user is authenticated
+            console.log('🔐 UserContext - checkAuthStatus - Found persisted user, validating token');
+
+            // Validate token before restoring session
+            // Only validate if not in guest mode
+            if (authModeStored !== 'guest') {
+              const { apiService } = await import('../utils/apiService');
+              
+              // Try to get a valid auth token (this will refresh if needed)
+              const authToken = await apiService.getAuthToken();
+              
+              if (!authToken) {
+                console.warn('🔐 UserContext - checkAuthStatus - No valid token found, clearing session');
+                // Token validation failed, clear session
+                await AsyncStorage.multiRemove([
+                  'current_user',
+                  'guest_mode',
+                  'auth_mode',
+                  'oauth_in_progress',
+                  'oauth_success_flag',
+                  'google_auth_user',
+                  'google_auth_token',
+                  'jwt_access_token',
+                  'jwt_token_expires_at',
+                  'jwt_refresh_token',
+                ]);
+                // Continue to unauthenticated state below
+              } else {
+                // Token is valid, proceed with session restoration
+                console.log('🔐 UserContext - checkAuthStatus - Token validated, restoring session');
+                const enrichedUser = await enrichUserWithOrgRoles(parsedUser);
+                setSelectedUserState(enrichedUser);
+                setIsAuthenticated(true);
+                setIsGuestMode(guestMode === 'true');
+                setAuthMode((authModeStored as AuthMode) || 'real');
+                console.log('🔐 UserContext - checkAuthStatus - Persisted session restored successfully');
+                return; // Exit early - user is authenticated
+              }
+            } else {
+              // Guest mode - no token validation needed
+              console.log('🔐 UserContext - checkAuthStatus - Guest mode, restoring session without token validation');
+              setSelectedUserState(parsedUser);
+              setIsAuthenticated(true);
+              setIsGuestMode(true);
+              setAuthMode('guest');
+              console.log('🔐 UserContext - checkAuthStatus - Guest session restored successfully');
+              return; // Exit early - guest user is authenticated
+            }
           }
         } catch (parseError) {
           console.error('🔐 UserContext - checkAuthStatus - Error parsing persisted user:', parseError);
@@ -327,7 +367,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         'oauth_in_progress',
         'oauth_success_flag',
         'google_auth_user',
-        'google_auth_token'
+        'google_auth_token',
+        'jwt_access_token',
+        'jwt_token_expires_at',
+        'jwt_refresh_token',
       ]);
 
       console.log('🔐 UserContext - checkAuthStatus - Setting unauthenticated state');

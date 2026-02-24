@@ -16,6 +16,7 @@
 // TODO: Add request/response transformation middleware
 // TODO: Add comprehensive logging and monitoring
 import { API_BASE_URL as CONFIG_API_BASE_URL } from './config.constants';
+import { logger } from './loggerService';
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -142,24 +143,93 @@ class ApiService {
     return `${normalizedBase}${normalizedEndpoint}`;
   }
 
-  private async getAuthToken(): Promise<string | null> {
+  /**
+   * Validate token and refresh if expired
+   * @returns Valid access token or null if refresh failed
+   */
+  private async validateAndRefreshToken(): Promise<string | null> {
     try {
-      // Try to get JWT access token from AsyncStorage first
       const AsyncStorage = await import('@react-native-async-storage/async-storage');
       const jwtToken = await AsyncStorage.default.getItem('jwt_access_token');
+      const expiresAt = await AsyncStorage.default.getItem('jwt_token_expires_at');
+      const refreshToken = await AsyncStorage.default.getItem('jwt_refresh_token');
 
+      // If no access token, try Firebase fallback
+      if (!jwtToken) {
+        return null;
+      }
+
+      // Check if token is still valid (with 1 minute buffer)
+      if (expiresAt && parseInt(expiresAt) > Date.now() + 60000) {
+        return jwtToken;
+      }
+
+      // Token is expired or about to expire, try to refresh
+      if (!refreshToken) {
+        console.warn('JWT token expired and no refresh token available');
+        await AsyncStorage.default.multiRemove(['jwt_access_token', 'jwt_token_expires_at']);
+        return null;
+      }
+
+      console.log('🔄 Attempting to refresh expired JWT token');
+
+      // Call refresh endpoint
+      const refreshUrl = this.buildUrl('/auth/refresh');
+      const response = await fetch(refreshUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        console.warn('❌ Token refresh failed:', data.error || 'Unknown error');
+        // Clear all tokens if refresh failed
+        await AsyncStorage.default.multiRemove([
+          'jwt_access_token',
+          'jwt_token_expires_at',
+          'jwt_refresh_token',
+        ]);
+        return null;
+      }
+
+      // Save new access token
+      const newAccessToken = data.accessToken;
+      const newExpiresAt = Date.now() + (data.expiresIn * 1000);
+      await AsyncStorage.default.setItem('jwt_access_token', newAccessToken);
+      await AsyncStorage.default.setItem('jwt_token_expires_at', String(newExpiresAt));
+
+      console.log('✅ Token refreshed successfully');
+      return newAccessToken;
+    } catch (error) {
+      console.warn('❌ Error during token validation/refresh:', error);
+      try {
+        const AsyncStorage = await import('@react-native-async-storage/async-storage');
+        await AsyncStorage.default.multiRemove([
+          'jwt_access_token',
+          'jwt_token_expires_at',
+          'jwt_refresh_token',
+        ]);
+      } catch (cleanupError) {
+        console.warn('Failed to cleanup tokens:', cleanupError);
+      }
+      return null;
+    }
+  }
+
+  async getAuthToken(): Promise<string | null> {
+    try {
+      // Try to validate and refresh JWT token if needed
+      const jwtToken = await this.validateAndRefreshToken();
       if (jwtToken) {
-        // Check if token is expired
-        const expiresAt = await AsyncStorage.default.getItem('jwt_token_expires_at');
-        if (expiresAt && parseInt(expiresAt) > Date.now()) {
-          return jwtToken;
-        } else {
-          console.warn('JWT token expired, attempting to refresh...');
-          // TODO: Implement token refresh logic
-        }
+        return jwtToken;
       }
 
       // Fallback: Try to get Firebase ID token
+      // This is robust because it automatically refreshes if needed
       const { getFirebase } = await import('./firebaseClient');
       const { getAuth } = await import('firebase/auth');
       const { app } = getFirebase();
@@ -167,6 +237,8 @@ class ApiService {
       const user = auth.currentUser;
 
       if (user) {
+        // forceRefresh=false by default, but if we suspect issues we could try true
+        // However, standard getIdToken() handles refresh automatically.
         const token = await user.getIdToken();
         return token;
       }
@@ -179,10 +251,10 @@ class ApiService {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retryOn401: boolean = true
   ): Promise<ApiResponse<T>> {
     // TODO: Add request ID for tracing and debugging
-    // TODO: Add retry logic for failed requests
     try {
       const url = this.buildUrl(endpoint);
 
@@ -198,7 +270,8 @@ class ApiService {
         ...options,
       };
 
-      console.log(`🌐 API Request: ${config.method || 'GET'} ${url}`, authToken ? '(authenticated)' : '(no auth)');
+      const isPeriodic = endpoint.includes('stats/community');
+      logger.debug('API', `${config.method || 'GET'} ${endpoint}`, { auth: !!authToken }, isPeriodic ? { periodic: true } : undefined);
 
       // Add timeout to prevent hanging requests
       const controller = new AbortController();
@@ -213,22 +286,50 @@ class ApiService {
 
         const data = await response.json();
 
+        // Handle 401 Unauthorized - try to refresh token and retry
+        if (response.status === 401 && retryOn401 && authToken) {
+          logger.warn('API', 'Received 401, attempting token refresh and retry', { endpoint });
+          
+          // Try to refresh token
+          const refreshedToken = await this.validateAndRefreshToken();
+          
+          if (refreshedToken) {
+            // Retry request with new token (only once to prevent infinite loops)
+            logger.info('API', 'Retrying request with refreshed token', { endpoint });
+            return this.request<T>(endpoint, options, false);
+          } else {
+            // Refresh failed, clear session
+            logger.error('API', 'Token refresh failed, clearing session', { endpoint });
+            const AsyncStorage = await import('@react-native-async-storage/async-storage');
+            await AsyncStorage.default.multiRemove([
+              'jwt_access_token',
+              'jwt_token_expires_at',
+              'jwt_refresh_token',
+            ]);
+            
+            return {
+              success: false,
+              error: 'Session expired. Please log in again.',
+            };
+          }
+        }
+
         if (!response.ok) {
-          console.error(`❌ API Error: ${response.status}`, data);
+          logger.error('API', `API Error ${response.status}`, { endpoint, status: response.status, data });
           return {
             success: false,
             error: data.message || data.error || 'Network error',
           };
         }
 
-        console.log(`✅ API Response: ${endpoint}`, data);
+        logger.debug('API', `Response ${endpoint}`, { success: true }, isPeriodic ? { periodic: true } : undefined);
         return data;
       } catch (fetchError: any) {
         clearTimeout(timeoutId);
 
         // Check if error is due to abort (timeout)
         if (fetchError.name === 'AbortError') {
-          console.error(`⏱️ API Timeout: ${endpoint}`);
+          logger.error('API', 'Request timeout', { endpoint });
           return {
             success: false,
             error: 'Request timeout - server is not responding',
@@ -237,7 +338,7 @@ class ApiService {
         throw fetchError;
       }
     } catch (error) {
-      console.error(`❌ API Network Error:`, error);
+      logger.error('API', 'Network error', { error: String(error) });
       return {
         success: false,
         error: 'Network error - please check your connection',
@@ -282,11 +383,24 @@ class ApiService {
   }
 
   /**
-   * Demote an admin to regular user (remove admin role)
+   * Demote an admin to regular user or volunteer (remove admin role)
    * Can only demote admins that are your subordinates
+   * @param convertToVolunteer - if true, user becomes volunteer under requesting admin
    */
-  async demoteAdmin(targetUserId: string, requestingAdminId: string): Promise<ApiResponse> {
+  async demoteAdmin(targetUserId: string, requestingAdminId: string, convertToVolunteer: boolean = false): Promise<ApiResponse> {
     return this.request(`/api/users/${targetUserId}/demote-admin`, {
+      method: 'POST',
+      body: JSON.stringify({ requestingAdminId, convertToVolunteer }),
+    });
+  }
+
+  /**
+   * Promote a user to volunteer role
+   * Any manager (hierarchy_level >= 1) can promote users to volunteer
+   * The target user will become a volunteer under the requesting admin
+   */
+  async promoteToVolunteer(targetUserId: string, requestingAdminId: string): Promise<ApiResponse> {
+    return this.request(`/api/users/${targetUserId}/promote-volunteer`, {
       method: 'POST',
       body: JSON.stringify({ requestingAdminId }),
     });
@@ -500,6 +614,21 @@ class ApiService {
     return this.request('/api/rides/stats/summary');
   }
 
+  async updateRide(rideId: string, updateData: any): Promise<ApiResponse> {
+    return this.request(`/api/rides/${rideId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
+  }
+
+  // Items Delivery APIs
+  async updateItem(itemId: string, updateData: any): Promise<ApiResponse> {
+    return this.request(`/api/items-delivery/${itemId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
+  }
+
   // Stats APIs
   async getCommunityStats(filters: {
     city?: string;
@@ -597,6 +726,14 @@ class ApiService {
       url += `&viewer_id=${viewerId}`;
     }
     return this.request(url);
+  }
+
+  async deletePost(postId: string, userId: string): Promise<ApiResponse> {
+    // userId is used for local Optimistic UI updates if needed, but not sent to server
+    // Server extracts user ID from JWT token
+    return this.request(`/api/posts/${postId}`, {
+      method: 'DELETE',
+    });
   }
 
   // Notifications APIs

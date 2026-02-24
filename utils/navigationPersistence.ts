@@ -92,7 +92,7 @@ export const saveNavigationState = (
             key: storageKey,
             stateSize: stateString.length,
             version: CURRENT_NAVIGATION_STATE_VERSION,
-          });
+          }, { periodic: true });
         }
       } else {
         // Native: asynchronous AsyncStorage
@@ -103,7 +103,7 @@ export const saveNavigationState = (
           key: storageKey,
           stateSize: stateString.length,
           version: CURRENT_NAVIGATION_STATE_VERSION,
-        });
+        }, { periodic: true });
       }
     } catch (error) {
       logger.error(LOG_SOURCE, 'Error saving navigation state', { error });

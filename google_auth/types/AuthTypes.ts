@@ -65,6 +65,7 @@ export type UserRole =
   | 'premium'        // Premium user with enhanced features
   | 'org_admin'      // Organization administrator  
   | 'moderator'      // Content moderator
+  | 'volunteer'      // Volunteer in the organization hierarchy
   | 'admin'          // System administrator
   | 'super_admin';   // Super administrator with all permissions
 

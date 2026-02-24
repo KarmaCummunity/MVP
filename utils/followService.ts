@@ -19,7 +19,7 @@ export const getUpdatedFollowCounts = async (userId: string): Promise<{ follower
   try {
     const followers = await db.getFollowers(userId);
     const following = await db.getFollowing(userId);
-    
+
     return {
       followersCount: followers.length,
       followingCount: following.length,
@@ -37,7 +37,7 @@ export const getFollowStats = async (userId: string, currentUserId: string): Pro
   try {
     const followers = await db.getFollowers(userId);
     const following = await db.getFollowing(userId);
-    
+
     const isFollowing = following.some((rel: any) => rel.followerId === currentUserId);
 
     return {
@@ -58,14 +58,14 @@ export const getFollowStats = async (userId: string, currentUserId: string): Pro
 export const followUser = async (followerId: string, followingId: string): Promise<boolean> => {
   try {
     if (followerId === followingId) {
-      return false; 
+      return false;
     }
 
     const existingFollowers = await db.getFollowers(followingId);
     const isAlreadyFollowing = existingFollowers.some((rel: any) => rel.followerId === followerId);
 
     if (isAlreadyFollowing) {
-      return false; 
+      return false;
     }
 
     const newFollow: FollowRelationship = {
@@ -75,19 +75,19 @@ export const followUser = async (followerId: string, followingId: string): Promi
     };
 
     await db.addFollower(followingId, followerId, newFollow);
-    
+
     await db.addFollowing(followerId, followingId, newFollow);
-    
+
     // Optional: fetch follower name from backend; fallback to ID
     try {
       const followerName = followerId;
-      sendFollowNotification(followerName, followingId);
-    } catch {}
-    
+      await sendFollowNotification(followerName, followingId);
+    } catch { }
+
     // Update follow counts for both users
     await updateFollowCounts(followerId);
     await updateFollowCounts(followingId);
-    
+
     return true;
   } catch (error) {
     console.error('❌ Follow user error:', error);
@@ -98,13 +98,13 @@ export const followUser = async (followerId: string, followingId: string): Promi
 export const unfollowUser = async (followerId: string, followingId: string): Promise<boolean> => {
   try {
     await db.removeFollower(followingId, followerId);
-    
+
     await db.removeFollowing(followerId, followingId);
-    
+
     // Update follow counts for both users
     await updateFollowCounts(followerId);
     await updateFollowCounts(followingId);
-    
+
     return true;
   } catch (error) {
     console.error('❌ Unfollow user error:', error);
@@ -116,7 +116,7 @@ export const getFollowers = async (userId: string): Promise<any[]> => {
   try {
     const followers = await db.getFollowers(userId);
     const followerIds = (followers as any[]).map((rel: any) => rel.followerId);
-    
+
     if (followerIds.length === 0) {
       return [];
     }
@@ -190,7 +190,7 @@ export const getFollowing = async (userId: string): Promise<any[]> => {
   try {
     const following = await db.getFollowing(userId);
     const followingIds = (following as any[]).map((rel: any) => rel.followingId);
-    
+
     if (followingIds.length === 0) {
       return [];
     }
@@ -275,14 +275,14 @@ export const getFollowSuggestions = async (currentUserId: string, limit: number 
           .filter((user: any) => {
             const userId = String(user.id || '').trim().toLowerCase();
             const userEmail = user.email ? String(user.email).trim().toLowerCase() : '';
-            const isCurrentUser = userId === excludeId || 
-                                 (excludeEmail && userEmail === excludeEmail) ||
-                                 userId === '';
-            
+            const isCurrentUser = userId === excludeId ||
+              (excludeEmail && userEmail === excludeEmail) ||
+              userId === '';
+
             if (isCurrentUser) {
               console.log('🚫 getFollowSuggestions - Filtered out current user:', { userId, userEmail, name: user.name });
             }
-            
+
             return !isCurrentUser;
           })
           .map((user: any) => ({
@@ -329,12 +329,12 @@ export const getFollowHistory = async (userId: string): Promise<FollowRelationsh
   try {
     const followers = await db.getFollowers(userId);
     const following = await db.getFollowing(userId);
-    
+
     const allRelationships: FollowRelationship[] = [
       ...(followers as any[]),
       ...(following as any[])
     ];
-    
+
     return allRelationships;
   } catch (error) {
     console.error('❌ Get follow history error:', error);
@@ -359,14 +359,14 @@ export const getPopularUsers = async (limit: number = 10, excludeUserId?: string
             if (!excludeId) return true;
             const userId = String(user.id || '').trim().toLowerCase();
             const userEmail = user.email ? String(user.email).trim().toLowerCase() : '';
-            const isCurrentUser = userId === excludeId || 
-                                 (excludeEmail && userEmail === excludeEmail) ||
-                                 userId === '';
-            
+            const isCurrentUser = userId === excludeId ||
+              (excludeEmail && userEmail === excludeEmail) ||
+              userId === '';
+
             if (isCurrentUser) {
               console.log('🚫 getPopularUsers - Filtered out current user:', { userId, userEmail, name: user.name });
             }
-            
+
             return !isCurrentUser;
           })
           .map((user: any) => ({
@@ -411,29 +411,21 @@ export const comprehensiveSystemCheck = async (): Promise<void> => {
 
 
 export const validateSystemIntegrity = async (): Promise<{ isValid: boolean; errors: string[] }> => {
-  try {
-    return { isValid: true, errors: [] };
-  } catch (error) {
-    console.error('❌ Validate system integrity error:', error);
-    return {
-      isValid: false,
-      errors: ['System validation failed']
-    };
-  }
-}; 
+  return { isValid: true, errors: [] };
+};
 
 
 export const updateFollowCounts = async (userId: string): Promise<void> => {
   try {
     const followers = await db.getFollowers(userId);
     const following = await db.getFollowing(userId);
-    
+
 
     const userData = {
       followersCount: followers.length,
       followingCount: following.length,
     };
-    
+
     await db.updateUser(userId, userData);
     console.log('✅ Updated follow counts for user:', userId, userData);
   } catch (error) {

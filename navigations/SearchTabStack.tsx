@@ -20,7 +20,7 @@ import NewChatScreen from '../screens/NewChatScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AboutKarmaCommunityScreen from '../topBarScreens/AboutKarmaCommunityScreen';
 import SettingsScreen from '../topBarScreens/SettingsScreen';
-import LandingSiteScreen from '../screens/LandingSiteScreen';
+import LandingSiteScreen from '../screens/Landing/LandingSiteScreen';
 import TopBarNavigator from './TopBarNavigator';
 import { logger } from '../utils/loggerService';
 
@@ -57,7 +57,7 @@ export default function SearchTabStack(): React.ReactElement {
         header: () => <TopBarNavigator navigation={navigation as any} />,
         // Fix for aria-hidden warning: prevent focus on inactive screens
         // detachInactiveScreens already handles this, but we keep cardStyle for web compatibility
-        cardStyle: Platform.OS === 'web' ? { 
+        cardStyle: Platform.OS === 'web' ? {
           // On web, ensure inactive screens don't interfere with focus
           // This prevents elements in hidden screens from receiving focus
         } : undefined,

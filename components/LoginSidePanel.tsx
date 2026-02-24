@@ -31,18 +31,18 @@ interface LoginSidePanelProps {
   onLoginSuccess?: () => void;
 }
 
-const LoginSidePanel: React.FC<LoginSidePanelProps> = ({ 
-  visible, 
-  onClose, 
-  onLoginSuccess 
+const LoginSidePanel: React.FC<LoginSidePanelProps> = ({
+  visible,
+  onClose,
+  onLoginSuccess
 }) => {
   const { t } = useTranslation(['common']);
   const { setSelectedUserWithMode, setGuestMode, selectedUser, isGuestMode } = useUser();
-  
+
   // Animation values
   const slideAnim = useRef(new Animated.Value(0)).current;
   const overlayAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Login state
   const [emailStep, setEmailStep] = useState<'email' | 'password'>('email');
   const [emailValue, setEmailValue] = useState('');
@@ -51,13 +51,13 @@ const LoginSidePanel: React.FC<LoginSidePanelProps> = ({
   const [emailExists, setEmailExists] = useState<boolean | null>(null);
   const [emailStatusMessage, setEmailStatusMessage] = useState<string | null>(null);
   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
-  
+
   // Organization login state
   const [orgLoginOpen, setOrgLoginOpen] = useState(false);
   const [orgQuery, setOrgQuery] = useState('');
   const [isCheckingOrg, setIsCheckingOrg] = useState(false);
   const orgOpenAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Email login state
   const [emailLoginOpen, setEmailLoginOpen] = useState(false);
   const emailOpenAnim = useRef(new Animated.Value(0)).current;
@@ -72,12 +72,12 @@ const LoginSidePanel: React.FC<LoginSidePanelProps> = ({
         Animated.timing(slideAnim, {
           toValue: 1,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(overlayAnim, {
           toValue: 1,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ]).start();
     } else {
@@ -85,12 +85,12 @@ const LoginSidePanel: React.FC<LoginSidePanelProps> = ({
         Animated.timing(slideAnim, {
           toValue: 0,
           duration: 250,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(overlayAnim, {
           toValue: 0,
           duration: 250,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ]).start();
     }
@@ -107,7 +107,7 @@ const LoginSidePanel: React.FC<LoginSidePanelProps> = ({
         isGuest: true,
         profileImage: null,
       };
-      
+
       await setSelectedUserWithMode(userData as any, 'real');
       onLoginSuccess?.();
     } catch (error) {
@@ -144,7 +144,7 @@ const LoginSidePanel: React.FC<LoginSidePanelProps> = ({
     const next = !orgLoginOpen;
     if (next && emailLoginOpen) {
       setEmailLoginOpen(false);
-      Animated.timing(emailOpenAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+      Animated.timing(emailOpenAnim, { toValue: 0, duration: 200, useNativeDriver: false }).start();
       resetEmailState();
     }
     setOrgLoginOpen(next);
@@ -152,7 +152,7 @@ const LoginSidePanel: React.FC<LoginSidePanelProps> = ({
     Animated.timing(orgOpenAnim, {
       toValue: next ? 1 : 0,
       duration: 260,
-      useNativeDriver: Platform.OS !== 'web',
+      useNativeDriver: false,
     }).start();
   };
 
@@ -160,7 +160,7 @@ const LoginSidePanel: React.FC<LoginSidePanelProps> = ({
     const next = !emailLoginOpen;
     if (next && orgLoginOpen) {
       setOrgLoginOpen(false);
-      Animated.timing(orgOpenAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+      Animated.timing(orgOpenAnim, { toValue: 0, duration: 200, useNativeDriver: false }).start();
       resetOrgState();
     }
     setEmailLoginOpen(next);
@@ -168,7 +168,7 @@ const LoginSidePanel: React.FC<LoginSidePanelProps> = ({
     Animated.timing(emailOpenAnim, {
       toValue: next ? 1 : 0,
       duration: 260,
-      useNativeDriver: Platform.OS !== 'web',
+      useNativeDriver: false,
     }).start();
   };
 
@@ -194,9 +194,9 @@ const LoginSidePanel: React.FC<LoginSidePanelProps> = ({
     <>
       {/* Overlay */}
       <Animated.View style={[styles.overlay, overlayAnimatedStyle]}>
-        <TouchableOpacity 
-          style={styles.overlayTouchable} 
-          activeOpacity={1} 
+        <TouchableOpacity
+          style={styles.overlayTouchable}
+          activeOpacity={1}
           onPress={onClose}
         />
       </Animated.View>
@@ -253,13 +253,13 @@ const LoginSidePanel: React.FC<LoginSidePanelProps> = ({
               onPress={toggleOrgLogin}
             >
               <Text style={styles.loginOptionText}>כניסה דרך ארגון</Text>
-              <Ionicons 
-                name={orgLoginOpen ? "chevron-up" : "chevron-down"} 
-                size={20} 
-                color={colors.textSecondary} 
+              <Ionicons
+                name={orgLoginOpen ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={colors.textSecondary}
               />
             </TouchableOpacity>
-            
+
             {orgLoginOpen && (
               <Animated.View style={[
                 styles.loginForm,
@@ -301,13 +301,13 @@ const LoginSidePanel: React.FC<LoginSidePanelProps> = ({
               onPress={toggleEmailLogin}
             >
               <Text style={styles.loginOptionText}>כניסה עם אימייל</Text>
-              <Ionicons 
-                name={emailLoginOpen ? "chevron-up" : "chevron-down"} 
-                size={20} 
-                color={colors.textSecondary} 
+              <Ionicons
+                name={emailLoginOpen ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={colors.textSecondary}
               />
             </TouchableOpacity>
-            
+
             {emailLoginOpen && (
               <Animated.View style={[
                 styles.loginForm,

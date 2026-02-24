@@ -39,10 +39,10 @@ interface CommentsModalProps {
   onClose: () => void;
   postId: string;
   postTitle: string;
-  postUser: {
+  postUser?: {
     id: string;
     name: string | null; // Can be null if name is not available (never use ID as name)
-    avatar: string;
+    avatar?: string;
   };
   onCommentsCountChange?: (count: number) => void;
 }
@@ -69,6 +69,14 @@ export default function CommentsModal({
       
       const response = await postsService.getPostComments(postId, selectedUser?.id);
       
+      console.log('🔄 CommentsModal - getPostComments response:', {
+        success: response.success,
+        hasData: !!response.data,
+        dataLength: response.data?.length,
+        total: response.total,
+        error: response.error
+      });
+      
       if (response.success && response.data) {
         const commentsData: Comment[] = response.data.map((apiComment: ApiComment) => ({
           id: apiComment.id,
@@ -82,13 +90,15 @@ export default function CommentsModal({
           isOwner: apiComment.user_id === selectedUser?.id,
         }));
         
+        console.log('✅ CommentsModal - Setting comments:', commentsData.length);
         setComments(commentsData);
         logger.debug('CommentsModal', 'Comments loaded', { count: commentsData.length });
       } else {
+        console.warn('⚠️ CommentsModal - Failed to load comments:', response.error);
         logger.warn('CommentsModal', 'Failed to load comments', { error: response.error });
         // Don't show error if it's just empty
         if (response.error && response.error !== 'No comments found') {
-          Alert.alert(t('common:errorTitle'), t('comments:loadError'));
+          Alert.alert(t('common:errorTitle'), response.error || t('comments:loadError'));
         }
       }
     } catch (error) {
@@ -125,6 +135,13 @@ export default function CommentsModal({
     try {
       const response = await postsService.addComment(postId, selectedUser.id, commentText);
       
+      console.log('🔄 CommentsModal - addComment response:', {
+        success: response.success,
+        hasData: !!response.data,
+        data: response.data,
+        error: response.error
+      });
+      
       if (response.success && response.data) {
         // Add new comment to the list
         const newCommentData: Comment = {
@@ -134,25 +151,29 @@ export default function CommentsModal({
           userName: response.data.user?.name || selectedUser.name || 'משתמש',
           userAvatar: response.data.user?.avatar_url || selectedUser.avatar || 'https://picsum.photos/seed/user/100/100',
           timestamp: response.data.created_at,
-          likes: 0,
+          likes: response.data.likes_count || 0,
           isLiked: false,
           isOwner: true,
         };
         
+        console.log('✅ CommentsModal - Adding comment to list:', newCommentData);
         setComments(prev => [...prev, newCommentData]);
         setNewComment('');
         
         // Notify parent about comment count change
         if (onCommentsCountChange && response.data.comments_count !== undefined) {
+          console.log('📊 CommentsModal - Updating comment count:', response.data.comments_count);
           onCommentsCountChange(response.data.comments_count);
         }
         
         logger.debug('CommentsModal', 'Comment added', { commentId: response.data.id });
       } else {
+        console.error('❌ CommentsModal - Failed to add comment:', response.error);
         logger.error('CommentsModal', 'Failed to add comment', { error: response.error });
-        Alert.alert(t('common:errorTitle'), t('comments:sendError'));
+        Alert.alert(t('common:errorTitle'), response.error || t('comments:sendError'));
       }
     } catch (error) {
+      console.error('❌ CommentsModal - Exception in addComment:', error);
       logger.error('CommentsModal', 'Send comment error', { error });
       Alert.alert(t('common:errorTitle'), t('comments:sendError'));
     } finally {
@@ -348,10 +369,13 @@ export default function CommentsModal({
 
         {/* Post Info */}
         <View style={styles.postInfo}>
-          <Image source={{ uri: postUser.avatar }} style={styles.postUserAvatar} />
+          <Image 
+            source={{ uri: postUser?.avatar || 'https://picsum.photos/seed/user/100/100' }} 
+            style={styles.postUserAvatar} 
+          />
           <View style={styles.postInfoContent}>
-            <Text style={styles.postUserName}>{postUser.name || 'משתמש'}</Text>
-            <Text style={styles.postTitle} numberOfLines={1}>{postTitle}</Text>
+            <Text style={styles.postUserName}>{postUser?.name || 'משתמש'}</Text>
+            <Text style={styles.postTitle} numberOfLines={1}>{postTitle || ''}</Text>
           </View>
         </View>
 

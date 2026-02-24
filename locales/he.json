@@ -6,6 +6,7 @@
     "notificationsList": "רשימת התראות",
     "cancel": "ביטול",
     "done": "הושלם",
+    "edit": "ערוך",
     "delete": "מחק",
     "loading": "טוען...",
     "notFound": {
@@ -35,7 +36,13 @@
     "back": "חזרה",
     "web": "דף אינטרנט",
     "report": "דווח",
+    "options": "אפשרויות",
+    "reopen": "פתיחה חוזרת",
+    "hide": "הסתר",
     "cannotOpenLink": "לא ניתן לפתוח את הקישור",
+    "edit_coming_soon": "אפשרות העריכה תגיע בקרוב",
+    "hide_coming_soon": "אפשרות ההסתרה תגיע בקרוב",
+    "reopen_coming_soon": "אפשרות הפתיחה מחדש תגיע בקרוב",
     "welcomeShort": "ברוכים הבאים!",
     "appName": "Karma Community",
     "freeAppNotice": "האפליקציה חינמית לחלוטין ללא מטרות רווח",
@@ -43,11 +50,82 @@
     "labels": {
       "countryIsrael": "ישראל"
     },
+    "accessibility": {
+      "aboutButton": "אודות",
+      "aboutButtonHint": "פתח את מסך אודות קהילת קארמה"
+    },
     "newChat": "שיחה חדשה",
     "chat": "שיחה",
     "favorites": "מועדפים",
     "posts": "פוסטים",
-    "inactive": "לא פעיל"
+    "inactive": "לא פעיל",
+    "feed": {
+      "tabs": {
+        "friends": "חברים",
+        "discovery": "גילוי"
+      },
+      "empty_title": "אין פוסטים עדיין",
+      "empty_friends": "הוסף חברים כדי לראות פוסטים!",
+      "empty_discovery": "היה הראשון לפרסם!"
+    },
+    "rides": {
+      "offered": "טרמפ זמין",
+      "completed": "הנסיעה הושלמה",
+      "taken": "הטרמפ נתפס",
+      "past": "הטרמפ עבר כבר",
+      "from": "מ",
+      "to": "ל",
+      "origin": "מוצא",
+      "destination": "יעד",
+      "seats": "מקומות",
+      "free": "חינם",
+      "fuelShare": "השתתפות",
+      "noCharge": "ללא עלות",
+      "departure": "יציאה",
+      "thanks_message": "תודה שלקחת חלק בנסיעה!"
+    },
+    "items": {
+      "title": "פריט",
+      "available": "פריט זמין",
+      "delivered": "הפריט נמסר"
+    },
+    "post": {
+      "noTitle": "פוסט ללא כותרת",
+      "closedSuccess": "הפוסט נסגר בהצלחה",
+      "closeError": "שגיאה בסגירת הפוסט",
+      "hideSuccess": "הפוסט הוסתר בהצלחה",
+      "hideError": "שגיאה בהסתרת הפוסט"
+    },
+    "edit_post": {
+      "title": "עריכת פוסט",
+      "post_title": "כותרת",
+      "title_placeholder": "הכנס כותרת לפוסט",
+      "title_required": "כותרת היא שדה חובה",
+      "description": "תיאור",
+      "description_placeholder": "הוסף תיאור מפורט",
+      "image": "תמונה",
+      "add_image": "הוסף תמונה",
+      "change_image": "שנה תמונה",
+      "remove_image_title": "הסר תמונה",
+      "remove_image_message": "האם אתה בטוח שברצונך להסיר את התמונה?",
+      "image_permission_required": "נדרשת הרשאה לגישה לגלריה",
+      "image_error": "שגיאה בטעינת התמונה",
+      "save_success": "הפוסט עודכן בהצלחה",
+      "save_error": "שגיאה בשמירת הפוסט",
+      "unsaved_changes_title": "שינויים לא נשמרו",
+      "unsaved_changes_message": "האם אתה בטוח שברצונך לסגור בלי לשמור?",
+      "discard": "התעלם"
+    },
+    "tasks": {
+      "status": {
+        "new": "משימה חדשה",
+        "new_for_you": "נוצרה עבורך משימה חדשה",
+        "open": "משימה פתוחה",
+        "completed": "משימה שבוצעה"
+      },
+      "view_details": "הצג פרטים",
+      "task_completed": "משימה בוצעה!"
+    }
   },
   "search": {
     "sortTitle": "מיון",
@@ -520,7 +598,7 @@
         "description": "מפגשי ספורט ופעילות"
       },
       "items": {
-        "title": "פריטים",
+        "title": "פריט",
         "subtitle": "חפצים",
         "description": "תרומות של פריטים"
       },
@@ -558,6 +636,11 @@
         "title": "שפות",
         "subtitle": "לימוד ושיתוף שפות",
         "description": "קהילה ותמיכה בלימוד שפות: מפגשי שפה, חונכות ותרגול יחד"
+      },
+      "challenges": {
+        "title": "אתגרים קהילתיים",
+        "subtitle": "אתגרים ומעקב התקדמות",
+        "description": "הצטרף לאתגרים קהילתיים, עקוב אחר ההתקדמות שלך והשג מטרות יחד עם הקהילה"
       }
     }
   },
@@ -854,6 +937,9 @@
       "unknownEmail": "מייל לא מוכר, יש להירשם",
       "checkFailed": "נכשלה בדיקת המייל. נסו שוב.",
       "invalidPassword": "סיסמה לא נכונה",
+      "wrongPassword": "סיסמה לא נכונה. אנא נסה שוב.",
+      "emailAlreadyRegistered": "המייל כבר רשום. אנא בדוק את הסיסמה.",
+      "unifiedAction": "המשך",
       "resetPassword": "איפוס סיסמה",
       "resetSent": "קישור לאיפוס סיסמה נשלח למייל",
       "resetError": "שליחת איפוס נכשלה",
@@ -861,6 +947,7 @@
       "passwordTooShort": "הסיסמה חייבת להכיל לפחות 6 תווים",
       "verifyTitle": "אימות מייל",
       "verifySent": "שלחנו קישור אימות למייל. לאחר אישור, חזרו למסך והתחברו כדי להשלים רישום.",
+      "verificationRequired": "שלחנו קישור אימות למייל. אנא אמת את המייל כדי להשלים את הרישום.",
       "signupFailed": "הרישום נכשל. נסו שוב."
     },
     "googleCta": "התחבר/הרשם עם גוגל",
@@ -950,6 +1037,24 @@
   "errors": {},
   "buttons": {},
   "labels": {},
+  "admin": {
+    "hierarchy": {
+      "loadError": "שגיאה בטעינת עץ המנהלים",
+      "connectionError": "שגיאה בחיבור לשרת",
+      "loading": "טוען את מבנה הניהול...",
+      "retry": "נסה שוב",
+      "noManagers": "אין מנהלים להצגה",
+      "managersCount": "{{count}} מנהלים",
+      "roleSuperAdmin": "מנהל ראשי",
+      "roleAdmin": "מנהל",
+      "roleVolunteer": "מתנדב",
+      "roleUser": "משתמש",
+      "expandHint": "לחץ להרחבה",
+      "salary": "משכורת",
+      "seniority": "ותק",
+      "level": "דרגה"
+    }
+  },
   "bookmarks": {
     "title": "מועדפים",
     "selectUserFirst": "יש לבחור יוזר תחילה",
@@ -1028,6 +1133,46 @@
   "landing": {
     "appName": "KarmaCommunity",
     "tagline": "קהילה שעוזרת אחת לשנייה — תרומות, תמיכה, משאבים וחיבורים אנושיים.",
+    "hero": {
+      "welcomeTitle": {
+        "large1": "המקום",
+        "small1": "בו",
+        "large2": "הטוב",
+        "small2": "קורה"
+      },
+      "values": {
+        "unity": "אחדות",
+        "transparency": "שקיפות",
+        "order": "סדר"
+      },
+      "subtitle": "רשת חברתית שמחברת בין אנשים שצריכים עזרה, לאנשים שרוצים לעזור. פשוט, שקוף ומהלב.",
+      "whatsappButton": "שלחו לי ווטסאפ",
+      "donateButton": "תרמו לנו",
+      "accessibility": {
+        "whatsapp": "שלח הודעת WhatsApp",
+        "donate": "תרום לארגון"
+      }
+    },
+    "menu": {
+      "title": "תפריט ניווט",
+      "stats": "במספרים",
+      "vision": "החזון",
+      "problems": "הבעיות",
+      "features": "תכונות",
+      "about": "אודות",
+      "how": "איך זה עובד",
+      "who": "למי זה מתאים",
+      "values": "ערכים",
+      "hierarchy": "מבנה ניהול",
+      "roadmap": "מפת דרכים",
+      "contact": "יצירת קשר",
+      "faq": "שאלות נפוצות",
+      "accessibility": {
+        "open": "פתח תפריט ניווט",
+        "close": "סגור תפריט ניווט",
+        "navigateTo": "נווט ל{{label}}"
+      }
+    },
     "cta": {
       "primary": "הורדת האפליקציה",
       "secondary": "דברו איתי"
@@ -1297,6 +1442,205 @@
       "success": "ההודעה נשלחה בהצלחה",
       "error": "ההודעה נכשלה",
       "sendButton": "שלח הודעה מהירה"
+    }
+  },
+  "rides": {
+    "offered": "טרמפ מוצע",
+    "completed": "הנסיעה הושלמה",
+    "seats": "מושבים",
+    "fuelShare": "השתתפות בדלק",
+    "free": "חינם",
+    "noCharge": "ללא עלות",
+    "departure": "יציאה",
+    "from": "מ",
+    "to": "ל",
+    "origin": "מוצא",
+    "destination": "יעד",
+    "thanks_message": "הנסיעה הושלמה בהצלחה! תודה רבה על העזרה."
+  },
+  "items": {
+    "title": "פריט",
+    "forSale": "למכירה"
+  },
+  "quickMessage": {
+    "title": "שלח הודעה מהירה",
+    "to": "ל",
+    "placeholder": "הקלד הודעה...",
+    "send": "שלח",
+    "success": "ההודעה נשלחה בהצלחה",
+    "error": "שגיאה בשליחת ההודעה",
+    "cannotMessageSelf": "לא ניתן לשלוח הודעה לעצמך",
+    "item": "האם פריט זה עוד רלוונטי?",
+    "ride": "האם טרמפ זה עוד רלוונטי?",
+    "task": "האם משימה זו עוד רלוונטית?",
+    "default": "האם זה עוד רלוונטי?"
+  },
+  "challenges": {
+    "title": "אתגרים קהילתיים",
+    "createChallenge": "יצירת אתגר חדש",
+    "createButton": "יצירת אתגר",
+    "joinChallenge": "הצטרף לאתגר",
+    "leaveChallenge": "עזוב אתגר",
+    "addEntry": "הוסף ביצוע",
+    "addEntryButton": "הוסף ביצוע להיום",
+    "statistics": "סטטיסטיקות",
+    "viewStatistics": "צפה בסטטיסטיקות",
+    "searchChallenges": "חפש אתגרים",
+    "createNewChallenge": "צור אתגר קהילתי חדש",
+    "challengeCreated": "אתגר נוצר בהצלחה! 🎉",
+    "challengeJoined": "הצטרפת לאתגר בהצלחה! 💪",
+    "entryAdded": "הביצוע נוסף בהצלחה! 🎯",
+    "alreadyJoined": "כבר הצטרפת לאתגר זה",
+    "types": {
+      "BOOLEAN": "כן/לא",
+      "NUMERIC": "מספרי",
+      "DURATION": "זמן"
+    },
+    "typesDescription": {
+      "BOOLEAN": "ביצוע יומי פשוט - עשיתי/לא עשיתי",
+      "NUMERIC": "מעקב אחר כמות - צעדים, כוסות מים וכו'",
+      "DURATION": "מעקב אחר זמן - דקות אימון, מדיטציה וכו'"
+    },
+    "frequency": {
+      "DAILY": "יומי",
+      "WEEKLY": "שבועי",
+      "MONTHLY": "חודשי",
+      "FLEXIBLE": "גמיש"
+    },
+    "viewMode": {
+      "day": "יום",
+      "week": "שבוע",
+      "month": "חודש"
+    },
+    "quickView": {
+      "title": "מעקב יומי",
+      "loading": "טוען מעקב יומי...",
+      "noChallenges": "אין אתגרים יומיים במעקב",
+      "noChallengesHint": "רק אתגרים עם תדירות «יומי» מופיעים כאן. הצטרף לאתגר יומי או צור חדש כדי לראות את טבלת המעקב."
+    },
+    "frequencyDescription": {
+      "DAILY": "כל יום",
+      "WEEKLY": "פעם בשבוע",
+      "FLEXIBLE": "בקצב שלך"
+    },
+    "difficulty": {
+      "easy": "קל",
+      "medium": "בינוני",
+      "hard": "קשה",
+      "expert": "מומחה"
+    },
+    "fields": {
+      "title": "כותרת האתגר",
+      "titlePlaceholder": "למשל: 10,000 צעדים ביום",
+      "titleRequired": "כותרת האתגר היא שדה חובה",
+      "description": "תיאור",
+      "descriptionPlaceholder": "תאר את האתגר...",
+      "image": "תמונת אתגר",
+      "type": "סוג מדידה",
+      "frequency": "תדירות",
+      "goalValue": "ערך יעד",
+      "goalValuePlaceholder": "מספר",
+      "goalValueMinutes": "דקות",
+      "deadline": "תאריך יעד",
+      "difficulty": "רמת קושי",
+      "category": "קטגוריה",
+      "categoryPlaceholder": "למשל: בריאות, ספורט, למידה",
+      "value": "ערך",
+      "valuePlaceholder": "הכנס ערך",
+      "notes": "הערות",
+      "notesPlaceholder": "הוסף הערות (אופציונלי)"
+    },
+    "stats": {
+      "participants": "משתתפים",
+      "participantsCount": "{{count}} משתתפים",
+      "currentStreak": "רצף נוכחי",
+      "bestStreak": "רצף מקסימלי",
+      "totalEntries": "סה\"כ ביצועים",
+      "successRate": "אחוז הצלחה",
+      "noData": "אין נתונים",
+      "activeChallenges": "אתגרים פעילים",
+      "completedDays": "ימים פעילים",
+      "overallSuccess": "אחוז הצלחה כולל",
+      "streakDays": "{{count}} ימים ברצף",
+      "entries": "ביצועים",
+      "lastEntry": "ביצוע אחרון",
+      "joined": "הצטרף",
+      "created": "נוצר",
+      "createdBy": "נוצר על ידי"
+    },
+    "messages": {
+      "noChallenges": "אין אתגרים להצגה",
+      "noChallengesSubtitle": "נסה לשנות את הפילטרים או צור אתגר חדש",
+      "noCreatedChallenges": "טרם יצרת אתגרים",
+      "noCreatedChallengesSubtitle": "צור אתגר חדש והזמן אחרים להצטרף",
+      "noJoinedChallenges": "טרם הצטרפת לאתגרים",
+      "noJoinedChallengesSubtitle": "גלה אתגרים והצטרף כדי להתחיל לעקוב אחר ההתקדמות שלך",
+      "noEntries": "עדיין לא הוספת ביצועים",
+      "noEntriesSubtitle": "התחל לתעד את ההתקדמות שלך!",
+      "loginRequired": "נא להתחבר כדי ליצור אתגר",
+      "loginToJoin": "נא להתחבר כדי להצטרף לאתגר",
+      "errorCreating": "שגיאה ביצירת האתגר",
+      "errorLoading": "שגיאה בטעינת אתגרים",
+      "errorJoining": "שגיאה בהצטרפות לאתגר",
+      "errorAddingEntry": "שגיאה בהוספת ביצוע",
+      "errorDeleting": "שגיאה במחיקת האתגר",
+      "errorUpdating": "שגיאה בעדכון האתגר",
+      "challengeNotFound": "האתגר לא נמצא",
+      "alreadyCompletedToday": "כבר ביצעת את האתגר היום!",
+      "keepItUp": "המשך כך! 💪",
+      "youAreParticipating": "אתה משתתף באתגר זה",
+      "anonymousActivity": "הביצועים שלך פרטיים ואנונימיים - רק אתה רואה אותם"
+    },
+    "details": {
+      "title": "פרטי אתגר",
+      "about": "אודות האתגר",
+      "myProgress": "ההתקדמות שלי",
+      "recentEntries": "ביצועים אחרונים",
+      "recentActivity": "פעילות אחרונה",
+      "topParticipants": "משתתפים מובילים",
+      "viewAll": "צפה בהכל",
+      "today": "היום",
+      "yesterday": "אתמול",
+      "daysAgo": "לפני {{count}} ימים"
+    },
+    "filters": {
+      "all": "הכל",
+      "active": "פעילים",
+      "joined": "הצטרפתי",
+      "created": "יצרתי"
+    },
+    "myChallenges": "האתגרים שלי",
+    "myCreatedChallenges": "האתגרים שיצרתי",
+    "quickEntry": "עדכון מהיר",
+    "quickEntryTitle": "עדכון ביצועים מהיר",
+    "edit": "ערוך",
+    "delete": "מחק",
+    "deleteChallenge": "מחק אתגר",
+    "deleteChallengeConfirm": "האם אתה בטוח שברצונך למחוק את האתגר '{{title}}'?",
+    "challengeDeleted": "האתגר נמחק בהצלחה",
+    "challengeUpdated": "האתגר עודכן בהצלחה",
+    "editChallenge": "עריכת אתגר",
+    "editInfo": "ניתן לערוך רק את הכותרת, התיאור, הקושי והקטגוריה. לא ניתן לשנות את סוג המדידה או התדירות.",
+    "active": "פעיל",
+    "inactive": "לא פעיל",
+    "activeStatus": "סטטוס",
+    "browseChallenges": "עיין באתגרים",
+    "addImage": "הוסף תמונה לאתגר",
+    "defaultImageInfo": "אם לא תבחר תמונה, תוצג תמונת ברירת מחדל",
+    "imagePermissionRequired": "נדרשת הרשאה לגישה לגלריה",
+    "imagePickError": "שגיאה בבחירת תמונה",
+    "viewComments": "הצג תגובות",
+    "commentsHint": "שתף מחשבות, עצות והצלחות עם הקהילה",
+    "editEntry": {
+      "deleteTitle": "מחיקת ערך",
+      "deleteMessage": "האם אתה בטוח שברצונך למחוק את הערך?",
+      "deleteErrorTitle": "שגיאה",
+      "deleteErrorMessage": "לא הצלחנו למחוק את הערך",
+      "saveErrorTitle": "שגיאה",
+      "saveErrorMessage": "לא הצלחנו לשמור את הערך",
+      "save": "שמור",
+      "saving": "שומר...",
+      "goalMinutes": "יעד: {{value}} דקות"
     }
   }
 }

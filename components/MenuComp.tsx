@@ -26,7 +26,7 @@ const MenuComp: React.FC<MenuCompProps> = ({ options, onSelectOption }) => {
   // Animated values for scale and opacity
   const scaleAnim = useRef(new Animated.Value(0.01)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Get responsive menu styles
   const menuStyles = getResponsiveMenuStyles();
 
@@ -42,12 +42,12 @@ const MenuComp: React.FC<MenuCompProps> = ({ options, onSelectOption }) => {
         Animated.spring(scaleAnim, {
           toValue: 1,
           friction: 8,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(opacityAnim, {
           toValue: 1,
           duration: 200,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ]).start();
     } else {
@@ -55,12 +55,12 @@ const MenuComp: React.FC<MenuCompProps> = ({ options, onSelectOption }) => {
         Animated.timing(scaleAnim, {
           toValue: 0.01,
           duration: 200,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(opacityAnim, {
           toValue: 0,
           duration: 200,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ]).start();
     }

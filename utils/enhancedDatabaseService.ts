@@ -471,7 +471,7 @@ export class EnhancedDatabaseService {
         const hasData = Object.keys(response.data).length > 0;
         if (hasData) {
           await this.setCache('community_stats', cacheKey, response.data);
-          logger.info('EnhancedDatabaseService', 'Community stats fetched from backend', { cacheKey, forceRefresh });
+          logger.info('EnhancedDatabaseService', 'Community stats fetched from backend', { cacheKey, forceRefresh }, { periodic: true });
           return response.data as Record<string, unknown>;
         } else {
           logger.warn('EnhancedDatabaseService', 'Backend returned empty stats data', { cacheKey, forceRefresh });

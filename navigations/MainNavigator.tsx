@@ -24,7 +24,6 @@ import BookmarksScreen from "../screens/BookmarksScreen";
 import FollowersScreen from "../screens/FollowersScreen";
 import DiscoverPeopleScreen from "../screens/DiscoverPeopleScreen";
 import LoginScreen from "../screens/LoginScreen";
-import NewLoginScreen from "../screens/NewLoginScreen";
 import { useUser } from '../stores/userStore';
 import colors from '../globals/colors';
 import styles from '../globals/styles';
@@ -38,7 +37,7 @@ import OrgOnboardingScreen from '../screens/OrgOnboardingScreen';
 import AdminOrgApprovalsScreen from '../screens/AdminOrgApprovalsScreen';
 import OrgDashboardScreen from '../screens/OrgDashboardScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
-import LandingSiteScreen from '../screens/LandingSiteScreen';
+import LandingSiteScreen from '../screens/Landing/LandingSiteScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import { useWebMode } from '../stores/webModeStore';
 import { logger } from '../utils/loggerService';
@@ -170,7 +169,7 @@ export default function MainNavigator() {
           ) : null}
 
           {/* In app mode (or if site mode landing navigates here), LoginScreen is main */}
-          <Stack.Screen name="LoginScreen" component={NewLoginScreen} />
+          <Stack.Screen name="LoginScreen" component={LoginScreen} />
 
           {/* Org Onboarding is part of the sign-up flow */}
           <Stack.Screen name="OrgOnboardingScreen" component={OrgOnboardingScreen} />

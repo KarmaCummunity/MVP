@@ -162,7 +162,7 @@ export const getConversations = async (userId: string): Promise<Conversation[]> 
 
         conversations.forEach(conv => {
           // Sort participants to ensure consistent key
-          const key = [...(conv.participants || [])].sort().join(',');
+          const key = [...(conv.participants || [])].sort((a, b) => a.localeCompare(b)).join(',');
 
           if (!uniqueMap.has(key)) {
             uniqueMap.set(key, conv);

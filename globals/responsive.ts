@@ -26,23 +26,23 @@ export const getScreenInfo = () => {
   const { width, height } = Dimensions.get('window');
   const shortest = Math.min(width, height);
   const longest = Math.max(width, height);
-  
+
   const isMobile = width < BREAKPOINTS.SMALL_PHONE;
   const isSmallPhone = width >= BREAKPOINTS.MOBILE && width < BREAKPOINTS.SMALL_PHONE;
   const isLargePhone = width >= BREAKPOINTS.SMALL_PHONE && width < BREAKPOINTS.LARGE_PHONE;
   const isTablet = width >= BREAKPOINTS.LARGE_PHONE && width < BREAKPOINTS.TABLET;
   const isDesktop = Platform.OS === 'web' && width >= BREAKPOINTS.TABLET && width < BREAKPOINTS.DESKTOP;
   const isLargeDesktop = Platform.OS === 'web' && width >= BREAKPOINTS.DESKTOP;
-  
-  return { 
-    width, 
-    height, 
-    shortest, 
-    longest, 
+
+  return {
+    width,
+    height,
+    shortest,
+    longest,
     isMobile,
     isSmallPhone,
     isLargePhone,
-    isTablet, 
+    isTablet,
     isDesktop,
     isLargeDesktop,
   };
@@ -73,12 +73,12 @@ export const useOrientation = (): Orientation => {
 export const scaleSize = (size: number) => {
   const { width, height } = Dimensions.get('window');
   const baseline = 414; // TODO: Move to constants file
-  
+
   // For web, use better mobile detection and scaling
   if (Platform.OS === 'web') {
     // Check if it's a mobile browser based on viewport size
     const isMobileWeb = width <= 768 && (width / height < 1.2); // Portrait-ish mobile
-    
+
     if (isMobileWeb) {
       // More aggressive scaling for mobile web to ensure readability
       const mobileFactor = Math.min(Math.max(width / baseline, 0.9), 1.4);
@@ -89,7 +89,7 @@ export const scaleSize = (size: number) => {
       return Math.round(size * desktopFactor);
     }
   }
-  
+
   // Original scaling for native mobile
   const factor = Math.min(Math.max(width / baseline, 0.85), 1.25);
   return Math.round(size * factor);
@@ -167,14 +167,14 @@ export const rowDirection = (mobileDefault: 'row' | 'row-reverse' = 'row') => {
 
 // Responsive spacing function - returns spacing based on screen size
 export const responsiveSpacing = (
-  mobile: number, 
-  tablet?: number, 
+  mobile: number,
+  tablet?: number,
   desktop?: number
 ): number => {
   const { isTablet, isDesktop, isLargeDesktop } = getScreenInfo();
   const { width } = Dimensions.get('window');
   const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
-  
+
   if (isLargeDesktop && desktop !== undefined) return Math.round(desktop * 1.2);
   if (isDesktopWeb && desktop !== undefined) return desktop;
   if (isDesktop && desktop !== undefined) return desktop;
@@ -184,14 +184,14 @@ export const responsiveSpacing = (
 
 // Responsive font size function
 export const responsiveFontSize = (
-  mobile: number, 
-  tablet?: number, 
+  mobile: number,
+  tablet?: number,
   desktop?: number
 ): number => {
   const { isTablet, isDesktop, isLargeDesktop } = getScreenInfo();
   const { width } = Dimensions.get('window');
   const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
-  
+
   if (isLargeDesktop && desktop !== undefined) return Math.round(desktop * 1.1);
   if (isDesktopWeb && desktop !== undefined) return desktop;
   if (isDesktop && desktop !== undefined) return desktop;
@@ -201,13 +201,13 @@ export const responsiveFontSize = (
 
 // Responsive width function - returns width based on screen size with optional max width
 export const responsiveWidth = (
-  mobilePercent: number, 
+  mobilePercent: number,
   maxWidth?: number
 ): number | string => {
   const { width, isDesktop, isLargeDesktop } = getScreenInfo();
   const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
   const calculatedWidth = (width * mobilePercent) / 100;
-  
+
   if (isDesktopWeb && maxWidth) {
     return Math.min(calculatedWidth, maxWidth);
   }
@@ -222,7 +222,7 @@ export const getResponsiveButtonStyles = () => {
   const { isTablet, isDesktop, isLargeDesktop } = getScreenInfo();
   const { width } = Dimensions.get('window');
   const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
-  
+
   return {
     paddingHorizontal: isLargeDesktop ? 36 : isDesktopWeb ? 32 : isTablet ? 28 : 24,
     paddingVertical: isLargeDesktop ? 18 : isDesktopWeb ? 16 : isTablet ? 14 : 12,
@@ -239,7 +239,7 @@ export const getResponsiveContainerStyles = () => {
   const { isTablet, isDesktop, isLargeDesktop } = getScreenInfo();
   const { width } = Dimensions.get('window');
   const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
-  
+
   return {
     padding: isLargeDesktop ? 48 : isDesktopWeb ? 40 : isTablet ? 32 : 20,
     paddingHorizontal: isLargeDesktop ? 48 : isDesktopWeb ? 40 : isTablet ? 32 : 20,
@@ -253,7 +253,7 @@ export const getResponsiveModalStyles = () => {
   const { isTablet, isDesktop, isLargeDesktop } = getScreenInfo();
   const { width } = Dimensions.get('window');
   const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
-  
+
   return {
     width: isLargeDesktop ? '40%' : isDesktopWeb ? '50%' : isTablet ? '70%' : '80%',
     maxWidth: isLargeDesktop ? 600 : isDesktopWeb ? 500 : isTablet ? 400 : undefined,
@@ -268,7 +268,7 @@ export const getResponsiveMenuStyles = () => {
   const { isTablet, isDesktop, isLargeDesktop } = getScreenInfo();
   const { width } = Dimensions.get('window');
   const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
-  
+
   return {
     minWidth: isLargeDesktop ? 220 : isDesktopWeb ? 200 : isTablet ? 180 : 160,
     maxWidth: isLargeDesktop ? 280 : isDesktopWeb ? 250 : isTablet ? 220 : 200,
@@ -282,6 +282,14 @@ export const getResponsiveMenuStyles = () => {
   };
 };
 
+// Return the width for the login side panel
+export const getLoginSidePanelWidth = () => {
+  const { width, isDesktop, isTablet } = getScreenInfo();
+  if (isDesktop) return 400;
+  if (isTablet) return 350;
+  return width * 0.85;
+};
+
 // Responsive padding function - returns padding object
 export const responsivePadding = (
   mobile: number | { horizontal?: number; vertical?: number },
@@ -291,34 +299,34 @@ export const responsivePadding = (
   const { isTablet, isDesktop, isLargeDesktop } = getScreenInfo();
   const { width } = Dimensions.get('window');
   const isDesktopWeb = Platform.OS === 'web' && width > BREAKPOINTS.TABLET;
-  
+
   let result: { horizontal?: number; vertical?: number } = {};
-  
+
   if (isLargeDesktop && desktop !== undefined) {
-    result = typeof desktop === 'number' 
+    result = typeof desktop === 'number'
       ? { horizontal: Math.round(desktop * 1.2), vertical: Math.round(desktop * 1.2) }
-      : { 
-          horizontal: desktop.horizontal ? Math.round(desktop.horizontal * 1.2) : undefined, 
-          vertical: desktop.vertical ? Math.round(desktop.vertical * 1.2) : undefined 
-        };
+      : {
+        horizontal: desktop.horizontal ? Math.round(desktop.horizontal * 1.2) : undefined,
+        vertical: desktop.vertical ? Math.round(desktop.vertical * 1.2) : undefined
+      };
   } else if (isDesktopWeb && desktop !== undefined) {
-    result = typeof desktop === 'number' 
+    result = typeof desktop === 'number'
       ? { horizontal: desktop, vertical: desktop }
       : desktop;
   } else if (isDesktop && desktop !== undefined) {
-    result = typeof desktop === 'number' 
+    result = typeof desktop === 'number'
       ? { horizontal: desktop, vertical: desktop }
       : desktop;
   } else if (isTablet && tablet !== undefined) {
-    result = typeof tablet === 'number' 
+    result = typeof tablet === 'number'
       ? { horizontal: tablet, vertical: tablet }
       : tablet;
   } else {
-    result = typeof mobile === 'number' 
+    result = typeof mobile === 'number'
       ? { horizontal: mobile, vertical: mobile }
       : mobile;
   }
-  
+
   return {
     paddingHorizontal: result.horizontal ?? 0,
     paddingVertical: result.vertical ?? 0,

@@ -29,20 +29,22 @@ const Toast: React.FC<ToastProps> = ({
 }) => {
   const translateY = useRef(new Animated.Value(100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
+  const [shouldRender, setShouldRender] = React.useState(visible);
 
   useEffect(() => {
     if (visible) {
+      setShouldRender(true);
       // Show animation
       Animated.parallel([
         Animated.timing(translateY, {
           toValue: 0,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(opacity, {
           toValue: 1,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ]).start();
 
@@ -52,14 +54,15 @@ const Toast: React.FC<ToastProps> = ({
           Animated.timing(translateY, {
             toValue: 100,
             duration: 300,
-            useNativeDriver: true,
+            useNativeDriver: false,
           }),
           Animated.timing(opacity, {
             toValue: 0,
             duration: 300,
-            useNativeDriver: true,
+            useNativeDriver: false,
           }),
         ]).start(() => {
+          setShouldRender(false);
           onHide?.();
         });
       }, duration);
@@ -71,18 +74,20 @@ const Toast: React.FC<ToastProps> = ({
         Animated.timing(translateY, {
           toValue: 100,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(opacity, {
           toValue: 0,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
-      ]).start();
+      ]).start(() => {
+        setShouldRender(false);
+      });
     }
   }, [visible, duration, translateY, opacity, onHide]);
 
-  if (!visible && opacity._value === 0) {
+  if (!shouldRender) {
     return null;
   }
 
