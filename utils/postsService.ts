@@ -155,8 +155,8 @@ class PostsService {
    * @param rideId - Optional: filter by ride_id
    */
   async getPosts(
-    limit = 20, 
-    offset = 0, 
+    limit = 20,
+    offset = 0,
     userId?: string,
     postType?: string,
     itemId?: string,
@@ -185,7 +185,7 @@ class PostsService {
    * @param limit
    * @param offset
    */
-  async getUserPosts(targetUserId: string, viewerId?: string, limit = 20, offset = 0): Promise<PostsApiResponse<any[]>> {
+  async getUserPosts(targetUserId: string, viewerId?: string, limit = 20, _offset = 0): Promise<PostsApiResponse<any[]>> {
     let url = `/api/posts/user/${targetUserId}?limit=${limit}`;
     if (viewerId) {
       url += `&viewer_id=${viewerId}`;

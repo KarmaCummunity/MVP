@@ -3,7 +3,7 @@ import { initReactI18next } from 'react-i18next';
 // Safe import for expo-localization to avoid native module crash on platforms/builds where it's not linked
 let Localization: any;
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+   
   Localization = require('expo-localization');
 } catch (error) {
   Localization = null;

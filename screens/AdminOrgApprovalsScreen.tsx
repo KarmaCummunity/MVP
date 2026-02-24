@@ -40,7 +40,7 @@ export default function AdminOrgApprovalsScreen() {
       const data = await db.listOrgApplications('admin_org_queue');
       setItems((data as any[]) as OrgApplication[]);
     } catch (e) {
-      // eslint-disable-next-line no-console
+       
       console.error('admin load error', e);
     } finally {
       setRefreshing(false);

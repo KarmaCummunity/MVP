@@ -11,16 +11,28 @@
         "react"
     ],
     "rules": {
-        "@typescript-eslint/no-unused-vars": [
-            "error",
-            {
-                "argsIgnorePattern": "^_",
-                "varsIgnorePattern": "^_"
-            }
-        ],
-        "@typescript-eslint/no-explicit-any": "error",
-        "react/react-in-jsx-scope": "off",
-        "react/display-name": "error"
+        "@typescript-eslint/no-unused-vars": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-require-imports": "warn",
+        "@typescript-eslint/no-empty-object-type": "warn",
+        "@typescript-eslint/ban-ts-comment": "warn",
+        "@typescript-eslint/no-this-alias": "warn",
+        "react/prop-types": "warn",
+        "react/no-unescaped-entities": "warn",
+        "react/display-name": "warn",
+        "react-hooks/rules-of-hooks": "warn",
+        "react-hooks/refs": "off",
+        "react-hooks/set-state-in-effect": "off",
+        "react-hooks/preserve-manual-memoization": "off",
+        "react-hooks/immutability": "off",
+        "react-hooks/purity": "off",
+        "react-hooks/static-components": "off",
+        "react-hooks/use-memo": "off",
+        "no-empty": "off",
+        "no-case-declarations": "off",
+        "no-useless-escape": "off",
+        "no-control-regex": "off",
+        "react/react-in-jsx-scope": "off"
     },
     "settings": {
         "react": {

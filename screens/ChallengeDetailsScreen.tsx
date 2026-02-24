@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
     color: colors.error,
     marginTop: 16,
     marginBottom: 24,
-    textAlign: 'center' as 'center',
+    textAlign: 'center' as const,
   },
   backButton: {
     paddingHorizontal: 24,
@@ -685,7 +685,7 @@ const styles = StyleSheet.create({
   },
   textArea: {
     height: 80,
-    textAlignVertical: 'top' as 'top',
+    textAlignVertical: 'top' as const,
   },
   addEntryButton: {
     flexDirection: 'row',
@@ -717,7 +717,7 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.small,
     color: colors.textSecondary,
     marginBottom: 12,
-    fontStyle: 'italic' as 'italic',
+    fontStyle: 'italic' as const,
   },
   activityItem: {
     flexDirection: 'row',
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
   noActivityText: {
     fontSize: FontSizes.small,
     color: colors.textSecondary,
-    textAlign: 'center' as 'center',
+    textAlign: 'center' as const,
     paddingVertical: 20,
   },
   participantsCard: {
@@ -783,15 +783,15 @@ const styles = StyleSheet.create({
     color: colors.error,
   },
   fab: {
-    position: 'absolute' as 'absolute',
+    position: 'absolute' as const,
     bottom: 24,
     right: 24,
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: colors.success,
-    justifyContent: 'center' as 'center',
-    alignItems: 'center' as 'center',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -805,9 +805,9 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   commentsButton: {
-    flexDirection: 'row' as 'row',
-    alignItems: 'center' as 'center',
-    justifyContent: 'space-between' as 'space-between',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
     backgroundColor: colors.white,
     padding: 16,
     borderRadius: 12,
@@ -818,20 +818,20 @@ const styles = StyleSheet.create({
   commentsButtonText: {
     flex: 1,
     fontSize: FontSizes.medium,
-    fontWeight: '600' as '600',
+    fontWeight: '600' as const,
     color: colors.textPrimary,
     marginLeft: 12,
   },
   commentsHint: {
     fontSize: FontSizes.small,
     color: colors.textSecondary,
-    textAlign: 'center' as 'center',
+    textAlign: 'center' as const,
     marginBottom: 24,
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end' as 'flex-end',
+    justifyContent: 'flex-end' as const,
   },
   modalContent: {
     backgroundColor: colors.white,

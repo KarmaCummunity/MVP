@@ -178,7 +178,7 @@ const OpenRoute = ({ userId, user, onHeightChange }: { userId?: string, user?: a
               let shouldInclude = false;
               let status = 'active';
               let type = 'post';
-              let subtype = p.post_type;
+              const subtype = p.post_type;
 
               // Determine if post should be in OPEN tab
               if (p.post_type === 'task_assignment' || p.post_type === 'task_completion') {
@@ -626,7 +626,7 @@ const ClosedRoute = ({ userId, user, onHeightChange }: { userId?: string, user?:
               let shouldInclude = false;
               let status = 'closed';
               let type = 'post';
-              let subtype = p.post_type;
+              const subtype = p.post_type;
 
               // Determine if post should be in CLOSED tab
               if (p.post_type === 'task_assignment' || p.post_type === 'task_completion') {

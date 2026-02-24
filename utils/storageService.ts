@@ -38,7 +38,7 @@ export async function uploadFileWithProgress(
   const storageRef = ref(storage, fullPath);
 
   let blob: Blob;
-  
+
   try {
     // Handle different URI types
     if (uri.startsWith('blob:') || uri.startsWith('data:')) {
@@ -109,29 +109,29 @@ export function sanitizeFileName(fileName: string): string {
 
   // Remove special characters: <>:"/\|?*
   let sanitized = nameWithoutExt.replace(/[<>:"/\\|?*]/g, '_');
-  
+
   // Replace spaces with underscores
   sanitized = sanitized.replace(/\s+/g, '_');
-  
+
   // Remove non-ASCII characters (Hebrew, Arabic, etc.) and replace with underscore
   // Keep only ASCII letters, numbers, underscores, hyphens, and dots
-  sanitized = sanitized.replace(/[^\x00-\x7F]/g, '_');
-  
+  sanitized = sanitized.replace(/[^\u0000-\u007F]/g, '_');
+
   // Remove multiple consecutive underscores
   sanitized = sanitized.replace(/_+/g, '_');
-  
+
   // Remove leading/trailing underscores
   sanitized = sanitized.replace(/^_+|_+$/g, '');
-  
+
   // If name is empty after sanitization, use 'file'
   if (!sanitized || sanitized.length === 0) {
     sanitized = 'file';
   }
-  
+
   // Add timestamp to prevent collisions
   const timestamp = Date.now();
   const finalName = sanitized || 'file';
-  
+
   return `${finalName}_${timestamp}${extension}`;
 }
 
@@ -157,22 +157,22 @@ export function buildAdminFilePath(folderPath: string, fileId: string, fileName:
     .replace(/^\/+|\/+$/g, '') // Remove leading/trailing slashes
     .replace(/[<>:"/\\|?*]/g, '_') // Remove special characters
     .replace(/\s+/g, '_') // Replace spaces with underscores
-    .replace(/[^\x00-\x7F]/g, '_'); // Remove non-ASCII characters (Hebrew, etc.)
-  
+    .replace(/[^\u0000-\u007F]/g, '_'); // Remove non-ASCII characters (Hebrew, etc.)
+
   // Remove multiple consecutive underscores
   sanitizedFolder = sanitizedFolder.replace(/_+/g, '_');
-  
+
   // Remove leading/trailing underscores
   sanitizedFolder = sanitizedFolder.replace(/^_+|_+$/g, '');
-  
+
   // Default to 'root' if empty
   if (!sanitizedFolder || sanitizedFolder.length === 0) {
     sanitizedFolder = 'root';
   }
-  
+
   // Sanitize fileId to ensure it's safe
-  const sanitizedFileId = fileId.replace(/[<>:"/\\|?*\s]/g, '_').replace(/[^\x00-\x7F]/g, '_');
-  
+  const sanitizedFileId = fileId.replace(/[<>:"/\\|?*\s]/g, '_').replace(/[^\u0000-\u007F]/g, '_');
+
   const sanitizedFileName = sanitizeFileName(fileName);
   const prefix = IS_DEVELOPMENT ? 'dev-' : '';
   return `${prefix}admin-files/${sanitizedFolder}/${sanitizedFileId}/${sanitizedFileName}`;

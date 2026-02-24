@@ -132,7 +132,7 @@ const containsActiveUserProfileScreen = (state: NavigationState): boolean => {
 
   // Recursively check nested states
   if (activeRoute.state) {
-    return containsActiveUserProfileScreen(activeRoute.state);
+    return containsActiveUserProfileScreen(activeRoute.state as any);
   }
 
   return false;
@@ -178,7 +178,7 @@ export const loadNavigationState = async (
     // Remove metadata if present (it's not part of NavigationState type)
     const metadata = (state as any)._metadata;
     if (metadata) {
-      const { _metadata, ...stateWithoutMetadata } = state as any;
+      const { _metadata: __metadata, ...stateWithoutMetadata } = state as any;
       state = stateWithoutMetadata as NavigationState;
     }
 

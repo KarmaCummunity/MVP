@@ -262,7 +262,7 @@ export class DatabaseService {
     try {
       if (USE_BACKEND) {
         for (const { id, data } of items) {
-          // eslint-disable-next-line no-await-in-loop
+           
           await restAdapter.create(collection, userId, id, data);
         }
         console.log(`✅ DatabaseService - Batch created ${items.length} ${collection} items (Backend)`);
@@ -291,7 +291,7 @@ export class DatabaseService {
     try {
       if (USE_BACKEND) {
         for (const id of itemIds) {
-          // eslint-disable-next-line no-await-in-loop
+           
           await restAdapter.delete(collection, userId, id);
         }
         console.log(`✅ DatabaseService - Batch deleted ${itemIds.length} ${collection} items (Backend)`);

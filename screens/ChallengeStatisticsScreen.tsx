@@ -598,7 +598,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textPrimary,
     marginBottom: 16,
-    textAlign: 'center' as 'center',
+    textAlign: 'center' as const,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: FontSizes.caption,
     color: colors.textSecondary,
-    textAlign: 'center' as 'center',
+    textAlign: 'center' as const,
   },
   chartCard: {
     backgroundColor: colors.white,

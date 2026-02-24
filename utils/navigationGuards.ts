@@ -9,6 +9,7 @@ import {
   QueuedNavigationAction,
 } from '../types/navigation';
 import { logger } from './loggerService';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { isValidRouteName } from './navigationStateValidator';
 
 const LOG_SOURCE = 'NavigationGuards';

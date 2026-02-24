@@ -7,6 +7,7 @@ import colors from '../globals/colors';
 let Notifications: any = null;
 if (Platform.OS !== 'web') {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     Notifications = require('expo-notifications');
   } catch (error) {
     console.warn('Failed to load expo-notifications:', error);

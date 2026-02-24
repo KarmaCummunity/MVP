@@ -3,12 +3,10 @@
 // Ensures navigation state is valid before saving/loading
 
 import { NavigationState } from '@react-navigation/native';
-import { 
-  NavigationStateValidationResult, 
+import {
+  NavigationStateValidationResult,
   NavigationStateVersion,
-  CURRENT_NAVIGATION_STATE_VERSION,
   VALID_ROUTES_MAP,
-  AllRouteNames
 } from '../types/navigation';
 import { logger } from './loggerService';
 
@@ -53,7 +51,7 @@ export const validateNavigationState = (
     if (stateSize > MAX_STATE_SIZE) {
       warnings.push(`Navigation state size (${stateSize} bytes) exceeds recommended limit (${MAX_STATE_SIZE} bytes)`);
     }
-  } catch (e) {
+  } catch {
     warnings.push('Could not calculate navigation state size');
   }
 
@@ -88,9 +86,9 @@ export const validateNavigationState = (
       }
 
       if (route.state.index !== undefined) {
-        if (typeof route.state.index !== 'number' || 
-            route.state.index < 0 || 
-            route.state.index >= route.state.routes.length) {
+        if (typeof route.state.index !== 'number' ||
+          route.state.index < 0 ||
+          route.state.index >= route.state.routes.length) {
           errors.push(`Route "${route.name}" has invalid nested state index`);
           return;
         }
@@ -113,19 +111,19 @@ export const validateNavigationState = (
       }
 
       // Validate nested routes
-      route.state.routes.forEach((nestedRoute: any, nestedIndex: number) => {
+      route.state.routes.forEach((nestedRoute: any, _nestedIndex: number) => {
         validateRoute(nestedRoute, nestedStackName, depth + 1);
       });
     }
   };
 
   // Validate all routes
-  state.routes.forEach((route, index) => {
+  state.routes.forEach((route, _index) => {
     validateRoute(route, 'RootStack', 0);
   });
 
   const valid = errors.length === 0;
-  
+
   if (!valid) {
     logger.warn(LOG_SOURCE, 'Navigation state validation failed', { errors, warnings });
   } else if (warnings.length > 0) {
@@ -148,7 +146,7 @@ export const checkNavigationStateVersion = (
   // Check for version in state (stored in route params or state key)
   // For now, we'll be lenient and accept states without version (backward compatibility)
   // In the future, we can add version checking here
-  
+
   return { compatible: true };
 };
 

@@ -11,7 +11,7 @@ const SAVE_INTERVAL = 5000; // Save logs every 5 seconds
 let isDevelopment = false;
 try {
   isDevelopment = typeof __DEV__ !== 'undefined' ? __DEV__ : false;
-} catch (e) {
+} catch {
   // If __DEV__ is not defined, assume production
   isDevelopment = false;
 }
@@ -83,7 +83,7 @@ class LoggerService {
       this.logs = [];
       try {
         await AsyncStorage.removeItem(LOGS_KEY);
-      } catch (e) {
+      } catch {
         // Ignore errors when removing
       }
     }
@@ -120,7 +120,7 @@ class LoggerService {
           this.pendingLogs = [];
           try {
             await AsyncStorage.removeItem(LOGS_KEY);
-          } catch (e) {
+          } catch {
             // Ignore errors when removing
           }
           if (this.enableConsoleOutput) {

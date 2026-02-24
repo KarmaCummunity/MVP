@@ -218,7 +218,7 @@ class UnusedFileFinder {
       importPatterns.forEach(pattern => {
         const match = line.match(pattern);
         if (match) {
-          let importPath = match[1];
+          const importPath = match[1];
 
           // Resolve the import path relative to the current file
           const fileDir = path.dirname(filePath);

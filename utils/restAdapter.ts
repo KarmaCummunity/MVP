@@ -63,7 +63,7 @@ export class RestAdapter {
     const token = await apiService.getAuthToken();
 
     // High-signal client log for production debugging
-    // eslint-disable-next-line no-console
+     
     console.log(`🌐 REST → ${method} ${url}`, init?.body ? { body: init?.body } : '', token ? '(authenticated)' : '(no auth)');
 
     const headers: Record<string, string> = {
@@ -78,11 +78,11 @@ export class RestAdapter {
       ...init,
     });
     const ms = Date.now() - startedAt;
-    // eslint-disable-next-line no-console
+     
     console.log(`🌐 REST ← ${method} ${url} ${res.status} (${ms}ms)`);
     if (!res.ok) {
       const text = await res.text();
-      // eslint-disable-next-line no-console
+       
       console.error(`❌ REST ${method} ${url} -> HTTP ${res.status}:`, text);
       throw new Error(`HTTP ${res.status}: ${text}`);
     }

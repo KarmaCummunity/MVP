@@ -230,7 +230,7 @@ export default function ChatDetailScreen() {
     try {
       // Send the message with fallback participants in case conversation not found
       // Note: sendMessage may update conversationId if backend creates new conversation
-      let currentConversationId = conversationId;
+      const currentConversationId = conversationId;
       const messageId = await sendMessage({
         conversationId: currentConversationId,
         senderId: selectedUser.id,

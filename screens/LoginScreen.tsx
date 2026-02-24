@@ -32,14 +32,13 @@ import {
 } from '../utils/authService';
 import FirebaseGoogleButton from '../components/FirebaseGoogleButton';
 import i18n from '../app/i18n';
-import { restAdapter } from '../utils/restAdapter';
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
 export default function LoginScreen() {
     const { t } = useTranslation(['auth', 'common', 'settings']);
     const { setCurrentPrincipal } = useUser();
-    const navigation = useNavigation<any>();
+    // const navigation = useNavigation<any>();
 
     // UI State
     const [email, setEmail] = useState('');
@@ -56,7 +55,7 @@ export default function LoginScreen() {
             duration: 800,
             useNativeDriver: false,
         }).start();
-    }, []);
+    }, [fadeAnim]);
 
     // Language Toggle
     const toggleLanguage = async () => {
@@ -209,44 +208,39 @@ export default function LoginScreen() {
                         // If sign up fails with email-already-in-use, try to sign in again
                         // This might happen if user was created between attempts
                         if (signUpError.code === 'auth/email-already-in-use') {
-                            try {
-                                const fbUser = await signInWithEmail(email, password);
-                                // Get user data and proceed with login (same logic as above)
-                                const { apiService } = await import('../utils/apiService');
-                                const resolveResponse = await apiService.resolveUserId({
-                                    firebase_uid: fbUser.uid,
-                                    email: email
-                                });
+                            const fbUser = await signInWithEmail(email, password);
+                            // Get user data and proceed with login (same logic as above)
+                            const { apiService } = await import('../utils/apiService');
+                            const resolveResponse = await apiService.resolveUserId({
+                                firebase_uid: fbUser.uid,
+                                email: email
+                            });
 
-                                if (resolveResponse.success && resolveResponse.user) {
-                                    const serverUser = resolveResponse.user;
-                                    const userData = {
-                                        id: serverUser.id,
-                                        name: serverUser.name || fbUser.displayName || email.split('@')[0],
-                                        email: serverUser.email || email,
-                                        isActive: serverUser.isActive !== false,
-                                        lastActive: serverUser.lastActive || nowIso,
-                                        roles: serverUser.roles || ['user'],
-                                        settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
-                                        phone: serverUser.phone || fbUser.phoneNumber || '',
-                                        avatar: serverUser.avatar || fbUser.photoURL || 'https://i.pravatar.cc/150?img=12',
-                                        bio: serverUser.bio || '',
-                                        karmaPoints: serverUser.karmaPoints || 0,
-                                        joinDate: serverUser.createdAt || serverUser.joinDate || nowIso,
-                                        location: serverUser.location || { city: 'תל אביב', country: 'Israel' },
-                                        interests: serverUser.interests || [],
-                                        postsCount: serverUser.postsCount || 0,
-                                        followersCount: serverUser.followersCount || 0,
-                                        followingCount: serverUser.followingCount || 0,
-                                        notifications: [],
-                                    };
-                                    await setCurrentPrincipal({ user: userData, role: 'user' });
-                                    await navigationQueue.reset(0, [{ name: 'HomeStack' }], 2);
-                                    return;
-                                }
-                            } catch (retryError: any) {
-                                // If retry also fails, show appropriate error
-                                throw retryError;
+                            if (resolveResponse.success && resolveResponse.user) {
+                                const serverUser = resolveResponse.user;
+                                const userData = {
+                                    id: serverUser.id,
+                                    name: serverUser.name || fbUser.displayName || email.split('@')[0],
+                                    email: serverUser.email || email,
+                                    isActive: serverUser.isActive !== false,
+                                    lastActive: serverUser.lastActive || nowIso,
+                                    roles: serverUser.roles || ['user'],
+                                    settings: serverUser.settings || { language: 'he', darkMode: false, notificationsEnabled: true },
+                                    phone: serverUser.phone || fbUser.phoneNumber || '',
+                                    avatar: serverUser.avatar || fbUser.photoURL || 'https://i.pravatar.cc/150?img=12',
+                                    bio: serverUser.bio || '',
+                                    karmaPoints: serverUser.karmaPoints || 0,
+                                    joinDate: serverUser.createdAt || serverUser.joinDate || nowIso,
+                                    location: serverUser.location || { city: 'תל אביב', country: 'Israel' },
+                                    interests: serverUser.interests || [],
+                                    postsCount: serverUser.postsCount || 0,
+                                    followersCount: serverUser.followersCount || 0,
+                                    followingCount: serverUser.followingCount || 0,
+                                    notifications: [],
+                                };
+                                await setCurrentPrincipal({ user: userData, role: 'user' });
+                                await navigationQueue.reset(0, [{ name: 'HomeStack' }], 2);
+                                return;
                             }
                         }
                         throw signUpError;
@@ -293,6 +287,7 @@ export default function LoginScreen() {
                     {/* Header / Logo */}
                     <View style={styles.header}>
                         <Image
+                            // eslint-disable-next-line @typescript-eslint/no-require-imports
                             source={require('../assets/images/new_logo_black.png')}
                             style={styles.logo}
                             resizeMode="contain"

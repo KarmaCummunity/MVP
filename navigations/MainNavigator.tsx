@@ -70,6 +70,10 @@ export default function MainNavigator() {
     }, [])
   );
 
+  // Stack Navigator key - only change when mode changes, or authentication state toggles major branches
+  // This helps ensure clean transitions between Auth and Unauth states
+  const stackKey = useMemo(() => `stack-${mode}-${isAuthenticated || isGuestMode ? 'auth' : 'unauth'}`, [mode, isAuthenticated, isGuestMode]);
+
   // Loading screen
   if (isLoading) {
     logger.debug('MainNavigator', 'Showing loading screen');
@@ -80,10 +84,6 @@ export default function MainNavigator() {
       </View>
     );
   }
-
-  // Stack Navigator key - only change when mode changes, or authentication state toggles major branches
-  // This helps ensure clean transitions between Auth and Unauth states
-  const stackKey = useMemo(() => `stack-${mode}-${isAuthenticated || isGuestMode ? 'auth' : 'unauth'}`, [mode, isAuthenticated, isGuestMode]);
 
   return (
     <Stack.Navigator
@@ -140,6 +140,7 @@ export default function MainNavigator() {
               to ensure bottom bar and top bar remain visible */}
           <Stack.Screen
             name="UserProfileScreen"
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
             component={require('../bottomBarScreens/ProfileScreen').default}
           />
           <Stack.Screen name="FollowersScreen" component={FollowersScreen} />

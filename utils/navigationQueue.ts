@@ -196,7 +196,7 @@ class NavigationQueue {
   /**
    * Execute goBack action
    */
-  private async executeGoBack(action: GoBackAction): Promise<void> {
+  private async executeGoBack(_action: GoBackAction): Promise<void> {
     if (!this.navigationRef) {
       throw new Error('Navigation ref not initialized');
     }
