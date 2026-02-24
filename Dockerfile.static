@@ -1,5 +1,5 @@
 # Simple static HTML Dockerfile - NO EXPO BUILD
-FROM nginx:1.25-alpine
+FROM nginx:1.29.5-alpine
 
 # Copy static HTML directly
 COPY public/ /usr/share/nginx/html/
