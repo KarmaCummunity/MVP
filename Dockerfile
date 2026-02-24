@@ -32,7 +32,7 @@ RUN chmod +x scripts/fix-scroll-html.sh && sh scripts/fix-scroll-html.sh || true
 RUN chmod +x scripts/restore-build-placeholders.sh && sh scripts/restore-build-placeholders.sh || true
 
 # 2) Nginx runtime to serve static files
-FROM nginx:1.25-alpine as web
+FROM nginx:1.29.5-alpine as web
 
 # Copy nginx config template and entrypoint to inject runtime BACKEND_BASE_URL
 ENV BACKEND_BASE_URL="http://localhost:3001"
