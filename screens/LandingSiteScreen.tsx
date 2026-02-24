@@ -353,7 +353,7 @@ const VisionSection: React.FC<{ onGoToApp: () => void }> = ({ onGoToApp }) => (
     </View>
 
     {/* CTA Button - Join Us */}
-    <View style={styles.ctaRow}>
+    {/* <View style={styles.ctaRow}>
       <TouchableOpacity
         style={styles.primaryCta}
         onPress={onGoToApp}
@@ -362,7 +362,7 @@ const VisionSection: React.FC<{ onGoToApp: () => void }> = ({ onGoToApp }) => (
         <Ionicons name="people-outline" size={isMobileWeb ? 16 : 22} color={colors.white} style={styles.ctaIcon} />
         <Text style={styles.primaryCtaText}>הצטרפו אלינו</Text>
       </TouchableOpacity>
-    </View>
+    </View> */}
   </Section>
 );
 
@@ -782,7 +782,7 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onG
         </View>
       )}
 
-      {/* CTA Button - Go to App */}
+      {/* CTA Button - Go to App 
       <View style={styles.ctaRow}>
         <TouchableOpacity
           style={styles.primaryCta}
@@ -792,7 +792,7 @@ const StatsSection: React.FC<{ stats: LandingStats; isLoadingStats: boolean; onG
           <Ionicons name="phone-portrait-outline" size={isMobileWeb ? 16 : 22} color={colors.white} style={styles.ctaIcon} />
           <Text style={styles.primaryCtaText}>עבור לאפליקציה</Text>
         </TouchableOpacity>
-      </View>
+      </View>*/}
     </Section>
   );
 };
@@ -1856,7 +1856,7 @@ const LandingSiteScreen: React.FC = () => {
         <LazySection section={WhoIsItForSection} onDonate={() => setShowDonationModal(true)} />
         <LazySection section={ValuesSection} />
         <LazySection section={CoreMottosSection} />
-        <LazySection section={AdminHierarchySection} />
+        {/* <LazySection section={AdminHierarchySection} /> */}
         <LazySection section={RoadmapSection} />
         <LazySection section={ContactSection} />
         <LazySection section={FAQSection} />
