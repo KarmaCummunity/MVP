@@ -111,8 +111,8 @@ function AppContent() {
   // Initialize stores and load navigation state on mount
   // This must happen before NavigationContainer is rendered
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout | null = null;
-    
+    let timeoutId: any = null;
+
     const initializeStoresAndLoadState = async () => {
       try {
         logger.info('App', 'Initializing Zustand stores and loading navigation state');
@@ -131,7 +131,7 @@ function AppContent() {
             logger.info('App', 'Web mode store imported, initializing');
             useWebModeStore.getState().initialize();
             logger.info('App', 'Web mode store initialized');
-            
+
             // Initialize version checker for web only (non-critical, can fail)
             try {
               logger.info('App', 'Importing version checker');
@@ -184,34 +184,34 @@ function AppContent() {
         } catch (navError) {
           logger.warn('App', 'Error loading navigation state, continuing anyway', { error: navError });
         }
-        
+
         // Clear timeout if initialization completed successfully
         if (timeoutId) {
           clearTimeout(timeoutId);
           timeoutId = null;
         }
-        
+
         setIsNavigationStateLoaded(true);
       } catch (error) {
-        logger.error('App', 'Failed to initialize stores or load navigation state', { 
+        logger.error('App', 'Failed to initialize stores or load navigation state', {
           error,
           message: error instanceof Error ? error.message : 'Unknown error',
           stack: error instanceof Error ? error.stack : undefined
         });
-        
+
         // Clear timeout on error
         if (timeoutId) {
           clearTimeout(timeoutId);
           timeoutId = null;
         }
-        
+
         setIsNavigationStateLoaded(true); // Continue even if loading fails
       }
     };
 
     // Initialize immediately - no delay needed
     initializeStoresAndLoadState();
-    
+
     // Cleanup timeout on unmount
     return () => {
       if (timeoutId) {
