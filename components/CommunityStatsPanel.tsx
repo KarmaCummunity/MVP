@@ -86,6 +86,8 @@ export default function CommunityStatsPanel() {
     };
   });
 
+  if (isRealAuth) return null;
+
   return (
     <Animated.View style={[styles.container, animatedStyle]}>
       <GestureDetector gesture={gesture}>

@@ -52,7 +52,7 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
     const now = new Date();
     const diffTime = date.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays < 0) {
       return `איחור של ${Math.abs(diffDays)} ימים`;
     } else if (diffDays === 0) {
@@ -70,8 +70,8 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
       `האם אתה בטוח שברצונך למחוק את המשימה "${task.title}"?`,
       [
         { text: 'ביטול', style: 'cancel' },
-        { 
-          text: 'מחק', 
+        {
+          text: 'מחק',
           style: 'destructive',
           onPress: () => onDeleteTask(task.id)
         }
@@ -88,14 +88,14 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
   }, [task.id, onToggleComplete]);
 
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.container, task.completed && styles.completedContainer]}
       onPress={handleEditPress}
       activeOpacity={0.7}
     >
       {/* Priority Indicator */}
       <View style={[styles.priorityIndicator, { backgroundColor: getPriorityColor(task.priority) }]} />
-      
+
       {/* Main Content */}
       <View style={styles.contentContainer}>
         <View style={styles.headerRow}>
@@ -110,7 +110,7 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
               {task.title}
             </Text>
             {task.description && (
-              <Text 
+              <Text
                 style={[styles.description, task.completed && styles.completedText]}
                 numberOfLines={1}
               >
@@ -118,7 +118,7 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
               </Text>
             )}
           </View>
-          
+
           {/* Priority Badge */}
           <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(task.priority) + '20' }]}>
             <Ionicons name={getPriorityIcon(task.priority) as any} size={12} color={getPriorityColor(task.priority)} />
@@ -138,7 +138,7 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
               </Text>
             </View>
           )}
-          
+
           {task.category && (
             <View style={styles.metaItem}>
               <Ionicons name="folder-outline" size={14} color={colors.textSecondary} />
@@ -185,18 +185,18 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
           thumbColor={task.completed ? getStatusColor(true) : colors.white}
           ios_backgroundColor={colors.border}
         />
-        
+
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity 
-            onPress={handleEditPress} 
+          <TouchableOpacity
+            onPress={handleEditPress}
             style={[styles.actionButton, styles.editButton]}
           >
             <Ionicons name="create-outline" size={18} color={colors.secondary} />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            onPress={handleDeletePress} 
+
+          <TouchableOpacity
+            onPress={handleDeletePress}
             style={[styles.actionButton, styles.deleteButton]}
           >
             <Ionicons name="trash-outline" size={18} color={colors.error} />
@@ -206,6 +206,8 @@ const TaskItem: React.FC<TaskItemProps> = memo((props) => {
     </TouchableOpacity>
   );
 });
+
+TaskItem.displayName = 'TaskItem';
 
 const styles = StyleSheet.create({
   container: {

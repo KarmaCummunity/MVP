@@ -70,7 +70,7 @@ export default function AdminTablesScreen({ navigation }: AdminTablesScreenProps
   const fetchTables = useCallback(async () => {
     setLoading(true);
     try {
-      const res: ApiResponse<AdminTable[]> = await apiService.adminTables.getAll();
+      const res = await apiService.adminTables.getAll() as ApiResponse<AdminTable[]>;
       if (res.success && res.data) {
         setTables(res.data);
       } else {
@@ -147,7 +147,7 @@ export default function AdminTablesScreen({ navigation }: AdminTablesScreenProps
 
     setCreating(true);
     try {
-      const res: ApiResponse<AdminTable> = await apiService.adminTables.create({
+      const res = await apiService.adminTables.create({
         name: formData.name.trim(),
         description: formData.description.trim() || undefined,
         columns: formData.columns.map((col, index) => ({
@@ -156,7 +156,7 @@ export default function AdminTablesScreen({ navigation }: AdminTablesScreenProps
           is_required: col.is_required,
           display_order: index,
         })),
-      });
+      }) as ApiResponse<AdminTable>;
 
       if (res.success && res.data) {
         setShowCreateModal(false);
@@ -286,7 +286,7 @@ export default function AdminTablesScreen({ navigation }: AdminTablesScreenProps
             <View style={styles.emptyContainer}>
               <Ionicons name="grid-outline" size={64} color={colors.textSecondary} />
               <Text style={styles.emptyText}>אין טבלאות</Text>
-              <Text style={styles.emptySubtext}>לחץ על "טבלה חדשה" כדי להתחיל</Text>
+              <Text style={styles.emptySubtext}>לחץ על &quot;טבלה חדשה&quot; כדי להתחיל</Text>
             </View>
           }
         />
@@ -393,7 +393,7 @@ export default function AdminTablesScreen({ navigation }: AdminTablesScreenProps
                 ))}
 
                 {formData.columns.length === 0 && (
-                  <Text style={styles.emptyColumnsText}>אין עמודות. לחץ על "הוסף עמודה" כדי להתחיל.</Text>
+                  <Text style={styles.emptyColumnsText}>אין עמודות. לחץ על &quot;הוסף עמודה&quot; כדי להתחיל.</Text>
                 )}
               </View>
 

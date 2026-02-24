@@ -661,7 +661,7 @@ export default function AdminMoneyScreen({ navigation }: AdminMoneyScreenProps) 
                   />
                 </View>
                 <Text style={styles.helperText}>
-                  תרומות בהוראת קבע נספרות כ"תורמים פעילים" בדף הנחיתה ומתעדכנות ברגע שנוספות או נמחקות.
+                  תרומות בהוראת קבע נספרות כ&quot;תורמים פעילים&quot; בדף הנחיתה ומתעדכנות ברגע שנוספות או נמחקות.
                 </Text>
               </View>
 

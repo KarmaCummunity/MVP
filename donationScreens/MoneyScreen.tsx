@@ -35,9 +35,9 @@ const dummyCharitiesBase = charities.map((charity, index) => ({
   rating: charity.rating,
   donors: charity.volunteersCount + charity.beneficiariesCount,
   description: charity.description.substring(0, 100) + "...",
-  image: charity.tags[0] === "קשישים" ? "👴" : 
-        charity.tags[0] === "חינוך" ? "📚" : 
-        charity.tags[0] === "בעלי חיים" ? "🐕" : 
+  image: charity.tags[0] === "קשישים" ? "👴" :
+    charity.tags[0] === "חינוך" ? "📚" :
+      charity.tags[0] === "בעלי חיים" ? "🐕" :
         charity.tags[0] === "בריאות" ? "🏥" : "💝",
   minDonation: 20 + (index * 10)
 }));
@@ -100,16 +100,16 @@ export default function MoneyScreen({
 }) {
   const route = useRoute();
   const routeParams = route.params as { mode?: string } | undefined;
-  
+
   const { isRealAuth } = useUser();
-  const { t } = useTranslation(['donations','common']);
+  const { t } = useTranslation(['donations', 'common']);
   // Debug log for MoneyScreen
   // console.log('💰 MoneyScreen - Component rendered');
   // console.log('💰 MoneyScreen - Navigation object:', navigation);
   // console.log('💰 MoneyScreen - Navigation state:', JSON.stringify(navigation.getState(), null, 2));
   const [selectedRecipient, setSelectedRecipient] = useState<string>('');
   const [amount, setAmount] = useState<string>('50');
-  
+
   // Get initial mode from URL (deep link) or default to search mode (מחפש)
   // mode: true = offerer (wants to donate), false = seeker (needs help)
   // URL mode: 'offer' = true, 'search' = false
@@ -131,14 +131,14 @@ export default function MoneyScreen({
   useEffect(() => {
     const newMode = mode ? 'offer' : 'search';
     const currentMode = routeParams?.mode;
-    
+
     // If no mode in URL, set it to search (default)
     if (!currentMode || currentMode === 'undefined' || currentMode === 'null') {
       // Set initial mode to search in URL
       (navigation as any).setParams({ mode: 'search' });
       return;
     }
-    
+
     // Only update URL if mode actually changed
     if (newMode !== currentMode) {
       (navigation as any).setParams({ mode: newMode });
@@ -227,17 +227,17 @@ export default function MoneyScreen({
   const preferredCharity = filteredCharities.length > 0
     ? filteredCharities[0]
     : (isRealAuth ? (charitiesStore[0] ? {
-        id: `store_${charitiesStore[0].id}`,
-        name: charitiesStore[0].name,
-        category: (charitiesStore[0].categories && charitiesStore[0].categories[0]) ? String(charitiesStore[0].categories[0]) : 'כללי',
-        location: charitiesStore[0].location?.city || 'כל הארץ',
-        rating: 4.8,
-        donors: 100,
-        description: charitiesStore[0].description || '',
-        image: '💝',
-        minDonation: 20,
-        _extUrl: charitiesStore[0].url,
-      } : null) : (dummyCharitiesBase[0] || null));
+      id: `store_${charitiesStore[0].id}`,
+      name: charitiesStore[0].name,
+      category: (charitiesStore[0].categories && charitiesStore[0].categories[0]) ? String(charitiesStore[0].categories[0]) : 'כללי',
+      location: charitiesStore[0].location?.city || 'כל הארץ',
+      rating: 4.8,
+      donors: 100,
+      description: charitiesStore[0].description || '',
+      image: '💝',
+      minDonation: 20,
+      _extUrl: charitiesStore[0].url,
+    } : null) : (dummyCharitiesBase[0] || null));
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -265,26 +265,24 @@ export default function MoneyScreen({
       if (payboxGroupLink.length > 0) {
         try {
           if (Platform.OS === 'web') {
-            // @ts-ignore window קיים בדפדפן
-            window.open(payboxGroupLink, '_blank');
+            (window as any).open(payboxGroupLink, '_blank');
             return;
           }
           await Linking.openURL(payboxGroupLink);
           return;
-        } catch {}
+        } catch { }
       }
 
       // 1b) עדיפות שנייה: פתיחה ישירה של קבוצת Bit אם יש קישור
       if (bitGroupLink.length > 0) {
         try {
           if (Platform.OS === 'web') {
-            // @ts-ignore window קיים בדפדפן
-            window.open(bitGroupLink, '_blank');
+            (window as any).open(bitGroupLink, '_blank');
             return;
           }
           await Linking.openURL(bitGroupLink);
           return;
-        } catch {}
+        } catch { }
       }
 
       // 2) אם לא נפתח קישור קבוצה: נוודא שיש סכום חיובי לפני מסלולי סכום ישירים
@@ -307,13 +305,12 @@ export default function MoneyScreen({
         : PAYBOX_WEB_URL.replace('{AMOUNT}', String(amount));
       try {
         if (Platform.OS === 'web') {
-          // @ts-ignore
-          window.open(webUrl, '_blank');
+          (window as any).open(webUrl, '_blank');
           return;
         }
         await Linking.openURL(webUrl);
         return;
-      } catch {}
+      } catch { }
 
       // 5) Fallback אחרון: Bit
       const bitSupported = await Linking.canOpenURL(bitUrl);
@@ -360,7 +357,7 @@ export default function MoneyScreen({
         filtered.sort((a, b) => b.donors - a.donors);
         break;
       case "לפי דירוג":
-         filtered.sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0));
+        filtered.sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0));
         break;
       case "לפי רלוונטיות":
         // Default - by rating
@@ -422,7 +419,7 @@ export default function MoneyScreen({
         },
         {
           text: 'תרום',
-          onPress: (amount) => {
+          onPress: (amount?: string) => {
             if (amount && !isNaN(Number(amount))) {
               Alert.alert(
                 'תרומה בוצעה',
@@ -439,7 +436,7 @@ export default function MoneyScreen({
     );
   };
 
- 
+
   const menuOptions = [
     'חיסכון לתרומה',
     'הוראות קבע',
@@ -478,18 +475,18 @@ export default function MoneyScreen({
 
   // Function to handle search results from HeaderComp
   const handleSearch = (query: string, filters?: string[], sorts?: string[], results?: any[]) => {
-    console.log('💰 MoneyScreen - Search received:', { 
-      query, 
-      filters: filters || [], 
-      sorts: sorts || [], 
-      resultsCount: results?.length || 0 
+    console.log('💰 MoneyScreen - Search received:', {
+      query,
+      filters: filters || [],
+      sorts: sorts || [],
+      resultsCount: results?.length || 0
     });
-    
+
     // Update state with search results
     setSearchQuery(query);
     setSelectedFilter(filters?.[0] || ""); // Only first filter
     setSelectedSort(sorts?.[0] || ""); // Only first sort
-    
+
     // If results are provided from SearchBar, use them
     if (results && results.length > 0) {
       setFilteredCharities(results);
@@ -573,7 +570,7 @@ export default function MoneyScreen({
   };
 
   const renderCharityCard = ({ item }: { item: any }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={localStyles.charityCard}
       onPress={() => {
         if (item._extUrl && typeof item._extUrl === 'string') {
@@ -646,7 +643,7 @@ export default function MoneyScreen({
       )}
     </View>
   );
-  
+
   return (
     <SafeAreaView style={localStyles.safeArea}>
       <HeaderComp
@@ -663,9 +660,9 @@ export default function MoneyScreen({
       />
 
       {/* Quick Donate Section */}
-     
-      <ScrollContainer 
-        style={localStyles.container} 
+
+      <ScrollContainer
+        style={localStyles.container}
         contentStyle={localStyles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -674,47 +671,47 @@ export default function MoneyScreen({
         {mode ? (
           // Donor mode - show charities for donation and donation history
           <View style={localStyles.sectionsContainer}>
-        <View style={localStyles.quickDonatePanel}>
-          <Text style={localStyles.quickDonateTitle}>תרומה לקהילה</Text>
-          {(() => {
-            const numericAmount = Number(amount) || 0;
-            const isZeroAmount = numericAmount <= 0;
-            return (
-              <>
-                <DonationAmountSlider 
-                  value={numericAmount}
-                  min={0}
-                  max={1000}
-                  step={5}
-                  onChange={(v) => setAmount(String(v))}
-                />
-                <View style={localStyles.quickDonateActionsRow}>
-                  <TouchableOpacity
-                    disabled={isZeroAmount}
-                    style={[localStyles.donateMainButton, isZeroAmount ? localStyles.donateMainButtonDisabled : localStyles.donateMainButtonActive]}
-                    onPress={() => Alert.alert('תרומה בוצעה', `תרומה בסך ₪${numericAmount} למען הקהילה`)}
-                  >
-                    <Text style={[localStyles.donateMainButtonText, isZeroAmount ? localStyles.donateMainButtonTextDisabled : localStyles.donateMainButtonTextActive]}>תרום</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={localStyles.bitCornerButton}
-                    onPress={() => openPaymentApp(numericAmount)}
-                  >
-                    <Text style={localStyles.bitCornerButtonText}>bit</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            );
-          })()}
-        </View>
+            <View style={localStyles.quickDonatePanel}>
+              <Text style={localStyles.quickDonateTitle}>תרומה לקהילה</Text>
+              {(() => {
+                const numericAmount = Number(amount) || 0;
+                const isZeroAmount = numericAmount <= 0;
+                return (
+                  <>
+                    <DonationAmountSlider
+                      value={numericAmount}
+                      min={0}
+                      max={1000}
+                      step={5}
+                      onChange={(v) => setAmount(String(v))}
+                    />
+                    <View style={localStyles.quickDonateActionsRow}>
+                      <TouchableOpacity
+                        disabled={isZeroAmount}
+                        style={[localStyles.donateMainButton, isZeroAmount ? localStyles.donateMainButtonDisabled : localStyles.donateMainButtonActive]}
+                        onPress={() => Alert.alert('תרומה בוצעה', `תרומה בסך ₪${numericAmount} למען הקהילה`)}
+                      >
+                        <Text style={[localStyles.donateMainButtonText, isZeroAmount ? localStyles.donateMainButtonTextDisabled : localStyles.donateMainButtonTextActive]}>תרום</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={localStyles.bitCornerButton}
+                        onPress={() => openPaymentApp(numericAmount)}
+                      >
+                        <Text style={localStyles.bitCornerButtonText}>bit</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                );
+              })()}
+            </View>
 
 
             <View style={[localStyles.section, localStyles.sectionPanel]}>
               <Text style={localStyles.sectionTitle}>
                 {searchQuery || selectedFilter ? 'תוצאות חיפוש' : 'עמותות מומלצות לתרומה'}
               </Text>
-              <ScrollView 
-                horizontal 
+              <ScrollView
+                horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={localStyles.charitiesScrollContainer}
               >
@@ -728,8 +725,8 @@ export default function MoneyScreen({
 
             <View style={[localStyles.section, localStyles.sectionPanel]}>
               <Text style={localStyles.sectionTitle}>היסטוריית תרומות שלך</Text>
-              <ScrollView 
-                horizontal 
+              <ScrollView
+                horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={localStyles.recentDonationsScrollContainer}
               >
@@ -765,8 +762,8 @@ export default function MoneyScreen({
               <Text style={localStyles.sectionTitle}>
                 {searchQuery || selectedFilter ? 'עמותות שיכולות לעזור' : 'עמותות מומלצות לעזרה'}
               </Text>
-              <ScrollView 
-                horizontal 
+              <ScrollView
+                horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={localStyles.charitiesScrollContainer}
               >
@@ -783,7 +780,7 @@ export default function MoneyScreen({
               <DonationStatsFooter
                 stats={[
                   { label: 'תרמת עד עכשיו', value: `₪${getFilteredRecentDonations().reduce((s, d) => s + (Number(d.amount) || 0), 0)}`, icon: 'cash-outline' },
-                  { label: 'נתרם באפליקציה', value: `₪${getFilteredRecentDonations().reduce((s, d) => s + (Number(d.amount) || 0), 0)}` , icon: 'trending-up-outline' },
+                  { label: 'נתרם באפליקציה', value: `₪${getFilteredRecentDonations().reduce((s, d) => s + (Number(d.amount) || 0), 0)}`, icon: 'trending-up-outline' },
                   { label: 'עמותות שנתמכו', value: new Set(getFilteredRecentDonations().map(d => d.charityName)).size, icon: 'business-outline' },
                 ]}
               />
@@ -912,701 +909,701 @@ export default function MoneyScreen({
 }
 
 const localStyles = StyleSheet.create({
-    safeArea: {
-      flex: 1,
-      backgroundColor: colors.backgroundTertiary,
-    },
-    container: {
-        flex: 1,
-        paddingHorizontal: 16,
-        paddingTop: 4,
-    },
-    scrollContent: {
-        paddingBottom: 100, // Bottom margin for screen
-    },
-    formContainer: {
-      backgroundColor: colors.pinkLight,
-      padding: 16,
-      borderRadius: 15,
-      marginBottom: 24,
-      borderWidth: 1,
-      borderColor: colors.secondary,
-    },
-    inputContainer: {
-        marginBottom: 20,
-    },
-    label: {
-        fontSize: FontSizes.medium,
-        fontWeight: '600',
-        color: colors.textPrimary,
-        marginBottom: 10,
-        textAlign: 'right',
-    },
-    input: {
-        backgroundColor: colors.white,
-        borderRadius: 10,
-        padding: 15,
-        fontSize: FontSizes.body,
-        textAlign: 'right',
-        color: colors.textPrimary,
-        borderWidth: 1,
-        borderColor: colors.secondary,
-    },
-    amountContainer: {
-        marginBottom: 25,
-    },
-    suggestedAmountsContainer: {
-        flexDirection: 'row-reverse',
-        justifyContent: 'space-between',
-        marginBottom: 15,
-    },
-    amountButton: {
-        backgroundColor: colors.white,
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: colors.secondary,
-    },
-    selectedAmount: {
-        backgroundColor: colors.secondary,
-        borderColor: colors.secondary,
-    },
-    amountButtonText: {
-        fontSize: FontSizes.body,
-        fontWeight: '700',
-        color: colors.textPrimary,
-    },
-    selectedAmountText: {
-        color: colors.background,
-    },
-    customAmountInput: {
-        textAlign: 'center',
-    },
-    donateButton: {
-        // backgroundColor: colors.accent,
-        padding: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    donateButtonText: {
-        color: colors.background,
-        fontSize: FontSizes.medium,
-        fontWeight: 'bold',
-    },
-    section: {
-        marginBottom: 10,
-    },
-    sectionTitle: {
-        fontSize: FontSizes.body,
-        fontWeight: 'bold',
-        color: colors.textPrimary,
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    sectionsContainer: {
-        flex: 1,
-        gap: 5,
-    },
-    sectionPanel: {
-        backgroundColor: colors.pinkLight,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: colors.secondary,
-        paddingVertical: 8,
-        paddingHorizontal: 8,
-    },
-    recommendationCard: {
-        backgroundColor: colors.pinkLight,
-        borderRadius: 15,
-        padding: 15,
-        marginRight: 15,
-        width: 150,
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: colors.secondary,
-    },
-    cardImage: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        marginBottom: 10,
-    },
-    cardTitle: {
-        fontSize: FontSizes.body,
-        fontWeight: 'bold',
-        color: colors.textPrimary,
-    },
-    cardDescription: {
-        fontSize: FontSizes.small,
-        color: colors.textSecondary,
-        textAlign: 'center',
-    },
-    historyCard: {
-        backgroundColor: colors.pinkLight,
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderColor: colors.secondary,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    historyContent: {
-        flex: 1,
-    },
-    historyTitle: {
-        fontSize: FontSizes.body,
-        fontWeight: '600',
-        color: colors.textPrimary,
-        marginBottom: 4,
-    },
-    historyAmount: {
-        fontSize: FontSizes.medium,
-        fontWeight: 'bold',
-        color: colors.accent,
-        marginBottom: 2,
-    },
-    historyDate: {
-        fontSize: FontSizes.small,
-        color: colors.textSecondary,
-    },
-    historyStatus: {
-        backgroundColor: colors.successLight,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-    },
-    historyStatusText: {
-        fontSize: FontSizes.small,
-        color: colors.success,
-        fontWeight: '600',
-    },
-    searchContainer: {
-        marginBottom: 20,
-    },
-    searchInput: {
-        marginBottom: 15,
-    },
-    searchButton: {
-        backgroundColor: colors.accent,
-        padding: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    searchButtonText: {
-        color: colors.background,
-        fontSize: FontSizes.medium,
-        fontWeight: 'bold',
-    },
-    recommendationsContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        paddingVertical: 10,
-    },
-    historyContainer: {
-        paddingVertical: 5,
-    },
-    searchInfoContainer: {
-        alignItems: 'center',
-        paddingVertical: 20,
-    },
-    searchInfoTitle: {
-        fontSize: FontSizes.heading3,
-        fontWeight: 'bold',
-        color: colors.textPrimary,
-        marginBottom: 10,
-        textAlign: 'center',
-    },
-    searchInfoText: {
-        fontSize: FontSizes.body,
-        color: colors.textSecondary,
-        textAlign: 'center',
-        marginBottom: 20,
-        lineHeight: 24,
-    },
-    searchTipsContainer: {
-        backgroundColor: colors.white,
-        borderRadius: 12,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: colors.secondary,
-    },
-    searchTipsTitle: {
-        fontSize: FontSizes.body,
-        fontWeight: 'bold',
-        color: colors.textPrimary,
-        marginBottom: 8,
-        textAlign: 'right',
-    },
-    searchTip: {
-        fontSize: FontSizes.body,
-        color: colors.textSecondary,
-        marginBottom: 4,
-        textAlign: 'right',
-    },
-    // Charity Cards Styles
-    charitiesScrollContainer: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-    },
-    charityCardWrapper: {
-        marginRight: 12,
-        width: 280,
-    },
-    charityCardWrapperCompact: {
-        width: 220,
-    },
-    charityCard: {
-        backgroundColor: colors.pinkLight,
-        borderRadius: 12,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: colors.secondary,
-        minHeight: 200,
-    },
-    charityCardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    charityEmoji: {
-        fontSize: FontSizes.displayLarge,
-    },
-    charityRating: {
-        backgroundColor: colors.successLight,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-    },
-    ratingText: {
-        fontSize: FontSizes.small,
-        color: colors.success,
-        fontWeight: 'bold',
-    },
-    charityName: {
-        fontSize: FontSizes.body,
-        fontWeight: 'bold',
-        color: colors.textPrimary,
-        marginBottom: 6,
-        textAlign: 'right',
-    },
-    charityDescription: {
-        fontSize: FontSizes.body,
-        color: colors.textSecondary,
-        marginBottom: 8,
-        textAlign: 'right',
-        lineHeight: 18,
-    },
-    charityDescriptionCompact: {
-        fontSize: FontSizes.small,
-        lineHeight: 16,
-    },
-    charityDetails: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 8,
-    },
-    charityLocation: {
-        fontSize: FontSizes.small,
-        color: colors.textSecondary,
-    },
-    charityCategory: {
-        fontSize: FontSizes.small,
-        color: colors.textSecondary,
-    },
-    charityStats: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 'auto',
-    },
-    charityDonors: {
-        fontSize: FontSizes.small,
-        color: colors.accent,
-        fontWeight: '600',
-    },
-    charityMinDonation: {
-        fontSize: FontSizes.small,
-        color: colors.accent,
-        fontWeight: '600',
-    },
-    // Recent Donations Styles
-    recentDonationsScrollContainer: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-    },
-    recentDonationCardWrapper: {
-        marginRight: 12,
-        width: 200,
-    },
-    recentDonationCard: {
-        backgroundColor: colors.pinkLight,
-        borderRadius: 12,
-        padding: 12,
-        borderWidth: 1,
-        borderColor: colors.secondary,
-        minHeight: 120,
-    },
-    recentDonationHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 6,
-    },
-    recentDonationCharity: {
-        fontSize: FontSizes.body,
-        fontWeight: 'bold',
-        color: colors.textPrimary,
-        textAlign: 'right',
-        flex: 1,
-    },
-    recentDonationAmount: {
-        fontSize: FontSizes.body,
-        fontWeight: 'bold',
-        color: colors.accent,
-    },
-    recentDonationDetails: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 6,
-    },
-    recentDonationDate: {
-        fontSize: FontSizes.small,
-        color: colors.textSecondary,
-    },
-    recentDonationCategory: {
-        fontSize: FontSizes.small,
-        color: colors.textSecondary,
-    },
-    recentDonationStatus: {
-        alignItems: 'flex-end',
-    },
-    recentDonationStatusText: {
-        fontSize: FontSizes.small,
-        color: colors.success,
-        fontWeight: '600',
-    },
-    // Quick Donate Panel
-    quickDonatePanel: {
-      backgroundColor: colors.pinkLight,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: colors.secondary,
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.backgroundTertiary,
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+  },
+  scrollContent: {
+    paddingBottom: 100, // Bottom margin for screen
+  },
+  formContainer: {
+    backgroundColor: colors.pinkLight,
+    padding: 16,
+    borderRadius: 15,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: FontSizes.medium,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 10,
+    textAlign: 'right',
+  },
+  input: {
+    backgroundColor: colors.white,
+    borderRadius: 10,
+    padding: 15,
+    fontSize: FontSizes.body,
+    textAlign: 'right',
+    color: colors.textPrimary,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+  },
+  amountContainer: {
+    marginBottom: 25,
+  },
+  suggestedAmountsContainer: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  amountButton: {
+    backgroundColor: colors.white,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+  },
+  selectedAmount: {
+    backgroundColor: colors.secondary,
+    borderColor: colors.secondary,
+  },
+  amountButtonText: {
+    fontSize: FontSizes.body,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  selectedAmountText: {
+    color: colors.background,
+  },
+  customAmountInput: {
+    textAlign: 'center',
+  },
+  donateButton: {
+    // backgroundColor: colors.accent,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  donateButtonText: {
+    color: colors.background,
+    fontSize: FontSizes.medium,
+    fontWeight: 'bold',
+  },
+  section: {
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontSize: FontSizes.body,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  sectionsContainer: {
+    flex: 1,
+    gap: 5,
+  },
+  sectionPanel: {
+    backgroundColor: colors.pinkLight,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+  },
+  recommendationCard: {
+    backgroundColor: colors.pinkLight,
+    borderRadius: 15,
+    padding: 15,
+    marginRight: 15,
+    width: 150,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.secondary,
+  },
+  cardImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginBottom: 10,
+  },
+  cardTitle: {
+    fontSize: FontSizes.body,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+  },
+  cardDescription: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  historyCard: {
+    backgroundColor: colors.pinkLight,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  historyContent: {
+    flex: 1,
+  },
+  historyTitle: {
+    fontSize: FontSizes.body,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  historyAmount: {
+    fontSize: FontSizes.medium,
+    fontWeight: 'bold',
+    color: colors.accent,
+    marginBottom: 2,
+  },
+  historyDate: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+  },
+  historyStatus: {
+    backgroundColor: colors.successLight,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  historyStatusText: {
+    fontSize: FontSizes.small,
+    color: colors.success,
+    fontWeight: '600',
+  },
+  searchContainer: {
+    marginBottom: 20,
+  },
+  searchInput: {
+    marginBottom: 15,
+  },
+  searchButton: {
+    backgroundColor: colors.accent,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  searchButtonText: {
+    color: colors.background,
+    fontSize: FontSizes.medium,
+    fontWeight: 'bold',
+  },
+  recommendationsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  historyContainer: {
+    paddingVertical: 5,
+  },
+  searchInfoContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  searchInfoTitle: {
+    fontSize: FontSizes.heading3,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  searchInfoText: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 24,
+  },
+  searchTipsContainer: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+  },
+  searchTipsTitle: {
+    fontSize: FontSizes.body,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: 8,
+    textAlign: 'right',
+  },
+  searchTip: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+    marginBottom: 4,
+    textAlign: 'right',
+  },
+  // Charity Cards Styles
+  charitiesScrollContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  charityCardWrapper: {
+    marginRight: 12,
+    width: 280,
+  },
+  charityCardWrapperCompact: {
+    width: 220,
+  },
+  charityCard: {
+    backgroundColor: colors.pinkLight,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    minHeight: 200,
+  },
+  charityCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  charityEmoji: {
+    fontSize: FontSizes.displayLarge,
+  },
+  charityRating: {
+    backgroundColor: colors.successLight,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  ratingText: {
+    fontSize: FontSizes.small,
+    color: colors.success,
+    fontWeight: 'bold',
+  },
+  charityName: {
+    fontSize: FontSizes.body,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: 6,
+    textAlign: 'right',
+  },
+  charityDescription: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+    marginBottom: 8,
+    textAlign: 'right',
+    lineHeight: 18,
+  },
+  charityDescriptionCompact: {
+    fontSize: FontSizes.small,
+    lineHeight: 16,
+  },
+  charityDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  charityLocation: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+  },
+  charityCategory: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+  },
+  charityStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 'auto',
+  },
+  charityDonors: {
+    fontSize: FontSizes.small,
+    color: colors.accent,
+    fontWeight: '600',
+  },
+  charityMinDonation: {
+    fontSize: FontSizes.small,
+    color: colors.accent,
+    fontWeight: '600',
+  },
+  // Recent Donations Styles
+  recentDonationsScrollContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  recentDonationCardWrapper: {
+    marginRight: 12,
+    width: 200,
+  },
+  recentDonationCard: {
+    backgroundColor: colors.pinkLight,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    minHeight: 120,
+  },
+  recentDonationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  recentDonationCharity: {
+    fontSize: FontSizes.body,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    textAlign: 'right',
+    flex: 1,
+  },
+  recentDonationAmount: {
+    fontSize: FontSizes.body,
+    fontWeight: 'bold',
+    color: colors.accent,
+  },
+  recentDonationDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  recentDonationDate: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+  },
+  recentDonationCategory: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+  },
+  recentDonationStatus: {
+    alignItems: 'flex-end',
+  },
+  recentDonationStatusText: {
+    fontSize: FontSizes.small,
+    color: colors.success,
+    fontWeight: '600',
+  },
+  // Quick Donate Panel
+  quickDonatePanel: {
+    backgroundColor: colors.pinkLight,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.secondary,
 
-      marginHorizontal: 0,
-      paddingVertical: 10,
-      paddingHorizontal: 12,
-    },
-    bitCornerButton: {
-      position: 'absolute',
-      top: 8,
-      left: 8,
-      padding: 8,
-      paddingHorizontal: 10,
-      borderRadius: 999,
-      backgroundColor: 'rgba(33, 150, 243, 0.12)',
-      borderWidth: 1,
-      borderColor: 'rgba(33, 150, 243, 0.35)',
-      zIndex: 2,
-    },
-    bitCornerButtonText: {
-      color: 'rgba(33, 150, 243, 0.9)',
-      fontSize: FontSizes.small,
-      fontWeight: '700',
-    },
-    quickDonateTitle: {
-      fontSize: FontSizes.body,
-      fontWeight: '700',
-      color: 'rgba(44,44,44,0.85)',
-      textAlign: 'center',
-    },
-    quickDonateSubtitle: {
-      fontSize: FontSizes.small,
-      color: 'rgba(102,102,102,0.75)',
-      textAlign: 'center',
-      marginTop: 2,
-      marginBottom: 6,
-    },
-    quickDonateAmountsRow: {
-      flexDirection: 'row-reverse',
-      justifyContent: 'center',
-      gap: 8,
-      marginBottom: 6,
-    },
-    quickAmountButton: {
-      backgroundColor: colors.white,
-      borderWidth: 1,
-      borderColor: colors.secondary,
-      borderRadius: 999,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-    },
-    quickAmountButtonText: {
-      fontSize: FontSizes.small,
-      color: colors.textPrimary,
-      fontWeight: '600',
-      textAlign: 'center',
-    },
-    quickDonateActionsRow: {
-      flexDirection: 'row-reverse',
-      justifyContent: 'center',
-      gap: 8,
-      marginTop: 4,
-    },
-    // Slider styles (modern, subtle)
-    amountSliderContainer: {
-      marginTop: 6,
-      marginBottom: 8,
-      paddingHorizontal: 6,
-    },
-    sliderTrack: {
-      height: "20%",
-      borderRadius: 999,
-      backgroundColor: 'rgba(255, 255, 255, 0.85)',
-      borderWidth: 1,
-      borderColor: colors.border,
-      overflow: 'hidden',
-    },
-    sliderFill: {
-      backgroundColor: colors.secondary,
-    },
-    sliderThumb: {
-      // height: 30,
-      borderRadius: 14,
-      backgroundColor: colors.secondary,
-      borderWidth: 2,
-      borderColor: colors.pinkDeep,
-      shadowColor: colors.black,
-      shadowOpacity: 0.08,
-      shadowRadius: 4,
-      shadowOffset: { width: 0, height: 2 },
-      elevation: 2,
-    },
-    sliderThumbInner: {
-      width: 12,
-      height: 12,
-      borderRadius: 6,
-      backgroundColor: colors.pinkLight,
-      alignSelf: 'center',
-      // marginTop: 7,
-    },
-    amountDisplayRow: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      marginTop: 8,
-    },
-    amountDisplayText: {
-      fontSize: FontSizes.medium,
-      fontWeight: '700',
-      color: 'rgba(44,44,44,0.9)',
-    },
-    amountRangeRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginTop: 4,
-    },
-    amountRangeText: {
-      fontSize: FontSizes.caption,
-      color: 'rgba(102,102,102,0.7)',
-    },
-    // Donate CTA styles
-    donateMainButton: {
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderRadius: 999,
-      alignItems: 'center',
-      justifyContent: 'center',
-      minWidth: 88,
-    },
-    donateMainButtonActive: {
-      backgroundColor: 'rgba(255, 107, 157, 0.2)',
-      borderWidth: 1,
-      borderColor: 'rgba(255, 107, 157, 0.4)',
-    },
-    donateMainButtonDisabled: {
-      backgroundColor: 'rgba(0,0,0,0.05)',
-      borderWidth: 1,
-      borderColor: 'rgba(0,0,0,0.06)',
-    },
-    donateMainButtonText: {
-      fontSize: FontSizes.body,
-      fontWeight: '700',
-      textAlign: 'center',
-    },
-    donateMainButtonTextActive: {
-      color: 'rgba(44,44,44,0.9)',
-    },
-    donateMainButtonTextDisabled: {
-      color: 'rgba(0,0,0,0.3)',
-    },
-    // removed inline bitSmallButton in favor of corner button
-    // Search Help Styles
-    searchHelpContainer: {
-        alignItems: 'center',
-        paddingVertical: 20,
-    },
-    searchHelpTitle: {
-        fontSize: FontSizes.heading2,
-        fontWeight: 'bold',
-        color: colors.textPrimary,
-        marginBottom: 12,
-        textAlign: 'center',
-    },
-    searchHelpText: {
-        fontSize: FontSizes.body,
-        color: colors.textSecondary,
-        textAlign: 'center',
-        marginBottom: 20,
-        lineHeight: 24,
-    },
-    searchHelpTipsContainer: {
-        backgroundColor: colors.white,
-        borderRadius: 12,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: colors.secondary,
-        width: '100%',
-    },
-    searchHelpTipsTitle: {
-        fontSize: FontSizes.body,
-        fontWeight: 'bold',
-        color: colors.textPrimary,
-        marginBottom: 10,
-        writingDirection: 'rtl',
-    },
-    searchHelpTip: {
-        fontSize: FontSizes.body,
-        color: colors.textSecondary,
-        marginBottom: 6,
-        writingDirection: 'rtl',
-        lineHeight: 20,
-    },
-    // Bottom small stats
-    bottomStatsRow: {
-      flexDirection: 'row-reverse',
-      justifyContent: 'space-between',
-      gap: 6,
-    },
-    statChip: {
-      flex: 1,
-      backgroundColor: colors.white,
-      borderWidth: 1,
-      borderColor: colors.secondary,
-      borderRadius: 10,
-      paddingVertical: 8,
-      paddingHorizontal: 10,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    statLabel: {
-      fontSize: FontSizes.caption,
-      color: colors.textSecondary,
-      marginBottom: 4,
-    },
-    statValue: {
-      fontSize: FontSizes.body,
-      color: colors.textPrimary,
-      fontWeight: 'bold',
-    },
+    marginHorizontal: 0,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  bitCornerButton: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    padding: 8,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    backgroundColor: 'rgba(33, 150, 243, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(33, 150, 243, 0.35)',
+    zIndex: 2,
+  },
+  bitCornerButtonText: {
+    color: 'rgba(33, 150, 243, 0.9)',
+    fontSize: FontSizes.small,
+    fontWeight: '700',
+  },
+  quickDonateTitle: {
+    fontSize: FontSizes.body,
+    fontWeight: '700',
+    color: 'rgba(44,44,44,0.85)',
+    textAlign: 'center',
+  },
+  quickDonateSubtitle: {
+    fontSize: FontSizes.small,
+    color: 'rgba(102,102,102,0.75)',
+    textAlign: 'center',
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  quickDonateAmountsRow: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  quickAmountButton: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  quickAmountButtonText: {
+    fontSize: FontSizes.small,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  quickDonateActionsRow: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  // Slider styles (modern, subtle)
+  amountSliderContainer: {
+    marginTop: 6,
+    marginBottom: 8,
+    paddingHorizontal: 6,
+  },
+  sliderTrack: {
+    height: "20%",
+    borderRadius: 999,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  sliderFill: {
+    backgroundColor: colors.secondary,
+  },
+  sliderThumb: {
+    // height: 30,
+    borderRadius: 14,
+    backgroundColor: colors.secondary,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    shadowColor: colors.black,
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  sliderThumbInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.pinkLight,
+    alignSelf: 'center',
+    // marginTop: 7,
+  },
+  amountDisplayRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  amountDisplayText: {
+    fontSize: FontSizes.medium,
+    fontWeight: '700',
+    color: 'rgba(44,44,44,0.9)',
+  },
+  amountRangeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  amountRangeText: {
+    fontSize: FontSizes.caption,
+    color: 'rgba(102,102,102,0.7)',
+  },
+  // Donate CTA styles
+  donateMainButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 88,
+  },
+  donateMainButtonActive: {
+    backgroundColor: 'rgba(255, 107, 157, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 157, 0.4)',
+  },
+  donateMainButtonDisabled: {
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+  },
+  donateMainButtonText: {
+    fontSize: FontSizes.body,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  donateMainButtonTextActive: {
+    color: 'rgba(44,44,44,0.9)',
+  },
+  donateMainButtonTextDisabled: {
+    color: 'rgba(0,0,0,0.3)',
+  },
+  // removed inline bitSmallButton in favor of corner button
+  // Search Help Styles
+  searchHelpContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  searchHelpTitle: {
+    fontSize: FontSizes.heading2,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  searchHelpText: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 24,
+  },
+  searchHelpTipsContainer: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    width: '100%',
+  },
+  searchHelpTipsTitle: {
+    fontSize: FontSizes.body,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: 10,
+    writingDirection: 'rtl',
+  },
+  searchHelpTip: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+    marginBottom: 6,
+    writingDirection: 'rtl',
+    lineHeight: 20,
+  },
+  // Bottom small stats
+  bottomStatsRow: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
+  statChip: {
+    flex: 1,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statLabel: {
+    fontSize: FontSizes.caption,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  statValue: {
+    fontSize: FontSizes.body,
+    color: colors.textPrimary,
+    fontWeight: 'bold',
+  },
 
-    // Modal shared styles
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.4)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: 16,
-    },
-    centerModalContent: {
-      width: '85%',
-      maxHeight: '75%',
-      backgroundColor: colors.surface,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.secondary,
-      padding: 14,
-    },
-    modalTitle: {
-      fontSize: FontSizes.heading3,
-      fontWeight: 'bold',
-      color: colors.textPrimary,
-      textAlign: 'center',
-    },
-    modalSubtitle: {
-      fontSize: FontSizes.small,
-      color: colors.textSecondary,
-      textAlign: 'center',
-      marginTop: 4,
-      marginBottom: 8,
-    },
-    modalDescription: {
-      fontSize: FontSizes.body,
-      color: colors.textSecondary,
-      textAlign: 'right',
-      marginBottom: 10,
-      lineHeight: 20,
-    },
-    modalFieldLabel: {
-      fontSize: FontSizes.small,
-      color: colors.textPrimary,
-      fontWeight: '600',
-      textAlign: 'right',
-      marginBottom: 6,
-      marginTop: 4,
-    },
-    modalAmountInput: {
-      textAlign: 'center',
-      marginBottom: 10,
-    },
-    modalActionsRow: {
-      flexDirection: 'row-reverse',
-      justifyContent: 'space-between',
-      gap: 8,
-      marginBottom: 8,
-    },
-    // Dedicated modal primary button styles to avoid duplicate keys
-    modalPrimaryButton: {
-      backgroundColor: colors.accent,
-      padding: 12,
-      borderRadius: 10,
-      alignItems: 'center',
-      flex: 1,
-    },
-    modalPrimaryButtonText: {
-      color: colors.background,
-      fontSize: FontSizes.medium,
-      fontWeight: 'bold',
-    },
-    bitButton: {
-      backgroundColor: 'transparent',
-      padding: 12,
-      borderRadius: 10,
-      alignItems: 'center',
-      flex: 1,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    bitButtonText: {
-      color: 'rgba(44,44,44,0.85)',
-      fontSize: FontSizes.medium,
-      fontWeight: 'bold',
-    },
-    contactButton: {
-      backgroundColor: colors.white,
-      borderWidth: 1,
-      borderColor: colors.secondary,
-      padding: 12,
-      borderRadius: 10,
-      alignItems: 'center',
-    },
-    contactButtonText: {
-      color: colors.textPrimary,
-      fontSize: FontSizes.medium,
-      fontWeight: 'bold',
-    },
+  // Modal shared styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  centerModalContent: {
+    width: '85%',
+    maxHeight: '75%',
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    padding: 14,
+  },
+  modalTitle: {
+    fontSize: FontSizes.heading3,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: FontSizes.small,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  modalDescription: {
+    fontSize: FontSizes.body,
+    color: colors.textSecondary,
+    textAlign: 'right',
+    marginBottom: 10,
+    lineHeight: 20,
+  },
+  modalFieldLabel: {
+    fontSize: FontSizes.small,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    textAlign: 'right',
+    marginBottom: 6,
+    marginTop: 4,
+  },
+  modalAmountInput: {
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  modalActionsRow: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 8,
+  },
+  // Dedicated modal primary button styles to avoid duplicate keys
+  modalPrimaryButton: {
+    backgroundColor: colors.accent,
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    flex: 1,
+  },
+  modalPrimaryButtonText: {
+    color: colors.background,
+    fontSize: FontSizes.medium,
+    fontWeight: 'bold',
+  },
+  bitButton: {
+    backgroundColor: 'transparent',
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  bitButtonText: {
+    color: 'rgba(44,44,44,0.85)',
+    fontSize: FontSizes.medium,
+    fontWeight: 'bold',
+  },
+  contactButton: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  contactButtonText: {
+    color: colors.textPrimary,
+    fontSize: FontSizes.medium,
+    fontWeight: 'bold',
+  },
 });

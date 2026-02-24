@@ -38,9 +38,7 @@ import { Ionicons as Icon } from '@expo/vector-icons';
 type FilterType = 'all' | 'online' | 'highKarma' | 'recentFollowers';
 type SortType = 'name' | 'karma' | 'followers' | 'recent';
 
-type NewChatRouteParams = {
-  // No specific params needed
-};
+type NewChatRouteParams = Record<string, never>;
 
 export default function NewChatScreen() {
   const { t } = useTranslation(['newChatScreen']);
@@ -335,7 +333,7 @@ export default function NewChatScreen() {
   return (
     <SafeAreaView style={[styles.safeArea, Platform.OS === 'web' && { position: 'relative' }]}>
       <StatusBar backgroundColor={colors.backgroundSecondary} barStyle="dark-content" />
-      <View 
+      <View
         style={styles.header}
         onLayout={(event) => {
           if (Platform.OS === 'web') {
@@ -382,7 +380,7 @@ export default function NewChatScreen() {
       </View>
 
       {showFilters && (
-        <View 
+        <View
           style={styles.filtersContainer}
           onLayout={(event) => {
             if (Platform.OS === 'web') {
